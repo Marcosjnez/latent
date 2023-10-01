@@ -1,0 +1,24 @@
+Package: latent
+Type: Package
+Title: Confirmatory and Exploratory Factor Analysis
+Version: 0.1.0
+Date: 2022-08-03
+Authors@R: c(person(given = "Marcos", family = "Jimenez", role = c("aut", "cre", "cph"), email = "marcosjnezhquez@gmail.com"), person(given="Francisco J.", family = "Abad", role = c("aut", "cph")), person(given="Eduardo", family = "Garcia-Garzon", role = c("aut", "cph")), person(given="Luis E.", family = "Garrido", role = c("aut", "cph")), person(given = "Vithor R.", family = "Franco", role = c("aut", "cph"), email = "vithorfranco@gmail.com"))
+Description: Fit confirmatory and exploratory factor models.
+License: GPL-3
+LazyData: TRUE
+Depends: R (>= 4.0)
+Imports: Rcpp
+URL: https://github.com/Marcosjnez/latent
+BugReports: https://github.com/Marcosjnez/latent/issues
+Encoding: UTF-8
+RoxygenNote: 7.2.3
+LinkingTo: Rcpp, RcppArmadillo
+NeedsCompilation: yes
+Packaged: 2022-05-04 18:00 UTC; marcos
+Author: Marcos Jimenez [aut, cre, cph],
+  Francisco J. Abad [aut, cph],
+  Eduardo Garcia-Garzon [aut, cph],
+  Luis E. Garrido [aut, cph]
+  Vithor R. Franco [aut, cph]
+Maintainer: Marcos Jiménez <marcosjnezhquez@gmail.com>
