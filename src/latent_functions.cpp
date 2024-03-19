@@ -91,7 +91,7 @@ Rcpp::List sl(arma::mat X, int n_generals, int n_groups,
               int cores = 1L);
 
 // [[Rcpp::export]]
-Rcpp::List rotate(arma::mat loadings,
+Rcpp::List rotate(arma::mat lambda,
                   Rcpp::CharacterVector rotation = Rcpp::CharacterVector::create("oblimin"),
                   std::string projection = "oblq",
                   arma::vec gamma = 0, arma::vec epsilon = Rcpp::NumericVector::create(0.01),
@@ -203,7 +203,7 @@ Rcpp::List parallel(arma::mat X, int nboot = 100, std::string cor = "pearson",
 //                        arma::vec k = 0, double w = 1);
 
 // [[Rcpp::export]]
-Rcpp::List polyfast(arma::mat X, std::string missing = "pairwise.complete.cases",
+Rcpp::List polyfast(arma::mat data, std::string missing = "pairwise.complete.cases",
                     const std::string acov = "none",
                     const std::string smooth = "none", double min_eigval = 0.001,
                     const int nboot = 1000L, const bool fit = false,
@@ -224,9 +224,11 @@ Rcpp::List cfa(arma::vec parameters,
                std::vector<arma::uvec> targetphi_indexes,
                std::vector<arma::uvec> targetpsi_indexes,
                std::vector<arma::uvec> free_indices_phi,
+               std::vector<arma::uvec> free_indices_psi,
                Rcpp::CharacterVector cor = Rcpp::CharacterVector::create("pearson"),
                Rcpp::CharacterVector estimator = Rcpp::CharacterVector::create("uls"),
                Rcpp::CharacterVector projection = Rcpp::CharacterVector::create("id"),
                Rcpp::CharacterVector missing = Rcpp::CharacterVector::create("pairwise.complete.cases"),
+               std::string se = "robust",
                int random_starts = 1L, int cores = 1L,
                Rcpp::Nullable<Rcpp::List> control = R_NilValue);

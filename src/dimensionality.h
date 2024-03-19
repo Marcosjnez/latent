@@ -63,7 +63,7 @@ arma::vec eig_PAF(arma::mat S) {
    * Compute the eigenvalues of the reduced covariance matrix S
    */
 
-  arma::mat inv_S = arma::inv(S); // Sometimes S is not positive-definite, so use inv()
+  arma::mat inv_S = arma::inv(S, arma::inv_opts::allow_approx); // Sometimes S is not positive-definite, so use inv()
   S.diag() -= 1/arma::diagvec(inv_S);
   arma::vec eigval_PAF = eig_sym(S);
 
@@ -216,19 +216,16 @@ Rcpp::List pa(arma::mat X, arma::mat S, int n_boot, std::string type, Rcpp::Null
       if(PAF) PAF_boot.col(i) = eig_PAF(S_boot);
 
     }
-
   } else if(type == "poly") {
-
-// #ifdef _OPENMP
-//       omp_set_num_threads(cores);
-// #pragma omp parallel for
-// #endif
+    #ifdef _OPENMP
+          omp_set_num_threads(cores);
+    #pragma omp parallel for
+    #endif
     for(int i=0; i < n_boot; ++i) {
 
       X_boots.slice(i) = boot_sample(X, replace);
       polyfast_object polychor = poly_no_cores(X_boots.slice(i), "none", 0.00);
-      // Rcpp::List polychor = polyfast(X_boots.slice(i), "none", 0L, false, 1L);
-      arma::mat S_boot = std::get<0>(polychor);;
+      arma::mat S_boot = std::get<0>(polychor);
       if(PCA) PCA_boot.col(i) = eig_sym(S_boot);
       if(PAF) PAF_boot.col(i) = eig_PAF(S_boot);
 
@@ -254,12 +251,15 @@ Rcpp::List pa(arma::mat X, arma::mat S, int n_boot, std::string type, Rcpp::Null
 
       arma::umat booleans = arma::reverse(eigval_PCA > PCA_cutoff.col(i));
       arma::uvec ones = arma::find(booleans == 0);
-      PCA_groups[i] = ones[0];
+      if(ones.is_empty()) {
+        PCA_groups[i] = p;
+      } else {
+        PCA_groups[i] = ones[0];
+      }
 
     }
 
   }
-  // Rcpp::stop("Well until here");
 
   if(PAF) {
 
@@ -269,11 +269,19 @@ Rcpp::List pa(arma::mat X, arma::mat S, int n_boot, std::string type, Rcpp::Null
     if(mean) PAF_cutoff.insert_rows(0, arma::mean(PAF_boot));
     PAF_cutoff = PAF_cutoff.t();
 
+    // Rcpp::Rcout << eigval_PAF << std::endl;
+    // Rcpp::Rcout << PAF_cutoff << std::endl;
     for(int i=0; i < s; ++i) {
 
       arma::umat booleans = arma::reverse(eigval_PAF > PAF_cutoff.col(i));
       arma::uvec ones = arma::find(booleans == 0);
-      PAF_groups[i] = ones[0];
+      // Rcpp::Rcout << booleans << std::endl;
+      // Rcpp::Rcout << ones << std::endl;
+      if(ones.is_empty()) {
+        PAF_groups[i] = p;
+      } else {
+        PAF_groups[i] = ones[0];
+      }
 
     }
 
@@ -352,12 +360,20 @@ Rcpp::List parallel(arma::mat X, int nboot, std::string cor, std::string missing
                     bool hierarchical, Rcpp::Nullable<Rcpp::List> nullable_efa,
                     int cores) {
 
+  // arguments_cor xcor;
+  // xcor.X = X;
+  // xcor.cor = cor;
+  // xcor.p = X.n_cols;
+  // xcor.missing = missing;
+  // xcor.cores = cores;
+
   arguments_cor xcor;
   xcor.X = X;
   xcor.cor = cor;
   xcor.p = X.n_cols;
+  xcor.nobs = X.n_rows;
   xcor.missing = missing;
-  xcor.cores = cores;
+  missingness(xcor);
 
   Rcpp::List efa;
   if(nullable_efa.isNotNull()) {
@@ -371,7 +387,8 @@ Rcpp::List parallel(arma::mat X, int nboot, std::string cor, std::string missing
   check_cor(xcor);
   Rcpp::List correlation_result = xcor.correlation_result;
 
-  Rcpp::List first_order = pa(xcor.X, xcor.R, nboot, cor, nullable_quantile, mean, replace, nullable_PA, cores);
+  Rcpp::List first_order = pa(xcor.X, xcor.R, nboot, cor, nullable_quantile, mean,
+                              replace, nullable_PA, cores);
 
   first_order["correlation"] = correlation_result;
   if(!hierarchical) return first_order;
@@ -393,8 +410,8 @@ Rcpp::List parallel(arma::mat X, int nboot, std::string cor, std::string missing
 
   pass_to_efast(efa, x);
 
-  arma::uvec unique = arma::unique(dims(arma::find(dims > 1))); // unique elements greater than 1
-  if(arma::max(unique) < 2) return first_order;
+  arma::uvec unique = arma::unique(dims(arma::find(dims > 2))); // unique elements greater than 1
+  // if(arma::max(unique) <= 2) return first_order;
   int unique_size = unique.size();
   arma::uvec groups(unique_size);
 
@@ -402,6 +419,10 @@ Rcpp::List parallel(arma::mat X, int nboot, std::string cor, std::string missing
 
   for(int i=0; i < unique_size; ++i) {
 
+    if(unique[i] < 3) {
+      arma::uvec indexes = arma::find(dims == unique[i]);
+      dims_2(indexes).zeros();
+    } else {
       Rcpp::List fit = efast(xcor.R, unique[i], x.cor, x.estimator, x.rotation, x.projection,
                              xcor.missing, x.nullable_nobs,
                              x.nullable_Target, x.nullable_Weight,
@@ -431,6 +452,7 @@ Rcpp::List parallel(arma::mat X, int nboot, std::string cor, std::string missing
       dims_2(indexes) = temp_dims(indexes);
 
     }
+  }
 
   std::vector<std::string> PA;
   if(nullable_PA.isNotNull()) {
@@ -448,114 +470,3 @@ Rcpp::List parallel(arma::mat X, int nboot, std::string cor, std::string missing
   return result;
 
 }
-
-// Rcpp::List cv_eigen(arma::mat X, int N, bool hierarchical,
-//                     Rcpp::Nullable<Rcpp::List> nullable_efa,
-//                     int cores) {
-//
-//   arma::mat S = arma::cor(X);
-//   int q = S.n_cols;
-//   arma::mat CV_eigvals(N, q);
-//   int p = X.n_rows;
-//   arma::uvec indexes = consecutive(0, p-1);
-//   int half = p/2;
-//
-// #ifdef _OPENMP
-//   omp_set_num_threads(cores);
-// #pragma omp parallel for
-// #endif
-//   for(int i=0; i < N; ++i) {
-//
-//     arma::uvec selected = arma::randperm(p, half);
-//     arma::mat A = X.rows(selected);
-//     arma::mat B = X;
-//     B.shed_rows(selected);
-//     arma::mat cor_A = arma::cor(A);
-//     arma::mat cor_B = arma::cor(B);
-//     arma::vec eigval;
-//     arma::mat eigvec;
-//     eig_sym(eigval, eigvec, cor_A);
-//
-//     arma::vec cv_values = eigvec.t() * cor_B * eigvec;
-//     CV_eigvals.row(i) = arma::diagvec(cv_values);
-//
-//   }
-//
-//   arma::vec avg_CV_eigvals = arma::mean(CV_eigvals, 0);
-//   arma::uvec which = arma::find(avg_CV_eigvals > 1);
-//   int dim = which.size();
-//
-//   Rcpp::List result;
-//   result["CV_eigvals"] = avg_CV_eigvals;
-//   result["dim"] = dim;
-//
-//   if(dim <= 1 || !hierarchical) return result;
-//
-//   Rcpp::List efa;
-//
-//   if(nullable_efa.isNotNull()) {
-//     efa = nullable_efa;
-//   }
-//
-//   // Arguments to pass to efa:
-//
-//   arguments_efast x;
-//
-//   pass_to_efast(efa, x);
-//
-//   // efa:
-//
-//   Rcpp::List fit = efast(S, dim, x.cor, x.estimator, x.rotation, x.projection,
-//                          "none", x.nullable_nobs,
-//                          x.nullable_Target, x.nullable_Weight,
-//                          x.nullable_PhiTarget, x.nullable_PhiWeight,
-//                          x.nullable_blocks,
-//                          x.nullable_block_weights,
-//                          x.nullable_oblq_factors,
-//                          x.gamma, x.epsilon, x.k, x.w,
-//                          x.random_starts, x.cores,
-//                          x.nullable_init, x.nullable_efa_control,
-//                          x.nullable_rot_control);
-//
-//   Rcpp::List rot = fit["rotation"];
-//   arma::mat Phi = rot["lambda"];
-//   arma::mat loadings = rot["lambda"];
-//   arma::mat L = loadings * Phi;
-//   arma::mat W = arma::solve(S, L);
-//   arma::mat fs = X * W;
-//
-//   arma::mat CV_eigvals2(N, dim);
-//
-//   omp_set_num_threads(cores);
-// #pragma omp parallel for
-//   for(int i=0; i < N; ++i) {
-//
-//     arma::uvec selected = arma::randperm(p, half);
-//     arma::mat A = fs.rows(selected);
-//     arma::mat B = fs;
-//     B.shed_rows(selected);
-//     arma::mat cor_A = arma::cor(A);
-//     arma::mat cor_B = arma::cor(B);
-//     arma::vec eigval;
-//     arma::mat eigvec;
-//     eig_sym(eigval, eigvec, cor_A);
-//
-//     arma::vec cv_values = eigvec.t() * cor_B * eigvec;
-//     CV_eigvals2.row(i) = arma::diagvec(cv_values);
-//
-//   }
-//
-//   arma::vec avg_CV_eigvals2 = arma::mean(CV_eigvals2, 0);
-//   // arma::uvec which2 = arma::find(avg_CV_eigvals2 > 1);
-//   // int dim2 = which2.size();
-//   arma::uvec ones = arma::find((avg_CV_eigvals2 < 1) == 1);
-//   int dim2 = ones[0];
-//
-//   result["CV_eigvals2"] = avg_CV_eigvals2;
-//   result["dim2"] = dim2;
-//   result["fit"] = fit;
-//   result["fs"] = fs;
-//
-//   return result;
-//
-// }

@@ -291,10 +291,10 @@ Rcpp::List polyfast(arma::mat X, std::string missing, std::string acov, const st
     int d = 0.5*p*(p-1);
     arma::uvec lower_indices = arma::trimatl_ind(arma::size(polys), -1);
     arma::mat boot_correlations(nboot, d);
-#ifdef _OPENMP
-    omp_set_num_threads(cores);
-#pragma omp parallel for
-#endif
+// #ifdef _OPENMP
+//     omp_set_num_threads(cores);
+// #pragma omp parallel for
+// #endif
     for(int i=0; i < nboot; ++i) {
       arma::uvec indexes = arma::randi<arma::uvec>(n, arma::distr_param(0, n-1));
       polyfast_object polychor = poly_no_cores(X.rows(indexes), smooth, min_eigval);

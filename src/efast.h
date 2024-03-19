@@ -280,6 +280,40 @@ Rcpp::List efast(arma::mat X, int nfactors, std::string cor, std::string estimat
     }
   }
 
+  // arma::vec uniquenesses = efa_result["uniquenesses"];
+  // xefa.lambda = L;
+  // xefa.phi = Phi;
+  // xefa.psi = arma::diagmat(uniquenesses);
+  // efa_criterion->H(xefa);
+  // efa_criterion->H2(xefa);
+  // xefa.lambda_indexes
+  // Standard errors:
+  // arma::mat inv_hessian;
+  // if(!opt.hessian.is_sympd()) {
+  //   arma::vec eigval;
+  //   arma::mat eigvec;
+  //   eig_sym(eigval, eigvec, opt.hessian);
+  //   arma::vec d = arma::clamp(eigval, 0.01, eigval.max());
+  //   inv_hessian = eigvec * arma::diagmat(1/d) * eigvec.t();
+  // } else {
+  //   inv_hessian = arma::inv_sympd(opt.hessian);
+  // }
+  // // arma::mat inv_hessian = arma::inv(opt.hessian);
+  // arma::uvec indexes = trimatl_ind(arma::size(xcfa[0].R), 0);
+  // arma::mat full_Sigma = asymptotic_normal(xcfa[0].R);
+  // arma::mat Sigma = full_Sigma(indexes, indexes);
+  // arma::mat dLPU_dS = opt.dLPU_dS[0].cols(indexes);
+  // for(int i=1; i < opt.nblocks; ++i) {
+  //   arma::uvec indexes = trimatl_ind(arma::size(xcfa[i].R), 0);
+  //   arma::mat full_Sigma = asymptotic_normal(xcfa[i].R);
+  //   Sigma = diagConc(Sigma, full_Sigma(indexes, indexes));
+  //   dLPU_dS = arma::join_rows(dLPU_dS, opt.dLPU_dS[i].cols(indexes));
+  // }
+  // arma::mat B = dLPU_dS * Sigma * dLPU_dS.t();
+  // arma::mat COV = inv_hessian * B * inv_hessian;
+  // double denominator = (opt.total_nobs-1L)/opt.nblocks;
+  // opt.se = sqrt(arma::diagvec(COV)/denominator);
+
   arma::vec propVar = arma::diagvec(Phi * L.t() * L)/x.p;
 
   rotation_result["lambda"] = L;

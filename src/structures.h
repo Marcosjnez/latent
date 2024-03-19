@@ -36,6 +36,8 @@ typedef struct arguments_rotate{
   gC1, gC, glogC, glogCN, gexplogCN, exp_lCN, gL1, gL2, I, I1, I2, Ng,
   dxtL, dxt_L2s, dmudL, dc2dL, dmudP, dc2dP, LtLxI, dxtP, expmu, expmmu, dir;
 
+  arma::vec epsilones, ge;
+
   arma::vec Lvec;
   arma::uvec lower, larger;
   std::vector<arma::uvec> loweri, largeri;
@@ -66,6 +68,12 @@ typedef struct arguments_rotate{
 
   Rcpp::Nullable<arma::mat> nullable_indexes1, nullable_indexes2;
   arma::mat indexes1, indexes2;
+
+  double k0 = 0;
+  arma::mat gmat, glambda, gphi, dglambda, dgphi, dlambda, dphi, hlambda,
+  hessian, dLPU_dS;
+  arma::vec parameters, dparameters, gradient, dgradient;
+  std::string estimator = "cf";
 
 } args;
 
@@ -189,7 +197,7 @@ typedef struct arguments_cfa{
   // Optim stuff:
   arma::vec dir;
   double c1 = 10e-04, c2 = 0.5, rho = 0.5, eps = 1e-05, ng = 1, ss = 1, inprod = 1;
-  int M = 5L, armijo_maxit = 10L, iteration = 0L, maxit = 1000L,
+  int m = 5L, armijo_maxit = 10L, iteration = 0L, maxit = 1000L,
     random_starts= 1L, cores = 1L;
   std::string search = "back";
   bool convergence = false;
@@ -214,6 +222,15 @@ typedef struct arguments_cfa{
   Rcpp::Nullable<Rcpp::List> nullable_efa_control, nullable_first_efa,
   nullable_second_efa, nullable_init;
   Rcpp::List correlation_result;
+
+  // positive
+  arma::mat U, dU, dgU;
+  arma::uvec psi_oblq_indexes, free_indices_psi;
+  arma::mat Psi_Target, AU;
+
+  // rotation
+  arma::mat L2, N, M, L2N, ML2, f1, f2, gmat;
+  double k;
 
 } args_cfa;
 

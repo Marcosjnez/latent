@@ -576,6 +576,127 @@ public:
 
 };
 
+// Geoblique manifold:
+
+class geoblq:public rotation_manifold {
+
+public:
+
+  void param(arguments_rotate& x) {
+
+    x.Phi = x.T.t() * x.T;
+    x.Inv_T = arma::inv(x.T);
+    x.L = x.lambda * x.Inv_T.t();
+
+  }
+
+  void dLP(arguments_rotate& x) {
+
+
+
+  }
+
+  void grad(arguments_rotate& x) {
+
+    arma::mat g1 = - x.Inv_T.t() * x.gL.t() * x.L;
+
+    if(x.gP.is_empty()) {
+
+      x.g = g1;
+
+    } else {
+
+      arma::mat g2 = x.T * x.gP;
+      x.g = g1 + g2;
+
+    }
+
+  }
+
+  void dgrad(arguments_rotate& x) {
+
+    arma::mat dg1 = - x.g * x.Inv_T_dt.t() - (x.dT * x.Inv_T).t() * x.g - (x.dgL * x.Inv_T).t() * x.L;
+
+    if(x.gP.is_empty()) {
+
+      x.dg = dg1;
+
+    } else {
+
+      arma::mat dg2 = x.dT * x.gP + x.T * x.dgP;
+      x.dg = dg1 + dg2;
+
+    }
+
+  }
+
+  void g_constraints(arguments_rotate& x) {
+
+    // Parameters in columns and constraints in rows
+
+    int pq = x.p*x.q;
+    int qq = x.q*x.q;
+    int q_cor = x.q*(x.q-1)/2;
+    arma::uvec indexes_1(x.q);
+
+    // indexes_1 contains the indexes of the diagonal matrix to remove
+    for(int i=0; i < x.q; ++i) indexes_1[i] = ((i+1)*x.q) - (x.q-i);
+    arma::uvec indexes_2 = arma::trimatl_ind(arma::size(x.Phi), -1);
+    arma::mat I2(x.q, x.q, arma::fill::eye);
+
+    x.d_constr_temp = arma::kron(I2, x.L.t()) * x.hL +
+      arma::kron(x.gL.t(), I2) * dxt(x.p, x.q); // q*q x p*q matrix
+
+    // Rebuild each column of x.d_constr_temp as a qxq matrix and multiply by inv_Phi:
+    arma::mat inv_Phi = arma::inv_sympd(x.Phi);
+    arma::cube B(qq, pq, 1);
+    B.slice(0) = x.d_constr_temp;
+    B.reshape(x.q, x.q, pq);
+    B.each_slice() *= inv_Phi;
+    B.reshape(qq, pq, 1);
+    // Derivative of the constraint equation (diagonal matrix) wrt L:
+    x.d_constr_temp = B.slice(0); // q*q x p*q matrix
+
+    // Derivative of the constraint equation (diagonal matrix) wrt Phi:
+    arma::mat c1p = -arma::kron(inv_Phi.t(), (x.L.t() * x.gL * inv_Phi));
+    arma::mat Phi_t = dxt(x.q, x.q);
+    arma::mat HP_temp = c1p + c1p * Phi_t;
+    if(!x.hP.is_empty()) HP_temp -= x.hP; // q*q x q*q matrix
+    // Pick up the estimated correlations in the lower diagonal:
+    arma::mat HP = HP_temp.cols(indexes_2);
+
+    // Join the derivative constraints wrt L and Phi:
+    x.d_constr = arma::join_rows(x.d_constr_temp, HP);
+    // Pick up the off-diagonals of the constraint derivatives wrt L (q*(q-1) constraints):
+    x.d_constr.shed_rows(indexes_1);
+    // add p zero-columns for the constraints wrt the uniquenesses:
+    x.d_constr.insert_cols(pq + q_cor, x.p);
+
+  };
+
+  void proj(arguments_rotate& x) {
+
+    x.rg = x.g - x.T * arma::diagmat( x.T.t() * x.g );
+
+  }
+
+  void hess(arguments_rotate& x) {
+
+    x.dH = x.dg - x.dT * arma::diagmat( x.T.t() * x.g) - x.T * arma::diagmat( x.T.t() * x.dg );
+    // arma::mat drg = x.dg - x.dT * arma::diagmat( x.T.t() * x.g) - x.T * arma::diagmat( x.dT.t() * x.g ) -
+    // x.T * arma::diagmat( x.T.t() * x.dg );
+    // x.dH = drg - x.T * arma::diagmat( x.T.t() * drg );
+
+  }
+
+  void retr(arguments_rotate& x) {
+
+    x.T *= arma::diagmat( 1 / sqrt(arma::sum(x.T % x.T, 0)) );
+
+  }
+
+};
+
 // Choose the manifold:
 
 rotation_manifold* choose_manifold(std::string projection) {
@@ -589,6 +710,8 @@ rotation_manifold* choose_manifold(std::string projection) {
     manifold = new poblq();
   } else if(projection == "id") {
     manifold = new id();
+  } else if(projection == "geoblq") {
+    manifold = new geoblq();
   } else if(projection == "none") {
 
   } else {

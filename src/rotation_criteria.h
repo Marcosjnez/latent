@@ -556,6 +556,52 @@ public:
 };
 
 /*
+ * Geomin 2.0
+ */
+
+// class geomin2: public rotation_criterion {
+//
+// public:
+//
+//   void F(arguments_rotate& x) {
+//
+//     x.q2 = 2/(x.q + 0.0);
+//     x.L2 = x.L % x.L;
+//     x.L2.each_row() += x.epsilones.t();
+//     x.term = arma::trunc_exp(arma::sum(arma::trunc_log(x.L2), 1) / x.q);
+//
+//     x.f = arma::accu(x.term);
+//
+//   }
+//
+//   void gLP(arguments_rotate& x) {
+//
+//     x.LoL2 = x.L / x.L2;
+//     x.gL = x.LoL2 * x.q2;
+//     x.gL.each_col() %= x.term;
+//     arma::mat z = arma::sum(arma::trunc_log(x.L2), 1);
+//     arma::vec dfdz = 1/x.q * x.term;
+//     arma::mat dzde = 1/x.L2;
+//     dzde.each_row() *= dfdz.t();
+//     x.ge = arma::sum(dzde, 0);
+//
+//   }
+//
+//   void hLP(arguments_rotate& x) {
+//
+//     Rcpp::stop("hLP not available");
+//
+//   }
+//
+//   void dgLP(arguments_rotate& x) {
+//
+//     Rcpp::stop("dgLP not available");
+//
+//   }
+//
+// };
+
+/*
  * Repeated Crawford-Ferguson family
  */
 
@@ -1423,6 +1469,10 @@ rotation_criterion* choose_criterion(std::vector<std::string> rotations, std::st
   } else if(rotations[0] == "invar") {
 
     criterion = new invar();
+
+  } else if(rotations[0] == "geomin2") {
+
+    // criterion = new geomin2();
 
   } else if(rotations[0] == "none") {
 

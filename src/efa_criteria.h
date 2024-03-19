@@ -58,6 +58,7 @@ public:
   void H(arguments_efa& x) {
 
     x.hessian.set_size(x.parameters.n_elem, x.parameters.n_elem); x.hessian.zeros();
+
     x.Rhat = x.lambda * x.phi * x.lambda.t() + x.psi;
     x.residuals = x.R - x.Rhat;
     x.lambda_phi = x.lambda * x.phi;
@@ -185,7 +186,7 @@ public:
 
     x.lambda = A * D;
     x.Rhat = x.lambda * x.lambda.t();
-    x.uniquenesses = 1 - arma::diagvec(x.Rhat);// x.R.diag() - arma::diagvec(x.Rhat) FIX
+    x.uniquenesses = x.R.diag() - arma::diagvec(x.Rhat);
     x.Rhat.diag() = x.R.diag();
 
   };
@@ -340,7 +341,7 @@ public:
 
     x.lambda = diagmat(x.sqrt_psi) * w;
     x.Rhat = x.lambda * x.lambda.t();
-    x.uniquenesses = 1 - diagvec(x.Rhat);// x.R.diag() - arma::diagvec(x.Rhat) FIX
+    x.uniquenesses = x.R.diag() - arma::diagvec(x.Rhat);
     x.Rhat.diag() = x.R.diag();
 
   };
@@ -491,7 +492,7 @@ public:
   void outcomes(arguments_efa& x) {
 
     x.Rhat = x.lambda * x.lambda.t();
-    x.uniquenesses = 1 - arma::diagvec(x.Rhat); // x.R.diag() - arma::diagvec(x.Rhat) FIX
+    x.uniquenesses = x.R.diag() - arma::diagvec(x.Rhat);
     x.Rhat.diag() = x.R.diag();
 
   };
