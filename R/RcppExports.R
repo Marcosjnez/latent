@@ -65,8 +65,8 @@ sl <- function(X, n_generals, n_groups, cor = "pearson", estimator = "uls", miss
     .Call(`_latent_sl`, X, n_generals, n_groups, cor, estimator, missing, nobs, first_efa, second_efa, cores)
 }
 
-rotate <- function(loadings, rotation = as.character( c("oblimin")), projection = "oblq", gamma = 0L, epsilon = as.numeric( c(0.01)), k = 0L, w = 1, Target = NULL, Weight = NULL, PhiTarget = NULL, PhiWeight = NULL, blocks = NULL, block_weights = NULL, oblq_factors = NULL, normalization = "none", rot_control = NULL, random_starts = 1L, cores = 1L) {
-    .Call(`_latent_rotate`, loadings, rotation, projection, gamma, epsilon, k, w, Target, Weight, PhiTarget, PhiWeight, blocks, block_weights, oblq_factors, normalization, rot_control, random_starts, cores)
+rotate <- function(lambda, rotation = as.character( c("oblimin")), projection = "oblq", gamma = 0L, epsilon = as.numeric( c(0.01)), k = 0L, w = 1, Target = NULL, Weight = NULL, PhiTarget = NULL, PhiWeight = NULL, blocks = NULL, block_weights = NULL, oblq_factors = NULL, normalization = "none", rot_control = NULL, random_starts = 1L, cores = 1L) {
+    .Call(`_latent_rotate`, lambda, rotation, projection, gamma, epsilon, k, w, Target, Weight, PhiTarget, PhiWeight, blocks, block_weights, oblq_factors, normalization, rot_control, random_starts, cores)
 }
 
 efast <- function(X, nfactors, cor = "pearson", estimator = "uls", rotation = as.character( c("oblimin")), projection = "oblq", missing = "pairwise.complete.cases", nobs = NULL, Target = NULL, Weight = NULL, PhiTarget = NULL, PhiWeight = NULL, blocks = NULL, block_weights = NULL, oblq_factors = NULL, gamma = 0L, epsilon = as.numeric( c(0.01)), k = 0L, w = 1, random_starts = 1L, cores = 1L, init = NULL, efa_control = NULL, rot_control = NULL) {
@@ -93,16 +93,12 @@ parallel <- function(X, nboot = 100L, cor = "pearson", missing = "pairwise.compl
     .Call(`_latent_parallel`, X, nboot, cor, missing, quant, mean, replace, PA, hierarchical, efa, cores)
 }
 
-check_deriv <- function(L, Phi, dL, dP, rotation = as.character( c("oblimin")), projection = "oblq", Target = NULL, Weight = NULL, PhiTarget = NULL, PhiWeight = NULL, blocks = NULL, block_weights = NULL, oblq_factors = NULL, gamma = 0L, epsilon = as.numeric( c(0.01)), k = 0L, w = 1) {
-    .Call(`_latent_check_deriv`, L, Phi, dL, dP, rotation, projection, Target, Weight, PhiTarget, PhiWeight, blocks, block_weights, oblq_factors, gamma, epsilon, k, w)
+polyfast <- function(data, missing = "pairwise.complete.cases", acov = "none", smooth = "none", min_eigval = 0.001, nboot = 1000L, fit = FALSE, cores = 1L) {
+    .Call(`_latent_polyfast`, data, missing, acov, smooth, min_eigval, nboot, fit, cores)
 }
 
-polyfast <- function(X, missing = "pairwise.complete.cases", acov = "none", smooth = "none", min_eigval = 0.001, nboot = 1000L, fit = FALSE, cores = 1L) {
-    .Call(`_latent_polyfast`, X, missing, acov, smooth, min_eigval, nboot, fit, cores)
-}
-
-cfa <- function(parameters, X, nfactors, nobs, lambda, phi, psi, lambda_indexes, phi_indexes, psi_indexes, target_indexes, targetphi_indexes, targetpsi_indexes, free_indices_phi, cor = as.character( c("pearson")), estimator = as.character( c("uls")), projection = as.character( c("id")), missing = as.character( c("pairwise.complete.cases")), random_starts = 1L, cores = 1L, control = NULL) {
-    .Call(`_latent_cfa`, parameters, X, nfactors, nobs, lambda, phi, psi, lambda_indexes, phi_indexes, psi_indexes, target_indexes, targetphi_indexes, targetpsi_indexes, free_indices_phi, cor, estimator, projection, missing, random_starts, cores, control)
+cfa <- function(parameters, X, nfactors, nobs, lambda, phi, psi, lambda_indexes, phi_indexes, psi_indexes, target_indexes, targetphi_indexes, targetpsi_indexes, free_indices_phi, free_indices_psi, cor = as.character( c("pearson")), estimator = as.character( c("uls")), projection = as.character( c("id")), missing = as.character( c("pairwise.complete.cases")), se = "robust", random_starts = 1L, cores = 1L, control = NULL) {
+    .Call(`_latent_cfa`, parameters, X, nfactors, nobs, lambda, phi, psi, lambda_indexes, phi_indexes, psi_indexes, target_indexes, targetphi_indexes, targetpsi_indexes, free_indices_phi, free_indices_psi, cor, estimator, projection, missing, se, random_starts, cores, control)
 }
 
 count <- function(X, n, max_X) {

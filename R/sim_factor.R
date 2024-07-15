@@ -258,7 +258,7 @@ CFA <- function(S, target, targetphi, targetpsi = diag(nrow(target)),
 
   # Model matrix:
   S_hat <- lambda_hat %*% phi_hat %*% t(lambda_hat) + psi_hat
-  uniquenesses_hat <- diag(psi_hat)
+  uniquenesses_hat <- 1 - diag(lambda_hat %*% phi_hat %*% t(lambda_hat))
   diag(S_hat) <- 1 # Fix rounding errors from the optimization
   residuals <- S - S_hat
 
@@ -404,7 +404,7 @@ cudeck <- function(R, lambda, Phi, Psi,
 
   }
 
-  if(method == "minres" || method == "ols") {
+  if(method == "minres" || method == "uls") {
 
     # Select the nonduplicated elements of the correlation matrix wrt each parameter
     B <- -gS[lower.tri(R, diag = TRUE), ]
@@ -435,7 +435,7 @@ cudeck <- function(R, lambda, Phi, Psi,
   # Generate random error:
 
   m <- p+1
-  U <- replicate(p, stats::runif(m, 0, 1))
+  U <- replicate(p, stats::runif(m, -1, 1))
   A1 <- t(U) %*% U
   sq <- diag(1/sqrt(diag(A1)))
   A2 <- sq %*% A1 %*% sq
@@ -450,7 +450,7 @@ cudeck <- function(R, lambda, Phi, Psi,
 
   # Adjust the error to satisfy the desired amount of misfit:
 
-  if(method == "minres" || method == "ols") {
+  if(method == "minres" || method == "uls") {
 
     E <- matrix(0, p, p)
     E[lower.tri(E, diag = TRUE)] <- e
@@ -587,7 +587,7 @@ yuan <- function(R, lambda, Phi, Psi,
 
   # Adjust the error to satisfy the desired amount of misfit:
 
-  if(method == "minres" || method == "ols") {
+  if(method == "minres" || method == "uls") {
 
     if(fit == "rmsr") {
       if(misfit == "close") {
