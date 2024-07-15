@@ -4,7 +4,7 @@
 \alias{rotate}
 \title{Fast rotation algorithm for factor analysis.}
 \usage{
-rotate(loadings, rotation = "oblimin", projection = "oblq",
+rotate(lambda, rotation = "oblimin", projection = "oblq",
 gamma = 0, epsilon = 0.01, k = 0, w = 1,
 Target = NULL, Weight = NULL, PhiTarget = NULL, PhiWeight = NULL,
 blocks = NULL, block_weights = NULL, oblq_factors = NULL,
@@ -12,7 +12,7 @@ normalization = "none",
 rot_control = NULL, random_starts = 1L, cores = 1L)
 }
 \arguments{
-\item{loadings}{Unrotated loading matrix.}
+\item{lambda}{Unrotated loading matrix.}
 
 \item{rotation}{Rotation criterion. Available rotations: "varimax", "cf" (Crawford-Ferguson), "oblimin", "geomin", "target", "xtarget" (extended target) and "none". Defaults to "oblimin".}
 

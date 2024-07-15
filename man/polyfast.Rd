@@ -4,11 +4,9 @@
 \alias{polyfast}
 \title{Fast polychoric correlations.}
 \usage{
-polyfast(X, acov = "none", smooth = "pd", min_eigval = 0.001, nboot = 1000L, fit = FALSE, cores = 1L)
+polyfast(data, acov = "none", smooth = "pd", min_eigval = 0.001, nboot = 1000L, fit = FALSE, cores = 1L)
 }
 \arguments{
-\item{X}{Matrix of categorical scores. The lowest score must start at 0.}
-
 \item{missing}{The way to handle missing data. Options: c("impute.mean", "impute.median", "complete.cases", "pairwise.complete.cases"). Defaults to "pairwise.complete.cases".}
 
 \item{acov}{Use acov = 'cov' to obtain the asymptotic covariance matrix and acov = 'var' to simply obtain the asymptotic variances. Use "bootstrap" for estimating the asymptotic covariance matrix by resampling. Defaults to "none".}
@@ -22,6 +20,8 @@ polyfast(X, acov = "none", smooth = "pd", min_eigval = 0.001, nboot = 1000L, fit
 \item{fit}{Should the fit value be calculated? Defaults to FALSE.}
 
 \item{cores}{Number of parallel cores to compute the polychoric correlations.}
+
+\item{X}{Matrix of categorical scores. The lowest score must start at 0.}
 }
 \value{
 A list with the polychoric correlations, the thresholds, and the elapsed time in nanoseconds.

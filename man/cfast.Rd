@@ -6,17 +6,20 @@
 \usage{
 cfast(
   data,
-  target,
-  targetphi = NULL,
-  targetpsi = NULL,
+  lambda,
+  phi = NULL,
+  psi = NULL,
   cor = "pearson",
   estimator = "uls",
+  rotate = NULL,
   missing = "pairwise.complete.cases",
   nobs = NULL,
   group = NULL,
   invariance = "metric",
   control = NULL,
-  positive = FALSE
+  positive = FALSE,
+  random_starts = 1L,
+  cores = 1L
 )
 }
 \description{
