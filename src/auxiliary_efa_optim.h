@@ -341,7 +341,7 @@ efa_NTR ntr(arguments_efa x, efa_manifold *manifold, efa_criterion *criterion) {
 
   criterion->outcomes(x);
 
-  NTR result = std::make_tuple(x.lambda, x.uniquenesses, x.Rhat,
+  efa_NTR result = std::make_tuple(x.lambda, x.uniquenesses, x.Rhat,
                                x.f, x.iteration, x.convergence);
 
   return result;

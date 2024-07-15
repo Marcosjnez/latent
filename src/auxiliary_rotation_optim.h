@@ -198,6 +198,7 @@ NTR ntr(arguments_rotate x, rotation_manifold *manifold, rotation_criterion *cri
     // subsolver
     tcg(x, manifold, criterion, dir, att_bnd, x.ng, c, rad);
     x.dT = dir;
+    x.dir = dir;
     new_x = x;
     new_x.T += dir;
 
@@ -265,9 +266,9 @@ NTR ntr(arguments_rotate x, rotation_manifold *manifold, rotation_criterion *cri
       break;
     }
 
-  } while (x.iteration < x.maxit);
+  } while (x.iteration <= x.maxit);
 
-  NTR result = std::make_tuple(x.L, x.Phi, x.T, x.f, x.iteration, x.convergence);
+  NTR result = std::make_tuple(x.L, x.Phi, x.T, x.f, x.iteration, x.convergence, x.dir);
 
   return result;
 
@@ -317,9 +318,9 @@ NTR gd(arguments_rotate x, rotation_manifold *manifold, rotation_criterion *crit
       break;
     }
 
-  } while (x.iteration < x.maxit);
+  } while (x.iteration <= x.maxit);
 
-  NTR result = std::make_tuple(x.L, x.Phi, x.T, x.f, x.iteration, x.convergence);
+  NTR result = std::make_tuple(x.L, x.Phi, x.T, x.f, x.iteration, x.convergence, x.dir);
 
   return result;
 
@@ -384,9 +385,9 @@ NTR bfgs(arguments_rotate x, rotation_manifold *manifold, rotation_criterion *cr
       break;
     }
 
-  } while (x.iteration < x.maxit);
+  } while (x.iteration <= x.maxit);
 
-  NTR result = std::make_tuple(x.L, x.Phi, x.T, x.f, x.iteration, x.convergence);
+  NTR result = std::make_tuple(x.L, x.Phi, x.T, x.f, x.iteration, x.convergence, x.dir);
 
   return result;
 
@@ -481,9 +482,9 @@ NTR lbfgs(arguments_rotate x, rotation_manifold *manifold, rotation_criterion *c
       break;
     }
 
-  } while (x.iteration < x.maxit);
+  } while (x.iteration <= x.maxit);
 
-  NTR result = std::make_tuple(x.L, x.Phi, x.T, x.f, x.iteration, x.convergence);
+  NTR result = std::make_tuple(x.L, x.Phi, x.T, x.f, x.iteration, x.convergence, x.dir);
 
   return result;
 

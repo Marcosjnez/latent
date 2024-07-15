@@ -104,6 +104,7 @@ Rcpp::List rotate(arma::mat lambda, Rcpp::CharacterVector char_rotation,
   double f = std::get<3>(x1);
   int iterations = std::get<4>(x1);
   bool convergence = std::get<5>(x1);
+  arma::mat dir = std::get<6>(x1);
 
   // Force average positive lambda in all factors:
 
@@ -163,6 +164,7 @@ Rcpp::List rotate(arma::mat lambda, Rcpp::CharacterVector char_rotation,
   result["f"] = f;
   result["iterations"] = iterations;
   result["convergence"] = convergence;
+  result["dir"] = dir;
 
   timer.step("elapsed");
 

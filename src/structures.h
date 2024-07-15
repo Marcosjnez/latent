@@ -266,6 +266,6 @@ typedef struct arguments_optim{
 } args_opt;
 
 typedef std::tuple<arma::mat, arma::vec, arma::mat, double, int, bool> efa_NTR;
-typedef std::tuple<arma::mat, arma::mat, arma::mat, double, int, bool> NTR;
+typedef std::tuple<arma::mat, arma::mat, arma::mat, double, int, bool, arma::mat> NTR;
 typedef std::tuple<arma::mat, arma::mat, double, int, bool> cor_NTR;
 typedef std::tuple<arma::vec, double, int, bool> cfa_NTR;
