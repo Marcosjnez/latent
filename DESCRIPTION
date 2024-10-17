@@ -3,7 +3,7 @@ Type: Package
 Title: Confirmatory and Exploratory Factor Analysis
 Version: 0.1.0
 Date: 2024-10-17
-Authors@R: c(person(given = "Marcos", family = "Jimenez", role = c("aut", "cre", "cph"), email = "marcosjnezhquez@gmail.com"), person(given = "Mauricio", family = "Garnier-Villarreal", role = c("aut", "cph"), email = "m.garniervillarreal@vu.nl"), person(given="Francisco J.", family = "Abad", role = c("aut", "cph")), person(given="Eduardo", family = "Garcia-Garzon", role = c("aut", "cph")), person(given="Luis E.", family = "Garrido", role = c("aut", "cph")), person(given = "Vithor R.", family = "Franco", role = c("aut", "cph"), email = "vithorfranco@gmail.com"))
+Authors@R: c(person(given = "Marcos", family = "Jimenez", role = c("aut", "cre"), email = "marcosjnezhquez@gmail.com"), person(given = "Mauricio", family = "Garnier-Villarreal", role = c("aut"), email = "m.garniervillarreal@vu.nl"), person(given="Francisco J.", family = "Abad", role = c("aut")), person(given="Eduardo", family = "Garcia-Garzon", role = c("aut")), person(given="Luis E.", family = "Garrido", role = c("aut")), person(given = "Vithor R.", family = "Franco", role = c("aut"), email = "vithorfranco@gmail.com"))
 Description: Fit confirmatory and exploratory factor models.
 License: GPL-3
 LazyData: TRUE
@@ -16,10 +16,10 @@ RoxygenNote: 7.2.3
 LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes
 Packaged: 2024-10-17 18:00 UTC; marcos
-Author: Marcos Jimenez [aut, cre, cph],
-  Mauricio Garnier-Villarreal [aut, cph],
-  Francisco J. Abad [aut, cph],
-  Eduardo Garcia-Garzon [aut, cph],
-  Luis E. Garrido [aut, cph]
-  Vithor R. Franco [aut, cph]
+Author: Marcos Jimenez [aut, cre],
+  Mauricio Garnier-Villarreal [aut],
+  Francisco J. Abad [aut],
+  Eduardo Garcia-Garzon [aut],
+  Luis E. Garrido [aut]
+  Vithor R. Franco [aut]
 Maintainer: Marcos Jiménez <marcosjnezhquez@gmail.com>

@@ -2,6 +2,20 @@
 
 Fit measurement models.
 
+# Authors
+
+* Marcos Jiménez (Creator; Author)
+
+* Mauricio Garnier-Villarreal (Author)
+
+* Vithor R. Franco (Author)
+
+* Francisco J. Abad (Author)
+
+* Eduardo Garcia-Garzon (Author)
+
+* Luis E. Garrido (Author)
+
 # Installation in Linux and Windows
 
 Using the `remotes` package:
