@@ -121,6 +121,7 @@ Rcpp::List efast(arma::mat X, int nfactors, std::string cor, std::string estimat
   xefa.W = xcor.W;
   xefa.cor = xcor.cor;
   xcor.estimator = xcor.estimator;
+  xefa.estimator = estimator;
   xefa.p = xcor.p;
   xefa.q = xcor.q;
   xefa.missing = xcor.missing;
@@ -382,6 +383,7 @@ Rcpp::List efast(arma::mat X, int nfactors, std::string cor, std::string estimat
   xefa.W = xcor.W;
   xefa.cor = xcor.cor;
   xcor.estimator = xcor.estimator;
+  xefa.estimator = estimator;
   xefa.p = xcor.p;
   xefa.q = xcor.q;
   xefa.missing = xcor.missing;
