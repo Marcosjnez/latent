@@ -1,0 +1,26 @@
+{
+    "id": "6FC06D8E",
+    "path": "~/Archivos R/prueba hessiana_lca_gaussian.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": true,
+    "created": 1743418416296.0,
+    "source_on_save": false,
+    "relative_order": 32,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "59,59",
+        "scrollLine": "0"
+    },
+    "folds": "69|38|189|0|\n",
+    "lastKnownWriteTime": 1743938511,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1743938540380,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,26 @@
+{
+    "id": "92107334",
+    "path": "~/Papers/latent/src/estimators/lca/lca_multinomial_softmax.h",
+    "project_path": "src/estimators/lca/lca_multinomial_softmax.h",
+    "type": "h",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1744446105943.0,
+    "source_on_save": false,
+    "relative_order": 27,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "39,17",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1744809572,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1744809572588,
+    "read_only": false,
+    "read_only_alternatives": []
+}

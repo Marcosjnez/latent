@@ -1,0 +1,340 @@
+---
+title: 'The orthoblique rotation for exploratory factor analysis'
+classoption: article
+format: pdf
+pdf-engine: pdflatex
+margin-left: 2.5cm
+margin-right: 2.5cm
+margin-bottom: 2.5cm
+margin-top: 2.5cm
+geometry:
+  - top=2.5cm
+  - left=2.5cm
+  - right=2.5cm
+  - bottom=2.5cm
+indent: true
+author: |
+  | Marcos Jiménez$^{1, \mathcal{y}}$ \hspace{1cm} Francisco J. Abad$^{1}$ \vspace{0.5cm}
+  | Eduardo Garcia-Garzon$^{2}$ \hspace{1cm} Luis Eduardo Garrido$^{3}$ \vspace{1cm}
+  | Vithor R. Franco$^{4}$
+  | \fontsize{12}{12}\selectfont $^1$Universidad Autónoma de Madrid (Spain)
+  | \fontsize{12}{12}\selectfont $^2$Universidad Camilo José Cela (Spain)
+  | \fontsize{12}{12}\selectfont $^3$Pontificia Universidad Católica Madre y Maestra (Dominican Republic)
+  | \fontsize{12}{12}\selectfont $^4$Universidade São Francisco (Brazil) \vspace{-3cm}
+# date: 12th Septembre, 2022
+fontsize: 12pt
+number-sections: false
+number-depth: 2
+editor: visual
+bibliography: references.bib
+csl: apa_7.csl
+# fontenc: Latin Modern Math
+# fontfamily: Latin Modern Math
+# mainfont: Latin Modern Math
+# sansfont: Latin Modern Math
+# monofont: Latin Modern Math
+# mathfont: Latin Modern Math
+header-includes:
+- \usepackage[utf8]{inputenc}
+- \usepackage{amsmath, amsfonts, amssymb, lmodern, fontenc, babel, setspace, mathrsfs}
+# - \usepackage{unicode-math, fontspec} # Use only with xelatex/lualatex
+- \newtheorem{definition}{Definition}
+- \newtheorem{theorem}{Theorem}
+# - \setmainfont{TeX Gyre Pagella}
+# - \setmathfont{Latin Modern Math}
+# - \usepackage[english]{babel}
+# - \usepackage{bm} % Conflict with mainfont
+# - \setmainfont{MathJax_Main}
+# - \setmathfont{MathJax_Main}
+# - \setsansfont{Arial}
+# - \setmainfont{Times New Roman}
+# - \setmathfont{Times New Roman}
+# - \setmainfont{Linux Libertine O}
+# - \usepackage[T1]{fontenc}
+# - \setmainfont{Latin Modern Roman}
+# - \setsansfont{Latin Modern Sans}
+# - \setmonofont{Latin Modern Mono}
+# - \setmathfont{Latin Modern Math}
+# - \setmathfont{NewComputerModernMath}
+# - \usepackage{newcomputermodern}
+# mainfontoptions:
+#   - Numbers=Lowercase
+#   - Numbers=Proportional  
+nocite: |
+ @jennrich_2001; @jennrich_2002; @absil_2009; @marsh_2020
+output-file: manuscript.pdf
+keep-tex: true
+abstract-title: "Abstract"
+abstract: |
+  For the last two decades, the gradient projection algorithm (GPA) has been the most used tool to rotate factor solutions. However, GPA is currently limited to perform either orthogonal or oblique rotation. This is a shortcoming because in some cases the researcher knows in advance that some factor correlations should be zero whereas others could be nonzero. Thereby, we developed a new kind of rotation, the orthoblique rotation, in which both oblique and orthogonal factors co-exists. This rotation is desirable to estimate exploratory bi-factor models with multiple general factors in which the general factors may be correlated but should remain orthogonal to the group factors, and in exploratory multitrait-multimethod models, in which the methods and traits should be uncorrelated between them but could correlate among themselves. We illustrate the advantages of the partially oblique rotation with an empirical example from personality research involving several general factors and from educational research with inter-rater assessments. We also made available this new rotation in the R package \texttt{bifactor} and provided code to use it within the R package \texttt{GPArotation}.
+---
+
+\doublespacing
+\fontsize{12}{12}\selectfont
+
+This work is supported by the Spanish Association of Methodology of Behavioral Sciences (AEMCCO).
+
+\newpage
+
+# Introduction
+
+Exploratory structural equation modeling (ESEM) is an increasingly popular framework for estimating large and complex factor structures. It was developed to overcome the unacceptable model fit indices often encountered in real applications of confirmatory factor analysis (CFA; Marsh et al., 2020). The particular feature of ESEM is that it permits the estimation of all the loading parameters of the measurement models by means of a rotation step, avoiding the risk of model misspecification. This is an important caveat of CFA, namely the incorrect allocation of cross-loadings in the measurement model.
+
+<!-- which can retrieve very different patterns -->
+The flexibility of ESEM comes at the expense of specifying a suitable simplicity criteria to be maximized, so that a factor solution is rotated to a loading matrix that resembles as much as possible such desired simplicity. In these regards, the gradient projection algorithm (GPA; Jennrich, 2001; Jennrich, 2002) has been the predominant computational tool for rotating loading patterns during the last twenty years. The success of GPA is instantiated by its implementation in widely used and reputed statistical programs such as MPlus [@mplus], \texttt{lavaan} [@lavaan], and \texttt{psych} [@psych], the last two of which perform the rotation step through the \texttt{GPArotation} R package [@bernaards_2005]. At difference with previously used rotation procedures like ..., GPA is simple and elegant. In fact, a general purpose optimization based on GPA can be written in about 50 lines of code in the R language ^[See the \texttt{GPForth} and \texttt{GPFoblq} functions from the \texttt{GPArotation} package, which perform orthogonal and oblique rotation, respectively.]. Moreover, GPA is based on an optimization framework where traditional step-size selection techniques (e.g., backtracking line-search or trust-region) and search directions based on first and second-order derivatives can be used [@liu_2020].
+
+Despite its appealing features, the applications of GPA are currently limited to orthogonal and oblique rotation. In other words, all the factors are either constrained to be orthogonal or allowed to correlate. This circunstance is problematic in cases where the researchers know in advance that two sets of factors may be correlated within them but orthogonal between. For example, consider multitrait-multimethod models, in which methods and traits may correlate among them but the methods are uncorrelated with the traits. This has motivated the development of a criterion that penalizes the size of the unwanted correlations [@zhang_2019]. In other cases, imposing the orthogonality in just one factor or group of factors is desirable to render a parsimonious pattern structure. For instance, consider applications of exploratory bi-factor modeling with one or multiple general factors in which all the general factors must be orthogonal to the group factors, but could be correlated among themselves [@jennrich_2012; @jimenez_2022]. If the general factors were allowed to correlate with the group factors, then the variance explained by each kind of factor could not be disentangled, with the consequence that cross-loadings across the general factors (i.e. interstitial cross-loadings) would be biased through these inter-factor correlations.
+
+Clearly, a generalization of the oblique and orthogonal rotations that allows for a mix of oblique and orthogonal factors within the same EFA model could aid the correct estimation of such factor structures.
+
+# An overview of the gradient projection algorithm
+
+\textcolor{red}{Define the Riemannian metric endowed with an inner product.}
+
+GPA builds on differential geometry to perform optimization on nonlinear manifolds. Let $\tilde{f}$ be a function with domain in $\mathbb{R}^{n\times n}$ that we aim to minimize with respect to a matrix of parameters $\mathbf{X}$. Suppose that we want to constraint the solution to lie on a nonlinear manifold $\mathcal{M}$. Let define another function $f$ with domain on $\mathcal{M}$ such that 
+$$
+\underset{\mathbf{X} \in \mathcal{M}}{\text{argmin}} \tilde{f}(\mathbf{X}) = \text{argmin} f(\mathbf{X}).
+$$ 
+
+Our aim is to obtain an expression for the gradient of $f$, which is different to that of $\tilde{f}$ because of the nonlinearity of $\mathcal{M}$. This is easy to see by means of the popular definition of derivative. The partial derivative of $\tilde{f}$ for the $ij$ element of $\mathbf{X}$ is
+$$
+\lim_{t \to 0} \frac{\tilde{f}(\mathbf{X} + t\boldsymbol{\epsilon}) - \tilde{f}(\mathbf{X})}{t},
+$$ 
+where $\boldsymbol{\epsilon}$ is a zero matrix with the $ij$ element set to 1. Clearly, this definition makes no sense for $\tilde{f}$ when we move on a nonlinear manifold because taking a plain difference does not guarantee that the result lies on $\mathcal{M}$. In other words, plain differences cannot be interpreted as distances in nonlinear spaces.
+
+Fortunately, there is a different definition of partial derivative that applies more generally using tangent spaces. Tangent spaces are linearizations of the manifold at a given point such that any element of the tangent space is orthogonal to that point on the manifold. By endowing it with a definition of inner product, the manifold acquires a Riemannian structure, turning it into a Riemannian manifold. This definition of inner product over the tangent space is what allows us to develop a definition of gradients on the nonlinear manifold $\mathcal{M}$. The gradient of $\tilde{f}$, $\text{grad}{\tilde{f}}$, can be defined as the unique element that satisfies $\text{D}\tilde{f}(\mathbf{X})[\mathbf{Z}] = \langle \mathbf{Z}, \text{grad}\tilde{f}(\mathbf{X}) \rangle$, where $\text{D}\tilde{f}(\mathbf{X})[\mathbf{Z}]$ is the differential of $\tilde{f}$ at $\mathbf{X}$ along the direction $\mathbf{Z}$ and $<\cdot, \cdot >$ denotes the inner product.
+
+To show that, notice that any member of $\mathbb{R}^{n \times n}$ can be decomposed in orthogonal complements. That is, the gradient of $\tilde{f}$ evaluated at $\mathbf{X}$ may be decomposed in an element belonging to the tangent space, $\mathcal{T}_\mathbf{X}\mathcal{M}$, and another element belonging to the normal space, $\mathcal{N}_{\mathbf{X}} \mathcal{M}$:
+\begin{equation} \label{orth_compl}
+\text{grad}\tilde{f}(\mathbf{X}) = \text{grad} \tilde{f}(\mathbf{X})_\parallel + \text{grad} \tilde{f}(\mathbf{X})_\perp,
+\end{equation} where $\text{grad} \tilde{f}(\mathbf{X})_\parallel$ and $\text{grad} \tilde{f}(\mathbf{X})_\perp$ are the projections of $\text{grad}\tilde{f}(\mathbf{X})$ onto the tangent and the normal spaces, respectively.
+
+If $\mathbf{Z} \in \mathcal{T}_\mathbf{X}\mathcal{M}$, then $\text{grad} \tilde{f}(\mathbf{X})_\perp$ is orthogonal to $\mathbf{Z}$, and it follows that $\text{D}\tilde{f}(\mathbf{X})[\mathbf{Z}] = \langle \mathbf{Z}, \text{grad}\tilde{f}(\mathbf{X})_\parallel \rangle$. Furthermore, if $\mathbf{X} \in \mathcal{M}$, then $\text{D}{f}(\mathbf{X})[\mathbf{Z}] = \langle \mathbf{Z}, \text{grad}\tilde{f}(\mathbf{X})_\parallel \rangle$ and the gradient of $f$ at $\mathbf{X} \in \mathcal{M}$ corresponds to the projection of the euclidean gradient of $\tilde{f}$ onto the tangent space of $\mathcal{M}$.
+
+\begin{definition}
+The Riemannian gradient of $f$ at $\mathbf{X} \in \mathcal{M}$, denoted by $\text{grad}{f}$, is the unique element of $\mathcal{T}_\mathbf{X}\mathcal{M}$ that satisfies $\text{D}f(\mathbf{X})[\mathbf{Z}] = \langle \mathbf{Z}, \text{grad}f(\mathbf{X}) \rangle$ for any $\mathbf{Z} \in \mathcal{T}_\mathbf{X}\mathcal{M}$.
+\end{definition}
+
+\textcolor{red}{Include a figure of a nonlinear manifold with a plane to show the tangent space and the vector of steppest ascent direction.}
+
+\textcolor{red}{Caption for Figure: Riemannian manifold with the tangent space at the point $x, y,$ and $z$ and the direction of steppest ascent along it.}
+
+\begin{definition}
+From Definition 4.2 in Absil et al. (2009), a retraction is a smooth map $R_\mathbf{X}: \mathcal{T}_\mathbf{X}\mathcal{M} \mapsto \mathcal{M}$ that satisfies the following conditions: \\
+(1) $R_\mathbf{X}(0) = \mathbf{X}$, and \\
+(2) (Rigidity condition) $DR_\mathbf{X}(0)[\mathbf{Z}] = \mathbf{Z}$, with $DR_\mathbf{X}(0): \mathcal{T}_\mathbf{X}\mathcal{M} \mapsto \mathcal{T}_\mathbf{X}\mathcal{M}$ being the identity map.
+\end{definition}
+
+Both requirements can be alternatively stated as the curve $\gamma(t) = R_\mathbf{X}(t \mathbf{Z})$ satisfying $\gamma(0) = \mathbf{X}$ and $\gamma^\prime(0) = \mathbf{Z}$.
+
+\textcolor{red}{Describe the retractions for orthogonal and oblique rotation.}
+
+Equipped with a suitable projection and retraction, GPA is ready to find the matrix of parameters that minimize the rotation criteria with the constraint that they are either orthogonal or oblique. 
+
+# The partially oblique manifold
+
+In this section, we define the manifold of rotation matrices for a mixture of orthogonal and oblique factors and provide a formula for the projection onto its tangent space and a retraction. Without loss of generality, we will treat the case of a single block of oblique factors and another block of completely orthogonal factors. However, the following results are easily generalized to any number of oblique blocks of factors.
+
+Let $\mathcal{POB}$ denote the subspace partially oblique matrices in $\mathbb{R}^{n \times n}$ defined by
+$$
+\mathcal{POB}(k, q) = \left\{\mathbf{X} \in \mathbb{R}^{n \times n}: \mathbf{X}^\top\mathbf{X} = \begin{bmatrix}
+\mathbf{Y}_{k \times k} & \mathbf{0} \\
+\mathbf{0} & \mathbf{I}_{q \times q} \\
+\end{bmatrix}, \ \text{ddiag}(\mathbf{Y}) = \mathbf{I}_{k \times k}
+\right\},
+$$
+where $k$ is the number of oblique factors in the first block and $q$ is the number of completely orthogonal factors in the second. Let
+\begin{equation} \label{defining_f}
+h: \mathbb{R}^{n \times n} \mapsto \mathcal{DS}\mathscr{ym}(k, q) : \mathbf{X} \mapsto h(\mathbf{X}) = \mathbf{X}^\top\mathbf{X} + \mathbf{P}\text{ddiag}(\mathbf{X}^\top\mathbf{X})\mathbf{P} - \mathbf{P} \mathbf{X}^\top\mathbf{X} \mathbf{P} - \mathbf{I}
+\end{equation}
+<!-- \begin{bmatrix} -->
+<!-- \begin{bmatrix} -->
+<!-- 1 & \mathbf{x}_{1}^\top\mathbf{x}_{2} & \dots & \mathbf{x}_{1}^\top\mathbf{x}_{k}\\ -->
+<!-- \mathbf{x}_{2}^\top\mathbf{x}_{1} & 1 & \dots & \vdots \\ -->
+<!-- \vdots & \vdots & \ddots & \mathbf{x}_{k-1}^\top\mathbf{x}_{k} \\ -->
+<!-- \mathbf{x}_{k}^\top\mathbf{x}_{1} & \dots & \mathbf{x}_{k}^\top\mathbf{x}_{k-1} & 1 -->
+<!-- \end{bmatrix} & \mathbf{0} \\ -->
+<!-- \mathbf{0} & \mathbf{I}_{m \times m} \\ -->
+<!-- \end{bmatrix} -->
+be the defining function of this subspace, where $\mathcal{DS}(k, q)$ is the set of matrices that are diagonal in the first $k$ rows and columns and symmetric elsewhere, $\text{ddiag}(\mathbf{Z})$ is an operator that fixes to zero the off-diagonal elements of $\mathbf{Z}$ and $\mathbf{P}$ is a square matrix with ones the first k-diagonal elements and zeros elsewhere. Note that $h^{-1}(\mathbf{0})$ implies that $\mathbf{X} \in \mathcal{POB}(k, q)$.
+
+The differential of $h$ along the direction $\mathbf{Z}$ is 
+$$
+\text{D} h(\mathbf{X})[\mathbf{Z}] = \mathbf{X}^\top \mathbf{Z} + \mathbf{Z}^\top \mathbf{X} + 
+2\mathbf{P} \text{diag}(\mathbf{X}^\top \mathbf{Z}) \mathbf{P} - \mathbf{P}(\mathbf{X}^\top \mathbf{Z} + \mathbf{Z}^\top \mathbf{X}) \mathbf{P}.
+$$
+\textcolor{red}{Demonstrate this is a Riemannian submanifold of $\mathbb{R}^{n\times n}$ and define the operator $I$.}
+
+The rank of $\text{D}h(\mathbf{X})[\mathbf{Z}]$ is $d$ for any $\mathbf{X} \in \mathcal{POB}(k, q)$, so that $\mathcal{POB}(k, q)$ can be regarded as an *embedded submanifold* of $\mathbb{R}^{n \times n}$ with dimension $n^2 - k - q(q+1)/2$ (Proposition 3.3.3; Absil et al., 2009).
+
+## Projection onto the tangent space of the partially oblique manifold
+
+\begin{theorem}
+The Riemannian gradient of a function $f: \mathcal{POB}(k, q) \mapsto \mathbb{R}$, denoted by $grad f$, is $grad \tilde{f}(\mathbf{X}) - \mathbf{XA}$, with $\mathbf{A} = I \circ \mathbf{V}\left( \frac{\mathbf{V}^\top \mathbf{QV}}{\mathbf{1} \mathbf{d}^\top + \mathbf{d} \mathbf{1}^\top} \right) \mathbf{V}^\top$, where $I$ is an operator that sets to zero the off-diagonal elements corresponding to the oblique factors, and $\mathbf{V}$ and $\mathbf{d}$ are the eigenvectors and eigenvalues of $\mathbf{X}^\top\mathbf{X}$, respectively.
+\end{theorem}
+
+\textcolor{red}{what is Q?}
+
+\emph{Proof}. The tangent space of $\mathcal{POB}(k, q)$ at $\mathbf{X} \in \mathcal{POB}(k, q)$ is the kernel of (\ref{defining_f}),
+\begin{equation} \label{tangent_spc}
+\begin{split}
+\mathcal{T}_\mathbf{X}\mathcal{POB}(k, q) &= \{\mathbf{Z} \in \mathbb{R}^{n \times n}: \mathbf{X}^\top \mathbf{Z} + \mathbf{Z}^\top \mathbf{X} + 
+2\mathbf{P} \text{diag}(\mathbf{X}^\top \mathbf{Z})\mathbf{P} - \mathbf{P}(\mathbf{X}^\top \mathbf{Z} + \mathbf{Z}^\top \mathbf{X}) \mathbf{P} = \mathbf{0} \} \\
+&= \{\mathbf{Z} \in \mathbb{R}^{n \times n}: \mathbf{X}^\top \mathbf{Z} + \mathbf{Z}^\top \mathbf{X} = \mathbf{P}(\mathbf{X}^\top \mathbf{Z} + \mathbf{Z}^\top \mathbf{X}) \mathbf{P} \},
+\end{split}
+\end{equation}
+where the term $2\mathbf{P} \text{diag}(\mathbf{X}^\top \mathbf{Z})\mathbf{P}$ vanished because the diagonal of $\mathbf{X}^\top\mathbf{Z}$ must be zero to satisfy the equation.
+
+Note that $\mathbf{X}^\top \mathbf{Z} + \mathbf{Z}^\top \mathbf{X} = \mathbf{0}$ implies that $\mathbf{X}^\top \mathbf{Z}$ is symmetric (and off-diagonal) in the first $k$ rows and columns and skew-symmetric in the remaining entries of the matrix. Let $\text{sym}(\mathbf{X}) = (\mathbf{X} + \mathbf{X}^\top)/2$ and $\text{skew}(\mathbf{X}) = (\mathbf{X} - \mathbf{X}^\top)/2$ such that any matrix can be written in terms of the sum of a symmetric and skew symmetric part. Using this decomposition, we can also define the tangent space of $\mathcal{POB}$ as
+$$
+\begin{aligned}
+\mathcal{T}_\mathbf{X}\mathcal{POB}(k, m) &= \left\{\mathbf{Z}: \mathbf{X}^\top \mathbf{Z} = \mathbf{P} (\mathbf{X}^\top \mathbf{Z} + \mathbf{Z}^\top \mathbf{X}) \mathbf{P} - \mathbf{Z}^\top \mathbf{X} \right\}, \\
+&= \left\{ \mathbf{Z}: \mathbf{Z} = \mathbf{X}^{-\top} \left( \text{sym}(\mathbf{X}^\top \mathbf{Z}) + \text{skew}(\mathbf{X}^\top \mathbf{Z}) \right) \right\}.
+\end{aligned}
+$$
+On the other hand, the normal space of $\mathcal{T}_\mathbf{X}\mathcal{POB}(k, q)$ is
+$$
+\mathcal{N}_{\mathbf{X}} \mathcal{POB}(k, q) = \left\{\mathbf{N} \in \mathbb{R}^{n \times n}: \langle \mathbf{Z}, \mathbf{N} \rangle = \mathbf{0} \text{ for any } \mathbf{Z} \in \mathcal{T}_\mathbf{X}\mathcal{POB}(k, q) \right\}.
+$$
+
+Considering that the term $\text{sym}(\mathbf{X}^\top \mathbf{Z}) + \text{skew}(\mathbf{X}^\top \mathbf{Z})$ is off-diagonal in the first $k$ rows and columns and skew-symmetric elsewhere, it follows that its orthogonal complement is a zero-diagonal matrix in the first $k$ rows and columns and symmetric elsewhere. Therefore, we can express the normal space as
+$$
+\begin{aligned}
+\mathcal{N}_{\mathbf{X}} \mathcal{POB} = \left\{\mathbf{N}: \mathbf{N} = \mathbf{XA}, \mathbf{A} \in \mathcal{DS}(k, q) \right\}, 
+\end{aligned}
+$$
+
+Substituting $\text{grad} \tilde{f}(\mathbf{X})_\perp$ in (\ref{orth_compl}) with the previous parametrization of the normal space, the Riemannian gradient becomes
+$$
+\text{grad} f(\mathbf{X}) = \text{grad}\tilde{f}(\mathbf{X}) - \mathbf{XA}.
+$$ 
+
+Substituting $\mathbf{Z}$ in (\ref{tangent_spc}) by this new parametrization, we get
+$$
+\mathbf{X}^\top (\text{grad}\tilde{f}(\mathbf{X}) - \mathbf{XA}) + (\text{grad}\tilde{f}(\mathbf{X}) - \mathbf{XA})^\top \mathbf{X} = \mathbf{P} (\mathbf{X}^\top (\text{grad}\tilde{f}(\mathbf{X}) - \mathbf{XA}) \mathbf{P} + \mathbf{P} (\text{grad}\tilde{f}(\mathbf{X}) - \mathbf{XA})^\top \mathbf{X}) \mathbf{P}.
+$$
+Notice that the equation $\mathbf{X}^\top (\text{grad}\tilde{f}(\mathbf{X}) - \mathbf{XA}) = -(\text{grad}\tilde{f}(\mathbf{X}) - \mathbf{XA})^\top \mathbf{X}$ automatically satisfies $\mathbf{P} \mathbf{X}^\top (\text{grad}\tilde{f}(\mathbf{X}) - \mathbf{XA}) \mathbf{P} = -\mathbf{P} (\text{grad}\tilde{f}(\mathbf{X}) - \mathbf{XA})^\top \mathbf{X} \mathbf{P}$. Therefore, we may just consider solving the former for $\mathbf{A} \in \mathcal{DS}(k, q)$, which leads to the following lyapunov equation
+\begin{equation} \label{lyap}
+\mathbf{Q} = \mathbf{X}^\top \mathbf{XA} + \mathbf{A} \mathbf{X}^\top \mathbf{X},
+\end{equation}
+where $\mathbf{Q} := \mathbf{X}^\top \text{grad}\tilde{f}(\mathbf{X}) + \text{grad}\tilde{f}(\mathbf{X})^\top \mathbf{X}$.
+
+Notice that $\mathbf{X}^\top\mathbf{XA} = \mathbf{X}^\top\mathbf{X}(\mathbf{A} + \text{diag}(\mathbf{PAP}) - \mathbf{PAP})$ for any $\mathbf{A} \in \mathcal{Dsym(k, q)}$. To find a solution for $A$ in (\ref{lyap}) that comply with the equation for the tangent space, we may first substitute $\mathbf{A}$ for a dense matrix $\boldsymbol{\Lambda}$, and then switch to zero the off-diagonal elements corresponding to the oblique block of factors. Such a solution satisfies the defining equation for the tangent space and should correspond to $\mathbf{A}$.
+
+This route greatly simplifies the solution because it allows us to exploit the fact that $\mathbf{Q}$, $\mathbf{X}^\top\mathbf{X}$, and $\mathbf{A}$ are all symmetric. Let $\mathbf{V}$ and $\mathbf{D}$ be the eigenvectors and diagonal matrix of eigenvalues of $\mathbf{X}^\top \mathbf{X}$, respectively. Then, 
+$$
+\begin{split}
+\mathbf{V}^\top \mathbf{QV} &= \mathbf{V}^\top \mathbf{X}^\top \mathbf{X}\boldsymbol{\Lambda}\mathbf{V} + \mathbf{V}^\top \boldsymbol{\Lambda}\mathbf{X}^\top\mathbf{XV} \\
+&= (\mathbf{V}^\top \mathbf{X}^\top \mathbf{XV}) \mathbf{V}^\top \boldsymbol{\Lambda}\mathbf{V} + \mathbf{V}^\top \boldsymbol{\Lambda}\mathbf{V} (\mathbf{V}^\top \mathbf{X}^\top\mathbf{XV}) \\
+&= \mathbf{DV}^\top \boldsymbol{\Lambda}\mathbf{V} + \mathbf{V}^\top \boldsymbol{\Lambda}\mathbf{VD}.
+\end{split}
+$$
+We now want to rewrite the left hand side of this expression so that the resulting matrix is similar to $\boldsymbol{\Lambda}$ (ie., it has the same eigenvalues). Let $\mathbf{1}$ be an n-dimensional vector of ones and $\mathbf{d}$ be the vector of eigenvalues of $\mathbf{X}^\top \mathbf{X}$. Then,
+$$
+\frac{\mathbf{V}^\top \mathbf{QV}}{\mathbf{1} \mathbf{d}^\top + \mathbf{d} \mathbf{1}^\top} = \mathbf{V}^\top \boldsymbol{\Lambda}\mathbf{V}, \quad \text{and}
+$$
+$$
+\boldsymbol{\Lambda} = \mathbf{V}\left( \frac{\mathbf{V}^\top \mathbf{QV}}{\mathbf{1} \mathbf{d}^\top + \mathbf{d} \mathbf{1}^\top} \right) \mathbf{V}^\top.
+$$
+Finally, let $I$ be an operator that sets to zero the off-diagonal elements corresponding to the oblique blocks. Then,
+$$
+\mathbf{A} = I \circ \boldsymbol{\Lambda}.
+$$
+
+\textcolor{red}{Tell that this formular is general and can account for more than one block of oblique factors.}
+
+## Retraction onto the partially oblique manifold
+
+Now, consider the case of several blocks of oblique factors. Let \textcolor{red}{redefine $k$} to denote the number of oblique blocks of factors and
+$$
+\mathcal{POB}(k, q) = \left\{\mathbf{X} \in \mathbb{R}^{n \times n}: \mathbf{X}^\top\mathbf{X} = \begin{bmatrix}
+\mathbf{Y}_1 & \mathbf{0} & \dots  & \mathbf{0} \\
+\vdots & \ddots & \mathbf{0} & \vdots \\
+\vdots & \mathbf{0} & \mathbf{Y}_k & \mathbf{0} \\
+\mathbf{0} & \dots & \mathbf{0} & \mathbf{I}_{q \times q} \\
+\end{bmatrix}, \ \text{ddiag}(\mathbf{Y}_i) = \mathbf{I}, \forall i = \{1, \dots, k \}
+\right\},
+$$
+
+At the $j$ iteration of the GPA, the update formula is $\mathbf{X}^{j+1} = R_\mathbf{X}(t\text{grad} f(\mathbf{X}^j))$. That is, we need to project $\mathbf{X}^j + t\text{grad}f(\mathbf{X}^j)$ back to $\mathcal{POB}(k, q)$ to find $\mathbf{X}^{j+1}$. The best retractions for the first block of oblique factors and for the orthogonal factors are the same as in the standard oblique and orthogonal rotation approaches, respectively. That is, a suitable retraction for the first block of oblique factors involves normalizing the first $k$ columns of $\mathbf{X}$ to the unit norm, whereas to achieve orthogonal factors, the Gram-Schmidt process is applied to the last $q$ columns of $\mathbf{X}$.
+
+If more than one oblique block of factors existed, then the Gram-Schmidt process should be applied to the columns of $\mathbf{X}$ corresponding to these oblique factors with respect the columns of $\mathbf{X}$ that corresponds to previous oblique blocks. In this process, every column of $\mathbf{X}_{\alpha_1}$ will become orthogonal to every column in $\{\mathbf{X}_{\alpha_1}, \dots, \mathbf{X}_{\alpha_{k-1}} \}$.
+
+\textcolor{red}{Proof the differential}
+$\mathbf{Y} skew(\mathbf{Y}^\top \mathbf{V}(\mathbf{Y}^\top(\mathbf{X} + tU))^{-1}) + (\mathbf{I} - \mathbf{YY}^\top) \mathbf{V} (\mathbf{Y}^\top (\mathbf{X + tU}))^{-1}$.
+
+Check that the result is $\mathbf{U}$ for $t=0$
+
+\textcolor{red}{Mention the generalization of this for sparse solutions.}
+
+# Rotation constraints for standard errors
+
+$n^2 - k - m(m+1)/2$ constraints.
+
+$n^2 - \sum^{k}_{i=1} \alpha_i - m(m+1)/2$ constraints. $k$ is the number of oblique blocks.
+
+# Empirical applications
+
+## Multitrait-multimethod modeling
+
+@watts_2021 used a confirmatory multitrait-multimethod (MTMM) model to investigate two traits (i.e., Internalizing and Externalizing) in a samples of youths (*N* = 2119) for whom three informants reported on the youth’s psychopathology (i.e., child, parents, and teachers).
+
+We reanalyzed the data by fitting an exploratory MTMM model with target rotation. We used a partially oblique rotation where the method factors and trait factors were freed to correlate among themselves but not between. In other words, the method factors were orthogonal to the trait factors.
+
+Figures 1 and 2 display a heatmap of the absolute values of the estimated factor loadings and correlations, respectively.
+
+\begin{figure}[!ht]
+\centering
+\captionsetup{width=1\textwidth}
+\includegraphics[width=\textwidth]{Figures/loadings_PIQ.png}
+\caption{\fontsize{12}{12}\selectfont Factor loadings for the PIQ scale, with two trait factors (i.e., Externalizing and Internalizing) and three raters (i.e., Children, Parents, and Teachers).}
+\end{figure}
+
+\newpage
+
+\begin{figure}[!ht]
+\centering
+\captionsetup{width=1\textwidth}
+\includegraphics[width=\textwidth]{Figures/correlations_PIQ.png}
+\caption{\fontsize{12}{12}\selectfont Factor correlations for the PIQ scale.}
+\end{figure}
+
+## Bi-factor modeling
+
+Convergence?
+
+## Bi-factor modeling beyond one general factor
+
+@anglim_2022
+
+Figures 3 and 4 display a heatmap of the absolute values of the estimated factor loadings and correlations, respectively.
+
+\begin{figure}[!ht]
+\centering
+\captionsetup{width=1\textwidth}
+\includegraphics[width=\textwidth]{Figures/loadings_hexaco.png}
+\caption{\fontsize{12}{12}\selectfont Factor loadings for the HEXACO, with six general factors and 25 traits defined by 100 indicators.}
+\end{figure}
+
+\newpage
+
+\begin{figure}[!ht]
+\centering
+\captionsetup{width=1\textwidth}
+\includegraphics[width=\textwidth]{Figures/correlations_hexaco.png}
+\caption{\fontsize{12}{12}\selectfont Factor correlations for the theoretical dimensions of the HEXACO.}
+\end{figure}
+
+# Conclusion
+
+Until now, EFA and ESEM has been limited to the estimation of either orthogonal or oblique factors, difficulting the estimation of models involving multiple correlated general factors and multitrait-multimethod structures. Thereby, we developed a new kind of rotation, the partially oblique rotation, that allows for concomitant orthogonal and oblique factors. We demonstrated with an empirical example from personality research that forcing the orthogonality between the group factors while allowing the general factors to correlated produce a more parsimonious interpretation of the factor structure than both a completely orthogonal or oblique rotation. 
+
+Several authors has remarked that target rotation can be understood as a semi-confirmatory method to do EFA, and this new rotation tightens further the gap between EFA and CFA with the possibility of setting constraints for some factor correlations.
+
+
+
+
+
+\newpage
+
+# References{-}

@@ -1,0 +1,25 @@
+library(latent2)
+library(haven)
+
+heinen3 <- read_sav(file = "C:/Users/Marcos/Desktop/heinen3.sav")
+colnames(heinen3)
+data <- heinen3[rep(1:nrow(heinen3), times = heinen3$FREQ), 1:5]
+dim(data)
+
+model <- c("multinomial", "multinomial", "multinomial", "multinomial", "multinomial")
+nclasses <- 3L
+control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 32L, cores = 32L,
+                eps = 1e-05, print = FALSE, step_maxit = 30)
+fit <- lca(data = data, model = model, nclasses = nclasses, control = control,
+           do.fit = TRUE)
+fit$loglik
+fit$opt$iterations
+fit$opt$convergence
+fit$parameters
+
+se_fit <- se(fit)
+round(se_fit$se, 4)
+
+# x <- c(0.2937, 0.2109, -0.5046)
+# exp(x) / sum(exp(x))
+# fit$parameters$classes

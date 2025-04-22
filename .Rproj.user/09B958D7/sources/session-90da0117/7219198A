@@ -1,0 +1,26 @@
+{
+    "id": "7219198A",
+    "path": "~/Archivos R/optim_manifolds.Rmd",
+    "project_path": null,
+    "type": "r_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1739310629649.0,
+    "source_on_save": false,
+    "relative_order": 51,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "18,0",
+        "scrollLine": "0"
+    },
+    "folds": "21|25|223|0|\n224|21|269|0|\n270|46|427|0|\n428|46|453|0|\n",
+    "lastKnownWriteTime": 1663755425,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1741899777343,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,279 @@
+source("C:/Users/Marcos/Documents/Archivos R/optimization.R")
+
+# Least-squares problem with different restrictions #
+
+set.seed(373662)
+set.seed(2025)
+n <- 100
+p <- 3+1
+predictors <- cbind(1, replicate(p-1, rnorm(n)))
+X <- matrix(runif(p, 0, 3), ncol = 1)
+X[1] <- 1
+X[2] <- -0.2
+X[3] <- 0.3
+X[4] <- 0.3
+Y <- predictors %*% X + rnorm(n, 0, 0.1)
+
+# Objective and gradient for the least-squares problem:
+fg <- function(X, f = TRUE, g = FALSE, h = FALSE, ...) {
+
+  res <- Y - predictors %*% X
+
+  if(f) {
+    f <- sum(res*res)
+  } else {
+    f = NULL
+  }
+
+  if(g) {
+    g <-  -2 * t(predictors) %*% res
+    rg <- projection(g, X, ...)
+  } else {
+    g <- rg <- NULL
+  }
+
+  if(h) {
+    h <- 2 * t(predictors) %*% predictors
+  } else {
+    h <- NULL
+  }
+
+  return(list(f = f, g = g, rg = rg, h = h))
+
+}
+
+#### Restriction: X'X = I (Orthogonal) ####
+symm <- function(X) (X + t(X)) / 2
+projection <- function(g, X, ...) {
+
+  p <- length(X)
+  X <- matrix(X, sqrt(p), sqrt(p))
+  g <- matrix(g, sqrt(p), sqrt(p))
+  Lambda <- symm(X %*% t(g))
+  rg <- c(g - Lambda %*% X)
+
+  return(rg)
+
+}
+retraction <- function(X, t, V, ...) {
+
+  p <- length(X)
+  X <- matrix(X, sqrt(p), sqrt(p))
+  V <- matrix(V, sqrt(p), sqrt(p))
+  X <- X + t*V
+  X <- c(qr.Q(qr(X)))
+
+  return(X)
+
+}
+
+# Check the retraction conditions:
+# X <- retraction(runif(p), 0, 0) # Put a random vector X on the manifold
+# retraction(X, 0, 0) # X remains the same (First condition satisfied)
+# V <- projection(runif(p), X) # Create a direction V that belongs to the tangent space
+# (retraction(X, 1e-09, V) - retraction(X, 0, 0)) / 1e-09  # Equals V (second conditions satisfied)
+
+init <- retraction(matrix(runif(p), ncol = 1), 0, 0)
+fit <- Roptim(init, fg, projection, retraction, search = "back",
+              maxit = 10000, eps = 1e-07,
+              c1 = 0.5, c2 = 0.5, max_inner_iter = 30, a_min = 1,
+              Y = Y, predictors = predictors,
+              algorithm = "gradient")
+
+crossprod(matrix(fit$X, 3, 3)) # Constraint satisfied
+
+#### Restriction: X'X = diag(1) (Oblique) ####
+projection <- function(g, X, ...) {
+
+  p <- length(X)
+  X <- matrix(X, sqrt(p), sqrt(p))
+  g <- matrix(g, sqrt(p), sqrt(p))
+  rg <- c(g - X %*% diag(diag(t(X) %*% g)))
+
+  return(rg)
+
+}
+retraction <- function(X, t, V, ...) {
+
+  p <- length(X)
+  X <- matrix(X, sqrt(p), sqrt(p))
+  V <- matrix(V, sqrt(p), sqrt(p))
+  X <- X + t*V
+  X <- c(X %*% (diag(1/sqrt(diag(t(X) %*% X)))))
+
+  return(X)
+
+}
+
+# Check the retraction conditions:
+# X <- retraction(runif(p), 0, 0) # Put a random vector X on the manifold
+# retraction(X, 0, 0) # X remains the same (First condition satisfied)
+# V <- projection(runif(p), X) # Create a direction V that belongs to the tangent space
+# (retraction(X, 1e-09, V) - retraction(X, 0, 0)) / 1e-09  # Equals V (second conditions satisfied)
+
+init <- retraction(matrix(runif(p), ncol = 1), 0, 0)
+fit <- Roptim(init, fg, projection, retraction, search = "back",
+              maxit = 1000, eps = 1e-07,
+              c1 = 0.5, c2 = 0.5, max_inner_iter = 30, a_min = 1,
+              Y = Y, predictors = predictors,
+              algorithm = "gradient")
+
+crossprod(matrix(fit$X, 3, 3)) # Constraint satisfied
+
+#### Restriction: sum(X) = 1 ####
+projection <- function(g, X, ...) {
+
+  rg <- A %*% g
+
+  return(rg)
+
+}
+retraction <- function(X, t, V, ...) {
+
+  # alpha <- sum(V)
+  # V <- V - alpha*X
+  X <- X + t*V
+  # X <- X - mean(X) + 1/length(c(X)) # Replace the 1 for a different equality constraint
+  X <- X / sum(X) # Sum to 0 constraint
+  # Y <- X * exp(V / X) # Based on mapping for positive scalars.
+  # X <- Y / sum(Y)
+
+  return(X)
+
+}
+V <- cbind(c(-1, 1, 0), c(-1, 0, 1))
+# V <- c(-2, 1, 1) # Prone to local minima
+A <- V %*% solve(t(V) %*% V) %*% t(V) # This a constant
+
+# Check the retraction conditions:
+# X <- retraction(runif(p), 0, 0) # Put a random vector X on the manifold
+# retraction(X, 0, 0) # X remains the same (First condition satisfied)
+# V <- projection(runif(p), X) # Create a direction V that belongs to the tangent space
+# (retraction(X, 1e-09, V) - retraction(X, 0, 0)) / 1e-09  # Equals V (second conditions satisfied)
+
+init <- retraction(matrix(runif(p), ncol = 1), 0, 0)
+fit <- Roptim(init, fg, projection, retraction, search = "back",
+              maxit = 100, eps = 1e-07, a_multiply = 2,
+              c1 = 0.5, c2 = 0.5, max_inner_iter = 30, a_min = 1,
+              Y = Y, predictors = predictors, A = A,
+              algorithm = "gradient")
+
+sum(fit$X) # Constraint satisfied
+fit$X
+# prod(X) == 1 would be straightforward setting the constraints on log(X)
+
+#### Restriction: sum(X) = 1 and X > 0 (Multinomial manifold) ####
+projection <- function(g, X, ...) {
+
+  Xegrad <- X * g
+  lambda <- -sum(Xegrad)  # Row vector of length m.
+  rg <- Xegrad + lambda * X  # This is in the tangent space.
+
+  return(rg)
+
+}
+retraction <- function(X, t, V, ...) {
+
+  alpha <- sum(V) # Row vector of length m.
+  V <- V - alpha * X
+  # nrm <- M.norm(X, V)
+  # V <- V / nrm
+
+  X <- X + t*V
+  Y <- X * exp(t * (V / X)) # Based on mapping for positive scalars.
+  Y <- Y / sum(Y)  # Projection onto the constraint set.
+
+  # For numerical reasons, so that we avoid entries going to zero:
+  X <- pmax(Y, .Machine$double.eps)
+
+  return(X)
+
+}
+
+# Check the retraction conditions:
+# X <- retraction(runif(p), 0, 0) # Put a random vector X on the manifold
+# retraction(X, 0, 0) # X remains the same (First condition satisfied)
+# V <- projection(runif(p), X) # Create a direction V that belongs to the tangent space
+# (retraction(X, 1e-09, V) - retraction(X, 0, 0)) / 1e-09  # Equals V (second conditions satisfied)
+
+parameters <- list(retraction(matrix(runif(p), ncol = 1), 0, 0))
+fit <- Roptim(parameters[[1]], fg, projection, retraction, search = "back",
+              maxit = 300, eps = 1e-07, a_multiply = 2,
+              c1 = 0.5, c2 = 0.5, max_inner_iter = 30, a_min = 1,
+              Y = Y, predictors = predictors, A = A,
+              algorithm = "gradient")
+
+sum(fit$X) # Constraint satisfied
+round(fit$X, 3)
+# prod(X) == 1 would be straightforward setting the constraints on log(X)
+
+lm(Y ~ -1 + predictors)
+
+#### Restriction: X'X = 1 (Unit sphere) ####
+projection <- function(g, X, ...) {
+
+  I <- diag(length(c(X)))
+  rg <- (I - X %*% t(X)) %*% g
+
+  return(rg)
+
+}
+retraction <- function(X, t, V, ...) {
+
+  X <- X + t*V
+  X <- X / sqrt(sum(X*X))
+
+  return(X)
+
+}
+
+# Check the retraction conditions:
+# X <- retraction(runif(p), 0, 0) # Put a random vector X on the manifold
+# retraction(X, 0, 0) # X remains the same (First condition satisfied)
+# V <- projection(runif(p), X) # Create a direction V that belongs to the tangent space
+# (retraction(X, 1e-09, V) - retraction(X, 0, 0)) / 1e-09  # Equals V (second conditions satisfied)
+
+init <- retraction(matrix(runif(p), ncol = 1), 0, 0)
+fit <- Roptim(init, fg, projection, retraction, search = "back",
+              maxit = 20, eps = 1e-07,
+              c1 = 0.5, c2 = 0.5, max_inner_iter = 30, a_min = 1,
+              Y = Y, predictors = predictors,
+              algorithm = "gradient")
+
+crossprod(fit$X) # Constraint satisfied
+
+#### Restriction: B'X = 0, for an arbitrary B ####
+projection <- function(g, X, ...) {
+
+  rg <- g - A %*% g
+
+  return(rg)
+
+}
+retraction <- function(X, t, V, ...) {
+
+  X <- X + t*V
+  X <- X - A %*% X
+
+  return(X)
+
+}
+
+B <- matrix(runif(p), ncol = 1)
+# B <- replicate(p-1, runif(p))
+A <- B %*% MASS::ginv(t(B) %*% B) %*% t(B)
+
+# Check the retraction conditions:
+# X <- retraction(runif(p), 0, 0) # Put a random vector X on the manifold
+# retraction(X, 0, 0) # X remains the same (First condition satisfied)
+# V <- projection(runif(p), X) # Create a direction V that belongs to the tangent space
+# (retraction(X, 1e-09, V) - retraction(X, 0, 0)) / 1e-09  # Equals V (second conditions satisfied)
+
+init <- retraction(matrix(runif(p), ncol = 1), 0, 0, B = B)
+fit <- Roptim(init, fg, projection, retraction, search = "back",
+              maxit = 20, eps = 1e-07,
+              c1 = 0.5, c2 = 0.5, max_inner_iter = 30, a_min = 1,
+              Y = Y, predictors = predictors, A = A,
+              algorithm = "gradient")
+
+t(B) %*% fit$X # Constraint satisfied

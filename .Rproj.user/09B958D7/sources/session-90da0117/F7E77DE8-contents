@@ -1,0 +1,323 @@
+---
+title: 'Optimization on manifolds'
+classoption: article
+format: pdf
+pdf-engine: lualatex
+margin-left: 2.5cm
+margin-right: 2.5cm
+margin-bottom: 2.5cm
+margin-top: 2.5cm
+geometry:
+  - top=2.5cm
+  - left=2.5cm
+  - right=2.5cm
+  - bottom=2.5cm
+indent: true
+# author: Marcos Jiménez
+# date: 14th September, 2022
+fontsize: 12pt
+number-sections: false
+number-depth: 2
+editor: visual
+bibliography: references.bib
+csl: apa_7.csl
+# fontenc: Latin Modern Mono
+# fontfamily: Latin Modern Mono
+mainfont: Latin Modern Roman
+sansfont: Latin Modern Mono
+monofont: Latin Modern Mono
+mathfont: Latin Modern Mono
+header-includes:
+- \usepackage{unicode-math, amsmath, amsfonts, amssymb, lmodern, fontspec, fontenc, babel, setspace, mathtools}
+# - \usepackage[english]{babel}
+# - \usepackage{bm} % Conflic with mainfont
+# - \setmainfont{MathJax_Main}
+# - \setmathfont{MathJax_Main}
+# - \setsansfont{Arial}
+# - \setmainfont{Times New Roman}
+# - \setmathfont{Times New Roman}
+# - \setmainfont{Linux Libertine O}
+# - \usepackage[T1]{fontenc}
+- \setmainfont{Latin Modern Mono}
+# - \setmainfont{Latin Modern Roman}
+# - \setsansfont{Latin Modern Sans}
+# - \setmonofont{Latin Modern Mono}
+# - \setmathfont{Latin Modern Math}
+# - \setmathfont{NewComputerModernMath}
+# - \usepackage{newcomputermodern}
+# mainfont: TeX Gyre Pagella
+# mainfontoptions:
+#   - Numbers=Lowercase
+#   - Numbers=Proportional  
+nocite: |
+ @absil_2009
+output-file: opt_manifolds.pdf
+keep-tex: true
+---
+
+\doublespacing
+
+## Traditional optimization
+
+Suppose that we want to minimize a function $\tilde{f}$ whose domain is in $\mathbb{R}^{n \times p}$. A second-order Taylor expansion around a point $\mathbf{V} \in \mathbb{R}^{n\times p}$ gives us a quadratic approximation as an alternative to minimize:
+$$
+\tilde{f}(\mathbf{V}) \approx m(\mathbf{X}) = \tilde{f}(\mathbf{V}) + \text{grad}\tilde{f}(\mathbf{V})^\top (\mathbf{X} - \mathbf{V}) + \frac{1}{2} (\mathbf{X} - \mathbf{V})^\top \text{Hess}\tilde{f}(\mathbf{V}) (\mathbf{X} - \mathbf{V}),
+$$
+where $\text{grad},\tilde{f}$ is the gradient of $\tilde{f}$ and $\text{Hess},\tilde{f}$ is the matrix of second-order derivatives. Taking the gradient of $m(\mathbf{X})$ and setting it to $0$, we obtain a minimum at
+$$
+\widehat{\mathbf{X}} = \mathbf{V} - \text{Hess}\tilde{f}(\mathbf{V})^{-1} \text{grad} \tilde{f}(\mathbf{V}).
+$$
+What appears to the right of $\mathbf{V}$ is known as the descent direction. If we take $\mathbf{V}$ as an initial point, then we can interpret $\widehat{\mathbf{X}}$ as an estimate of the true vector that minimizes $\tilde{f}$. Therefore, the equation of the quadratic model becomes more accurate the more we iterate it, eventually converging to an optimal point. 
+
+Sometimes, it is difficult to find an expression for $\text{Hess}\tilde{f}$ and it can be costly to compute the solution. The gradient descent method assumes that $\text{Hess}\tilde{f}(\mathbf{V}) = \mathbf{I}$, being less precise but faster to solve. It is also useful to calculate a step size $t$ that chooses an optimal distance to move in the descent direction, $\widehat{\mathbf{X}} = \mathbf{V} - t \text{grad}\tilde{f}(\mathbf{V})$.
+
+## Optimization on nonlinear manifolds
+
+A manifold is...
+
+Let $\tilde{f}$ be a function with domain in $\mathbb{R}^{n\times p}$. Suppose that we want to constraint the solution to the subspace $\mathcal{M}$. We may define another function $f$ with domain on $\mathcal{M}$ such that 
+$$
+\underset{\mathbf{X} \in \mathcal{M}}{\text{argmin}} \tilde{f}(\mathbf{X}) = \text{argmin} f(\mathbf{X}).
+$$ 
+Our aim is to obtain an expression for the gradient of $f$, which is different to that of $\tilde{f}$ if $\mathcal{M}$ is not a linear space. This is easy to see after looking at the popular definition of derivative. The partial derivative of $\tilde{f}$ at $\mathbf{X}$ for the $i,j$ element of $\mathbf{X}$ is usually defined by 
+$$
+\lim_{\epsilon_{ij} \to 0} \frac{\tilde{f}(\mathbf{X} + \boldsymbol{\epsilon}) - \tilde{f}(\mathbf{X})}{\boldsymbol{\epsilon}},
+$$ 
+where $\boldsymbol{\epsilon}$ is a zero matrix and the $i,j$ element tends to 0. This definition makes no sense when we move on a nonlinear manifold $\mathcal{M}$ since taking a plain difference does not guarantee that the result lies on $\mathcal{M}$. Fortunately, there is another definition of derivative that applies to any manifold.
+
+When $\mathcal{M} = \mathbb{R}^{n\times p}$, by endowing this space with a notion of inner product (e.g., $\| \mathbf{U} - \mathbf{V}\|^2$) we turn $\mathcal{M}$ into an Euclidean space. This way, if $f$ is differentiable, we can exploit the gradient $\text{grad}f$ and hessian $\text{Hess}f$ for optimization purposes.
+
+On the contrary, when $\mathcal{M}$ is a nonlinear space, choosing a notion of inner product over this space will turn it into a Riemannian manifold. This way, if $f$ is differentiable, we can exploit the Riemannian gradient $\text{grad}f$ and Riemanian hessian $\text{Hess}f$ for optimization purposes.
+
+A Taylor expansion of $h(\mathbf{x})$ around a point $\mathbf{v}$:
+$$
+h(\mathbf{x}+\mathbf{v}) = h(\mathbf{x}) + \text{D}h(\mathbf{x})[\mathbf{v}].
+$$
+We know that $h(\mathbf{x})=0$ because $\mathbf{x} \in \mathbb{M}$. Therefore, for $h(\mathbf{x}+\mathbf{v})$ to stay on $\mathbb{M}$, we also need that $\text{D}h(\mathbf{x})[\mathbf{v}]=0$.
+
+We have to find the kernel of $\text{D}h(\mathbf{x})[\mathbf{v}]$:
+$$\text{ker} \, \text{D}h(\mathbf{x})[\mathbf{v}]= \{\mathbf{v} \in \mathbb{R}: \text{D}h(\mathbf{x})[\mathbf{v}]=0\} \coloneq \mathcal{T}_\mathbf{x}\mathcal{M}$$.
+
+## The Riemannian gradient
+
+In a linear space, the gradient $\text{grad}\tilde{f}$ at a point $\mathbf{X} \in \mathbb{R}^{n\times p}$ is the unique element $\mathbb{R}^{n\times p}$ that satisfies $\text{D}\tilde{f}(\mathbf{X})[\mathbf{V}] = \text{trace}(\mathbf{V}^\top \text{grad}\tilde{f}(\mathbf{X}))$ for any $\mathbf{V} \in \mathbb{R}^{n\times p}$, where $\text{D}\tilde{f}(\mathbf{X})[\mathbf{V}]$ denotes the derivative of $\tilde{f}$ at $\mathbf{X}$ along the direction $\mathbf{V}$ (the differential).
+
+Now, notice that any member of $\mathbb{R}^{n \times p}$ can be decomposed in orthogonal complements. That is, the gradient of $\tilde{f}$ evaluated at $\mathbf{X}$ may be decomposed in an element belonging to the tangent space, $\mathcal{T}_\mathbf{X}\mathcal{M}$, and another belonging to the normal space, $\mathcal{N}_{\mathbf{X}} \mathcal{M}$: \begin{equation} \label{orth_compl}
+\text{grad}\tilde{f}(\mathbf{X}) = \text{grad} \tilde{f}(\mathbf{X})_\parallel + \text{grad} \tilde{f}(\mathbf{X})_\perp,
+\end{equation} where $\text{grad} \tilde{f}(\mathbf{X})_\parallel$ and $\text{grad} \tilde{f}(\mathbf{X})_\perp$ are the projections of $\text{grad}\tilde{f}(\mathbf{X})$ onto the tangent space and the normal space, respectively (p. 47; Absil et al. (2009)).
+
+With these definitions, the Riemannian gradient at $\mathbf{X}$, $\text{grad}f(\mathbf{X})$, can be defined as the unique element of $\mathcal{T}_\mathbf{X}\mathcal{M}$ that satisfies $\text{D}f(\mathbf{X})[\mathbf{V}] = \text{trace}(\mathbf{V}^\top \text{grad}f(\mathbf{X}))$ for any $\mathbf{V} \in \mathcal{T}_\mathbf{X}\mathcal{M}$ (Definition 3.31; Absil et al. (2009)).
+
+Using (\ref{orth_compl}), we arrive at the following identities for any $\mathbf{V} \in \mathcal{T}_\mathbf{X}\mathcal{M}$: 
+$$
+\begin{aligned}
+\text{trace}\left( \mathbf{V}^\top \text{grad}\tilde{f}(\mathbf{X})_\parallel \right) &= \text{trace}\left( \mathbf{V}^\top (\text{grad}\tilde{f}(\mathbf{X}) - \text{grad}\tilde{f}(\mathbf{X})_\perp) \right) \\
+&= \text{trace}\left( \mathbf{V}^\top \text{grad}\tilde{f}(\mathbf{X}) \right) - \text{trace}\left( \mathbf{V}^\top \text{grad}\tilde{f}(\mathbf{X})_\perp \right) \\ 
+&= \text{trace}\left( \mathbf{V}^\top \text{grad}\tilde{f}(\mathbf{X}) \right), \quad{\text{because }} \mathbf{V} \text{ is orthogonal to }\text{grad}\tilde{f}(\mathbf{X})_\perp, \\
+&= \text{D}\tilde{f}(\mathbf{X})[\mathbf{V}] \\
+&= \text{D}f(\mathbf{X})[\mathbf{V}], \quad{\text{because }} \mathbf{V} \in \mathcal{T}_\mathbf{X}\mathcal{M}.
+\end{aligned}
+$$ 
+Hence, $\text{grad}f(\mathbf{X}) = \text{grad} \tilde{f}(\mathbf{X})_\parallel$ (equation 3.37; Absil et al. (2009)). In other words, the projection of the euclidean gradient onto the tangent space of $\mathcal{M}$ (i.e., $\text{grad} \tilde{f}(\mathbf{X})_\parallel$) is the gradient of $f$ (i.e., the gradient of $\tilde{f}$ when its domain is restricted to $\mathcal{M}$).
+
+From here, our job is to find an expression of $\text{grad}\tilde{f}(\mathbf{X})_\perp \in \mathcal{N}_{\mathbf{X}} \mathcal{M}$ to get the Riemannian gradient from (\ref{orth_compl}) or to directly find an expression for it. In the example below, I will do the latter.
+
+## Projection
+
+Suppose that we want to constraint a parameter vector to sum up to 0 such that $\mathcal{M} = \{\mathbf{x} \in \mathbb{R}^3: x_1 + x_2 + x_3 = 0\}$. To optimize this problem, we need to \textbf{project the ordinary or euclidean gradient} of the objective function onto the tangent space of $\mathcal{M}$ (i.e., the Riemannian gradient).
+
+First, we need to propose a defining equation for the constrained parameter vector:
+$$
+h: \mathbb{R}^3 \mapsto \mathcal{M} : \mathbf{x} \mapsto h(\mathbf{x}) = x_1 + x_2 + x_3 = 0.
+$$ 
+The tangent space of $\mathcal{M}$ is defined as the kernel of the differential of the defining equation $h$, 
+$$
+\mathcal{T}_\mathbf{x}\mathcal{M} = \text{ker} \, \text{D}h(\mathbf{x}) = \{\mathbf{z} \in \mathbb{R}^3: z_1 + z_2 + z_3 = 0 \}.
+$$
+Now, we need to find a basis for $\mathcal{T}_\mathbf{x}\mathcal{M}$. That is, we seek for a matrix $\mathbf{V}$ such that any vector in $\mathcal{T}_\mathbf{x}\mathcal{M}$ can be represented as a linear combination of it (i.e., $\mathcal{T}_\mathbf{x}\mathcal{M} = \mathrm{span}\left(\mathbf{V}\right)$).
+A suitable basis matrix is the following: 
+$$
+\mathbf{V} = \begin{bmatrix}
+-1 & -1 \\
+1 & 0 \\
+0 & 1
+\end{bmatrix},
+$$ 
+since any $\mathbf{Z} \in \mathcal{T}_\mathbf{x}\mathcal{M} = \mathbf{Vy}$ for some $\mathbf{y} \in \mathbb{R}^2$ (the dimensionality of our problem is two because we have three unknowns and one restriction).
+
+Now, considering that $\text{grad} \tilde{f}(\mathbf{X})_\parallel = \mathbf{Vy}$ for some $\mathbf{y} \in \mathbb{R}^2$, we substitute in (\ref{orth_compl}) to get 
+$$
+\begin{aligned}
+\mathbf{V}^\top (\text{grad}\tilde{f}(\mathbf{X}) - \text{grad} f(\mathbf{X})_\parallel) &= \mathbf{V}^\top \text{grad} \tilde{f}(\mathbf{X})_\perp \\
+\mathbf{V}^\top (\text{grad}\tilde{f}(\mathbf{X}) - \mathbf{Vy}) &= \mathbf{0}, \quad{\text{since } \mathbf{V} \in \mathcal{T}_\mathbf{x}\mathcal{M} \text{ and } \text{grad} \tilde{f}(\mathbf{X})_\perp \in \mathcal{N}_\mathbf{x}\mathcal{M}}.
+\end{aligned}
+$$ 
+So, we only need to solve for $\mathbf{y}$ in the above equation to find and expression for the Riemannian gradient parameterized as $\mathbf{Vy}$: 
+$$
+\mathbf{y} = (\mathbf{V}^\top \mathbf{V})^{-1} \mathbf{V}^\top \text{grad}\tilde{f}(\mathbf{X}).
+$$
+Therefore, the Riemannian gradient is
+$$
+\text{grad} f(\mathbf{X}) = \mathbf{V}^\top(\mathbf{V}^\top \mathbf{V})^{-1} \mathbf{V}^\top \text{grad}\tilde{f}(\mathbf{X}).
+$$
+This is similar to the common expression used to find the linear regression coefficients from a matrix of predictors.
+
+## Retraction
+
+We must also take care of the updating procedure. When we get a descent direction $\mathbf{V}$, the updated parameters $\mathbf{X}^* = \mathbf{X}_k + t\mathbf{V}$, where $t$ is a step size, may not lie on the manifold $\mathcal{M}$ anymore. We want that $\mathbf{X}_{k+1}$ lies on $\mathcal{M}$. To do this, we project $\mathbf{X}^*$ back to the manifold $\mathcal{M}$ using **parallel or vector transport**. Parallel transport is the shortest path connecting $\mathbf{X}^*$ in $\mathbb{R}^{n\times p}$ and $\mathbf{X}_{k+1}$ in $\mathcal{M}$. Sometimes, the formula for parallel transport is very complex or it is not analytically tractable. It may also be too expensive to compute. As an alternative, a **retraction** $R_\mathbf{X}$ is used. Retractions are functions that must satisfy two conditions.
+
+A retraction $R_\mathbf{X}: \mathbb{R}^{n\times p} \mapsto \mathcal{M}: t \mapsto R_\mathbf{X}(t)$ must satisfy (1) $R_\mathbf{X}(0) = \mathbf{X}$ and (2) $R_\mathbf{X}(t \mathbf{V})^\prime |_{t=0} = \mathbf{V}$ for any $\mathbf{X} \in \mathcal{M}$ and $\mathbf{V} \in \mathcal{T}_\mathbf{X}\mathcal{M}$ (Definition 4.1.1; Absil et al. (2009)).
+
+In our example, if $\mathbf{x}^* = \mathbf{x}_{k} + t\mathbf{v}$, then $R_\mathbf{x}(t\mathbf{v}) = \mathbf{x}^* - \frac{1}{3}\mathbf{1}^\top\mathbf{x}^*$ is a suitable retraction that satisfies both conditions. Another possible retraction is $R_\mathbf{x}(t\mathbf{v}) = \frac{\mathbf{x}^*}{\mathbf{1}^\top\mathbf{x}^*}$.
+
+\newpage
+
+# Example
+
+```{r, eval=FALSE, echo=FALSE}
+# A = Matrix of predictors
+# x = parameter vector
+# y = response vector
+# f = value of the objective function at x
+# g = gradient of the objective function at x
+# t step size
+
+# Define the objective function:
+objective <- function(A, x, y) {
+  
+  f <- sum((y - A %*% x)^2)
+  
+  return( f )
+  
+}
+# Define the gradient:
+gradient <- function(A, x, y) {
+  
+  g <- -2 * t(A) %*% (y - A %*% x)
+  g <- matrix(g, ncol = 1)
+  
+  return( g )
+  
+}
+# Define the projection
+projection <- function(g) {
+  
+  V <- rbind(c(-1, -1), # Basis for the tangent space
+             c( 1,  0),
+             c( 0,  1))
+  # Project the gradient onto the tangent space:
+  rg <- V %*% solve(t(V) %*% V) %*% t(V) %*% g # Riemannian gradient
+  
+  return(rg)
+  
+}
+# Define the retraction
+retraction <- function(x, t, rg) {
+  
+  x <- x + t*rg # Update
+  # x <- x / sum(x) # Sum to 0 constraint
+  x <- x - mean(x)
+  
+  return(x)
+  
+}
+
+# Simulate data:
+set.seed(1)
+n <- 1000                       # Observations
+p <- 3                          # Number of predictors
+A <- replicate(p, rnorm(n))     # Matrix of predictors
+x <- matrix(runif(p, -1, 1), ncol = 1) # Coefficients
+y <- A %*% x + rnorm(n, 0, 0.1) # Response vector
+
+# Gradient descent algorithm:
+
+maxit <- 1e4 # Number of iterations
+eps <- 1e-4  # Tolerance for the norm of the gradient
+al <- 1      # Initial step size
+xhat <- matrix(runif(p), ncol = 1) # Starting parameter values
+xhat <- retraction(xhat, 0, 0)     # Project the initial values onto the manifold
+
+f <- objective(A, x, y)
+g <- gradient(A, x, y)
+rg <- projection(g)
+
+for (iter in 0:maxit) {
+  s <- sqrt(sum(rg^2))
+  if (s < eps)
+    break
+  al <- 2 * al
+  for (i in 0:10) {
+    x_temp <- retraction(xhat, al, -rg)
+    improvement <- f - objective(A, x_temp, y)
+    if (improvement > 0.5 * s^2 * al) 
+      break
+    al <- al/2
+  }
+  xhat <- x_temp
+  f <- objective(A, xhat, y)
+  g <- gradient(A, xhat, y)
+  rg <- projection(g)
+  cat("\r", "Iteration = ", iter)
+}
+
+# Check the constraint sum(xhat) == 0
+sum(xhat)
+
+# You may consider other manifolds by changing the projection and retraction:
+
+# Unit length manifold:
+
+projection <- function(g, x) {
+  
+  I <- diag(length(x))
+  rg <- (I - x %*% t(x)) %*% g
+  
+  return( rg )
+  
+}
+retraction <- function(x, t, rg) {
+  
+  x <- x + t*rg
+  x <- x / sqrt(sum(x^2))
+  
+  return( x )
+  
+}
+
+# Gradient descent algorithm:
+
+maxit <- 1e4 # Number of iterations
+eps <- 1e-4  # Tolerance for the norm of the gradient
+al <- 1      # Initial step size
+xhat <- matrix(runif(p), ncol = 1) # Starting parameter values
+xhat <- retraction(xhat, 0, 0)     # Project the initial values onto the manifold
+
+f <- objective(A, x, y)
+g <- gradient(A, x, y)
+rg <- projection(g, x)
+
+for (iter in 0:maxit) {
+  s <- sqrt(sum(rg^2))
+  if (s < eps)
+    break
+  al <- 2 * al
+  for (i in 0:10) {
+    x_temp <- retraction(xhat, al, -rg)
+    improvement <- f - objective(A, x_temp, y)
+    if (improvement > 0.5 * s^2 * al) 
+      break
+    al <- al/2
+  }
+  xhat <- x_temp
+  f <- objective(A, xhat, y)
+  g <- gradient(A, xhat, y)
+  rg <- projection(g, xhat)
+  cat("\r", "Iteration = ", iter)
+}
+
+# Check the constraint crossprod(xhat) == 1
+t(xhat) %*% xhat
+```
+
+# Reference

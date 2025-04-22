@@ -1,0 +1,26 @@
+{
+    "id": "7A591666",
+    "path": "~/Documents/Papers/latent2/src/auxiliary.h",
+    "project_path": "src/auxiliary.h",
+    "type": "h",
+    "hash": "3847294281",
+    "contents": "",
+    "dirty": false,
+    "created": 1720512580009.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "9,6",
+        "scrollLine": "0"
+    },
+    "folds": "27|29|33|0|\n35|29|41|0|\n43|51|58|0|\n60|46|79|0|\n81|46|90|0|\n94|51|107|0|\n109|51|120|0|\n122|25|129|0|\n",
+    "lastKnownWriteTime": 1704042744,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1720549514529,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,31 @@
+{
+    "id": "F7E77DE8",
+    "path": "~/Papers/poblq_projection/notes/opt_manifolds.qmd",
+    "project_path": null,
+    "type": "quarto_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1739356604528.0,
+    "source_on_save": false,
+    "relative_order": 52,
+    "properties": {
+        "rmdVisualMode": "false",
+        "rmdVisualWrapConfigured": "true",
+        "source_window_id": "",
+        "Source": "Source",
+        "docOutlineVisible": "0",
+        "rmdVisualCollapsedChunks": "",
+        "cursorPosition": "67,73",
+        "scrollLine": "0",
+        "rmdVisualModeLocation": "282:0"
+    },
+    "folds": "100|26|123|0|\n174|9|321|0|\n176|30|320|0|\n185|32|191|0|\n193|31|200|0|\n202|27|212|0|\n214|34|222|0|\n270|30|277|0|\n278|34|285|0|\n322|11|323|0|\n",
+    "lastKnownWriteTime": 1740389871,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1741899795979,
+    "read_only": false,
+    "read_only_alternatives": []
+}

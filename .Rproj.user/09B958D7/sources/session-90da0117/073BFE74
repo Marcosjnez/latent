@@ -1,0 +1,32 @@
+{
+    "id": "073BFE74",
+    "path": "~/Archivos R/lca.qmd",
+    "project_path": null,
+    "type": "quarto_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1726946643526.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "rmdVisualMode": "false",
+        "rmdVisualWrapConfigured": "true",
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "25,0",
+        "scrollLine": "0",
+        "docOutlineVisible": "0",
+        "rmdVisualCollapsedChunks": "",
+        "rmdVisualModeLocation": "347:0"
+    },
+    "folds": "0|3|7|0|\n50|27|80|0|\n104|16|107|0|\n108|28|114|0|\n",
+    "lastKnownWriteTime": 1743467052,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1743467052117,
+    "read_only": false,
+    "read_only_alternatives": []
+}

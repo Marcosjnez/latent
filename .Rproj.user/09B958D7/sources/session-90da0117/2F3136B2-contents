@@ -1,0 +1,89 @@
+# Miguel A. Sorrel
+# version: 2020/12/16
+# Info from
+## https://hilaryparker.com/2014/04/29/writing-an-r-package-from-scratch/
+## https://kbroman.org/github_tutorial/
+
+# How to Create an R Package
+
+# Step 0: Packages you will need
+# install.packages("devtools")
+library(devtools) # v2.3.2
+# devtools::install_github("klutometis/roxygen")
+library(roxygen2) # v7.1.1.9000 (it has multiple dependencies)
+roxygen2::roxygenise()
+
+# Step 1: Create your package directory
+# File < New Project R package
+# You should edit DESCRIPTION to include your contact info., etc
+## see cdcatR_DESCRIPTION for an example
+# Step 2: Add functions
+# Copy those into your R folder. You will find a hello.R function already in the folder (remove that after you are finished)
+
+# Step 3: Add documentation
+# The package roxygen2 makes everything amazing and simple. Put comments before each function following the format from hello.R
+## see cdcat() for an example. If you have examples that last longer than 5-10 seconds combine \dontshow (toy example for the test) and \donttest (example for the manual)
+
+# Step 4: Process your documentation
+roxygen2::roxygenise()
+# This automatically adds in the .Rd files to the man directory, adds a NAMESPACE file to the main directory
+
+# Step 5: Install! This ends with a library(packagename)
+# Build < Install and Restart
+
+# # Step 6: Generate Package Manual and Build source package to share
+# devtools::build_manual(pkg = "..../GitHub/packagename")
+## e.g.:
+devtools::build_manual(pkg = "C:/Users/Usuario/Desktop/packagename")
+devtools::build_manual(pkg = "C:/Users/Marcos/Documents/Papers/latent_package/latent")
+devtools::build()
+
+# Step 7: Take it to github
+# We will first create another project with Git version control and then copy all the files we created into this new folder
+# Step 7.1: Make a new repo on GitHub
+# Go to GitHub.com and login. Click the green "New Repository" button
+# Repository name: myrepo
+# Public
+# Check Initialize this repository with a README
+
+# Step 7.2: Clone the new GitHub repository to your computer via RStudio
+# File > New Project > Version Control > Git. In the repository URL paste the URL of your new GitHub repository
+# login when indicated
+
+# Step 7.3: Copy all the previous files into this new folder and use the Git menu under "Tools". Commit + Push.
+# Remove the newest project file - you won't need it
+
+# If everything is OK, now this works:
+devtools::install_github("miguel-sorrel/cdcatR") # e.g.
+
+# Step 8-100: Iterate
+# whenever you want to update the documents do:
+# Built < Document
+# Built < Clean and rebuild
+# devtools::build()
+# devtools::build_manual()
+
+# Step 101: Getting it into CRAN
+# Multiple checks:
+# Build < Check Package
+devtools::check()
+# devtools::check(run_dont_test = TRUE)
+update(devtools::dev_package_deps(dependencies=TRUE))
+devtools::spell_check() # comprobar palabras "mal escritas"
+devtools::install_deps(dependencies = TRUE) # comprobar dependencias
+devtools::check_rhub() # validar el email
+devtools::check_win_devel()
+rhub::check_on_windows()
+rhub::check_for_cran()
+previous_checks <- rhub::list_package_checks() # validar el email
+previous_checks
+group_id <- previous_checks$group[1]
+group_check <- rhub::get_check(group_id)
+group_check
+
+# Final step:
+devtools::release()
+
+# Future sumissions: to re-submit the package without working through all the release() questions a second time
+devtools::submit_cran() #
+

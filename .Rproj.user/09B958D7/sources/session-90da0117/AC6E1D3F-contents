@@ -1,0 +1,24 @@
+Package: latent
+Type: Package
+Title: An R package for Latent Variable Modeling
+Version: 0.1.0
+Date: 2025-20-01
+Description: Fit latent variable models.
+Author: Marcos Jiménez [aut, cre],
+  Mauricio Garnier-Villarreal [aut],
+  Vithor R. Franco [aut],
+  Francisco J. Abad [aut],
+  Eduardo Garcia-Garzon [aut],
+  Luis E. Garrido [aut]
+Maintainer: Marcos Jiménez <m.j.jimenezhenriquez@vu.nl>
+License: GPL-3
+Imports: Rcpp (>= 1.0.11)
+LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 7.3.2
+Encoding: UTF-8
+Depends: data.table, lavaan
+URL: https://github.com/Marcosjnez/latent
+BugReports: https://github.com/Marcosjnez/latent/issues
+NeedsCompilation: yes
+LazyData: TRUE
+Year: 2025

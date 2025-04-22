@@ -1,0 +1,103 @@
+/*
+ * Author: Marcos Jiménez
+ * email: marcosjnezhquez@gmail.com
+ * Modification date: 10/01/2024
+ */
+
+// #define ARMA_NO_DEBUG
+// #define ARMA_DONT_USE_OPENMP
+// #define ARMA_DONT_OPTIMISE_BAND
+// #define ARMA_OPENMP_THREADS 10
+// #define ARMA_DONT_OPTIMISE_SYMPD
+// #define ARMA_DONT_USE_SUPERLU
+// #define ARMA_DONT_USE_BLAS
+// #define ARMA_OPENMP_THRESHOLD 240
+// #define ARMA_64BIT_WORD
+// #define ARMA_MAT_PREALLOC 4
+
+// [[Rcpp::depends(RcppArmadillo)]]
+
+#ifdef _OPENMP
+  #include <omp.h>
+#else
+  #define omp_get_num_threads() 1
+  #define omp_set_num_threads() 1
+#endif
+
+#include <RcppArmadillo.h>
+#include <Rcpp/Benchmark/Timer.h>
+#include "structures.h"
+#include "auxiliary.h"
+#include "manifolds.h"
+#include "estimators.h"
+
+// [[Rcpp::export]]
+Rcpp::List optimizer(arma::vec parameters,
+                     int random_starts, int cores,
+                     Rcpp::List control_estimator,
+                     Rcpp::List control_manifold,
+                     Rcpp::List control_optimizer) {
+
+  // parameters: vector of parameters
+  // manifold: list of manifolds
+  // manifold_indices: list of indices that relate sets of parameters to manifolds
+  // manifold_target: list of indices that relate manifolds to parameters
+  // estimator: list of estimators
+  // estimator_indices: list of indices that relate sets of parameters to estimators
+  // estimator_target: list of indices that relate estimators to parameters
+  // int random_starts: number of independent repetitions of the optimization
+  // cores: number of cores
+  // setup: list containing
+
+  arguments_optim x;
+
+  x.parameters = parameters;
+  x.nestimators = control_estimator.size();
+  std::vector<estimators*> xestimators(x.nestimators);
+  x.nmanifolds = control_manifold.size();
+  std::vector<manifolds*> xmanifolds(x.nmanifolds);
+
+  for(int i=0; i < x.nestimators; ++i) {
+    xestimators[i] = choose_estimator(control_estimator[i], xestimators[i]);
+  }
+  for(int i=0; i < x.nmanifolds; ++i) {
+    xmanifolds[i] = choose_manifold(control_manifold[i]);
+  }
+
+  product_estimator* final_estimator;
+  Rcpp::Rcout << "0" << std::endl;
+  final_estimator->param(x, xestimators);
+  // final_estimator->dparam(x, xestimators);
+  Rcpp::Rcout << "1" << std::endl;
+  final_estimator->F(x, xestimators);
+  Rcpp::Rcout << "2" << std::endl;
+  final_estimator->G(x, xestimators);
+  Rcpp::Rcout << "3" << std::endl;
+  final_estimator->grad(x, xestimators);
+  Rcpp::Rcout << "4" << std::endl;
+  // final_estimator->dG(x, xestimators);
+  // final_estimator->dgrad(x, xestimators);
+  final_estimator->outcomes(x, xestimators);
+  Rcpp::Rcout << "5" << std::endl;
+  final_estimator->H(x, xestimators);
+  Rcpp::Rcout << "6" << std::endl;
+  final_estimator->GS(x, xestimators);
+  Rcpp::Rcout << "7" << std::endl;
+
+  Rcpp::List result;
+  result["f"] = x.f;
+  result["g"] = x.g;
+  result["rg"] = x.rg;
+  result["dg"] = x.dg;
+  result["drg"] = x.drg;
+  result["hessian"] = x.hessian;
+  result["dparam_dS"] = x.dparam_dS;
+  // Rcpp::stop("Nothing2");
+  result["lambda"] = xestimators[0]->g;
+  result["phi"] = xestimators[0]->phi;
+  result["psi"] = xestimators[0]->psi;
+
+  return result;
+
+};
+

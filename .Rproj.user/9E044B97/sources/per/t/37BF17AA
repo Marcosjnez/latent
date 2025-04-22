@@ -1,0 +1,27 @@
+{
+    "id": "37BF17AA",
+    "path": "~/Documents/Archivos R/prueba_latent2.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "2650980705",
+    "contents": "",
+    "dirty": false,
+    "created": 1720514470824.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "3,12",
+        "scrollLine": "0"
+    },
+    "folds": "72|38|74|0|\n103|70|122|0|\n",
+    "lastKnownWriteTime": 1720559547,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1720559943741,
+    "read_only": false,
+    "read_only_alternatives": []
+}

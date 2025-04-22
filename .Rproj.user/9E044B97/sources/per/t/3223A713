@@ -1,0 +1,26 @@
+{
+    "id": "3223A713",
+    "path": "~/Documents/Papers/latent2/src/optim.h",
+    "project_path": "src/optim.h",
+    "type": "h",
+    "hash": "2692693067",
+    "contents": "",
+    "dirty": false,
+    "created": 1720512604080.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "317,15",
+        "scrollLine": "0"
+    },
+    "folds": "10|13|18|0|\n22|24|34|0|\n28|45|32|2|\n38|26|50|0|\n44|45|48|2|\n54|25|66|0|\n60|45|64|2|\n68|40|85|0|\n90|43|115|0|\n120|77|197|0|\n411|83|505|0|\n",
+    "lastKnownWriteTime": 1703611856,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1720549522926,
+    "read_only": false,
+    "read_only_alternatives": []
+}

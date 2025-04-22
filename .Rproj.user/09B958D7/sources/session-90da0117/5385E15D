@@ -1,0 +1,26 @@
+{
+    "id": "5385E15D",
+    "path": "~/Archivos R/EM_lca_normal.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1731610360325.0,
+    "source_on_save": false,
+    "relative_order": 42,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "68,0",
+        "scrollLine": "0"
+    },
+    "folds": "8|22|15|0|\n17|22|28|0|\n38|22|45|0|\n47|22|58|0|\n68|24|71|0|\n73|26|110|0|\n112|26|170|0|\n183|26|220|0|\n222|26|276|0|\n",
+    "lastKnownWriteTime": 1743765891,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1744623813569,
+    "read_only": false,
+    "read_only_alternatives": []
+}

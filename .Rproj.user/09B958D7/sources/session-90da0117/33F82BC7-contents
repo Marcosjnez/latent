@@ -1,0 +1,245 @@
+# Gram Schmidt process:
+gram <- function(V, L, target) {
+
+  n <- nrow(V)
+  k <- ncol(V)
+  U <- matrix(0, n, k)
+  indexes <- apply(target, MARGIN = 2, \(x) x != 0, simplify = FALSE)
+  correction <- sqrt(1 - colSums(target^2))
+  U[indexes[[1]], 1] <- target[indexes[[1]], 1]
+  U[!indexes[[1]], 1] <- V[!indexes[[1]], 1] / sqrt(sum(V[!indexes[[1]], 1]^2))*correction[1]
+
+  for(i in 2:k) {
+
+    U[, i] <- V[, i]
+    U[indexes[[i]], i] <- target[indexes[[i]], i]
+
+    for(j in 1:(i-1)) {
+
+      U[!indexes[[i]], i] <- U[!indexes[[i]], i] -
+        sum(U[!indexes[[i]], j]*U[!indexes[[i]], i]) / sum(U[!indexes[[i]], j]^2) * U[!indexes[[i]], j]
+
+    }
+
+    # U[, i] <- U[, i] / sqrt(sum(U[, i]^2))
+    # U[indexes[[i]], i] <- target[indexes[[i]], i]
+    U[!indexes[[i]], i] <- U[!indexes[[i]], i] / sqrt(sum(U[!indexes[[i]], i]^2))*correction[i]
+
+  }
+
+  return(U)
+
+}
+
+Z <- U
+m <- sum(Z[1, 1] * Z[1, 2])
+Z[!indexes[[i]], i] <- U[!indexes[[i]], i] -
+  sum(U[!indexes[[i]], j]*U[!indexes[[i]], i]) / sum(U[!indexes[[i]], j]^2) * U[!indexes[[i]], j]
+sum(Z[, 1] * Z[, 2])
+
+# Orthogonal rotation + equalities
+fix <- 0.5
+p <- 5
+q <- 4
+X <- bifactor::random_orth(q, q)
+L <- replicate(q, rnorm(p))
+L %*% X
+Q <- qr.Q(qr(X[, 1:2]))
+A <- cbind(L[1, ], Q)
+A <- t(A)
+y <- c(0.5, 0, 0) # restrictions
+e <- y - A %*% t(A) %*% y
+x <- lm(y ~ 0 + A)$coef
+x[4] <- 0
+A %*% x
+x2 <- retr_orth(matrix(x))
+A %*% x2
+
+
+B <- matrix(runif(p), ncol = 1)
+A <- B %*% MASS::ginv(t(B) %*% B) %*% t(B)
+X <- X - A %*% X
+
+
+X <- replicate(5, rnorm(5))
+target <- matrix(0, 5, 5)
+# target[1, 1] <- 0.5
+# target[2, 1] <- 0.3
+target[1, 2] <- 0.5
+Z <- gram(X, 0, target)
+round(crossprod(Z), 4)
+
+# Oblique rotation:
+retraction_oblq <- function(t, V, X) {
+
+  X <- X + t*V
+  # Z <- X
+  X_oblq <- X %*% (diag(1/sqrt(diag(t(X) %*% X))))
+  # X_oblq[, 4:6] <- Z[, 4:6]
+
+  return(X_oblq)
+
+}
+projection_oblq <- function(G, X) {
+
+  G_proj <- G - X %*% diag(diag(t(X) %*% G))
+
+  return(G_proj)
+
+}
+
+# Orthogonal rotation:
+retraction_orth <- function(t, V, X) {
+
+  X <- X + t*V
+  UDV <- svd(X)
+  X_orth <- UDV$u %*% t(UDV$v)
+
+  return(X_orth)
+
+}
+retraction_orth <- function(t, V, X) {
+
+  X <- X + t*V
+  X_orth <- qr.Q(qr(X))
+
+  return(X_orth)
+
+}
+projection_orth <- function(G, X) {
+
+  Y <- symm(X %*% t(G))
+  G_proj <- (G - Y %*% X)
+
+  return(G_proj)
+
+}
+# x.T * skew(x.T.t() * x.g)
+symm <- function(X) (X + t(X)) / 2
+skew <- function(X) (X - t(X)) / 2
+
+check_dderiv <- function(t, V, X, retraction) {
+
+  epsilon <- 1e-09
+  derivative <- (retraction(t + epsilon, V, X) - retraction(t, V, X)) / epsilon
+
+  return(derivative)
+
+}
+
+# oblique case
+X <- bifactor::random_oblq(10, 5)
+G <- replicate(5, rnorm(10))
+V <- projection_oblq(G, X)
+t <- 0
+# R(0, V, X) == X
+X
+retraction_oblq(t, V, X)
+# R'(0, V, X) == V
+V
+check_dderiv(t = 0, V, X, retraction_oblq)
+
+# orthogonal case
+X <- bifactor::random_orth(10, 5)
+G <- replicate(5, rnorm(10))
+V <- projection_orth(G, X)
+t <- 0
+# R(0, V, X) == X
+X
+retraction_orth(t, V, X)
+# R'(0, V, X) == V
+V
+check_dderiv(t = 0, V, X, retraction_orth)
+
+# Orthogonal rotation + equalities
+library(bifactor)
+retr_fix <- function(L_aug, X, target) {
+
+  cols <- which(colSums(target != 0) > 0)
+  Y <- X[, cols]
+  for(i in 1:length(cols)) {
+    rows <- which(target[, cols[i]] != 0)
+    B <- cbind(t(L_aug[rows, , drop = FALSE]), Y[, 1:i])
+    R <- crossprod(B)
+    R[ncol(B), 1:ncol(B)] <- R[1:ncol(B), ncol(B)] <- 0; R[ncol(B), ncol(B)] <- 1
+    R[ncol(B), 1:length(rows)] <- R[1:length(rows), ncol(B)] <- target[rows, cols[i]]
+    Q <- qr.Q(qr(B))
+    x <- solve(t(B) %*% B) %*% t(B) %*% Q
+    r <- x %*% chol(R)
+    Xa <- B %*% r
+    # if(sum(Xa[, ncol(B)] * B[, 1]) = )
+    Y[, i] <- -Xa[, ncol(B)]
+  }
+
+  Y <- cbind(X[, -cols], Y)
+
+  return(Y)
+
+}
+X <- random_oblq(6, 6)
+retr_fix <- function(L_aug, X, target) {
+
+  cols <- which(colSums(target != 0) > 0)
+  Y <- X[, cols]
+  for(i in 1:length(cols)) {
+    rows <- which(target[, cols[i]] != 0)
+    n_rows <- length(rows)
+    B <- cbind(t(L_aug[rows, , drop = FALSE]), X[, 1:3], Y[, i])
+    R <- crossprod(B)
+    R[ncol(B), 1:(ncol(B)-1)] <- R[1:(ncol(B)-1), ncol(B)] <- 0; #R[ncol(B), ncol(B)] <- 1
+    R[ncol(B), 1:length(rows)] <- R[1:length(rows), ncol(B)] <- target[rows, cols[i]]
+    R[(n_rows+1):(n_rows+3), ncol(B)] <- R[ncol(B), (n_rows+1):(n_rows+3)] <- 0
+    Q <- qr.Q(qr(B))
+    x <- solve(t(B) %*% B) %*% t(B) %*% Q
+    r <- x %*% chol(R)
+    Xa <- B %*% r
+    # if(sum(Xa[, ncol(B)] * B[, 1]) = )
+    Y[, i] <- -Xa[, ncol(B)]
+  }
+
+  Y <- cbind(X[, -cols], Y)
+
+  return(Y)
+
+}
+round(crossprod(Y), 3)
+L_aug %*% t(Y)
+
+set.seed(1)
+x <- rnorm(5)
+y <- rnorm(5)
+z <- rnorm(5)
+w <- rnorm(5) # transform Y
+# w <- w/sqrt(sum(w*w)) * 0.5/sum(y*y)*y
+# sum(w*y)
+w <- w - sum(x*w)/(sum(x*x))*x
+sum(w*x)
+n <- 0.5/sum(w*y)
+w <- n*w
+sum(w*x) # 0
+sum(w*y) # 0.5
+sum(w*z) # 0.4
+
+X <- replicate(3, rnorm(3))
+
+
+set.seed(3)
+p <- 10
+q <- 3
+G <- replicate(q, rnorm(p))
+L1 <- bifactor::random_orth(p, q)
+L2 <- bifactor::random_orth(p, q)
+L_aug <- cbind(L1, L2)
+target <- matrix(0, p, q+q)
+target[1, q+1] <- 0.30
+target[2, q+1] <- 0.15
+target[1, q+2] <- -0.24
+target[3, q+3] <- 0.20
+
+X <- bifactor::random_orth(2*q, 2*q)
+Y <- retr_fix(L_aug, X, target)
+L_aug %*% Y
+round(crossprod(Y), 3)
+rows <- which(rowSums(target != 0) > 0)
+round(L_aug[rows, , drop = FALSE] %*% Y, 2)
+

@@ -1,0 +1,512 @@
+X
+X$A2 <- NA
+X$A2 <- c(1, 0.75, NA, 1, 1, 1, 0.85, 0.75, 0.75, 1, 1, 1, 1, 0.75, NA,
+0.75, 0.90, NA, 1, 0.90, 1, 1, 1, NA, 0.75, 0.90, 1, 1)
+colnames(X)[3:4] <- c("Actividad 1", "Actividad 2")
+X
+X$A3 <- NA
+X$A3 <- c(0.85, 0.85, NA, 0.85, 0.85, 0.85, NA, 0.85, 0.85, NA, NA, 0.85, 0.85,
+0.85, 0.70, 0.50, 0.70, NA, 0.85, 0.70, 0.85, 0.70, 0.85, 0.50, 0.50,
+NA, 0.85, 0.85)
+colnames(X)[3:5] <- c("Actividad 1", "Actividad 2", "Actividad 3")
+X
+#### Grupo A ####
+datos <- read.csv("C:/Users/Marcos/Documents/UNIE/Estadistica I/GrupoA.csv")
+X <- datos[-2, 1:2]
+X$A1 <- NA
+soraya <- c("Avi Manso", "Soraya", NA)
+X <- rbind(X[1, ], soraya, X[-1, ])
+X$A1 <- c(1, 1, 1, 1, 1, 1, NA, 1, 1, 1, 1, 1, 1, 1, 1, NA, 1,
+NA, 1, NA, 1, 1, 1, 1, NA, 1, 1, 1)
+rownames(X) <- 1:nrow(X)
+X
+X$A2 <- NA
+X$A2 <- c(1, 0.75, NA, 1, 1, 1, 0.85, 0.75, 0.75, 1, 1, 1, 1, 0.75, NA,
+0.75, 0.90, NA, 1, 0.90, 1, 1, 1, NA, 0.75, 0.90, 1, 1)
+colnames(X)[3:4] <- c("Actividad 1", "Actividad 2")
+X
+X$A3 <- NA
+X$A3 <- c(0.85, 0.85, NA, 0.85, 0.85, 0.85, NA, 0.85, 0.85, NA, NA, 0.85, 0.85,
+0.85, 0.70, 0.50, 0.70, NA, 0.85, 0.70, 0.85, 0.70, 0.85, 0.50, 0.50,
+NA, 0.85, 0.85)
+colnames(X)[3:5] <- c("Actividad 1", "Actividad 2", "Actividad 3")
+X
+X$A4 <- NA
+X$A4 <- c(1, 0.90, 0.50, 1, 1, 1, 0.80, 0.90, 0.80, 1, 1, 1, 1, 1, 0.90, 0.25,
+0.50, NA, 0.80, NA, 1, 1, 1, 0.25, 0, 1, 1, 1)
+colnames(X)[3:6] <- c("Actividad 1", "Actividad 2", "Actividad 3", "Actividad 4")
+X
+clipr::write_clip(X)
+b0 <- 5
+b1 <- 3.5
+Xi <- c(0, 1, 3, 5, 6)
+Ei <- c(-3.5, 3.5, -2, 3.5, -1.5)
+Yi <- b0 + b1*Xi + Ei
+N <- length(Xi)
+plot(Xi, Yi, ylab = "Yi", xlab = "Xi", ylim = c(0, 30),
+main = "Recta de regresión", type = "n")
+legend("topleft", legend = c(expression(b[0] == 5), expression(b[1] == 3.5)),
+text.width = 1)
+lines(Xi, b0 + b1*Xi, lwd = 2)
+points(Xi, Yi, bg = "skyblue", pch = 21, cex = 1.25)
+xi <- Xi-mean(Xi)
+xi2 <- xi^2
+Sx2 <- sum(xi2)/N
+Sx <- sqrt(Sx2)
+round(xi, 2)
+round(xi2, 2)
+round(Sx2, 2)
+round(Sx, 2)
+yi <- Yi-mean(Yi)
+yi2 <- yi^2
+Sy2 <- sum(yi2)/N
+Sy <- sqrt(Sy2)
+round(yi, 2)
+round(yi2, 2)
+round(Sy2, 2)
+round(Sy, 2)
+xiyi <- xi*yi
+Sxy <- sum(xiyi)/N
+rxy <- Sxy/(Sx*Sy)
+round(xiyi, 2)
+round(Sxy, 2)
+round(rxy, 2)
+b1 <- Sxy/Sx^2
+b0 <- mean(Yi) - b1*mean(Xi)
+round(b1, 2)
+round(b0, 2)
+Ypi <- b0 + b1*Xi
+round(Ypi, 2)
+ypi <- Ypi - mean(Ypi)
+round(ypi, 2)
+a1 <- 6
+b1 <- 4
+Ui <- a1 + b1*Xi
+SU2 <- b1^2*Sx2
+SU <- sqrt(SU2)
+round(Ui, 2)
+round(SU2, 2)
+round(SU, 2)
+a2 <- 8
+b2 <- 7
+Vi <- a2 + b2*Yi
+SV2 <- b2^2*Sy2
+SV <- sqrt(SV2)
+round(Vi, 2)
+round(SV2, 2)
+round(SV, 2)
+Suv <- b1*b2*Sxy
+round(Suv, 2)
+ruv <- Suv/(SU*SV)
+round(ruv, 2)
+b1 <- Suv/(SU2)
+round(b1, 2)
+b0 <- mean(Vi) - b1*mean(Ui)
+round(b0, 2)
+b1 <- 0.93*3/2
+b1
+b1 <- round(0.93*3/2, 2)
+b1
+b0 <- 18 - b1*12
+b0
+b1 <- 0.93*3/2
+b1
+b0 <- 18 - b1*12
+b0
+b1 <- round(0.93*3/2, 2)
+b1
+b0 <- 18 - b1*12
+b0
+R2 <- round(0.93^2)
+R2 <- round(0.93^2)
+9*c(1, R2, 1-R2)
+R2 <- round(0.93^2, 2)
+9*c(1, R2, 1-R2)
+b0 + b1*15
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+vars <- c(16, 9, 4)
+diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+-0.80*4*2
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+S
+round(S, 2)
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+round(S, 2)
+SW2 <- 9+4 + 2*5.58
+SW2
+SW2
+30*0.75
+-6.40+5.58
+SW2
+SRNW * 4/SW2
+# Ecuación de regresión
+SRNW <- -6.40+5.58
+b1 <- SRNW * 4/SW2
+b1
+SRNW/(4*sqrt(SW2))
+# Ecuación de regresión
+SRNW <- -6.40-5.58
+SRNW/(4*sqrt(SW2))
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+SW2 <- 9 + 4 - 2*5.58
+SW2
+S
+round(S, 2)
+X <- MASS::mvrnorm(10000, rep(3, 0), Sigma = S)
+S
+eigen(S)
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+R
+eigen(R)
+84/88
+4/88
+7/88
+13/563
+100/210
+(414-488)/488
+(488)/488
+(488-414)/488
+4/88
+4/88 * 1760
+4/92 * 1760
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+X <- MASS::mvrnorm(10000, rep(3, 0), Sigma = S, empirical = TRUE)
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.75, -0.50),
+c(0.75, 1, 0.93),
+c(-0.50, 0.93, 1))
+eigen(R)
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.75, -0.50),
+c(0.75, 1, 0.7),
+c(-0.50, 0.7, 1))
+R
+eigen(R)
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.40, -0.50),
+c(0.40, 1, 0.70),
+c(-0.50, 0.70, 1))
+eigen(R)$values
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.40, -0.50),
+c(0.40, 1, 0.60),
+c(-0.50, 0.60, 1))
+eigen(R)$values
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.40, -0.50),
+c(0.40, 1, 0.55),
+c(-0.50, 0.55, 1))
+eigen(R)$values
+X <- MASS::mvrnorm(10000, rep(3, 0), Sigma = S, empirical = TRUE)
+rep(3, 0)
+X <- MASS::mvrnorm(10000, rep(0, 3), Sigma = S, empirical = TRUE)
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.40, -0.50),
+c(0.40, 1, 0.55),
+c(-0.50, 0.55, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+X <- MASS::mvrnorm(10000, rep(0, 3), Sigma = S, empirical = TRUE)
+cov(X)
+S
+RN <- X[, 1]
+W <- X[, 2] - X[, 3]
+cov(RN, W)
+cor(RN, W)
+W <- X[, 2] + X[, 3]
+cov(RN, W)
+cor(RN, W)
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+SW2 <- 9 + 4 - 2*5.58
+SW2
+-6.40-5.58
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.40, -0.45),
+c(0.40, 1, 0.55),
+c(-0.45, 0.55, 1))
+eigen(R)$values
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.40, -0.50),
+c(0.40, 1, 0.55),
+c(-0.50, 0.55, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+X <- MASS::mvrnorm(10000, rep(0, 3), Sigma = S, empirical = TRUE)
+cov(X)
+RN <- X[, 1]
+W <- X[, 2] + X[, 3]
+cov(RN, W)
+cor(RN, W)
+W <- X[, 2] - X[, 3]
+cov(RN, W)
+cor(RN, W)
+cov(X)
+-4-3.3
+cov(RN, W)
+4.8--4
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+# Encuentra la
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+SW2 <- 9 + 4 - 2*5.58
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+SW2 <- 9 + 4 - 2*5.58
+SW2
+# Ecuación de regresión
+SRNW <- 9--6.40
+SRNW
+SRNW/(4*sqrt(SW2))
+sqrt(SW2)
+SW2
+round(S, 2)
+S
+SRNW
+SRNW/(4*sqrt(SW2))
+9--6.40
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+SW2 <- 9 + 4 - 2*5.58
+SW2
+# Pasa de matriz de correlaciones a matriz de covarianzas:
+R <- rbind(c(1, 0.40, -0.50),
+c(0.40, 1, 0.55),
+c(-0.50, 0.55, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+X <- MASS::mvrnorm(10000, rep(0, 3), Sigma = S, empirical = TRUE)
+cov(X)
+RN <- X[, 1]
+W <- X[, 2] - X[, 3]
+cov(RN, W)
+4.8--4
+cor(RN, W)
+4.8--4
+S
+SRNW <- 4.8--4
+SRNW
+SW2 <- 9 + 4 - 2*3.3
+SW2
+var(W)
+SRNW/(4*sqrt(SW2))
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+6*1.125
+6*1.13
+-1.13/(1.8*0.83)
+-1.13/(1.8)*0.83
+datos <- read.csv("C:/Users/Marcos/Documents/UNIE/Estadistica I/GrupoB.csv")
+X <- datos[-2, 1:2]
+soraya <- c("Bravo Chiquito", "Kristhel Georgina", NA)
+X <- rbind(X[1, ], soraya, X[-1, ])
+X$A1 <- NA
+X$A1 <- c(1, 1, NA, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+1, 1, 1, 1, 1, 1, 1)
+rownames(X) <- 1:nrow(X)
+X
+X$A2 <- NA
+X$A2 <- c(0.60, 0.90, NA, 1, 0.80, 1, 1, 1, 1, 0.6, 1, 1, NA, 1, NA, 0.60, 1, 1, 1,
+1, 1, 0.60, 1, 0.90, 1, 0.90, NA, 1, 0.80, 1, 1)
+colnames(X)[3:4] <- c("Actividad 1", "Actividad 2")
+X
+X$A3 <- NA
+X$A3 <- c(0.85, 0.70, 0.85, 0.70, NA, 0.85, 0.55, 0.85, 0.70, 0.55, 0.85, 0.85,
+0.85, 0.85, NA, 0.55, 0.85, 0.55, 1, 1, 0.85, 0.85, 0.55, 0.85, 0.70,
+0.85, 0.85, 0.70, 0.70, 0.85, 0.70)
+colnames(X)[3:5] <- c("Actividad 1", "Actividad 2", "Actividad 3")
+X
+X$A4 <- c(0.90, 1, 0.80, 1, NA, 0.50, 1, 1, 0.40, 0.80, 0.50, 0.50, 1, 1, NA, NA,
+0.50, 1, 1, 1, 1, 0.50, 0.50, 1, 1, NA, NA, 1, 0.50, 1, NA)
+colnames(X)[3:6] <- c("Actividad 1", "Actividad 2", "Actividad 3", "Actividad 4")
+X
+datos <- read.csv("C:/Users/Marcos/Documents/UNIE/Estadistica I/GrupoB.csv")
+X <- datos[-2, 1:2]
+soraya <- c("Bravo Chiquito", "Kristhel Georgina", NA)
+X <- rbind(X[1, ], soraya, X[-1, ])
+X$A1 <- NA
+X$A1 <- c(1, 1, NA, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+1, 1, 1, 1, 1, 1, 1)
+rownames(X) <- 1:nrow(X)
+X
+X$A2 <- NA
+X$A2 <- c(0.60, 0.90, NA, 1, 0.80, 1, 1, 1, 1, 0.6, 1, 1, NA, 1, NA, 0.60, 1, 1, 1,
+1, 1, 0.60, 1, 0.90, 1, 0.90, NA, 1, 0.80, 1, 1)
+colnames(X)[3:4] <- c("Actividad 1", "Actividad 2")
+X
+X$A3 <- NA
+X$A3 <- c(0.85, 0.70, 0.85, 0.70, NA, 0.85, 0.55, 0.85, 0.70, 0.55, 0.85, 0.85,
+0.85, 0.85, NA, 0.55, 0.85, 0.55, 1, 1, 0.85, 0.85, 0.55, 0.85, 0.70,
+0.85, 0.85, 0.70, 0.70, 0.85, 0.70)
+colnames(X)[3:5] <- c("Actividad 1", "Actividad 2", "Actividad 3")
+X
+X$A4 <- NA
+X$A4 <- c(0.90, 1, 0.80, 1, NA, 0.40, 1, 1, 0.40, 0.80, 0.50, 0.50, 1, 1, NA, NA,
+0.40, 1, 1, 1, 1, 0.50, 0.40, 1, 1, NA, NA, 1, 0.50, 1, NA)
+colnames(X)[3:6] <- c("Actividad 1", "Actividad 2", "Actividad 3", "Actividad 4")
+X
+clipr::write_clip(X)
+#
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+SW2 <- 9 + 4 - 2*5.58
+SW2
+# Ecuación de regresión
+SRNW <- 9--6.40
+SRNW/(4*sqrt(SW2))
+# Ecuación de regresión
+SRNW <- 9-6.40
+SRNW/(4*sqrt(SW2))
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+SW2 <- 9 + 4 + 2*5.58
+SW2
+# Ecuación de regresión
+SRNW <- 9-6.40
+SRNW/(4*sqrt(SW2))
+# Ecuación de regresión
+SRNW <- 9-6.40
+SRNW/(4*sqrt(SW2))
+b1 <- SRNW * 4/SW2
+b1
+b0 <- 20 - b1*meanW
+b0
+SRNW
+R <- rbind(c(1, 0.40, -0.50),
+c(0.40, 1, 0.55),
+c(-0.50, 0.55, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+X <- MASS::mvrnorm(10000, rep(0, 3), Sigma = S, empirical = TRUE)
+cov(X)
+RN <- X[, 1]
+W <- X[, 2] - X[, 3]
+cov(RN, W)
+SRNW <- 4.8-4
+SRNW
+cor(RN, W)
+SW2 <- 9 + 4 + 2*3.3
+SW2
+SRNW/(4*sqrt(SW2))
+W <- X[, 2] + X[, 3]
+cov(RN, W)
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+SW2 <- 9 + 4 + 2*5.58
+SW2
+# Ecuación de regresión
+SRNW <- 9-6.40
+SRNW/(4*sqrt(SW2))
+b1 <- SRNW * 4/SW2
+round(b1, 2)
+b0 <- 20 - b1*meanW
+round(b0, 2)
+rRNW <- SRNW/(4*sqrt(SW2))
+rRNW
+rRNW^2
+0.13^2
+# Descomposición de la varianza
+16*c(1, 0.20, 0.80)
+round(rRNW^2, 2)
+# Predicción
+b0 + b1*(21+9)
+#
+R <- rbind(c(1, 0.75, -0.80),
+c(0.75, 1, 0.93),
+c(-0.80, 0.93, 1))
+eigen(R)$values
+vars <- c(16, 9, 4)
+S <- diag(sqrt(vars)) %*% R %*% diag(sqrt(vars))
+round(S, 2)
+# Encuentra la media y varianza de la suma de FV y CV
+meanW <- 18+12
+meanW
+SW2 <- 9 + 4 + 2*5.58
+SW2
+# Ecuación de regresión
+SRNW <- 9-6.40
+b1 <- SRNW * 4/SW2
+round(b1, 2)
+b0 <- 20 - b1*meanW
+round(b0, 2)
+rRNW <- SRNW/(4*sqrt(SW2))
+round(rRNW^2, 2)
+# Predicción
+b0 + b1*(21+9)
+# Descomposición de la varianza
+16*c(1, 0.20, 0.80)
+Rcpp::sourceCpp("src/functions.cpp")

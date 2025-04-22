@@ -1,0 +1,6 @@
+[1,"==> quarto preview lca.qmd --to pdf --no-watch-inputs --no-browse\n\n"]
+[1,"pandoc \n  to: latex\n  output-file: lca.tex\n  standalone: true\n  pdf-engine: xelatex\n  variables:\n    graphics: true\n    tables: true\n  default-image-extension: pdf\n  \nmetadata\n  documentclass: scrartcl\n  classoption:\n    - DIV=11\n    - numbers=noendperiod\n  papersize: letter\n  header-includes:\n    - '\\KOMAoption{captions}{tableheading}'\n  block-headings: true\n  title: latent\n  editor: visual\n  date: 01/18/2025\n  date-format: 'D MMM, YYYY'\n  \n"]
+[1,"\nRendering PDF\nrunning xelatex - 1\n"]
+[1,"  This is XeTeX, Version 3.141592653-2.6-0.999996 (TeX Live 2024) (preloaded format=xelatex)\n   restricted \\write18 enabled.\n  entering extended mode\n  \nupdating tlmgr\n"]
+[1,"\nupdating existing packages\n"]
+[1,"ERROR: \ncompilation failed- error\nDouble subscript.\n<argument> \\partial P(y_m_\n                          k|x_g)\nl.270 \\frac{\\partial ll}{\\partial P(y_m_k|x_g)}\n                                                = \\frac{n}{\\sum_{k=1}^K P(x_... \n\nsee lca.log for more information.\n"]

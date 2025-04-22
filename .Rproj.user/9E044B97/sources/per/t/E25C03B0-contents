@@ -1,0 +1,1350 @@
+/*
+ * Author: Marcos Jimenez
+ * email: marcosjnezhquez@gmail.com
+ * Modification date: 10/01/2024
+ */
+
+class estimators {
+
+public:
+
+  double f;
+  arma::vec dparameters, g, dg, rg, drg, dH;
+  arma::mat hessian, dparam_dS;
+  arma::vec uniquenesses;
+  arma::mat lambda, phi, psi, model, residuals;
+  int nhessian, nS;
+
+  // virtual ~estimators() = default;
+
+  virtual void param() = 0;
+
+  virtual void dparam() = 0;
+
+  virtual void F() = 0;
+
+  virtual void G() = 0;
+
+  virtual void grad() = 0;
+
+  virtual void dG() = 0;
+
+  virtual void dgrad() = 0;
+
+  virtual void H() = 0;
+
+  virtual void GS() = 0;
+
+  virtual void outcomes() = 0;
+
+};
+
+/*
+ * EFA ML
+ */
+
+class ml_efa: public estimators {
+
+public:
+
+  arma::mat R, reduced_R, eigvec, Rhat,
+  lambda_phi, W_residuals, W_residuals_lambda, W, dlambda_dRhat_W,
+  lambda_phit_kron_Ip, Ip, Iq, hlambda, hphi, hpsi, dlambda_dS,
+  dphi_dS, dpsi_dS, dphi_dRhat_W, dlambda_dphi, dlambda_dpsi, dpsi_dphi, dpsi_dRhat_W,
+  Rhat_inv, Ri_res_Ri, glambda;
+  arma::vec vector, sqrt_vector, eigval, parameters, w;
+  int p, q;
+  arma::uvec vector_indices, lambda_indices, targetlambda_indices, indices_q, indices_diag_q,
+  indices_diag_p, phi_indices, targetphi_indices, psi_indices, targetpsi_indices;
+  arma::uvec estimator_indices;
+
+  void param() {
+
+    vector = parameters(estimator_indices);
+
+  }
+
+  void dparam() {
+
+    Rcpp::warning("dparam not available");
+
+  }
+
+  void F() {
+
+    sqrt_vector = sqrt(vector);
+    arma::mat sc = arma::diagmat(1/sqrt_vector);
+    reduced_R = sc * R * sc;
+    eig_sym(eigval, eigvec, reduced_R);
+    arma::vec e = eigval(arma::span(0, p - q - 1));
+
+    // double objective = -arma::accu(log(e) + 1/e - 1);
+    f = -(arma::accu(log(e) - e) + p - q);
+    // Rcpp::Rcout << f << std::endl;
+
+  }
+
+  void G() {
+
+    arma::mat A = eigvec(arma::span::all, arma::span(p-q, p-1));
+    arma::vec eigenvalues = eigval(arma::span(p-q, p-1));
+    g = ((A % A) * (eigenvalues - 1) + 1 - arma::diagvec(R)/vector)/vector;
+
+  }
+
+  void grad() {
+
+    rg = g;
+
+  }
+
+  void dG() {
+
+    Rcpp::stop("dG not available");
+
+  }
+
+  void dgrad() {
+
+    Rcpp::stop("dgrad not available");
+
+  }
+
+  void H() {
+
+    hessian.set_size(nhessian, nhessian); hessian.zeros();
+    // Define lambda, phi and psi (probably in outcomes())
+
+    Rhat = lambda * phi * lambda.t() + psi;
+    Rhat_inv = arma::inv_sympd(Rhat);
+    residuals = R - Rhat;
+    Ri_res_Ri = 2*Rhat_inv * -residuals * Rhat_inv;
+    lambda_phi = lambda * phi;
+
+    // Rcpp::Rcout << "hlambda" << std::endl;
+    // Lambda
+    arma::mat h1 = arma::kron(phi, Ri_res_Ri);
+    arma::mat dRhat_dL = gLRhat(lambda, phi);
+    arma::mat dRi_res_Ri_dRhat = 2*arma::kron(Rhat_inv, Rhat_inv) -
+      arma::kron(Ri_res_Ri, Rhat_inv) - arma::kron(Rhat_inv, Ri_res_Ri);
+    arma::mat dRi_res_Ri_dL = dRi_res_Ri_dRhat * dRhat_dL;
+    arma::mat h2 = arma::kron(lambda_phi.t(), Ip) * dRi_res_Ri_dL;
+    hlambda = h1 + h2;
+    hessian(lambda_indices, lambda_indices) += hlambda(targetlambda_indices,
+            targetlambda_indices);
+
+    // Rcpp::Rcout << "hphi" << std::endl;
+    // Phi
+    arma::mat dRhat_dP = gPRhat(lambda, phi);
+    arma::mat dRi_res_Ri_dP = dRi_res_Ri_dRhat * dRhat_dP;
+    hphi = arma::kron(lambda.t(), lambda.t()) * dRi_res_Ri_dP;
+    hphi.rows(indices_diag_q) *= 0.5;
+    hessian(phi_indices, phi_indices) += hphi(targetphi_indices, targetphi_indices);
+
+    // Rcpp::Rcout << "hpsi" << std::endl;
+    // Psi
+    arma::mat dRhat_dU = gURhat(p);
+    arma::mat dRi_res_Ri_dU = dRi_res_Ri_dRhat * dRhat_dU;
+    hpsi = dRi_res_Ri_dU;
+    hpsi.rows(indices_diag_p) *= 0.5;
+    hessian(psi_indices, psi_indices) += hpsi(targetpsi_indices, targetpsi_indices);
+
+    // Rcpp::Rcout << "dlambda_dphi" << std::endl;
+    // Lambda & Phi
+    h1 = arma::kron(lambda_phi.t(), Ip) * dRi_res_Ri_dP;
+    arma::mat h21 = arma::kron(Iq, Ri_res_Ri * lambda);
+    h2 = h21;
+    h2 += h21 * dxt(q, q);
+    h2.cols(indices_diag_q) = h21.cols(indices_diag_q);
+    dlambda_dphi = h1 + h2; //(lambda_indices, phi_indices);
+    hessian(lambda_indices, phi_indices) += dlambda_dphi(targetlambda_indices, targetphi_indices);
+
+    // Rcpp::Rcout << "dlambda_dpsi" << std::endl;
+    // Lambda & Psi
+    dlambda_dpsi = arma::kron(lambda_phi.t(), Ip) * dRi_res_Ri_dU;
+    hessian(lambda_indices, psi_indices) += dlambda_dpsi(targetlambda_indices, targetpsi_indices);
+
+    // Rcpp::Rcout << "dpsi_dphi" << std::endl;
+    // Phi & Psi
+    arma::mat DXT = dxt(q, q);
+    arma::mat dRhat_invdP = -arma::kron((lambda.t() * Rhat_inv.t()).t(), Rhat_inv * lambda);
+    h1 = dRhat_invdP + dRhat_invdP * DXT;
+    h2 = (arma::kron((R * Rhat_inv).t(), Ip) + arma::kron(Ip, Rhat_inv * R)) * h1;
+    dpsi_dphi = 2*(h1 - h2);
+    dpsi_dphi.cols(indices_diag_q) *= 0.5;
+    dpsi_dphi.rows(indices_diag_p) *= 0.5;
+    hessian(psi_indices, phi_indices) += dpsi_dphi(targetpsi_indices, targetphi_indices);
+
+    hessian = arma::symmatu(hessian);
+
+  }
+
+  void GS() {
+
+    dparam_dS.set_size(nhessian, nS); dparam_dS.zeros();
+
+    // Rcpp::Rcout << "dlambda_dS" << std::endl;
+    arma::mat DXTS = dxt(p, p);
+    arma::mat dRi_res_Ri_dS = -2*arma::kron(Rhat_inv, Rhat_inv);
+    dRi_res_Ri_dS += dRi_res_Ri_dS * DXTS;
+    arma::mat h = arma::kron(lambda_phi.t(), Ip) * dRi_res_Ri_dS;
+    h.cols(indices_diag_p) *= 0.5;
+    dlambda_dS = h; //(lambda_indices, S_indices);
+    dparam_dS.rows(lambda_indices) += dlambda_dS.rows(targetlambda_indices);
+
+    // Rcpp::Rcout << "dphi_dS" << std::endl;
+    h = arma::kron(lambda.t(), lambda.t()) * dRi_res_Ri_dS;
+    h.cols(indices_diag_p) *= 0.5;
+    h.rows(indices_diag_q) *= 0.5;
+    dphi_dS = h; //(phi_indices, S_indices);
+    dparam_dS.rows(phi_indices) += dphi_dS.rows(targetphi_indices);
+
+    // Rcpp::Rcout << "dpsi_dS" << std::endl;
+    h = dRi_res_Ri_dS;
+    h.cols(indices_diag_p) *= 0.5;
+    h.rows(indices_diag_p) *= 0.5;
+    dpsi_dS = h; //(psi_indices, S_indices);
+    dparam_dS.rows(psi_indices) += dpsi_dS.rows(targetpsi_indices);
+
+  }
+
+  void outcomes() {
+
+    arma::vec eigval;
+    arma::mat eigvec;
+    eig_sym(eigval, eigvec, reduced_R);
+
+    arma::vec eigval2 = reverse(eigval);
+    arma::mat eigvec2 = reverse(eigvec, 1);
+
+    arma::mat A = eigvec2(arma::span::all, arma::span(0, q-1));
+    arma::vec eigenvalues = eigval2(arma::span(0, q-1)) - 1;
+    for(int i=0; i < q; ++i) {
+      if(eigenvalues[i] < 0) eigenvalues[i] = 0;
+    }
+    arma::mat D = diagmat(sqrt(eigenvalues));
+    arma::mat w = A * D;
+
+    lambda = arma::diagmat(sqrt_vector) * w;
+    model = lambda * lambda.t();
+    uniquenesses = R.diag() - arma::diagvec(model);
+    model.diag() = R.diag();
+    residuals = R-model;
+    phi.set_size(q, q); phi.eye();
+    psi.set_size(p, p); psi.diag() = uniquenesses;
+
+  };
+
+};
+
+/*
+ * EFA ULS
+ */
+
+class uls_efa: public estimators {
+
+public:
+
+  arma::mat R, reduced_R, eigvec, Rhat,
+  lambda_phi, W_residuals, W_residuals_lambda, W, dlambda_dRhat_W,
+  lambda_phit_kron_Ip, Ip, Iq, hlambda, hphi, hpsi, dlambda_dS,
+  dphi_dS, dpsi_dS, dphi_dRhat_W, dlambda_dphi, dlambda_dpsi, dpsi_dphi, dpsi_dRhat_W,
+  Rhat_inv, Ri_res_Ri, glambda;
+  arma::vec vector, sqrt_vector, eigval, parameters, w;
+  // double f;
+  int p, q;
+  arma::uvec vector_indices, lambda_indices, targetlambda_indices, indices_q, indices_diag_q,
+  indices_diag_p, phi_indices, targetphi_indices, psi_indices, targetpsi_indices;
+  arma::uvec estimator_indices;
+
+  void param() {
+
+    vector = parameters(estimator_indices);
+
+  }
+
+  void dparam() {
+
+    Rcpp::stop("dparam not available");
+
+  }
+
+  void F() {
+
+    reduced_R = R - arma::diagmat(vector);
+    eig_sym(eigval, eigvec, reduced_R);
+    arma::vec e = eigval(arma::span(0, p - q - 1));
+
+    f = 0.5*arma::accu(e % e);
+
+  }
+
+  void G() {
+
+    arma::vec e_values = eigval(arma::span(0, p - q - 1));
+    arma::mat e_vectors = eigvec(arma::span::all, arma::span(0, p - q - 1));
+    g = -arma::diagvec(e_vectors * arma::diagmat(e_values) * e_vectors.t());
+
+  }
+
+  void grad() {
+
+    rg = g;
+
+  }
+
+  void dG() {
+
+    Rcpp::stop("dG not available");
+
+  }
+
+  void dgrad() {
+
+    Rcpp::stop("dgrad not available");
+
+  }
+
+  void H() {
+
+    hessian.set_size(nhessian, nhessian); hessian.zeros();
+    // Define lambda, phi and psi (probably in outcomes())
+
+    Rhat = lambda * phi * lambda.t() + psi;
+    residuals = R - Rhat;
+    lambda_phi = lambda * phi;
+    W.set_size(p, p); W.ones();
+    W_residuals = W % residuals;
+    W_residuals_lambda = W_residuals * lambda;
+
+    w = arma::vectorise(W);
+    // Rcpp::Rcout << "hlambda" << std::endl;
+    // Lambda
+    dlambda_dRhat_W = gLRhat(lambda, phi);
+    dlambda_dRhat_W.each_col() %= w;
+    lambda_phit_kron_Ip = arma::kron(lambda_phi.t(), Ip);
+    arma::mat g1 = 2*lambda_phit_kron_Ip * dlambda_dRhat_W;
+    arma::mat g2 = -2*arma::kron(phi, W_residuals);
+    arma::mat hlambda = g1 + g2;
+    hlambda = hlambda; //(lambda_indices, lambda_indices);
+    hessian(lambda_indices, lambda_indices) += hlambda(targetlambda_indices, targetlambda_indices);
+
+    // Rcpp::Rcout << "hphi" << std::endl;
+    // Phi
+    arma::mat LL = 2*arma::kron(lambda, lambda).t();
+    dphi_dRhat_W = gPRhat(lambda, phi);
+    dphi_dRhat_W.each_col() %= w;
+    arma::mat hphi_temp = LL * dphi_dRhat_W;
+    hphi_temp.rows(indices_diag_q) *= 0.5;
+    hphi = hphi_temp; //(phi_indices, phi_indices);
+    hessian(phi_indices, phi_indices) += hphi(targetphi_indices, targetphi_indices);
+
+    // Rcpp::Rcout << "hpsi" << std::endl;
+    // Psi
+    dpsi_dRhat_W = gURhat(p);
+    dpsi_dRhat_W.each_col() %= w;
+    arma::mat W2 = 2*W;
+    W2.diag() *= 0.5;
+    arma::vec w2 = arma::vectorise(W2);
+    arma::mat hpsi = arma::diagmat(w2);
+    hpsi = hpsi; //(psi_indices, psi_indices);
+    hessian(psi_indices, psi_indices) += hpsi(targetpsi_indices, targetpsi_indices);
+
+    // Rcpp::Rcout << "dlambda_dphi" << std::endl;
+    // Lambda & Phi
+    g1 = 2*lambda_phit_kron_Ip * dphi_dRhat_W;
+    arma::mat g21 = -2*arma::kron(Iq, W_residuals_lambda);
+    arma::mat dtg21 = g21 * dxt(q, q);
+    g2 = g21 + dtg21;
+    g2.cols(indices_diag_q) -= dtg21.cols(indices_diag_q);
+    dlambda_dphi = g1 + g2;
+    hessian(lambda_indices, phi_indices) += dlambda_dphi(targetlambda_indices, targetphi_indices);
+
+    // Rcpp::Rcout << "dlambda_dpsi" << std::endl;
+    // Lambda & Psi
+    arma::mat dlambda_dpsi_temp = 2*lambda_phit_kron_Ip * dpsi_dRhat_W;
+    dlambda_dpsi = dlambda_dpsi_temp; //(lambda_indices, psi_indices);
+    hessian(lambda_indices, psi_indices) += dlambda_dpsi(targetlambda_indices, targetpsi_indices);
+
+    // Rcpp::Rcout << "dpsi_dphi" << std::endl;
+    // Phi & Psi
+    arma::mat dpsi_dphi_temp = dphi_dRhat_W;
+    dpsi_dphi_temp.rows(indices_diag_p) *= 0.5;
+    dpsi_dphi_temp *= 2;
+    dpsi_dphi = dpsi_dphi_temp; //(psi_indices, phi_indices);
+    hessian(psi_indices, phi_indices) += dpsi_dphi(targetpsi_indices, targetphi_indices);
+
+    hessian = arma::symmatu(hessian);
+
+  }
+
+  void GS() {
+
+    dparam_dS.set_size(nhessian, nS); dparam_dS.zeros();
+
+    // Rcpp::Rcout << "dlambda_dS" << std::endl;
+    arma::mat g1 = -2*lambda_phit_kron_Ip;
+    g1.each_row() %= w.t();
+    arma::mat g2 = g1 * dxt(p, p);
+    arma::mat g = g1 + g2;
+    g.cols(indices_diag_p) *= 0.5;
+    dlambda_dS = g; //(lambda_indices, S_indices);
+    dparam_dS.rows(lambda_indices) += dlambda_dS.rows(targetlambda_indices);
+
+    // Rcpp::Rcout << "dphi_dS" << std::endl;
+    g1 = -2*arma::kron(lambda.t(), lambda.t());
+    g1.each_row() %= w.t();
+    g2 = g1 * dxt(p, p);
+    g = g1 + g2;
+    g.cols(indices_diag_p) *= 0.5;
+    g.rows(indices_diag_q) *= 0.5;
+    dphi_dS = g; //(phi_indices, S_indices);
+    dparam_dS.rows(phi_indices) += dphi_dS.rows(targetphi_indices);
+
+    // Rcpp::Rcout << "dpsi_dS" << std::endl;
+    g = -2*arma::diagmat(w);
+    g.cols(indices_diag_p) *= 0.5;
+    dpsi_dS = g; //(psi_indices, S_indices);
+    dparam_dS.rows(psi_indices) += dpsi_dS.rows(targetpsi_indices);
+
+  }
+
+  void outcomes() {
+
+    arma::vec eigval;
+    arma::mat eigvec;
+    eig_sym(eigval, eigvec, reduced_R);
+
+    arma::vec eigval2 = reverse(eigval);
+    arma::mat eigvec2 = reverse(eigvec, 1);
+
+    arma::mat A = eigvec2(arma::span::all, arma::span(0, q-1));
+    arma::vec eigenvalues = eigval2(arma::span(0, q-1));
+    for(int i=0; i < q; ++i) {
+      if(eigenvalues(i) < 0) eigenvalues(i) = 0;
+    }
+    arma::mat D = arma::diagmat(sqrt(eigenvalues));
+
+    lambda = A * D;
+    model = lambda * lambda.t();
+    uniquenesses = R.diag() - arma::diagvec(model);
+    model.diag() = R.diag();
+    residuals = R-model;
+    phi.set_size(q, q); phi.eye();
+    psi.set_size(p, p); psi.diag() = uniquenesses;
+
+  };
+
+};
+
+/*
+ * EFA DWLS
+ */
+
+class dwls_efa: public estimators {
+
+public:
+
+  arma::mat R, reduced_R, eigvec, Rhat,
+  lambda_phi, W_residuals, W_residuals_lambda, W, dlambda_dRhat_W,
+  lambda_phit_kron_Ip, Ip, Iq, hlambda, hphi, hpsi, dlambda_dS,
+  dphi_dS, dpsi_dS, dphi_dRhat_W, dlambda_dphi, dlambda_dpsi, dpsi_dphi, dpsi_dRhat_W,
+  Rhat_inv, Ri_res_Ri, glambda;
+  arma::vec vector, sqrt_vector, eigval, parameters, w;
+  int p, q;
+  arma::uvec vector_indices, lambda_indices, targetlambda_indices, indices_q, indices_diag_q,
+  indices_diag_p, phi_indices, targetphi_indices, psi_indices, targetpsi_indices;
+  arma::uvec estimator_indices, estimator_target;
+
+  void param() {
+
+    lambda.elem(targetlambda_indices) = parameters(lambda_indices);
+
+  }
+
+  void dparam() {
+
+    Rcpp::stop("dparam not available");
+
+  }
+
+  void F() {
+
+    // W is a matrix with the variance of the polychoric correlations
+    // Only the variance, not the covariances, are considered
+    Rhat = lambda * lambda.t();// + arma::diagmat(uniquenesses);
+    // Rhat.diag().ones();
+    residuals = R - Rhat;
+    f = 0.5*arma::accu(residuals % residuals % W);
+
+  }
+
+  void G() {
+
+    glambda = -2*(residuals % W) * lambda; // * Phi;
+    // arma::mat DW_res = residuals % DW;
+    // gU = -arma::diagvec(DW_res);
+    arma::uvec alt_lower_indices = arma::trimatl_ind(arma::size(glambda), 0);
+    g = glambda.elem(alt_lower_indices);
+
+  }
+
+  void grad() {
+
+    rg = g;
+
+  }
+
+  void dG() {
+
+    Rcpp::stop("dG not available");
+
+  }
+
+  void dgrad() {
+
+    Rcpp::stop("dgrad not available");
+
+  }
+
+  void H() {
+
+    hessian.set_size(nhessian, nhessian); hessian.zeros();
+
+    Rhat = lambda * phi * lambda.t() + psi;
+    residuals = R - Rhat;
+    lambda_phi = lambda * phi;
+    W_residuals = W % residuals;
+    W_residuals_lambda = W_residuals * lambda;
+
+    w = arma::vectorise(W);
+    // Rcpp::Rcout << "hlambda" << std::endl;
+    // Lambda
+    dlambda_dRhat_W = gLRhat(lambda, phi);
+    dlambda_dRhat_W.each_col() %= w;
+    lambda_phit_kron_Ip = arma::kron(lambda_phi.t(), Ip);
+    arma::mat g1 = 2*lambda_phit_kron_Ip * dlambda_dRhat_W;
+    arma::mat g2 = -2*arma::kron(phi, W_residuals);
+    arma::mat hlambda = g1 + g2;
+    hlambda = hlambda; //(lambda_indices, lambda_indices);
+    hessian(lambda_indices, lambda_indices) += hlambda(targetlambda_indices,
+            targetlambda_indices);
+
+    // Rcpp::Rcout << "hphi" << std::endl;
+    // Phi
+    arma::mat LL = 2*arma::kron(lambda, lambda).t();
+    dphi_dRhat_W = gPRhat(lambda, phi);
+    dphi_dRhat_W.each_col() %= w;
+    arma::mat hphi_temp = LL * dphi_dRhat_W;
+    hphi_temp.rows(indices_diag_q) *= 0.5;
+    hphi = hphi_temp; //(phi_indices, phi_indices);
+    hessian(phi_indices, phi_indices) += hphi(targetphi_indices, targetphi_indices);
+
+    // Rcpp::Rcout << "hpsi" << std::endl;
+    // Psi
+    dpsi_dRhat_W = gURhat(p);
+    dpsi_dRhat_W.each_col() %= w;
+    arma::mat W2 = 2*W;
+    W2.diag() *= 0.5;
+    arma::vec w2 = arma::vectorise(W2);
+    arma::mat hpsi = arma::diagmat(w2);
+    hpsi = hpsi; //(psi_indices, psi_indices);
+    hessian(psi_indices, psi_indices) += hpsi(targetpsi_indices, targetpsi_indices);
+
+    // Rcpp::Rcout << "dlambda_dphi" << std::endl;
+    // Lambda & Phi
+    g1 = 2*lambda_phit_kron_Ip * dphi_dRhat_W;
+    arma::mat g21 = -2*arma::kron(Iq, W_residuals_lambda);
+    arma::mat dtg21 = g21 * dxt(q, q);
+    g2 = g21 + dtg21;
+    g2.cols(indices_diag_q) -= dtg21.cols(indices_diag_q);
+    dlambda_dphi = g1 + g2;
+    hessian(lambda_indices, phi_indices) += dlambda_dphi(targetlambda_indices, targetphi_indices);
+
+    // Rcpp::Rcout << "dlambda_dpsi" << std::endl;
+    // Lambda & Psi
+    arma::mat dlambda_dpsi_temp = 2*lambda_phit_kron_Ip * dpsi_dRhat_W;
+    dlambda_dpsi = dlambda_dpsi_temp; //(lambda_indices, psi_indices);
+    hessian(lambda_indices, psi_indices) += dlambda_dpsi(targetlambda_indices, targetpsi_indices);
+
+    // Rcpp::Rcout << "dpsi_dphi" << std::endl;
+    // Phi & Psi
+    arma::mat dpsi_dphi_temp = dphi_dRhat_W;
+    dpsi_dphi_temp.rows(indices_diag_p) *= 0.5;
+    dpsi_dphi_temp *= 2;
+    dpsi_dphi = dpsi_dphi_temp; //(psi_indices, phi_indices);
+    hessian(psi_indices, phi_indices) += dpsi_dphi(targetpsi_indices, targetphi_indices);
+
+    hessian = arma::symmatu(hessian);
+
+  }
+
+  void GS() {
+
+    dparam_dS.set_size(nhessian, nS); dparam_dS.zeros();
+
+    // Rcpp::Rcout << "dlambda_dS" << std::endl;
+    arma::mat g1 = -2*lambda_phit_kron_Ip;
+    g1.each_row() %= w.t();
+    arma::mat g2 = g1 * dxt(p, p);
+    arma::mat g = g1 + g2;
+    g.cols(indices_diag_p) *= 0.5;
+    dlambda_dS = g; //(lambda_indices, S_indices);
+    dparam_dS.rows(lambda_indices) += dlambda_dS.rows(targetlambda_indices);
+
+    // Rcpp::Rcout << "dphi_dS" << std::endl;
+    g1 = -2*arma::kron(lambda.t(), lambda.t());
+    g1.each_row() %= w.t();
+    g2 = g1 * dxt(p, p);
+    g = g1 + g2;
+    g.cols(indices_diag_p) *= 0.5;
+    g.rows(indices_diag_q) *= 0.5;
+    dphi_dS = g; //(phi_indices, S_indices);
+    dparam_dS.rows(phi_indices) += dphi_dS.rows(targetphi_indices);
+
+    // Rcpp::Rcout << "dpsi_dS" << std::endl;
+    g = -2*arma::diagmat(w);
+    g.cols(indices_diag_p) *= 0.5;
+    dpsi_dS = g; //(psi_indices, S_indices);
+    dparam_dS.rows(psi_indices) += dpsi_dS.rows(targetpsi_indices);
+
+  }
+
+  void outcomes() {
+
+    model = lambda * lambda.t();
+    uniquenesses = R.diag() - arma::diagvec(model);
+    model.diag() = R.diag();
+    residuals = R-model;
+    phi.set_size(q, q); phi.eye();
+    psi.set_size(p, p); psi.diag() = uniquenesses;
+
+  };
+
+};
+
+/*
+ * CFA ML
+ */
+
+class ml_cfa: public estimators {
+
+public:
+
+  void param() {
+
+    lambda.elem(targetlambda_indices) = parameters(lambda_indices);
+    phi.elem(targetphi_indices) = parameters(phi_indices);
+    psi.elem(targetpsi_indices) = parameters(psi_indices);
+
+  }
+
+  void dparam() {
+
+    Rcpp::stop("dparam not available");
+
+  }
+
+  void F(arguments_cfa& x) {
+
+    x.Rhat = x.lambda * x.phi * x.lambda.t() + x.psi;
+    if(!x.Rhat.is_sympd()) {
+      arma::vec eigval;
+      arma::mat eigvec;
+      eig_sym(eigval, eigvec, x.Rhat);
+      arma::vec d = arma::clamp(eigval, 0.1, eigval.max());
+      x.Rhat = eigvec * arma::diagmat(d) * eigvec.t();
+    }
+    x.Rhat_inv = arma::inv_sympd(x.Rhat);
+    x.f = arma::log_det_sympd(x.Rhat) - x.logdetR +
+      arma::accu(x.R % x.Rhat_inv) - x.p;
+
+  }
+
+  void G(arguments_cfa& x) {
+
+    x.gradient.set_size(x.parameters.n_elem); x.gradient.zeros();
+
+    x.residuals = x.R - x.Rhat;
+    x.Ri_res_Ri = 2*x.Rhat_inv * -x.residuals * x.Rhat_inv;
+    x.lambda_phi = x.lambda * x.phi;
+    x.glambda = x.Ri_res_Ri * x.lambda_phi;
+
+    x.gphi = x.lambda.t() * x.Ri_res_Ri * x.lambda;
+    x.gphi.diag() *= 0.5;
+
+    arma::mat dlogdetRhatdU = 2*x.Rhat_inv;
+    dlogdetRhatdU.diag() *= 0.5;
+    arma::mat dRhat_invdU = 2*(-x.Rhat_inv * x.R * x.Rhat_inv);
+    dRhat_invdU.diag() *= 0.5;
+    x.gpsi = dRhat_invdU + dlogdetRhatdU;
+
+    x.gradient(x.lambda_indexes) += x.glambda.elem(x.target_indexes);
+    // if(x.positive) {
+    //   x.gradient(x.T_indexes) += x.gphi.elem(x.targetT_indexes);
+    // } else {
+    x.gradient(x.phi_indexes) += x.gphi.elem(x.targetphi_indexes);
+    // }
+    x.gradient(x.psi_indexes) += x.gpsi.elem(x.targetpsi_indexes);
+
+  }
+
+  void grad() {
+
+    rg = g;
+
+  }
+
+  void dG(arguments_cfa& x) {
+
+    x.dgradient.set_size(x.parameters.n_elem); x.dgradient.zeros();
+
+    // dglambda:
+    arma::mat dRhat = x.dlambda * x.lambda_phi.t() + x.lambda_phi * x.dlambda.t();
+    arma::mat dresiduals = -dRhat;
+    arma::mat dRhat_inv = -x.Rhat_inv * -dresiduals * x.Rhat_inv;
+    arma::mat dRi_res_Ri = 2*(dRhat_inv * -x.residuals * x.Rhat_inv +
+      x.Rhat_inv * -x.residuals * dRhat_inv + x.Rhat_inv * -dresiduals * x.Rhat_inv);
+    x.dglambda = x.Ri_res_Ri * x.dlambda * x.phi + dRi_res_Ri * x.lambda_phi;
+
+    // dgphi:
+    dRhat = x.lambda * x.dphi * x.lambda.t();
+    dresiduals = -dRhat;
+    dRhat_inv = -x.Rhat_inv * -dresiduals * x.Rhat_inv;
+    dRi_res_Ri = 2*(dRhat_inv * -x.residuals * x.Rhat_inv + x.Rhat_inv * -x.residuals * dRhat_inv +
+      x.Rhat_inv * -dresiduals * x.Rhat_inv);
+    x.dgphi = x.lambda.t() * dRi_res_Ri * x.lambda;
+    x.dgphi.diag() *= 0.5;
+
+    // dgpsi:
+    dRhat = x.dpsi;
+    dRhat_inv = -x.Rhat_inv * dRhat * x.Rhat_inv;
+    arma::mat ddlogdetRhat = 2*dRhat_inv.t();
+    ddlogdetRhat.diag() *= 0.5;
+    arma::mat ddRhat_inv = 2*(-dRhat_inv * x.R * x.Rhat_inv + -x.Rhat_inv * x.R * dRhat_inv);
+    ddRhat_inv.diag() *= 0.5;
+    x.dgpsi = ddlogdetRhat + ddRhat_inv;
+
+    x.dgradient(x.lambda_indexes) += x.dglambda.elem(x.target_indexes);
+    // if(x.positive) {
+    //   x.dgradient(x.T_indexes) += x.dgphi.elem(x.targetT_indexes);
+    // } else {
+    x.dgradient(x.phi_indexes) += x.dgphi.elem(x.targetphi_indexes);
+    // }
+    x.dgradient(x.psi_indexes) += x.dgpsi.elem(x.targetpsi_indexes);
+
+  }
+
+  void dgrad() {
+
+    Rcpp::stop("dgrad not available");
+
+  }
+
+  void H(arguments_cfa& x) {
+
+    x.hessian.set_size(x.parameters.n_elem, x.parameters.n_elem); x.hessian.zeros();
+    // Rcpp::Rcout << "hlambda" << std::endl;
+    // Lambda
+    arma::mat h1 = arma::kron(x.phi, x.Ri_res_Ri);
+    arma::mat dRhat_dL = gLRhat(x.lambda, x.phi);
+    arma::mat dRi_res_Ri_dRhat = 2*arma::kron(x.Rhat_inv, x.Rhat_inv) -
+      arma::kron(x.Ri_res_Ri, x.Rhat_inv) - arma::kron(x.Rhat_inv, x.Ri_res_Ri);
+    arma::mat dRi_res_Ri_dL = dRi_res_Ri_dRhat * dRhat_dL;
+    arma::mat h2 = arma::kron(x.lambda_phi.t(), x.Ip) * dRi_res_Ri_dL;
+    x.hlambda = h1 + h2;
+    x.hessian(x.lambda_indexes, x.lambda_indexes) += x.hlambda(x.target_indexes, x.target_indexes);
+
+    // Rcpp::Rcout << "hphi" << std::endl;
+    // Phi
+    arma::mat dRhat_dP = gPRhat(x.lambda, x.phi, x.indexes_diag_q);
+    arma::mat dRi_res_Ri_dP = dRi_res_Ri_dRhat * dRhat_dP;
+    x.hphi = arma::kron(x.lambda.t(), x.lambda.t()) * dRi_res_Ri_dP;
+    x.hphi.rows(x.indexes_diag_q) *= 0.5;
+    x.hessian(x.phi_indexes, x.phi_indexes) += x.hphi(x.targetphi_indexes, x.targetphi_indexes);
+
+    // Rcpp::Rcout << "hpsi" << std::endl;
+    // Psi
+    arma::mat dRhat_dU = gURhat(x.psi);
+    arma::mat dRi_res_Ri_dU = dRi_res_Ri_dRhat * dRhat_dU;
+    x.hpsi = dRi_res_Ri_dU;
+    x.hpsi.rows(x.indexes_diag_p) *= 0.5;
+    x.hessian(x.psi_indexes, x.psi_indexes) += x.hpsi(x.targetpsi_indexes, x.targetpsi_indexes);
+
+    // Rcpp::Rcout << "dlambda_dphi" << std::endl;
+    // Lambda & Phi
+    h1 = arma::kron(x.lambda_phi.t(), x.Ip) * dRi_res_Ri_dP;
+    arma::mat h21 = arma::kron(x.Iq, x.Ri_res_Ri * x.lambda);
+    h2 = h21;
+    h2 += h21 * dxt(x.q, x.q);
+    h2.cols(x.indexes_diag_q) = h21.cols(x.indexes_diag_q);
+    x.dlambda_dphi = h1 + h2; //(x.lambda_indexes, x.phi_indexes);
+    x.hessian(x.lambda_indexes, x.phi_indexes) += x.dlambda_dphi(x.target_indexes, x.targetphi_indexes);
+
+    // Rcpp::Rcout << "dlambda_dpsi" << std::endl;
+    // Lambda & Psi
+    x.dlambda_dpsi = arma::kron(x.lambda_phi.t(), x.Ip) * dRi_res_Ri_dU;
+    x.hessian(x.lambda_indexes, x.psi_indexes) += x.dlambda_dpsi(x.target_indexes, x.targetpsi_indexes);
+
+    // Rcpp::Rcout << "dpsi_dphi" << std::endl;
+    // Phi & Psi
+    arma::mat DXT = dxt(x.q, x.q);
+    arma::mat dRhat_invdP = -arma::kron((x.lambda.t() * x.Rhat_inv.t()).t(), x.Rhat_inv * x.lambda);
+    h1 = dRhat_invdP + dRhat_invdP * DXT;
+    h2 = (arma::kron((x.R * x.Rhat_inv).t(), x.Ip) + arma::kron(x.Ip, x.Rhat_inv * x.R)) * h1;
+    x.dpsi_dphi = 2*(h1 - h2);
+    x.dpsi_dphi.cols(x.indexes_diag_q) *= 0.5;
+    x.dpsi_dphi.rows(x.indexes_diag_p) *= 0.5;
+    x.hessian(x.psi_indexes, x.phi_indexes) += x.dpsi_dphi(x.targetpsi_indexes, x.targetphi_indexes);
+
+    x.hessian = arma::symmatu(x.hessian);
+
+    /*
+     * Join all the derivatives such that
+     * hLambda           dlambda_dphi   dlambda_dpsi
+     * dlambda_dphi.t()  hphi           dpsi_dphi.t()
+     * dambda_dpsi.t()   dpsi_dphi      hpsi
+     */
+
+  }
+
+  void GS(arguments_cfa& x) {
+
+    x.dLPU_dS.set_size(x.parameters.n_elem, x.p*x.p); x.dLPU_dS.zeros();
+
+    // Rcpp::Rcout << "dlambda_dS" << std::endl;
+    arma::mat DXTS = dxt(x.p, x.p);
+    arma::mat dRi_res_Ri_dS = -2*arma::kron(x.Rhat_inv, x.Rhat_inv);
+    dRi_res_Ri_dS += dRi_res_Ri_dS * DXTS;
+    arma::mat h = arma::kron(x.lambda_phi.t(), x.Ip) * dRi_res_Ri_dS;
+    h.cols(x.indexes_diag_p) *= 0.5;
+    x.dlambda_dS = h; //(x.lambda_indexes, x.S_indexes);
+    x.dLPU_dS.rows(x.lambda_indexes) += x.dlambda_dS.rows(x.target_indexes);
+
+    // Rcpp::Rcout << "dphi_dS" << std::endl;
+    h = arma::kron(x.lambda.t(), x.lambda.t()) * dRi_res_Ri_dS;
+    h.cols(x.indexes_diag_p) *= 0.5;
+    h.rows(x.indexes_diag_q) *= 0.5;
+    x.dphi_dS = h; //(x.phi_indexes, x.S_indexes);
+    x.dLPU_dS.rows(x.phi_indexes) += x.dphi_dS.rows(x.targetphi_indexes);
+
+    // Rcpp::Rcout << "dpsi_dS" << std::endl;
+    h = dRi_res_Ri_dS;
+    h.cols(x.indexes_diag_p) *= 0.5;
+    h.rows(x.indexes_diag_p) *= 0.5;
+    x.dpsi_dS = h; //(x.psi_indexes, x.S_indexes);
+    x.dLPU_dS.rows(x.psi_indexes) += x.dpsi_dS.rows(x.targetpsi_indexes);
+
+  }
+
+  void outcomes(arguments_cfa& x) {
+
+    // x.uniquenesses = x.R.diag() - arma::diagvec(x.Rhat);
+    // x.Rhat.diag() = x.R.diag();
+
+  };
+
+};
+
+/*
+ * CFA DWLS / ULS
+ */
+
+class dwls_cfa: public estimators {
+
+public:
+
+  void param() {
+
+    lambda.elem(targetlambda_indices) = parameters(lambda_indices);
+    phi.elem(targetphi_indices) = parameters(phi_indices);
+    psi.elem(targetpsi_indices) = parameters(psi_indices);
+
+  }
+
+  void dparam() {
+
+    Rcpp::stop("dparam not available");
+
+  }
+
+  void F(arguments_cfa& x) {
+
+    x.Rhat = x.lambda * x.phi * x.lambda.t() + x.psi;
+    x.residuals = x.R - x.Rhat;
+    x.f = 0.5*arma::accu(x.residuals % x.residuals % x.W);
+
+  }
+
+  void G(arguments_cfa& x) {
+
+    x.gradient.set_size(x.parameters.n_elem); x.gradient.zeros();
+
+    x.lambda_phi = x.lambda * x.phi;
+    x.W_residuals = x.W % x.residuals;
+    x.glambda = -2* x.W_residuals * x.lambda_phi;
+    x.W_residuals_lambda = x.W_residuals * x.lambda;
+    x.gphi = -2*x.lambda.t() * x.W_residuals_lambda;
+    x.gphi.diag() *= 0.5;
+    x.gpsi = -2*x.W_residuals;
+    x.gpsi.diag() *= 0.5;
+
+    x.gradient(x.lambda_indexes) += x.glambda.elem(x.target_indexes);
+    // if(x.positive) {
+    //   x.gradient(x.T_indexes) += x.gphi.elem(x.targetT_indexes);
+    // } else {
+    x.gradient(x.phi_indexes) += x.gphi.elem(x.targetphi_indexes);
+    // }
+    x.gradient(x.psi_indexes) += x.gpsi.elem(x.targetpsi_indexes);
+
+  }
+
+  void grad() {
+
+    rg = g;
+
+  }
+
+  void dG(arguments_cfa& x) {
+
+    x.dgradient.set_size(x.parameters.n_elem); x.dgradient.zeros();
+
+    // dglambda:
+    arma::mat dg1 = -2*x.W_residuals * x.dlambda * x.phi;
+    arma::mat W_dresiduals = -x.W % (x.dlambda * x.lambda_phi.t() +
+      x.lambda_phi * x.dlambda.t());
+    arma::mat dg2 = -2*W_dresiduals * x.lambda_phi;
+    x.dglambda = dg1 + dg2;
+
+    // dgphi:
+    W_dresiduals = -x.W % (x.lambda * x.dphi * x.lambda.t());
+    x.dgphi = -2*x.lambda.t() * W_dresiduals * x.lambda;
+    x.dgphi.diag() *= 0.5;
+
+    // dgpsi:
+    x.dgpsi = 2*x.W % x.dpsi;
+    x.dgpsi.diag() *= 0.5;
+
+    x.dgradient(x.lambda_indexes) += x.dglambda.elem(x.target_indexes);
+    // if(x.positive) {
+    //   x.dgradient(x.T_indexes) += x.dgphi.elem(x.targetT_indexes);
+    // } else {
+    x.dgradient(x.phi_indexes) += x.dgphi.elem(x.targetphi_indexes);
+    // }
+    x.dgradient(x.psi_indexes) += x.dgpsi.elem(x.targetpsi_indexes);
+
+  }
+
+  void dgrad() {
+
+    Rcpp::stop("dgrad not available");
+
+  }
+
+  void H(arguments_cfa& x) {
+
+    x.hessian.set_size(x.parameters.n_elem, x.parameters.n_elem); x.hessian.zeros();
+
+    x.w = arma::vectorise(x.W);
+    // Rcpp::Rcout << "hlambda" << std::endl;
+    // Lambda
+    x.dlambda_dRhat_W = gLRhat(x.lambda, x.phi);
+    x.dlambda_dRhat_W.each_col() %= x.w;
+    x.lambda_phit_kron_Ip = arma::kron(x.lambda_phi.t(), x.Ip);
+    arma::mat g1 = 2*x.lambda_phit_kron_Ip * x.dlambda_dRhat_W;
+    arma::mat g2 = -2*arma::kron(x.phi, x.W_residuals);
+    arma::mat hlambda = g1 + g2;
+    x.hlambda = hlambda; //(x.lambda_indexes, x.lambda_indexes);
+    x.hessian(x.lambda_indexes, x.lambda_indexes) += x.hlambda(x.target_indexes, x.target_indexes);
+
+    // Rcpp::Rcout << "hphi" << std::endl;
+    // Phi
+    arma::mat LL = 2*arma::kron(x.lambda, x.lambda).t();
+    x.dphi_dRhat_W = gPRhat(x.lambda, x.phi, x.indexes_q);
+    x.dphi_dRhat_W.each_col() %= x.w;
+    arma::mat hphi_temp = LL * x.dphi_dRhat_W;
+    hphi_temp.rows(x.indexes_diag_q) *= 0.5;
+    x.hphi = hphi_temp; //(x.phi_indexes, x.phi_indexes);
+    x.hessian(x.phi_indexes, x.phi_indexes) += x.hphi(x.targetphi_indexes, x.targetphi_indexes);
+
+    // Rcpp::Rcout << "hpsi" << std::endl;
+    // Psi
+    x.dpsi_dRhat_W = gURhat(x.psi);
+    x.dpsi_dRhat_W.each_col() %= x.w;
+    arma::mat W2 = 2*x.W;
+    W2.diag() *= 0.5;
+    arma::vec w2 = arma::vectorise(W2);
+    arma::mat hpsi = arma::diagmat(w2);
+    x.hpsi = hpsi; //(x.psi_indexes, x.psi_indexes);
+    x.hessian(x.psi_indexes, x.psi_indexes) += x.hpsi(x.targetpsi_indexes, x.targetpsi_indexes);
+
+    // Rcpp::Rcout << "dlambda_dphi" << std::endl;
+    // Lambda & Phi
+    g1 = 2*x.lambda_phit_kron_Ip * x.dphi_dRhat_W;
+    arma::mat g21 = -2*arma::kron(x.Iq, x.W_residuals_lambda);
+    arma::mat dtg21 = g21 * dxt(x.q, x.q);
+    g2 = g21 + dtg21;
+    g2.cols(x.indexes_diag_q) -= dtg21.cols(x.indexes_diag_q);
+    arma::mat dlambda_dphi_temp = g1 + g2;
+    x.dlambda_dphi = dlambda_dphi_temp; //(x.lambda_indexes, x.phi_indexes);
+    x.hessian(x.lambda_indexes, x.phi_indexes) += x.dlambda_dphi(x.target_indexes, x.targetphi_indexes);
+
+    // Rcpp::Rcout << "dlambda_dpsi" << std::endl;
+    // Lambda & Psi
+    arma::mat dlambda_dpsi_temp = 2*x.lambda_phit_kron_Ip * x.dpsi_dRhat_W;
+    x.dlambda_dpsi = dlambda_dpsi_temp; //(x.lambda_indexes, x.psi_indexes);
+    x.hessian(x.lambda_indexes, x.psi_indexes) += x.dlambda_dpsi(x.target_indexes, x.targetpsi_indexes);
+
+    // Rcpp::Rcout << "dpsi_dphi" << std::endl;
+    // Phi & Psi
+    arma::mat dpsi_dphi_temp = x.dphi_dRhat_W;
+    dpsi_dphi_temp.rows(x.indexes_diag_p) *= 0.5;
+    dpsi_dphi_temp *= 2;
+    x.dpsi_dphi = dpsi_dphi_temp; //(x.psi_indexes, x.phi_indexes);
+    x.hessian(x.psi_indexes, x.phi_indexes) += x.dpsi_dphi(x.targetpsi_indexes, x.targetphi_indexes);
+
+    x.hessian = arma::symmatu(x.hessian);
+
+    /*
+     * Join all the derivatives such that
+     * hLambda           dlambda_dphi   dlambda_dpsi
+     * dlambda_dphi.t()  hphi           dpsi_dphi.t()
+     * dlambda_dpsi.t()   dpsi_dphi      hpsi
+     */
+
+  }
+
+  void GS(arguments_cfa& x) {
+
+    x.dLPU_dS.set_size(x.parameters.n_elem, x.p*x.p); x.dLPU_dS.zeros();
+
+    // Rcpp::Rcout << "dlambda_dS" << std::endl;
+    arma::mat g1 = -2*x.lambda_phit_kron_Ip;
+    g1.each_row() %= x.w.t();
+    arma::mat g2 = g1 * dxt(x.p, x.p);
+    arma::mat g = g1 + g2;
+    g.cols(x.indexes_diag_p) *= 0.5;
+    x.dlambda_dS = g; //(x.lambda_indexes, x.S_indexes);
+    x.dLPU_dS.rows(x.lambda_indexes) += x.dlambda_dS.rows(x.target_indexes);
+
+    // Rcpp::Rcout << "dphi_dS" << std::endl;
+    g1 = -2*arma::kron(x.lambda.t(), x.lambda.t());
+    g1.each_row() %= x.w.t();
+    g2 = g1 * dxt(x.p, x.p);
+    g = g1 + g2;
+    g.cols(x.indexes_diag_p) *= 0.5;
+    g.rows(x.indexes_diag_q) *= 0.5;
+    x.dphi_dS = g; //(x.phi_indexes, x.S_indexes);
+    x.dLPU_dS.rows(x.phi_indexes) += x.dphi_dS.rows(x.targetphi_indexes);
+
+    // Rcpp::Rcout << "dpsi_dS" << std::endl;
+    g = -2*arma::diagmat(x.w);
+    g.cols(x.indexes_diag_p) *= 0.5;
+    x.dpsi_dS = g; //(x.psi_indexes, x.S_indexes);
+    x.dLPU_dS.rows(x.psi_indexes) += x.dpsi_dS.rows(x.targetpsi_indexes);
+
+  }
+
+  void outcomes(arguments_cfa& x) {
+
+    // x.uniquenesses = x.R.diag() - arma::diagvec(x.Rhat);
+    // x.Rhat.diag() = x.R.diag();
+
+  };
+
+};
+
+// Choose the estimator:
+
+estimators* choose_estimator(Rcpp::List estimator_setup, estimators* xestimator) {
+
+  estimators* criterion;
+  std::string estimator = estimator_setup["estimator"];
+  arma::vec parameters = estimator_setup["parameters"];
+
+  if (estimator == "ml_efa") {
+
+    ml_efa* myestimator = new ml_efa(); // Creating ml_efa object dynamically
+
+    int p = estimator_setup["p"];
+    int q = estimator_setup["q"];
+    int nhessian = estimator_setup["nhessian"];
+    int nS = estimator_setup["nS"];
+    arma::uvec vp = consecutive(0, p-1);
+    arma::uvec indices_diag_p = p*vp + vp;
+    arma::uvec vq = consecutive(0, q-1);
+    arma::uvec indices_diag_q = q*vq + vq;
+    arma::mat Ip(p, p, arma::fill::eye); // Define identity
+    arma::mat Iq(q, q, arma::fill::eye); // Define identity
+
+    // Provide these:
+    arma::uvec estimator_indices = estimator_setup["estimator_indices"];
+    arma::uvec target_estimator_indices = estimator_setup["estimator_indices"];
+    arma::uvec lambda_indices = estimator_setup["lambda_indices"];
+    arma::uvec targetlambda_indices = estimator_setup["targetlambda_indices"];
+    arma::uvec phi_indices = estimator_setup["phi_indices"];
+    arma::uvec targetphi_indices = estimator_setup["targetphi_indices"];
+    arma::uvec psi_indices = estimator_setup["psi_indices"];
+    arma::uvec targetpsi_indices = estimator_setup["targetpsi_indices"];
+    arma::mat R = estimator_setup["R"];
+
+    myestimator->parameters = parameters;
+    myestimator->estimator_indices = estimator_indices;
+    myestimator->R = R;
+    myestimator->p = p;
+    myestimator->q = q;
+    myestimator->nhessian = nhessian;
+    myestimator->nS = nS;
+    myestimator->indices_diag_p = indices_diag_p;
+    myestimator->indices_diag_q = indices_diag_q;
+    myestimator->Ip = Ip;
+    myestimator->Iq = Iq;
+
+    myestimator->lambda_indices = lambda_indices;
+    myestimator->phi_indices = phi_indices;
+    myestimator->psi_indices = psi_indices;
+    myestimator->targetlambda_indices = targetlambda_indices;
+    myestimator->targetphi_indices = targetphi_indices;
+    myestimator->targetpsi_indices = targetpsi_indices;
+
+    criterion = myestimator;
+
+  } else if (estimator == "uls_efa") {
+
+    uls_efa* myestimator = new uls_efa(); // Creating uls_efa object dynamically
+
+    int p = estimator_setup["p"];
+    int q = estimator_setup["q"];
+    int nhessian = estimator_setup["nhessian"];
+    int nS = estimator_setup["nS"];
+    arma::uvec vp = consecutive(0, p-1);
+    arma::uvec indices_diag_p = p*vp + vp;
+    arma::uvec vq = consecutive(0, q-1);
+    arma::uvec indices_diag_q = q*vq + vq;
+    arma::mat Ip(p, p, arma::fill::eye); // Define identity
+    arma::mat Iq(q, q, arma::fill::eye); // Define identity
+
+    // Provide these:
+    arma::uvec estimator_indices = estimator_setup["estimator_indices"];
+    arma::uvec lambda_indices = estimator_setup["lambda_indices"];
+    arma::uvec targetlambda_indices = estimator_setup["targetlambda_indices"];
+    arma::uvec phi_indices = estimator_setup["phi_indices"];
+    arma::uvec targetphi_indices = estimator_setup["targetphi_indices"];
+    arma::uvec psi_indices = estimator_setup["psi_indices"];
+    arma::uvec targetpsi_indices = estimator_setup["targetpsi_indices"];
+    arma::mat R = estimator_setup["R"];
+
+    myestimator->parameters = parameters;
+    myestimator->estimator_indices = estimator_indices;
+    myestimator->R = R;
+    myestimator->p = p;
+    myestimator->q = q;
+    myestimator->nhessian = nhessian;
+    myestimator->nS = nS;
+    myestimator->indices_diag_p = indices_diag_p;
+    myestimator->indices_diag_q = indices_diag_q;
+    myestimator->Ip = Ip;
+    myestimator->Iq = Iq;
+
+    myestimator->lambda_indices = lambda_indices;
+    myestimator->phi_indices = phi_indices;
+    myestimator->psi_indices = psi_indices;
+    myestimator->targetlambda_indices = targetlambda_indices;
+    myestimator->targetphi_indices = targetphi_indices;
+    myestimator->targetpsi_indices = targetpsi_indices;
+
+    criterion = myestimator;
+
+  } else if (estimator == "dwls_efa") {
+
+    dwls_efa* myestimator = new dwls_efa(); // Creating dwls_efa object dynamically
+
+    int p = estimator_setup["p"];
+    int q = estimator_setup["q"];
+    int nhessian = estimator_setup["nhessian"];
+    int nS = estimator_setup["nS"];
+    arma::uvec vp = consecutive(0, p-1);
+    arma::uvec indices_diag_p = p*vp + vp;
+    arma::uvec vq = consecutive(0, q-1);
+    arma::uvec indices_diag_q = q*vq + vq;
+    arma::mat Ip(p, p, arma::fill::eye); // Define identity
+    arma::mat Iq(q, q, arma::fill::eye); // Define identity
+
+    // Provide these:
+    arma::uvec estimator_indices = estimator_setup["estimator_indices"];
+    arma::uvec lambda_indices = estimator_setup["lambda_indices"];
+    arma::uvec targetlambda_indices = estimator_setup["targetlambda_indices"];
+    arma::uvec phi_indices = estimator_setup["phi_indices"];
+    arma::uvec targetphi_indices = estimator_setup["targetphi_indices"];
+    arma::uvec psi_indices = estimator_setup["psi_indices"];
+    arma::uvec targetpsi_indices = estimator_setup["targetpsi_indices"];
+    arma::mat R = estimator_setup["R"];
+    arma::mat W = estimator_setup["W"];
+    arma::mat lambda(p, q, arma::fill::zeros);
+
+    myestimator->parameters = parameters;
+    myestimator->estimator_indices = estimator_indices;
+    myestimator->R = R;
+    myestimator->W = W;
+    myestimator->lambda = lambda;
+    myestimator->p = p;
+    myestimator->q = q;
+    myestimator->nhessian = nhessian;
+    myestimator->nS = nS;
+    myestimator->indices_diag_p = indices_diag_p;
+    myestimator->indices_diag_q = indices_diag_q;
+    myestimator->Ip = Ip;
+    myestimator->Iq = Iq;
+
+    myestimator->lambda_indices = lambda_indices;
+    myestimator->phi_indices = phi_indices;
+    myestimator->psi_indices = psi_indices;
+    myestimator->targetlambda_indices = targetlambda_indices;
+    myestimator->targetphi_indices = targetphi_indices;
+    myestimator->targetpsi_indices = targetpsi_indices;
+
+    criterion = myestimator;
+
+  } else {
+
+    Rcpp::stop("Unkown estimator");
+
+  }
+
+  return criterion;
+
+}
+
+// Estimators
+
+class product_estimator {
+
+public:
+
+  void param(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->param();
+
+    }
+
+  }
+
+  void dparam(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->dparam();
+
+    }
+
+  }
+
+  void F(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    x.f = 0;
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->F();
+      x.f += xestimators[i]->f;
+
+    }
+
+  }
+
+  void G(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    x.g.set_size(x.parameters.n_elem); x.g.zeros();
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->G();
+      x.g += xestimators[i]->g;
+
+    }
+
+  }
+
+  void grad(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    x.rg.set_size(x.parameters.n_elem); x.rg.zeros();
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->grad();
+      x.rg += xestimators[i]->rg;
+
+    }
+
+  }
+
+  void dG(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    x.dg.set_size(x.parameters.n_elem); x.dg.zeros();
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->dG();
+      x.dg += xestimators[i]->dg;
+
+    }
+
+  }
+
+  void dgrad(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    x.drg.set_size(x.parameters.n_elem); x.drg.zeros();
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->dgrad();
+      x.drg += xestimators[i]->drg;
+
+    }
+
+  }
+
+  void H(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    int nhessian = xestimators[0]->nhessian;
+    x.hessian.set_size(nhessian, nhessian); x.hessian.zeros();
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->H();
+      x.hessian += xestimators[i]->hessian;
+
+    }
+
+  }
+
+  void GS(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    int nhessian = xestimators[0]->nhessian;
+    int nS = xestimators[0]->nS;
+    x.dparam_dS.set_size(nhessian, nS); x.dparam_dS.zeros();
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->GS();
+      x.dparam_dS += xestimators[i]->dparam_dS;
+
+    }
+
+  }
+
+  void outcomes(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    for(int i=0; i < x.nestimators; ++i) {
+
+      xestimators[i]->outcomes();
+      x.lambda = xestimators[i]->lambda;
+
+    }
+
+  }
+
+};
+

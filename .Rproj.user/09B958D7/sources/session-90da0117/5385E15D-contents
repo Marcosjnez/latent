@@ -1,0 +1,303 @@
+# E step: compute P(X = c | data) (Posterior)
+# M step: Use P(X = c | data) as weights to estimate P(X = c) and P(data | X = c)
+
+# E step: compute P(X = c | data) (Posterior)
+# M step: Use P(X = c | data) as weights to estimate P(X = c) and P(data | X = c)
+
+#### Derivative wrt dnorm ####
+
+f3 <- function(x, y) {
+
+  mu <- x[1]
+  sd <- x[2]
+  d <- dnorm(y, mu, sd)
+  return(d)
+
+}
+
+g3 <- function(x, y) {
+
+  mu <- x[1]
+  sd <- x[2]
+  d <- dnorm(y, mu, sd)
+  dmu <- (y-mu)*d/sd^2
+  dsd <- ((y-mu)^2-sd^2)*d/sd^3
+  g <- c(dmu, dsd)
+
+  return(g)
+
+}
+
+y <- rnorm(1)
+x <- runif(2)
+f3(x, y)
+c(latent:::num_grad(f3, X = x, y = y))
+g3(x, y)
+
+# exp(log(sd))
+
+f2 <- function(x, y) {
+
+  mu <- x[1]
+  sd <- exp(x[2])
+  d <- dnorm(y, mu, sd)
+  return(d)
+
+}
+
+g2 <- function(x, y) {
+
+  mu <- x[1]
+  sd <- exp(x[2])
+  d <- dnorm(y, mu, sd)
+  dmu <- (y-mu)*d/sd^2
+  dsd <- ((y-mu)^2-sd^2)*d/sd^2
+  g <- c(dmu, dsd)
+
+  return(g)
+
+}
+
+y <- rnorm(1)
+x <- runif(2)
+f2(x, y)
+c(latent:::num_grad(f2, X = x, y = y))
+g2(x, y)
+
+#### Derivative wrt all response patterns (softmax link) ####
+
+softmax <- function(x) {
+  p <- exp(x)/sum(exp(x))
+  return(p)
+}
+
+f1 <- function(x, Y, nc) {
+
+  S <- nrow(Y) # Number of patterns
+  J <- ncol(Y) # Number of items
+
+  u <- x[1:nc] # P(X = c)
+  z <- x[-(1:nc)] # P(data | X = c)
+
+  softu <- softmax(u) # P(X = c)
+  pX <- log(softu) # log(P(X = c))
+  # pX <- log(u) # log(P(X = c))
+  means <- matrix(z[1:(J*nc)], nrow = J, ncol = nc)
+  log_sds <- matrix(z[-(1:(J*nc))], nrow = J, ncol = nc)
+
+  lik <- array(NA, dim = c(J, nc, S))
+  loglik <- vector(length = S)
+
+  for(s in 1:S) {
+    for(i in 1:nc) {
+      for(j in 1:J) {
+        mu <- means[j, i]
+        sd <- exp(log_sds[j, i])
+        lik[j, i, s] <- dnorm(Y[s, j], mu, sd, log = TRUE)
+      }
+    }
+    vector <- colSums(lik[, , s]) + pX
+    max_vector <- max(vector)
+    loglik[s] <- max_vector + log(sum(exp(vector - max_vector))) # P(data)
+    # loglik[s] <- log(sum(exp(colSums(lik[, , s]) + pX))) # P(data)
+  }
+
+  # loglik[is.infinite(loglik)] <- 0
+
+  f <- -sum(loglik)
+
+  return(f)
+
+}
+
+g1 <- function(x, Y, nc) {
+
+  S <- nrow(Y) # Number of patterns
+  J <- ncol(Y) # Number of items
+
+  u <- x[1:nc] # P(X = c)
+  z <- x[-(1:nc)] # P(data | X = c)
+
+  softu <- softmax(u) # P(X = c)
+  pX <- log(softu) # log(P(X = c))
+  # pX <- log(u) # log(P(X = c))
+  means <- matrix(z[1:(J*nc)], nrow = J, ncol = nc)
+  log_sds <- matrix(z[-(1:(J*nc))], nrow = J, ncol = nc)
+
+  lik <- array(NA, dim = c(J, nc, S))
+  glu <- rep(0, length(u))
+
+  for(s in 1:S) {
+    for(i in 1:nc) {
+      for(j in 1:J) {
+        mu <- means[j, i]
+        sd <- exp(log_sds[j, i])
+        lik[j, i, s] <- dnorm(Y[s, j], mu, sd, log = TRUE)
+      }
+    }
+    mid <- sum(exp(colSums(lik[, , s]) + pX))
+    glu <- -exp(- log(mid) + colSums(lik[, , s])) + glu
+  }
+
+  jacobian <- -softu %*% t(softu)
+  diag(jacobian) <- softu*(1-softu)
+  glu <- glu %*% jacobian
+
+  gmeans <- matrix(0, nrow = J, ncol = nc)
+  glog_sds <- matrix(0, nrow = J, ncol = nc)
+
+  for(s in 1:S) {
+    mid <- sum(exp(colSums(lik[, , s]) + pX))
+    term <- - log(mid) + pX + colSums(lik[, , s])
+    for(i in 1:nc) {
+      for(j in 1:J) {
+        mu <- means[j, i]
+        log_sd <- log_sds[j, i]
+        grad <- g2(c(mu, log_sd), Y[s, j])
+
+        add <- gmeans[j, i]
+        gmeans[j, i] <- -exp(term[i] - lik[j, i, s])*grad[1] + add
+        add <- glog_sds[j, i]
+        glog_sds[j, i] <- -exp(term[i] - lik[j, i, s])*grad[2] + add
+      }
+    }
+  }
+
+  g <- c(glu, c(gmeans, glog_sds))
+  g[is.infinite(g)] <- 0
+
+  return(g)
+
+}
+
+set.seed(2024)
+J <- 5
+nc <- 2
+Y <- replicate(J, rnorm(10))
+x <- rnorm(nc + 2*J*nc)
+f1(x, Y, nc)
+round(g1(x, Y, nc), 2)
+round(c(latent:::num_grad(f1, X = x, Y = Y, nc = nc)), 2)
+
+#### Derivative wrt all response patterns (raw scale) ####
+
+f1 <- function(x, Y, nc) {
+
+  S <- nrow(Y) # Number of patterns
+  J <- ncol(Y) # Number of items
+
+  u <- x[1:nc] # P(X = c)
+  z <- x[-(1:nc)] # P(data | X = c)
+
+  softu <- u # P(X = c)
+  pX <- log(softu) # log(P(X = c))
+  # pX <- log(u) # log(P(X = c))
+  means <- matrix(z[1:(J*nc)], nrow = J, ncol = nc)
+  sds <- matrix(z[-(1:(J*nc))], nrow = J, ncol = nc)
+
+  lik <- array(NA, dim = c(J, nc, S))
+  loglik <- vector(length = S)
+
+  for(s in 1:S) {
+    for(i in 1:nc) {
+      for(j in 1:J) {
+        mu <- means[j, i]
+        sd <- sds[j, i]
+        lik[j, i, s] <- dnorm(Y[s, j], mu, sd, log = TRUE)
+      }
+    }
+    vector <- colSums(lik[, , s]) + pX
+    max_vector <- max(vector)
+    loglik[s] <- max_vector + log(sum(exp(vector - max_vector))) # P(data)
+    # loglik[s] <- log(sum(exp(colSums(lik[, , s]) + pX))) # P(data)
+  }
+
+  # loglik[is.infinite(loglik)] <- 0
+
+  f <- -sum(loglik)
+
+  return(f)
+
+}
+
+g1 <- function(x, Y, nc) {
+
+  S <- nrow(Y) # Number of patterns
+  J <- ncol(Y) # Number of items
+
+  u <- x[1:nc] # P(X = c)
+  z <- x[-(1:nc)] # P(data | X = c)
+
+  softu <- u # P(X = c)
+  pX <- log(softu) # log(P(X = c))
+  # pX <- log(u) # log(P(X = c))
+  means <- matrix(z[1:(J*nc)], nrow = J, ncol = nc)
+  sds <- matrix(z[-(1:(J*nc))], nrow = J, ncol = nc)
+
+  lik <- array(NA, dim = c(J, nc, S))
+  glu <- rep(0, length(u))
+
+  for(s in 1:S) {
+    for(i in 1:nc) {
+      for(j in 1:J) {
+        mu <- means[j, i]
+        sd <- sds[j, i]
+        lik[j, i, s] <- dnorm(Y[s, j], mu, sd, log = TRUE)
+      }
+    }
+    mid <- sum(exp(colSums(lik[, , s]) + pX))
+    glu <- -exp(- log(mid) + colSums(lik[, , s])) + glu
+  }
+
+  gmeans <- matrix(0, nrow = J, ncol = nc)
+  gsds <- matrix(0, nrow = J, ncol = nc)
+
+  for(s in 1:S) {
+    mid <- sum(exp(colSums(lik[, , s]) + pX))
+    term <- - log(mid) + pX + colSums(lik[, , s])
+    for(i in 1:nc) {
+      for(j in 1:J) {
+        mu <- means[j, i]
+        sd <- sds[j, i]
+        grad <- g3(c(mu, sd), Y[s, j])
+
+        add <- gmeans[j, i]
+        gmeans[j, i] <- -exp(term[i] - lik[j, i, s])*grad[1] + add
+        add <- gsds[j, i]
+        gsds[j, i] <- -exp(term[i] - lik[j, i, s])*grad[2] + add
+      }
+    }
+  }
+
+  g <- c(glu, c(gmeans, gsds))
+  g[is.infinite(g)] <- 0
+
+  return(g)
+
+}
+
+set.seed(2024)
+J <- 5
+nc <- 2
+Y <- replicate(J, rnorm(10))
+x <- runif(nc + 2*J*nc)
+f1(x, Y, nc)
+round(g1(x, Y, nc), 2)
+round(c(latent:::num_grad(f1, X = x, Y = Y, nc = nc)), 2)
+
+#### EM ####
+
+
+
+#### Simulated data with 3 classes and 5 items ####
+
+
+Y <- replicate(J, rnorm(10))
+x <- rnorm(nc + 2*J*nc)
+f(x, Y, nc)
+g(x, Y, nc) -
+  c(latent:::num_grad(f, X = x, Y = Y, nc = nc))
+
+fit <- optim(x, fn = f, gr = g, Y = Y, nc = nc,
+             control = list(maxit = 10000))
+

@@ -1,0 +1,123 @@
+library(latent2)
+set.seed(1)
+R <- cor(replicate(3, rnorm(9)))
+p <- nrow(R)
+q <- 1
+
+setup_estimator <- function(estimators, R, p, q, parameters) {
+
+  result <- list()
+  for(i in 1:length(estimators)) {
+
+    estimator <- estimators[i]
+
+    if(estimator == "uls_efa" || estimator == "ml_efa") {
+
+      manifold <- "euclidean"
+      estimator_indices = 1:p-1
+      estimator_target = 1:p-1
+      lambda_indices <- 1:p*q-1
+      plambda <- length(lambda_indices)
+      phi_indices <- plambda:(plambda + 0.5*q*(q+1) - 1)
+      plambdaphi <- plambda + length(phi_indices)
+      psi_indices <- plambdaphi:(plambdaphi + p - 1) # plambdaphi:(plambdaphi + 0.5*p*(p+1) - 1)
+      targetlambda_indices <- 1:p*q-1
+      Iq <- matrix(0, q, q)
+      targetphi_indices <- which(lower.tri(Iq, diag = TRUE))-1
+      Ip <- matrix(0, p, p)
+      vp <- 0:(p-1)
+      targetpsi_indices <- p*vp + vp # which(lower.tri(Ip, diag = TRUE))-1
+      nhessian <- sum(length(lambda_indices), length(phi_indices), length(psi_indices))
+      nS <- p*p
+
+      result[[i]] <- list(R = R, p = p, q = q, parameters = parameters,
+                          estimator = estimator, nhessian = nhessian, nS = nS,
+                          estimator_indices = estimator_indices, estimator_target = estimator_target,
+                          lambda_indices = lambda_indices, targetlambda_indices = targetlambda_indices,
+                          phi_indices = phi_indices, targetphi_indices = targetphi_indices,
+                          psi_indices = psi_indices, targetpsi_indices = targetpsi_indices)
+
+    } else if(estimator == "dwls_efa") {
+
+      estimator_indices = 1:p-1
+      estimator_target = 1:p-1
+      lambda_indices <- 1:p*q-1
+      plambda <- length(lambda_indices)
+      phi_indices <- plambda:(plambda + 0.5*q*(q+1) - 1)
+      plambdaphi <- plambda + length(phi_indices)
+      psi_indices <- plambdaphi:(plambdaphi + p - 1) # plambdaphi:(plambdaphi + 0.5*p*(p+1) - 1)
+      targetlambda_indices <- 1:p*q-1
+      Iq <- matrix(0, q, q)
+      targetphi_indices <- which(lower.tri(Iq, diag = TRUE))-1
+      Ip <- matrix(0, p, p)
+      vp <- 0:(p-1)
+      targetpsi_indices <- p*vp + vp # which(lower.tri(Ip, diag = TRUE))-1
+      nhessian <- sum(length(lambda_indices), length(phi_indices), length(psi_indices))
+      nS <- p*p
+      W <- matrix(1, p, p)
+
+      result[[i]] <- list(R = R, p = p, q = q, parameters = parameters,
+                          estimator = estimator, nhessian = nhessian, nS = nS,
+                          estimator_indices = estimator_indices, estimator_target = estimator_target,
+                          lambda_indices = lambda_indices, targetlambda_indices = targetlambda_indices,
+                          phi_indices = phi_indices, targetphi_indices = targetphi_indices,
+                          psi_indices = psi_indices, targetpsi_indices = targetpsi_indices,
+                          W = W)
+
+    }
+  }
+
+  return(result)
+
+}
+setup_manifold <- function(manifold) {
+
+}
+
+parameters <- runif(p)
+estimators <- c("ml_efa", "uls_efa", "dwls_efa")
+estimator_setup <- setup_estimator(estimators, R, p, q, parameters)
+manifold <- "euclidean"
+manifold_indices <- 0
+manifold_target <- 0
+manifold_setup <- list(list(parameters = parameters,
+                            manifold = manifold,
+                            manifold_indices = manifold_indices,
+                            manifold_target = manifold_target))
+
+x <- optimizer(parameters = parameters,
+               random_starts = 1L, cores = 1L,
+               control_estimator = estimator_setup,
+               control_manifold = manifold_setup,
+               control_optimizer = list(nada = NULL))
+x
+
+
+
+efa <- function(X, nfactors = 1, cor = "pearson", estimator = "uls",
+                rotation = "oblimin", manifold = "oblq", nobs = NULL,
+                Target = NULL, Weight = NULL, PhiTarget = NULL, PhiWeight = NULL,
+                blocks = NULL, block_weights = NULL,
+                oblq_factors = NULL, gamma = 0,
+                epsilon = 1e-02, k = 0, w = 1,
+                random_starts = 1L, cores = 1L,
+                init = NULL, efa_control = NULL, rot_control = NULL) {
+
+  nestimators <- length(estimator)
+  estimator_setup <- list()
+  for(i in 1:nestimators) {
+    estimator_setup[[i]] <- setup_estimator(estimator[i])
+  }
+
+  nmanifolds <- length(manifold)
+  estimator_setup <- list()
+  for(i in 1:nmanifolds) {
+    manifold_setup[[i]] <- setup_manifold(manifold[i])
+  }
+
+  x <- optimizer(parameters = parameters,
+                 random_starts = random_starts, cores = cores,
+                 estimator_setup = estimator_setup,
+                 manifold_setup = manifold_setup, control = list(nada = NULL))
+
+}

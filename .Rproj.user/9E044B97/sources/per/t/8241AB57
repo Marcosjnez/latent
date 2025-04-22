@@ -1,0 +1,26 @@
+{
+    "id": "8241AB57",
+    "path": "~/Documents/Papers/latent_package/latent/src/cfa_criteria.h",
+    "project_path": null,
+    "type": "h",
+    "hash": "529039521",
+    "contents": "",
+    "dirty": false,
+    "created": 1720548171783.0,
+    "source_on_save": false,
+    "relative_order": 8,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "207,2",
+        "scrollLine": "0"
+    },
+    "folds": "9|21|25|0|\n35|28|41|2|\n43|28|64|2|\n66|29|94|2|\n96|28|167|2|\n169|29|198|2|\n200|35|205|2|\n213|36|404|0|\n217|28|231|2|\n233|28|259|2|\n261|29|299|2|\n301|28|366|2|\n368|29|395|2|\n397|35|402|2|\n408|60|436|0|\n438|22|454|0|\n456|49|576|0|\n460|67|473|2|\n475|67|488|2|\n490|68|503|2|\n505|67|518|2|\n520|68|534|2|\n536|74|574|2|\n",
+    "lastKnownWriteTime": 1697532889,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1720568246277,
+    "read_only": false,
+    "read_only_alternatives": []
+}

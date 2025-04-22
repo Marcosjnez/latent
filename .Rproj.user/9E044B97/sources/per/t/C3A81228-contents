@@ -1,0 +1,42 @@
+/*
+ * Author: Marcos Jiménez
+ * email: marcosjnezhquez@gmail.com
+ * Modification date: 10/01/2024
+ */
+
+struct arguments_optim{
+
+  // Manifolds and Estimators:
+  int nmanifolds, nestimators;
+
+  // Estimators stuff:
+  std::vector<arma::uvec> indexes, target_indexes;
+  double f = 0.00, f_null = 0.00;
+
+  // Optim stuff:
+  double c1 = 10e-04, c2 = 0.5, rho = 0.5, eps = 1e-05, ng = 1, ss = 1, inprod = 1;
+  int M = 5L, armijo_maxit = 10L, iteration = 0L, maxit = 10000L,
+    random_starts = 1L, cores = 1L;
+  std::string search = "back";
+  bool convergence = false;
+  arma::vec parameters, dparameters, gradient, dgradient, g, dg, rg, drg, dH, dir;
+  arma::mat hessian, dparam_dS, B;
+  arma::vec se;
+
+  // Checks:
+  Rcpp::Nullable<Rcpp::List> nullable_control = R_NilValue;
+  std::string optim = "L-BFGS", std_error = "normal";
+  arma::uvec lower, upper;
+
+  // Manifolds:
+  arma::mat X, dX, dL, dP, Phi, A, Phi_Target;
+  arma::uvec oblq_indexes;
+
+  // Output:
+  Rcpp::List lambda, phi, psi, Rhat, residuals, R;
+  std::vector<double> fs;
+  int df = 0L, df_null = 0L, total_nobs = 0L;
+  std::vector<int> nobs, p, q;
+  Rcpp::CharacterVector cor, estimator, projection;
+
+};

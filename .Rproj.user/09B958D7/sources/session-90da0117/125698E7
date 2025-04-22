@@ -1,0 +1,27 @@
+{
+    "id": "125698E7",
+    "path": "~/Papers/latent/R/extract_param.R",
+    "project_path": "R/extract_param.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1740995427685.0,
+    "source_on_save": false,
+    "relative_order": 8,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "6,18",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1739987152,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1741942959552,
+    "read_only": false,
+    "read_only_alternatives": []
+}

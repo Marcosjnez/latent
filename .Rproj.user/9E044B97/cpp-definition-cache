@@ -1,0 +1,1204 @@
+[
+    {
+        "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+        "file_last_write": 1704042744.0,
+        "definitions": [
+            {
+                "usr": "c:@F@dxt#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "dxt(int, int)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+                "line": 7,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@skew#$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "skew(arma::mat)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+                "line": 28,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@symm#$@N@arma@S@Mat>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "symm(arma::mat)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+                "line": 36,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@orthogonalize#$@N@arma@S@Mat>#d#$@N@arma@S@Col>#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "orthogonalize(arma::mat, arma::vec)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+                "line": 44,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@lyap_sym#$@N@arma@S@Mat>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "lyap_sym(arma::mat, arma::mat)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+                "line": 61,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@consecutive#I#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "consecutive(int, int)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+                "line": 82,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@gLRhat#$@N@arma@S@Mat>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "gLRhat(arma::mat, arma::mat)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+                "line": 95,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@gPRhat#$@N@arma@S@Mat>#d#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "gPRhat(arma::mat, arma::mat)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+                "line": 110,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@gURhat#I#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "gURhat(int)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/auxiliary.h",
+                "line": 123,
+                "column": 11,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+        "file_last_write": 1720564390.0,
+        "definitions": [
+            {
+                "usr": "c:@S@estimators",
+                "kind": 2,
+                "parent_name": "",
+                "name": "estimators",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 7,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa",
+                "kind": 2,
+                "parent_name": "",
+                "name": "ml_efa",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 46,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@param#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "param",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 61,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@dparam#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "dparam",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 67,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@F#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "F",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 73,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@G#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "G",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 87,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@grad#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "grad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 95,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@dG#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "dG",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 101,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@dgrad#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "dgrad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 107,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@H#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "H",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 113,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@GS#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "GS",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 182,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_efa@F@outcomes#",
+                "kind": 7,
+                "parent_name": "ml_efa",
+                "name": "outcomes",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 211,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa",
+                "kind": 2,
+                "parent_name": "",
+                "name": "uls_efa",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 244,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@param#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "param",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 260,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@dparam#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "dparam",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 266,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@F#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "F",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 272,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@G#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "G",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 282,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@grad#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "grad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 290,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@dG#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "dG",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 296,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@dgrad#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "dgrad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 302,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@H#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "H",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 308,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@GS#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "GS",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 381,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@uls_efa@F@outcomes#",
+                "kind": 7,
+                "parent_name": "uls_efa",
+                "name": "outcomes",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 412,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa",
+                "kind": 2,
+                "parent_name": "",
+                "name": "dwls_efa",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 444,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@param#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "param",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 459,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@dparam#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "dparam",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 465,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@F#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "F",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 471,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@G#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "G",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 482,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@grad#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "grad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 492,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@dG#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "dG",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 498,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@dgrad#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "dgrad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 504,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@H#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "H",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 510,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@GS#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "GS",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 582,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_efa@F@outcomes#",
+                "kind": 7,
+                "parent_name": "dwls_efa",
+                "name": "outcomes",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 613,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa",
+                "kind": 2,
+                "parent_name": "",
+                "name": "ml_cfa",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 630,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@param#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "param",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 634,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@dparam#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "dparam",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 642,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@F#&I#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "F(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 648,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@G#&I#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "G(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 664,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@grad#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "grad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 692,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@dG#&I#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "dG(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 698,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@dgrad#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "dgrad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 738,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@H#&I#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "H(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 744,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@GS#&I#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "GS(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 811,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@ml_cfa@F@outcomes#&I#",
+                "kind": 7,
+                "parent_name": "ml_cfa",
+                "name": "outcomes(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 840,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa",
+                "kind": 2,
+                "parent_name": "",
+                "name": "dwls_cfa",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 853,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@param#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "param",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 857,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@dparam#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "dparam",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 865,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@F#&I#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "F(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 871,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@G#&I#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "G(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 879,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@grad#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "grad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 902,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@dG#&I#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "dG(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 908,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@dgrad#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "dgrad",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 938,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@H#&I#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "H(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 944,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@GS#&I#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "GS(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1017,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@dwls_cfa@F@outcomes#&I#",
+                "kind": 7,
+                "parent_name": "dwls_cfa",
+                "name": "outcomes(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1048,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@choose_estimator#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#*$@S@estimators#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "choose_estimator(Rcpp::List, estimators *)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1059,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator",
+                "kind": 2,
+                "parent_name": "",
+                "name": "product_estimator",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1220,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@param#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "param(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1224,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@dparam#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "dparam(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1234,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@F#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "F(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1244,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@G#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "G(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1257,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@grad#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "grad(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1270,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@dG#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "dG(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1283,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@dgrad#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "dgrad(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1296,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@H#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "H(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1309,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@GS#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "GS(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1323,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_estimator@F@outcomes#&I#S0_#",
+                "kind": 7,
+                "parent_name": "product_estimator",
+                "name": "outcomes(int &, int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/estimators.h",
+                "line": 1338,
+                "column": 8,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/home/marcos/Documents/Papers/latent2/src/functions.cpp",
+        "file_last_write": 1720559331.0,
+        "definitions": [
+            {
+                "usr": "c:@F@optimizer#$@N@arma@S@Col>#d#I#I#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "optimizer(arma::vec, int, int, Rcpp::List, Rcpp::List, Rcpp::List)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/functions.cpp",
+                "line": 35,
+                "column": 12,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+        "file_last_write": 1708447849.0,
+        "definitions": [
+            {
+                "usr": "c:@S@manifolds",
+                "kind": 2,
+                "parent_name": "",
+                "name": "manifolds",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 9,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@euclidean",
+                "kind": 2,
+                "parent_name": "",
+                "name": "euclidean",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 23,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@euclidean@F@proj#&I#",
+                "kind": 7,
+                "parent_name": "euclidean",
+                "name": "proj(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 27,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@euclidean@F@hess#&I#",
+                "kind": 7,
+                "parent_name": "euclidean",
+                "name": "hess(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 33,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@euclidean@F@retr#&I#",
+                "kind": 7,
+                "parent_name": "euclidean",
+                "name": "retr(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 39,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@orth",
+                "kind": 2,
+                "parent_name": "",
+                "name": "orth",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 47,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@orth@F@proj#&I#",
+                "kind": 7,
+                "parent_name": "orth",
+                "name": "proj(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 51,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@orth@F@hess#&I#",
+                "kind": 7,
+                "parent_name": "orth",
+                "name": "hess(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 57,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@orth@F@retr#&I#",
+                "kind": 7,
+                "parent_name": "orth",
+                "name": "retr(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 64,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@oblq",
+                "kind": 2,
+                "parent_name": "",
+                "name": "oblq",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 77,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@oblq@F@proj#&I#",
+                "kind": 7,
+                "parent_name": "oblq",
+                "name": "proj(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 81,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@oblq@F@hess#&I#",
+                "kind": 7,
+                "parent_name": "oblq",
+                "name": "hess(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 87,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@oblq@F@retr#&I#",
+                "kind": 7,
+                "parent_name": "oblq",
+                "name": "retr(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 94,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@poblq",
+                "kind": 2,
+                "parent_name": "",
+                "name": "poblq",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 104,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@poblq@F@proj#&I#",
+                "kind": 7,
+                "parent_name": "poblq",
+                "name": "proj(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 108,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@poblq@F@hess#&I#",
+                "kind": 7,
+                "parent_name": "poblq",
+                "name": "hess(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 119,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@poblq@F@retr#&I#",
+                "kind": 7,
+                "parent_name": "poblq",
+                "name": "retr(int &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 141,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@choose_manifold#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "choose_manifold(Rcpp::List)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 170,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_manifold2",
+                "kind": 2,
+                "parent_name": "",
+                "name": "product_manifold2",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 197,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_manifold",
+                "kind": 2,
+                "parent_name": "",
+                "name": "product_manifold",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 201,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_manifold@F@proj#&I#&$@N@std@S@vector>#*$@S@manifolds#$@N@std@S@allocator>#S3_#",
+                "kind": 7,
+                "parent_name": "product_manifold",
+                "name": "proj(int &, std::vector<manifolds *> &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 205,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_manifold@F@hess#&I#&$@N@std@S@vector>#*$@S@manifolds#$@N@std@S@allocator>#S3_#",
+                "kind": 7,
+                "parent_name": "product_manifold",
+                "name": "hess(int &, std::vector<manifolds *> &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 223,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@product_manifold@F@retr#&I#&$@N@std@S@vector>#*$@S@manifolds#$@N@std@S@allocator>#S3_#",
+                "kind": 7,
+                "parent_name": "product_manifold",
+                "name": "retr(int &, std::vector<manifolds *> &)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/manifolds.h",
+                "line": 238,
+                "column": 8,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+        "file_last_write": 1703611856.0,
+        "definitions": [
+            {
+                "usr": "c:optim.h@T@optim_result",
+                "kind": 8,
+                "parent_name": "",
+                "name": "optim_result",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 7,
+                "column": 50,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@optim",
+                "kind": 2,
+                "parent_name": "",
+                "name": "optim",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 11,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@RGD",
+                "kind": 2,
+                "parent_name": "",
+                "name": "RGD",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 23,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@RGD@F@optim#I#*I#S0_#",
+                "kind": 7,
+                "parent_name": "RGD",
+                "name": "optim(int, int *, int *)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 27,
+                "column": 16,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@LBFGS",
+                "kind": 2,
+                "parent_name": "",
+                "name": "LBFGS",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 39,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@LBFGS@F@optim#I#*I#S0_#",
+                "kind": 7,
+                "parent_name": "LBFGS",
+                "name": "optim(int, int *, int *)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 43,
+                "column": 16,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@RNTR",
+                "kind": 2,
+                "parent_name": "",
+                "name": "RNTR",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 55,
+                "column": 7,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@RNTR@F@optim#I#*I#S0_#",
+                "kind": 7,
+                "parent_name": "RNTR",
+                "name": "optim(int, int *, int *)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 59,
+                "column": 16,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@choose_optim#$@N@std@N@__cxx11@S@basic_string>#C#$@N@std@S@char_traits>#C#$@N@std@S@allocator>#C#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "choose_optim(std::string)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 69,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@armijo#&I#*I#S1_#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "armijo(int &, int *, int *, double, double)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 90,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@tcg#I#*I#S0_#&$@N@arma@S@Col>#d#&b#d#S2_#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "tcg(int, int *, int *, arma::vec &, bool &, double, arma::vec, double)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 120,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@gd#I#*I#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "gd(int, int *, int *)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 202,
+                "column": 14,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@ntr#I#*I#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "ntr(int, int *, int *)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 264,
+                "column": 14,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@lbfgs#I#*I#S0_#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "lbfgs(int, int *, int *)",
+                "file": "/home/marcos/Documents/Papers/latent2/src/optim.h",
+                "line": 412,
+                "column": 14,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/home/marcos/Documents/Papers/latent2/src/structures.h",
+        "file_last_write": 1708716823.0,
+        "definitions": [
+            {
+                "usr": "c:@S@arguments_optim",
+                "kind": 3,
+                "parent_name": "",
+                "name": "arguments_optim",
+                "file": "/home/marcos/Documents/Papers/latent2/src/structures.h",
+                "line": 7,
+                "column": 8,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    }
+]
