@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   ci_residuals: ci_residuals.html
   NHST_and_screening_tests: NHST_and_screening_tests.html
-last_built: 2025-04-24T20:24Z
+last_built: 2025-04-24T20:36Z
 urls:
   reference: https://marcosjnez.github.io/latent/reference
   article: https://marcosjnez.github.io/latent/articles
