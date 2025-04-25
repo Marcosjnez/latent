@@ -1,8 +1,12 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://marcosjnez.github.io/latent/404.html</loc></url>
-<url><loc>https://marcosjnez.github.io/latent/articles/ci_residuals.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/articles/cfa_article.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/articles/cfa_tutorial.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/articles/efa_article.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/articles/efa_tutorial.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/articles/index.html</loc></url>
-<url><loc>https://marcosjnez.github.io/latent/articles/NHST_and_screening_tests.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/articles/lca_article.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/articles/lca_tutorial.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/authors.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/index.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/cfast.html</loc></url>
