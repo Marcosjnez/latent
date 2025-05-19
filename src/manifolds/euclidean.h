@@ -31,4 +31,23 @@ public:
 
   }
 
+  void dconstraints() {
+
+  }
+
+  void outcomes() {
+
+  }
+
 };
+
+euclidean* choose_euclidean(Rcpp::List manifold_setup) {
+
+  euclidean* mymanifold = new euclidean();
+
+  arma::uvec indices = manifold_setup["indices"];
+  mymanifold->indices = indices;
+
+  return mymanifold;
+
+}

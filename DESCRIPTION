@@ -12,12 +12,11 @@ Author: Marcos Jiménez [aut, cre],
   Luis E. Garrido [aut]
 Maintainer: Marcos Jiménez <m.j.jimenezhenriquez@vu.nl>
 License: GPL-3
-Imports: Rcpp (>= 1.0.11)
+Imports: Rcpp (>= 1.0.11), png, grid, data.table, lavaan
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 7.3.2
 Encoding: UTF-8
-Depends: data.table, lavaan
-URL: https://github.com/Marcosjnez/latent
+URL: https://github.com/Marcosjnez/latent, https://marcosjnez.github.io/latent/
 BugReports: https://github.com/Marcosjnez/latent/issues
 NeedsCompilation: yes
 LazyData: TRUE

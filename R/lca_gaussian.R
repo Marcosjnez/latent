@@ -1,17 +1,17 @@
 # Auxiliary function for lca.R
 
 lca_gaussian <- function(Y, n, uniq_indices, map2full, classes, conditionals,
-                         parameter_vector, fixed_vector, opt) {
+                         parameter_vector, fixed_vector) {
 
   S <- nrow(Y) # Number of different response patterns
   J <- ncol(Y) # Number of items
 
-  nc <- length(classes) # Number of classes in each group
+  nclasses <- length(classes) # Number of classes in each group
 
   indices_target_classes <- indices_target_conditionals <- indices_classes <-
     indices_conditionals <- c()
 
-  classes_hat <- vector(length = nc)
+  classes_hat <- vector(length = nclasses)
   conditionals_hat <- vector("list", length = J)
   # Find which elements in the targets correspond to a parameter:
   indices_target_classes <- which(classes %in% parameter_vector) # Which classes are estimated
@@ -32,6 +32,7 @@ lca_gaussian <- function(Y, n, uniq_indices, map2full, classes, conditionals,
   # indices <- match(classes[indices_target_classes], parameter_vector)
   duplicated_indices <- c(indices_classes, indices_conditionals2)
   indices <- unique(duplicated_indices)
+  # indices <- indices_conditionals2
 
   # Find which elements in the targets correspond to a fixed value:
   indices_fixtarget_classes <- which(classes %in% fixed_vector) # Which classes are fixed in group i
@@ -50,7 +51,7 @@ lca_gaussian <- function(Y, n, uniq_indices, map2full, classes, conditionals,
   }
 
   # Non-specified elements in classes are set to 0:
-  classes_hat <- rep(0, nc)
+  classes_hat <- rep(0, nclasses)
   classes_hat[indices_fixtarget_classes] <- fixed_vector[indices_fix_classes]
   class(classes_hat) <- "numeric"
   if(any(classes_hat < 0)) {
@@ -63,7 +64,7 @@ lca_gaussian <- function(Y, n, uniq_indices, map2full, classes, conditionals,
 
   # Non-specified elements in conditionals are set to 0:
   for(j in 1:J) {
-    conditionals_hat[[j]] <- matrix(0, nrow = 2, ncol = nc)
+    conditionals_hat[[j]] <- matrix(0, nrow = 2, ncol = nclasses)
   }
   flat_vector <- unlist(conditionals_hat)
   flat_vector[indices_fixtarget_conditionals] <- fixed_vector[indices_fix_conditionals]
@@ -91,7 +92,7 @@ lca_gaussian <- function(Y, n, uniq_indices, map2full, classes, conditionals,
     # Update the start position for the next matrix
     start <- start + num_elements
 
-    for(i in 1:nc) {
+    for(i in 1:nclasses) {
       logical_vector <- conditionals_hat_logical[[j]][, i]
       targets <- which(logical_vector)
       indices_target_conditionals[[j]][[i]] <- targets-1
@@ -107,18 +108,12 @@ lca_gaussian <- function(Y, n, uniq_indices, map2full, classes, conditionals,
   # logclasses <- log(classes_hat)
   # logclasses[is.infinite(logclasses)] <- 0
 
-  if(opt == "em") {
-    estimator <- "lca_gaussian"
-  } else {
-    estimator <- "lca_gaussian_softmax"
-  }
-
-  export <- list(estimator = estimator,
+  export <- list(estimator = "lca_gaussian",
                  Y = Y,
                  S = S,
                  J = J,
-                 nclasses = nc,
                  n = n,
+                 nclasses = nclasses,
                  uniq_indices = uniq_indices,
                  map2full = map2full,
                  classes = classes_hat,

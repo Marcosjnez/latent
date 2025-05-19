@@ -9,9 +9,9 @@ getmodel(data, model = rep("multinomial", ncol(data)), nclasses = 2L)
 \arguments{
 \item{data}{data.frame or matrix of response.}
 
-\item{model}{Character vector with the model for each item.}
-
 \item{nclasses}{Number of latent classes.}
+
+\item{model}{Character vector with the model for each item.}
 }
 \value{
 List with the following objects:

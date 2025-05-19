@@ -14,6 +14,10 @@
 # define __ATOMIC_ACQUIRE 2
 #endif
 
+#ifndef __WCHAR_MAX__
+# define __WCHAR_MAX__ 0xffff
+#endif
+
 #ifndef __FLT128_MAX_10_EXP__
 # define __FLT128_MAX_10_EXP__ 4932
 #endif
@@ -80,10 +84,6 @@
 
 #ifndef __ORDER_LITTLE_ENDIAN__
 # define __ORDER_LITTLE_ENDIAN__ 1234
-#endif
-
-#ifndef __WCHAR_MAX__
-# define __WCHAR_MAX__ 0xffff
 #endif
 
 #ifndef __GCC_HAVE_SYNC_COMPARE_AND_SWAP_2
@@ -362,10 +362,6 @@
 # define __FLT64_EPSILON__ 2.22044604925031308084726333618164062e-16F64
 #endif
 
-#ifndef __FLT128_IS_IEC_60559__
-# define __FLT128_IS_IEC_60559__ 1
-#endif
-
 #ifndef __FLT64X_MIN_10_EXP__
 # define __FLT64X_MIN_10_EXP__ (-4931)
 #endif
@@ -395,7 +391,7 @@
 #endif
 
 #ifndef __GNUC__
-# define __GNUC__ 13
+# define __GNUC__ 14
 #endif
 
 #ifndef _cdecl
@@ -587,7 +583,7 @@
 #endif
 
 #ifndef __GXX_ABI_VERSION
-# define __GXX_ABI_VERSION 1018
+# define __GXX_ABI_VERSION 1019
 #endif
 
 #ifndef __FLT_MIN_EXP__
@@ -719,7 +715,7 @@
 #endif
 
 #ifndef __VERSION__
-# define __VERSION__ "13.2.0"
+# define __VERSION__ "14.2.0"
 #endif
 
 #ifndef __UINT64_C
@@ -1008,6 +1004,10 @@
 
 #ifndef __SEG_FS
 # define __SEG_FS 1
+#endif
+
+#ifndef __BITINT_MAXWIDTH__
+# define __BITINT_MAXWIDTH__ 65535
 #endif
 
 #ifndef __INT_LEAST16_MAX__
@@ -1454,6 +1454,10 @@
 # define __FLT_DENORM_MIN__ 1.40129846432481707092372958328991613e-45F
 #endif
 
+#ifndef __FLT128_IS_IEC_60559__
+# define __FLT128_IS_IEC_60559__ 1
+#endif
+
 #ifndef __INT8_MAX__
 # define __INT8_MAX__ 0x7f
 #endif
@@ -1550,6 +1554,10 @@
 # define __INT16_C(c) c
 #endif
 
+#ifndef __ATOMIC_RELEASE
+# define __ATOMIC_RELEASE 3
+#endif
+
 #ifndef __STDC__
 # define __STDC__ 1
 #endif
@@ -1620,10 +1628,6 @@
 
 #ifndef __ATOMIC_ACQ_REL
 # define __ATOMIC_ACQ_REL 4
-#endif
-
-#ifndef __ATOMIC_RELEASE
-# define __ATOMIC_RELEASE 3
 #endif
 
 #ifndef __declspec

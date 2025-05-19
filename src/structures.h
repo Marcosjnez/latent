@@ -1,13 +1,15 @@
 /*
  * Author: Marcos Jiménez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 03/02/2025
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 17/05/2025
  */
+
+#include <tuple>
 
 struct arguments_optim{
 
   // Manifolds and Estimators:
-  int nmanifolds, nestimators;
+  int nmanifolds, nestimators, ntransforms;
 
   // Estimators stuff:
   std::vector<arma::uvec> indexes, target_indexes;
@@ -28,10 +30,11 @@ struct arguments_optim{
   std::string search = "back";
   bool convergence = false;
   arma::vec parameters, dparameters, g, dg, rg, drg, dH;
+  arma::vec transparameters, dtransparameters, grad, dgrad;
   arma::mat hessian, B;
   arma::mat posterior;
   arma::mat latentloglik;
-  arma::vec latentpars;
+  arma::vec latentpars, loglatentpars;
   arma::vec n;
   arma::vec se;
   std::vector<arma::mat> modhessian, dparam_dS;
@@ -46,7 +49,6 @@ struct arguments_optim{
   // Manifolds:
   arma::mat X, dX, dL, dP, Phi, A, Phi_Target;
   arma::uvec oblq_indexes;
-  std::size_t ntransformations;
 
   // Output:
   // Rcpp::List lambda, phi, psi, Rhat, residuals, R;
@@ -56,11 +58,35 @@ struct arguments_optim{
   // Rcpp::CharacterVector cor, estimator, projection;
 
   // Outcomes:
-  std::vector<std::vector<double>> doubles;
-  std::vector<std::vector<arma::vec>> vectors;
-  std::vector<std::vector<arma::mat>> matrices;
-  std::vector<std::vector<std::vector<arma::mat>>> list_matrices;
+  // std::vector<std::vector<double>> doubles;
+  // std::vector<std::vector<arma::vec>> vectors;
+  // std::vector<std::vector<arma::mat>> matrices;
+  // std::vector<std::vector<std::vector<arma::mat>>> list_matrices;
 
-  int nparam, nrow_post, ncol_post;
+  // Manifolds:
+  std::tuple<
+    std::vector<std::vector<double>>,
+    std::vector<std::vector<arma::vec>>,
+    std::vector<std::vector<arma::mat>>,
+    std::vector<std::vector<std::vector<arma::mat>>>
+  > outputs_manifold;
+
+  // Transformations:
+  std::tuple<
+    std::vector<std::vector<double>>,
+    std::vector<std::vector<arma::vec>>,
+    std::vector<std::vector<arma::mat>>,
+    std::vector<std::vector<std::vector<arma::mat>>>
+  > outputs_transform;
+
+  // Estimators:
+  std::tuple<
+    std::vector<std::vector<double>>,
+    std::vector<std::vector<arma::vec>>,
+    std::vector<std::vector<arma::mat>>,
+    std::vector<std::vector<std::vector<arma::mat>>>
+  > outputs_estimator;
+
+  int nparam, ntransparam, nrow_post, ncol_post;
 
 };

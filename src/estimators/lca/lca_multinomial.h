@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/02/2025
+ * Modification date: 16/05/2025
  */
 
 /*
@@ -17,7 +17,6 @@ public:
   int J; // cols of Y (number of items)
   arma::uvec K; // Vector of number of categories by item
   int nclasses; // Number of latent classes
-  // arma::vec n; // number of subjects in each pattern
   arma::vec classes, logclasses; // log(P(X = c))
   std::vector<arma::mat> logconditionals; // Provide this filled with zeroes
   double constant_class;
@@ -44,7 +43,7 @@ public:
 
     latentloglik.zeros();
 
-    classes(indices_target_classes) = parameters(indices_classes);
+    classes(indices_target_classes) = transparameters(indices_classes);
     logclasses = trunc_log(classes);
 
     for(int j=0; j < J; ++j) {
@@ -52,7 +51,7 @@ public:
         arma::uvec indices1 = indices_conditionals[j][i];
         arma::uvec indices2 = indices_target_conditionals[j][i];
         arma::uvec col = arma::uvec{i};
-        conditionals[j](indices2, col) = parameters(indices1);
+        conditionals[j](indices2, col) = transparameters(indices1);
         logconditionals[j].col(i) = arma::trunc_log(conditionals[j].col(i));
         for(int s=0; s < S; ++s) {
           int category = Y(s, j);
@@ -62,7 +61,7 @@ public:
       }
     }
 
-    latentpars = logclasses;
+    loglatentpars = logclasses;
 
   }
 
@@ -82,16 +81,14 @@ public:
 
   void G() {
 
-    arma::vec gclasses(nclasses, arma::fill::zeros);
     for(int j=0; j < J; ++j) {
       gconditionals[j].zeros();
     }
 
     for(int s=0; s < S; ++s) {
-      jointlogp.row(s) = latentloglik.row(s) + latentpars.t();
+      jointlogp.row(s) = latentloglik.row(s) + loglatentpars.t();
       double max_vector = jointlogp.row(s).max();
       loglik_case[s] = max_vector + arma::trunc_log(arma::accu(arma::trunc_exp(jointlogp.row(s) - max_vector)));
-      gclasses += -n[s]*arma::trunc_exp(-loglik_case[s] + latentloglik.row(s).t());
       arma::vec term = -loglik_case[s] + jointlogp.row(s).t();
       for(int i=0; i < nclasses; ++i) {
         for(int j=0; j < J; ++j) {
@@ -101,19 +98,16 @@ public:
       }
     }
 
-    arma::vec gu = gclasses;
     arma::vec gz;
     for (const auto& mat : gconditionals) {
       // Flatten each matrix as a column vector and join everything
       gz = arma::join_cols(gz, arma::vectorise(mat));
     }
 
-    arma::vec gugz(parameters.n_elem, arma::fill::zeros);
-    // gugz(indices_classes) += gu(indices_target_classes);
+    arma::vec gugz(transparameters.n_elem, arma::fill::zeros);
     gugz(indices_conditionals2) += gz(indices_target_conditionals2);
-    g = gugz;
-    // g.replace(arma::datum::nan, 0);
-    g.elem( arma::find_nonfinite(g) ).zeros();
+    grad = gugz;
+    grad.elem( arma::find_nonfinite(grad) ).zeros();
 
   }
 
@@ -135,11 +129,18 @@ public:
 
     latentloglik.zeros();
 
+    // Rprintf("Posterior:\n");
+    // Rprintf("%zu ", posterior.n_rows);
+    // Rprintf("%zu ", posterior.n_cols);
+    // Rprintf("\n\n");
+    //
+    // Rprintf("n:\n");
+    // Rprintf("%zu ", n.n_elem);
+    // Rprintf("\n\n");
+
     arma::mat freqs = posterior; // S x nclasses
     freqs.each_col() %= n;
     arma::vec post_total = arma::sum(freqs, 0).t();
-    classes = post_total / arma::accu(post_total);
-    logclasses = trunc_log(classes);
 
     for(int j=0; j < J; ++j) {
       conditionals[j].zeros();
@@ -168,10 +169,9 @@ public:
       // Flatten each matrix as a column vector and join everything
       cond_vector = arma::join_cols(cond_vector, arma::vectorise(mat));
     }
-    parameters = arma::vectorise(arma::join_cols(classes, cond_vector));
+    transparameters = arma::vectorise(arma::join_cols(latentpars, cond_vector));
 
-    latentpars = logclasses;
-
+    // Rf_error("170");
     // Rprintf("Multinomial nparam = %zu\n", parameters.n_elem);
     // Rprintf("Number of Multinomial indices = %zu\n", indices.n_elem);
 
@@ -185,7 +185,7 @@ public:
 
     for(int s=0; s < S; ++s) {
       latentloglik.row(s) = arma::sum(loglik.slice(s), 0);
-      pYXX.row(s) = arma::trunc_exp(latentloglik.row(s) + logclasses.t()); // P(data |X = c) P(X = c)
+      pYXX.row(s) = arma::trunc_exp(latentloglik.row(s) + loglatentpars.t()); // P(data |X = c) P(X = c)
       mid[s] = arma::accu(pYXX.row(s)); // P(data)
     }
 
@@ -193,18 +193,92 @@ public:
     posterior.each_col() /= mid;
     loglik_case = arma::trunc_log(mid);
 
-    vectors.resize(3);
-    vectors[0] = classes;
-    vectors[1] = -loglik_case;
-    vectors[2] = n;
+    vectors.resize(4);
+    vectors[0] = latentpars;
+    vectors[1] = loglatentpars;
+    vectors[2] = loglik_case;
+    vectors[3] = n;
 
     matrices.resize(2);
     matrices[0] = posterior;
     matrices[1] = latentloglik;
 
-    list_matrices.resize(1);
+    list_matrices.resize(2);
     list_matrices[0] = conditionals;
+    list_matrices[1] = logconditionals;
 
   }
 
 };
+
+lca_multinomial* choose_lca_multinomial(Rcpp::List estimator_setup) {
+
+  lca_multinomial* myestimator = new lca_multinomial();
+
+  arma::mat Y = estimator_setup["Y"];
+  int S = estimator_setup["S"];
+  int J = estimator_setup["J"];
+  arma::uvec K = estimator_setup["K"];
+  int nclasses = estimator_setup["nclasses"];
+  arma::vec n = estimator_setup["n"];
+  arma::vec classes = estimator_setup["classes"];
+  // arma::vec logclasses = estimator_setup["logclasses"];
+  double constant_class = estimator_setup["constant_class"];
+  bool fix_logit = estimator_setup["fix_logit"];
+  std::vector<arma::mat> conditionals = estimator_setup["conditionals"];
+  // std::vector<arma::mat> logconditionals = estimator_setup["logconditionals"];
+  std::vector<arma::vec> constant_cond = estimator_setup["constant_cond"];;
+  // std::vector<arma::mat> gconditionals = estimator_setup["gconditionals"];
+  arma::uvec indices_classes = estimator_setup["indices_classes"];
+  arma::uvec indices_target_classes = estimator_setup["indices_target_classes"];
+  std::vector<std::vector<arma::uvec>> indices_conditionals = estimator_setup["indices_conditionals"];
+  std::vector<std::vector<arma::uvec>> indices_target_conditionals = estimator_setup["indices_target_conditionals"];
+  arma::uvec indices = estimator_setup["indices"];
+  // arma::uvec targets = estimator_setup["targets"];
+  arma::uvec indices_conditionals2 = estimator_setup["indices_conditionals2"];
+  arma::uvec indices_target_conditionals2 = estimator_setup["indices_target_conditionals2"];
+
+  arma::cube loglik(J, nclasses, S, arma::fill::zeros);
+  arma::vec logliks(S, arma::fill::zeros);
+  arma::vec mid(S, arma::fill::zeros);
+  arma::vec loglik_case(S, arma::fill::zeros);
+  arma::mat pYXX(S, nclasses, arma::fill::zeros);
+  // arma::mat posterior(S, nclasses, arma::fill::randu);
+  // posterior = arma::normalise(posterior, 1);
+  arma::mat latentloglik(S, nclasses, arma::fill::zeros);
+  arma::mat jointlogp(S, nclasses, arma::fill::zeros);
+
+  myestimator->Y = Y;
+  myestimator->S = S;
+  myestimator->J = J;
+  myestimator->K = K;
+  myestimator->nclasses = nclasses;
+  myestimator->n = n;
+  myestimator->classes = classes;
+  myestimator->constant_class = constant_class;
+  myestimator->fix_logit = fix_logit;
+  myestimator->conditionals = conditionals;
+  myestimator->constant_cond = constant_cond;
+  myestimator->indices_classes = indices_classes;
+  myestimator->indices_target_classes = indices_target_classes;
+  myestimator->indices_conditionals = indices_conditionals;
+  myestimator->indices_target_conditionals = indices_target_conditionals;
+  myestimator->indices = indices;
+  myestimator->indices_conditionals2 = indices_conditionals2;
+  myestimator->indices_target_conditionals2 = indices_target_conditionals2;
+
+  myestimator->logconditionals = conditionals;
+  myestimator->gconditionals = conditionals;
+  myestimator->loglik = loglik;
+  myestimator->logliks = logliks;
+  myestimator->mid = mid;
+  myestimator->loglik_case = loglik_case;
+  myestimator->pYXX = pYXX;
+  // myestimator->posterior = posterior;
+  myestimator->latentloglik = latentloglik;
+  myestimator->jointlogp = jointlogp;
+  myestimator->evalEM = true;
+
+ return myestimator;
+
+}

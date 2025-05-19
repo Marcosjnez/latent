@@ -246,3 +246,41 @@ public:
   };
 
 };
+
+cfa_ml* choose_cfa_ml(Rcpp::List estimator_setup) {
+
+  cfa_ml* myestimator = new cfa_ml();
+
+  arma::mat R = estimator_setup["R"];
+  arma::mat lambda = estimator_setup["lambda"];
+  arma::mat phi = estimator_setup["phi"];
+  arma::mat psi = estimator_setup["psi"];
+  double logdetR = estimator_setup["logdetR"];
+  int nparam = estimator_setup["nparam"];
+  int p = estimator_setup["p"];
+  arma::uvec lambda_indexes = estimator_setup["lambda_indexes"];
+  arma::uvec phi_indexes = estimator_setup["phi_indexes"];
+  arma::uvec psi_indexes = estimator_setup["psi_indexes"];
+  arma::uvec target_indexes = estimator_setup["target_indexes"];
+  arma::uvec targetphi_indexes = estimator_setup["targetphi_indexes"];
+  arma::uvec targetpsi_indexes = estimator_setup["targetpsi_indexes"];
+  arma::uvec indices = estimator_setup["indices"];
+
+  myestimator->R = R;
+  myestimator->logdetR = logdetR;
+  myestimator->lambda = lambda;
+  myestimator->phi = phi;
+  myestimator->psi = psi;
+  myestimator->nparam = nparam;
+  myestimator->p = p;
+  myestimator->lambda_indexes = lambda_indexes;
+  myestimator->phi_indexes = phi_indexes;
+  myestimator->psi_indexes = psi_indexes;
+  myestimator->target_indexes = target_indexes;
+  myestimator->targetphi_indexes = targetphi_indexes;
+  myestimator->targetpsi_indexes = targetpsi_indexes;
+  myestimator->indices = indices;
+
+  return myestimator;
+
+}

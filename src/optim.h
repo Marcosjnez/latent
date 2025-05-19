@@ -1,10 +1,10 @@
 /*
  * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 14/03/2025
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 29/04/2025
  */
 
-typedef std::tuple<arma::vec, double, int, bool, double, arma::mat, arma::mat> optim_result;
+typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::mat> optim_result;
 
 // Line-search algorithm satisfying the armijo condition:
 
@@ -51,8 +51,12 @@ void armijo(arguments_optim& x,
 // Line-search algorithm satisfying the Wolfe conditions:
 
 void wolfe(arguments_optim& x,
-           product_manifold* final_manifold, product_estimator* final_estimator,
-           std::vector<manifolds*>& xmanifolds, std::vector<estimators*>& xestimators) {
+           product_transform* final_transform,
+           product_manifold* final_manifold,
+           product_estimator* final_estimator,
+           std::vector<transformations*>& xtransforms,
+           std::vector<manifolds*>& xmanifolds,
+           std::vector<estimators*>& xestimators) {
 
   // x.ss = std::max(x.ss_min, x.ss * x.ss_fac);
   // x.ss = x.ss*2;
@@ -72,9 +76,11 @@ void wolfe(arguments_optim& x,
     final_manifold->retr(x, xmanifolds);
     // final_manifold->param(x, xmanifolds); // Unnecessary
     // Parameterization
+    final_transform->transform(x, xtransforms);
     final_estimator->param(x, xestimators);
     final_estimator->F(x, xestimators);
     final_estimator->G(x, xestimators);
+    final_transform->jacobian(x, xtransforms);
     final_manifold->param(x, xmanifolds);
     final_manifold->proj(x, xmanifolds);
     x.df = x.f - f0;
@@ -181,10 +187,13 @@ void tcg(arguments_optim& x, product_manifold* final_manifold, product_estimator
 
 // Gradient descent algorithm:
 
-optim_result gd(arguments_optim x, std::vector<manifolds*>& xmanifolds,
+optim_result gd(arguments_optim x,
+                std::vector<transformations*>& xtransforms,
+                std::vector<manifolds*>& xmanifolds,
                 std::vector<estimators*>& xestimators) {
 
   product_manifold* final_manifold;
+  product_transform* final_transform;
   product_estimator* final_estimator;
 
   // Ensure initial parameters are ok:
@@ -216,7 +225,8 @@ optim_result gd(arguments_optim x, std::vector<manifolds*>& xmanifolds,
     // x.ss *= 2;
 
     // armijo(x, final_manifold, final_estimator, xmanifolds, xestimators);
-    wolfe(x, final_manifold, final_estimator, xmanifolds, xestimators);
+    wolfe(x, final_transform, final_manifold, final_estimator,
+          xtransforms, xmanifolds, xestimators);
 
     // update gradient
     // final_estimator->param(x, xestimators); // param() was called in armijo
@@ -256,7 +266,11 @@ optim_result gd(arguments_optim x, std::vector<manifolds*>& xmanifolds,
 
   // final_estimator->outcomes(x, xestimators);
 
-  optim_result result = std::make_tuple(x.parameters, x.f, x.iterations, x.convergence,
+  optim_result result = std::make_tuple(x.parameters,
+                                        x.transparameters,
+                                        x.f,
+                                        x.iterations,
+                                        x.convergence,
                                         x.ng, x.rg, x.posterior);
 
   return result;
@@ -265,18 +279,26 @@ optim_result gd(arguments_optim x, std::vector<manifolds*>& xmanifolds,
 
 // L-BFGS algorithm:
 
-optim_result lbfgs(arguments_optim x, std::vector<manifolds*>& xmanifolds,
+optim_result lbfgs(arguments_optim x,
+                   std::vector<transformations*>& xtransforms,
+                   std::vector<manifolds*>& xmanifolds,
                    std::vector<estimators*>& xestimators) {
 
   product_manifold* final_manifold;
+  product_transform* final_transform;
   product_estimator* final_estimator;
 
   // Ensure initial parameters are ok:
+  // Rf_error("292");
   final_manifold->param(x, xmanifolds);
   final_manifold->retr(x, xmanifolds);
   final_manifold->param(x, xmanifolds);
+  // Rf_error("296");
+  final_transform->transform(x, xtransforms);
+  // Rf_error("298");
+  // Rf_error("299");
   final_estimator->param(x, xestimators);
-
+  // Rf_error("300");
   x.iterations = 0L;
 
   // Parameterization
@@ -284,6 +306,9 @@ optim_result lbfgs(arguments_optim x, std::vector<manifolds*>& xmanifolds,
   final_estimator->F(x, xestimators);
   // update the gradient
   final_estimator->G(x, xestimators);
+  // Rf_error("307");
+  final_transform->jacobian(x, xtransforms);
+  // Rf_error("306");
   // Riemannian gradient
   // final_manifold->param(x, xmanifolds);
   final_manifold->proj(x, xmanifolds);
@@ -317,7 +342,8 @@ optim_result lbfgs(arguments_optim x, std::vector<manifolds*>& xmanifolds,
     arma::vec old_rg = x.rg;
 
     // armijo(x, final_manifold, final_estimator, xmanifolds, xestimators);
-    wolfe(x, final_manifold, final_estimator, xmanifolds, xestimators);
+    wolfe(x, final_transform, final_manifold, final_estimator,
+          xtransforms, xmanifolds, xestimators);
 
     // if(x.ss < arma::datum::eps) {
     //   x.convergence = false;
@@ -326,6 +352,7 @@ optim_result lbfgs(arguments_optim x, std::vector<manifolds*>& xmanifolds,
 
     // final_estimator->param(x, xestimators); // Necessary¿?
     final_estimator->G(x, xestimators);
+    final_transform->jacobian(x, xtransforms);
     // After the retraction in armijo you need to param the manifolds:
     final_manifold->param(x, xmanifolds);
     final_manifold->proj(x, xmanifolds);
@@ -394,7 +421,11 @@ optim_result lbfgs(arguments_optim x, std::vector<manifolds*>& xmanifolds,
 
   // final_estimator->outcomes(x, xestimators);
 
-  optim_result result = std::make_tuple(x.parameters, x.f, x.iterations, x.convergence,
+  optim_result result = std::make_tuple(x.parameters,
+                                        x.transparameters,
+                                        x.f,
+                                        x.iterations,
+                                        x.convergence,
                                         x.ng, x.rg, x.posterior);
 
   return result;
@@ -403,7 +434,9 @@ optim_result lbfgs(arguments_optim x, std::vector<manifolds*>& xmanifolds,
 
 // Newton Trust-region algorithm:
 
-optim_result ntr(arguments_optim x, std::vector<manifolds*>& xmanifolds,
+optim_result ntr(arguments_optim x,
+                 std::vector<transformations*>& xtransforms,
+                 std::vector<manifolds*>& xmanifolds,
                  std::vector<estimators*>& xestimators) {
 
   product_manifold* final_manifold;
@@ -545,7 +578,11 @@ optim_result ntr(arguments_optim x, std::vector<manifolds*>& xmanifolds,
 
   // final_estimator->outcomes(x, xestimators);
 
-  optim_result result = std::make_tuple(x.parameters, x.f, x.iterations, x.convergence,
+  optim_result result = std::make_tuple(x.parameters,
+                                        x.transparameters,
+                                        x.f,
+                                        x.iterations,
+                                        x.convergence,
                                         x.ng, x.rg, x.posterior);
 
   return result;
@@ -554,8 +591,10 @@ optim_result ntr(arguments_optim x, std::vector<manifolds*>& xmanifolds,
 
 // Newton Trust-region algorithm:
 
-optim_result em(arguments_optim x, std::vector<manifolds*>& xmanifolds,
-                 std::vector<estimators*>& xestimators) {
+optim_result em(arguments_optim x,
+                std::vector<transformations*>& xtransforms,
+                std::vector<manifolds*>& xmanifolds,
+                std::vector<estimators*>& xestimators) {
 
   product_estimator* final_estimator;
 
@@ -575,12 +614,17 @@ optim_result em(arguments_optim x, std::vector<manifolds*>& xmanifolds,
       x.convergence = true;
       break;
     }
+    // Rf_error("617");
 
   } while(x.iterations < x.maxit);
 
   // final_estimator->outcomes(x, xestimators);
 
-  optim_result result = std::make_tuple(x.parameters, x.loglik, x.iterations, x.convergence,
+  optim_result result = std::make_tuple(x.parameters,
+                                        x.transparameters,
+                                        x.loglik,
+                                        x.iterations,
+                                        x.convergence,
                                         x.ng, x.rg, x.posterior);
 
   return result;
@@ -594,6 +638,7 @@ class optim {
 public:
 
   virtual optim_result optimize(arguments_optim x,
+                                std::vector<transformations*>& xtransforms,
                                 std::vector<manifolds*>& xmanifolds,
                                 std::vector<estimators*>& xestimators) = 0;
 
@@ -606,10 +651,11 @@ class RGD:public optim {
 public:
 
   optim_result optimize(arguments_optim x,
+                        std::vector<transformations*>& xtransforms,
                         std::vector<manifolds*>& xmanifolds,
                         std::vector<estimators*>& xestimators) {
 
-    return gd(x, xmanifolds, xestimators);
+    return gd(x, xtransforms, xmanifolds, xestimators);
 
   }
 
@@ -622,10 +668,11 @@ class LBFGS:public optim {
 public:
 
   optim_result optimize(arguments_optim x,
+                        std::vector<transformations*>& xtransforms,
                         std::vector<manifolds*>& xmanifolds,
                         std::vector<estimators*>& xestimators) {
 
-    return lbfgs(x, xmanifolds, xestimators);
+    return lbfgs(x, xtransforms, xmanifolds, xestimators);
 
   }
 
@@ -638,10 +685,11 @@ class RNTR:public optim {
 public:
 
   optim_result optimize(arguments_optim x,
+                        std::vector<transformations*>& xtransforms,
                         std::vector<manifolds*>& xmanifolds,
                         std::vector<estimators*>& xestimators) {
 
-    return ntr(x, xmanifolds, xestimators);
+    return ntr(x, xtransforms, xmanifolds, xestimators);
 
   }
 
@@ -652,10 +700,11 @@ class EM:public optim {
 public:
 
   optim_result optimize(arguments_optim x,
+                        std::vector<transformations*>& xtransforms,
                         std::vector<manifolds*>& xmanifolds,
                         std::vector<estimators*>& xestimators) {
 
-    return em(x, xmanifolds, xestimators);
+    return em(x, xtransforms, xmanifolds, xestimators);
 
   }
 
@@ -663,25 +712,33 @@ public:
 
 optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
 
-  if(control_optimizer.containsElementNamed("parameters")) {
+  // if(control_optimizer.containsElementNamed("parameters")) {
     std::vector<arma::vec> params = control_optimizer["parameters"];
     x.nparam = params[0].n_elem;
     x.dir.set_size(x.nparam); x.dir.zeros();
     x.parameters.set_size(x.nparam);
+  // }
+
+  if(control_optimizer.containsElementNamed("transparameters")) {
+    std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
+    x.ntransparam = transparameters[0].n_elem;
+    x.transparameters.set_size(x.ntransparam);
   }
 
-  // if(control_optimizer.containsElementNamed("posterior")) {
-  //   std::vector<arma::mat> post = control_optimizer["posterior"];
-  //   x.nrow_post = post[0].n_rows;
-  //   x.ncol_post = post[0].n_cols;
-  //   x.latentloglik.set_size(x.nrow_post, x.ncol_post);
-  // }
+  if(control_optimizer.containsElementNamed("posterior")) {
+    std::vector<arma::mat> post = control_optimizer["posterior"];
+    x.nrow_post = post[0].n_rows;
+    x.ncol_post = post[0].n_cols;
+    x.posterior.set_size(x.nrow_post, x.ncol_post);
+    x.latentloglik.set_size(x.nrow_post, x.ncol_post);
+  }
 
   if(control_optimizer.containsElementNamed("nlatent")) {
     int S = control_optimizer["S"];
     int nlatent = control_optimizer["nlatent"];
     x.latentloglik.set_size(S, nlatent);
     x.latentpars.set_size(nlatent);
+    x.loglatentpars.set_size(nlatent);
   }
 
   if(control_optimizer.containsElementNamed("opt")) {

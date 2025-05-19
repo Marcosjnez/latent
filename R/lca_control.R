@@ -8,14 +8,6 @@ lca_control <- function(control) {
     control$opt <- "em-lbfgs"
   }
 
-  # condition <- "softmax" %in% names(control)
-
-  if(control$opt == "em") {
-    control$softmax <- FALSE # Use latentloglik_combination_softmax.h
-  } else {
-    control$softmax <- TRUE # Use latentloglik_combination_softmax.h
-  }
-
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L
   }

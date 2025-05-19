@@ -7,7 +7,7 @@
 se(fit)
 }
 \arguments{
-\item{fit}{model.}
+\item{fit}{model fitted with lca.}
 }
 \value{
 List with the following objects:

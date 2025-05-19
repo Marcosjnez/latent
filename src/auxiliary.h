@@ -1,6 +1,6 @@
 /*
  * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
+ * email: m.j.jimenezhenriquez@vu.nl
  * Modification date: 03/02/2025
  */
 

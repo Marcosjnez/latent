@@ -70,4 +70,24 @@ public:
 
   }
 
+  void dconstraints() {
+
+  }
+
+  void outcomes() {
+
+  }
+
 };
+
+simplex* choose_simplex(Rcpp::List manifold_setup) {
+
+  simplex* mymanifold = new simplex();
+
+  // Provide these:
+  arma::uvec indices = manifold_setup["indices"];
+  mymanifold->indices = indices;
+
+  return mymanifold;
+
+}

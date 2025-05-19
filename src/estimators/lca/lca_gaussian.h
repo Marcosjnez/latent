@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 03/02/2025
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 16/05/2025
  */
 
 /*
@@ -17,7 +17,6 @@ public:
   int J; // cols of Y (number of items)
   arma::uvec K; // Vector of number of categories by item
   int nclasses; // Number of latent classes
-  // arma::vec n; // number of subjects in each pattern
   arma::vec lclasses, classes, logclasses;
   std::vector<arma::mat> logconditionals; // Provide this filled with zeroes
   double constant_class;
@@ -44,7 +43,7 @@ public:
 
     latentloglik.zeros();
 
-    classes(indices_target_classes) = parameters(indices_classes);
+    classes(indices_target_classes) = transparameters(indices_classes);
     logclasses = trunc_log(classes);
 
     for(int j=0; j < J; ++j) {
@@ -52,7 +51,7 @@ public:
         arma::uvec indices1 = indices_conditionals[j][i];
         arma::uvec indices2 = indices_target_conditionals[j][i];
         arma::uvec col = arma::uvec{i};
-        conditionals[j](indices2, col) = parameters(indices1);
+        conditionals[j](indices2, col) = transparameters(indices1);
         for(int s=0; s < S; ++s) {
           double value = Y(s, j);
           double mu = conditionals[j](0, i);
@@ -63,7 +62,7 @@ public:
       }
     }
 
-    latentpars = logclasses;
+    loglatentpars = logclasses;
 
   }
 
@@ -84,15 +83,13 @@ public:
 
   void G() {
 
-    arma::vec gclasses(nclasses, arma::fill::zeros);
     gmeans.set_size(J, nclasses); gmeans.zeros();
     gsds.set_size(J, nclasses); gsds.zeros();
 
     for(int s=0; s < S; ++s) {
-      jointlogp.row(s) = latentloglik.row(s) + latentpars.t();
+      jointlogp.row(s) = latentloglik.row(s) + loglatentpars.t();
       double max_vector = jointlogp.row(s).max();
       loglik_case[s] = max_vector + arma::trunc_log(arma::accu(arma::trunc_exp(jointlogp.row(s) - max_vector)));
-      gclasses += -n[s]*arma::trunc_exp(-loglik_case[s] + latentloglik.row(s).t());
       arma::vec term = -loglik_case[s] + jointlogp.row(s).t();
       for(int i=0; i < nclasses; ++i) {
         for(int j=0; j < J; ++j) {
@@ -121,16 +118,10 @@ public:
       gz = arma::join_cols(gz, arma::vectorise(mat));
     }
 
-    //     arma::vec gmeans_v = arma::vectorise(gmeans);
-    //     arma::vec glog_sds_v = arma::vectorise(glog_sds);
-    //     arma::vec gz = arma::join_cols(gmeans_v, glog_sds_v);
-
-    arma::vec gugz(parameters.n_elem, arma::fill::zeros);
-    // gugz(indices_classes) += gclasses(indices_target_classes);
+    arma::vec gugz(transparameters.n_elem, arma::fill::zeros);
     gugz(indices_conditionals2) += gz(indices_target_conditionals2);
-    g = gugz;
-    // g.replace(arma::datum::nan, 0);
-    g.elem( arma::find_nonfinite(g) ).zeros();
+    grad = gugz;
+    grad.elem( arma::find_nonfinite(grad) ).zeros();
 
   }
 
@@ -154,15 +145,14 @@ public:
 
     arma::mat freqs = posterior; // S x nclasses
     freqs.each_col() %= n;
-    arma::vec post_total = arma::sum(freqs, 0).t();
-    classes = post_total / arma::accu(post_total);
-    logclasses = trunc_log(classes);
+    arma::rowvec post_total = arma::sum(freqs, 0);
+    freqs.each_row() /= post_total;
 
     for(int j=0; j < J; ++j) {
       for(unsigned int i=0; i < nclasses; ++i) {
-        conditionals[j](0, i) = arma::accu(Y.col(j) % freqs.col(i)) / post_total(i);
+        conditionals[j](0, i) = arma::accu(Y.col(j) % freqs.col(i));
         arma::vec xdiff = Y.col(j) - conditionals[j](0, i);
-        conditionals[j](1, i) = arma::accu(xdiff % xdiff % freqs.col(i)) / post_total(i);
+        conditionals[j](1, i) = arma::accu(xdiff % xdiff % freqs.col(i));
         double mu = conditionals[j](0, i);
         double sigma2 = conditionals[j](1, i);
         for(int s=0; s < S; ++s) {
@@ -173,18 +163,13 @@ public:
       }
     }
 
-    // for(int s=0; s < S; ++s) {
-    //   latentloglik.row(s) = arma::sum(loglik.slice(s), 0);
-    // }
-
     arma::vec cond_vector;
     for (const auto& mat : conditionals) {
       // Flatten each matrix as a column vector and join everything
       cond_vector = arma::join_cols(cond_vector, arma::vectorise(mat));
     }
-    parameters = arma::vectorise(arma::join_cols(classes, cond_vector));
+    transparameters = arma::vectorise(arma::join_cols(latentpars, cond_vector));
 
-    latentpars = logclasses;
     // Rprintf("Gaussian nparam = %zu\n", parameters.n_elem);
     // Rprintf("Number of Gaussian indices = %zu\n", indices.n_elem);
 
@@ -198,7 +183,7 @@ public:
 
     for(int s=0; s < S; ++s) {
       latentloglik.row(s) = arma::sum(loglik.slice(s), 0);
-      pYXX.row(s) = arma::trunc_exp(latentloglik.row(s) + logclasses.t()); // P(data |X = c) P(X = c)
+      pYXX.row(s) = arma::trunc_exp(latentloglik.row(s) + loglatentpars.t()); // P(data |X = c) P(X = c)
       mid[s] = arma::accu(pYXX.row(s)); // P(data)
     }
 
@@ -206,18 +191,83 @@ public:
     posterior.each_col() /= mid; //P(X = c | data) = P(data | X = c) P(X = c) / P(data)
     loglik_case = arma::trunc_log(mid);
 
-    vectors.resize(3);
-    vectors[0] = classes;
-    vectors[1] = -loglik_case;
-    vectors[2] = n;
+    vectors.resize(4);
+    vectors[0] = latentpars;
+    vectors[1] = loglatentpars;
+    vectors[2] = loglik_case;
+    vectors[3] = n;
 
     matrices.resize(2);
     matrices[0] = posterior;
     matrices[1] = latentloglik;
 
-    list_matrices.resize(1);
+    list_matrices.resize(2);
     list_matrices[0] = conditionals;
+    list_matrices[1] = logconditionals;
 
   }
 
 };
+
+lca_gaussian* choose_lca_gaussian(Rcpp::List estimator_setup) {
+
+  lca_gaussian* myestimator = new lca_gaussian();
+
+  arma::mat Y = estimator_setup["Y"];
+  int S = estimator_setup["S"];
+  int J = estimator_setup["J"];
+  arma::vec n = estimator_setup["n"];
+  int nclasses = estimator_setup["nclasses"];
+  arma::vec classes = estimator_setup["classes"];
+  double constant_class = estimator_setup["constant_class"];
+  bool fix_logit = estimator_setup["fix_logit"];
+  std::vector<arma::mat> conditionals = estimator_setup["conditionals"];
+  arma::uvec indices_classes = estimator_setup["indices_classes"];
+  arma::uvec indices_target_classes = estimator_setup["indices_target_classes"];
+  std::vector<std::vector<arma::uvec>> indices_conditionals = estimator_setup["indices_conditionals"];
+  std::vector<std::vector<arma::uvec>> indices_target_conditionals = estimator_setup["indices_target_conditionals"];
+  arma::uvec indices = estimator_setup["indices"];
+  arma::uvec indices_conditionals2 = estimator_setup["indices_conditionals2"];
+  arma::uvec indices_target_conditionals2 = estimator_setup["indices_target_conditionals2"];
+
+  arma::cube loglik(J, nclasses, S, arma::fill::zeros);
+  arma::vec logliks(S, arma::fill::zeros);
+  arma::vec mid(S, arma::fill::zeros);
+  arma::vec loglik_case(S, arma::fill::zeros);
+  arma::mat pYXX(S, nclasses, arma::fill::zeros);
+  // arma::mat posterior(S, nclasses, arma::fill::randu);
+  // posterior = arma::normalise(posterior, 1);
+  arma::mat latentloglik(S, nclasses, arma::fill::zeros);
+  arma::mat jointlogp(S, nclasses, arma::fill::zeros);
+
+  myestimator->Y = Y;
+  myestimator->S = S;
+  myestimator->J = J;
+  myestimator->n = n;
+  myestimator->nclasses = nclasses;
+  myestimator->classes = classes;
+  myestimator->constant_class = constant_class;
+  myestimator->fix_logit = fix_logit;
+  myestimator->conditionals = conditionals;
+  myestimator->indices_classes = indices_classes;
+  myestimator->indices_target_classes = indices_target_classes;
+  myestimator->indices_conditionals = indices_conditionals;
+  myestimator->indices_target_conditionals = indices_target_conditionals;
+  myestimator->indices = indices;
+  myestimator->indices_conditionals2 = indices_conditionals2;
+  myestimator->indices_target_conditionals2 = indices_target_conditionals2;
+
+  myestimator->gconditionals = conditionals;
+  myestimator->loglik = loglik;
+  myestimator->logliks = logliks;
+  myestimator->mid = mid;
+  myestimator->loglik_case = loglik_case;
+  myestimator->pYXX = pYXX;
+  // myestimator->posterior = posterior;
+  myestimator->latentloglik = latentloglik;
+  myestimator->jointlogp = jointlogp;
+  myestimator->evalEM = true;
+
+  return myestimator;
+
+}

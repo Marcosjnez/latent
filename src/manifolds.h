@@ -1,13 +1,7 @@
 /*
  * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 03/02/2025
- */
-
-/*
- * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 03/02/2025
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 17/05/2025
  */
 
 // Manifolds
@@ -30,6 +24,11 @@ public:
   double ss;
   arma::vec dir;
 
+  std::vector<double> doubles;
+  std::vector<arma::vec> vectors;
+  std::vector<arma::mat> matrices;
+  std::vector<std::vector<arma::mat>> list_matrices;
+
   virtual void param() = 0;
 
   virtual void proj() = 0;
@@ -37,6 +36,10 @@ public:
   virtual void hess() = 0;
 
   virtual void retr() = 0;
+
+  virtual void dconstraints() = 0;
+
+  virtual void outcomes() = 0;
 
 };
 
@@ -56,75 +59,27 @@ manifolds* choose_manifold(Rcpp::List manifold_setup, manifolds* xmanifold) {
 
   if(projection == "euclidean") {
 
-    euclidean* mymanifold = new euclidean();
-
-    arma::uvec indices = manifold_setup["indices"];
-    mymanifold->indices = indices;
-
-    manifold = mymanifold;
+    manifold = choose_euclidean(manifold_setup);
 
   } else if(projection == "unit") {
 
-    unit* mymanifold = new unit();
-
-    // Provide these:
-    arma::uvec indices = manifold_setup["indices"];
-    mymanifold->indices = indices;
-
-    manifold = mymanifold;
+    manifold = choose_unit(manifold_setup);
 
   } else if(projection == "simplex") {
 
-    simplex* mymanifold = new simplex();
-
-    // Provide these:
-    arma::uvec indices = manifold_setup["indices"];
-    mymanifold->indices = indices;
-
-    manifold = mymanifold;
+    manifold = choose_simplex(manifold_setup);
 
   } else if(projection == "orth") {
 
-    orth* mymanifold = new orth();
-
-    // Provide these:
-    arma::uvec indices = manifold_setup["indices"];
-    std::size_t q = manifold_setup["q"];
-    mymanifold->indices = indices;
-    mymanifold->q = q;
-
-    manifold = mymanifold;
+    manifold = choose_orth(manifold_setup);
 
   } else if(projection == "oblq") {
 
-    oblq* mymanifold = new oblq();
-
-    // Provide these:
-    arma::uvec indices = manifold_setup["indices"];
-    std::size_t q = manifold_setup["q"];
-    mymanifold->indices = indices;
-    mymanifold->q = q;
-
-    manifold = mymanifold;
+    manifold = choose_oblq(manifold_setup);
 
   } else if(projection == "poblq") {
 
-    poblq* mymanifold = new poblq();
-
-    // Provide these:
-    arma::uvec indices = manifold_setup["indices"];
-    std::size_t q = manifold_setup["q"];
-    // arma::uvec oblq_indices = manifold_setup["oblq_indices"];
-    arma::mat PhiTarget = manifold_setup["PhiTarget"];
-    mymanifold->indices = indices;
-    mymanifold->q = q;
-    mymanifold->PhiTarget = PhiTarget;
-
-    PhiTarget.diag() += 10;
-    arma::uvec oblq_indices = arma::find(PhiTarget == 1);
-    mymanifold->oblq_indices = oblq_indices;
-
-    manifold = mymanifold;
+    manifold = choose_poblq(manifold_setup);
 
   } else {
 
@@ -198,6 +153,32 @@ public:
       xmanifolds[i]->retr();
       // x.dir(indices) = xmanifolds[i]->dir;
       x.parameters.elem(indices) = xmanifolds[i]->parameters;
+
+    }
+
+  }
+
+  void dconstraints(arguments_optim& x, std::vector<manifolds*>& xmanifolds) {
+
+    // for(int i=0; i < x.nmanifolds; ++i) {
+    //
+    // }
+
+  }
+
+  void outcomes(arguments_optim& x, std::vector<manifolds*>& xmanifolds) {
+
+    std::get<0>(x.outputs_manifold).resize(x.nmanifolds);
+    std::get<1>(x.outputs_manifold).resize(x.nmanifolds);
+    std::get<2>(x.outputs_manifold).resize(x.nmanifolds);
+    std::get<3>(x.outputs_manifold).resize(x.nmanifolds);
+
+    for(int i=0; i < x.nmanifolds; ++i) {
+
+      std::get<0>(x.outputs_manifold)[i] = xmanifolds[i]->doubles;
+      std::get<1>(x.outputs_manifold)[i] = xmanifolds[i]->vectors;
+      std::get<2>(x.outputs_manifold)[i] = xmanifolds[i]->matrices;
+      std::get<3>(x.outputs_manifold)[i] = xmanifolds[i]->list_matrices;
 
     }
 

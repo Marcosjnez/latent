@@ -29,6 +29,7 @@
 #include "structures.h"
 #include "auxiliary.h"
 #include "manifolds.h"
+#include "transformations.h"
 #include "estimators.h"
 #include "optim.h"
 #include "optimizer.h"
@@ -43,6 +44,7 @@
 
 // [[Rcpp::export]]
 Rcpp::List optimizer(Rcpp::List control_manifold,
+                     Rcpp::List control_transform,
                      Rcpp::List control_estimator,
                      Rcpp::List control_optimizer);
 
@@ -61,7 +63,9 @@ Rcpp::List polyfast(arma::mat data, std::string missing = "pairwise.complete.cas
                     const int cores = 1L);
 
 // [[Rcpp::export]]
-arma::vec grad_comp(arma::vec parameters,
-                    Rcpp::List control_manifold,
-                    Rcpp::List control_estimator,
-                    Rcpp::List control_optimizer);
+Rcpp::List grad_comp(arma::vec parameters,
+                     Rcpp::List control_manifold,
+                     Rcpp::List control_transform,
+                     Rcpp::List control_estimator,
+                     Rcpp::List control_optimizer,
+                     double eps = 1e-04);

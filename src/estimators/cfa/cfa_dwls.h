@@ -234,3 +234,39 @@ public:
   };
 
 };
+
+cfa_dwls* choose_cfa_dwls(Rcpp::List estimator_setup) {
+
+  cfa_dwls* myestimator = new cfa_dwls();
+
+  arma::mat R = estimator_setup["R"];
+  arma::mat lambda = estimator_setup["lambda"];
+  arma::mat phi = estimator_setup["phi"];
+  arma::mat psi = estimator_setup["psi"];
+  arma::mat W = estimator_setup["W"];
+  int nparam = estimator_setup["nparam"];
+  arma::uvec lambda_indexes = estimator_setup["lambda_indexes"];
+  arma::uvec phi_indexes = estimator_setup["phi_indexes"];
+  arma::uvec psi_indexes = estimator_setup["psi_indexes"];
+  arma::uvec target_indexes = estimator_setup["target_indexes"];
+  arma::uvec targetphi_indexes = estimator_setup["targetphi_indexes"];
+  arma::uvec targetpsi_indexes = estimator_setup["targetpsi_indexes"];
+  arma::uvec indices = estimator_setup["indices"];
+
+  myestimator->R = R;
+  myestimator->lambda = lambda;
+  myestimator->phi = phi;
+  myestimator->psi = psi;
+  myestimator->W = W;
+  myestimator->nparam = nparam;
+  myestimator->lambda_indexes = lambda_indexes;
+  myestimator->phi_indexes = phi_indexes;
+  myestimator->psi_indexes = psi_indexes;
+  myestimator->target_indexes = target_indexes;
+  myestimator->targetphi_indexes = targetphi_indexes;
+  myestimator->targetpsi_indexes = targetpsi_indexes;
+  myestimator->indices = indices;
+
+  return myestimator;
+
+}

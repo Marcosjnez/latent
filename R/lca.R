@@ -10,7 +10,7 @@
 #' control = list(opt = "lbfgs", rstarts = 30L, cores = 1L))
 #'
 #' @param data data.frame or matrix of response.
-#' @param model Character vector with the model for each item.
+#' @param itemmodel Character vector with the model for each item.
 #' @param nclasses Number of latent classes.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #'
@@ -25,8 +25,11 @@
 #' None yet.
 #'
 #' @export
-lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
-                fullmodel = NULL, control = NULL, do.fit = TRUE) {
+lca <- function(data, nclasses = 2L, item_model = rep("multinomial", ncol(data)),
+                model = NULL, control = NULL, do.fit = TRUE, constraints = TRUE) {
+
+  # library(data.table, quietly = TRUE)
+  # library(lavaan, quietly = TRUE)
 
   # Check that data is either a data.frame or a matrix:
   if(!is.data.frame(data) & !is.matrix(data)) {
@@ -57,26 +60,16 @@ lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
   nobs <- nrow(data) # Sample size
 
   # Check that the model is a character vector with a string for each column of data:
-  if(!is.character(model) || length(model) != ncol(data)) {
+  if(!is.character(item_model) || length(item_model) != ncol(data)) {
 
-    stop("model must be a character vector with as many elements as columns in data")
-
-  }
-
-  if(is.null(fullmodel)) {
-
-    # Get the full model specification with labels for each parameter:
-    # Fix the first parameter of a constrained vector:
-    free <- FALSE
-    if(control$opt == "em") free <- TRUE # Free all the parameters if EM is used
-    fullmodel <- getmodel(data = data, model = model, nclasses = nclasses, free = free)
+    stop("item_model must be a character vector with as many elements as columns in data")
 
   }
 
-  classes <- fullmodel$classes           # Get the model for the classes
-  conditionals <- fullmodel$conditionals # Get the model for the item parameters
-
-  opt <- control$opt                     # Optimizer
+  # Get the full model specification with labels for each parameter:
+  # Fix the first parameter of a constrained vector:
+  model <- getmodel(data = data, item_model = item_model, nclasses = nclasses,
+                    model = model, constraints = constraints)
 
   # Generate all the necessary objects to evaluate the estimator:
   data_list <- vector("list")
@@ -84,25 +77,22 @@ lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
   data_list$n <- n
   data_list$uniq_indices <- uniq_indices
   data_list$map2full <- map2full
+  data_list$dt <- dt
 
-  args <- getargs_lca(data_list = data_list, model = model, classes = classes,
-                      conditionals = conditionals, control = control)
+  args <- getargs_lca(data_list = data_list, item_model = item_model, model = model,
+                      control = control)
+  manifold_setup <- args$manifold_setup
+  transform_setup <- args$transform_setup
   estimator_setup <- args$estimator_setup
-
-  # Generate all the necessary objects to project onto the manifold:
-  # All the parameters are fixed to belong to the Euclidean manifold:
-  indices <- unique(unlist(lapply(estimator_setup, function(x) x$indices)))
-  manifolds <- c("euclidean")
-  arguments <- list()
-  arguments[[1]] <- list(indices = indices)
-  manifold_setup <- setup_all_manifolds(manifolds, arguments)
 
   # Initial parameters estimates and posterior probabilities for the optimizer:
   parameters <- args$parameters # For derivative-based algorithms
   posterior <- args$posterior   # For the EM algorithm
+  transparameters <- args$transparameters
 
   # Give additional information to the optimizer:
   control$parameters <- parameters
+  control$transparameters <- transparameters
   control$posterior <- posterior
   control$S <- estimator_setup[[1]]$S # Number of unique patterns
   control$nlatent <- length(estimator_setup[[1]]$classes) # Number of latent variables
@@ -114,19 +104,21 @@ lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
 
     # If do.fit is FALSE, just return the model setup for the optimization:
 
-    opt <- list(estimator_setup = estimator_setup,
-                manifold_setup = manifold_setup,
+    opt <- list(manifold_setup = manifold_setup,
+                transform_setup = transform_setup,
+                estimator_setup = estimator_setup,
                 control = control,
                 # init_param = parameters,  # Already in control
                 # init_post = posterior,    # Already in control
                 data = data)
 
-    modelInfo <- list(model_vector = model,
-                      model = fullmodel,
+    modelInfo <- list(item_model = item_model,
+                      model = model$log_model,
                       nobs = nobs,
-                      nparam = length(parameters),
+                      nparam = length(parameters[[1]]),
+                      ntransparam = length(transparameters[[1]]),
                       npatterns = npatterns,
-                      df = npatterns - length(parameters))
+                      df = npatterns - length(parameters[[1]]))
 
     result$modelInfo <- modelInfo
     result$opt <- opt
@@ -139,8 +131,8 @@ lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
 
     # Perform the optimization with EM (fit the model):
     control$opt <- "em"
-    x <- lca(data, nclasses = nclasses, model = model,
-             fullmodel = NULL, control = control, do.fit = TRUE)
+    x <- lca(data, nclasses = nclasses, item_model = item_model,
+             model = NULL, control = control, do.fit = TRUE)
 
     # Perform the optimization with L-BFGS (fit the model):
     control$opt <- "lbfgs"
@@ -148,144 +140,119 @@ lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
     control$posterior <- list(x$opt$posterior)
     control$rstarts <- 1L
     control$cores <- 1L
-    # which(fullmodel)
-    x <- lca(data, nclasses = nclasses, model = model,
-             fullmodel = fullmodel, control = control, do.fit = TRUE)
+    x <- lca(data, nclasses = nclasses, item_model = item_model,
+             model = model$log_model, control = control, do.fit = TRUE)
 
   } else {
 
     # Perform the optimization (fit the model):
-    x <- optimizer(control_estimator = estimator_setup,
+    x <- optimizer(control_transform = transform_setup,
+                   control_estimator = estimator_setup,
                    control_manifold = manifold_setup,
                    control_optimizer = control)
 
   }
 
+  if(control$opt != "em") {
+
+    parameters <- x$parameters
+    transparameters <- c(x$transparameters)
+
+  } else {
+
+    copy <- model$log_model$conditionals
+    k <- 0
+
+    if("gaussian" %in% item_model) {
+      k <- k+1
+      indices_gauss <- which(item_model == "gaussian")
+      copy[indices_gauss] <- x$list_matrices[[k]][[1]]
+    }
+
+    if("multinomial" %in% item_model) {
+      k <- k+1
+      indices_mult <- which(item_model == "multinomial")
+      copy[indices_mult] <- x$list_matrices[[k]][[1]]
+    }
+
+    parameters <- NULL
+    transparameters <- c(x$vectors[[1]][[1]], unlist(copy))
+
+  }
+
   # Collect all the information about the optimization:
-  opt <- list(parameters = x$parameters,
+  opt <- list(parameters = parameters,
+              transparameters = transparameters,
               posterior = x$posterior,
-              estimator_setup = estimator_setup,
               manifold_setup = manifold_setup,
+              transform_setup = transform_setup,
+              estimator_setup = estimator_setup,
               control = control,
               init_param = parameters,
+              init_transparam = transparameters,
               init_post = posterior,
               iterations = x$iterations,
               convergence = x$convergence,
               ng = x$ng,
-              data = data)
+              data = data,
+              outputs = x$outputs)
 
   loglik <- -x$f # Logarithm likelihood
-  classes <- x$vectors[[1]][[1]] # Class probabilities
-  names(classes) <- paste("Class", 1:nclasses, sep = "")
+  logliks <- x$outputs$estimators$vectors[[1]][[3]] # Loglik of response pattern
+  loglik_case <- n * logliks # Sum of logliks by response pattern
+  posterior <- x$posterior
+  colnames(posterior) <- paste("P(", "Class", 1:nclasses, "|Y)", sep = "")
+  state <- apply(posterior, MARGIN = 1, FUN = which.max)
 
-  nitems <- ncol(data) # Number of items in the data
+  # Create a summary table with information for each response pattern:
+  estimated <- round(exp(logliks) * sum(n), 0)
+  state <- apply(x$posterior, MARGIN = 1, FUN = which.max)
+  Freqs <- cbind(Pattern = Y + 1,
+                 Observed = n,
+                 Estimated = estimated,
+                 Posterior = posterior,
+                 State = state,
+                 loglik = logliks,
+                 total_loglik = loglik_case)
+  Freqs <- as.data.frame(Freqs)
+  Freqs <- Freqs[do.call(order, as.data.frame(Freqs)), ]
+  rownames(Freqs) <- paste("pattern", 1:nrow(Freqs), sep = "")
 
-  # Initialize the outputs:
-  ClassConditional <- RespConditional <- vector("list", length = nitems)
-  names(ClassConditional) <- names(RespConditional) <- paste("Item", 1:nitems)
-  type <- list()
-
-  gauss <- "gaussian" %in% model     # Check the existence of gaussian items
-  multin <- "multinomial" %in% model # Check the existence of multinomial items
-  rm(posterior) # Remove the posterior from the environment REMOVE?
-
-  # Fill the objects that were initialized depending on the nature of the items:
-  k <- 1
-
-  if(gauss & multin) {
-
-    # If there are both gaussian and multinomial items...
-
-    # S1 <- estimator_setup[[1]]$S # Number of patterns in gaussian data
-    # S2 <- estimator_setup[[2]]$S # Number of patterns in multinomial data
-    # gauss_map2full <- estimator_setup[[1]]$map2full
-    # categ_map2full <- estimator_setup[[2]]$map2full
-
-    # Log likelihood of gaussian data conditioning on the latent parameters:
-    gauss_latentloglik <- matrix(x$matrices[[1]][[2]], nrow = npatterns, ncol = nclasses)
-    # Log likelihood of multinomial data conditioning on the latent parameters:
-    categ_latentloglik <- matrix(x$matrices[[2]][[2]], nrow = npatterns, ncol = nclasses)
-
-    # gauss_latentloglik <- gauss_latentloglik[gauss_map2full, ]
-    # categ_latentloglik <- categ_latentloglik[categ_map2full, ]
-
-    # Log likelihood of data conditioning on the latent parameters:
-    latentloglik <- gauss_latentloglik + categ_latentloglik
-
-    # Joint lkelihood of data and latent parameters:
-    jointp <- t(exp(t(latentloglik) + log(classes)))
-    # Marginal likelihood of latent parameters:
-    marginalp <- rowSums(jointp)
-    # Posterior probabilities of the latent parameters:
-    posterior <- jointp / marginalp
-    # Logarithm likelihood by pattern:
-    loglik_case <- log(marginalp)
-
-    # Most probable class for each pattern:
-    state <- apply(posterior, MARGIN = 1, which.max)
-
-    colnames(posterior) <- paste("Class", 1:nclasses, sep = "")
-
+  vec <- vector(length = args$ntransparam)
+  if(!is.null(parameters)) {
+    vec[args$indices_full_param_vector] <- parameters
+    vec[args$indices_full_fixed_vector] <- args$full_fixed_vector
+    result$parameters <- fill_list_with_vector(model$log_model, vec)
+    result$parameters <- convert_all_to_numeric(result$parameters)
   }
+  # result$parameters <- replace_near_zero(result$parameters)
+  result$transformed_parameters <- fill_list_with_vector(model$prob_model, x$transparameters)
+  result$transformed_parameters <- convert_all_to_numeric(result$transformed_parameters)
+  # result$transformed_parameters <- replace_near_zero(result$transformed_parameters)
 
-  if(gauss) {
+  result$posterior <- posterior[map2full, ]
+  result$state <- state[map2full]
+  result$loglik <- loglik
+  result$loglik_case <- logliks[map2full]
+  result$summary_table <- Freqs
 
-    type$gaussian <- list()
-    # For gaussian items:
-    indices <- which(model == "gaussian")
-    gaussian_conditionals <- lapply(x$list_matrices[[1]][[1]], FUN = \(x) {
-      # P(y|X):
-      result <- matrix(x, nrow = 2, ncol = nclasses)
-      if(control$opt == "em") {
-        result[2, ] <- sqrt(result[2, ]) # Variance to Standard deviation
-      } else {
-        result[2, ] <- exp(result[2, ]) # Standard deviation
-      }
-      colnames(result) <- paste("Class", 1:nclasses, sep = "")
-      rownames(result) <- c("Mean", "Std")
-      return(result)
-    })
-    ClassConditional[indices] <- gaussian_conditionals
+  rownames(result$posterior) <- rownames(data)
 
-    uniq_indices <- estimator_setup[[1]]$uniq_indices
-    observed <- estimator_setup[[1]]$n
-    pattern <- estimator_setup[[1]]$Y
-    logliks <- -x$vectors[[1]][[2]]
-    liks <- exp(logliks)
-    estimated <- round(liks/sum(liks) * sum(observed), 2)
-    map2full <- estimator_setup[[1]]$map2full
-    if(!exists("posterior")) {
-      post <-  matrix(unlist(x$matrices[[1]][1]), nrow = nrow(pattern), ncol = nclasses)
-      colnames(post) <- paste("Class", 1:nclasses, sep = "")
-      stat <- apply(post, MARGIN = 1, which.max)
-      posterior <- post
-      state <- stat
-      loglik_case <- logliks[map2full]
-    } else {
-      post <- posterior[uniq_indices, ]
-      stat <- state[uniq_indices]
-    }
-    Freqs <- cbind(pattern,
-                   observed = observed,
-                   estimated = estimated,
-                   posterior = post,
-                   state = stat,
-                   loglik = logliks)
-    Freqs <- as.data.frame(Freqs)
-    type$gaussian$loglik_case <- logliks[map2full]
-    Freqs <- Freqs[do.call(order, as.data.frame(Freqs)), ]
-    rownames(Freqs) <- paste("pattern", 1:nrow(Freqs), sep = "")
-    type$gaussian$Pattern <- Freqs
-    k <- k+1
+  gauss <- "gaussian" %in% item_model     # Check the existence of gaussian items
+  multin <- "multinomial" %in% item_model # Check the existence of multinomial items
 
-  }
+  # Outputs only for multinomial models:
+  if(multin & !gauss) {
 
-  if(multin) {
+    classes <- transparameters[1:nclasses]
 
-    type$multinomial <- list()
     # For multinomial items:
-    indices <- which(model == "multinomial")
-    multinomial_conditionals <- lapply(x$list_matrices[[k]][[1]], FUN = \(x) {
+    indices <- which(item_model == "multinomial")
+    # Initialize the outputs:
+    nitems <- length(indices) # Number of items in the data
+    ClassConditional <- RespConditional <- vector("list", length = nitems)
+    names(ClassConditional) <- names(RespConditional) <- paste("Item", 1:nitems)
+    multinomial_conditionals <- lapply(x$outputs$estimators$list_matrices[[1]][[1]], FUN = \(x) {
       # Extract P(y|X):
       ncategories <- length(x)/nclasses
       result <- matrix(x, nrow = ncategories, ncol = nclasses)
@@ -293,9 +260,7 @@ lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
       rownames(result) <- paste("Category", 1:ncategories, sep = "")
       return(result)
     })
-    nitemscat <- length(multinomial_conditionals)
-    names(multinomial_conditionals) <- paste("Item", 1:nitemscat)
-    type$multinomial$ClassConditional <- multinomial_conditionals
+    names(multinomial_conditionals) <- paste("Item", 1:nitems)
 
     ClassConditional[indices] <- multinomial_conditionals
 
@@ -307,7 +272,6 @@ lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
       return(probCat)
     })
 
-    type$multinomial$probCat <- probCat
 
     RespConditional[indices] <- lapply(multinomial_conditionals, FUN = \(mat) {
       # Calculate P(y|X)*P(X), the joint probability:
@@ -319,65 +283,25 @@ lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
       return(posterior)
     })
 
-    type$multinomial$RespConditional <- RespConditional[indices]
-    names(type$multinomial$RespConditional) <- paste("Item", 1:nitemscat)
-
-    uniq_indices <- estimator_setup[[k]]$uniq_indices
-    observed <- estimator_setup[[k]]$n
-    pattern <- estimator_setup[[k]]$Y + 1
-    logliks <- -x$vectors[[k]][[2]]
-    estimated <- round(exp(logliks) * sum(observed), 0)
-    map2full <- estimator_setup[[k]]$map2full
-    if(!exists("posterior")) {
-      post <-  matrix(unlist(x$matrices[[k]][1]), nrow = nrow(pattern), ncol = nclasses)
-      colnames(post) <- paste("Class", 1:nclasses, sep = "")
-      stat <- apply(post, MARGIN = 1, which.max)
-      posterior <- post
-      state <- stat
-      loglik_case <- logliks[map2full]
-    } else {
-      post <- posterior[uniq_indices, ]
-      stat <- state[uniq_indices]
-    }
-    Freqs <- cbind(pattern,
-                   observed = observed,
-                   estimated = estimated,
-                   posterior = post,
-                   state = stat,
-                   loglik = logliks)
-    Freqs <- as.data.frame(Freqs)
-    # type$multinomial$posterior <- post[map2full, ]
-    type$multinomial$loglik_case <- logliks[map2full]
-    Freqs <- Freqs[do.call(order, as.data.frame(Freqs)), ]
-    rownames(Freqs) <- paste("pattern", 1:nrow(Freqs), sep = "")
-    type$multinomial$Pattern <- Freqs
+    result$ClassConditional <- multinomial_conditionals
+    result$RespConditional <- RespConditional[indices]
+    names(result$RespConditional) <- paste("Item", 1:nitems)
+    result$probCat <- probCat
 
   }
 
-  result$parameters$classes <- classes
-  result$parameters$items <- ClassConditional
-  result$parameters <- replace_near_zero(result$parameters)
-  # result$classes <- classes
-  # result$ClassConditional <- ClassConditional
-  result$posterior <- posterior
-  result$state <- state
-  result$loglik <- loglik
-  result$loglik_case <- loglik_case
-  result$details <- type
-
-  modelInfo <- list(model_vector = model,
-                    model = fullmodel,
+  nparam <- length(parameters)
+  modelInfo <- list(item_model = item_model,
+                    model = model$log_model,
+                    prob_model = model$prob_model,
                     nobs = nobs,
-                    nparam = length(x$parameters),
+                    nparam = nparam,
                     npatterns = npatterns,
-                    df = npatterns - length(x$parameters))
+                    df = npatterns - nparam)
   result$modelInfo <- modelInfo
 
   result$opt <- opt
   result$elapsed <- x$elapsed
-  # table(x$classification)/nrow(data)
-  # x$classes
-  # table(dat$trueclass)/nrow(data)
 
   class(result) <- "lca"
 
@@ -389,7 +313,6 @@ lca <- function(data, nclasses = 2L, model = rep("multinomial", ncol(data)),
 # Andres Chull, fit indices
 # input output lavaan
 # missing data CFA EFA LCA
-# 1:nc
-
-## Estimated values
+# 1:nclasses
+# Estimated values
 

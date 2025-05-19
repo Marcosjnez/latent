@@ -180,6 +180,12 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
   manifold_setup <- setup_all_manifolds(manifolds, arguments)
   # manifold_setup <- latent2:::setup_all_manifolds(manifolds, arguments)
 
+  nparam <- length(indices)
+  transform_setup <- list()
+  transform_setup[[1]] <- list(transform = "identity",
+                               indices = 1:nparam - 1,
+                               target_indices = 1:nparam - 1)
+
   # Collect the initital values of all the entries of lambda, phi and psi:
   if(is.null(control$init)) { # Extract the vector of parameter matrices
     init <- unlist(lapply(estimator_setup, FUN = \(x) unlist(x$matrices)))
@@ -199,6 +205,7 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
 
     x <- vector("list")
     x$model <- matrices
+    x$transform_setup <- transform_setup
     x$estimator_setup <- estimator_setup
     x$manifold_setup <- manifold_setup
     x$control <- control
@@ -210,11 +217,13 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
 
   control$parameters <- parameters
 
-  x <- optimizer(control_estimator = estimator_setup,
+  x <- optimizer(control_transform = transform_setup,
+                 control_estimator = estimator_setup,
                  control_manifold = manifold_setup,
                  control_optimizer = control)
 
   x$init_parameters <- parameters
+  x$transform_setup <- transform_setup
   x$estimator_setup <- estimator_setup
   x$manifold_setup <- manifold_setup
   x$control <- control

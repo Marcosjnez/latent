@@ -112,3 +112,25 @@ public:
   void outcomes() {}
 
 };
+
+lclf* choose_lclf(Rcpp::List estimator_setup) {
+
+  lclf* myestimator = new lclf();
+
+  arma::mat lambda = estimator_setup["lambda"];
+  bool orth = estimator_setup["orth"];
+  double epsilon = estimator_setup["epsilon"];
+  arma::uvec indices = estimator_setup["indices"];
+
+  int p = lambda.n_rows;
+  int q = lambda.n_cols;
+
+  myestimator->lambda = lambda;
+  myestimator->orth = orth;
+  myestimator->indices = indices;
+  myestimator->q = q;
+  myestimator->epsilon = epsilon;
+
+  return myestimator;
+
+}

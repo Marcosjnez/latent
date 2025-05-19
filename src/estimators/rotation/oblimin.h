@@ -114,3 +114,31 @@ public:
   }
 
 };
+
+oblimin* choose_oblimin(Rcpp::List estimator_setup) {
+
+  oblimin* myestimator = new oblimin();
+
+  arma::mat lambda = estimator_setup["lambda"];
+  bool orth = estimator_setup["orth"];
+  double gamma = estimator_setup["gamma"];
+  arma::uvec indices = estimator_setup["indices"];
+
+  int p = lambda.n_rows;
+  int q = lambda.n_cols;
+  arma::mat N(q, q, arma::fill::ones);
+  N.diag(0).zeros();
+  arma::mat I(p, p, arma::fill::eye), gamma_C(p, p, arma::fill::ones);
+  gamma_C *= (gamma/p);
+  arma::mat I_gamma_C = (I - gamma_C);
+
+  myestimator->lambda = lambda;
+  myestimator->orth = orth;
+  myestimator->indices = indices;
+  myestimator->q = q;
+  myestimator->N = N;
+  myestimator->I_gamma_C = I_gamma_C;
+
+  return myestimator;
+
+}

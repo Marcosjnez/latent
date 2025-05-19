@@ -117,3 +117,28 @@ public:
   }
 
 };
+
+varimax* choose_varimax(Rcpp::List estimator_setup) {
+
+  varimax* myestimator = new varimax();
+
+  arma::mat lambda = estimator_setup["lambda"];
+  bool orth = estimator_setup["orth"];
+  arma::uvec indices = estimator_setup["indices"];
+
+  int p = lambda.n_rows;
+  int q = lambda.n_cols;
+
+  arma::vec v(p, arma::fill::ones);
+  arma::mat I(p, p, arma::fill::eye);
+  arma::mat H = I - v * v.t() / (p + 0.0);
+
+  myestimator->lambda = lambda;
+  myestimator->orth = orth;
+  myestimator->indices = indices;
+  myestimator->Hh = H;
+  myestimator->q = q;
+
+  return myestimator;
+
+}

@@ -81,5 +81,33 @@ public:
 
   }
 
+  void dconstraints() {
+
+  }
+
+  void outcomes() {
+
+  }
+
 };
 
+poblq* choose_poblq(Rcpp::List manifold_setup) {
+
+  poblq* mymanifold = new poblq();
+
+  // Provide these:
+  arma::uvec indices = manifold_setup["indices"];
+  std::size_t q = manifold_setup["q"];
+  // arma::uvec oblq_indices = manifold_setup["oblq_indices"];
+  arma::mat PhiTarget = manifold_setup["PhiTarget"];
+  mymanifold->indices = indices;
+  mymanifold->q = q;
+  mymanifold->PhiTarget = PhiTarget;
+
+  PhiTarget.diag() += 10;
+  arma::uvec oblq_indices = arma::find(PhiTarget == 1);
+  mymanifold->oblq_indices = oblq_indices;
+
+  return mymanifold;
+
+}

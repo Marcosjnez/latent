@@ -195,3 +195,50 @@ public:
   };
 
 };
+
+uls_efa* choose_uls_efa(Rcpp::List estimator_setup) {
+
+  uls_efa* myestimator = new uls_efa();
+
+  int p = estimator_setup["p"];
+  int q = estimator_setup["q"];
+  int nhessian = estimator_setup["nhessian"];
+  int nS = estimator_setup["nS"];
+  arma::uvec vp = consecutive(0, p-1);
+  arma::uvec indices_diag_p = p*vp + vp;
+  arma::uvec vq = consecutive(0, q-1);
+  arma::uvec indices_diag_q = q*vq + vq;
+  arma::mat Ip(p, p, arma::fill::eye); // Define identity
+  arma::mat Iq(q, q, arma::fill::eye); // Define identity
+
+  // Provide these:
+  arma::uvec indices = estimator_setup["indices"];
+  arma::uvec lambda_indices = estimator_setup["lambda_indices"];
+  arma::uvec targetlambda_indices = estimator_setup["targetlambda_indices"];
+  arma::uvec phi_indices = estimator_setup["phi_indices"];
+  arma::uvec targetphi_indices = estimator_setup["targetphi_indices"];
+  arma::uvec psi_indices = estimator_setup["psi_indices"];
+  arma::uvec targetpsi_indices = estimator_setup["targetpsi_indices"];
+  arma::mat R = estimator_setup["R"];
+
+  myestimator->R = R;
+  myestimator->p = p;
+  myestimator->q = q;
+  myestimator->nhessian = nhessian;
+  myestimator->nS = nS;
+  myestimator->indices_diag_p = indices_diag_p;
+  myestimator->indices_diag_q = indices_diag_q;
+  myestimator->Ip = Ip;
+  myestimator->Iq = Iq;
+
+  myestimator->indices = indices;
+  myestimator->lambda_indices = lambda_indices;
+  myestimator->phi_indices = phi_indices;
+  myestimator->psi_indices = psi_indices;
+  myestimator->targetlambda_indices = targetlambda_indices;
+  myestimator->targetphi_indices = targetphi_indices;
+  myestimator->targetpsi_indices = targetpsi_indices;
+
+  return myestimator;
+
+}

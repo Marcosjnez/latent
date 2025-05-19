@@ -37,4 +37,24 @@ public:
 
   }
 
+  void dconstraints() {
+
+  }
+
+  void outcomes() {
+
+  }
+
 };
+
+unit* choose_unit(Rcpp::List manifold_setup) {
+
+  unit* mymanifold = new unit();
+
+  // Provide these:
+  arma::uvec indices = manifold_setup["indices"];
+  mymanifold->indices = indices;
+
+  return mymanifold;
+
+}

@@ -39,4 +39,26 @@ public:
 
   }
 
+  void dconstraints() {
+
+  }
+
+  void outcomes() {
+
+  }
+
 };
+
+oblq* choose_oblq(Rcpp::List manifold_setup) {
+
+  oblq* mymanifold = new oblq();
+
+  // Provide these:
+  arma::uvec indices = manifold_setup["indices"];
+  std::size_t q = manifold_setup["q"];
+  mymanifold->indices = indices;
+  mymanifold->q = q;
+
+  return mymanifold;
+
+}

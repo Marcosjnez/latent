@@ -8,13 +8,14 @@
 #'
 #' se(fit)
 #'
-#' @param fit model.
+#' @param fit model fitted with lca.
 #'
 #' @details Compute standard errors.
 #'
 #' @return List with the following objects:
 #' \item{vcov}{Variance-covariance matrix between the parameters.}
 #' \item{se}{Standard errors.}
+#' \item{SE}{Standard errors in the model list.}
 #'
 #' @references
 #'
@@ -24,96 +25,147 @@
 se <- function(fit) {
 
   data <- fit$opt$data
-  model <- fit$modelInfo$model_vector # ALLOW CUSTOM MODELS
   nclasses <- length(fit$parameters$classes)
   control_manifold <- fit$opt$manifold_setup
+  control_transform <- fit$opt$transform_setup
   control_estimator <- fit$opt$estimator_setup
   control_optimizer <- fit$opt$control
-  # control <- list(opt = "em", maxit = 1L, rstarts = 1L, cores = 1L)
-  # control$force.combi <- TRUE # Use latentloglik_combination.h even when opt = "em"
-  # empty_fit <- lca(data = data, model = model, nclasses = nclasses,
-  #                  control = control, do.fit = FALSE)
-  # control_manifold <- empty_fit$opt$manifold_setup
-  # control_estimator <- empty_fit$opt$estimator_setup
-  # control_optimizer <- empty_fit$opt$control
 
-  gauss <- "gaussian" %in% model
-  multin <- "multinomial" %in% model
+  item_model <- fit$modelInfo$item_model
+  gauss <- "gaussian" %in% item_model
+  multin <- "multinomial" %in% item_model
 
-  # parameters <- unlist(fit$parameters)
-  parameters <- c(fit$opt$parameters)
-  H <- numDeriv::jacobian(func = latent2::grad_comp,
-                          x = parameters,
+  ntransparam <- length(fit$opt$transparameters)
+  indices <- 1:ntransparam
+  X <- vector(length = ntransparam)
+  control_manifold <- control_transform <- list()
+  control_manifold[[1]] <- list(manifold = "euclidean",
+                                indices = indices-1L)
+  control_transform[[1]] <- list(transform = "identity",
+                                 indices = indices-1L,
+                                 target_indices = indices-1L,
+                                 vector_indices = indices-1L,
+                                 X = X)
+  x <- fit$opt$transparameters
+  control_optimizer$parameters <- list()
+  control_optimizer$parameters[[1]] <- x
+
+  grad_computation <- function(parameters, control_manifold,
+                               control_transform, control_estimator,
+                               control_optimizer) {
+
+    grad <- latent::grad_comp(parameters = parameters,
+                              control_manifold = control_manifold,
+                              control_transform = control_transform,
+                              control_estimator = control_estimator,
+                              control_optimizer = control_optimizer)$grad
+
+    return(grad)
+
+  }
+
+  # latent:::grad_comp(x, control_manifold,
+  #                    control_transform, control_estimator,
+  #                    control_optimizer)
+  H <- numDeriv::jacobian(func = grad_computation,
+                          x = x,
                           control_manifold = control_manifold,
+                          control_transform = control_transform,
                           control_estimator = control_estimator,
                           control_optimizer = control_optimizer)
+  # round(cbind(x, H-t(H)), 3)
+
+  param_charvector <- unlist(fit$modelInfo$prob_model)
   non_alnum_indices <- grep("^(?!-?\\d+(\\.\\d+)?$)",
-                            unlist(fit$modelInfo$model), perl = TRUE)
-  rownames(H) <- colnames(H) <- unlist(fit$modelInfo$model)[non_alnum_indices]
+                            param_charvector, perl = TRUE)
+  rownames(H) <- colnames(H) <- param_charvector[non_alnum_indices]
 
-  # Create the constraints
-  extract_column_constraints <- function(x) {
-    # Recursive function to process each element
-    if (is.list(x)) {
-      # If it's a list, recurse and flatten
-      unlist(lapply(x, extract_column_constraints), recursive = FALSE)
-    } else if (is.matrix(x)) {
-      # If it's a matrix, extract each column as a vector
-      lapply(seq_len(ncol(x)), function(j) rep(1, times = length(x[, j])))
-    } else if (is.vector(x)) {
-      # If it's a vector, return as single-item list
-      list(rep(1, times = length(x)))
-    } else {
-      stop("Unsupported element type in structure")
-    }
-  }
-
-  if(multin & gauss) {
-    multinom_indices <- which(model == "multinomial")
-    vector_constraints <- extract_column_constraints(fit$modelInfo$model)
-  } else if(multin) {
-    vector_constraints <- extract_column_constraints(fit$modelInfo$model)
-  } else if(gauss) {
-    gauss_indices <- which(model == "gaussian")
-    vector_constraints <- extract_column_constraints(fit$modelInfo$model$classes)
-  }
+  nconstraints <- length(fit$opt$outputs$transformations$vectors)
 
   # Total number of rows is the number of parameters
-  nparam <- length(unlist(fit$parameters))
-  n_rows <- nparam
-  n_cols <- length(vector_constraints)
+  nparam <- length(x)
 
   # Initialize matrix with zeros
-  constraints <- matrix(0, nrow = n_rows, ncol = n_cols)
+  constraints <- matrix(0, nrow = nparam, ncol = nconstraints)
 
-  # Fill each column block
-  start_row <- 1
-  for (i in seq_along(vector_constraints)) {
-    v <- vector_constraints[[i]]
-    len <- length(v)
-    constraints[start_row:(start_row + len - 1), i] <- v
-    start_row <- start_row + len
+  for(i in 1:nconstraints) {
+
+    v <- fit$opt$outputs$transformations$vectors[[i]][[1]]
+    ind <- fit$opt$outputs$transformations$vectors[[i]][[2]]+1
+    constraints[ind, i] <- v
+
   }
 
-  # REMOVE PROBABILITIES CLOSE TO ZERO in H and constraints:
-
-  # remove <- which(unlist(empty_fit$modelInfo$model) == "-1")
-  # remove <- which(abs(unlist(fit$parameters)) < 1e-05)
-  # constraints <- constraints[-remove, ]
-  # H <- H[-remove, ]
-  # H <- H[, -remove]
-
   constraints <- constraints[non_alnum_indices, ]
+
+  # REMOVE PROBABILITIES CLOSE TO ZERO in H and constraints:
+  param_vector <- x
+  param_vector <- param_vector[non_alnum_indices]
+  names(param_vector) <- param_charvector[non_alnum_indices]
+  condition <- param_vector < 0.005 | param_vector > 0.995
+  keep <- which(!condition)
+  remove <- which(condition)
+  H <- H[-remove, ][, -remove]
+  constraints <- constraints[-remove, ]
+  zeros <- colSums(constraints) < 1
+  if(any(zeros)) {
+    constraints <- constraints[, -which(zeros)]
+  }
+
+  # Visser, I., Raijmakers, M.E.J. and Molenaar, P.C.M. (2000),
+  # Confidence intervals for hidden Markov model parameters.
+  # British Journal of Mathematical and Statistical Psychology, 53: 317-327.
+  # https://doi.org/10.1348/000711000159240
+
   K <- t(constraints)
   D <- H + t(K) %*% K
   D_inv <- solve(D)
-  C <- D_inv - D_inv %*% t(K) %*% solve(K %*% D_inv %*% t(K)) %*% K %*% D_inv
-  se <- sqrt(diag(C))
+  C0 <- D_inv - D_inv %*% t(K) %*% solve(K %*% D_inv %*% t(K)) %*% K %*% D_inv
+  se0 <- sqrt(diag(C0))
+
+  se <- vector(length = nparam)
+  se[keep] <- se0
+  se[remove] <- NA
+  names(se) <- param_charvector
+  SE <- fill_list_with_vector(fit$transformed_parameters, se)
+
+  C <- matrix(NA, nrow = nparam, ncol = nparam)
+  C[keep, keep] <- C0
+  rownames(C) <- colnames(C) <- param_charvector
+
+  confidence <- function(x, se) {
+
+    z <- qnorm(0.975)
+    logit_prob <- qlogis(x)
+    logit_se <- se / (x * (1 - x))  # Delta method
+
+    logit_lower <- logit_prob - z * logit_se
+    logit_upper <- logit_prob + z * logit_se
+
+    # Back-transform to probability scale
+    lower_prob <- plogis(logit_lower)
+    upper_prob <- plogis(logit_upper)
+
+    return(c(lower_prob, upper_prob))
+
+  }
+
+  ci <- sapply(1:nparam, FUN = \(i) confidence(x[i], se[i]))
+  rownames(ci) <- c("lower", "upper")
+  colnames(ci) <- param_charvector
+  ci0 <- format(round(rbind(x, ci), 2), nsmall = 2)
+  CI <- apply(ci0, MARGIN = 2, FUN = \(x) paste(x[1], " (", x[2], " - ", x[3], ")",
+                                                sep = "", collapse = ""))
+  CI <- fill_list_with_vector(fit$transformed_parameters, CI)
 
   result <- list()
   result$se <- se
+  result$SE <- SE
   result$vcov <- C
+  result$ci <- ci
+  result$CI <- CI
 
   return(result)
 
 }
+

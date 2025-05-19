@@ -135,3 +135,31 @@ public:
   }
 
 };
+
+cf* choose_cf(Rcpp::List estimator_setup) {
+
+ cf* myestimator = new cf();
+
+  arma::mat lambda = estimator_setup["lambda"];
+  bool orth = estimator_setup["orth"];
+  double k = estimator_setup["k"];
+  arma::uvec indices = estimator_setup["indices"];
+
+  int p = lambda.n_rows;
+  int q = lambda.n_cols;
+  arma::mat M(p, p, arma::fill::ones);
+  M.diag(0).zeros();
+  arma::mat N(q, q, arma::fill::ones);
+  N.diag(0).zeros();
+
+  myestimator->lambda = lambda;
+  myestimator->orth = orth;
+  myestimator->indices = indices;
+  myestimator->q = q;
+  myestimator->Mm = M;
+  myestimator->N = N;
+  myestimator->k = k;
+
+  return myestimator;
+
+}

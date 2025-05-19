@@ -1,6 +1,6 @@
 /*
  * Author: Marcos Jiménez
- * email: marcosjnezhquez@gmail.com
+ * email: m.j.jimenezhenriquez@vu.nl
  * Modification date: 03/02/2025
  */
 
@@ -90,10 +90,10 @@ Rcpp::List check(arma::vec parameters,
   computations["hessian"] = x.hessian;
   computations["modhessian"] = x.modhessian;
   computations["dparam_dS"] = x.dparam_dS;
-  computations["doubles"] = x.doubles;
-  computations["vectors"] = x.vectors;
-  computations["matrices"] = x.matrices;
-  computations["list_matrices"] = x.list_matrices;
+  // computations["doubles"] = x.doubles;
+  // computations["vectors"] = x.vectors;
+  // computations["matrices"] = x.matrices;
+  // computations["list_matrices"] = x.list_matrices;
 
   /*
    * DERIVATIVES

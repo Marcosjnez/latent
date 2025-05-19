@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 03/02/2025
+ * Modification date: 29/04/2025
  */
 
 /*
@@ -19,14 +19,10 @@ public:
   arma::vec Y;
   arma::mat predictors;
   arma::vec res;
-  // arma::uvec target_indices;
-  // arma::uvec indices;
 
   void param() {
 
-    X = parameters;
-
-    res = Y - predictors * X;
+    res = Y - predictors * transparameters;
 
   }
 
@@ -38,7 +34,7 @@ public:
 
   void G() {
 
-    g = -2 * predictors.t() * res;
+    grad = -2 * predictors.t() * res;
 
   }
 
@@ -63,3 +59,19 @@ public:
   void outcomes() {}
 
 };
+
+lreg* choose_lreg(Rcpp::List estimator_setup) {
+
+  lreg* myestimator = new lreg();
+
+  arma::uvec indices = estimator_setup["indices"];
+  arma::mat Y = estimator_setup["Y"];
+  arma::mat predictors = estimator_setup["predictors"];
+
+  myestimator->indices = indices;
+  myestimator->Y = Y;
+  myestimator->predictors = predictors;
+
+  return myestimator;
+
+}

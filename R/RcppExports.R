@@ -5,8 +5,8 @@ logDnorm <- function(x, mu, s2) {
     .Call(`_latent_logDnorm`, x, mu, s2)
 }
 
-optimizer <- function(control_manifold, control_estimator, control_optimizer) {
-    .Call(`_latent_optimizer`, control_manifold, control_estimator, control_optimizer)
+optimizer <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
+    .Call(`_latent_optimizer`, control_manifold, control_transform, control_estimator, control_optimizer)
 }
 
 check <- function(parameters, dparameters, control_manifold, control_estimator, control_optimizer, eps = 1e-04) {
@@ -17,8 +17,8 @@ polyfast <- function(data, missing = "pairwise.complete.cases", acov = "none", s
     .Call(`_latent_polyfast`, data, missing, acov, smooth, min_eigval, nboot, fit, cores)
 }
 
-grad_comp <- function(parameters, control_manifold, control_estimator, control_optimizer) {
-    .Call(`_latent_grad_comp`, parameters, control_manifold, control_estimator, control_optimizer)
+grad_comp <- function(parameters, control_manifold, control_transform, control_estimator, control_optimizer, eps = 1e-04) {
+    .Call(`_latent_grad_comp`, parameters, control_manifold, control_transform, control_estimator, control_optimizer, eps)
 }
 
 count <- function(X, n, max_X) {

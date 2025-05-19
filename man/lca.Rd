@@ -12,9 +12,9 @@ control = list(opt = "lbfgs", rstarts = 30L, cores = 1L))
 
 \item{nclasses}{Number of latent classes.}
 
-\item{model}{Character vector with the model for each item.}
-
 \item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+
+\item{itemmodel}{Character vector with the model for each item.}
 }
 \value{
 List with the following objects:

@@ -126,3 +126,37 @@ public:
   }
 
 };
+
+xtarget* choose_xtarget(Rcpp::List estimator_setup) {
+
+  xtarget* myestimator = new xtarget();
+
+  arma::mat lambda = estimator_setup["lambda"];
+  bool orth = estimator_setup["orth"];
+  arma::uvec indices = estimator_setup["indices"];
+  arma::mat Target = estimator_setup["Target"];
+  arma::mat Weight = estimator_setup["Weight"];
+  arma::mat PhiTarget = estimator_setup["PhiTarget"];
+  arma::mat PhiWeight = estimator_setup["PhiWeight"];
+  double w = estimator_setup["w"];
+
+  arma::mat Weight2 = Weight % Weight;
+  arma::mat PhiWeight2 = PhiWeight % PhiWeight;
+  int p = lambda.n_rows;
+  int q = lambda.n_cols;
+
+  myestimator->lambda = lambda;
+  myestimator->orth = orth;
+  myestimator->indices = indices;
+  myestimator->Target = Target;
+  myestimator->Weight = Weight;
+  myestimator->Weight2 = Weight2;
+  myestimator->PhiTarget = PhiTarget;
+  myestimator->PhiWeight = PhiWeight;
+  myestimator->PhiWeight2 = PhiWeight2;
+  myestimator->w = w;
+  myestimator->q = q;
+
+  return myestimator;
+
+}

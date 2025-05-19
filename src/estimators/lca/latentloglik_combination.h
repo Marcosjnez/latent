@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 03/02/2025
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 16/05/2025
  */
 
 /*
@@ -21,18 +21,15 @@ public:
 
   void param() {
 
-    // NEEDS latentloglik
-    // PROVIDES latentpars and jointlogp
-
-    classes(indices_target_classes) = parameters(indices_classes);
-    latentpars = trunc_log(classes);
+    latentpars(indices_target_classes) = transparameters(indices_classes);
+    loglatentpars = trunc_log(latentpars);
 
     // for (arma::uword j = 0; j < lclasses.n_elem; ++j) {
     //     Rprintf("%g ", lclasses[j]);
     //   }
 
     for(int s=0; s < S; ++s) {
-      jointlogp.row(s) = latentloglik.row(s) + latentpars.t();
+      jointlogp.row(s) = latentloglik.row(s) + loglatentpars.t();
       double max_vector = jointlogp.row(s).max();
       loglik_case[s] = max_vector + arma::trunc_log(arma::accu(arma::trunc_exp(jointlogp.row(s) - max_vector)));
       logliks[s] = n[s] * loglik_case[s];
@@ -55,23 +52,18 @@ public:
 
   void G() {
 
-    g.set_size(parameters.n_elem); g.zeros();
+    // Rf_error("58");
     arma::vec gclasses(nclasses, arma::fill::zeros);
     for(int s=0; s < S; ++s) {
       gclasses += -n[s]*arma::trunc_exp(-loglik_case[s] + latentloglik.row(s).t());
     }
 
-    // arma::vec v = gclasses;
-    // for (arma::uword j = 0; j < v.n_elem; ++j) {
-    //   Rprintf("%g \n", v[j]);
+    // for (arma::uword j = 0; j < gclasses.n_elem; ++j) {
+    //   Rprintf("%g \n", gclasses[j]);
     // }
 
-    g = gclasses(indices_target_classes);
+    grad = gclasses(indices_target_classes);
 
-    // arma::vec v = dale;
-    // for (arma::uword j = 0; j < v.n_elem; ++j) {
-    //   Rprintf("%g \n", v[j]);
-    // }
   }
 
   void dG() {
@@ -89,6 +81,7 @@ public:
   void E() { // Update the parameter estimates and loglik of each observation
 
     // Rf_error("EM algorithm not available");
+    // latentloglik.zeros();
 
   }
 
@@ -100,6 +93,56 @@ public:
 
   void outcomes() {
 
+    vectors.resize(4);
+    vectors[0] = latentpars;
+    vectors[1] = loglatentpars;
+    vectors[2] = loglik_case;
+    vectors[3] = n;
+
+    matrices.resize(2);
+    matrices[0] = posterior;
+    matrices[1] = latentloglik;
+
   }
 
 };
+
+latentloglik_combination* choose_latentloglik_combination(Rcpp::List estimator_setup) {
+
+  latentloglik_combination* myestimator = new latentloglik_combination();
+
+  arma::vec classes = estimator_setup["classes"];
+  arma::uvec indices_classes = estimator_setup["indices_classes"];
+  arma::uvec indices_target_classes = estimator_setup["indices_target_classes"];
+  int S = estimator_setup["S"];
+  int nclasses = estimator_setup["nclasses"];
+  arma::vec n = estimator_setup["n"];
+  arma::uvec indices = estimator_setup["indices"];
+
+  arma::vec loglik_case(S, arma::fill::zeros);
+  arma::mat latentloglik(S, nclasses, arma::fill::zeros);
+  arma::vec latentpars(nclasses, arma::fill::zeros);
+  arma::vec loglatentpars(nclasses, arma::fill::zeros);
+  arma::mat jointlogp(S, nclasses, arma::fill::zeros);
+  arma::vec logliks(S, arma::fill::zeros);
+
+  myestimator->nclasses = nclasses;
+  myestimator->classes = classes;
+  myestimator->lclasses = classes;
+  myestimator->indices_classes = indices_classes;
+  myestimator->indices_target_classes = indices_target_classes;
+  myestimator->S = S;
+  myestimator->n = n;
+  myestimator->indices = indices;
+  myestimator->loglik_case = loglik_case;
+  myestimator->logliks = logliks;
+  // myestimator->posterior = posterior;
+  myestimator->latentloglik = latentloglik;
+  myestimator->latentpars = latentpars;
+  myestimator->loglatentpars = loglatentpars;
+  myestimator->jointlogp = jointlogp;
+  myestimator->evalEM = false;
+
+  return myestimator;
+
+}

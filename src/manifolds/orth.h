@@ -39,4 +39,26 @@ public:
 
   }
 
+  void dconstraints() {
+
+  }
+
+  void outcomes() {
+
+  }
+
 };
+
+orth* choose_orth(Rcpp::List manifold_setup) {
+
+  orth* mymanifold = new orth();
+
+  // Provide these:
+  arma::uvec indices = manifold_setup["indices"];
+  std::size_t q = manifold_setup["q"];
+  mymanifold->indices = indices;
+  mymanifold->q = q;
+
+  return mymanifold;
+
+}

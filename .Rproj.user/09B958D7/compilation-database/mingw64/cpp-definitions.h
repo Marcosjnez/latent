@@ -489,7 +489,7 @@
 #endif
 
 #ifndef __GNUC__
-# define __GNUC__ 13
+# define __GNUC__ 14
 #endif
 
 #ifndef _cdecl
@@ -685,7 +685,7 @@
 #endif
 
 #ifndef __GNUG__
-# define __GNUG__ 13
+# define __GNUG__ 14
 #endif
 
 #ifndef __LONG_LONG_MAX__
@@ -729,7 +729,7 @@
 #endif
 
 #ifndef __GXX_ABI_VERSION
-# define __GXX_ABI_VERSION 1018
+# define __GXX_ABI_VERSION 1019
 #endif
 
 #ifndef __FLT_MIN_EXP__
@@ -857,7 +857,7 @@
 #endif
 
 #ifndef __VERSION__
-# define __VERSION__ "13.2.0"
+# define __VERSION__ "14.2.0"
 #endif
 
 #ifndef __UINT64_C
@@ -1114,10 +1114,6 @@
 
 #ifndef __FLT_MAX_10_EXP__
 # define __FLT_MAX_10_EXP__ 38
-#endif
-
-#ifndef __LONG_MAX__
-# define __LONG_MAX__ 0x7fffffffL
 #endif
 
 #ifndef __FLT64X_HAS_DENORM__
@@ -1790,6 +1786,10 @@
 
 #ifndef __PTRDIFF_TYPE__
 # define __PTRDIFF_TYPE__ long long int
+#endif
+
+#ifndef __LONG_MAX__
+# define __LONG_MAX__ 0x7fffffffL
 #endif
 
 #ifndef __FLT32X_MIN_10_EXP__
