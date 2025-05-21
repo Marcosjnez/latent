@@ -26,6 +26,7 @@ getargs_lca <- function(data_list, item_model, model, control) {
   ep1 <- extract_param(model$log_model)
   parameter_vector <- ep1$parameter_vector
   indices_param_vector <- ep1$indices_param_vector
+  indices_param_vector2 <- ep1$indices_param_vector2
   full_parameter_vector <- ep1$full_parameter_vector
   full_fixed_vector <- ep1$full_fixed_vector
   fixed_vector <- ep1$fixed_vector
@@ -246,6 +247,8 @@ getargs_lca <- function(data_list, item_model, model, control) {
                  posterior = posterior,
                  nparam = nparam,
                  ntransparam = ntransparam,
+                 indices_param_vector = indices_param_vector,
+                 indices_param_vector2 = indices_param_vector2,
                  indices_full_param_vector = indices_full_param_vector,
                  indices_full_fixed_vector = indices_full_fixed_vector,
                  full_fixed_vector = full_fixed_vector)

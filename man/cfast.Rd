@@ -19,7 +19,8 @@ cfast(
   invariance = "none",
   control = NULL,
   std.lv = FALSE,
-  positive = FALSE
+  positive = FALSE,
+  do.fit = TRUE
 )
 }
 \description{

@@ -20,10 +20,12 @@ extract_param <- function(model) {
   fixed_vector <- uniques[which(!is.na(z))]
 
   indices_param_vector <- match(parameter_vector, modelvector)
+  indices_param_vector2 <- match(modelvector, parameter_vector)
 
   result <- list(parameter_vector = parameter_vector, # Unique parameter vector
                  fixed_vector = fixed_vector,         # Unique fixed vector
                  indices_param_vector = indices_param_vector,
+                 indices_param_vector2 = indices_param_vector2,
                  full_parameter_vector = full_parameter_vector,
                  full_fixed_vector = full_fixed_vector,
                  indices_full_param_vector = indices_full_param_vector,

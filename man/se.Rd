@@ -13,6 +13,7 @@ se(fit)
 List with the following objects:
 \item{vcov}{Variance-covariance matrix between the parameters.}
 \item{se}{Standard errors.}
+\item{SE}{Standard errors in the model list.}
 }
 \description{
 Compute standard errors.

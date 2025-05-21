@@ -97,7 +97,7 @@ public:
       // Rprintf("\n\n");
       // Rf_error("118");
       x.transparameters.elem(target_indices) = xtransformations[i]->transparameters;
-      // Rf_error("128");
+      // Rf_error("100");
 
     }
 

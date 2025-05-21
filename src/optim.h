@@ -719,11 +719,11 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
     x.parameters.set_size(x.nparam);
   // }
 
-  if(control_optimizer.containsElementNamed("transparameters")) {
+  // if(control_optimizer.containsElementNamed("transparameters")) {
     std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
     x.ntransparam = transparameters[0].n_elem;
     x.transparameters.set_size(x.ntransparam);
-  }
+  // }
 
   if(control_optimizer.containsElementNamed("posterior")) {
     std::vector<arma::mat> post = control_optimizer["posterior"];

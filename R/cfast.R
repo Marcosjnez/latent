@@ -4,7 +4,8 @@
 cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor = "pearson",
                   estimator = "uls", rotate = NULL, missing = "pairwise.complete.cases",
                   nobs = NULL, group = NULL, invariance = "none",
-                  control = NULL, std.lv = FALSE, positive = FALSE) {
+                  control = NULL, std.lv = FALSE, positive = FALSE,
+                  do.fit = TRUE) {
 
   # cor = "pearson";
   # group = NULL;
@@ -12,9 +13,11 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
   # missing = "pairwise.complete.cases"
   # data <- sim$R_error
   # positive = FALSE
-  # lambda <- target
-  # phi <- targetphi
-  # psi <- targetpsi
+  # std.lv = FALSE
+  # nobs = NULL
+  # lambda <- NULL
+  # phi <- NULL
+  # psi <- NULL
 
   # S is a list of correlation matrices (one for each group)
   # lambda is a list of matrices for the loadings indicating the parameters
@@ -148,6 +151,8 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
   # Get the fixed values (those elements that are digits):
   fixed_vector <- uniques[which(!is.na(z))]
 
+  allindices <- extract_param(matrices)
+
   estimator_setup <- list()
   for(i in 1:ngroups) { # For each group, get the setup
 
@@ -184,7 +189,9 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
   transform_setup <- list()
   transform_setup[[1]] <- list(transform = "identity",
                                indices = 1:nparam - 1,
-                               target_indices = 1:nparam - 1)
+                               target_indices = 1:nparam - 1,
+                               vector_indices = 1:nparam - 1,
+                               X = vector(length = nparam))
 
   # Collect the initital values of all the entries of lambda, phi and psi:
   if(is.null(control$init)) { # Extract the vector of parameter matrices
@@ -201,26 +208,33 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
     parameters[[i]] <- init[nondupli]
   }
 
-  if(control$maxit < 1) {
+  control$parameters <- parameters
+  control$transparameters <- parameters
+
+  if(do.fit) {
+
+    x <- optimizer(control_manifold = manifold_setup,
+                   control_transform = transform_setup,
+                   control_estimator = estimator_setup,
+                   control_optimizer = control)
+
+  } else {
 
     x <- vector("list")
     x$model <- matrices
+    x$manifold_setup <- manifold_setup
     x$transform_setup <- transform_setup
     x$estimator_setup <- estimator_setup
-    x$manifold_setup <- manifold_setup
     x$control <- control
     x$parameters <- parameters
+    x$transparameters <- parameters
+    x$matrices <- matrices
+    x$allindices <- allindices
 
     return(x)
 
   }
 
-  control$parameters <- parameters
-
-  x <- optimizer(control_transform = transform_setup,
-                 control_estimator = estimator_setup,
-                 control_manifold = manifold_setup,
-                 control_optimizer = control)
 
   x$init_parameters <- parameters
   x$transform_setup <- transform_setup
@@ -236,95 +250,23 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
     q <- ncol(x$estimator_setup[[i]]$lambda)
 
     # Arrange lambda parameter estimates:
-    outputs[[i]]$lambda <- matrix(x$matrices[[i]][[1]], p, q)
+    outputs[[i]]$lambda <- matrix(x$outputs$estimators$matrices[[i]][[1]], p, q)
 
     # Arrange phi parameter estimates:
-    outputs[[i]]$phi <- matrix(x$matrices[[i]][[2]], q, q)
+    outputs[[i]]$phi <- matrix(x$outputs$estimators$matrices[[i]][[2]], q, q)
 
     # Arrange psi parameter estimates:
-    outputs[[i]]$psi <- matrix(x$matrices[[i]][[3]], p, p)
+    outputs[[i]]$psi <- matrix(x$outputs$estimators$matrices[[i]][[3]], p, p)
     # uniquenesses_hat[[i]] <- diag(psi_hat[[i]])
 
     # Model matrix:
-    outputs[[i]]$model <- matrix(x$matrices[[i]][[4]], p, p)
-    outputs[[i]]$residuals <- matrix(x$matrices[[i]][[5]], p, p)
+    outputs[[i]]$model <- matrix(x$outputs$estimators$matrices[[i]][[4]], p, p)
+    outputs[[i]]$residuals <- matrix(x$outputs$estimators$matrices[[i]][[5]], p, p)
 
   }
 
   x$model <- matrices
   x$outputs <- outputs
-
-  # fit <- cfa(parameters = x, X = data, nfactors = q, nobs = nobs,
-  #            lambda = lambda_hat, phi = phi_hat, psi = psi_hat,
-  #            lambda_indexes = indexes_lambda,
-  #            phi_indexes = indexes_phi,
-  #            psi_indexes = indexes_psi,
-  #            target_indexes = indexes_target,
-  #            targetphi_indexes = indexes_targetphi,
-  #            targetpsi_indexes = indexes_targetpsi,
-  #            free_indices_phi = free_indices_phi,
-  #            free_indices_psi = free_indices_psi,
-  #            cor = cor,
-  #            estimator = estimator,
-  #            projection = projection,
-  #            missing = rep(missing, ngroups),
-  #            se = "robust",
-  #            control = control)
-  # c(fit$cfa$parameters)[indexes_phi[[1]]]
-  # fit$cfa$phi
-  # fit$cfa$f
-  # fit$cfa$iterations
-
-  # Arrange the parameter estimates in the lambda, phi, and psi matrices:
-  # for(i in 1:n) {
-  #
-  #   # Arrange lambda parameter estimates:
-  #   lambda_hat[[i]] <- matrix(fit$cfa$lambda[[i]], p[i], q[i])
-  #
-  #   # Arrange phi parameter estimates:
-  #   phi_hat[[i]] <- matrix(fit$cfa$phi[[i]], q[i], q[i])
-  #
-  #   # Arrange psi parameter estimates:
-  #   psi_hat[[i]] <- matrix(fit$cfa$psi[[i]], p[i], p[i])
-  #   uniquenesses_hat[[i]] <- diag(psi_hat[[i]])
-  #
-  #   # Model matrix:
-  #   R[[i]] <- matrix(fit$cfa$R[[i]], p[i], p[i])
-  #   Rhat[[i]] <- matrix(fit$cfa$Rhat[[i]], p[i], p[i])
-  #   residuals[[i]] <- R[[i]] - Rhat[[i]]
-  #
-  # }
-
-  # if(!is.null(rotate)) {
-  #   rotation <- rotate$rotation
-  #   projection <- rotate$projection
-  #   gamma <- rotate$gamma
-  #   epsilon <- rotate$gamma
-  #   if(!is.null(rotate$k)) k <- rotate$k
-  #   w <- rotate$w
-  #   Target <- rotate$Target
-  #   Weight <- rotate$Weight
-  #   PhiTarget <- rotate$PhiTarget
-  #   PhiWeight <- rotate$PhiWeight
-  #   blocks <- rotate$blocks
-  #   block_weights <- rotate$block_weights
-  #   oblq_factors <- rotate$oblq_factors
-  #   normalization <- rotate$normalization
-  #   rot_control <- rotate$rot_control
-  #   rstarts <- control$rstarts
-  #   cores <- control$cores
-  #
-  #   for(i in 1:n) {
-  #     lambda <- fit$cfa$lambda[[i]]
-  #     rot <- rotate(lambda = lambda, rotation = rotation, projection = projection,
-  #                   gamma = gamma, epsilon = epsilon, k = k, w = w, Target = Target,
-  #                   Weight = Weight, PhiTarget = PhiTarget, PhiWeight = PhiWeight,
-  #                   blocks = blocks, block_weights = block_weights,
-  #                   oblq_factors = oblq_factors, normalization = normalization,
-  #                   rot_control = rot_control, random_starts = rstarts, cores = cores)
-  #     fit$rotation[[i]] <- rot
-  #   }
-  # }
 
   return(x)
 

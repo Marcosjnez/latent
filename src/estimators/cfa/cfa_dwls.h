@@ -21,20 +21,9 @@ public:
 
   void param() {
 
-    // Rprintf("%u", parameters.n_elem);
-    // Rprintf("\n");
-    //
-    // for (size_t i = 0; i < parameters.n_elem; ++i) {
-    //   Rprintf("parameter ");
-    //   Rprintf("%u", i);
-    //   Rprintf(" = ");
-    //   Rprintf("%f", parameters[i]);
-    //   Rprintf("\n");
-    // }
-
-    lambda.elem(target_indexes) = parameters(lambda_indexes);
-    phi.elem(targetphi_indexes) = parameters(phi_indexes);
-    psi.elem(targetpsi_indexes) = parameters(psi_indexes);
+    lambda.elem(target_indexes) = transparameters(lambda_indexes);
+    phi.elem(targetphi_indexes) = transparameters(phi_indexes);
+    psi.elem(targetpsi_indexes) = transparameters(psi_indexes);
     phi = arma::symmatl(phi);
     psi = arma::symmatl(psi);
 
@@ -51,7 +40,7 @@ public:
 
   void G() {
 
-    g.set_size(nparam); g.zeros();
+    grad.zeros();
 
     lambda_phi = lambda * phi;
     W_residuals = W % residuals;
@@ -62,13 +51,23 @@ public:
     gpsi = -2*W_residuals;
     gpsi.diag() *= 0.5;
 
-    g(lambda_indexes) += glambda.elem(target_indexes);
+    // Rprintf("%zu", grad.n_elem);
+    // Rprintf("\n\n");
+    // Rprintf("grad:\n");
+    // for (arma::uword i = 0; i < grad.n_elem; ++i) {
+    //   Rprintf("%u ", grad[i]);
+    // }
+    // Rprintf("\n\n");
+
+    // Rf_error("60");
+    grad(lambda_indexes) += glambda.elem(target_indexes);
+    // Rf_error("53");
     // if(positive) {
     //   g(T_indexes) += gphi.elem(targetT_indexes);
     // } else {
-    g(phi_indexes) += gphi.elem(targetphi_indexes);
+    grad(phi_indexes) += gphi.elem(targetphi_indexes);
     // }
-    g(psi_indexes) += gpsi.elem(targetpsi_indexes);
+    grad(psi_indexes) += gpsi.elem(targetpsi_indexes);
 
   }
 
@@ -252,6 +251,7 @@ cfa_dwls* choose_cfa_dwls(Rcpp::List estimator_setup) {
   arma::uvec targetphi_indexes = estimator_setup["targetphi_indexes"];
   arma::uvec targetpsi_indexes = estimator_setup["targetpsi_indexes"];
   arma::uvec indices = estimator_setup["indices"];
+  arma::vec grad(indices.n_elem);
 
   myestimator->R = R;
   myestimator->lambda = lambda;
@@ -266,6 +266,7 @@ cfa_dwls* choose_cfa_dwls(Rcpp::List estimator_setup) {
   myestimator->targetphi_indexes = targetphi_indexes;
   myestimator->targetpsi_indexes = targetpsi_indexes;
   myestimator->indices = indices;
+  myestimator->grad = grad;
 
   return myestimator;
 

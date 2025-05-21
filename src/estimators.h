@@ -207,6 +207,9 @@ public:
 
     x.grad.set_size(x.transparameters.n_elem); x.grad.zeros();
 
+    // Rprintf("%zu ", x.grad.n_elem);
+    // Rprintf("\n\n");
+
     for(int i=0; i < x.nestimators; ++i) {
 
       xestimators[i]->latentloglik = x.latentloglik;

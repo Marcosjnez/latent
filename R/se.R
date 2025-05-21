@@ -22,7 +22,7 @@
 #' None yet.
 #'
 #' @export
-se <- function(fit) {
+se <- function(fit, confidence = 0.95) {
 
   data <- fit$opt$data
   nclasses <- length(fit$parameters$classes)
@@ -133,24 +133,24 @@ se <- function(fit) {
   C[keep, keep] <- C0
   rownames(C) <- colnames(C) <- param_charvector
 
-  confidence <- function(x, se) {
+  conf <- function(x, se, confidence) {
 
-    z <- qnorm(0.975)
-    logit_prob <- qlogis(x)
+    z <- stats::qnorm((1+confidence)/2)
+    logit_prob <- stats::qlogis(x)
     logit_se <- se / (x * (1 - x))  # Delta method
 
     logit_lower <- logit_prob - z * logit_se
     logit_upper <- logit_prob + z * logit_se
 
     # Back-transform to probability scale
-    lower_prob <- plogis(logit_lower)
-    upper_prob <- plogis(logit_upper)
+    lower_prob <- stats::plogis(logit_lower)
+    upper_prob <- stats::plogis(logit_upper)
 
     return(c(lower_prob, upper_prob))
 
   }
 
-  ci <- sapply(1:nparam, FUN = \(i) confidence(x[i], se[i]))
+  ci <- sapply(1:nparam, FUN = \(i) conf(x[i], se[i], confidence = confidence))
   rownames(ci) <- c("lower", "upper")
   colnames(ci) <- param_charvector
   ci0 <- format(round(rbind(x, ci), 2), nsmall = 2)

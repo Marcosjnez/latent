@@ -16,6 +16,7 @@
 // #define ARMA_MAT_PREALLOC 4
 
 // [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::plugins(openmp)]]
 
 #ifdef _OPENMP
   #include <omp.h>

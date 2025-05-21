@@ -17,7 +17,7 @@
    / / /_/ / /_/  __/ / / / /_
   /_/\\____/\\__/\\___/_/ /_/\\__/   version %s
 
-Type 'citation(\"%s\")' for how to cite this package in publications.
+Type 'citation(\"%s\")' for citing this package in publications.
 ", version, pkgname)
 
   packageStartupMessage(msg)

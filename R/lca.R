@@ -220,7 +220,7 @@ lca <- function(data, nclasses = 2L, item_model = rep("multinomial", ncol(data))
 
   vec <- vector(length = args$ntransparam)
   if(!is.null(parameters)) {
-    vec[args$indices_full_param_vector] <- parameters
+    vec[args$indices_full_param_vector] <- parameters[args$indices_param_vector2[!is.na(args$indices_param_vector2)]]
     vec[args$indices_full_fixed_vector] <- args$full_fixed_vector
     result$parameters <- fill_list_with_vector(model$log_model, vec)
     result$parameters <- convert_all_to_numeric(result$parameters)
@@ -316,3 +316,4 @@ lca <- function(data, nclasses = 2L, item_model = rep("multinomial", ncol(data))
 # 1:nclasses
 # Estimated values
 
+# parameters package R

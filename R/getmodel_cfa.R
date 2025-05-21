@@ -1,9 +1,9 @@
 getmodel_cfa <- function(obj) {
 
   ng <- obj@Data@ngroups
-  tech <- lavTech(obj)
-  par_mat <- lavMatrixRepresentation(partable(obj),
-                                     representation = "LISREL")
+  tech <- lavaan::lavTech(obj)
+  par_mat <- lavaan::lavMatrixRepresentation(lavaan::partable(obj),
+                                             representation = "LISREL")
   # mat_names <- subset(unique(par_mat$mat), unique(par_mat$mat) != "")
   mat_names <- c("lambda", "psi", "theta")
 

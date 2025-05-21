@@ -21,9 +21,9 @@ public:
 
   void param() {
 
-    lambda.elem(target_indexes) = parameters(lambda_indexes);
-    phi.elem(targetphi_indexes) = parameters(phi_indexes);
-    psi.elem(targetpsi_indexes) = parameters(psi_indexes);
+    lambda.elem(target_indexes) = transparameters(lambda_indexes);
+    phi.elem(targetphi_indexes) = transparameters(phi_indexes);
+    psi.elem(targetpsi_indexes) = transparameters(psi_indexes);
     phi = arma::symmatl(phi);
     psi = arma::symmatl(psi);
 
@@ -48,7 +48,7 @@ public:
 
   void G() {
 
-    g.set_size(nparam); g.zeros();
+    grad.zeros();
 
     residuals = R - Rhat;
     Ri_res_Ri = 2*Rhat_inv * -residuals * Rhat_inv;
@@ -64,13 +64,13 @@ public:
     dRhat_invdU.diag() *= 0.5;
     gpsi = dRhat_invdU + dlogdetRhatdU;
 
-    g(lambda_indexes) += glambda.elem(target_indexes);
+    grad(lambda_indexes) += glambda.elem(target_indexes);
     // if(positive) {
     //   g(T_indexes) += gphi.elem(targetT_indexes);
     // } else {
-    g(phi_indexes) += gphi.elem(targetphi_indexes);
+    grad(phi_indexes) += gphi.elem(targetphi_indexes);
     // }
-    g(psi_indexes) += gpsi.elem(targetpsi_indexes);
+    grad(psi_indexes) += gpsi.elem(targetpsi_indexes);
 
   }
 
@@ -265,6 +265,7 @@ cfa_ml* choose_cfa_ml(Rcpp::List estimator_setup) {
   arma::uvec targetphi_indexes = estimator_setup["targetphi_indexes"];
   arma::uvec targetpsi_indexes = estimator_setup["targetpsi_indexes"];
   arma::uvec indices = estimator_setup["indices"];
+  arma::vec grad(indices.n_elem);
 
   myestimator->R = R;
   myestimator->logdetR = logdetR;
@@ -280,6 +281,7 @@ cfa_ml* choose_cfa_ml(Rcpp::List estimator_setup) {
   myestimator->targetphi_indexes = targetphi_indexes;
   myestimator->targetpsi_indexes = targetpsi_indexes;
   myestimator->indices = indices;
+  myestimator->grad= grad;
 
   return myestimator;
 

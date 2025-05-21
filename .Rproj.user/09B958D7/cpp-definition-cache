@@ -292,7 +292,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators.h",
-        "file_last_write": 1747570410.0,
+        "file_last_write": 1747834189.0,
         "definitions": [
             {
                 "usr": "c:@S@estimators",
@@ -360,7 +360,7 @@
                 "parent_name": "product_estimator",
                 "name": "dG(int &, int &)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators.h",
-                "line": 246,
+                "line": 249,
                 "column": 8,
                 "hidden": false
             },
@@ -370,7 +370,7 @@
                 "parent_name": "product_estimator",
                 "name": "H(int &, int &)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators.h",
-                "line": 262,
+                "line": 265,
                 "column": 8,
                 "hidden": false
             },
@@ -380,7 +380,7 @@
                 "parent_name": "product_estimator",
                 "name": "E(int &, int &)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators.h",
-                "line": 277,
+                "line": 280,
                 "column": 8,
                 "hidden": false
             },
@@ -390,7 +390,7 @@
                 "parent_name": "product_estimator",
                 "name": "M(int &, int &)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators.h",
-                "line": 324,
+                "line": 327,
                 "column": 8,
                 "hidden": false
             },
@@ -400,7 +400,7 @@
                 "parent_name": "product_estimator",
                 "name": "outcomes(int &, int &)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators.h",
-                "line": 373,
+                "line": 376,
                 "column": 8,
                 "hidden": false
             }
@@ -409,7 +409,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-        "file_last_write": 1747464647.0,
+        "file_last_write": 1747834173.0,
         "definitions": [
             {
                 "usr": "c:@S@cfa_dwls",
@@ -437,7 +437,7 @@
                 "parent_name": "cfa_dwls",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-                "line": 46,
+                "line": 35,
                 "column": 8,
                 "hidden": false
             },
@@ -447,7 +447,7 @@
                 "parent_name": "cfa_dwls",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-                "line": 52,
+                "line": 41,
                 "column": 8,
                 "hidden": false
             },
@@ -457,7 +457,7 @@
                 "parent_name": "cfa_dwls",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-                "line": 75,
+                "line": 74,
                 "column": 8,
                 "hidden": false
             },
@@ -467,7 +467,7 @@
                 "parent_name": "cfa_dwls",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-                "line": 112,
+                "line": 111,
                 "column": 8,
                 "hidden": false
             },
@@ -477,7 +477,7 @@
                 "parent_name": "cfa_dwls",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-                "line": 114,
+                "line": 113,
                 "column": 8,
                 "hidden": false
             },
@@ -487,7 +487,7 @@
                 "parent_name": "cfa_dwls",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-                "line": 116,
+                "line": 115,
                 "column": 8,
                 "hidden": false
             },
@@ -497,7 +497,7 @@
                 "parent_name": "cfa_dwls",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-                "line": 216,
+                "line": 215,
                 "column": 8,
                 "hidden": false
             },
@@ -507,7 +507,7 @@
                 "parent_name": "",
                 "name": "choose_cfa_dwls(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-                "line": 238,
+                "line": 237,
                 "column": 11,
                 "hidden": false
             }
@@ -516,7 +516,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_ml.h",
-        "file_last_write": 1747464698.0,
+        "file_last_write": 1747838423.0,
         "definitions": [
             {
                 "usr": "c:@S@cfa_ml",
@@ -2228,7 +2228,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/functions.cpp",
-        "file_last_write": 1746689531.0,
+        "file_last_write": 1747810880.0,
         "definitions": [],
         "hidden": false
     },
@@ -2870,7 +2870,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/optim.h",
-        "file_last_write": 1747517656.0,
+        "file_last_write": 1747831913.0,
         "definitions": [
             {
                 "usr": "c:optim.h@T@optim_result",
@@ -3345,7 +3345,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations.h",
-        "file_last_write": 1747580675.0,
+        "file_last_write": 1747829315.0,
         "definitions": [
             {
                 "usr": "c:@S@transformations",
@@ -3509,7 +3509,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/identity.h",
-        "file_last_write": 1747562758.0,
+        "file_last_write": 1747828931.0,
         "definitions": [
             {
                 "usr": "c:@S@identity",

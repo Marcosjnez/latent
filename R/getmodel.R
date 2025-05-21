@@ -81,7 +81,7 @@ getmodel <- function(data, item_model = rep("multinomial", ncol(data)), nclasses
 
     # Put all the constrainst that are necessary to identify the model
     if(sum(!is.na(suppressWarnings(as.numeric(classes)))) < 1) {
-      classes[1] <- "-1" # Set reference class at position 1
+      classes[1] <- "0" # Set reference class at position 1
     }
 
     for(j in 1:nitems) { # Loop across the items
@@ -89,7 +89,7 @@ getmodel <- function(data, item_model = rep("multinomial", ncol(data)), nclasses
       if(item_model[j] == "multinomial") { # For categorical items
 
         if(sum(!is.na(suppressWarnings(as.numeric(conditionals[[j]][1, ])))) < 1) {
-          conditionals[[j]][1, ] <- "-1" # Set a reference category in each item
+          conditionals[[j]][1, ] <- "0" # Set a reference category in each item
         }
 
       }
