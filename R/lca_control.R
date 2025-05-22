@@ -1,6 +1,10 @@
-# Auxiliary function for lca.R
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 22/05/2025
 
 lca_control <- function(control) {
+
+  # Auxiliary function for lca.R
 
   # Control input
 

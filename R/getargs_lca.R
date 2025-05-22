@@ -1,6 +1,10 @@
-# Auxiliary function for lca.R
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 22/05/2025
 
-getargs_lca <- function(data_list, item_model, model, control) {
+getargs_lca <- function(data_list, item, model, control) {
+
+  # Auxiliary function for lca.R
 
   # This function generates all the arguments that are necessary to execute the
   # estimators for either normal and categorical data
@@ -12,7 +16,7 @@ getargs_lca <- function(data_list, item_model, model, control) {
   dt <- data_list$dt
 
   # Create the vector of unique estimators:
-  estimators <- unique(item_model)
+  estimators <- unique(item)
   estimators[estimators == "gaussian"] <- "lca_gaussian"
   estimators[estimators == "multinomial"] <- "lca_multinomial"
 
@@ -38,17 +42,18 @@ getargs_lca <- function(data_list, item_model, model, control) {
   ep2 <- extract_param(model$prob_model)
   transparameter_vector <- ep2$parameter_vector
   transfixed_vector <- ep2$fixed_vector
-  full_transparameter_vector <- ep1$full_parameter_vector
-  full_transfixed_vector <- ep1$full_fixed_vector
+  full_transparameter_vector <- ep2$full_parameter_vector
+  full_transfixed_vector <- ep2$full_fixed_vector
   indices_full_transparam_vector <- ep2$indices_full_param_vector
   indices_full_transfixed_vector <- ep2$indices_full_fixed_vector
+  indices_transparam_vector2 <- ep2$indices_param_vector2
   ntransparam <- length(transparameter_vector)
 
   # Generate the arguments that are necessary to execute the estimators for
   # either gaussian and multinomial data
 
-  gauss <- "gaussian" %in% item_model
-  categ <- "multinomial" %in% item_model
+  gauss <- "gaussian" %in% item
+  categ <- "multinomial" %in% item
   classes <- model$prob_model$classes
   conditionals <- model$prob_model$conditionals
   id_classes <- model$log_model$classes
@@ -65,17 +70,15 @@ getargs_lca <- function(data_list, item_model, model, control) {
   # Generate all the necessary objects to project onto the manifold:
   # All the parameters are fixed to belong to the Euclidean manifold:
   indices <- 1:nparam
-  manifold <- "euclidean"
-  arguments <- list()
-  arguments[[1]] <- list(indices = indices-1L)
-  manifold_setup <- setup_all_manifolds(manifold, arguments)
+  manifold_setup <- list()
+  manifold_setup[[1]] <- list(manifold = "euclidean", indices = indices-1L)
 
   # Parameterize P(class) as a softmax transformation:
   classes_indices <- which(parameter_vector %in% id_classes)
   classes_transindices <- which(transparameter_vector %in% classes)
   X <- suppressWarnings(as.numeric(id_classes))
   vector_indices <- which(is.na(X))
-  transform_setup[[1]] <- list(transform = "softmaxt",
+  transform_setup[[1]] <- list(transform = "softmax",
                                indices = classes_indices-1L,
                                target_indices = classes_transindices-1L,
                                vector_indices = vector_indices-1L,
@@ -84,8 +87,8 @@ getargs_lca <- function(data_list, item_model, model, control) {
   # Initial values for the gaussian conditional parameters:
   if(gauss) {
     # For gaussian data:
-    indices <- which(item_model == "gaussian")
-    normal_data <- Y[, item_model == "gaussian", drop = FALSE]
+    indices <- which(item == "gaussian")
+    normal_data <- Y[, item == "gaussian", drop = FALSE]
     estimator_setup[[k]] <- lca_gaussian(normal_data, n, uniq_indices, map2full, classes,
                                          conditionals[indices],
                                          transparameter_vector, transfixed_vector)
@@ -113,7 +116,7 @@ getargs_lca <- function(data_list, item_model, model, control) {
     sd_transindices <- which(transparameter_vector %in% sd_labels)
     X <- suppressWarnings(as.numeric(id_sd_labels))
     vector_indices <- which(is.na(X))
-    transform_setup[[3]] <- list(transform = "exp",
+    transform_setup[[3]] <- list(transform = "exponential",
                                  indices = id_sd_indices-1L,
                                  target_indices = sd_transindices-1L,
                                  vector_indices = vector_indices-1L,
@@ -140,8 +143,8 @@ getargs_lca <- function(data_list, item_model, model, control) {
   # Initial values for the multinomial conditional parameters:
   if(categ) {
     # For multinomial data:
-    indices <- which(item_model == "multinomial")
-    categorical_data <- Y[, item_model == "multinomial", drop = FALSE]
+    indices <- which(item == "multinomial")
+    categorical_data <- Y[, item == "multinomial", drop = FALSE]
     estimator_setup[[k]] <- lca_multinomial(categorical_data, n, uniq_indices, map2full,
                                             classes, conditionals[indices],
                                             transparameter_vector, transfixed_vector)
@@ -157,7 +160,7 @@ getargs_lca <- function(data_list, item_model, model, control) {
         j <- j+1
         X <- suppressWarnings(as.numeric(id_conditionals[indices][[i]][, g]))
         vector_indices <- which(is.na(X))
-        transform_setup[[j]] <- list(transform = "softmaxt",
+        transform_setup[[j]] <- list(transform = "softmax",
                                      indices = id_res[[g]]-1L,
                                      target_indices = transres[[g]]-1L,
                                      vector_indices = vector_indices-1L,
@@ -166,18 +169,6 @@ getargs_lca <- function(data_list, item_model, model, control) {
       }
 
     }
-
-    # Compute initial values:
-    # Count the number of times of a response category in each item:
-    # counts <- lapply(names(dt), function(col) {
-    #   out <- dt[, .N, by = get(col)][]
-    #   setnames(out, "get", col)
-    #   out[, proportion := N / sum(N)]
-    #   out[order(get(col))]
-    # })
-    # names(counts) <- names(dt)
-    # proportions <- unlist(lapply(counts, FUN = \(x) rep(x$proportion, times = nclasses)))
-    # init_multinomial_conditionals <- log(proportions)
 
     nelem_multinomial <- sum(unlist(lapply(id_conditionals[indices], FUN = \(x) prod(dim(x)))))
     # All the conditional parameters for multinomial items are DIFFERENT across random starts:
@@ -188,6 +179,13 @@ getargs_lca <- function(data_list, item_model, model, control) {
     }
 
     k <- k+1
+  }
+
+  # Identify and remove identical transformations:
+  duplications <- duplicated(transform_setup)
+  if(any(duplications)) {
+    remove <- -which(duplications)
+    transform_setup <- transform_setup[remove]
   }
 
   estimator_setup[[k]] <- list()
@@ -239,9 +237,20 @@ getargs_lca <- function(data_list, item_model, model, control) {
     }
   }
 
+  # Give additional information to the optimizer:
+  control_setup <- control
+  control_setup$parameters <- parameters
+  control_setup$transparameters <- transparameters
+  control_setup$posterior <- posterior
+  control_setup$S <- estimator_setup[[1]]$S # Number of unique patterns
+  control_setup$nlatent <- length(estimator_setup[[1]]$classes) # Number of latent variables
+
   result <- list(manifold_setup = manifold_setup,
                  transform_setup = transform_setup,
                  estimator_setup = estimator_setup,
+                 control_setup = control_setup,
+                 parameter_vector = parameter_vector,
+                 transparameter_vector = transparameter_vector,
                  parameters = parameters,
                  transparameters = transparameters,
                  posterior = posterior,
@@ -251,7 +260,11 @@ getargs_lca <- function(data_list, item_model, model, control) {
                  indices_param_vector2 = indices_param_vector2,
                  indices_full_param_vector = indices_full_param_vector,
                  indices_full_fixed_vector = indices_full_fixed_vector,
-                 full_fixed_vector = full_fixed_vector)
+                 full_fixed_vector = full_fixed_vector,
+                 full_transfixed_vector = full_transfixed_vector,
+                 indices_full_transparam_vector = indices_full_transparam_vector,
+                 indices_full_transfixed_vector = indices_full_transfixed_vector,
+                 indices_transparam_vector2 = indices_transparam_vector2)
 
   # classes: model for the classes
   # conditionals: list with the model for the conditional parameters of each item

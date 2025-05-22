@@ -1,3 +1,7 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 22/05/2025
+#'
 #' @title
 #' Standard Errors
 #' @description
@@ -29,11 +33,11 @@ se <- function(fit, confidence = 0.95) {
   control_manifold <- fit$opt$manifold_setup
   control_transform <- fit$opt$transform_setup
   control_estimator <- fit$opt$estimator_setup
-  control_optimizer <- fit$opt$control
+  control_optimizer <- fit$opt$control_setup
 
-  item_model <- fit$modelInfo$item_model
-  gauss <- "gaussian" %in% item_model
-  multin <- "multinomial" %in% item_model
+  item <- fit$modelInfo$item
+  gauss <- "gaussian" %in% item
+  multin <- "multinomial" %in% item
 
   ntransparam <- length(fit$opt$transparameters)
   indices <- 1:ntransparam
@@ -73,9 +77,8 @@ se <- function(fit, confidence = 0.95) {
                           control_transform = control_transform,
                           control_estimator = control_estimator,
                           control_optimizer = control_optimizer)
-  # round(cbind(x, H-t(H)), 3)
 
-  param_charvector <- unlist(fit$modelInfo$prob_model)
+  param_charvector <- unique(unlist(fit$modelInfo$prob_model))
   non_alnum_indices <- grep("^(?!-?\\d+(\\.\\d+)?$)",
                             param_charvector, perl = TRUE)
   rownames(H) <- colnames(H) <- param_charvector[non_alnum_indices]
@@ -90,9 +93,12 @@ se <- function(fit, confidence = 0.95) {
 
   for(i in 1:nconstraints) {
 
-    v <- fit$opt$outputs$transformations$vectors[[i]][[1]]
-    ind <- fit$opt$outputs$transformations$vectors[[i]][[2]]+1
-    constraints[ind, i] <- v
+    constraints0 <- fit$opt$outputs$transformations$vectors
+    if(!is.null(constraints0[[i]][1][[1]])) {
+      v <- constraints0[[i]][[1]]
+      ind <- constraints0[[i]][[2]]+1
+      constraints[ind, i] <- v
+    }
 
   }
 
@@ -107,7 +113,7 @@ se <- function(fit, confidence = 0.95) {
   remove <- which(condition)
   H <- H[-remove, ][, -remove]
   constraints <- constraints[-remove, ]
-  zeros <- colSums(constraints) < 1
+  zeros <- colSums(constraints) < 1 | duplicated(t(constraints))
   if(any(zeros)) {
     constraints <- constraints[, -which(zeros)]
   }
@@ -126,36 +132,58 @@ se <- function(fit, confidence = 0.95) {
   se <- vector(length = nparam)
   se[keep] <- se0
   se[remove] <- NA
-  names(se) <- param_charvector
-  SE <- fill_list_with_vector(fit$transformed_parameters, se)
+  names(se) <- fit$opt$args$transparameter_vector
+
+  Se <- vector(length = length(unlist(fit$parameters)))
+  ind_target <- fit$opt$args$indices_full_transparam_vector
+  ind_select <- fit$opt$args$indices_transparam_vector2
+  Se[ind_target] <- se[ind_select[!is.na(ind_select)]]
+  SE <- fill_list_with_vector(fit$transformed_parameters, Se)
 
   C <- matrix(NA, nrow = nparam, ncol = nparam)
   C[keep, keep] <- C0
-  rownames(C) <- colnames(C) <- param_charvector
+  rownames(C) <- colnames(C) <- fit$opt$args$transparameter_vector
 
-  conf <- function(x, se, confidence) {
+  fit$transformed_parameters
+  type <- rep("prob", times = nparam)
+
+  conf <- function(x, se, confidence, type) {
 
     z <- stats::qnorm((1+confidence)/2)
-    logit_prob <- stats::qlogis(x)
-    logit_se <- se / (x * (1 - x))  # Delta method
 
-    logit_lower <- logit_prob - z * logit_se
-    logit_upper <- logit_prob + z * logit_se
+    if(type == "prob") {
 
-    # Back-transform to probability scale
-    lower_prob <- stats::plogis(logit_lower)
-    upper_prob <- stats::plogis(logit_upper)
+      logit_prob <- stats::qlogis(x)
+      logit_se <- se / (x * (1 - x))  # Delta method
 
-    return(c(lower_prob, upper_prob))
+      logit_lower <- logit_prob - z * logit_se
+      logit_upper <- logit_prob + z * logit_se
+
+      # Back-transform to probability scale
+      lower <- stats::plogis(logit_lower)
+      upper <- stats::plogis(logit_upper)
+
+    } else if(type == "linear") {
+
+      lower <- x - z * se
+      upper <- x + z * se
+
+    }
+
+
+    return(c(lower, upper))
 
   }
 
-  ci <- sapply(1:nparam, FUN = \(i) conf(x[i], se[i], confidence = confidence))
+  ci <- sapply(1:nparam, FUN = \(i) conf(x[i], se[i], confidence = confidence, type = type[i]))
   rownames(ci) <- c("lower", "upper")
-  colnames(ci) <- param_charvector
+  colnames(ci) <- fit$opt$args$transparameter_vector
+
   ci0 <- format(round(rbind(x, ci), 2), nsmall = 2)
-  CI <- apply(ci0, MARGIN = 2, FUN = \(x) paste(x[1], " (", x[2], " - ", x[3], ")",
+  Ci <- apply(ci0, MARGIN = 2, FUN = \(x) paste(x[1], " (", x[2], " - ", x[3], ")",
                                                 sep = "", collapse = ""))
+  CI <- vector(length = length(unlist(fit$parameters)))
+  CI[ind_target] <- Ci[ind_select[!is.na(ind_select)]]
   CI <- fill_list_with_vector(fit$transformed_parameters, CI)
 
   result <- list()

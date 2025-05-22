@@ -9,14 +9,18 @@ getmodel(data, model = rep("multinomial", ncol(data)), nclasses = 2L)
 \arguments{
 \item{data}{data.frame or matrix of response.}
 
+\item{item}{Character vector with the model for each item.}
+
 \item{nclasses}{Number of latent classes.}
 
-\item{model}{Character vector with the model for each item.}
+\item{model}{List of parameter labels. See 'details' for more information.}
+
+\item{constraints}{Should the model be checked for identification? Defaults to TRUE.}
 }
 \value{
 List with the following objects:
-\item{classes}{The model for the probabilities of the classes.}
-\item{conditionals}{The model for the conditional response probabilities.}
+\item{none}{.}
+\item{none}{.}
 }
 \description{
 Get the default model for Latent Class Analysis.

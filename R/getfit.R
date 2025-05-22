@@ -1,3 +1,7 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 22/05/2025
+#'
 #' @title
 #' Fit indices
 #' @description

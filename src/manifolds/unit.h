@@ -1,3 +1,9 @@
+/*
+ * Author: Marcos Jimenez
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 03/02/2025
+ */
+
 // Unit manifold (Sphere):
 
 class unit:public manifolds {

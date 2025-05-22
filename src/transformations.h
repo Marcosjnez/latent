@@ -33,7 +33,7 @@ public:
 
 #include "transformations/identity.h"
 #include "transformations/softmax.h"
-#include "transformations/expo.h"
+#include "transformations/exponential.h"
 
 // Choose the transformation:
 
@@ -46,17 +46,17 @@ transformations* choose_transform(Rcpp::List trans_setup, transformations* xtran
 
     trans = choose_identity(trans_setup);
 
-  } else if(transform == "softmaxt") {
+  } else if(transform == "softmax") {
 
-    trans = choose_softmaxt(trans_setup);
+    trans = choose_softmax(trans_setup);
 
-  } else if(transform == "exp") {
+  } else if(transform == "exponential") {
 
-    trans = choose_expo(trans_setup);
+    trans = choose_exponential(trans_setup);
 
   } else {
 
-    Rcpp::stop("Available transformations: \n identity, exp, and softmaxt");
+    Rcpp::stop("Available transformations: \n identity, exponential, and softmax");
 
   }
 

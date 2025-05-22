@@ -54,9 +54,11 @@ public:
         conditionals[j](indices2, col) = transparameters(indices1);
         logconditionals[j].col(i) = arma::trunc_log(conditionals[j].col(i));
         for(int s=0; s < S; ++s) {
-          int category = Y(s, j);
-          loglik(j, i, s) = logconditionals[j](category, i);
-          latentloglik(s, i) += loglik(j, i, s);
+          if(!std::isnan(Y(s, j))) {
+            int category = Y(s, j);
+            loglik(j, i, s) = logconditionals[j](category, i);
+            latentloglik(s, i) += loglik(j, i, s);
+          }
         }
       }
     }
@@ -92,8 +94,10 @@ public:
       arma::vec term = -loglik_case[s] + jointlogp.row(s).t();
       for(int i=0; i < nclasses; ++i) {
         for(int j=0; j < J; ++j) {
-          int category = Y(s, j);
-          gconditionals[j](category, i) += -n[s]*arma::trunc_exp(term[i] - loglik(j, i, s));
+          if(!std::isnan(Y(s, j))) {
+            int category = Y(s, j);
+            gconditionals[j](category, i) += -n[s]*arma::trunc_exp(term[i] - loglik(j, i, s));
+          }
         }
       }
     }

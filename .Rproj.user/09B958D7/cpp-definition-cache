@@ -78,7 +78,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/auxiliary.h",
-        "file_last_write": 1747517703.0,
+        "file_last_write": 1747935800.0,
         "definitions": [
             {
                 "usr": "c:@F@root_quad#d#d#d#",
@@ -201,10 +201,10 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@softmax#$@N@arma@S@Col>#d#d#",
+                "usr": "c:@F@soft#$@N@arma@S@Col>#d#d#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "softmax(arma::vec, double)",
+                "name": "soft(arma::vec, double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/auxiliary.h",
                 "line": 192,
                 "column": 11,
@@ -268,23 +268,6 @@
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/auxiliary.h",
                 "line": 250,
                 "column": 8,
-                "hidden": false
-            }
-        ],
-        "hidden": false
-    },
-    {
-        "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/check.h",
-        "file_last_write": 1747575290.0,
-        "definitions": [
-            {
-                "usr": "c:@F@check#$@N@arma@S@Col>#d#S0_#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#d#",
-                "kind": 6,
-                "parent_name": "",
-                "name": "check(arma::vec, arma::vec, Rcpp::List, Rcpp::List, Rcpp::List, double)",
-                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/check.h",
-                "line": 7,
-                "column": 12,
                 "hidden": false
             }
         ],
@@ -409,7 +392,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/cfa/cfa_dwls.h",
-        "file_last_write": 1747834173.0,
+        "file_last_write": 1747932808.0,
         "definitions": [
             {
                 "usr": "c:@S@cfa_dwls",
@@ -1051,7 +1034,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-        "file_last_write": 1747479779.0,
+        "file_last_write": 1747910290.0,
         "definitions": [
             {
                 "usr": "c:@S@lca_gaussian",
@@ -1079,7 +1062,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 69,
+                "line": 71,
                 "column": 8,
                 "hidden": false
             },
@@ -1089,7 +1072,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 84,
+                "line": 86,
                 "column": 8,
                 "hidden": false
             },
@@ -1099,7 +1082,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 128,
+                "line": 132,
                 "column": 8,
                 "hidden": false
             },
@@ -1109,7 +1092,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 135,
+                "line": 139,
                 "column": 8,
                 "hidden": false
             },
@@ -1119,7 +1102,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 142,
+                "line": 146,
                 "column": 8,
                 "hidden": false
             },
@@ -1129,7 +1112,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 178,
+                "line": 182,
                 "column": 8,
                 "hidden": false
             },
@@ -1139,7 +1122,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 182,
+                "line": 186,
                 "column": 8,
                 "hidden": false
             },
@@ -1149,7 +1132,7 @@
                 "parent_name": "",
                 "name": "choose_lca_gaussian(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 212,
+                "line": 216,
                 "column": 15,
                 "hidden": false
             }
@@ -1158,7 +1141,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-        "file_last_write": 1747479231.0,
+        "file_last_write": 1747910131.0,
         "definitions": [
             {
                 "usr": "c:@S@lca_multinomial",
@@ -1186,7 +1169,7 @@
                 "parent_name": "lca_multinomial",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-                "line": 68,
+                "line": 70,
                 "column": 8,
                 "hidden": false
             },
@@ -1196,7 +1179,7 @@
                 "parent_name": "lca_multinomial",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-                "line": 82,
+                "line": 84,
                 "column": 8,
                 "hidden": false
             },
@@ -1206,7 +1189,7 @@
                 "parent_name": "lca_multinomial",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-                "line": 114,
+                "line": 118,
                 "column": 8,
                 "hidden": false
             },
@@ -1216,7 +1199,7 @@
                 "parent_name": "lca_multinomial",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-                "line": 121,
+                "line": 125,
                 "column": 8,
                 "hidden": false
             },
@@ -1226,7 +1209,7 @@
                 "parent_name": "lca_multinomial",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-                "line": 128,
+                "line": 132,
                 "column": 8,
                 "hidden": false
             },
@@ -1236,7 +1219,7 @@
                 "parent_name": "lca_multinomial",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-                "line": 180,
+                "line": 184,
                 "column": 8,
                 "hidden": false
             },
@@ -1246,7 +1229,7 @@
                 "parent_name": "lca_multinomial",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-                "line": 184,
+                "line": 188,
                 "column": 8,
                 "hidden": false
             },
@@ -1256,7 +1239,7 @@
                 "parent_name": "",
                 "name": "choose_lca_multinomial(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-                "line": 214,
+                "line": 218,
                 "column": 18,
                 "hidden": false
             }
@@ -1372,7 +1355,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-        "file_last_write": 1747464778.0,
+        "file_last_write": 1747933308.0,
         "definitions": [
             {
                 "usr": "c:@S@cf",
@@ -1380,7 +1363,7 @@
                 "parent_name": "",
                 "name": "cf",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 5,
+                "line": 11,
                 "column": 7,
                 "hidden": false
             },
@@ -1390,7 +1373,7 @@
                 "parent_name": "cf",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 18,
+                "line": 24,
                 "column": 8,
                 "hidden": false
             },
@@ -1400,7 +1383,7 @@
                 "parent_name": "cf",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 43,
+                "line": 49,
                 "column": 8,
                 "hidden": false
             },
@@ -1410,7 +1393,7 @@
                 "parent_name": "cf",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 49,
+                "line": 55,
                 "column": 8,
                 "hidden": false
             },
@@ -1420,7 +1403,7 @@
                 "parent_name": "cf",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 67,
+                "line": 73,
                 "column": 8,
                 "hidden": false
             },
@@ -1430,7 +1413,7 @@
                 "parent_name": "cf",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 100,
+                "line": 106,
                 "column": 8,
                 "hidden": false
             },
@@ -1440,7 +1423,7 @@
                 "parent_name": "cf",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 107,
+                "line": 113,
                 "column": 8,
                 "hidden": false
             },
@@ -1450,7 +1433,7 @@
                 "parent_name": "cf",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 109,
+                "line": 115,
                 "column": 8,
                 "hidden": false
             },
@@ -1460,7 +1443,7 @@
                 "parent_name": "cf",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 111,
+                "line": 117,
                 "column": 8,
                 "hidden": false
             },
@@ -1470,7 +1453,7 @@
                 "parent_name": "",
                 "name": "choose_cf(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/cf.h",
-                "line": 139,
+                "line": 145,
                 "column": 5,
                 "hidden": false
             }
@@ -1479,7 +1462,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-        "file_last_write": 1747464910.0,
+        "file_last_write": 1747933313.0,
         "definitions": [
             {
                 "usr": "c:@S@geomin",
@@ -1487,7 +1470,7 @@
                 "parent_name": "",
                 "name": "geomin",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 5,
+                "line": 11,
                 "column": 7,
                 "hidden": false
             },
@@ -1497,7 +1480,7 @@
                 "parent_name": "geomin",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 18,
+                "line": 24,
                 "column": 8,
                 "hidden": false
             },
@@ -1507,7 +1490,7 @@
                 "parent_name": "geomin",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 42,
+                "line": 48,
                 "column": 8,
                 "hidden": false
             },
@@ -1517,7 +1500,7 @@
                 "parent_name": "geomin",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 48,
+                "line": 54,
                 "column": 8,
                 "hidden": false
             },
@@ -1527,7 +1510,7 @@
                 "parent_name": "geomin",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 66,
+                "line": 72,
                 "column": 8,
                 "hidden": false
             },
@@ -1537,7 +1520,7 @@
                 "parent_name": "geomin",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 103,
+                "line": 109,
                 "column": 8,
                 "hidden": false
             },
@@ -1547,7 +1530,7 @@
                 "parent_name": "geomin",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 110,
+                "line": 116,
                 "column": 8,
                 "hidden": false
             },
@@ -1557,7 +1540,7 @@
                 "parent_name": "geomin",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 112,
+                "line": 118,
                 "column": 8,
                 "hidden": false
             },
@@ -1567,7 +1550,7 @@
                 "parent_name": "geomin",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 114,
+                "line": 120,
                 "column": 8,
                 "hidden": false
             },
@@ -1577,7 +1560,7 @@
                 "parent_name": "",
                 "name": "choose_geomin(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/geomin.h",
-                "line": 142,
+                "line": 148,
                 "column": 9,
                 "hidden": false
             }
@@ -1586,7 +1569,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-        "file_last_write": 1747465181.0,
+        "file_last_write": 1747933318.0,
         "definitions": [
             {
                 "usr": "c:@S@lclf",
@@ -1594,7 +1577,7 @@
                 "parent_name": "",
                 "name": "lclf",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 5,
+                "line": 11,
                 "column": 7,
                 "hidden": false
             },
@@ -1604,7 +1587,7 @@
                 "parent_name": "lclf",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 19,
+                "line": 25,
                 "column": 8,
                 "hidden": false
             },
@@ -1614,7 +1597,7 @@
                 "parent_name": "lclf",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 47,
+                "line": 53,
                 "column": 8,
                 "hidden": false
             },
@@ -1624,7 +1607,7 @@
                 "parent_name": "lclf",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 53,
+                "line": 59,
                 "column": 8,
                 "hidden": false
             },
@@ -1634,7 +1617,7 @@
                 "parent_name": "lclf",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 71,
+                "line": 77,
                 "column": 8,
                 "hidden": false
             },
@@ -1644,7 +1627,7 @@
                 "parent_name": "lclf",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 101,
+                "line": 107,
                 "column": 8,
                 "hidden": false
             },
@@ -1654,7 +1637,7 @@
                 "parent_name": "lclf",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 108,
+                "line": 114,
                 "column": 8,
                 "hidden": false
             },
@@ -1664,7 +1647,7 @@
                 "parent_name": "lclf",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 110,
+                "line": 116,
                 "column": 8,
                 "hidden": false
             },
@@ -1674,7 +1657,7 @@
                 "parent_name": "lclf",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 112,
+                "line": 118,
                 "column": 8,
                 "hidden": false
             },
@@ -1684,7 +1667,7 @@
                 "parent_name": "",
                 "name": "choose_lclf(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/lclf.h",
-                "line": 116,
+                "line": 122,
                 "column": 7,
                 "hidden": false
             }
@@ -1693,7 +1676,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-        "file_last_write": 1747464860.0,
+        "file_last_write": 1747933330.0,
         "definitions": [
             {
                 "usr": "c:@S@oblimin",
@@ -1701,7 +1684,7 @@
                 "parent_name": "",
                 "name": "oblimin",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 5,
+                "line": 11,
                 "column": 7,
                 "hidden": false
             },
@@ -1711,7 +1694,7 @@
                 "parent_name": "oblimin",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 16,
+                "line": 22,
                 "column": 8,
                 "hidden": false
             },
@@ -1721,7 +1704,7 @@
                 "parent_name": "oblimin",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 38,
+                "line": 44,
                 "column": 8,
                 "hidden": false
             },
@@ -1731,7 +1714,7 @@
                 "parent_name": "oblimin",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 44,
+                "line": 50,
                 "column": 8,
                 "hidden": false
             },
@@ -1741,7 +1724,7 @@
                 "parent_name": "oblimin",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 60,
+                "line": 66,
                 "column": 8,
                 "hidden": false
             },
@@ -1751,7 +1734,7 @@
                 "parent_name": "oblimin",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 87,
+                "line": 93,
                 "column": 8,
                 "hidden": false
             },
@@ -1761,7 +1744,7 @@
                 "parent_name": "oblimin",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 94,
+                "line": 100,
                 "column": 8,
                 "hidden": false
             },
@@ -1771,7 +1754,7 @@
                 "parent_name": "oblimin",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 96,
+                "line": 102,
                 "column": 8,
                 "hidden": false
             },
@@ -1781,7 +1764,7 @@
                 "parent_name": "oblimin",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 98,
+                "line": 104,
                 "column": 8,
                 "hidden": false
             },
@@ -1791,7 +1774,7 @@
                 "parent_name": "",
                 "name": "choose_oblimin(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/oblimin.h",
-                "line": 118,
+                "line": 124,
                 "column": 10,
                 "hidden": false
             }
@@ -1800,7 +1783,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-        "file_last_write": 1747465076.0,
+        "file_last_write": 1747933337.0,
         "definitions": [
             {
                 "usr": "c:@S@target",
@@ -1808,7 +1791,7 @@
                 "parent_name": "",
                 "name": "target",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 5,
+                "line": 11,
                 "column": 7,
                 "hidden": false
             },
@@ -1818,7 +1801,7 @@
                 "parent_name": "target",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 16,
+                "line": 22,
                 "column": 8,
                 "hidden": false
             },
@@ -1828,7 +1811,7 @@
                 "parent_name": "target",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 37,
+                "line": 43,
                 "column": 8,
                 "hidden": false
             },
@@ -1838,7 +1821,7 @@
                 "parent_name": "target",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 43,
+                "line": 49,
                 "column": 8,
                 "hidden": false
             },
@@ -1848,7 +1831,7 @@
                 "parent_name": "target",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 59,
+                "line": 65,
                 "column": 8,
                 "hidden": false
             },
@@ -1858,7 +1841,7 @@
                 "parent_name": "target",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 86,
+                "line": 92,
                 "column": 8,
                 "hidden": false
             },
@@ -1868,7 +1851,7 @@
                 "parent_name": "target",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 93,
+                "line": 99,
                 "column": 8,
                 "hidden": false
             },
@@ -1878,7 +1861,7 @@
                 "parent_name": "target",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 95,
+                "line": 101,
                 "column": 8,
                 "hidden": false
             },
@@ -1888,7 +1871,7 @@
                 "parent_name": "target",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 97,
+                "line": 103,
                 "column": 8,
                 "hidden": false
             },
@@ -1898,7 +1881,7 @@
                 "parent_name": "",
                 "name": "choose_target(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/target.h",
-                "line": 113,
+                "line": 119,
                 "column": 9,
                 "hidden": false
             }
@@ -1907,7 +1890,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-        "file_last_write": 1747464971.0,
+        "file_last_write": 1747933344.0,
         "definitions": [
             {
                 "usr": "c:@S@varimax",
@@ -1915,7 +1898,7 @@
                 "parent_name": "",
                 "name": "varimax",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 5,
+                "line": 11,
                 "column": 7,
                 "hidden": false
             },
@@ -1925,7 +1908,7 @@
                 "parent_name": "varimax",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 16,
+                "line": 22,
                 "column": 8,
                 "hidden": false
             },
@@ -1935,7 +1918,7 @@
                 "parent_name": "varimax",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 39,
+                "line": 45,
                 "column": 8,
                 "hidden": false
             },
@@ -1945,7 +1928,7 @@
                 "parent_name": "varimax",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 45,
+                "line": 51,
                 "column": 8,
                 "hidden": false
             },
@@ -1955,7 +1938,7 @@
                 "parent_name": "varimax",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 61,
+                "line": 67,
                 "column": 8,
                 "hidden": false
             },
@@ -1965,7 +1948,7 @@
                 "parent_name": "varimax",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 90,
+                "line": 96,
                 "column": 8,
                 "hidden": false
             },
@@ -1975,7 +1958,7 @@
                 "parent_name": "varimax",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 97,
+                "line": 103,
                 "column": 8,
                 "hidden": false
             },
@@ -1985,7 +1968,7 @@
                 "parent_name": "varimax",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 99,
+                "line": 105,
                 "column": 8,
                 "hidden": false
             },
@@ -1995,7 +1978,7 @@
                 "parent_name": "varimax",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 101,
+                "line": 107,
                 "column": 8,
                 "hidden": false
             },
@@ -2005,7 +1988,7 @@
                 "parent_name": "",
                 "name": "choose_varimax(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimax.h",
-                "line": 121,
+                "line": 127,
                 "column": 10,
                 "hidden": false
             }
@@ -2014,7 +1997,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-        "file_last_write": 1747465028.0,
+        "file_last_write": 1747933349.0,
         "definitions": [
             {
                 "usr": "c:@S@varimin",
@@ -2022,7 +2005,7 @@
                 "parent_name": "",
                 "name": "varimin",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 5,
+                "line": 11,
                 "column": 7,
                 "hidden": false
             },
@@ -2032,7 +2015,7 @@
                 "parent_name": "varimin",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 16,
+                "line": 22,
                 "column": 8,
                 "hidden": false
             },
@@ -2042,7 +2025,7 @@
                 "parent_name": "varimin",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 39,
+                "line": 45,
                 "column": 8,
                 "hidden": false
             },
@@ -2052,7 +2035,7 @@
                 "parent_name": "varimin",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 45,
+                "line": 51,
                 "column": 8,
                 "hidden": false
             },
@@ -2062,7 +2045,7 @@
                 "parent_name": "varimin",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 61,
+                "line": 67,
                 "column": 8,
                 "hidden": false
             },
@@ -2072,7 +2055,7 @@
                 "parent_name": "varimin",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 90,
+                "line": 96,
                 "column": 8,
                 "hidden": false
             },
@@ -2082,7 +2065,7 @@
                 "parent_name": "varimin",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 97,
+                "line": 103,
                 "column": 8,
                 "hidden": false
             },
@@ -2092,7 +2075,7 @@
                 "parent_name": "varimin",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 99,
+                "line": 105,
                 "column": 8,
                 "hidden": false
             },
@@ -2102,7 +2085,7 @@
                 "parent_name": "varimin",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 101,
+                "line": 107,
                 "column": 8,
                 "hidden": false
             },
@@ -2112,7 +2095,7 @@
                 "parent_name": "",
                 "name": "choose_varimin(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/varimin.h",
-                "line": 121,
+                "line": 127,
                 "column": 10,
                 "hidden": false
             }
@@ -2121,7 +2104,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-        "file_last_write": 1747465131.0,
+        "file_last_write": 1747933361.0,
         "definitions": [
             {
                 "usr": "c:@S@xtarget",
@@ -2129,7 +2112,7 @@
                 "parent_name": "",
                 "name": "xtarget",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 5,
+                "line": 11,
                 "column": 7,
                 "hidden": false
             },
@@ -2139,7 +2122,7 @@
                 "parent_name": "xtarget",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 18,
+                "line": 24,
                 "column": 8,
                 "hidden": false
             },
@@ -2149,7 +2132,7 @@
                 "parent_name": "xtarget",
                 "name": "F",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 40,
+                "line": 46,
                 "column": 8,
                 "hidden": false
             },
@@ -2159,7 +2142,7 @@
                 "parent_name": "xtarget",
                 "name": "G",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 46,
+                "line": 52,
                 "column": 8,
                 "hidden": false
             },
@@ -2169,7 +2152,7 @@
                 "parent_name": "xtarget",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 65,
+                "line": 71,
                 "column": 8,
                 "hidden": false
             },
@@ -2179,7 +2162,7 @@
                 "parent_name": "xtarget",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 97,
+                "line": 103,
                 "column": 8,
                 "hidden": false
             },
@@ -2189,7 +2172,7 @@
                 "parent_name": "xtarget",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 104,
+                "line": 110,
                 "column": 8,
                 "hidden": false
             },
@@ -2199,7 +2182,7 @@
                 "parent_name": "xtarget",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 106,
+                "line": 112,
                 "column": 8,
                 "hidden": false
             },
@@ -2209,7 +2192,7 @@
                 "parent_name": "xtarget",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 108,
+                "line": 114,
                 "column": 8,
                 "hidden": false
             },
@@ -2219,7 +2202,7 @@
                 "parent_name": "",
                 "name": "choose_xtarget(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/rotation/xtarget.h",
-                "line": 130,
+                "line": 136,
                 "column": 10,
                 "hidden": false
             }
@@ -2228,13 +2211,13 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/functions.cpp",
-        "file_last_write": 1747810880.0,
+        "file_last_write": 1747934981.0,
         "definitions": [],
         "hidden": false
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/grad_comp.h",
-        "file_last_write": 1747517629.0,
+        "file_last_write": 1747916138.0,
         "definitions": [
             {
                 "usr": "c:@F@grad_comp#$@N@arma@S@Col>#d#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#d#",
@@ -2348,7 +2331,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/euclidean.h",
-        "file_last_write": 1747575002.0,
+        "file_last_write": 1747933237.0,
         "definitions": [
             {
                 "usr": "c:@S@euclidean",
@@ -2356,7 +2339,7 @@
                 "parent_name": "",
                 "name": "euclidean",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/euclidean.h",
-                "line": 3,
+                "line": 9,
                 "column": 7,
                 "hidden": false
             },
@@ -2366,7 +2349,7 @@
                 "parent_name": "euclidean",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/euclidean.h",
-                "line": 10,
+                "line": 16,
                 "column": 8,
                 "hidden": false
             },
@@ -2376,7 +2359,7 @@
                 "parent_name": "euclidean",
                 "name": "proj",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/euclidean.h",
-                "line": 16,
+                "line": 22,
                 "column": 8,
                 "hidden": false
             },
@@ -2386,7 +2369,7 @@
                 "parent_name": "euclidean",
                 "name": "hess",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/euclidean.h",
-                "line": 22,
+                "line": 28,
                 "column": 8,
                 "hidden": false
             },
@@ -2396,7 +2379,7 @@
                 "parent_name": "euclidean",
                 "name": "retr",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/euclidean.h",
-                "line": 28,
+                "line": 34,
                 "column": 8,
                 "hidden": false
             },
@@ -2406,7 +2389,7 @@
                 "parent_name": "euclidean",
                 "name": "dconstraints",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/euclidean.h",
-                "line": 34,
+                "line": 40,
                 "column": 8,
                 "hidden": false
             },
@@ -2416,7 +2399,7 @@
                 "parent_name": "euclidean",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/euclidean.h",
-                "line": 38,
+                "line": 44,
                 "column": 8,
                 "hidden": false
             },
@@ -2426,7 +2409,7 @@
                 "parent_name": "",
                 "name": "choose_euclidean(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/euclidean.h",
-                "line": 44,
+                "line": 50,
                 "column": 12,
                 "hidden": false
             }
@@ -2435,7 +2418,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/oblq.h",
-        "file_last_write": 1747575007.0,
+        "file_last_write": 1747933241.0,
         "definitions": [
             {
                 "usr": "c:@S@oblq",
@@ -2443,7 +2426,7 @@
                 "parent_name": "",
                 "name": "oblq",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/oblq.h",
-                "line": 3,
+                "line": 9,
                 "column": 7,
                 "hidden": false
             },
@@ -2453,7 +2436,7 @@
                 "parent_name": "oblq",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/oblq.h",
-                "line": 10,
+                "line": 16,
                 "column": 8,
                 "hidden": false
             },
@@ -2463,7 +2446,7 @@
                 "parent_name": "oblq",
                 "name": "proj",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/oblq.h",
-                "line": 16,
+                "line": 22,
                 "column": 8,
                 "hidden": false
             },
@@ -2473,7 +2456,7 @@
                 "parent_name": "oblq",
                 "name": "hess",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/oblq.h",
-                "line": 23,
+                "line": 29,
                 "column": 8,
                 "hidden": false
             },
@@ -2483,7 +2466,7 @@
                 "parent_name": "oblq",
                 "name": "retr",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/oblq.h",
-                "line": 36,
+                "line": 42,
                 "column": 8,
                 "hidden": false
             },
@@ -2493,7 +2476,7 @@
                 "parent_name": "oblq",
                 "name": "dconstraints",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/oblq.h",
-                "line": 42,
+                "line": 48,
                 "column": 8,
                 "hidden": false
             },
@@ -2503,7 +2486,7 @@
                 "parent_name": "oblq",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/oblq.h",
-                "line": 46,
+                "line": 52,
                 "column": 8,
                 "hidden": false
             },
@@ -2513,7 +2496,7 @@
                 "parent_name": "",
                 "name": "choose_oblq(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/oblq.h",
-                "line": 52,
+                "line": 58,
                 "column": 7,
                 "hidden": false
             }
@@ -2522,7 +2505,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/orth.h",
-        "file_last_write": 1747575010.0,
+        "file_last_write": 1747933248.0,
         "definitions": [
             {
                 "usr": "c:@S@orth",
@@ -2530,7 +2513,7 @@
                 "parent_name": "",
                 "name": "orth",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/orth.h",
-                "line": 3,
+                "line": 9,
                 "column": 7,
                 "hidden": false
             },
@@ -2540,7 +2523,7 @@
                 "parent_name": "orth",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/orth.h",
-                "line": 10,
+                "line": 16,
                 "column": 8,
                 "hidden": false
             },
@@ -2550,7 +2533,7 @@
                 "parent_name": "orth",
                 "name": "proj",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/orth.h",
-                "line": 16,
+                "line": 22,
                 "column": 8,
                 "hidden": false
             },
@@ -2560,7 +2543,7 @@
                 "parent_name": "orth",
                 "name": "hess",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/orth.h",
-                "line": 23,
+                "line": 29,
                 "column": 8,
                 "hidden": false
             },
@@ -2570,7 +2553,7 @@
                 "parent_name": "orth",
                 "name": "retr",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/orth.h",
-                "line": 33,
+                "line": 39,
                 "column": 8,
                 "hidden": false
             },
@@ -2580,7 +2563,7 @@
                 "parent_name": "orth",
                 "name": "dconstraints",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/orth.h",
-                "line": 42,
+                "line": 48,
                 "column": 8,
                 "hidden": false
             },
@@ -2590,7 +2573,7 @@
                 "parent_name": "orth",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/orth.h",
-                "line": 46,
+                "line": 52,
                 "column": 8,
                 "hidden": false
             },
@@ -2600,7 +2583,7 @@
                 "parent_name": "",
                 "name": "choose_orth(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/orth.h",
-                "line": 52,
+                "line": 58,
                 "column": 7,
                 "hidden": false
             }
@@ -2609,7 +2592,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/poblq.h",
-        "file_last_write": 1747575014.0,
+        "file_last_write": 1747933254.0,
         "definitions": [
             {
                 "usr": "c:@S@poblq",
@@ -2617,7 +2600,7 @@
                 "parent_name": "",
                 "name": "poblq",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/poblq.h",
-                "line": 3,
+                "line": 9,
                 "column": 7,
                 "hidden": false
             },
@@ -2627,7 +2610,7 @@
                 "parent_name": "poblq",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/poblq.h",
-                "line": 12,
+                "line": 18,
                 "column": 8,
                 "hidden": false
             },
@@ -2637,7 +2620,7 @@
                 "parent_name": "poblq",
                 "name": "proj",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/poblq.h",
-                "line": 19,
+                "line": 25,
                 "column": 8,
                 "hidden": false
             },
@@ -2647,7 +2630,7 @@
                 "parent_name": "poblq",
                 "name": "hess",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/poblq.h",
-                "line": 31,
+                "line": 37,
                 "column": 8,
                 "hidden": false
             },
@@ -2657,7 +2640,7 @@
                 "parent_name": "poblq",
                 "name": "retr",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/poblq.h",
-                "line": 59,
+                "line": 65,
                 "column": 8,
                 "hidden": false
             },
@@ -2667,7 +2650,7 @@
                 "parent_name": "poblq",
                 "name": "dconstraints",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/poblq.h",
-                "line": 84,
+                "line": 90,
                 "column": 8,
                 "hidden": false
             },
@@ -2677,7 +2660,7 @@
                 "parent_name": "poblq",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/poblq.h",
-                "line": 88,
+                "line": 94,
                 "column": 8,
                 "hidden": false
             },
@@ -2687,7 +2670,7 @@
                 "parent_name": "",
                 "name": "choose_poblq(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/poblq.h",
-                "line": 94,
+                "line": 100,
                 "column": 8,
                 "hidden": false
             }
@@ -2783,7 +2766,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/unit.h",
-        "file_last_write": 1747575025.0,
+        "file_last_write": 1747933261.0,
         "definitions": [
             {
                 "usr": "c:@S@unit",
@@ -2791,7 +2774,7 @@
                 "parent_name": "",
                 "name": "unit",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/unit.h",
-                "line": 3,
+                "line": 9,
                 "column": 7,
                 "hidden": false
             },
@@ -2801,7 +2784,7 @@
                 "parent_name": "unit",
                 "name": "param",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/unit.h",
-                "line": 10,
+                "line": 16,
                 "column": 8,
                 "hidden": false
             },
@@ -2811,7 +2794,7 @@
                 "parent_name": "unit",
                 "name": "proj",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/unit.h",
-                "line": 16,
+                "line": 22,
                 "column": 8,
                 "hidden": false
             },
@@ -2821,7 +2804,7 @@
                 "parent_name": "unit",
                 "name": "hess",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/unit.h",
-                "line": 23,
+                "line": 29,
                 "column": 8,
                 "hidden": false
             },
@@ -2831,7 +2814,7 @@
                 "parent_name": "unit",
                 "name": "retr",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/unit.h",
-                "line": 34,
+                "line": 40,
                 "column": 8,
                 "hidden": false
             },
@@ -2841,7 +2824,7 @@
                 "parent_name": "unit",
                 "name": "dconstraints",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/unit.h",
-                "line": 40,
+                "line": 46,
                 "column": 8,
                 "hidden": false
             },
@@ -2851,7 +2834,7 @@
                 "parent_name": "unit",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/unit.h",
-                "line": 44,
+                "line": 50,
                 "column": 8,
                 "hidden": false
             },
@@ -2861,7 +2844,7 @@
                 "parent_name": "",
                 "name": "choose_unit(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/manifolds/unit.h",
-                "line": 50,
+                "line": 56,
                 "column": 7,
                 "hidden": false
             }
@@ -3074,7 +3057,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-        "file_last_write": 1739011767.0,
+        "file_last_write": 1747933200.0,
         "definitions": [
             {
                 "usr": "c:@F@count#&1$@N@std@S@vector>#I#$@N@std@S@allocator>#I#1I#1I#",
@@ -3082,7 +3065,7 @@
                 "parent_name": "",
                 "name": "count(const std::vector<int> &, const int, const int)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 12,
+                "line": 18,
                 "column": 18,
                 "hidden": false
             },
@@ -3092,7 +3075,7 @@
                 "parent_name": "",
                 "name": "joint_frequency_table(const std::vector<int> &, const int, const int, const std::vector<int> &, const int)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 30,
+                "line": 36,
                 "column": 31,
                 "hidden": false
             },
@@ -3102,7 +3085,7 @@
                 "parent_name": "",
                 "name": "erf_inverse(double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 47,
+                "line": 53,
                 "column": 8,
                 "hidden": false
             },
@@ -3112,7 +3095,7 @@
                 "parent_name": "",
                 "name": "Dnorm(double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 78,
+                "line": 84,
                 "column": 8,
                 "hidden": false
             },
@@ -3122,7 +3105,7 @@
                 "parent_name": "",
                 "name": "Qnorm(double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 84,
+                "line": 90,
                 "column": 8,
                 "hidden": false
             },
@@ -3132,7 +3115,7 @@
                 "parent_name": "",
                 "name": "MVPHI(double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 88,
+                "line": 94,
                 "column": 8,
                 "hidden": false
             },
@@ -3142,7 +3125,7 @@
                 "parent_name": "",
                 "name": "genz(const double, const double, const double, const double, const double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 118,
+                "line": 124,
                 "column": 8,
                 "hidden": false
             },
@@ -3152,7 +3135,7 @@
                 "parent_name": "",
                 "name": "drezner(double, double, const double, const double, double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 200,
+                "line": 206,
                 "column": 8,
                 "hidden": false
             },
@@ -3162,7 +3145,7 @@
                 "parent_name": "",
                 "name": "dbinorm(double, double, double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 262,
+                "line": 268,
                 "column": 8,
                 "hidden": false
             },
@@ -3172,7 +3155,7 @@
                 "parent_name": "",
                 "name": "pbinorm(const double, const double, const double, const double, const double, const double, const double, const double, const double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 279,
+                "line": 285,
                 "column": 8,
                 "hidden": false
             },
@@ -3182,7 +3165,7 @@
                 "parent_name": "",
                 "name": "ddbinorm(const double, const double, const double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 358,
+                "line": 364,
                 "column": 8,
                 "hidden": false
             },
@@ -3192,7 +3175,7 @@
                 "parent_name": "",
                 "name": "fpoly(double, const std::vector<double> &, const std::vector<double> &, const std::vector<std::vector<int>> &, const size_t, const size_t, const std::vector<double> &, const std::vector<double> &)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 382,
+                "line": 388,
                 "column": 8,
                 "hidden": false
             },
@@ -3202,7 +3185,7 @@
                 "parent_name": "",
                 "name": "optimize2(const std::vector<double> &, const std::vector<double> &, const std::vector<std::vector<int>> &, const size_t, const size_t, const std::vector<double> &, const std::vector<double> &, const int, const double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 400,
+                "line": 406,
                 "column": 21,
                 "hidden": false
             },
@@ -3212,7 +3195,7 @@
                 "parent_name": "",
                 "name": "optimize(const std::vector<double> &, const std::vector<double> &, const std::vector<std::vector<int>> &, const size_t, const size_t, const std::vector<double> &, const std::vector<double> &, const int, const double)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 460,
+                "line": 466,
                 "column": 21,
                 "hidden": false
             },
@@ -3222,7 +3205,7 @@
                 "parent_name": "",
                 "name": "cumsum(const std::vector<int>)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 514,
+                "line": 520,
                 "column": 21,
                 "hidden": false
             },
@@ -3232,7 +3215,7 @@
                 "parent_name": "",
                 "name": "poly_derivatives(double, std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 520,
+                "line": 526,
                 "column": 12,
                 "hidden": false
             },
@@ -3242,7 +3225,7 @@
                 "parent_name": "",
                 "name": "COV(double, std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>, arma::mat, arma::mat, arma::mat, arma::mat)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 571,
+                "line": 577,
                 "column": 12,
                 "hidden": false
             },
@@ -3252,7 +3235,7 @@
                 "parent_name": "",
                 "name": "COV2(double, std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 640,
+                "line": 646,
                 "column": 12,
                 "hidden": false
             },
@@ -3262,7 +3245,7 @@
                 "parent_name": "",
                 "name": "std_2_matrix(std::vector<std::vector<int>>, int)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 702,
+                "line": 708,
                 "column": 11,
                 "hidden": false
             },
@@ -3272,7 +3255,7 @@
                 "parent_name": "",
                 "name": "DACOV2(int, arma::mat, std::vector<std::vector<std::vector<int>>>, std::vector<std::vector<double>>, std::vector<std::vector<double>>)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polychorics.h",
-                "line": 718,
+                "line": 724,
                 "column": 11,
                 "hidden": false
             }
@@ -3281,7 +3264,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polyfast.h",
-        "file_last_write": 1739011641.0,
+        "file_last_write": 1747933207.0,
         "definitions": [
             {
                 "usr": "c:@F@pairwise_cor#$@N@arma@S@Mat>#d#",
@@ -3289,7 +3272,7 @@
                 "parent_name": "",
                 "name": "pairwise_cor(arma::mat)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polyfast.h",
-                "line": 1,
+                "line": 7,
                 "column": 11,
                 "hidden": false
             },
@@ -3299,7 +3282,7 @@
                 "parent_name": "",
                 "name": "polyfast_object",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polyfast.h",
-                "line": 37,
+                "line": 43,
                 "column": 31,
                 "hidden": false
             },
@@ -3309,7 +3292,7 @@
                 "parent_name": "",
                 "name": "poly(const arma::mat &, const std::string, double, const bool, const int)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polyfast.h",
-                "line": 39,
+                "line": 45,
                 "column": 17,
                 "hidden": false
             },
@@ -3319,7 +3302,7 @@
                 "parent_name": "",
                 "name": "polyfast(arma::mat, std::string, std::string, const std::string, double, const int, const bool, const int)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/polyfast.h",
-                "line": 115,
+                "line": 121,
                 "column": 12,
                 "hidden": false
             }
@@ -3345,7 +3328,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations.h",
-        "file_last_write": 1747829315.0,
+        "file_last_write": 1747935606.0,
         "definitions": [
             {
                 "usr": "c:@S@transformations",
@@ -3431,77 +3414,77 @@
         "hidden": false
     },
     {
-        "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/expo.h",
-        "file_last_write": 1747562949.0,
+        "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/exponential.h",
+        "file_last_write": 1747934916.0,
         "definitions": [
             {
-                "usr": "c:@S@expo",
+                "usr": "c:@S@exponential",
                 "kind": 2,
                 "parent_name": "",
-                "name": "expo",
-                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/expo.h",
+                "name": "exponential",
+                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/exponential.h",
                 "line": 9,
                 "column": 7,
                 "hidden": false
             },
             {
-                "usr": "c:@S@expo@F@transform#",
+                "usr": "c:@S@exponential@F@transform#",
                 "kind": 7,
-                "parent_name": "expo",
+                "parent_name": "exponential",
                 "name": "transform",
-                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/expo.h",
+                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/exponential.h",
                 "line": 16,
                 "column": 8,
                 "hidden": false
             },
             {
-                "usr": "c:@S@expo@F@jacobian#",
+                "usr": "c:@S@exponential@F@jacobian#",
                 "kind": 7,
-                "parent_name": "expo",
+                "parent_name": "exponential",
                 "name": "jacobian",
-                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/expo.h",
+                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/exponential.h",
                 "line": 23,
                 "column": 8,
                 "hidden": false
             },
             {
-                "usr": "c:@S@expo@F@d2jacobian#",
+                "usr": "c:@S@exponential@F@d2jacobian#",
                 "kind": 7,
-                "parent_name": "expo",
+                "parent_name": "exponential",
                 "name": "d2jacobian",
-                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/expo.h",
+                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/exponential.h",
                 "line": 31,
                 "column": 8,
                 "hidden": false
             },
             {
-                "usr": "c:@S@expo@F@dconstraints#",
+                "usr": "c:@S@exponential@F@dconstraints#",
                 "kind": 7,
-                "parent_name": "expo",
+                "parent_name": "exponential",
                 "name": "dconstraints",
-                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/expo.h",
+                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/exponential.h",
                 "line": 35,
                 "column": 8,
                 "hidden": false
             },
             {
-                "usr": "c:@S@expo@F@outcomes#",
+                "usr": "c:@S@exponential@F@outcomes#",
                 "kind": 7,
-                "parent_name": "expo",
+                "parent_name": "exponential",
                 "name": "outcomes",
-                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/expo.h",
+                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/exponential.h",
                 "line": 39,
                 "column": 8,
                 "hidden": false
             },
             {
-                "usr": "c:@F@choose_expo#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "usr": "c:@F@choose_exponential#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "choose_expo(Rcpp::List)",
-                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/expo.h",
+                "name": "choose_exponential(Rcpp::List)",
+                "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/exponential.h",
                 "line": 48,
-                "column": 7,
+                "column": 14,
                 "hidden": false
             }
         ],
@@ -3586,22 +3569,22 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/softmax.h",
-        "file_last_write": 1747639072.0,
+        "file_last_write": 1747935855.0,
         "definitions": [
             {
-                "usr": "c:@S@softmaxt",
+                "usr": "c:@S@softmax",
                 "kind": 2,
                 "parent_name": "",
-                "name": "softmaxt",
+                "name": "softmax",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/softmax.h",
                 "line": 9,
                 "column": 7,
                 "hidden": false
             },
             {
-                "usr": "c:@S@softmaxt@F@transform#",
+                "usr": "c:@S@softmax@F@transform#",
                 "kind": 7,
-                "parent_name": "softmaxt",
+                "parent_name": "softmax",
                 "name": "transform",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/softmax.h",
                 "line": 16,
@@ -3609,9 +3592,9 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@softmaxt@F@jacobian#",
+                "usr": "c:@S@softmax@F@jacobian#",
                 "kind": 7,
-                "parent_name": "softmaxt",
+                "parent_name": "softmax",
                 "name": "jacobian",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/softmax.h",
                 "line": 23,
@@ -3619,9 +3602,9 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@softmaxt@F@d2jacobian#",
+                "usr": "c:@S@softmax@F@d2jacobian#",
                 "kind": 7,
-                "parent_name": "softmaxt",
+                "parent_name": "softmax",
                 "name": "d2jacobian",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/softmax.h",
                 "line": 33,
@@ -3629,9 +3612,9 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@softmaxt@F@dconstraints#",
+                "usr": "c:@S@softmax@F@dconstraints#",
                 "kind": 7,
-                "parent_name": "softmaxt",
+                "parent_name": "softmax",
                 "name": "dconstraints",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/softmax.h",
                 "line": 39,
@@ -3639,9 +3622,9 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@softmaxt@F@outcomes#",
+                "usr": "c:@S@softmax@F@outcomes#",
                 "kind": 7,
-                "parent_name": "softmaxt",
+                "parent_name": "softmax",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/softmax.h",
                 "line": 46,
@@ -3649,13 +3632,13 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@choose_softmaxt#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "usr": "c:@F@choose_softmax#$@N@Rcpp@S@Vector>#VI19#@N@Rcpp@ST>1#T@PreserveStorage#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "choose_softmaxt(Rcpp::List)",
+                "name": "choose_softmax(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/softmax.h",
                 "line": 60,
-                "column": 11,
+                "column": 10,
                 "hidden": false
             }
         ],

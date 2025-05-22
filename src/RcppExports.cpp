@@ -38,22 +38,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// check
-Rcpp::List check(arma::vec parameters, arma::vec dparameters, Rcpp::List control_manifold, Rcpp::List control_estimator, Rcpp::List control_optimizer, double eps);
-RcppExport SEXP _latent_check(SEXP parametersSEXP, SEXP dparametersSEXP, SEXP control_manifoldSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP epsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec >::type parameters(parametersSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type dparameters(dparametersSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
-    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
-    rcpp_result_gen = Rcpp::wrap(check(parameters, dparameters, control_manifold, control_estimator, control_optimizer, eps));
-    return rcpp_result_gen;
-END_RCPP
-}
 // polyfast
 Rcpp::List polyfast(arma::mat data, std::string missing, const std::string acov, const std::string smooth, double min_eigval, const int nboot, const bool fit, const int cores);
 RcppExport SEXP _latent_polyfast(SEXP dataSEXP, SEXP missingSEXP, SEXP acovSEXP, SEXP smoothSEXP, SEXP min_eigvalSEXP, SEXP nbootSEXP, SEXP fitSEXP, SEXP coresSEXP) {
@@ -133,7 +117,6 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_latent_logDnorm", (DL_FUNC) &_latent_logDnorm, 3},
     {"_latent_optimizer", (DL_FUNC) &_latent_optimizer, 4},
-    {"_latent_check", (DL_FUNC) &_latent_check, 6},
     {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 8},
     {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 6},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},

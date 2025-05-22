@@ -4,17 +4,24 @@
 \alias{lca}
 \title{Latent Class Analysis.}
 \usage{
-lca(data, model = rep("multinomial", ncol(data)), nclasses = 2L,
-control = list(opt = "lbfgs", rstarts = 30L, cores = 1L))
+lca(data, itemmodel = rep("gaussian", ncol(data)), nclasses = 2L,
+model = NULL, control = list(opt = "lbfgs", rstarts = 30L, cores = 1L),
+do.fit = TRUE, constraints = TRUE)
 }
 \arguments{
-\item{data}{data.frame or matrix of response.}
+\item{data}{data frame or matrix.}
 
 \item{nclasses}{Number of latent classes.}
 
+\item{item}{Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.}
+
+\item{model}{List of parameter labels. See 'details' for more information.}
+
 \item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
 
-\item{itemmodel}{Character vector with the model for each item.}
+\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+
+\item{constraints}{Should the model be checked for identification? Defaults to TRUE.}
 }
 \value{
 List with the following objects:
@@ -22,7 +29,7 @@ List with the following objects:
 \item{f}{Logarithm likelihood at the maximum.}
 }
 \description{
-Estimate latent class models with categorical and continuous data.
+Estimate latent class models with gaussian and multinomial item models.
 }
 \details{
 \code{lca} estimates models with categorical and continuous data.

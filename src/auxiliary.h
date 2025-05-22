@@ -189,7 +189,7 @@ arma::mat kdiag(arma::mat X) { // For geomin
 
 }
 
-arma::vec softmax(arma::vec x, double a) {
+arma::vec soft(arma::vec x, double a) {
 
   arma::vec x_trunc_exp = arma::trunc_exp(x);
   arma::vec probs = x_trunc_exp / arma::accu(x_trunc_exp) * a;

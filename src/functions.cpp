@@ -34,7 +34,6 @@
 #include "estimators.h"
 #include "optim.h"
 #include "optimizer.h"
-#include "check.h"
 #include "polychorics.h"
 #include "polyfast.h"
 #include "asymptotic_cov.h"
@@ -48,13 +47,6 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
                      Rcpp::List control_transform,
                      Rcpp::List control_estimator,
                      Rcpp::List control_optimizer);
-
-// [[Rcpp::export]]
-Rcpp::List check(arma::vec parameters, arma::vec dparameters,
-                 Rcpp::List control_manifold,
-                 Rcpp::List control_estimator,
-                 Rcpp::List control_optimizer,
-                 double eps = 1e-04);
 
 // [[Rcpp::export]]
 Rcpp::List polyfast(arma::mat data, std::string missing = "pairwise.complete.cases",

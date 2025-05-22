@@ -1,3 +1,9 @@
+/*
+ * Author: Marcos Jimenez
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 03/02/2025
+ */
+
 arma::mat pairwise_cor(arma::mat X) {
 
   const size_t numCols = X.n_cols;

@@ -1,3 +1,7 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 22/05/2025
+#'
 #' @title
 #' Confirmatory factor analysis.
 #' @export
@@ -179,11 +183,8 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
   # }
 
   indices <- unique(unlist(lapply(estimator_setup, function(x) x$indices)))
-  manifolds <- c("euclidean")
-  arguments <- list()
-  arguments[[1]] <- list(indices = indices)
-  manifold_setup <- setup_all_manifolds(manifolds, arguments)
-  # manifold_setup <- latent2:::setup_all_manifolds(manifolds, arguments)
+  manifold_setup <- list()
+  manifold_setup[[1]] <- list(manifold = "euclidean", indices = indices)
 
   nparam <- length(indices)
   transform_setup <- list()

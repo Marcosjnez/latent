@@ -6,7 +6,7 @@
 
 // Softmax transformation:
 
-class softmaxt:public transformations {
+class softmax:public transformations {
 
 public:
 
@@ -16,7 +16,7 @@ public:
   void transform() {
 
     X(vector_indices) = parameters;
-    transparameters = softmax(X, 1.00);
+    transparameters = soft(X, 1.00);
 
   }
 
@@ -57,9 +57,9 @@ public:
 
 };
 
-softmaxt* choose_softmaxt(Rcpp::List trans_setup) {
+softmax* choose_softmax(Rcpp::List trans_setup) {
 
-  softmaxt* mytrans = new softmaxt();
+  softmax* mytrans = new softmax();
 
   arma::uvec indices = trans_setup["indices"];
   arma::uvec target_indices = trans_setup["target_indices"];

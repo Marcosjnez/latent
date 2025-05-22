@@ -53,11 +53,13 @@ public:
         arma::uvec col = arma::uvec{i};
         conditionals[j](indices2, col) = transparameters(indices1);
         for(int s=0; s < S; ++s) {
-          double value = Y(s, j);
-          double mu = conditionals[j](0, i);
-          double sigma = conditionals[j](1, i);
-          loglik(j, i, s) = logdnorm2(value, mu, sigma);
-          latentloglik(s, i) += loglik(j, i, s);
+          if(!std::isnan(Y(s, j))) {
+            double value = Y(s, j);
+            double mu = conditionals[j](0, i);
+            double sigma = conditionals[j](1, i);
+            loglik(j, i, s) = logdnorm2(value, mu, sigma);
+            latentloglik(s, i) += loglik(j, i, s);
+          }
         }
       }
     }
@@ -94,12 +96,14 @@ public:
       for(int i=0; i < nclasses; ++i) {
         for(int j=0; j < J; ++j) {
           double constant = -n[s]*arma::trunc_exp(term[i] - loglik(j, i, s));
-          double value = Y(s, j);
-          double mu = conditionals[j](0, i);
-          double sigma = conditionals[j](1, i);
-          arma::vec gdnorm = ddnorm2(value, mu, sigma);
-          gmeans(j, i) += constant*gdnorm[0];
-          gsds(j, i) += constant*gdnorm[1];
+          if(!std::isnan(Y(s, j))) {
+            double value = Y(s, j);
+            double mu = conditionals[j](0, i);
+            double sigma = conditionals[j](1, i);
+            arma::vec gdnorm = ddnorm2(value, mu, sigma);
+            gmeans(j, i) += constant*gdnorm[0];
+            gsds(j, i) += constant*gdnorm[1];
+          }
         }
       }
     }

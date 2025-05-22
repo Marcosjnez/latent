@@ -6,7 +6,7 @@
 
 // Exponential transformation:
 
-class expo:public transformations {
+class exponential:public transformations {
 
 public:
 
@@ -45,9 +45,9 @@ public:
 
 };
 
-expo* choose_expo(Rcpp::List trans_setup) {
+exponential* choose_exponential(Rcpp::List trans_setup) {
 
-  expo* mytrans = new expo();
+  exponential* mytrans = new exponential();
 
   arma::uvec indices = trans_setup["indices"];
   arma::uvec target_indices = trans_setup["target_indices"];

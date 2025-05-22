@@ -93,7 +93,24 @@ Rcpp::List grad_comp(arma::vec parameters,
   product_estimator* F1;
   // double eps = 1e-04;
 
-  // Check the gradient
+  // Check the gradient of the transformed parameters:
+  arma::vec transparameters = x.transparameters;
+  arma::vec numg(transparameters.n_elem);
+  for(int i = 0; i < transparameters.n_elem; ++i) {
+    x.transparameters = transparameters; x.transparameters[i] += eps;
+    F1->param(x, xestimators);
+    F1->F(x, xestimators);
+    double f1 = x.f;
+    x.transparameters = transparameters; x.transparameters[i] -= eps;
+    F1->param(x, xestimators);
+    F1->F(x, xestimators);
+    double f0 = x.f;
+    numg[i] = (f1-f0) / (2*eps);
+  }
+
+  result["numg"] = numg;
+
+  // Check the gradient:
   arma::vec numgrad(parameters.n_elem);
   for(int i = 0; i < parameters.n_elem; ++i) {
     x.parameters = parameters; x.parameters[i] += eps;

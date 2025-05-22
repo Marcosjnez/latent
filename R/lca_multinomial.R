@@ -1,7 +1,11 @@
-# Auxiliary function for lca.R
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 22/05/2025
 
 lca_multinomial <- function(Y, n, uniq_indices, map2full, classes, conditionals,
                             parameter_vector, fixed_vector) {
+
+  # Auxiliary function for lca.R
 
   S <- nrow(Y) # Number of different response patterns
   J <- ncol(Y) # Number of items
