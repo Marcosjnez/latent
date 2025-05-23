@@ -1034,7 +1034,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-        "file_last_write": 1747910290.0,
+        "file_last_write": 1747987277.0,
         "definitions": [
             {
                 "usr": "c:@S@lca_gaussian",
@@ -1141,7 +1141,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_multinomial.h",
-        "file_last_write": 1747910131.0,
+        "file_last_write": 1747987281.0,
         "definitions": [
             {
                 "usr": "c:@S@lca_multinomial",

@@ -5,7 +5,7 @@
  */
 
 /*
- * Latent class analysis (multinomial) Probabilities in the raw scale
+ * Latent class analysis (multinomial model)
  */
 
 class lca_multinomial: public estimators {

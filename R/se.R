@@ -13,6 +13,7 @@
 #' se(fit)
 #'
 #' @param fit model fitted with lca.
+#' @param confidence Coverage of the confidence interval.
 #'
 #' @details Compute standard errors.
 #'
@@ -104,15 +105,33 @@ se <- function(fit, confidence = 0.95) {
 
   constraints <- constraints[non_alnum_indices, ]
 
+  ind_target <- fit$opt$args$indices_full_transparam_vector
+  ind_select <- fit$opt$args$indices_transparam_vector2
+  se_type <- fit$modelInfo$prob_model
+  se_type$classes[] <- "prob"
+  indices <- which(item == "multinomial")
+  for(i in indices) {
+    se_type$conditionals[[i]][] <- "prob"
+  }
+  indices <- which(item == "gaussian")
+  for(i in indices) {
+    se_type$conditionals[[i]][] <- "linear"
+  }
+
+  type <- unlist(se_type)[ind_select[!is.na(ind_select)]]
+
   # REMOVE PROBABILITIES CLOSE TO ZERO in H and constraints:
   param_vector <- x
   param_vector <- param_vector[non_alnum_indices]
   names(param_vector) <- param_charvector[non_alnum_indices]
-  condition <- param_vector < 0.005 | param_vector > 0.995
+  type0 <- type[non_alnum_indices]
+  condition <- (param_vector < 0.005 | param_vector > 0.995) & type0 == "prob"
   keep <- which(!condition)
   remove <- which(condition)
-  H <- H[-remove, ][, -remove]
-  constraints <- constraints[-remove, ]
+  if(length(remove) > 0) {
+    H <- H[-remove, ][, -remove]
+    constraints <- constraints[-remove, ]
+  }
   zeros <- colSums(constraints) < 1 | duplicated(t(constraints))
   if(any(zeros)) {
     constraints <- constraints[, -which(zeros)]
@@ -135,17 +154,12 @@ se <- function(fit, confidence = 0.95) {
   names(se) <- fit$opt$args$transparameter_vector
 
   Se <- vector(length = length(unlist(fit$parameters)))
-  ind_target <- fit$opt$args$indices_full_transparam_vector
-  ind_select <- fit$opt$args$indices_transparam_vector2
   Se[ind_target] <- se[ind_select[!is.na(ind_select)]]
   SE <- fill_list_with_vector(fit$transformed_parameters, Se)
 
   C <- matrix(NA, nrow = nparam, ncol = nparam)
   C[keep, keep] <- C0
   rownames(C) <- colnames(C) <- fit$opt$args$transparameter_vector
-
-  fit$transformed_parameters
-  type <- rep("prob", times = nparam)
 
   conf <- function(x, se, confidence, type) {
 
@@ -175,7 +189,8 @@ se <- function(fit, confidence = 0.95) {
 
   }
 
-  ci <- sapply(1:nparam, FUN = \(i) conf(x[i], se[i], confidence = confidence, type = type[i]))
+  ci <- sapply(1:nparam, FUN = \(i) conf(x[i], se[i], confidence = confidence,
+                                         type = type[i]))
   rownames(ci) <- c("lower", "upper")
   colnames(ci) <- fit$opt$args$transparameter_vector
 

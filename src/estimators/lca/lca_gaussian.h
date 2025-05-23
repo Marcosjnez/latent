@@ -5,7 +5,7 @@
  */
 
 /*
- * Latent class analysis (normal) Probabilities in the raw scale
+ * Latent class analysis (gaussian model)
  */
 
 class lca_gaussian: public estimators {
