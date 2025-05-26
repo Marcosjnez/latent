@@ -543,8 +543,9 @@ cudeck <- function(R, lambda, Phi, Psi,
   minimum_eigval <- min(eigen(R_error, symmetric = TRUE, only.values = TRUE)$values)
   positive <- TRUE
   if(minimum_eigval <= 0) {
-    warning("The matrix was not positive-definite. The amount of misfit may be too big.")
-    positive <- FALSE
+    # warning("The matrix was not positive-definite. The amount of misfit may be too big.")
+    # positive <- FALSE
+    return(cudeck(R, lambda, Phi, Psi, fit, misfit, estimator))
   }
 
   return(list(R_error = R_error, fit = fit, delta = delta, misfit = misfit, positive = positive))
@@ -667,8 +668,9 @@ yuan <- function(R, lambda, Phi, Psi,
   minimum_eigval <- min(eigen(R_error, symmetric = TRUE, only.values = TRUE)$values)
   positive <- TRUE
   if(minimum_eigval <= 0) {
-    warning("The matrix was not positive-definite. The amount of misfit may be too big.")
-    positive <- FALSE
+    # warning("The matrix was not positive-definite. The amount of misfit may be too big.")
+    # positive <- FALSE
+    return(yuan(R, lambda, Phi, Psi, fit, misfit, estimator))
   }
 
   return(list(R_error = R_error, fit = fit, delta = delta, misfit = misfit, positive = positive))

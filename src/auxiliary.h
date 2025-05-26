@@ -199,7 +199,7 @@ arma::vec soft(arma::vec x, double a) {
 
 const double SQRT2M_PI = std::sqrt(2 * M_PI);
 arma::vec ddnorm2(double x, double mu, double sd) {
-  // Derivative of lognormal wrt mu and s, where s = standard deviation
+  // Derivative of normal density wrt mu and s, where sd = standard deviation
   x -= mu;
   double sd2 = sd*sd;
   double sd3 = sd2*sd;

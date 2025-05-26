@@ -78,7 +78,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/auxiliary.h",
-        "file_last_write": 1747935800.0,
+        "file_last_write": 1748086029.0,
         "definitions": [
             {
                 "usr": "c:@F@root_quad#d#d#d#",
@@ -1034,7 +1034,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-        "file_last_write": 1747987277.0,
+        "file_last_write": 1748252055.0,
         "definitions": [
             {
                 "usr": "c:@S@lca_gaussian",
@@ -1082,7 +1082,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "dG",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 132,
+                "line": 134,
                 "column": 8,
                 "hidden": false
             },
@@ -1092,7 +1092,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "H",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 139,
+                "line": 141,
                 "column": 8,
                 "hidden": false
             },
@@ -1102,7 +1102,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "E",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 146,
+                "line": 148,
                 "column": 8,
                 "hidden": false
             },
@@ -1112,7 +1112,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "M",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 182,
+                "line": 184,
                 "column": 8,
                 "hidden": false
             },
@@ -1122,7 +1122,7 @@
                 "parent_name": "lca_gaussian",
                 "name": "outcomes",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 186,
+                "line": 188,
                 "column": 8,
                 "hidden": false
             },
@@ -1132,7 +1132,7 @@
                 "parent_name": "",
                 "name": "choose_lca_gaussian(Rcpp::List)",
                 "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/estimators/lca/lca_gaussian.h",
-                "line": 216,
+                "line": 218,
                 "column": 15,
                 "hidden": false
             }
@@ -3415,7 +3415,7 @@
     },
     {
         "file": "C:/Users/Marcos/Documents/Papers/latent - copia/src/transformations/exponential.h",
-        "file_last_write": 1747934916.0,
+        "file_last_write": 1748011574.0,
         "definitions": [
             {
                 "usr": "c:@S@exponential",

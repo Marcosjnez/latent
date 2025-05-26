@@ -16,7 +16,7 @@ public:
   void transform() {
 
     X(vector_indices) = parameters;
-    transparameters = arma::trunc_exp(X);
+    transparameters = 0.05 + arma::trunc_exp(X);
 
   }
 

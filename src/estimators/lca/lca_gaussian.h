@@ -100,9 +100,11 @@ public:
             double value = Y(s, j);
             double mu = conditionals[j](0, i);
             double sigma = conditionals[j](1, i);
-            arma::vec gdnorm = ddnorm2(value, mu, sigma);
-            gmeans(j, i) += constant*gdnorm[0];
-            gsds(j, i) += constant*gdnorm[1];
+            double Ymu = Y(s, j) - mu;
+            double sigma2 = sigma*sigma;
+            double lik = exp(loglik(j, i, s));
+            gmeans(j, i) += constant*(Ymu*lik/sigma2);
+            gsds(j, i) += constant*((Ymu*Ymu - sigma2)*lik/(sigma2*sigma));
           }
         }
       }

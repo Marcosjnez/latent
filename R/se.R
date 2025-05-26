@@ -182,6 +182,11 @@ se <- function(fit, confidence = 0.95) {
       lower <- x - z * se
       upper <- x + z * se
 
+    } else if(type == "sd") {
+
+      lower <- exp(log(x) - z * se)
+      upper <- exp(log(x) + z * se)
+
     }
 
 
