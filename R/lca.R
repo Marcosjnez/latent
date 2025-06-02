@@ -10,7 +10,7 @@
 #'
 #' @usage
 #'
-#' lca(data, itemmodel = rep("gaussian", ncol(data)), nclasses = 2L,
+#' lca(data, item = rep("gaussian", ncol(data)), nclasses = 2L,
 #' model = NULL, control = list(opt = "lbfgs", rstarts = 30L, cores = 1L),
 #' do.fit = TRUE, constraints = TRUE)
 #'
@@ -25,7 +25,7 @@
 #' @details \code{lca} estimates models with categorical and continuous data.
 #'
 #' @return List with the following objects:
-#' \item{parameters}{The model for the probabilities of the classes.}
+#' \item{parameters}{The model for the logarithm probabilities of the classes.}
 #' \item{f}{Logarithm likelihood at the maximum.}
 #'
 #' @references

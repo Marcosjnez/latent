@@ -117,7 +117,7 @@ getmodel <- function(data, item = rep("multinomial", ncol(data)), nclasses = 2L,
   # Build the logarithm model:
   log_model <- list(classes = model$classes, conditionals = model$conditionals)
   # Generate the probability model from the logarithm model:
-  prob_model <- log2prob(log_model, nitems, nclasses)
+  prob_model <- log2prob(log_model, data, item, nitems, nclasses)
 
   # Return the model in the logarithm and probability scales:
   result <- list(prob_model = prob_model, log_model = log_model)
@@ -126,7 +126,7 @@ getmodel <- function(data, item = rep("multinomial", ncol(data)), nclasses = 2L,
 
 }
 
-log2prob <- function(log_model, nitems, nclasses) {
+log2prob <- function(log_model, data, item, nitems, nclasses) {
 
   conditionals <- vector("list", length = nitems)
   names(conditionals) <- paste("Item", 1:nitems)

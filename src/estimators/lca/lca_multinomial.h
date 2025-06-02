@@ -91,12 +91,12 @@ public:
       jointlogp.row(s) = latentloglik.row(s) + loglatentpars.t();
       double max_vector = jointlogp.row(s).max();
       loglik_case[s] = max_vector + arma::trunc_log(arma::accu(arma::trunc_exp(jointlogp.row(s) - max_vector)));
-      arma::vec term = -loglik_case[s] + jointlogp.row(s).t();
+      arma::vec log_posterior = -loglik_case[s] + jointlogp.row(s).t();
       for(int i=0; i < nclasses; ++i) {
         for(int j=0; j < J; ++j) {
           if(!std::isnan(Y(s, j))) {
             int category = Y(s, j);
-            gconditionals[j](category, i) += -n[s]*arma::trunc_exp(term[i] - loglik(j, i, s));
+            gconditionals[j](category, i) += -n[s]*arma::trunc_exp(log_posterior[i] - loglik(j, i, s));
           }
         }
       }
