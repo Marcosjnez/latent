@@ -75,69 +75,34 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="latent-confirmatory-and-exploratory-factor-analysis-models">latent: Confirmatory and Exploratory Factor Analysis Models<a class="anchor" aria-label="anchor" href="#latent-confirmatory-and-exploratory-factor-analysis-models"></a>
+<div class="page-header"><h1 id="latent-latent-class-and-factor-analysis-models">latent: Latent Class and Factor Analysis Models<a class="anchor" aria-label="anchor" href="#latent-latent-class-and-factor-analysis-models"></a>
 </h1></div>
-<p>Fit measurement models.</p>
+<p>Fit measurement models with discrete or continuous latent variables.</p>
 </div>
 <div class="section level1">
-<h1 id="installation-in-linux-and-windows">Installation in Linux and Windows<a class="anchor" aria-label="anchor" href="#installation-in-linux-and-windows"></a>
+<h1 id="installation-in-windows-and-linux">Installation in Windows and Linux<a class="anchor" aria-label="anchor" href="#installation-in-windows-and-linux"></a>
 </h1>
-<p>Using the <code>remotes</code> package:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"remotes"</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
-<p>Using the <code>devtools</code> package:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"devtools"</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
 </div>
 <div class="section level1">
 <h1 id="installation-in-macos">Installation in macOS<a class="anchor" aria-label="anchor" href="#installation-in-macos"></a>
 </h1>
-<p>Delete the clang4,6,7 binary and the prior version of gfortran installed:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>sudo rm <span class="sc">-</span>rf <span class="sc">/</span>usr<span class="sc">/</span>local<span class="sc">/</span>clang{<span class="dv">4</span>,<span class="dv">6</span>,<span class="dv">7</span>}</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>sudo rm <span class="sc">-</span>rf <span class="sc">/</span>usr<span class="sc">/</span>local<span class="sc">/</span>gfortran</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>sudo rm <span class="sc">-</span>rf <span class="sc">/</span>usr<span class="sc">/</span>local<span class="sc">/</span>bin<span class="sc">/</span>gfortran</span></code></pre></div>
-<p>Remove the gfortran install receipts:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>sudo rm <span class="sc">/</span>private<span class="sc">/</span>var<span class="sc">/</span>db<span class="sc">/</span>receipts<span class="sc">/</span>com.gnu.gfortran.bom</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>sudo rm <span class="sc">/</span>private<span class="sc">/</span>var<span class="sc">/</span>db<span class="sc">/</span>receipts<span class="sc">/</span>com.gnu.gfortran.plist</span></code></pre></div>
-<p>Remove the clang4 installer receipt:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>sudo rm <span class="sc">/</span>private<span class="sc">/</span>var<span class="sc">/</span>db<span class="sc">/</span>receipts<span class="sc">/</span>com.rbinaries.clang4.bom</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>sudo rm <span class="sc">/</span>private<span class="sc">/</span>var<span class="sc">/</span>db<span class="sc">/</span>receipts<span class="sc">/</span>com.rbinaries.clang4.plist</span></code></pre></div>
-<p>Remove the Makevars file and the Renviron file:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>rm <span class="sc">~</span><span class="er">/</span>.R<span class="sc">/</span>Makevars</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>rm <span class="sc">~</span><span class="er">/</span>.Renviron</span></code></pre></div>
-<p>Install Homebrew from the terminal:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="sc">/</span>bin<span class="sc">/</span>bash <span class="sc">-</span>c <span class="st">"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"</span>                                </span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>echo <span class="st">'eval "$(/opt/homebrew/bin/brew shellenv)"'</span> <span class="sc">&gt;</span><span class="er">&gt;</span> <span class="er">~/</span>.zprofile</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>eval <span class="st">"$(/opt/homebrew/bin/brew shellenv)"</span></span></code></pre></div>
-<p>Verify the installation with:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>brew doctor</span></code></pre></div>
-<p>Install <code>xcode</code>, if not installed:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>xcode<span class="sc">-</span>select <span class="sc">--</span>install</span></code></pre></div>
-<p>Install <code>libomp</code>, <code>llvm</code> and <code>gettext</code> from the terminal:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>brew install libomp</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>brew install gettext</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>brew install llvm</span></code></pre></div>
-<p>Download and install <code>gfortran</code> from <a href="https://github.com/fxcoudert/gfortran-for-macOS/releases" class="external-link uri">https://github.com/fxcoudert/gfortran-for-macOS/releases</a> for your macOS version.</p>
-<p>Create the directory ~/.R/, if it does not exist:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>sudo mkdir <span class="sc">~</span><span class="er">/</span>.R</span></code></pre></div>
-<p>Create a file named Makevars in this directory:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>sudo touch <span class="sc">~</span><span class="er">/</span>.R<span class="sc">/</span>Makevars</span></code></pre></div>
-<p>Open the Makevars file and paste the following lines in it:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>LOC <span class="ot">=</span> <span class="er">/</span>usr<span class="sc">/</span>local<span class="sc">/</span>gfortran<span class="sc">/</span></span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>CC<span class="ot">=</span><span class="er">$</span>(LOC)<span class="sc">/</span>bin<span class="sc">/</span>gcc <span class="sc">-</span>fopenmp</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>CXX<span class="ot">=</span><span class="er">$</span>(LOC)<span class="sc">/</span>bin<span class="sc">/</span>g<span class="sc">++</span> <span class="sc">-</span>fopenmp</span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># -O3 should be faster than -O2 (default) level optimisation ..</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>CFLAGS<span class="ot">=</span><span class="sc">-</span>g <span class="sc">-</span>O3 <span class="sc">-</span>Wall <span class="sc">-</span>pedantic <span class="sc">-</span>std<span class="ot">=</span>gnu99 <span class="sc">-</span>mtune<span class="ot">=</span>native <span class="sc">-</span>pipe</span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>CXXFLAGS<span class="ot">=</span><span class="sc">-</span>g <span class="sc">-</span>O3 <span class="sc">-</span>Wall <span class="sc">-</span>pedantic <span class="sc">-</span>std<span class="ot">=</span>c<span class="sc">++</span><span class="dv">11</span> <span class="sc">-</span>mtune<span class="ot">=</span>native <span class="sc">-</span>pipe</span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>LDFLAGS<span class="ot">=</span><span class="sc">-</span>L<span class="sc">/</span>usr<span class="sc">/</span>local<span class="sc">/</span>opt<span class="sc">/</span>gettext<span class="sc">/</span>lib <span class="sc">-</span>L<span class="sc">$</span>(LOC)<span class="sc">/</span>lib <span class="sc">-</span>Wl,<span class="sc">-</span>rpath,<span class="sc">$</span>(LOC)<span class="sc">/</span>lib</span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>CPPFLAGS<span class="ot">=</span><span class="sc">-</span>I<span class="sc">/</span>usr<span class="sc">/</span>local<span class="sc">/</span>opt<span class="sc">/</span>gettext<span class="sc">/</span>include <span class="sc">-</span>I<span class="sc">$</span>(LOC)<span class="sc">/</span>include</span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="sc">-</span>I<span class="sc">/</span>Library<span class="sc">/</span>Developer<span class="sc">/</span>CommandLineTools<span class="sc">/</span>SDKs<span class="sc">/</span>MacOSX.sdk<span class="sc">/</span>usr<span class="sc">/</span>include</span></code></pre></div>
-<p>The Makevars file can be opened and edited from the R console:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">file.edit</span>(<span class="st">"~/.R/Makevars"</span>)</span></code></pre></div>
-<p>Install <code>Rcpp</code> and <code>RcppArmadillo</code> from the R console:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">'Rcpp'</span>, <span class="st">'RcppArmadillo'</span>))</span></code></pre></div>
-<p>Install <code>latent</code>:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
+<p>Install Command Line Tools:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>xcode<span class="sc">-</span>select <span class="sc">--</span>install</span></code></pre></div>
+<p>Install Homebrew:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="sc">/</span>bin<span class="sc">/</span>bash <span class="sc">-</span>c <span class="st">"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</span></span></code></pre></div>
+<p>Install OpenMP support:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>brew update <span class="sc">&amp;&amp;</span> brew install libomp</span></code></pre></div>
+<p>Update Makevars</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>add the following lines to <span class="sc">~</span><span class="er">/</span>.R<span class="sc">/</span>Makevars.</span></code></pre></div>
+<p>On Intel Macs:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>CPPFLAGS <span class="sc">+</span><span class="er">=</span> <span class="sc">-</span>Xclang <span class="sc">-</span>fopenmp</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>LDFLAGS <span class="sc">+</span><span class="er">=</span> <span class="sc">-</span>lomp</span></code></pre></div>
+<p>On Apple Silicon Macs (make sure this goes at the end of the file):</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>LDFLAGS <span class="sc">+</span><span class="er">=</span> <span class="sc">-</span>L<span class="sc">/</span>opt<span class="sc">/</span>homebrew<span class="sc">/</span>opt<span class="sc">/</span>libomp<span class="sc">/</span>lib <span class="sc">-</span>lomp</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>CPPFLAGS <span class="sc">+</span><span class="er">=</span> <span class="sc">-</span>I<span class="sc">/</span>opt<span class="sc">/</span>homebrew<span class="sc">/</span>opt<span class="sc">/</span>libomp<span class="sc">/</span>include <span class="sc">-</span>Xclang <span class="sc">-</span>fopenmp</span></code></pre></div>
+<p>Finally,</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
 </div>
 
   </main><aside class="col-md-3"><div class="links">
@@ -166,7 +131,7 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Marcos Jiménez <br><small class="roles"> Maintainer </small>  </li>
+<li>Marcos Jiménez <br><small class="roles"> Maintainer </small>   </li>
 </ul>
 </div>
 
@@ -181,7 +146,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer>

@@ -52,7 +52,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Get the default model for Latent Class Analysis.</h1>
-      <small class="dont-index">Source: <a href="https://github.com/Marcosjnez/latent/blob/HEAD/R/getmodel.R" class="external-link"><code>R/getmodel.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/Marcosjnez/latent/blob/master/R/getmodel.R" class="external-link"><code>R/getmodel.R</code></a></small>
       <div class="d-none name"><code>getmodel.Rd</code></div>
     </div>
 
@@ -73,22 +73,30 @@
 <dd><p>data.frame or matrix of response.</p></dd>
 
 
-<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
+<dt id="arg-item">item<a class="anchor" aria-label="anchor" href="#arg-item"></a></dt>
 <dd><p>Character vector with the model for each item.</p></dd>
 
 
 <dt id="arg-nclasses">nclasses<a class="anchor" aria-label="anchor" href="#arg-nclasses"></a></dt>
 <dd><p>Number of latent classes.</p></dd>
 
+
+<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
+<dd><p>List of parameter labels. See 'details' for more information.</p></dd>
+
+
+<dt id="arg-constraints">constraints<a class="anchor" aria-label="anchor" href="#arg-constraints"></a></dt>
+<dd><p>Should the model be checked for identification? Defaults to TRUE.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>List with the following objects:</p>
-<dl><dt>classes</dt>
-<dd><p>The model for the probabilities of the classes.</p></dd>
+<dl><dt>none</dt>
+<dd><p>.</p></dd>
 
-<dt>conditionals</dt>
-<dd><p>The model for the conditional response probabilities.</p></dd>
+<dt>none</dt>
+<dd><p>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -111,7 +119,7 @@ be modified by the user to set equality constraints or to fix parameters.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>
