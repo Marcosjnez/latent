@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/05/2025
+# Modification date: 07/06/2025
 #'
 #' @title
 #' Get the default model for Latent Class Analysis.

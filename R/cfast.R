@@ -1,12 +1,12 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/05/2025
+# Modification date: 07/06/2025
 #'
 #' @title
 #' Confirmatory factor analysis.
 #' @export
 cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor = "pearson",
-                  estimator = "uls", rotate = NULL, missing = "pairwise.complete.cases",
+                  estimator = "uls", rotate = NULL, missing = "pairwise.complete.obs",
                   nobs = NULL, group = NULL, invariance = "none",
                   control = NULL, std.lv = FALSE, positive = FALSE,
                   do.fit = TRUE) {
@@ -14,7 +14,7 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
   # cor = "pearson";
   # group = NULL;
   # invariance = "none";
-  # missing = "pairwise.complete.cases"
+  # missing = "pairwise.complete.obs"
   # data <- sim$R_error
   # positive = FALSE
   # std.lv = FALSE
@@ -34,7 +34,7 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
   # The targets must be fully specified, that is, every entry in a target
   # must contain either a character or a numeric value
 
-  control <- lca_control(control)
+  control <- cfast_control(control)
 
   extract_fit <- lavaan::cfa(model = model, data = data, std.lv = std.lv,
                              do.fit = FALSE, group = group)
@@ -165,11 +165,11 @@ cfast <- function(data, model = NULL, lambda = NULL, phi = NULL, psi = NULL, cor
       W <- matrix(1, nrow = p, ncol = p)
       estimator_setup[[i]] <- getargs_cfa_dwls(parameter_vector, fixed_vector,
                                                dataset[[i]], lambda[[i]], phi[[i]], psi[[i]],
-                                               W = W, positive = FALSE)
+                                               W = W, missing = missing, positive = FALSE)
     } else if(estimator[i] == "ml") {
       estimator_setup[[i]] <- getargs_cfa_ml(parameter_vector, fixed_vector,
                                              dataset[[i]], lambda[[i]], phi[[i]], psi[[i]],
-                                             positive = FALSE)
+                                             missing = missing, positive = FALSE)
     } else {
       stop("Not yet there")
     }

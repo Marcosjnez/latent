@@ -13,7 +13,7 @@ cfast(
   cor = "pearson",
   estimator = "uls",
   rotate = NULL,
-  missing = "pairwise.complete.cases",
+  missing = "pairwise.complete.obs",
   nobs = NULL,
   group = NULL,
   invariance = "none",

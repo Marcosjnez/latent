@@ -1,9 +1,10 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/05/2025
+# Modification date: 07/06/2025
 
 getargs_cfa_dwls <- function(parameter_vector, fixed_vector,
-                             data, lambda, phi, psi, W = NULL, positive = FALSE) {
+                             data, lambda, phi, psi, W = NULL,
+                             missing, positive = FALSE) {
 
   # Initialize the vector of initial parameter estimates:
   init <- vector(length = length(parameter_vector))
@@ -102,7 +103,7 @@ getargs_cfa_dwls <- function(parameter_vector, fixed_vector,
   if(nrow(data) == ncol(data)) {
     S <- data
   } else {
-    S <- cor(data)
+    S <- cor(data, use = missing)
   }
   R <- S
   u <- 1/diag(solve(S))

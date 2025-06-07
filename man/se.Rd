@@ -8,6 +8,8 @@ se(fit)
 }
 \arguments{
 \item{fit}{model fitted with lca.}
+
+\item{confidence}{Coverage of the confidence interval.}
 }
 \value{
 List with the following objects:

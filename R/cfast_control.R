@@ -2,9 +2,9 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 07/06/2025
 
-lca_control <- function(control) {
+cfast_control <- function(control) {
 
-  # Auxiliary function for lca.R
+  # Auxiliary function for cfast.R
 
   # Control input
 
@@ -37,7 +37,7 @@ lca_control <- function(control) {
   }
 
   if(is.null(control$eps)) {
-    control$eps <- 1e-04
+    control$eps <- 1e-06
   }
 
   if(is.null(control$ss_fac)) {
@@ -49,7 +49,7 @@ lca_control <- function(control) {
   }
 
   if(is.null(control$rstarts)) {
-    control$rstarts <- 16L
+    control$rstarts <- 1L
   }
 
   if(is.null(control$cores)) {
