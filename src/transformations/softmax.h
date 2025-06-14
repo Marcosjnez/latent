@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 29/04/2025
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 11/06/2025
  */
 
 // Softmax transformation:
@@ -24,9 +24,8 @@ public:
 
     jacob = -transparameters * transparameters.t();
     jacob.diag() = transparameters % (1-transparameters);
-    g = jacob * grad;
-    g = g(vector_indices);
-    g.elem( arma::find_nonfinite(g) ).zeros();
+    jacob = jacob.cols(vector_indices);
+    g = jacob.t() * grad;
 
   }
 
@@ -57,7 +56,7 @@ public:
 
 };
 
-softmax* choose_softmax(Rcpp::List trans_setup) {
+softmax* choose_softmax(const Rcpp::List& trans_setup) {
 
   softmax* mytrans = new softmax();
 

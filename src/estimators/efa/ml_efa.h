@@ -194,7 +194,7 @@ public:
 
 };
 
-ml_efa* choose_ml_efa(Rcpp::List estimator_setup) {
+ml_efa* choose_ml_efa(const Rcpp::List& estimator_setup) {
 
   ml_efa* myestimator = new ml_efa();
 

@@ -1,5 +1,7 @@
 # latent: Latent Class and Factor Analysis Models
 
+<img src="man/figures/standard.png" align="right" />
+
 Fit measurement models with discrete or continuous latent variables.
 
 # Installation in Windows and Linux

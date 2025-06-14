@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/05/2025
+ * Modification date: 11/06/2025
  */
 
 // By default, this optimizer performs minimization
@@ -68,6 +68,8 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   x.ntransforms = control_transform.size();
   x.nestimators = control_estimator.size();
 
+  optim* algorithm = choose_optim(x, control_optimizer);
+
   std::vector<std::vector<manifolds*>> xmanifolds(rstarts,
                                                   std::vector<manifolds*>(x.nmanifolds));
   std::vector<std::vector<transformations*>> xtransforms(rstarts,
@@ -75,20 +77,18 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   std::vector<std::vector<estimators*>> xestimators(rstarts,
                                                     std::vector<estimators*>(x.nestimators));
 
-  optim* algorithm = choose_optim(x, control_optimizer);
-
   for(int j=0; j < rstarts; ++j) {
 
-    for(int i=0; i < x.ntransforms; ++i) {
-      xtransforms[j][i] = choose_transform(control_transform[i], xtransforms[j][i]);
+    for(int i=0; i < x.nmanifolds; ++i) {
+      xmanifolds[j][i] = choose_manifold(control_manifold[i]);
     }
 
-    for(int i=0; i < x.nmanifolds; ++i) {
-      xmanifolds[j][i] = choose_manifold(control_manifold[i], xmanifolds[j][i]);
+    for(int i=0; i < x.ntransforms; ++i) {
+      xtransforms[j][i] = choose_transform(control_transform[i]);
     }
 
     for(int i=0; i < x.nestimators; ++i) {
-      xestimators[j][i] = choose_estimator(control_estimator[i], xestimators[j][i]);
+      xestimators[j][i] = choose_estimator(control_estimator[i]);
 
     }
 
@@ -171,19 +171,22 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   outputsMani["doubles"] = std::get<0>(args[index_minimum].outputs_manifold);
   outputsMani["vectors"] = std::get<1>(args[index_minimum].outputs_manifold);
   outputsMani["matrices"] = std::get<2>(args[index_minimum].outputs_manifold);
-  outputsMani["list_matrices"] = std::get<3>(args[index_minimum].outputs_manifold);
+  outputsMani["cubes"] = std::get<3>(args[index_minimum].outputs_manifold);
+  outputsMani["list_matrices"] = std::get<4>(args[index_minimum].outputs_manifold);
 
   Rcpp::List outputsTrans;
   outputsTrans["doubles"] = std::get<0>(args[index_minimum].outputs_transform);
   outputsTrans["vectors"] = std::get<1>(args[index_minimum].outputs_transform);
   outputsTrans["matrices"] = std::get<2>(args[index_minimum].outputs_transform);
-  outputsTrans["list_matrices"] = std::get<3>(args[index_minimum].outputs_transform);
+  outputsTrans["cubes"] = std::get<3>(args[index_minimum].outputs_transform);
+  outputsTrans["list_matrices"] = std::get<4>(args[index_minimum].outputs_transform);
 
   Rcpp::List outputsEst;
   outputsEst["doubles"] = std::get<0>(args[index_minimum].outputs_estimator);
   outputsEst["vectors"] = std::get<1>(args[index_minimum].outputs_estimator);
   outputsEst["matrices"] = std::get<2>(args[index_minimum].outputs_estimator);
-  outputsEst["list_matrices"] = std::get<3>(args[index_minimum].outputs_estimator);
+  outputsEst["cubes"] = std::get<3>(args[index_minimum].outputs_estimator);
+  outputsEst["list_matrices"] = std::get<4>(args[index_minimum].outputs_estimator);
 
   Rcpp::List outputs;
   outputs["manifolds"] = outputsMani;

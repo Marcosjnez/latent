@@ -247,7 +247,7 @@ public:
 
 };
 
-cfa_ml* choose_cfa_ml(Rcpp::List estimator_setup) {
+cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
 
   cfa_ml* myestimator = new cfa_ml();
 

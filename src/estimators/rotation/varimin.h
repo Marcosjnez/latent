@@ -124,7 +124,7 @@ public:
 
 };
 
-varimin* choose_varimin(Rcpp::List estimator_setup) {
+varimin* choose_varimin(const Rcpp::List& estimator_setup) {
 
   varimin* myestimator = new varimin();
 

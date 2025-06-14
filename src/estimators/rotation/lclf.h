@@ -119,7 +119,7 @@ public:
 
 };
 
-lclf* choose_lclf(Rcpp::List estimator_setup) {
+lclf* choose_lclf(const Rcpp::List& estimator_setup) {
 
   lclf* myestimator = new lclf();
 

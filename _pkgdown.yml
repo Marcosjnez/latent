@@ -1,5 +1,12 @@
 url: https://marcosjnez.github.io/latent/
 
+home:
+  title: An R package for Latent Class and Factor Analysis Models
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
+  description: >
+    Fit measurement models with discrete or continuous latent variables.
+
 template:
   bootstrap: 5
   includes:

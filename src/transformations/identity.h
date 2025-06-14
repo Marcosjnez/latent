@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 29/04/2025
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 11/06/2025
  */
 
 // Identity (no transformation):
@@ -38,6 +38,10 @@ public:
     //
     // Rf_error("30");
 
+    // jacob.set_size(parameters.n_elem, parameters.n_elem);
+    // jacob.eye();
+    // jacob = jacob.cols(vector_indices);
+    // g = jacob.t() * grad;
     g = grad(vector_indices);
 
   }
@@ -56,7 +60,7 @@ public:
 
 };
 
-identity* choose_identity(Rcpp::List trans_setup) {
+identity* choose_identity(const Rcpp::List& trans_setup) {
 
   identity* mytrans = new identity();
 

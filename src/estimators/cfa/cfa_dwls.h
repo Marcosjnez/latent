@@ -234,7 +234,7 @@ public:
 
 };
 
-cfa_dwls* choose_cfa_dwls(Rcpp::List estimator_setup) {
+cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
 
   cfa_dwls* myestimator = new cfa_dwls();
 

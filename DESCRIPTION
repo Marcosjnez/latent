@@ -3,14 +3,11 @@ Type: Package
 Title: An R package for Latent Variable Modeling
 Version: 0.1.0
 Date: 2025-20-01
-Description: Fit latent variable models.
-Author: Marcos Jiménez [aut, cre],
-  Mauricio Garnier-Villarreal [aut],
-  Vithor R. Franco [aut],
-  Francisco J. Abad [aut],
-  Eduardo Garcia-Garzon [aut],
-  Luis E. Garrido [aut]
-Maintainer: Marcos Jiménez <m.j.jimenezhenriquez@vu.nl>
+Description: Fit measurement models with discrete or continuous latent variables.
+Author: Marcos Jiménez [fnd, cre],
+  Mauricio Garnier-Villarreal [cre],
+  Vithor R. Franco [cre]
+Maintainer: Marcos Jiménez <m.j.jimenezhenriquez@vu.nl>, Mauricio Garnier-Villarreal <m.garniervillarreal@vu.nl>, Vithor R. Franco <vithorfranco@gmail.com>
 License: GPL-3
 Imports: Rcpp (>= 1.0.11), png, grid, data.table, lavaan
 LinkingTo: Rcpp, RcppArmadillo

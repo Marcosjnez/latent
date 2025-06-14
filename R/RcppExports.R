@@ -13,8 +13,8 @@ polyfast <- function(data, missing = "pairwise.complete.cases", acov = "none", s
     .Call(`_latent_polyfast`, data, missing, acov, smooth, min_eigval, nboot, fit, cores)
 }
 
-grad_comp <- function(parameters, control_manifold, control_transform, control_estimator, control_optimizer, eps = 1e-04) {
-    .Call(`_latent_grad_comp`, parameters, control_manifold, control_transform, control_estimator, control_optimizer, eps)
+grad_comp <- function(parameters, control_manifold, control_transform, control_estimator, control_optimizer, compute = "all", eps = 1e-04) {
+    .Call(`_latent_grad_comp`, parameters, control_manifold, control_transform, control_estimator, control_optimizer, compute, eps)
 }
 
 count <- function(X, n, max_X) {

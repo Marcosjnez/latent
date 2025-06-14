@@ -95,16 +95,17 @@ public:
       arma::vec log_posterior = -loglik_case[s] + jointlogp.row(s).t();
       for(int i=0; i < nclasses; ++i) {
         for(int j=0; j < J; ++j) {
-          double constant = -n[s]*arma::trunc_exp(log_posterior[i] - loglik(j, i, s));
+          // double constant = -n[s]*arma::trunc_exp(log_posterior[i] - loglik(j, i, s));
+          double constant = -n[s]*arma::trunc_exp(log_posterior[i]);
           if(!std::isnan(Y(s, j))) {
             double value = Y(s, j);
             double mu = conditionals[j](0, i);
             double sigma = conditionals[j](1, i);
             double Ymu = Y(s, j) - mu;
             double sigma2 = sigma*sigma;
-            double lik = exp(loglik(j, i, s));
-            gmeans(j, i) += constant*(Ymu*lik/sigma2);
-            gsds(j, i) += constant*((Ymu*Ymu - sigma2)*lik/(sigma2*sigma));
+            // double lik = exp(loglik(j, i, s));
+            gmeans(j, i) += constant*Ymu/sigma2;
+            gsds(j, i) += constant*((Ymu*Ymu - sigma2)/(sigma2*sigma));
           }
         }
       }
@@ -207,6 +208,9 @@ public:
     matrices[0] = posterior;
     matrices[1] = latentloglik;
 
+    cubes.resize(1);
+    cubes[0] = loglik;
+
     list_matrices.resize(2);
     list_matrices[0] = conditionals;
     list_matrices[1] = logconditionals;
@@ -215,7 +219,7 @@ public:
 
 };
 
-lca_gaussian* choose_lca_gaussian(Rcpp::List estimator_setup) {
+lca_gaussian* choose_lca_gaussian(const Rcpp::List& estimator_setup) {
 
   lca_gaussian* myestimator = new lca_gaussian();
 

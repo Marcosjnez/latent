@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 03/02/2025
+ * Modification date: 11/06/2025
  */
 
 // Multinomial manifold (simplex):
@@ -80,7 +80,7 @@ public:
 
 };
 
-simplex* choose_simplex(Rcpp::List manifold_setup) {
+simplex* choose_simplex(const Rcpp::List& manifold_setup) {
 
   simplex* mymanifold = new simplex();
 

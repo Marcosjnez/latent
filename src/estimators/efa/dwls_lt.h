@@ -176,7 +176,7 @@ public:
 
 };
 
-dwls_lt* choose_dwls_lt(Rcpp::List estimator_setup) {
+dwls_lt* choose_dwls_lt(const Rcpp::List& estimator_setup) {
 
  dwls_lt* myestimator = new dwls_lt(); // Creating dwls_lt object dynamically
 

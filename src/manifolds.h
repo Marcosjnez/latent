@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/05/2025
+ * Modification date: 11/05/2025
  */
 
 // Manifolds
@@ -27,6 +27,7 @@ public:
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
   std::vector<arma::mat> matrices;
+  std::vector<arma::cube> cubes;
   std::vector<std::vector<arma::mat>> list_matrices;
 
   virtual void param() = 0;
@@ -50,45 +51,29 @@ public:
 #include "manifolds/poblq.h"
 #include "manifolds/simplex.h"
 
-// Choose the manifold:
+// type alias for factory functions
+using ManifoldFactory = std::function<manifolds*(const Rcpp::List&)>;
 
-manifolds* choose_manifold(Rcpp::List manifold_setup, manifolds* xmanifold) {
+// dispatch table
+static const std::unordered_map<std::string, ManifoldFactory> manifold_factories = {
+  { "euclidean", choose_euclidean },
+  { "unit",      choose_unit      },
+  { "simplex",   choose_simplex   },
+  { "orth",      choose_orth      },
+  { "oblq",      choose_oblq      },
+  { "poblq",     choose_poblq     }
+};
 
-  manifolds* manifold;
-  std::string projection = manifold_setup["manifold"];
-
-  if(projection == "euclidean") {
-
-    manifold = choose_euclidean(manifold_setup);
-
-  } else if(projection == "unit") {
-
-    manifold = choose_unit(manifold_setup);
-
-  } else if(projection == "simplex") {
-
-    manifold = choose_simplex(manifold_setup);
-
-  } else if(projection == "orth") {
-
-    manifold = choose_orth(manifold_setup);
-
-  } else if(projection == "oblq") {
-
-    manifold = choose_oblq(manifold_setup);
-
-  } else if(projection == "poblq") {
-
-    manifold = choose_poblq(manifold_setup);
-
-  } else {
-
-    Rcpp::stop("Available manifolds: \n euclidean, unit, simplex, orth, oblq, and poblq");
-
+manifolds* choose_manifold(const Rcpp::List& manifold_setup) {
+  const std::string name = Rcpp::as<std::string>(manifold_setup["manifold"]);
+  auto it = manifold_factories.find(name);
+  if (it == manifold_factories.end()) {
+    Rcpp::stop(
+      "Unknown manifold ‘" + name +
+        "’. Available: euclidean, unit, simplex, orth, oblq, poblq"
+    );
   }
-
-  return manifold;
-
+  return it->second(manifold_setup);
 }
 
 // Product Manifold:
@@ -172,13 +157,15 @@ public:
     std::get<1>(x.outputs_manifold).resize(x.nmanifolds);
     std::get<2>(x.outputs_manifold).resize(x.nmanifolds);
     std::get<3>(x.outputs_manifold).resize(x.nmanifolds);
+    std::get<4>(x.outputs_manifold).resize(x.nmanifolds);
 
     for(int i=0; i < x.nmanifolds; ++i) {
 
       std::get<0>(x.outputs_manifold)[i] = xmanifolds[i]->doubles;
       std::get<1>(x.outputs_manifold)[i] = xmanifolds[i]->vectors;
       std::get<2>(x.outputs_manifold)[i] = xmanifolds[i]->matrices;
-      std::get<3>(x.outputs_manifold)[i] = xmanifolds[i]->list_matrices;
+      std::get<3>(x.outputs_manifold)[i] = xmanifolds[i]->cubes;
+      std::get<4>(x.outputs_manifold)[i] = xmanifolds[i]->list_matrices;
 
     }
 

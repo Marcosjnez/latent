@@ -142,7 +142,7 @@ public:
 
 };
 
-cf* choose_cf(Rcpp::List estimator_setup) {
+cf* choose_cf(const Rcpp::List& estimator_setup) {
 
  cf* myestimator = new cf();
 

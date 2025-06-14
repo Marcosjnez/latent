@@ -60,7 +60,7 @@ public:
 
 };
 
-lreg* choose_lreg(Rcpp::List estimator_setup) {
+lreg* choose_lreg(const Rcpp::List& estimator_setup) {
 
   lreg* myestimator = new lreg();
 

@@ -116,7 +116,7 @@ public:
 
 };
 
-target* choose_target(Rcpp::List estimator_setup) {
+target* choose_target(const Rcpp::List& estimator_setup) {
 
   target* myestimator = new target();
 

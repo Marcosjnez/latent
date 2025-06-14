@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/05/2025
+ * Modification date: 11/06/2025
  */
 
 // Transformations
@@ -11,12 +11,15 @@ class transformations {
 public:
 
   arma::vec parameters, dparameters, transparameters, dconstr;
-  arma::mat jacob, grad, g;
+  arma::vec grad, g;
+  arma::mat jacob;
   arma::uvec indices, target_indices;
+  arma::cube jacob2;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
   std::vector<arma::mat> matrices;
+  std::vector<arma::cube> cubes;
   std::vector<std::vector<arma::mat>> list_matrices;
 
   virtual void transform() = 0;
@@ -34,34 +37,25 @@ public:
 #include "transformations/identity.h"
 #include "transformations/softmax.h"
 #include "transformations/exponential.h"
+#include "transformations/lgaussian.h"
 
-// Choose the transformation:
+using TransformFactory =
+  std::function< transformations*(const Rcpp::List&) >;
 
-transformations* choose_transform(Rcpp::List trans_setup, transformations* xtrans) {
+static const std::unordered_map<std::string, TransformFactory> transform_factories = {
+  { "identity",    choose_identity    },
+  { "softmax",     choose_softmax     },
+  { "exponential", choose_exponential },
+  { "lgaussian",   choose_lgaussian   }
+};
 
-  transformations* trans;
-  std::string transform = trans_setup["transform"];
-
-  if(transform == "identity") {
-
-    trans = choose_identity(trans_setup);
-
-  } else if(transform == "softmax") {
-
-    trans = choose_softmax(trans_setup);
-
-  } else if(transform == "exponential") {
-
-    trans = choose_exponential(trans_setup);
-
-  } else {
-
-    Rcpp::stop("Available transformations: \n identity, exponential, and softmax");
-
+transformations* choose_transform(const Rcpp::List& trans_setup) {
+  const std::string name = Rcpp::as<std::string>(trans_setup["transform"]);
+  auto it = transform_factories.find(name);
+  if (it == transform_factories.end()) {
+    Rcpp::stop("Unknown transform: " + name);
   }
-
-  return trans;
-
+  return it->second(trans_setup);
 }
 
 // Product transformation:
@@ -106,12 +100,15 @@ public:
   void jacobian(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
     // Use the gradient of the transformed parameters (grad) to get the final gradient (g):
+    // Rf_error("102");
+    // x.jacob.set_size(x.transparameters.n_elem, x.parameters.n_elem);
+    // x.jacob.zeros();
     x.g.set_size(x.parameters.n_elem); x.g.zeros();
 
     for(int i=0; i < x.ntransforms; ++i) {
 
       arma::uvec target_indices = xtransformations[i]->target_indices;
-      xtransformations[i]->grad = x.grad.elem(target_indices);
+      xtransformations[i]->grad = x.grad(target_indices);
 
       // Rprintf("indices:\n");
       // for (arma::uword i = 0; i < indices.n_elem; ++i) {
@@ -125,14 +122,16 @@ public:
       // }
       // Rprintf("\n\n");
       //
-      // Rf_error("150");
+      // Rf_error("124");
 
       xtransformations[i]->jacobian();
 
-      // Rf_error("154");
+      // Rf_error("128");
 
       arma::uvec indices = xtransformations[i]->indices;
-      x.g.elem(indices) += xtransformations[i]->g;
+      // x.jacob(target_indices, indices) += xtransformations[i]->jacob;
+      x.g(indices) += xtransformations[i]->g;
+      // x.g(indices) += xtransformations[i]->jacob.t() * x.grad(target_indices);
 
       // Rprintf("x.g:\n");
       // for (arma::uword j = 0; j < x.g.n_elem; ++j) {
@@ -140,9 +139,11 @@ public:
       // }
       // Rprintf("\n\n");
       //
-      // Rf_error("163");
+      // Rf_error("143");
 
     }
+
+    // x.g = x.jacob.t() * x.grad;
 
   }
 
@@ -172,6 +173,7 @@ public:
     std::get<1>(x.outputs_transform).resize(x.ntransforms);
     std::get<2>(x.outputs_transform).resize(x.ntransforms);
     std::get<3>(x.outputs_transform).resize(x.ntransforms);
+    std::get<4>(x.outputs_transform).resize(x.ntransforms);
 
     for(int i=0; i < x.ntransforms; ++i) {
 
@@ -180,7 +182,8 @@ public:
       std::get<0>(x.outputs_transform)[i] = xtransformations[i]->doubles;
       std::get<1>(x.outputs_transform)[i] = xtransformations[i]->vectors;
       std::get<2>(x.outputs_transform)[i] = xtransformations[i]->matrices;
-      std::get<3>(x.outputs_transform)[i] = xtransformations[i]->list_matrices;
+      std::get<3>(x.outputs_transform)[i] = xtransformations[i]->cubes;
+      std::get<4>(x.outputs_transform)[i] = xtransformations[i]->list_matrices;
 
     }
 

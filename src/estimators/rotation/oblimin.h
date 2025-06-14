@@ -121,7 +121,7 @@ public:
 
 };
 
-oblimin* choose_oblimin(Rcpp::List estimator_setup) {
+oblimin* choose_oblimin(const Rcpp::List& estimator_setup) {
 
   oblimin* myestimator = new oblimin();
 

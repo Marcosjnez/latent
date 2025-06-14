@@ -25,6 +25,8 @@
   #define omp_set_num_threads() 1
 #endif
 
+#include <unordered_map>
+#include <functional>
 #include <RcppArmadillo.h>
 #include <Rcpp/Benchmark/Timer.h>
 #include "structures.h"
@@ -61,4 +63,5 @@ Rcpp::List grad_comp(arma::vec parameters,
                      Rcpp::List control_transform,
                      Rcpp::List control_estimator,
                      Rcpp::List control_optimizer,
+                     std::string compute = "all",
                      double eps = 1e-04);

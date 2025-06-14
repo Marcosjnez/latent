@@ -124,7 +124,7 @@ public:
 
 };
 
-varimax* choose_varimax(Rcpp::List estimator_setup) {
+varimax* choose_varimax(const Rcpp::List& estimator_setup) {
 
   varimax* myestimator = new varimax();
 

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/05/2025
+ * Modification date: 11/06/2025
  */
 
 Rcpp::List grad_comp(arma::vec parameters,
@@ -9,6 +9,7 @@ Rcpp::List grad_comp(arma::vec parameters,
                      Rcpp::List control_transform,
                      Rcpp::List control_estimator,
                      Rcpp::List control_optimizer,
+                     std::string compute,
                      double eps) {
 
   /*
@@ -43,17 +44,28 @@ Rcpp::List grad_comp(arma::vec parameters,
   optim* algorithm = choose_optim(x, control_optimizer);
   x.parameters = parameters;
 
+  Rcpp::List result;
+  result["parameters"] = x.parameters;
+
+  if(compute == "pre_setup") return result;
+
   for(int i=0; i < x.nmanifolds; ++i) {
-    xmanifolds[i] = choose_manifold(control_manifold[i], xmanifolds[i]);
+    xmanifolds[i] = choose_manifold(control_manifold[i]);
   }
+
+  if(compute == "choose_manifold") return result;
 
   for(int i=0; i < x.ntransforms; ++i) {
-    xtransforms[i] = choose_transform(control_transform[i], xtransforms[i]);
+    xtransforms[i] = choose_transform(control_transform[i]);
   }
 
+  if(compute == "choose_transform") return result;
+
   for(int i=0; i < x.nestimators; ++i) {
-    xestimators[i] = choose_estimator(control_estimator[i], xestimators[i]);
+    xestimators[i] = choose_estimator(control_estimator[i]);
   }
+
+  if(compute == "choose_estimator") return result;
 
   /*
    * Computations
@@ -61,32 +73,38 @@ Rcpp::List grad_comp(arma::vec parameters,
 
   Rcpp::List computations;
 
+  if(compute == "setup") return result;
   final_manifold->param(x, xmanifolds);
+  if(compute == "mani_param") return result;
   final_manifold->retr(x, xmanifolds);
+  if(compute == "mani_retr") return result;
   final_manifold->param(x, xmanifolds);
-  // Rf_error("67");
+  if(compute == "mani") return result;
   final_transform->transform(x, xtransforms);
-  // Rf_error("68");
-  final_estimator->param(x, xestimators);
-  // Rf_error("70");
-  final_estimator->F(x, xestimators);
-  // Rf_error("72");
-  final_estimator->G(x, xestimators);
-  // Rf_error("74");
-  final_transform->jacobian(x, xtransforms);
-  final_manifold->proj(x, xmanifolds);
-  // Rf_error("78");
-
-  Rcpp::List result;
-  result["parameters"] = x.parameters;
   result["transparameters"] = x.transparameters;
+  if(compute == "trans") return result;
+  final_estimator->param(x, xestimators);
+  if(compute == "param") return result;
+  final_estimator->F(x, xestimators);
   result["f"] = x.f;
+  if(compute == "f") return result;
+  final_estimator->G(x, xestimators);
   result["grad"] = x.grad;
+  if(compute == "grad") return result;
+  final_transform->jacobian(x, xtransforms);
+  // final_transform->outcomes(x, xtransforms);
   result["g"] = x.g;
+  // result["matrices"] = xtransforms[x.ntransforms-1L]->matrices;
+  if(compute == "g") return result;
+  final_manifold->proj(x, xmanifolds);
+
+  result["dg"] = x.dg;
   result["rg"] = x.rg;
+  result["J"] = xtransforms[0]->jacob;
+  result["h"] = x.h;
 
   /*
-   * DERIVATIVES
+   * NUMERICAL DERIVATIVES
    */
 
   product_transform* T1;

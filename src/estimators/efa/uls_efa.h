@@ -196,7 +196,7 @@ public:
 
 };
 
-uls_efa* choose_uls_efa(Rcpp::List estimator_setup) {
+uls_efa* choose_uls_efa(const Rcpp::List& estimator_setup) {
 
   uls_efa* myestimator = new uls_efa();
 

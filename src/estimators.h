@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/05/2025
+ * Modification date: 11/06/2025
  */
 
 class estimators {
@@ -23,6 +23,7 @@ public:
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
   std::vector<arma::mat> matrices;
+  std::vector<arma::cube> cubes;
   std::vector<std::vector<arma::mat>> list_matrices;
 
   arma::uvec indices;
@@ -63,95 +64,43 @@ public:
 #include "estimators/lca/lca_multinomial.h"
 #include "estimators/lca/lca_gaussian.h"
 #include "estimators/lca/latentloglik_combination.h"
+#include "estimators/lca/lca.h"
 
 #include "estimators/lreg/lreg.h"
 
 #include "estimators/cfa/cfa_dwls.h"
 #include "estimators/cfa/cfa_ml.h"
 
-// Choose the estimator:
+using EstimatorFactory = std::function<estimators*(const Rcpp::List&)>;
 
-estimators* choose_estimator(Rcpp::List estimator_setup, estimators* xestimator) {
+static const std::unordered_map<std::string, EstimatorFactory> estimator_factories = {
+  { "ml_efa",                      choose_ml_efa                    },
+  { "uls_efa",                     choose_uls_efa                   },
+  { "dwls_lt",                     choose_dwls_lt                   },
+  { "cfa_dwls",                    choose_cfa_dwls                  },
+  { "cfa_ml",                      choose_cfa_ml                    },
+  { "cf",                          choose_cf                        },
+  { "oblimin",                     choose_oblimin                   },
+  { "geomin",                      choose_geomin                    },
+  { "varimax",                     choose_varimax                   },
+  { "varimin",                     choose_varimin                   },
+  { "target",                      choose_target                    },
+  { "xtarget",                     choose_xtarget                   },
+  { "lclf",                        choose_lclf                      },
+  { "lca_multinomial",             choose_lca_multinomial           },
+  { "lca_gaussian",                choose_lca_gaussian              },
+  { "latentloglik_combination",    choose_latentloglik_combination  },
+  { "lca",                         choose_lca                       },
+  { "lreg",                        choose_lreg                      }
+};
 
-  estimators* criterion;
-  std::string estimator = estimator_setup["estimator"];
-
-  if (estimator == "ml_efa") {
-
-    criterion = choose_ml_efa(estimator_setup);
-
-  } else if (estimator == "uls_efa") {
-
-    criterion = choose_uls_efa(estimator_setup);
-
-  } else if (estimator == "dwls_lt") {
-
-    criterion = choose_dwls_lt(estimator_setup);
-
-  } else if(estimator == "cfa_dwls") {
-
-    criterion = choose_cfa_dwls(estimator_setup);
-
-  } else if(estimator == "cfa_ml") {
-
-    criterion = choose_cfa_ml(estimator_setup);
-
-  } else if (estimator == "cf") {
-
-    criterion = choose_cf(estimator_setup);
-
-  } else if (estimator == "oblimin") {
-
-    criterion = choose_oblimin(estimator_setup);
-
-  } else if (estimator == "geomin") {
-
-    criterion = choose_geomin(estimator_setup);
-
-  } else if (estimator == "varimax") {
-
-    criterion = choose_varimax(estimator_setup);
-
-  } else if (estimator == "varimin") {
-
-    criterion = choose_varimin(estimator_setup);
-
-  } else if (estimator == "target") {
-
-    criterion = choose_target(estimator_setup);
-
-  } else if (estimator == "xtarget") {
-
-    criterion = choose_xtarget(estimator_setup);
-
-  } else if (estimator == "lclf") {
-
-    criterion = choose_lclf(estimator_setup);
-
-  } else if (estimator == "lca_multinomial") {
-
-    criterion = choose_lca_multinomial(estimator_setup);
-
-  } else if (estimator == "lca_gaussian") {
-
-    criterion = choose_lca_gaussian(estimator_setup);
-
-  } else if (estimator == "latentloglik_combination") {
-
-    criterion = choose_latentloglik_combination(estimator_setup);
-
-  } else if (estimator == "lreg") {
-
-    criterion = choose_lreg(estimator_setup);
-
-  } else {
-
-    Rcpp::stop("Unkown estimator");
-
+estimators* choose_estimator(const Rcpp::List& estimator_setup) {
+  const std::string name = Rcpp::as<std::string>(estimator_setup["estimator"]);
+  auto it = estimator_factories.find(name);
+  if (it == estimator_factories.end()) {
+    Rcpp::stop("Unknown estimator: " + name);
   }
-
-  return criterion;
-
+  return it->second(estimator_setup);
 }
 
 // Product Estimator
@@ -385,6 +334,7 @@ public:
     std::get<1>(x.outputs_estimator).resize(x.nestimators);
     std::get<2>(x.outputs_estimator).resize(x.nestimators);
     std::get<3>(x.outputs_estimator).resize(x.nestimators);
+    std::get<4>(x.outputs_estimator).resize(x.nestimators);
 
     for(int i=0; i < x.nestimators; ++i) {
 
@@ -400,7 +350,8 @@ public:
       std::get<0>(x.outputs_estimator)[i] = xestimators[i]->doubles;
       std::get<1>(x.outputs_estimator)[i] = xestimators[i]->vectors;
       std::get<2>(x.outputs_estimator)[i] = xestimators[i]->matrices;
-      std::get<3>(x.outputs_estimator)[i] = xestimators[i]->list_matrices;
+      std::get<3>(x.outputs_estimator)[i] = xestimators[i]->cubes;
+      std::get<4>(x.outputs_estimator)[i] = xestimators[i]->list_matrices;
 
     }
 

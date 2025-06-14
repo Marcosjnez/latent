@@ -4,7 +4,7 @@
 
 .onAttach <- function(libname, pkgname) {
 
-  path <- system.file("extdata", "latent_mascot.png", package = pkgname)
+  path <- system.file("extdata", "standard.png", package = pkgname)
   if (nzchar(path)) {
     if (interactive() && requireNamespace("png", quietly = TRUE) && requireNamespace("grid", quietly = TRUE)) {
       img <- png::readPNG(path)
@@ -25,5 +25,8 @@ Type 'citation(\"%s\")' for citing this package in publications.
 ", version, pkgname)
 
   packageStartupMessage(msg)
+  packageStartupMessage("Report bugs at m.j.jimenezhenriquez@vu.nl")
+  packageStartupMessage("For tutorials, visit marcosjnez.github.io/latent/")
+  packageStartupMessage("🌈 Happy pride month!")
 
 }

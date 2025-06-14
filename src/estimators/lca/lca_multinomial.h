@@ -215,7 +215,7 @@ public:
 
 };
 
-lca_multinomial* choose_lca_multinomial(Rcpp::List estimator_setup) {
+lca_multinomial* choose_lca_multinomial(const Rcpp::List& estimator_setup) {
 
   lca_multinomial* myestimator = new lca_multinomial();
 

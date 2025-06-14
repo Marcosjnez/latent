@@ -133,7 +133,7 @@ public:
 
 };
 
-xtarget* choose_xtarget(Rcpp::List estimator_setup) {
+xtarget* choose_xtarget(const Rcpp::List& estimator_setup) {
 
   xtarget* myestimator = new xtarget();
 

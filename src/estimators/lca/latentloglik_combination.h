@@ -107,7 +107,7 @@ public:
 
 };
 
-latentloglik_combination* choose_latentloglik_combination(Rcpp::List estimator_setup) {
+latentloglik_combination* choose_latentloglik_combination(const Rcpp::List& estimator_setup) {
 
   latentloglik_combination* myestimator = new latentloglik_combination();
 

@@ -145,7 +145,7 @@ public:
 
 };
 
-geomin* choose_geomin(Rcpp::List estimator_setup) {
+geomin* choose_geomin(const Rcpp::List& estimator_setup) {
 
   geomin* myestimator = new geomin();
 

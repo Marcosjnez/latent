@@ -877,7 +877,7 @@ simfactor <- function(nfactors = 3, nitems = 4,
 
     # Cross-loadings on the group factors:
 
-    if(crossloadings != 0) {
+    if(crossloadings != 0 & nfactors > 1) {
 
       ratio <- nfactors
       row_index <- seq(nitems+1, n_items, by = nitems)
@@ -896,7 +896,8 @@ simfactor <- function(nfactors = 3, nitems = 4,
         row_indexes <- row_index[i]:(row_index[i])
         col_index_2 <- which(lambda[row_indexes[1], ] > 0)
         lambda[row_indexes, col_index[i]] <- crossloadings
-        lambda[row_indexes, col_index_2] <- sqrt(lambda[row_indexes, col_index_2]^2 - crossloadings^2/2)
+        # lambda[row_indexes, col_index_2] <- sqrt(lambda[row_indexes, col_index_2]^2 - crossloadings^2/2)
+        # Skip the recalibration of the items
 
       }
 
@@ -906,7 +907,8 @@ simfactor <- function(nfactors = 3, nitems = 4,
         row_indexes <- row_index:(row_index)
         col_index_2 <- which(lambda[row_indexes[1], ] > 0)
         lambda[row_indexes, ngenerals+i*ratio] <- crossloadings
-        lambda[row_indexes, col_index_2] <- sqrt(lambda[row_indexes, col_index_2]^2 - crossloadings^2/2)
+        # lambda[row_indexes, col_index_2] <- sqrt(lambda[row_indexes, col_index_2]^2 - crossloadings^2/2)
+        # Skip the recalibration of the items
 
       }
 

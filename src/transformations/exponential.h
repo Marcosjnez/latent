@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 29/04/2025
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 11/06/2025
  */
 
 // Exponential transformation:
@@ -22,7 +22,9 @@ public:
 
   void jacobian() {
 
-    jacob = transparameters;
+    // jacob = arma::diagmat(transparameters);
+    // jacob = jacob.cols(vector_indices);
+    // g = jacob * grad;
     g = grad % transparameters;
     g = g(vector_indices);
 
@@ -45,7 +47,7 @@ public:
 
 };
 
-exponential* choose_exponential(Rcpp::List trans_setup) {
+exponential* choose_exponential(const Rcpp::List& trans_setup) {
 
   exponential* mytrans = new exponential();
 

@@ -31,7 +31,7 @@ struct arguments_optim{
   bool convergence = false;
   arma::vec parameters, dparameters, g, dg, rg, drg, dH;
   arma::vec transparameters, dtransparameters, grad, dgrad;
-  arma::mat hessian, B;
+  arma::mat jacob, h, hessian, B;
   arma::mat posterior;
   arma::mat latentloglik;
   arma::vec latentpars, loglatentpars;
@@ -68,6 +68,7 @@ struct arguments_optim{
     std::vector<std::vector<double>>,
     std::vector<std::vector<arma::vec>>,
     std::vector<std::vector<arma::mat>>,
+    std::vector<std::vector<arma::cube>>,
     std::vector<std::vector<std::vector<arma::mat>>>
   > outputs_manifold;
 
@@ -76,6 +77,7 @@ struct arguments_optim{
     std::vector<std::vector<double>>,
     std::vector<std::vector<arma::vec>>,
     std::vector<std::vector<arma::mat>>,
+    std::vector<std::vector<arma::cube>>,
     std::vector<std::vector<std::vector<arma::mat>>>
   > outputs_transform;
 
@@ -84,6 +86,7 @@ struct arguments_optim{
     std::vector<std::vector<double>>,
     std::vector<std::vector<arma::vec>>,
     std::vector<std::vector<arma::mat>>,
+    std::vector<std::vector<arma::cube>>,
     std::vector<std::vector<std::vector<arma::mat>>>
   > outputs_estimator;
 

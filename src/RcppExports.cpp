@@ -57,8 +57,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // grad_comp
-Rcpp::List grad_comp(arma::vec parameters, Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, double eps);
-RcppExport SEXP _latent_grad_comp(SEXP parametersSEXP, SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP epsSEXP) {
+Rcpp::List grad_comp(arma::vec parameters, Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, std::string compute, double eps);
+RcppExport SEXP _latent_grad_comp(SEXP parametersSEXP, SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP computeSEXP, SEXP epsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -67,8 +67,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    Rcpp::traits::input_parameter< std::string >::type compute(computeSEXP);
     Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
-    rcpp_result_gen = Rcpp::wrap(grad_comp(parameters, control_manifold, control_transform, control_estimator, control_optimizer, eps));
+    rcpp_result_gen = Rcpp::wrap(grad_comp(parameters, control_manifold, control_transform, control_estimator, control_optimizer, compute, eps));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -118,7 +119,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_logDnorm", (DL_FUNC) &_latent_logDnorm, 3},
     {"_latent_optimizer", (DL_FUNC) &_latent_optimizer, 4},
     {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 8},
-    {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 6},
+    {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 7},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},
     {"_latent_joint_frequency_table", (DL_FUNC) &_latent_joint_frequency_table, 5},
     {"_latent_dbinorm", (DL_FUNC) &_latent_dbinorm, 3},
