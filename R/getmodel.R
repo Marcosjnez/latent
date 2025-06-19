@@ -126,84 +126,67 @@ getmodel <- function(data, item = rep("multinomial", ncol(data)), nclasses = 2L,
 
 }
 
-log2prob <- function(log_model, data, item, nitems, nclasses) {
-
+log2prob <- function (log_model, data, item, nitems, nclasses) {
   conditionals <- vector("list", length = nitems)
   names(conditionals) <- paste("Item", 1:nitems)
-
-  # Create the probability model by default
-  # Create the model for the classes:
   classes <- paste("P(class", 1:nclasses, ")", sep = "")
   names(classes) <- paste("Class", 1:nclasses, sep = "")
-
-  for(j in 1:nitems) { # Loop across the items
-
-    if(item[j] == "multinomial") { # For categorical items
-
-      # The model of the conditional parameters has as many rows as response
-      # categories in the item and as many columns as the number of classes
-      ncategories <- length(unique(data[, j]))
-      classes_v <- rep(paste("class", 1:nclasses, sep = ""), each = ncategories)
+  for (j in 1:nitems) {
+    if (item[j] == "multinomial") {
+      uniques <- unique(data[, j])
+      ncategories <- sum(!is.na(uniques))
+      classes_v <- rep(paste("class", 1:nclasses, sep = ""),
+                       each = ncategories)
       catg_v <- rep(1:ncategories, times = nclasses)
-      conditionals[[j]] <- matrix(paste("P(y", j, catg_v, "|", classes_v, ")", sep = ""),
-                                  nrow = ncategories, ncol = nclasses)
-      rownames(conditionals[[j]]) <- paste("P(Category", 1:ncategories, ")", sep = "")
-      colnames(conditionals[[j]]) <- paste("Class", 1:nclasses, sep = "")
-
-    } else if(item[j] == "gaussian") { # For continuous items
-
-      # The model of the conditional parameters has 2 rows (one for the mean of
-      # the item and another for the standard deviation) and as many columns as
-      # the number of classes
-      classes_v <- rep(paste("class", 1:nclasses, sep = ""), each = 2)
-      conditionals[[j]] <- matrix(paste(c("mean", "sd"), j, "|", classes_v, sep = ""),
-                                  nrow = 2, ncol = nclasses)
+      conditionals[[j]] <- matrix(paste("P(y", j, catg_v,
+                                        "|", classes_v, ")", sep = ""), nrow = ncategories,
+                                  ncol = nclasses)
+      rownames(conditionals[[j]]) <- paste("P(Category",
+                                           1:ncategories, ")", sep = "")
+      colnames(conditionals[[j]]) <- paste("Class", 1:nclasses,
+                                           sep = "")
+    }
+    else if (item[j] == "gaussian") {
+      classes_v <- rep(paste("class", 1:nclasses, sep = ""),
+                       each = 2)
+      conditionals[[j]] <- matrix(paste(c("mean", "sd"),
+                                        j, "|", classes_v, sep = ""), nrow = 2, ncol = nclasses)
       rownames(conditionals[[j]]) <- c("Means", "Sds")
-      colnames(conditionals[[j]]) <- paste("Class", 1:nclasses, sep = "")
-
+      colnames(conditionals[[j]]) <- paste("Class", 1:nclasses,
+                                           sep = "")
     }
   }
-
   prob_model <- list(classes = classes, conditionals = conditionals)
-
   slots <- slots2 <- vector("list")
   k <- 1
   slots[[k]] <- log_model$classes
   slots2[[k]] <- prob_model$classes
-  for(i in 1:length(log_model$conditionals)) {
-    for(j in 1:ncol(log_model$conditionals[[i]])) {
-      k <- k+1
+  for (i in 1:length(log_model$conditionals)) {
+    for (j in 1:ncol(log_model$conditionals[[i]])) {
+      k <- k + 1
       slots[[k]] <- log_model$conditionals[[i]][, j]
       slots2[[k]] <- prob_model$conditionals[[i]][, j]
     }
   }
-
   nslots <- length(slots)
-  for(i in 1:(nslots-1L)) {
-
+  for (i in 1:(nslots - 1L)) {
     ni <- length(slots[[i]])
-
-    for(j in 2:(nslots)) {
-
+    for (j in 2:(nslots)) {
       nj <- length(slots[[j]])
       same_length <- ni == nj
-
-      if(same_length) {
-        if(all(slots[[j]] %in% slots[[i]])) {
+      if (same_length) {
+        if (all(slots[[j]] %in% slots[[i]])) {
           mi <- match(slots[[i]], slots[[j]])
           slots[[j]] <- slots[[i]][mi]
           slots2[[j]] <- slots2[[i]][mi]
         }
       }
-
     }
   }
-
   prob_model <- fill_list_with_vector(prob_model, unlist(slots2))
-
   return(prob_model)
-
 }
+
 
 fill_list_with_vector <- function(lst, values) {
   i <- 1
