@@ -40,7 +40,7 @@ getmodel <- function(data, item = rep("multinomial", ncol(data)), nclasses = 2L,
   # Initialize the logarithm model for the items:
   nitems <- ncol(data)
   conditionals <- vector("list", length = nitems)
-  names(conditionals) <- paste("Item", 1:nitems)
+  names(conditionals) <- colnames(data)#paste("Item", 1:nitems)
 
   # If the user did not supply a custom model, create a default model:
   if(is.null(model)) {
@@ -128,7 +128,7 @@ getmodel <- function(data, item = rep("multinomial", ncol(data)), nclasses = 2L,
 
 log2prob <- function (log_model, data, item, nitems, nclasses) {
   conditionals <- vector("list", length = nitems)
-  names(conditionals) <- paste("Item", 1:nitems)
+  names(conditionals) <- colnames(data)#paste("Item", 1:nitems)
   classes <- paste("P(class", 1:nclasses, ")", sep = "")
   names(classes) <- paste("Class", 1:nclasses, sep = "")
   for (j in 1:nitems) {
