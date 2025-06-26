@@ -1,12 +1,32 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 16/05/2025
+ * Modification date: 26/06/2025
  */
 
 /*
  * Latent class analysis (gaussian model)
  */
+
+double sum_ignore_na(const arma::vec& x) {
+  arma::vec x_copy = x;  // Optional: only needed if x is not const
+  arma::vec x_clean = x_copy;
+  x_clean.elem(arma::find_nonfinite(x_clean)).zeros();  // Set NaNs/Infs to 0
+  return arma::accu(x_clean);
+}
+
+arma::rowvec col_sum_ignore_nan(const arma::mat& X) {
+  arma::rowvec result(X.n_cols, arma::fill::zeros);
+  for (arma::uword j = 0; j < X.n_cols; ++j) {
+    for (arma::uword i = 0; i < X.n_rows; ++i) {
+      double val = X(i, j);
+      if (arma::is_finite(val)) {
+        result(j) += val;
+      }
+    }
+  }
+  return result;
+}
 
 class lca_gaussian: public estimators {
 
@@ -152,11 +172,27 @@ public:
 
     arma::mat freqs = posterior; // S x nclasses
     freqs.each_col() %= n;
+    arma::rowvec post_total = col_sum_ignore_nan(freqs);
+    // arma::rowvec post_total = arma::sum(freqs, 0);
     arma::rowvec post_total = arma::sum(freqs, 0);
     freqs.each_row() /= post_total;
 
     for(int j=0; j < J; ++j) {
       for(unsigned int i=0; i < nclasses; ++i) {
+        // conditionals[j](0, i) = arma::accu(Y.col(j) % freqs.col(i));
+        // arma::vec xdiff = Y.col(j) - conditionals[j](0, i);
+        // conditionals[j](1, i) = arma::accu(xdiff % xdiff % freqs.col(i));
+        double mu = sum_ignore_na(Y.col(j) % freqs.col(i));
+        arma::vec xdiff = Y.col(j) - conditionals[j](0, i);
+        double sigma2 = sum_ignore_na(xdiff % xdiff % freqs.col(i));
+        conditionals[j](0, i) = mu;
+        conditionals[j](1, i) = std::sqrt(sigma2);
+        for(int s=0; s < S; ++s) {
+          if(!std::isnan(Y(s, j))) {
+            double value = Y(s, j);
+            loglik(j, i, s) = logDnorm(value, mu, sigma2);
+            latentloglik(s, i) += loglik(j, i, s);
+          }
         conditionals[j](0, i) = arma::accu(Y.col(j) % freqs.col(i));
         arma::vec xdiff = Y.col(j) - conditionals[j](0, i);
         conditionals[j](1, i) = arma::accu(xdiff % xdiff % freqs.col(i));
