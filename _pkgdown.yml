@@ -1,0 +1,46 @@
+url: https://marcosjnez.github.io/latent/
+
+home:
+  title: An R package for Latent Class and Factor Analysis Models
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
+  description: >
+    Fit measurement models with discrete or continuous latent variables.
+
+template:
+  bootstrap: 5
+  includes:
+    in_header:
+      - inst/pkgdown/includes/custom-head.html
+  assets:
+    - pkgdown/extra.css
+
+# Sidebar structure
+navbar:
+  structure:
+    left:
+      - home
+      - documentation
+      - articles
+      - tutorials
+
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: The Latent Class model
+          href: articles/lca_article.html
+        - text: The Confirmatory Factor model
+          href: articles/cfa_article.html
+        - text: The Exploratory Factor model
+          href: articles/efa_article.html
+
+    tutorials:
+      text: Tutorials
+      menu:
+        - text: Latent Class Analysis
+          href: articles/lca_tutorial.html
+        - text: Confirmatory Factor Analysis
+          href: articles/cfa_tutorial.html
+        - text: Exploratory Factor Analysis
+          href: articles/efa_tutorial.html
