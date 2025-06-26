@@ -1,10 +1,21 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/06/2025
+ * Modification date: 26/06/2025
  */
 
-class estimators {
+arma::vec row_sum_ignore_nan(const arma::mat& X) {
+  arma::vec result(X.n_rows, arma::fill::zeros);
+  for (arma::uword i = 0; i < X.n_rows; ++i) {
+    for (arma::uword j = 0; j < X.n_cols; ++j) {
+      double val = X(i, j);
+      if (arma::is_finite(val)) {
+        result(i) += val;
+      }
+    }
+  }
+  return result;
+}
 
 public:
 
@@ -303,6 +314,7 @@ public:
     x.posterior = x.latentloglik;
     x.posterior.each_row() += x.loglatentpars.t();
     x.posterior = arma::trunc_exp(x.posterior);
+    // mid = row_sum_ignore_nan(x.posterior);
     mid = arma::sum(x.posterior, 1);
 
     x.posterior.each_col() /= mid; // P(X = c | data) = P(data | X = c) P(X = c) / P(data)
@@ -318,6 +330,7 @@ public:
     // Rprintf("\n\n");
 
     arma::vec logliks = x.n % arma::trunc_log(mid);
+    x.loglik = -sum_ignore_na(logliks);
     x.loglik = -arma::accu(logliks);
 
   }
