@@ -41,3 +41,6 @@ On Apple Silicon Macs (make sure this goes at the end of the file):
 Finally,
 
     devtools::install_github("marcosjnez/latent")
+
+## Funding
+The package development is supported by the “DYNANSE: Righting the Wrongs. A Life Course Dynamics Approach for Non-Standard Employment” project, which has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No 864471).
