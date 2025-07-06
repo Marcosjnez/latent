@@ -243,7 +243,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   # Allocate the parameters (logarithm scale) in the full model specification:
   ncomplete <- length(unlist(model$log_model))
   vec <- vector(length = ncomplete)
-  if(!is.null(parameters)) {
+  if(!is.null(parameters[[1]])) {
     vec[args$indices_full_param_vector] <- parameters[args$indices_param_vector2[!is.na(args$indices_param_vector2)]]
     vec[args$indices_full_fixed_vector] <- args$full_fixed_vector
     parameters <- fill_list_with_vector(model$log_model, vec)
