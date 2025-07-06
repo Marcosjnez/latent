@@ -139,19 +139,19 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     llca <- new("llca",
                    version            = as.character( packageVersion('latent') ),
                    call               = mc, # matched call
-                   timing             = NULL, # timing information
+                   timing             = numeric(), # timing information
                    modelInfo          = modelInfo, # modelInfo
                    Optim              = opt, # opt
-                   parameters         = NULL,
-                   transformed_pars   = NULL,
-                   posterior          = NULL,
-                   state              = NULL,
-                   loglik             = NULL, # loglik values and info
-                   loglik_case        = NULL,
-                   summary_table      = NULL,
-                   ClassConditional   = NULL,
-                   RespConditional    = NULL,
-                   probCat            = NULL
+                   parameters         = list(),
+                   transformed_pars   = list(),
+                   posterior          = matrix(),
+                   state              = vector(),
+                   loglik             = numeric(), # loglik values and info
+                   loglik_case        = numeric(),
+                   summary_table      = list(),
+                   ClassConditional   = list(),
+                   RespConditional    = list(),
+                   probCat            = list()
                    )
 
     return(llca) # Return information without fitting the model
@@ -314,9 +314,10 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     })
 
     ClassConditional <- multinomial_conditionals
+    names(ClassConditional) <- colnames(data)
     RespConditional <- RespConditional[indices]
     names(RespConditional) <- colnames(data)#paste("Item", 1:nitems)
-    #probCat <- probCat
+    names(probCat) <- colnames(data)
 
   }
 

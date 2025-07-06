@@ -4,7 +4,8 @@ setMethod("show", "llca", function(object) {
 
   # Print header with model name and version
   cat(sprintf("%s %s ended normally after %d iterations\n\n",
-              "latent", "0.1.0", object@Optim$iterations))
+              "latent", as.character( packageVersion('latent') ),
+              object@Optim$iterations))
 
   # Print Estimator, Optimization, and Parameters section
   cat(sprintf("  %-45s %s\n", "Estimator", "Multinomial"))
