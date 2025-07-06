@@ -12,8 +12,8 @@ setClass("llca",
            Optim              = "list", # opt
            parameters         = "list",
            transformed_pars   = "list",
-           posterior          = "list",
-           state              = "list",
+           posterior          = "matrix",
+           state              = "vector",
            loglik             = "numeric", # loglik values and info
            loglik_case        = "numeric",
            summary_table      = "list",
