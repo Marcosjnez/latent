@@ -190,7 +190,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
       copy[indices_mult] <- x$outputs$estimators$list_matrices[[k]][[1]]
     }
 
-    parameters <- NULL
+    parameters <- list(NULL)
     transparameters <- c(x$outputs$estimators$vectors[[1]][[1]], unlist(copy))
 
   }
