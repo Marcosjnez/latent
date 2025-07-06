@@ -344,8 +344,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                  Optim              = opt, # opt
                  parameters         = parameters,
                  transformed_pars   = transformed_parameters,
-                 posterior          = posterior,
-                 state              = state,
+                 posterior          = list(posterior),
+                 state              = list(state),
                  loglik             = loglik, # loglik values and info
                  loglik_case        = loglik_case,
                  summary_table      = summary_table,
