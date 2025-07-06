@@ -47,6 +47,9 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     stop("nclasses must be a positive integer")
   }
 
+  ## store original call
+  mc  <- match.call()
+
   # Create defaults for the control of the optimizer:
   control <- lca_control(control)
 
@@ -104,7 +107,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   nparam <- length(parameters[[1]])
   ntransparam <- length(transparameters[[1]])
 
-  result <- vector("list") # Initialize the object to be returned
+  #result <- vector("list") # Initialize the object to be returned
 
   # Fit the model or just get the model specification:
   if(!do.fit) {
@@ -121,7 +124,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                       npatterns = npatterns,
                       df = npatterns - nparam)
 
-    result$modelInfo <- modelInfo
+    #result$modelInfo <- modelInfo
 
     # Data for the optimization algorithms:
     opt <- list(data = data,
@@ -132,9 +135,26 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                 control_setup = control_setup,
                 args = args)
 
-    result$opt <- opt
+    #result$opt <- opt
+    llca <- new("llca",
+                   version            = as.character( packageVersion('latent') ),
+                   call               = mc, # matched call
+                   timing             = NULL, # timing information
+                   modelInfo          = modelInfo, # modelInfo
+                   Optim              = opt, # opt
+                   parameters         = NULL,
+                   transformed_pars   = NULL,
+                   posterior          = NULL,
+                   state              = NULL,
+                   loglik             = NULL, # loglik values and info
+                   loglik_case        = NULL,
+                   summary_table      = NULL,
+                   ClassConditional   = NULL,
+                   RespConditional    = NULL,
+                   probCat            = NULL
+                   )
 
-    return(result) # Return information without fitting the model
+    return(llca) # Return information without fitting the model
 
   }
 
@@ -226,8 +246,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   if(!is.null(parameters)) {
     vec[args$indices_full_param_vector] <- parameters[args$indices_param_vector2[!is.na(args$indices_param_vector2)]]
     vec[args$indices_full_fixed_vector] <- args$full_fixed_vector
-    result$parameters <- fill_list_with_vector(model$log_model, vec)
-    result$parameters <- convert_all_to_numeric(result$parameters)
+    parameters <- fill_list_with_vector(model$log_model, vec)
+    parameters <- convert_all_to_numeric(parameters)
   }
 
   # Allocate the transformed parameters (probability scale) in the full model
@@ -235,16 +255,16 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   transformed_parameters <- vector(length = ncomplete)
   transformed_parameters[args$indices_full_transfixed_vector] <- args$full_transfixed_vector
   transformed_parameters[args$indices_full_transparam_vector] <- x$transparameters[args$indices_transparam_vector2[!is.na(args$indices_transparam_vector2)]]
-  result$transformed_parameters <- fill_list_with_vector(model$prob_model, transformed_parameters)
-  result$transformed_parameters <- convert_all_to_numeric(result$transformed_parameters)
+  transformed_parameters <- fill_list_with_vector(model$prob_model, transformed_parameters)
+  transformed_parameters <- convert_all_to_numeric(transformed_parameters)
 
   # Fill some results:
-  result$posterior <- posterior[map2full, ]
-  rownames(result$posterior) <- rownames(data)
-  result$state <- state[map2full]
-  result$loglik <- loglik
-  result$loglik_case <- logliks[map2full]
-  result$summary_table <- Freqs
+  posterior <- posterior[map2full, ]
+  rownames(posterior) <- rownames(data)
+  state <- state[map2full]
+  loglik <- loglik
+  loglik_case <- logliks[map2full]
+  summary_table <- Freqs
 
   # Check the existence of gaussian items:
   gauss <- "gaussian" %in% item
@@ -293,10 +313,10 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
       return(posterior)
     })
 
-    result$ClassConditional <- multinomial_conditionals
-    result$RespConditional <- RespConditional[indices]
-    names(result$RespConditional) <- paste("Item", 1:nitems)
-    result$probCat <- probCat
+    ClassConditional <- multinomial_conditionals
+    RespConditional <- RespConditional[indices]
+    names(RespConditional) <- colnames(data)#paste("Item", 1:nitems)
+    #probCat <- probCat
 
   }
 
@@ -308,14 +328,33 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                     ntransparam = ntransparam,
                     npatterns = npatterns,
                     df = npatterns - nparam)
-  result$modelInfo <- modelInfo
 
-  result$opt <- opt
-  result$elapsed <- x$elapsed
+  #result$modelInfo <- modelInfo
 
-  class(result) <- "lca"
+  #result$opt <- opt
+  #result$elapsed <- x$elapsed
 
-  return(result)
+  #class(result) <- "lca"
+
+  llca <- new("llca",
+                 version            = as.character( packageVersion('latent') ),
+                 call               = mc, # matched call
+                 timing             = x$elapsed, # timing information
+                 modelInfo          = modelInfo, # modelInfo
+                 Optim              = opt, # opt
+                 parameters         = parameters,
+                 transformed_pars   = transformed_parameters,
+                 posterior          = posterior,
+                 state              = state,
+                 loglik             = loglik, # loglik values and info
+                 loglik_case        = loglik_case,
+                 summary_table      = summary_table,
+                 ClassConditional   = ClassConditional,
+                 RespConditional    = RespConditional,
+                 probCat            = probCat
+  )
+
+  return(llca)
 
 }
 
