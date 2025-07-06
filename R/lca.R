@@ -367,13 +367,13 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   }
 
+  class(llca_list) <- "llca.list"
+
   if(nmodels == 1){
     return(llca_list[[1]])
   }else{
     return(llca_list)
   }
-
-  class(llca_list) <- "llca_list"
 
 
 }
