@@ -41,6 +41,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     stop("data must be a matrix or data.frame")
   }
 
+  model0 <- model
   NCLASSES <- nclasses
   nmodels <- length(NCLASSES)
 
@@ -89,7 +90,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Get the full model specification (in logarithm and probability scale) with
     # labels for each parameter:
     model <- getmodel(data = data, item = item, nclasses = nclasses,
-                      model = model, constraints = constraints)
+                      model = model0, constraints = constraints)
 
     # Put in a list the objects generated form the data:
     data_list <- vector("list")
