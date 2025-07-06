@@ -41,14 +41,15 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     stop("data must be a matrix or data.frame")
   }
 
-  nmodels <- length(nclasses)
+  NCLASSES <- nclasses
+  nmodels <- length(NCLASSES)
 
   llca_list <- list()
   for(NK in 1:nmodels){
 
-    print(paste0("Model nclasses = ", nclasses[NK]) )
+    print(paste0("Model nclasses = ", NCLASSES[NK]) )
 
-    nclasses <- as.integer(nclasses[NK]) # Ensure that nclasses is an integer
+    nclasses <- as.integer(NCLASSES[NK]) # Ensure that nclasses is an integer
     # Check that nclasses is a positive integer:
     if(nclasses < 1L) {
       stop("nclasses must be a positive integer")
