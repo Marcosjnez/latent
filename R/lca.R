@@ -163,14 +163,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                   probCat            = list()
       )
 
-      #return(llca) # Return information without fitting the model
-      class(llca_list) <- "llca.list"
-
-      if(nmodels == 1){
-        return(llca_list[[1]])
-      }else{
-        return(llca_list)
-      }
+      next
 
     }
 
