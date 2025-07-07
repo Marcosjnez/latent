@@ -2,7 +2,7 @@
 ## add more things as we go
 
 latInspect <- function(object,
-                       what = "free",
+                       what = "classconditional",
                        digits = 3){
 
 
