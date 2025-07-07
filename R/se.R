@@ -29,18 +29,18 @@
 #' @export
 se <- function(fit, confidence = 0.95) {
 
-  data <- fit$opt$data
-  nclasses <- length(fit$parameters$classes)
-  control_manifold <- fit$opt$manifold_setup
-  control_transform <- fit$opt$transform_setup
-  control_estimator <- fit$opt$estimator_setup
-  control_optimizer <- fit$opt$control_setup
+  data <- fit@Optim$data
+  nclasses <- length(fit@parameters$classes)
+  control_manifold <- fit@Optim$manifold_setup
+  control_transform <- fit@Optim$transform_setup
+  control_estimator <- fit@Optim$estimator_setup
+  control_optimizer <- fit@Optim$control_setup
 
-  item <- fit$modelInfo$item
+  item <- fit@modelInfo$item
   gauss <- "gaussian" %in% item
   multin <- "multinomial" %in% item
 
-  ntransparam <- length(fit$opt$transparameters)
+  ntransparam <- length(fit@Optim$transparameters)
   indices <- 1:ntransparam
   X <- vector(length = ntransparam)
   control_manifold <- control_transform <- list()
@@ -51,7 +51,7 @@ se <- function(fit, confidence = 0.95) {
                                  target_indices = indices-1L,
                                  vector_indices = indices-1L,
                                  X = X)
-  x <- fit$opt$transparameters
+  x <- fit@Optim$transparameters
   control_optimizer$parameters <- list()
   control_optimizer$parameters[[1]] <- x
 
@@ -79,12 +79,12 @@ se <- function(fit, confidence = 0.95) {
                           control_estimator = control_estimator,
                           control_optimizer = control_optimizer)
 
-  param_charvector <- unique(unlist(fit$modelInfo$prob_model))
+  param_charvector <- unique(unlist(fit@modelInfo$prob_model))
   non_alnum_indices <- grep("^(?!-?\\d+(\\.\\d+)?$)",
                             param_charvector, perl = TRUE)
   rownames(H) <- colnames(H) <- param_charvector[non_alnum_indices]
 
-  nconstraints <- length(fit$opt$outputs$transformations$vectors)
+  nconstraints <- length(fit@Optim$outputs$transformations$vectors)
 
   # Total number of rows is the number of parameters
   nparam <- length(x)
@@ -94,7 +94,7 @@ se <- function(fit, confidence = 0.95) {
 
   for(i in 1:nconstraints) {
 
-    constraints0 <- fit$opt$outputs$transformations$vectors
+    constraints0 <- fit@Optim$outputs$transformations$vectors
     if(!is.null(constraints0[[i]][1][[1]])) {
       v <- constraints0[[i]][[1]]
       ind <- constraints0[[i]][[2]]+1
@@ -105,9 +105,9 @@ se <- function(fit, confidence = 0.95) {
 
   constraints <- constraints[non_alnum_indices, ]
 
-  ind_target <- fit$opt$args$indices_full_transparam_vector
-  ind_select <- fit$opt$args$indices_transparam_vector2
-  se_type <- fit$modelInfo$prob_model
+  ind_target <- fit@Optim$args$indices_full_transparam_vector
+  ind_select <- fit@Optim$args$indices_transparam_vector2
+  se_type <- fit@modelInfo$prob_model
   se_type$classes[] <- "prob"
   indices <- which(item == "multinomial")
   for(i in indices) {
@@ -151,15 +151,15 @@ se <- function(fit, confidence = 0.95) {
   se <- vector(length = nparam)
   se[keep] <- se0
   se[remove] <- NA
-  names(se) <- fit$opt$args$transparameter_vector
+  names(se) <- fit@Optim$args$transparameter_vector
 
-  Se <- vector(length = length(unlist(fit$parameters)))
+  Se <- vector(length = length(unlist(fit@parameters)))
   Se[ind_target] <- se[ind_select[!is.na(ind_select)]]
-  SE <- fill_list_with_vector(fit$transformed_parameters, Se)
+  SE <- fill_list_with_vector(fit@transformed_pars, Se)
 
   C <- matrix(NA, nrow = nparam, ncol = nparam)
   C[keep, keep] <- C0
-  rownames(C) <- colnames(C) <- fit$opt$args$transparameter_vector
+  rownames(C) <- colnames(C) <- fit@Optim$args$transparameter_vector
 
   conf <- function(x, se, confidence, type) {
 
@@ -197,14 +197,14 @@ se <- function(fit, confidence = 0.95) {
   ci <- sapply(1:nparam, FUN = \(i) conf(x[i], se[i], confidence = confidence,
                                          type = type[i]))
   rownames(ci) <- c("lower", "upper")
-  colnames(ci) <- fit$opt$args$transparameter_vector
+  colnames(ci) <- fit@Optim$args$transparameter_vector
 
   ci0 <- format(round(rbind(x, ci), 2), nsmall = 2)
   Ci <- apply(ci0, MARGIN = 2, FUN = \(x) paste(x[1], " (", x[2], " - ", x[3], ")",
                                                 sep = "", collapse = ""))
-  CI <- vector(length = length(unlist(fit$parameters)))
+  CI <- vector(length = length(unlist(fit@parameters)))
   CI[ind_target] <- Ci[ind_select[!is.na(ind_select)]]
-  CI <- fill_list_with_vector(fit$transformed_parameters, CI)
+  CI <- fill_list_with_vector(fit@transformed_pars, CI)
 
   result <- list()
   result$se <- se
