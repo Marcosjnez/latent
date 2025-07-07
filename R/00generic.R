@@ -30,16 +30,11 @@ setMethod("show", "llca", function(object) {
 })
 
 
-inspect.llca <- function(object, ...) {
-  lInspect.llca(object, ...)
-}
-
-setMethod("inspect", "llca", lInspect.llca)
 
 ## use lInspect everywhere we can:
 ## add more things as we go
 
-lInspect.llca <- function(object,
+latInspect <- function(object,
                           what = "free",
                           digits = 3){
 
