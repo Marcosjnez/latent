@@ -145,7 +145,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                   args = args)
 
       #result$opt <- opt
-      llca <- new("llca",
+      llca_list[[NK]] <- new("llca",
                   version            = as.character( packageVersion('latent') ),
                   call               = mc, # matched call
                   timing             = numeric(), # timing information
@@ -163,7 +163,14 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                   probCat            = list()
       )
 
-      return(llca) # Return information without fitting the model
+      #return(llca) # Return information without fitting the model
+      class(llca_list) <- "llca.list"
+
+      if(nmodels == 1){
+        return(llca_list[[1]])
+      }else{
+        return(llca_list)
+      }
 
     }
 
