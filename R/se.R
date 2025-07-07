@@ -27,7 +27,7 @@
 #' None yet.
 #'
 #' @export
-se <- function(fit, confidence = 0.95) {
+se <- function(fit, confidence = 0.95, digits = 2) {
 
   data <- fit@Optim$data
   nclasses <- length(fit@parameters$classes)
@@ -199,7 +199,7 @@ se <- function(fit, confidence = 0.95) {
   rownames(ci) <- c("lower", "upper")
   colnames(ci) <- fit@Optim$args$transparameter_vector
 
-  ci0 <- format(round(rbind(x, ci), 2), nsmall = 2)
+  ci0 <- format(round(rbind(x, ci), digits), nsmall = 2)
   Ci <- apply(ci0, MARGIN = 2, FUN = \(x) paste(x[1], " (", x[2], " - ", x[3], ")",
                                                 sep = "", collapse = ""))
   CI <- vector(length = length(unlist(fit@parameters)))
