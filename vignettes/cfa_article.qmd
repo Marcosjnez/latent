@@ -1,0 +1,29 @@
+---
+title: "The Confirmatory Factor model"
+format: html
+---
+
+```{r load, include=FALSE}
+library(latent, quietly=TRUE)
+```
+
+Article in progress...
+
+# The Confirmatory Factor model
+
+
+## The likelihood
+
+
+## First-order derivatives
+
+
+## Second-order derivatives
+
+
+## Evaluating the likelihood
+
+
+
+
+

@@ -1,0 +1,164 @@
+/*
+ * Author: Marcos Jimenez
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 20/07/2025
+ */
+
+const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);
+
+// Logarithm gaussian density transformation:
+
+arma::vec ldnorm(arma::vec x, arma::vec mean, arma::vec sd) {
+  x -= mean;
+  arma::vec sd2 = sd % sd;
+  arma::vec lpd = -0.5 * x % x/sd2 - arma::trunc_log(SQRT2M_PI*sd);
+  // lpd.elem( arma::find_nonfinite(lpd) ).zeros();
+  return lpd;
+}
+
+// [[Rcpp::export]]
+arma::mat reshape_block(const arma::vec& v, std::size_t k) {
+  // Reshape a vector as a block matrix with k columns
+  std::size_t n = v.n_elem;
+  std::size_t bs = n / k;
+  arma::mat M(n, k, arma::fill::zeros);
+  for (std::size_t t = 0; t < n; ++t) {
+    M(t, t / bs) = v(t);
+  }
+  return M;
+}
+
+class normal:public transformations {
+
+public:
+
+  arma::uvec mu_indices;
+  arma::uvec sigma_indices;
+  arma::vec y, mu, x, x2, sigma, sigma2;
+  // arma::vec newgrad;
+
+  void transform() {
+
+    mu_indices = indices_in[1];
+    sigma_indices = indices_in[2];
+    mu = transparameters.elem(mu_indices);
+    sigma = transparameters.elem(sigma_indices);
+
+    x = y - mu;
+    sigma2 = sigma % sigma;
+    x2 = arma::square(x);
+    transparameters = -0.5 * x2/sigma2 -
+      arma::trunc_log(sigma) - LOG2M_PI05;
+
+    // x = y;
+    // x -= mu;
+    //
+    // // 2) sigma2 = sigma^2  (1 pass)
+    // sigma2 = sigma;
+    // sigma2 %= sigma;
+    //
+    // // 3) transparameters = −0.5 * x^2 / sigma2  (1 pass)
+    // transparameters = x;
+    // transparameters %= x;
+    // transparameters /= sigma2;
+    // transparameters *= -0.5;
+    //
+    // // 4) subtract log term (combined with constant)  (1 pass)
+    // transparameters -= (arma::trunc_log(sigma) + LOG2M_PI05);
+
+  }
+
+  void jacobian() {
+
+    // jacob.set_size(transparameters.n_elem, parameters.n_elem);
+    // jacob.zeros();
+
+    // // compute exp(...) once  (1 pass)
+    // arma::vec exp_tp = arma::trunc_exp(transparameters);
+    //
+    // // compute dmu = grad * x / sigma2 * exp_tp  (1 pass)
+    // arma::vec dmu = grad;
+    // dmu %= x;
+    // dmu /= sigma2;
+    // dmu %= exp_tp;
+    //
+    // // compute dsigma = grad * (x^2 – sigma2)/(sigma2 * sigma) * exp_tp  (1 pass)
+    // arma::vec tmp = x;
+    // tmp %= x;
+    // tmp -= sigma2;
+    // tmp /= (sigma2 % sigma);
+    // arma::vec dsigma = grad;
+    // dsigma %= tmp;
+    // dsigma %= exp_tp;
+
+    arma::vec exp_transparameters = arma::trunc_exp(transparameters);
+    arma::vec dmu = grad % x/sigma2 % exp_transparameters;
+    arma::vec dsigma = grad % (x2 - sigma2) /
+      (sigma2 % sigma) % exp_transparameters;
+
+    grad.resize(indices_in[0].n_elem); grad.zeros();
+    grad(mu_indices) += dmu;
+    grad(sigma_indices) += dsigma;
+
+    // Resize to allocate the gradient of the input parameters:
+
+    // arma::vec newgrad(indices_in[0].n_elem, arma::fill::zeros);
+    // newgrad.zeros();
+    // newgrad(mu_indices) += dmu;
+    // newgrad(sigma_indices) += dsigma;
+    // grad = newgrad;
+
+  }
+
+  void d2jacobian() {
+
+    // jacob2.set_size(y.n_elem, parameters.n_elem, parameters.n_elem);
+    // arma::vec d2means = transparameters %
+    //   (y % y - 2*means*y + means % means - vars) / (vars % vars);
+    // arma::vec d2sds = transparameters % ((1/vars - 3*x % x / (vars % vars)) +
+    //   (x % x - vars) % (x % x - vars) / (vars % vars % vars));
+    // arma::vec d2meanssds = transparameters % x % (x % x - 3*vars) /
+    //   (vars % vars % sds);
+    //
+    // for (std::size_t i = 0; i < parameters.n_elem; ++i) {
+    //   for (std::size_t j = i; j < parameters.n_elem; ++j) {
+    //
+    //   }
+    //
+    // }
+  }
+
+  void dconstraints() {
+
+  }
+
+  void outcomes() {
+
+    matrices.resize(1);
+    matrices[0] = jacob;
+
+    cubes.resize(1);
+    cubes[0] = jacob2;
+
+  }
+
+};
+
+normal* choose_normal(const Rcpp::List& trans_setup) {
+
+  normal* mytrans = new normal();
+
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  arma::vec y = trans_setup["y"];
+
+  // arma::vec newgrad(indices_in[0].n_elem);
+
+  mytrans->indices_in = indices_in;
+  mytrans->indices_out = indices_out;
+  mytrans->y = y;
+  // mytrans->newgrad = newgrad;
+
+  return mytrans;
+
+}

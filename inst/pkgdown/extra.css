@@ -1,0 +1,13 @@
+body {
+  font-family: "Merriweather", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: "Lato", sans-serif;
+}
+
+code, pre, .r {
+  font-family: "Roboto Mono", monospace;
+}

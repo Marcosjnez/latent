@@ -1,0 +1,116 @@
+---
+title: "The Latent Class model"
+format: html
+---
+
+```{r load, include=FALSE}
+library(latent, quietly=TRUE)
+```
+
+Article in progress...
+
+# Latent Class Analysis
+
+Sometimes, people belong to different groups (i.e., classes) that are due to nonobservable characteristics. This fact conditions their probability of selecting a particular response option when answering an item. Latent Class Analysis is a statistical model that estimates the probability that  a person belongs to a particular class and the conditional probabilities of selecting a particular response option conditioning in the given class.
+
+## The likelihood
+
+Suppose that a sample of people respond to $J$ items and $\boldsymbol{y}$ is a vector that contains the scores to each item $j$. Also, let $K$ denote the number of latent classes and $x_k$, the specific class $k$. Then, the likelihood of this response pattern $\boldsymbol{y}$, if it was observed $n$ times in the sample, can be written as
+
+$$
+\begin{aligned}
+l &= P(\boldsymbol{y})^n \\
+&= \Bigg (\sum_{k=1}^K P(x_k)P(\boldsymbol{y}|x_k)\Bigg)^n,
+\end{aligned}
+$$
+
+Assuming local independence, we can rewrite the conditional probabilities as
+
+$$
+P(\boldsymbol{y}|x_k) = \prod_{j=1}^J P(y_j|x_k),
+$$
+
+where $y_j$ denotes the score in item $j$. 
+
+With this assumption, the likelihood can be rewritten as
+$$l = \Bigg(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Bigg)^n,$$
+
+and the logarithm likelihood becomes
+$$ll = n \log\Bigg(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Bigg).$$
+
+## First-order derivatives
+
+The partial derivative of $ll$  with respect to the probability of belonging to the class $k$ is
+$$
+\frac{\partial ll}{\partial P(x_g)} = \frac{n}{\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)} \prod_{j=1}^J P(y_j|x_g).
+$$
+
+On the other hand, the partial derivative of $ll$ with respect to the probability of scoring a particular $y_j$ while belonging to the class $k$ is
+$$
+\frac{\partial ll}{\partial P(y_m|x_g)} = \frac{n}{\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)} P(x_g)\prod_{j\neq m} P(y_j|x_g).
+$$
+
+## Second-order derivatives
+
+The second partial derivative of $ll$  with respect to the probability of belonging to the class $k$ is
+
+$$
+\frac{\partial^2 ll}{\partial P(x_g) \partial P(x_h)} = -\frac{n \prod_{j=1}^J P(y_j|x_h) \prod_{j=1}^J P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}
+$$
+
+$$
+\frac{\partial ll}{\partial P(y_m|x_g) P(y_m|x_g)} = -\frac{n P(x_g)\prod_{j \neq m} P(y_j|x_g) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+$$
+
+$$
+\frac{\partial ll}{\partial P(y_m|x_g) P(y_n|x_g)} = \frac{n \sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k) P(x_g) \prod_{j\neq m,n} P(y_j|x_g) - n P(x_g)\prod_{j \neq n} P(y_j|x_g) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+$$
+
+The second partial derivative of $ll$ with respect to the probability of scoring a particular $y_m$ or $y_n$ while belonging to the class $g$ or $h$ is
+$$
+\frac{\partial ll}{\partial P(y_m|x_g) P(y_n|x_h)} = -\frac{n P(x_h) \prod_{j\neq n} P(y_j|x_h) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+$$
+
+The second partial derivative of $ll$ between the probability of belonging to the class $g$ and the probability of scoring a particular $y_m$ while belonging to the class $h$ is
+
+$$
+\frac{\partial ll}{\partial P(x_g) \partial P(y_m|x_g)} = \frac{n \prod_{j\neq m} P(y_j|x_g) \sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k) - n \prod_{j=1}^J P(y_j|x_g) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+$$
+
+$$
+\frac{\partial ll}{\partial P(x_h) \partial P(y_m|x_g)} = -\frac{n \prod_{j=1}^J P(y_j|x_h) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+$$
+
+## Model for the conditional probabilities
+
+### Bernoulli
+
+When $y_j$ is a bernoulli random variable, the conditional probability becomes
+$$
+P(y_j|x_k) = \theta_j^{y_j} (1-\theta_j)^{1-y_j},
+$$
+where $\theta_j$ is the probability of endorsing item $j$ (i.e., $y_j=1$).
+
+Its partial derivative with respect to $\theta_j$ is
+$$
+\frac{\partial P(y_j|x_k)}{\theta_j} = \frac{1}{2y_j - 1}.
+$$
+
+### Multinomial
+
+$$
+\frac{\partial P(y_m|x_g)}{\partial \theta_{m_k|g}} = \frac{n}{l} P(x_g)\prod_{j\neq m} P(y_j|x_g).
+$$
+
+### Gaussian
+
+## Link function
+
+softmax
+
+## Evaluating the likelihood
+
+trick to prevent undeflow
+
+
+
