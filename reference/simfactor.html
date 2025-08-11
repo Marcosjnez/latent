@@ -180,11 +180,40 @@ or increase (if setting pure items).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-
-
-
+    <p>Cudeck, R., &amp; Browne, M. W. (1992). Constructing a covariance matrix that yields a specified minimizer and a specified minimum discrepancy function value. <em>Psychometrika, 57</em>(3), 357–369. <a href="https://doi.org/10.1007/BF02295424" class="external-link">doi:10.1007/BF02295424</a></p>
+<p>Jiménez, M., Abad, F. J., Garcia-Garzon, E., &amp; Garrido, L. E. (2023). Exploratory Bi-factor Analysis with Multiple General Factors. <em>Multivariate Behavioral Research, 58</em>(6), 1072–1089. <a href="https://doi.org/10.1080/00273171.2023.2189571" class="external-link">doi:10.1080/00273171.2023.2189571</a></p>
+<p>Jiménez, M., Abad, F. J., Garcia-Garzon, E., Golino, H., Christensen, A. P., &amp; Garrido, L. E. (2023). Dimensionality assessment in bifactor structures with multiple general factors: A network psychometrics approach. <em>Psychological Methods</em>. Advance online publication. <a href="https://doi.org/10.1037/met0000590" class="external-link">doi:10.1037/met0000590</a></p>
+<p>Yuan, K.-H., &amp; Hayashi, K. (2003). Bootstrap approach to inference and power analysis based on three test statistics for covariance structure models. <em>British Journal of Mathematical and Statistical Psychology, 56</em>(1), 93–110. <a href="https://doi.org/10.1348/000711003321645368" class="external-link">doi:10.1348/000711003321645368</a></p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Simulate data:</span></span></span>
+<span class="r-in"><span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu">simfactor</span><span class="op">(</span>nfactors <span class="op">=</span> <span class="fl">3</span>, nitems <span class="op">=</span> <span class="fl">4</span>, correlations <span class="op">=</span> <span class="fl">0.40</span>,</span></span>
+<span class="r-in"><span>                 crossloadings <span class="op">=</span> <span class="fl">0.30</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">sim</span><span class="op">$</span><span class="va">lambda</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               S1        S2        S3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item1  0.4995555 0.0000000 0.3000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item2  0.4579534 0.0000000 0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item3  0.5465764 0.0000000 0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item4  0.5545043 0.0000000 0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item5  0.3000000 0.5749201 0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item6  0.0000000 0.4349881 0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item7  0.0000000 0.4068483 0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item8  0.0000000 0.4640771 0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item9  0.0000000 0.3000000 0.4804656</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item10 0.0000000 0.0000000 0.4391340</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item11 0.0000000 0.0000000 0.4807076</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item12 0.0000000 0.0000000 0.4127323</span>
+<span class="r-in"><span><span class="va">sim</span><span class="op">$</span><span class="va">Phi</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      [,1] [,2] [,3]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  1.0  0.4  0.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]  0.4  1.0  0.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,]  0.4  0.4  1.0</span>
+<span class="r-in"><span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu">MASS</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/MASS/man/mvrnorm.html" class="external-link">mvrnorm</a></span><span class="op">(</span><span class="fl">1e3</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">R_error</span><span class="op">)</span><span class="op">)</span>, Sigma <span class="op">=</span> <span class="va">sim</span><span class="op">$</span><span class="va">R_error</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">scores</span><span class="op">)</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
