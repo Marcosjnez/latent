@@ -1,4 +1,4 @@
-#' Example dataset: empathy
+#' Example dataset: values
 #'
 #' A dataset from the poLCA R package with 216 rows and 4 columns.
 #' All the 4 columns are dichotomous items.

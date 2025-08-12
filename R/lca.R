@@ -112,15 +112,16 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #### Create the model ####
 
     # Get the model specification:
-    full_model <- get_full_lca_model(data_list = data_list, item = item,
-                                     nclasses = nclasses, model = model,
+    full_model <- get_full_lca_model(data_list = data_list, nclasses = nclasses,
+                                     item = item, model = model,
                                      control = control)
     list2env(full_model, envir = environment())
 
     # Get the short model specification (in logarithm and probability scale) with
     # labels for each parameter:
-    short_model <- get_short_lca_model(data = data, item = item, nclasses = nclasses,
-                                       lca_trans = lca_trans, model = model)
+    short_model <- get_short_lca_model(data = data, nclasses = nclasses,
+                                       item = item, lca_trans = lca_trans,
+                                       model = model)
     list2env(short_model, envir = environment())
 
     #### Create the structures ####
@@ -185,17 +186,10 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     # Collect all the information about the optimization:
 
-    Optim <- list(data = data,
-                  data_list = data_list,
-                  control_manifold = control_manifold,
-                  control_transform = control_transform,
-                  control_estimator = control_estimator,
-                  control = control,
-                  opt = x)
+    Optim$opt <- x
 
     #### Process the outputs ####
 
-    ## Collect information from the fitted model ##
     # Logarithm likelihood:
     loglik <- -x$f
     # Logarithm likelihood of each response pattern:
@@ -241,60 +235,41 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     raw_model <- fill_list_with_vector(log_model, out)
     raw_model <- allnumeric(raw_model)
 
-    ClassConditional <- RespConditional <- probCat <- list()
+    ClassConditional <- user_model$items
+    RespConditional <- probCat <- list() # Only for full multinomial models
 
-    # Additional outputs only for multinomial models:
-    # if(multin & !gauss) {
-    #
-    #   classes <- x$outputs$estimators$vectors[[2]][[1]]
-    #
-    #   # For multinomial items:
-    #   indices <- which(item == "multinomial")
-    #   # Initialize the outputs:
-    #   nitems <- length(indices) # Number of items in the data
-    #   ClassConditional <- RespConditional <- vector("list", length = nitems)
-    #   names(ClassConditional) <- names(RespConditional) <- paste("Item", 1:nitems)
-    #   multinomial_conditionals <- lapply(x$outputs$estimators$list_matrices[[1]][[1]], FUN = \(x) {
-    #     # Extract P(y|X):
-    #     ncategories <- length(x)/nclasses
-    #     result <- matrix(x, nrow = ncategories, ncol = nclasses)
-    #     colnames(result) <- paste("Class", 1:nclasses, sep = "")
-    #     rownames(result) <- paste("Category", 1:ncategories, sep = "")
-    #     return(result)
-    #   })
-    #   names(multinomial_conditionals) <- paste("Item", 1:nitems)
-    #
-    #   ClassConditional[indices] <- multinomial_conditionals
-    #
-    #   probCat <- lapply(multinomial_conditionals, FUN = \(mat) {
-    #     # Calculate P(y|X)*P(X), the joint probability:
-    #     jointp <- t(mat) * classes
-    #     # Calculate P(y), the denominator of the posterior:
-    #     probCat <- colSums(jointp)
-    #     return(probCat)
-    #   })
-    #
-    #   RespConditional[indices] <- lapply(multinomial_conditionals, FUN = \(mat) {
-    #     # Calculate P(y|X)*P(X), the joint probability:
-    #     jointp <- t(mat) * classes
-    #     # Calculate P(y), the denominator of the posterior:
-    #     probCat <- colSums(jointp)
-    #     # Calculate P(X|y) = P(y|X)*P(X)/P(y), the posterior:
-    #     posterior <- t(jointp) / probCat
-    #     return(posterior)
-    #   })
-    #
-    #   result$ClassConditional <- multinomial_conditionals
-    #   result$RespConditional <- RespConditional[indices]
-    #   names(result$RespConditional) <- paste("Item", 1:nitems)
-    #   result$probCat <- probCat
-    #
-    # }
+    # Additional outputs for full multinomial models:
+    if(all(item == "multinomial")) {
+
+      classes <- user_model$classes
+      conditionals <- user_model$items
+
+      probCat <- lapply(conditionals, FUN = \(mat) {
+        # Calculate P(y|X)*P(X), the joint probability:
+        jointp <- t(mat) * classes
+        # Calculate P(y), the denominator of the posterior:
+        probCat <- colSums(jointp)
+        return(probCat)
+      })
+
+      RespConditional <- lapply(conditionals, FUN = \(mat) {
+        # Calculate P(y|X)*P(X), the joint probability:
+        jointp <- t(mat) * classes
+        # Calculate P(y), the denominator of the posterior:
+        probCat <- colSums(jointp)
+        # Calculate P(X|y) = P(y|X)*P(X)/P(y), the posterior:
+        posterior <- t(jointp) / probCat
+        return(posterior)
+      })
+
+      names(RespConditional) <- colnames(data)
+
+    }
 
     #### Return ####
 
     loglik_case <- loglik_case[short2full]
-    posterior <- posterior[short2full, ]
+    posterior <- posterior[short2full, , drop = FALSE]
     state <- state[short2full]
     rownames(posterior) <- names(state) <-
       names(loglik_case) <- rownames(data)
