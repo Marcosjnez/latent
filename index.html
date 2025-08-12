@@ -92,22 +92,20 @@
 <div class="section level1">
 <h1 id="installation-in-macos">Installation in macOS<a class="anchor" aria-label="anchor" href="#installation-in-macos"></a>
 </h1>
-<p>Install Command Line Tools:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>xcode<span class="sc">-</span>select <span class="sc">--</span>install</span></code></pre></div>
-<p>Install Homebrew:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="sc">/</span>bin<span class="sc">/</span>bash <span class="sc">-</span>c <span class="st">"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</span></span></code></pre></div>
-<p>Install OpenMP support:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>brew update <span class="sc">&amp;&amp;</span> brew install libomp</span></code></pre></div>
-<p>Update Makevars</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>add the following lines to <span class="sc">~</span><span class="er">/</span>.R<span class="sc">/</span>Makevars.</span></code></pre></div>
-<p>On Intel Macs:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>CPPFLAGS <span class="sc">+</span><span class="er">=</span> <span class="sc">-</span>Xclang <span class="sc">-</span>fopenmp</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>LDFLAGS <span class="sc">+</span><span class="er">=</span> <span class="sc">-</span>lomp</span></code></pre></div>
-<p>On Apple Silicon Macs (make sure this goes at the end of the file):</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>LDFLAGS <span class="sc">+</span><span class="er">=</span> <span class="sc">-</span>L<span class="sc">/</span>opt<span class="sc">/</span>homebrew<span class="sc">/</span>opt<span class="sc">/</span>libomp<span class="sc">/</span>lib <span class="sc">-</span>lomp</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>CPPFLAGS <span class="sc">+</span><span class="er">=</span> <span class="sc">-</span>I<span class="sc">/</span>opt<span class="sc">/</span>homebrew<span class="sc">/</span>opt<span class="sc">/</span>libomp<span class="sc">/</span>include <span class="sc">-</span>Xclang <span class="sc">-</span>fopenmp</span></code></pre></div>
+<p>Install the <code>macrtools</code> R package of James Balamuta:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># install.packages("remotes")</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"coatless-mac/macrtools"</span>)</span></code></pre></div>
+<p>Install Command Line Tools and the R Compilation Toolchain (this will take some minutes):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>macrtools<span class="sc">::</span><span class="fu">macos_rtools_install</span>()</span></code></pre></div>
+<p>Get OpenMP support:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>macrtools<span class="sc">::</span><span class="fu">openmp_install</span>()</span></code></pre></div>
+<p>Please, if you difficulties during the installation, check the following resources:</p>
+<ul>
+<li><a href="https://mac.thecoatlessprofessor.com/macrtools/index.html" class="external-link uri">https://mac.thecoatlessprofessor.com/macrtools/index.html</a></li>
+<li><a href="https://mac.thecoatlessprofessor.com/macrtools/reference/openmp.html" class="external-link uri">https://mac.thecoatlessprofessor.com/macrtools/reference/openmp.html</a></li>
+</ul>
 <p>Finally,</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
 <div class="section level2">
 <h2 id="funding">Funding<a class="anchor" aria-label="anchor" href="#funding"></a>
 </h2>
