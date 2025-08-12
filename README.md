@@ -25,7 +25,7 @@ Get OpenMP support:
 
     macrtools::openmp_install()
 
-Please, if you difficulties during the installation, check the following resources:
+If you have difficulties during the installation, check the following resources:
 
 * https://mac.thecoatlessprofessor.com/macrtools/index.html
 * https://mac.thecoatlessprofessor.com/macrtools/reference/openmp.html
