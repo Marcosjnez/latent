@@ -12,32 +12,24 @@ Fit measurement models with discrete or continuous latent variables.
 
 # Installation in macOS
 
-Install Command Line Tools:
+Install the `macrtools` R package of James Balamuta:
 
-    xcode-select --install
+    # install.packages("remotes")
+    remotes::install_github("coatless-mac/macrtools")
 
-Install Homebrew:
- 
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+Install Command Line Tools and the R Compilation Toolchain (this will take some minutes):
+
+    macrtools::macos_rtools_install()
+
+Get OpenMP support:
+
+    macrtools::openmp_install()
+
+Please, if you difficulties during the installation, check the following resources:
+
+* https://mac.thecoatlessprofessor.com/macrtools/index.html
+* https://mac.thecoatlessprofessor.com/macrtools/reference/openmp.html
     
-Install OpenMP support:
-
-    brew update && brew install libomp
-    
-Update Makevars
-
-    add the following lines to ~/.R/Makevars.
-
-On Intel Macs:
-
-    CPPFLAGS += -Xclang -fopenmp
-    LDFLAGS += -lomp
-
-On Apple Silicon Macs (make sure this goes at the end of the file):
-
-    LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp
-    CPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xclang -fopenmp
-
 Finally,
 
     devtools::install_github("marcosjnez/latent")
