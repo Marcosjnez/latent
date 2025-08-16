@@ -3,7 +3,7 @@
 \docType{data}
 \name{values}
 \alias{values}
-\title{Example dataset: empathy}
+\title{Example dataset: values}
 \format{
 A data frame with 467 rows and 13 variables:
 \describe{

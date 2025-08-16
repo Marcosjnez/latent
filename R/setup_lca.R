@@ -202,10 +202,12 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     # For mu, they will be the mean of the items
     # For s, they will be the sd of the items
     init_mu <- rep(colMeans(data[, gauss], na.rm = TRUE), times = nclasses)
-    init_s <- rep(log(apply(data[, gauss], MARGIN = 2, FUN = sd, na.rm = TRUE)),
+    init_sd <- rep(apply(data[, gauss], MARGIN = 2, FUN = sd, na.rm = TRUE),
                   times = nclasses)
+    init_s <- log(init_sd)
     for(i in 1:control$rstarts) {
-      init_param[[i]] <- c(init_param[[i]], init_mu, init_s)
+      init_mui <- rnorm(Jgauss*nclasses, init_mu, init_sd/sqrt(nobs))
+      init_param[[i]] <- c(init_param[[i]], init_mui, init_s)
     }
 
   }
@@ -217,7 +219,7 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     Jmulti <- length(multinom) # Number of multinomial items
     # Collect the number of response categories:
     K <- apply(data[, multinom], MARGIN = 2, FUN = \(x) length(unique(x)))
-    Ks <- rep(K, each = nclasses)
+    Ks <- rep(K, times = nclasses)
     repitems <- rep(multinom, times = nclasses)
     repclasses <- rep(1:nclasses, each = Jmulti)
     repitemsK <- rep(repitems, times = Ks)
@@ -508,7 +510,7 @@ get_lca_structures <- function(data_list, full_model) {
     multinom <- which(item == "multinomial")
     Jmulti <- length(multinom) # Number of multinomial items
     K <- apply(data[, multinom], MARGIN = 2, FUN = \(x) length(unique(x)))
-    Ks <- rep(K, each = nclasses)
+    Ks <- rep(K, times = nclasses)
 
     for(i in 1:(Jmulti*nclasses)) {
 
@@ -545,6 +547,9 @@ get_lca_structures <- function(data_list, full_model) {
     }
     dummy <- rep(dummy, times = nclasses)
     dummy_indices <- which(as.logical(dummy))
+    # dummy <- unname(cumsum(rep(K, each = npatterns)) - K[1] + c(patterns[, multinom]))
+    # dummy_indices <- rep(dummy, Jmulti) + rep(seq(0L, Jmulti-1L) * (max(dummy) + 1L),
+    #                                          each = npatterns*Jmulti)
     # petas contributing to the likelihood for each (by class):
     peta_indices <- peta_indices[dummy_indices]
     indices_in <- list(indices_in-1L, peta_indices-1L)
@@ -585,4 +590,7 @@ get_lca_structures <- function(data_list, full_model) {
 
 }
 
+# indices <- control_transform[[11]]$indices_in[[2]]+1L
+# cbind(control_transform[[11]]$labels_in[indices],
+# control_transform[[11]]$labels_out)
 

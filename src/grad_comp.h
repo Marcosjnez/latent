@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/07/2025
+ * Modification date: 15/08/2025
  */
 
 Rcpp::List grad_comp(Rcpp::List control_manifold,
@@ -124,6 +124,10 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   final_manifold->proj(x, xmanifolds);
   if(compute == "rg") return result;
 
+  final_estimator->H(x, xestimators);
+  result["hess"] = x.h;
+  if(compute == "hess") return result;
+
   final_estimator->outcomes(x, xestimators);
   result["doubles"] = std::get<0>(x.outputs_estimator);
   result["vectors"] = std::get<1>(x.outputs_estimator);
@@ -136,7 +140,6 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["dg"] = x.dg;
   result["rg"] = x.rg;
   // result["J"] = xtransforms[0]->jacob;
-  result["h"] = x.h;
 
   /*
    * NUMERICAL DERIVATIVES

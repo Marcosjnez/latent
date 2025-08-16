@@ -50,22 +50,6 @@ public:
     transparameters = -0.5 * x2/sigma2 -
       arma::trunc_log(sigma) - LOG2M_PI05;
 
-    // x = y;
-    // x -= mu;
-    //
-    // // 2) sigma2 = sigma^2  (1 pass)
-    // sigma2 = sigma;
-    // sigma2 %= sigma;
-    //
-    // // 3) transparameters = −0.5 * x^2 / sigma2  (1 pass)
-    // transparameters = x;
-    // transparameters %= x;
-    // transparameters /= sigma2;
-    // transparameters *= -0.5;
-    //
-    // // 4) subtract log term (combined with constant)  (1 pass)
-    // transparameters -= (arma::trunc_log(sigma) + LOG2M_PI05);
-
   }
 
   void jacobian() {
@@ -73,40 +57,12 @@ public:
     // jacob.set_size(transparameters.n_elem, parameters.n_elem);
     // jacob.zeros();
 
-    // // compute exp(...) once  (1 pass)
-    // arma::vec exp_tp = arma::trunc_exp(transparameters);
-    //
-    // // compute dmu = grad * x / sigma2 * exp_tp  (1 pass)
-    // arma::vec dmu = grad;
-    // dmu %= x;
-    // dmu /= sigma2;
-    // dmu %= exp_tp;
-    //
-    // // compute dsigma = grad * (x^2 – sigma2)/(sigma2 * sigma) * exp_tp  (1 pass)
-    // arma::vec tmp = x;
-    // tmp %= x;
-    // tmp -= sigma2;
-    // tmp /= (sigma2 % sigma);
-    // arma::vec dsigma = grad;
-    // dsigma %= tmp;
-    // dsigma %= exp_tp;
-
-    arma::vec exp_transparameters = arma::trunc_exp(transparameters);
-    arma::vec dmu = grad % x/sigma2 % exp_transparameters;
-    arma::vec dsigma = grad % (x2 - sigma2) /
-      (sigma2 % sigma) % exp_transparameters;
+    arma::vec dmu = grad % x/sigma2;
+    arma::vec dsigma = grad % (x2 - sigma2) / (sigma2 % sigma);
 
     grad.resize(indices_in[0].n_elem); grad.zeros();
     grad(mu_indices) += dmu;
     grad(sigma_indices) += dsigma;
-
-    // Resize to allocate the gradient of the input parameters:
-
-    // arma::vec newgrad(indices_in[0].n_elem, arma::fill::zeros);
-    // newgrad.zeros();
-    // newgrad(mu_indices) += dmu;
-    // newgrad(sigma_indices) += dsigma;
-    // grad = newgrad;
 
   }
 

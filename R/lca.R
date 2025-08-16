@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/08/2025
+# Modification date: 16/08/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -74,6 +74,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   # Put in a list the objects generated form the data:
   data_list <- vector("list")
   data_list$dt <- dt
+  data_list$nobs <- nobs
   data_list$patterns <- patterns
   data_list$npatterns <- npatterns
   data_list$nitems <- nitems
@@ -187,6 +188,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Collect all the information about the optimization:
 
     Optim$opt <- x
+    Optim$opt$parameters_labels <- parameters_labels
+    Optim$opt$transparameters_labels <- transparameters_labels
 
     #### Process the outputs ####
 

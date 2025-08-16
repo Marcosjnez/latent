@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/07/2025
+ * Modification date: 15/08/2025
  */
 
 /*
@@ -83,16 +83,19 @@ public:
   void G() {
 
     grad.set_size(transparameters.n_elem); grad.zeros();
-    arma::vec dclasses(I, arma::fill::zeros);
-    dloglik.zeros();
 
+    arma::vec dclasses(I, arma::fill::zeros);
+    arma::mat ditemloglik(S, I, arma::fill::zeros);
     for(int s=0; s < S; ++s) {
       for(int i=0; i < I; ++i) {
         dclasses(i) -= arma::trunc_exp(logweights[s] + latentloglik(s, i) - loglik_case(s));
-        for(int j=0; j < J; ++j) {
-          dloglik(s, j, i) -= arma::trunc_exp(logweights[s] + logposterior(s, i) - loglik(s, j, i));
-        }
+        ditemloglik(s, i) -= arma::trunc_exp(logweights[s] + logposterior(s, i));
       }
+    }
+
+    dloglik.zeros();
+    for (arma::uword k = 0; k < I; ++k) {
+      dloglik.slice(k).each_col() = ditemloglik.col(k);
     }
 
     grad.elem(indices_classes) += dclasses;
@@ -113,6 +116,10 @@ public:
     hessian.set_size(transparameters.n_elem, transparameters.n_elem);
     hessian.zeros();
 
+    arma::mat latentlik = arma::trunc_exp(latentloglik);
+    latentlik.each_col() %= arma::log(weights) / loglik_case;
+    hessian(indices_classes, indices_classes) = -latentlik.t() * latentlik;
+
   }
 
   void E() { // Update the parameter estimates
@@ -132,9 +139,10 @@ public:
     vectors[3] = logliks;
     vectors[4] = weights;
 
-    matrices.resize(2);
+    matrices.resize(3);
     matrices[0] = latentloglik;
     matrices[1] = logposterior;
+    matrices[2] = jointlogp;
 
     cubes.resize(2);
     cubes[0] = loglik;

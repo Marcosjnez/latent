@@ -21,8 +21,6 @@ public:
     peta_indices = indices_in[1]; // SxJxIxK indices
     small_logpeta = arma::trunc_log(small_peta); // JxIxK
     transparameters = small_logpeta.elem(peta_indices); // SxJxI
-    // logpeta = small_logpeta.elem(peta_indices); // SxJxIxK
-    // transparameters = logpeta.elem(dummy_indices); // SxJxI
 
   }
 
@@ -31,10 +29,8 @@ public:
     // jacob.set_size(transparameters.n_elem, parameters.n_elem);
     // jacob.zeros();
 
-    arma::vec dloglik = grad;
-    // arma::uvec final_indices = peta_indices(dummy_indices);
+    arma::vec dloglik = grad / small_peta(peta_indices);
     grad.resize(indices_in[0].n_elem); grad.zeros();
-    // grad.elem(final_indices) += dloglik;
     grad.elem(peta_indices) += dloglik;
 
   }
