@@ -76,17 +76,14 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="latent-latent-class-and-factor-analysis-models">latent: Latent Class and Factor Analysis Models<a class="anchor" aria-label="anchor" href="#latent-latent-class-and-factor-analysis-models"></a>
-</h1></div>
+  <main id="main" class="col-md-9"><p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD # latent: Latent Class and Factor Analysis Models</p>
 <div style="padding-top:1em; padding-bottom: 0.5em;">
 <p><img src="reference/figures/standard.png" width="135" align="right"></p>
 </div>
 <p>Fit measurement models with discrete or continuous latent variables.</p>
-</div>
 <div class="section level1">
-<h1 id="installation-in-windows-and-linux">Installation in Windows and Linux<a class="anchor" aria-label="anchor" href="#installation-in-windows-and-linux"></a>
-</h1>
+<div class="page-header"><h1 id="installation-in-windows-and-linux">Installation in Windows and Linux<a class="anchor" aria-label="anchor" href="#installation-in-windows-and-linux"></a>
+</h1></div>
 <div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
 </div>
 <div class="section level1">
@@ -109,7 +106,46 @@
 <div class="section level2">
 <h2 id="funding">Funding<a class="anchor" aria-label="anchor" href="#funding"></a>
 </h2>
-<p>The package development is supported by the “DYNANSE: Righting the Wrongs. A Life Course Dynamics Approach for Non-Standard Employment” project, which has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No 864471).</p>
+</div>
+</div>
+<div class="section level1">
+<h1 id="the-package-development-is-supported-by-the-dynanse-righting-the-wrongs-a-life-course-dynamics-approach-for-non-standard-employment-project-which-has-received-funding-from-the-european-research-council-erc-under-the-european-unions-horizon-2020-research-and-innovation-programme-grant-agreement-no-864471">The package development is supported by the “DYNANSE: Righting the Wrongs. A Life Course Dynamics Approach for Non-Standard Employment” project, which has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No 864471).<a class="anchor" aria-label="anchor" href="#the-package-development-is-supported-by-the-dynanse-righting-the-wrongs-a-life-course-dynamics-approach-for-non-standard-employment-project-which-has-received-funding-from-the-european-research-council-erc-under-the-european-unions-horizon-2020-research-and-innovation-programme-grant-agreement-no-864471"></a>
+</h1>
+</div>
+<div class="section level1">
+<h1 id="latent-latent-class-and-factor-analysis-models">latent: Latent Class and Factor Analysis Models<a class="anchor" aria-label="anchor" href="#latent-latent-class-and-factor-analysis-models"></a>
+</h1>
+<div style="padding-top:1em; padding-bottom: 0.5em;">
+<p><img src="reference/figures/standard.png" width="135" align="right"></p>
+</div>
+<p>Fit measurement models with discrete or continuous latent variables.</p>
+</div>
+<div class="section level1">
+<h1 id="installation-in-windows-and-linux-1">Installation in Windows and Linux<a class="anchor" aria-label="anchor" href="#installation-in-windows-and-linux-1"></a>
+</h1>
+<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
+</div>
+<div class="section level1">
+<h1 id="installation-in-macos-1">Installation in macOS<a class="anchor" aria-label="anchor" href="#installation-in-macos-1"></a>
+</h1>
+<p>Install the <code>macrtools</code> R package of James Balamuta:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># install.packages("remotes")</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"coatless-mac/macrtools"</span>)</span></code></pre></div>
+<p>Install Command Line Tools and the R Compilation Toolchain (this will take some minutes):</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>macrtools<span class="sc">::</span><span class="fu">macos_rtools_install</span>()</span></code></pre></div>
+<p>Get OpenMP support:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>macrtools<span class="sc">::</span><span class="fu">openmp_install</span>()</span></code></pre></div>
+<p>If you have difficulties during the installation, check the following resources:</p>
+<ul>
+<li><a href="https://mac.thecoatlessprofessor.com/macrtools/index.html" class="external-link uri">https://mac.thecoatlessprofessor.com/macrtools/index.html</a></li>
+<li><a href="https://mac.thecoatlessprofessor.com/macrtools/reference/openmp.html" class="external-link uri">https://mac.thecoatlessprofessor.com/macrtools/reference/openmp.html</a></li>
+</ul>
+<p>Finally,</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"marcosjnez/latent"</span>)</span></code></pre></div>
+<div class="section level2">
+<h2 id="funding-1">Funding<a class="anchor" aria-label="anchor" href="#funding-1"></a>
+</h2>
+<p>The package development is supported by the “DYNANSE: Righting the Wrongs. A Life Course Dynamics Approach for Non-Standard Employment” project, which has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No 864471). &gt;&gt;&gt;&gt;&gt;&gt;&gt; ec5a59b8cde613fd9651922dc52b2f9ef46a45da</p>
 </div>
 </div>
 
