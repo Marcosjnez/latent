@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/08/2025
+# Modification date: 17/08/2025
 #'
 #' @title
 #' Get the default model for Latent Class Analysis.
@@ -573,6 +573,9 @@ get_lca_structures <- function(data_list, full_model) {
   indices[[2]] <- indices_classes-1L
   indices[[3]] <- indices_items-1L
   labels <- transparameters_labels[all_indices]
+  SJ <- npatterns*nitems
+  hess_indices <- lapply(0:(nclasses - 1), function(i) {
+    nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
   control_estimator <- list()
   control_estimator[[1]] <- list(estimator = "lca",
                                  labels = labels,
@@ -580,7 +583,8 @@ get_lca_structures <- function(data_list, full_model) {
                                  S = npatterns,
                                  J = nitems,
                                  I = nclasses,
-                                 weights = weights)
+                                 weights = weights,
+                                 hess_indices = hess_indices)
 
   #### Return ####
 

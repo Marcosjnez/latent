@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 15/08/2025
+ * Modification date: 17/08/2025
  */
 
 Rcpp::List grad_comp(Rcpp::List control_manifold,
@@ -125,7 +125,7 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   if(compute == "rg") return result;
 
   final_estimator->H(x, xestimators);
-  result["hess"] = x.h;
+  result["hess"] = x.hess;
   if(compute == "hess") return result;
 
   final_estimator->outcomes(x, xestimators);

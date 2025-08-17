@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 16/08/2025
+# Modification date: 17/08/2025
 #'
 #' @title
 #' Latent Class Analysis.

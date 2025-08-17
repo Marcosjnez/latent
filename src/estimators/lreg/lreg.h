@@ -48,7 +48,7 @@ public:
   void H() {
 
     // Rcpp::stop("H not available");
-    hessian = 2 * predictors.t() * predictors;
+    // hess = 2 * predictors.t() * predictors;
 
   }
 

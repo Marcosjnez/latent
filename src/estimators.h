@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/07/2025
+ * Modification date: 17/08/2025
  */
 
 class estimators {
@@ -12,7 +12,7 @@ public:
   arma::vec parameters, transparameters, dparameters;
   arma::mat g, dg;
   arma::mat grad, dgrad;
-  arma::mat hessian, dparam_dS, modhessian;
+  arma::mat hess, dparam_dS, modhessian;
   arma::mat posterior, latentloglik;
   arma::vec uniquenesses;
   // arma::mat lambda, phi, psi, model, residuals;
@@ -209,13 +209,13 @@ public:
   void H(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
     int nhessian = x.transparameters.n_elem;
-    x.hessian.set_size(nhessian, nhessian); x.hessian.zeros();
+    x.hess.set_size(nhessian, nhessian); x.hess.zeros();
 
     for(int i=0; i < x.nestimators; ++i) {
 
       xestimators[i]->H();
       arma::uvec indices = xestimators[i]->indices[0];
-      x.hessian(indices, indices) += xestimators[i]->hessian;
+      x.hess(indices, indices) += xestimators[i]->hess;
 
     }
 

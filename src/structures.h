@@ -31,7 +31,7 @@ struct arguments_optim{
   bool convergence = false;
   arma::vec parameters, dparameters, g, dg, rg, drg, dH;
   arma::vec transparameters, dtransparameters, grad, dgrad;
-  arma::mat jacob, h, hessian, B;
+  arma::mat jacob, h, hess, B;
   arma::mat posterior;
   arma::mat latentloglik;
   arma::vec latentpars, loglatentpars;

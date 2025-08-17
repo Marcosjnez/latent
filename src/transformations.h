@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 21/07/2025
+ * Modification date: 17/08/2025
  */
 
 // Transformations
@@ -12,7 +12,7 @@ public:
 
   arma::vec parameters, dparameters, transparameters, dconstr;
   arma::vec grad, g;
-  arma::mat jacob;
+  arma::mat jacob, h;
   std::vector<arma::uvec> indices_in, indices_out;
   arma::cube jacob2;
 
@@ -111,7 +111,6 @@ public:
   void jacobian(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
     // Use the gradient of the transformed parameters (grad) to get the final gradient (g):
-    // Rf_error("102");
     // x.jacob.set_size(x.transparameters.n_elem, x.parameters.n_elem);
     // x.jacob.zeros();
     x.g.set_size(x.parameters.n_elem); x.g.zeros();
@@ -160,6 +159,8 @@ public:
   }
 
   void d2jacobian(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+
+    x.h.set_size(x.parameters.n_elem, x.parameters.n_elem); x.g.zeros();
 
   }
 

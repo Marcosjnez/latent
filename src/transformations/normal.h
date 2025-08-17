@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/07/2025
+ * Modification date: 17/08/2025
  */
 
 const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);
@@ -34,7 +34,7 @@ public:
 
   arma::uvec mu_indices;
   arma::uvec sigma_indices;
-  arma::vec y, mu, x, x2, sigma, sigma2;
+  arma::vec y, mu, x, x2, sigma, sigma2, sigma3, sigma4;
   // arma::vec newgrad;
 
   void transform() {
@@ -57,8 +57,9 @@ public:
     // jacob.set_size(transparameters.n_elem, parameters.n_elem);
     // jacob.zeros();
 
+    sigma3 = sigma2 % sigma;
     arma::vec dmu = grad % x/sigma2;
-    arma::vec dsigma = grad % (x2 - sigma2) / (sigma2 % sigma);
+    arma::vec dsigma = grad % (x2 - sigma2) / sigma3;
 
     grad.resize(indices_in[0].n_elem); grad.zeros();
     grad(mu_indices) += dmu;
@@ -69,19 +70,15 @@ public:
   void d2jacobian() {
 
     // jacob2.set_size(y.n_elem, parameters.n_elem, parameters.n_elem);
-    // arma::vec d2means = transparameters %
-    //   (y % y - 2*means*y + means % means - vars) / (vars % vars);
-    // arma::vec d2sds = transparameters % ((1/vars - 3*x % x / (vars % vars)) +
-    //   (x % x - vars) % (x % x - vars) / (vars % vars % vars));
-    // arma::vec d2meanssds = transparameters % x % (x % x - 3*vars) /
-    //   (vars % vars % sds);
-    //
-    // for (std::size_t i = 0; i < parameters.n_elem; ++i) {
-    //   for (std::size_t j = i; j < parameters.n_elem; ++j) {
-    //
-    //   }
-    //
-    // }
+
+    arma::mat h(indices_in[0].n_elem, indices_in[0].n_elem, arma::fill::zeros);
+
+    sigma4 = sigma3 % sigma;
+    h(mu_indices, mu_indices) += arma::diagmat(-1/sigma2);
+    h(sigma_indices, sigma_indices) += arma::diagmat(1/sigma2 - 3*x2/sigma4);
+    h(mu_indices, sigma_indices) = arma::diagmat(-2*sigma % x /sigma4);
+    h(sigma_indices, mu_indices) = h(mu_indices, sigma_indices);
+
   }
 
   void dconstraints() {

@@ -60,7 +60,7 @@ public:
   void H() {
 
     // Rcpp::stop("H not available");
-    hessian.set_size(parameters.n_elem, parameters.n_elem); hessian.zeros();
+    hess.set_size(parameters.n_elem, parameters.n_elem); hess.zeros();
 
   }
 

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 15/08/2025
+ * Modification date: 17/08/2025
  */
 
 /*
@@ -27,6 +27,7 @@ public:
   arma::cube loglik, dloglik;
   arma::mat latentloglik;
   arma::mat posterior, logposterior;
+  std::vector<arma::uvec> hess_indices;
 
   void param() {
 
@@ -54,23 +55,6 @@ public:
       logposterior.row(s) = jointlogp.row(s) - loglik_case(s);
       logliks(s) = weights(s) * loglik_case(s);
     }
-
-    // for(int i = 0; i < I; ++i) {
-    //   latentloglik.col(i) = arma::sum(loglik.slice(i), /* dim = */ 1);
-    // }
-    //
-    // // 2) add the log prior for each class to every row
-    // jointlogp = latentloglik;
-    // jointlogp.each_row() += logclasses.t();
-    //
-    // // 3) compute the per‐case log‐likelihood via the log‐sum‐exp trick
-    // arma::vec maxv = arma::max(jointlogp, /* dim = */ 1);
-    // arma::mat expshift = arma::trunc_exp(jointlogp.each_col() - maxv);
-    // loglik_case = maxv + arma::trunc_log( arma::sum(expshift, /* dim = */ 1) );
-    //
-    // // 4) posterior (still S×I) and weighted sum
-    // logposterior = jointlogp.each_col() - loglik_case;
-    // logliks = weights % loglik_case;
 
   }
 
@@ -113,12 +97,50 @@ public:
   void H() {
 
     // Rcpp::stop("H not available");
-    hessian.set_size(transparameters.n_elem, transparameters.n_elem);
-    hessian.zeros();
+    hess.set_size(transparameters.n_elem, transparameters.n_elem);
+    hess.zeros();
 
-    arma::mat latentlik = arma::trunc_exp(latentloglik);
-    latentlik.each_col() %= arma::log(weights) / loglik_case;
-    hessian(indices_classes, indices_classes) = -latentlik.t() * latentlik;
+    arma::mat posterior = arma::trunc_exp(logposterior);
+    arma::mat M(J, J, arma::fill::ones);
+
+    arma::mat post1 = posterior; post1.each_row() /= classes.t();
+    arma::mat post2 = post1; post2.each_col() %= weights;
+    hess(indices_classes, indices_classes) = post1.t() * post2;
+
+    for (int i = 0; i < I; ++i) {
+      for (int k = i; k < I; ++k) {
+        arma::vec term;
+
+        if (i == k) {
+
+          term = -weights % posterior.col(i) % (1.0 - posterior.col(k));
+
+          arma::vec rep_vec = arma::repmat(term / classes(k), J, 1);
+          hess.submat(hess_indices[i], arma::uvec{ static_cast<arma::uword>(k) }) = rep_vec;
+          hess.submat(arma::uvec{ static_cast<arma::uword>(k) }, hess_indices[i]) = rep_vec.t();
+
+          arma::mat block = arma::kron(M, arma::diagmat(term));
+          hess.submat(hess_indices[i], hess_indices[k]) = block;
+
+        } else {
+
+          term = weights % posterior.col(i) % posterior.col(k);
+
+          arma::vec rep_vec = arma::repmat(term / classes(k), J, 1);
+          hess.submat(hess_indices[i], arma::uvec{ static_cast<arma::uword>(k) }) = rep_vec;
+          hess.submat(arma::uvec{ static_cast<arma::uword>(k) }, hess_indices[i]) = rep_vec.t();
+
+          arma::vec rep_vec2 = arma::repmat(term / classes(i), J, 1);
+          hess.submat(hess_indices[k], arma::uvec{ static_cast<arma::uword>(i) }) = rep_vec2;
+          hess.submat(arma::uvec{ static_cast<arma::uword>(i) }, hess_indices[k]) = rep_vec2.t();
+
+          arma::mat block = arma::kron(M, arma::diagmat(term));
+          hess.submat(hess_indices[i], hess_indices[k]) = block;
+          hess.submat(hess_indices[k], hess_indices[i]) = block;
+
+        }
+      }
+    }
 
   }
 
@@ -161,6 +183,7 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
   int I = estimator_setup["I"];
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::vec weights = estimator_setup["weights"];
+  std::vector<arma::uvec> hess_indices = estimator_setup["hess_indices"];
 
   arma::vec classes(I);
   arma::vec logliks(S, arma::fill::zeros);
@@ -179,6 +202,7 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
   myestimator->weights = weights;
   myestimator->logweights = logweights;
   myestimator->indices = indices;
+  myestimator->hess_indices = hess_indices;
 
   myestimator->classes = classes;
   myestimator->logliks = logliks;
@@ -190,6 +214,6 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
   myestimator->posterior = posterior;
   myestimator->logposterior = logposterior;
 
- return myestimator;
+  return myestimator;
 
 }
