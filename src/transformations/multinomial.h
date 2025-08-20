@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/08/2025
+ * Modification date: 20/08/2025
  */
 
 // Logarithm multinomial probability transformation:
@@ -14,6 +14,7 @@ public:
   arma::vec small_logpeta;
   arma::vec logpeta;
   arma::uvec peta_indices;
+  arma::vec dloglik;
 
   void transform() {
 
@@ -29,13 +30,24 @@ public:
     // jacob.set_size(transparameters.n_elem, parameters.n_elem);
     // jacob.zeros();
 
-    arma::vec dloglik = grad / small_peta(peta_indices);
-    grad.resize(indices_in[0].n_elem); grad.zeros();
-    grad.elem(peta_indices) += dloglik;
+    dloglik = grad_in / small_peta(peta_indices);
+    grad_out.resize(indices_in[0].n_elem); grad_out.zeros();
+    grad_out.elem(peta_indices) += dloglik;
 
   }
 
   void d2jacobian() {
+
+    jacob.set_size(transparameters.n_elem, indices_in[0].n_elem);
+    jacob.zeros();
+    jacob.cols(peta_indices) += arma::diagmat(1/small_peta(peta_indices));
+
+    // sum_djacob.set_size(indices_in[0].n_elem, indices_in[0].n_elem);
+    // sum_djacob.zeros();
+    arma::vec djacob(indices_in[0].n_elem);
+    djacob.elem(peta_indices) += (1/small_peta(peta_indices))
+      % (1/small_peta(peta_indices)) % grad_in;
+    sum_djacob = arma::diagmat(-djacob);
 
   }
 

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2025
+ * Modification date: 18/08/2025
  */
 
 // Crossproduct transformation:
@@ -25,19 +25,21 @@ public:
   void jacobian() {
 
     // jacob = arma::diagmat(transparameters);
-    // jacob = jacob.cols(vector_indices);
-    // g = jacob * grad;
     arma::mat gradmat(p, q);
-    std::memcpy(gradmat.memptr(), grad.memptr(), grad.n_elem * sizeof(double));
-    grad = arma::vectorise(2*X * gradmat);
-    // grad = 2*grad % arma::vectorise(X.t());
-    // grad = 2*grad % arma::vectorise(X);
-    // grad = arma::vectorise((X + X.t()) * gradmat);
-    // grad = arma::vectorise(X * gradmat + X.t() * gradmat);
+    std::memcpy(gradmat.memptr(), grad_in.memptr(), grad_in.n_elem * sizeof(double));
+    grad_out = arma::vectorise(2*X * gradmat);
 
   }
 
   void d2jacobian() {
+
+    jacob = arma::diagmat(transparameters);
+
+    sum_djacob.set_size(indices_in[0].n_elem, indices_in[0].n_elem);
+    sum_djacob.zeros();
+
+    hess_out.set_size(indices_in[0].n_elem, indices_in[0].n_elem);
+    hess_out.zeros();
 
   }
 

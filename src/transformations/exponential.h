@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2025
+ * Modification date: 20/08/2025
  */
 
 // Exponential transformation:
@@ -19,13 +19,18 @@ public:
   void jacobian() {
 
     // jacob = arma::diagmat(transparameters);
-    // jacob = jacob.cols(vector_indices);
-    // g = jacob * grad;
-    grad = grad % transparameters;
+    // g = jacob.t() * grad;
+    grad_out = grad_in % transparameters;
 
   }
 
   void d2jacobian() {
+
+
+    jacob = arma::diagmat(transparameters);
+    sum_djacob = arma::diagmat(transparameters % grad_in);
+
+    // hess_out = jacob.t() * hess_in * jacob + sum_djacob;
 
   }
 

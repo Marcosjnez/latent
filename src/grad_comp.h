@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/08/2025
+ * Modification date: 20/08/2025
  */
 
 Rcpp::List grad_comp(Rcpp::List control_manifold,
@@ -122,11 +122,17 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   if(compute == "g") return result;
 
   final_manifold->proj(x, xmanifolds);
+  result["rg"] = x.rg;
   if(compute == "rg") return result;
 
   final_estimator->H(x, xestimators);
-  result["hess"] = x.hess;
+  // result["hess"] = x.hess;
   if(compute == "hess") return result;
+
+  final_transform->d2jacobian(x, xtransforms);
+  result["hess"] = x.hess;
+  result["h"] = x.h;
+  if(compute == "h") return result;
 
   final_estimator->outcomes(x, xestimators);
   result["doubles"] = std::get<0>(x.outputs_estimator);
@@ -138,7 +144,6 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   if(compute == "outcomes") return result;
 
   result["dg"] = x.dg;
-  result["rg"] = x.rg;
   // result["J"] = xtransforms[0]->jacob;
 
   /*

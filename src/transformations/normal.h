@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/08/2025
+ * Modification date: 20/08/2025
  */
 
 const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);
@@ -54,30 +54,42 @@ public:
 
   void jacobian() {
 
-    // jacob.set_size(transparameters.n_elem, parameters.n_elem);
+    // jacob.set_size(transparameters.n_elem, indices_in[0].n_elem);
     // jacob.zeros();
 
     sigma3 = sigma2 % sigma;
-    arma::vec dmu = grad % x/sigma2;
-    arma::vec dsigma = grad % (x2 - sigma2) / sigma3;
+    arma::vec dmu = grad_in % x/sigma2;
+    arma::vec dsigma = grad_in % (x2 - sigma2) / sigma3;
 
-    grad.resize(indices_in[0].n_elem); grad.zeros();
-    grad(mu_indices) += dmu;
-    grad(sigma_indices) += dsigma;
+    grad_out.resize(indices_in[0].n_elem); grad_out.zeros();
+    grad_out(mu_indices) += dmu;
+    grad_out(sigma_indices) += dsigma;
+
+    // The same but much slower:
+    // jacob.set_size(transparameters.n_elem, indices_in[0].n_elem);
+    // jacob.zeros();
+    // jacob.cols(mu_indices) += arma::diagmat(x/sigma2);
+    // jacob.cols(sigma_indices) += arma::diagmat((x2 - sigma2) / sigma3);
+    // grad_out = jacob.t() * grad_in;
 
   }
 
   void d2jacobian() {
 
-    // jacob2.set_size(y.n_elem, parameters.n_elem, parameters.n_elem);
+    jacob.set_size(transparameters.n_elem, indices_in[0].n_elem);
+    jacob.zeros();
+    jacob.cols(mu_indices) += arma::diagmat(x/sigma2);
+    jacob.cols(sigma_indices) += arma::diagmat((x2 - sigma2) / sigma3);
 
-    arma::mat h(indices_in[0].n_elem, indices_in[0].n_elem, arma::fill::zeros);
-
+    sum_djacob.set_size(indices_in[0].n_elem, indices_in[0].n_elem);
+    sum_djacob.zeros();
     sigma4 = sigma3 % sigma;
-    h(mu_indices, mu_indices) += arma::diagmat(-1/sigma2);
-    h(sigma_indices, sigma_indices) += arma::diagmat(1/sigma2 - 3*x2/sigma4);
-    h(mu_indices, sigma_indices) = arma::diagmat(-2*sigma % x /sigma4);
-    h(sigma_indices, mu_indices) = h(mu_indices, sigma_indices);
+    sum_djacob(mu_indices, mu_indices) += arma::diagmat(-1/sigma2 % grad_in);
+    sum_djacob(sigma_indices, sigma_indices) += arma::diagmat((1/sigma2 - 3*x2/sigma4) % grad_in);
+    sum_djacob(mu_indices, sigma_indices) += arma::diagmat(-2*sigma % x /sigma4 % grad_in);
+    sum_djacob(sigma_indices, mu_indices) = sum_djacob(mu_indices, sigma_indices);
+
+    // hess_out = jacob.t() * hess_in * jacob + sum_djacob;
 
   }
 

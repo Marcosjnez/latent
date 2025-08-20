@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/08/2025
+ * Modification date: 18/08/2025
  */
 
 class estimators {
@@ -152,39 +152,12 @@ public:
 
     x.grad.set_size(x.transparameters.n_elem); x.grad.zeros();
 
-    // Rprintf("%zu ", x.grad.n_elem);
-    // Rprintf("\n\n");
-
     for(int i=0; i < x.nestimators; ++i) {
-
-      // xestimators[i]->latentloglik = x.latentloglik;
-      // xestimators[i]->latentpars = x.latentpars; // ADD INDICES
-      // xestimators[i]->loglatentpars = x.loglatentpars; // ADD INDICES
 
       xestimators[i]->G();
 
-      // Rprintf("Indices:\n");
-      // for (arma::uword i = 0; i < indices.n_elem; ++i) {
-      //   Rprintf("%u ", indices[i]);
-      // }
-      // Rprintf("\n\n");
-      //
-      // Rprintf("xestimators[i]->grad.n_elem:\n");
-      // Rprintf("%zu ", xestimators[i]->grad.n_elem);
-      // Rprintf("\n\n");
-      //
-      // Rprintf("x.grad.n_elem:\n");
-      // Rprintf("%zu ", x.grad.n_elem);
-      // Rprintf("\n\n");
-      //
-      // Rf_error("921");
       arma::uvec indices = xestimators[i]->indices[0];
       x.grad.elem(indices) += xestimators[i]->grad;
-      // Rf_error("922");
-
-      // for (arma::uword j = 0; j < x.grad.n_elem; ++j) {
-      //   Rprintf("%grad \n", x.grad[j]);
-      // }
 
     }
 
