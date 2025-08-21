@@ -53,6 +53,31 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   #### Process the data ####
 
+  # Check if any column in "data" is an ordered factor and transform it into
+  # intergers starting at 0:
+  is_factor <- unlist(lapply(data, is.factor))
+  ncategorical <- sum(is_factor | item == "multinomial")
+  factor_names <- vector("list", length = ncategorical)
+  factor_indices <- unlist(lapply(data, is.factor))
+
+  # Save category names for data modeled with the multinomial model:
+  if(any(!is_factor & item == "multinomial")) {
+
+    factor_names[!factor_indices] <- lapply(data[, !factor_indices],
+                                            \(x) sort(unique(x)))
+
+  }
+
+  # Save category names for factor data:
+  if(any(is_factor)) {
+
+    factor_names[factor_indices] <- lapply(data[, factor_indices], levels)
+    data[] <- lapply(data, function(col) {
+      if (is.factor(col)) as.integer(col) - 1L else col
+    })
+
+  }
+
   # Number of subjects:
   nobs <- nrow(data)
   # Convert data to a data.table object:
@@ -73,7 +98,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   # Put in a list the objects generated form the data:
   data_list <- vector("list")
-  data_list$dt <- dt
+  data_list$data <- data
   data_list$nobs <- nobs
   data_list$patterns <- patterns
   data_list$npatterns <- npatterns
@@ -81,6 +106,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   data_list$weights <- weights
   data_list$full2short <- full2short
   data_list$short2full <- short2full
+  data_list$factor_indices <- factor_indices
+  data_list$factor_names <- factor_names
 
   #### Initialize objects to store all the models ####
 
@@ -120,7 +147,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     # Get the short model specification (in logarithm and probability scale) with
     # labels for each parameter:
-    short_model <- get_short_lca_model(data = data, nclasses = nclasses,
+    short_model <- get_short_lca_model(data_list = data_list, nclasses = nclasses,
                                        item = item, lca_trans = lca_trans,
                                        model = model)
     list2env(short_model, envir = environment())
@@ -312,9 +339,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 }
 
 # Andres Chull, fit indices
-# input output lavaan
 # missing data CFA EFA LCA
-# 1:nclasses
 # Estimated values
 
 # parameters package R

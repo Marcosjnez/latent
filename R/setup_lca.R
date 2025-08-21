@@ -351,7 +351,7 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
 
 }
 
-get_short_lca_model <- function(data, nclasses, item, lca_trans,
+get_short_lca_model <- function(data_list, nclasses, item, lca_trans,
                                 model = NULL) {
 
   # This function displays the reduced LCA model in logarithm and probability
@@ -360,6 +360,7 @@ get_short_lca_model <- function(data, nclasses, item, lca_trans,
 
   # Create a short summary model:
 
+  data <- data_list$data
   gauss <- which(item == "gaussian")
   multinom <- which(item == "multinomial")
   K <- apply(data[, multinom], MARGIN = 2, FUN = \(x) length(unique(x)))
@@ -389,7 +390,8 @@ get_short_lca_model <- function(data, nclasses, item, lca_trans,
     i <- 1L
     for(j in multinom) {
       items[[j]] <- matrix(NA, nrow = K[i], ncol = nclasses)
-      rownames(items[[j]]) <- paste("Category", 1:K[i], sep = "")
+      # rownames(items[[j]]) <- paste("Category", 1:K[i], sep = "")
+      rownames(items[[j]]) <- data_list$factor_names[[j]]
       colnames(items[[j]]) <- lca_trans$class
       i <- i+1L
     }
