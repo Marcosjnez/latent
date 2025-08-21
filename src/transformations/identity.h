@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2025
+ * Modification date: 21/08/2025
  */
 
 // Identity (no transformation):
@@ -22,7 +22,7 @@ public:
 
   }
 
-  void jacobian() {
+  void update_grad() {
 
     // Rprintf("vector_indices:\n");
     // for (arma::uword i = 0; i < vector_indices.n_elem; ++i) {
@@ -46,11 +46,13 @@ public:
 
   }
 
-  void d2jacobian() {
+  void update_hess() {
 
   }
 
   void dconstraints() {
+
+    constraints = false;
 
   }
 

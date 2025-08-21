@@ -41,6 +41,8 @@ struct arguments_optim{
   std::vector<arma::vec> classes; // P(X = c) // classes_hat
   std::vector<std::vector<arma::mat>> conditionals; // conditionals_hat
 
+  arma::mat mat_dconstraints;
+
   // Checks:
   // Rcpp::Nullable<Rcpp::List> nullable_control = R_NilValue;
   std::string optimizer = "newton", std_error = "normal";

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/08/2025
+ * Modification date: 21/08/2025
  */
 
 // Logarithm multinomial probability transformation:
@@ -25,7 +25,7 @@ public:
 
   }
 
-  void jacobian() {
+  void update_grad() {
 
     // jacob.set_size(transparameters.n_elem, parameters.n_elem);
     // jacob.zeros();
@@ -36,22 +36,40 @@ public:
 
   }
 
-  void d2jacobian() {
+  void update_hess() {
 
-    jacob.set_size(transparameters.n_elem, indices_in[0].n_elem);
+    const arma::uword n_out = transparameters.n_elem;
+    const arma::uword n_in  = indices_in[0].n_elem;
+
+    jacob.set_size(n_out, n_in);
     jacob.zeros();
-    jacob.cols(peta_indices) += arma::diagmat(1/small_peta(peta_indices));
+    sum_djacob.set_size(n_in, n_in);
+    sum_djacob.zeros();
 
-    // sum_djacob.set_size(indices_in[0].n_elem, indices_in[0].n_elem);
-    // sum_djacob.zeros();
-    arma::vec djacob(indices_in[0].n_elem);
-    djacob.elem(peta_indices) += (1/small_peta(peta_indices))
-      % (1/small_peta(peta_indices)) % grad_in;
-    sum_djacob = arma::diagmat(-djacob);
+    // jacob.cols(peta_indices) += arma::diagmat(1/small_peta(peta_indices));
+
+    // Vectorised version:
+    arma::uvec rows = arma::regspace<arma::uvec>(0, n_out - 1);
+    arma::uvec lin_peta = rows + peta_indices * n_out;
+    arma::vec dpeta = 1/small_peta(peta_indices);
+    jacob.elem(lin_peta) += dpeta;
+
+    // arma::vec djacob(n_in);
+    // djacob.elem(peta_indices) += (1/small_peta(peta_indices))
+    //   % (1/small_peta(peta_indices)) % grad_in;
+    // sum_djacob = arma::diagmat(-djacob);
+
+    // Vectorised version:
+    lin_peta = peta_indices + peta_indices * n_in;
+    sum_djacob.elem(lin_peta) -= dpeta % dpeta % grad_in;
+
+    // hess_out = jacob.t() * hess_in * jacob + sum_djacob;
 
   }
 
   void dconstraints() {
+
+    constraints = false;
 
   }
 

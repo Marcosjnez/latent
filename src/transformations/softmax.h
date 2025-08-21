@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/08/2025
+ * Modification date: 21/08/2025
  */
 
 // Softmax transformation:
@@ -30,16 +30,15 @@ public:
 
   }
 
-  void jacobian() {
+  void update_grad() {
 
     jacob = arma::diagmat(transparameters) - transparameters * transparameters.t();
     grad_out = jacob.t() * grad_in;
 
   }
 
-  void d2jacobian() {
+  void update_hess() {
 
-    jacob = arma::diagmat(transparameters) - transparameters * transparameters.t();
     sum_djacob = softmax_chain_second_term(transparameters, grad_in, jacob);
 
     // hess_out = jacob.t() * hess_in * jacob + sum_djacob;
@@ -48,8 +47,9 @@ public:
 
   void dconstraints() {
 
-    arma::vec v = arma::vec(transparameters.n_elem).fill(1.00);
-    dconstr = v;
+    constraints = true;
+    dconstr.set_size(indices_out[0].n_elem);
+    dconstr.ones();
 
   }
 
@@ -80,19 +80,3 @@ softmax* choose_softmax(const Rcpp::List& trans_setup) {
   return mytrans;
 
 }
-
-arma::cube softmax_hessian(const arma::vec& theta) {
-  arma::vec p = arma::normalise(arma::exp(theta), 1); // softmax
-  const arma::uword n = p.n_elem;
-
-  arma::mat J = arma::diagmat(p) - p * p.t(); // Jacobian
-  arma::cube H(n, n, n, arma::fill::none);
-
-  for (arma::uword i = 0; i < n; ++i) {
-    arma::vec a = -p;
-    a(i) += 1.0; // a = e_i - p
-    H.slice(i) = p(i) * (a * a.t() - J);
-  }
-  return H;
-}
-

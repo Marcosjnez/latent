@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/08/2025
+ * Modification date: 21/08/2025
  */
 
 const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);
@@ -35,7 +35,6 @@ public:
   arma::uvec mu_indices;
   arma::uvec sigma_indices;
   arma::vec y, mu, x, x2, sigma, sigma2, sigma3, sigma4;
-  // arma::vec newgrad;
 
   void transform() {
 
@@ -52,7 +51,7 @@ public:
 
   }
 
-  void jacobian() {
+  void update_grad() {
 
     // jacob.set_size(transparameters.n_elem, indices_in[0].n_elem);
     // jacob.zeros();
@@ -74,26 +73,53 @@ public:
 
   }
 
-  void d2jacobian() {
+  void update_hess() {
 
-    jacob.set_size(transparameters.n_elem, indices_in[0].n_elem);
+    const arma::uword n_out = transparameters.n_elem;
+    const arma::uword n_in  = indices_in[0].n_elem;
+
+    jacob.set_size(n_out, n_in);
     jacob.zeros();
-    jacob.cols(mu_indices) += arma::diagmat(x/sigma2);
-    jacob.cols(sigma_indices) += arma::diagmat((x2 - sigma2) / sigma3);
-
-    sum_djacob.set_size(indices_in[0].n_elem, indices_in[0].n_elem);
+    sum_djacob.set_size(n_in, n_in);
     sum_djacob.zeros();
+
+    // jacob.cols(mu_indices) += arma::diagmat(x/sigma2);
+    // jacob.cols(sigma_indices) += arma::diagmat((x2 - sigma2) / sigma3);
+    // Vectorised version:
+    arma::uvec rows = arma::regspace<arma::uvec>(0, n_out - 1);
+    arma::uvec lin_mu    = rows + mu_indices    * n_out;
+    arma::uvec lin_sigma = rows + sigma_indices * n_out;
+    jacob.elem(lin_mu)    += x / sigma2;
+    jacob.elem(lin_sigma) += (x2 - sigma2) / sigma3;
+
+    // sigma4 = sigma3 % sigma;
+    // sum_djacob(mu_indices, mu_indices) += arma::diagmat(-1.0/sigma2 % grad_in);
+    // sum_djacob(sigma_indices, sigma_indices) += arma::diagmat((1/sigma2 - 3.0*x2/sigma4) % grad_in);
+    // sum_djacob(mu_indices, sigma_indices) += arma::diagmat(-2.0 % x /sigma3 % grad_in);
+    // sum_djacob(sigma_indices, mu_indices) = sum_djacob(mu_indices, sigma_indices);
+    // Vectorised version:
     sigma4 = sigma3 % sigma;
-    sum_djacob(mu_indices, mu_indices) += arma::diagmat(-1/sigma2 % grad_in);
-    sum_djacob(sigma_indices, sigma_indices) += arma::diagmat((1/sigma2 - 3*x2/sigma4) % grad_in);
-    sum_djacob(mu_indices, sigma_indices) += arma::diagmat(-2*sigma % x /sigma4 % grad_in);
-    sum_djacob(sigma_indices, mu_indices) = sum_djacob(mu_indices, sigma_indices);
+    // diagonal (mu,mu)
+    lin_mu = mu_indices + mu_indices * n_in;
+    sum_djacob.elem(lin_mu) += (-1.0 / sigma2 % grad_in);
+    // diagonal (sigma,sigma)
+    lin_sigma = sigma_indices + sigma_indices * n_in;
+    sum_djacob.elem(lin_sigma) += ((1.0 / sigma2 - 3.0 * x2 / sigma4) % grad_in);
+    // off-diagonal (mu,sigma)
+    arma::uvec lin_mu_sigma = mu_indices + sigma_indices * n_in;
+    arma::vec vals_mu_sigma = (-2.0 * x / sigma3) % grad_in;
+    sum_djacob.elem(lin_mu_sigma) += vals_mu_sigma;
+    // symmetric counterpart (sigma,mu)
+    arma::uvec lin_sigma_mu = sigma_indices + mu_indices * n_in;
+    sum_djacob.elem(lin_sigma_mu) = sum_djacob.elem(lin_mu_sigma);
 
     // hess_out = jacob.t() * hess_in * jacob + sum_djacob;
 
   }
 
   void dconstraints() {
+
+    constraints = false;
 
   }
 

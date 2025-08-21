@@ -80,7 +80,7 @@ void wolfe(arguments_optim& x,
     final_estimator->param(x, xestimators);
     final_estimator->F(x, xestimators);
     final_estimator->G(x, xestimators);
-    final_transform->jacobian(x, xtransforms);
+    final_transform->update_grad(x, xtransforms);
     final_manifold->param(x, xmanifolds);
     final_manifold->proj(x, xmanifolds);
     x.df = x.f - f0;
@@ -308,7 +308,7 @@ optim_result lbfgs(arguments_optim x,
   // update the gradient
   final_estimator->G(x, xestimators);
   // Rf_error("307");
-  final_transform->jacobian(x, xtransforms);
+  final_transform->update_grad(x, xtransforms);
   // Rf_error("306");
   // Riemannian gradient
   // final_manifold->param(x, xmanifolds);
@@ -374,7 +374,7 @@ optim_result lbfgs(arguments_optim x,
 
     // final_estimator->param(x, xestimators); // Necessary¿?
     final_estimator->G(x, xestimators);
-    final_transform->jacobian(x, xtransforms);
+    final_transform->update_grad(x, xtransforms);
     // After the retraction in armijo you need to param the manifolds:
     final_manifold->param(x, xmanifolds);
     final_manifold->proj(x, xmanifolds);

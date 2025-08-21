@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/08/2025
+ * Modification date: 21/08/2025
  */
 
 // Transformations
@@ -15,6 +15,7 @@ public:
   arma::mat jacob, sum_djacob, hess_in, hess_out, h;
   std::vector<arma::uvec> indices_in, indices_out;
   arma::cube jacob2;
+  bool constraints;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
@@ -25,9 +26,9 @@ public:
 
   virtual void transform() = 0;
 
-  virtual void jacobian() = 0;
+  virtual void update_grad() = 0;
 
-  virtual void d2jacobian() = 0;
+  virtual void update_hess() = 0;
 
   virtual void dconstraints() = 0;
 
@@ -84,11 +85,13 @@ public:
 
   }
 
-  void jacobian(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+  void update_grad(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
+    // Update the gradient after each parameter transformation:
     // Use the gradient of the transformed parameters (grad) to get the final gradient (g):
-    // x.jacob.set_size(x.transparameters.n_elem, x.parameters.n_elem);
-    // x.jacob.zeros();
+    // x.g = x.jacob.t() * x.grad;
+    // But avoid this multiplication to reduce computing cost
+
     x.g.set_size(x.parameters.n_elem); x.g.zeros();
 
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
@@ -96,7 +99,7 @@ public:
       arma::uvec indices_out = xtransformations[i]->indices_out[0];
       xtransformations[i]->grad_in = x.grad(indices_out);
 
-      xtransformations[i]->jacobian();
+      xtransformations[i]->update_grad();
 
       arma::uvec indices_in = xtransformations[i]->indices_in[0];
       x.grad(indices_in) += xtransformations[i]->grad_out;
@@ -104,52 +107,96 @@ public:
     }
 
     x.g = x.grad(x.transparam2param);
-    // x.g = x.jacob.t() * x.grad;
 
   }
 
-  void d2jacobian(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+  void update_hess(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
     x.h.set_size(x.parameters.n_elem, x.parameters.n_elem); x.h.zeros();
-    arma::mat jacob(x.transparameters.n_elem, x.transparameters.n_elem, arma::fill::eye);
-    arma::mat sum_djacob(x.transparameters.n_elem, x.transparameters.n_elem, arma::fill::zeros);
+    // arma::mat jacob(x.transparameters.n_elem, x.transparameters.n_elem, arma::fill::eye);
+    // arma::mat sum_djacob(x.transparameters.n_elem, x.transparameters.n_elem, arma::fill::zeros);
 
     // Update the hessian using the chain rule:
-    arma::mat hess = x.hess;
-    for(int i=x.ntransforms-1L; i > -1L ; --i) {
+    // for(int i=x.ntransforms-1L; i > -1L ; --i) {
+    //
+    //   // Indices of input parameters:
+    //   arma::uvec indices_in = xtransformations[i]->indices_in[0];
+    //
+    //   // Indices of output parameters:
+    //   arma::uvec indices_out = xtransformations[i]->indices_out[0];
+    //
+    //   // Compute the jacobian and sum_djacob of each transformation:
+    //   xtransformations[i]->update_hess();
+    //
+    //   // Update the overall jacobian and sum_djacob:
+    //   jacob(indices_out, indices_in) += xtransformations[i]->jacob;
+    //   sum_djacob(indices_in, indices_in) += xtransformations[i]->sum_djacob;
+    //
+    //   x.hess = jacob.t() * x.hess * jacob + sum_djacob;
+    //
+    //   // After modifying the hessian, restore the jacobian and sum_djacob
+    //   // of the completed tranformations so they do not affect next computations:
+    //   jacob(indices_out, indices_in).zeros();
+    //   sum_djacob(indices_in, indices_in).zeros();
+    //
+    // }
 
-      arma::uvec indices_out = xtransformations[i]->indices_out[0];
-      xtransformations[i]->grad_in = x.grad(indices_out);
-      // xtransformations[i]->hess_in = x.hess(indices_out, indices_out);
+    // Faster version:
+    for (int i = x.ntransforms - 1; i >= 0; --i) {
 
-      // COmpute the jacobian and sum_djacob of each transformation:
-      xtransformations[i]->d2jacobian();
+      const arma::uvec& indices_in  = xtransformations[i]->indices_in[0];
+      const arma::uvec& indices_out = xtransformations[i]->indices_out[0];
 
-      // Update the jacobian and sum_djacob:
-      arma::uvec indices_in = xtransformations[i]->indices_in[0];
-      jacob(indices_out, indices_in) += xtransformations[i]->jacob;
-      sum_djacob(indices_in, indices_in) += xtransformations[i]->sum_djacob;
+      // Compute the jacobian and sum_djacob of each transformation:
+      xtransformations[i]->update_hess();
 
-      x.hess = jacob.t() * x.hess * jacob + sum_djacob;
-      // hess(indices_in, indices_in) = x.hess(indices_in, indices_in);
-      // hess(indices_out, indices_in) = x.hess(indices_out, indices_in);
-      // hess(indices_in, indices_out) = x.hess(indices_in, indices_out);
-      // x.hess(indices_in, indices_in) = xtransformations[i]->hess_out;
+      // Update the hessian: H += H U + U^T H + U^T H U + S
+      const arma::mat& J = xtransformations[i]->jacob;
+      const arma::mat& S = xtransformations[i]->sum_djacob;
 
-      // After modifying the hessian, restore the jacobian and sum_djacob:
-      // jacob(indices_out, indices_in) -= xtransformations[i]->jacob;
-      // sum_djacob(indices_in, indices_in) -= xtransformations[i]->sum_djacob;
-      jacob(indices_out, indices_in).zeros();
-      sum_djacob(indices_in, indices_in).zeros();
+      // HU = H * U:
+      arma::mat HU = x.hess.cols(indices_out) * J;
+
+      // H += H U + U^T H:
+      x.hess.cols(indices_in) += HU;
+      x.hess.rows(indices_in) += HU.t();
+
+      // H += U^T H U + S:
+      x.hess(indices_in, indices_in) += J.t() * x.hess(indices_out, indices_out) * J;
+      x.hess(indices_in, indices_in) += S;
 
     }
 
     x.h = x.hess(x.transparam2param, x.transparam2param);
-    // x.hess = hess;
 
   }
 
   void dconstraints(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+
+    int nconstr = 0L;
+
+    // Count the number of sets of constrained parameters:
+    for(int i=x.ntransforms-1L; i > -1L ; --i) {
+
+      xtransformations[i]->dconstraints();
+      if(xtransformations[i]->constraints) ++ nconstr;
+
+    }
+
+    // Compute the derivative of the constraints of each transformation:
+    x.mat_dconstraints.set_size(x.transparameters.n_elem, nconstr);
+    x.mat_dconstraints.zeros();
+    int k=0L;
+    for(int i=x.ntransforms-1L; i > -1L ; --i) {
+
+      arma::uvec indices_out = xtransformations[i]->indices_out[0];
+      xtransformations[i]->dconstraints();
+      if(xtransformations[i]->constraints) {
+        x.mat_dconstraints.submat(indices_out, arma::uvec{ static_cast<arma::uword>(k) }) = xtransformations[i]->dconstr;
+        ++k;
+      };
+
+    }
 
   }
 

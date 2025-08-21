@@ -190,6 +190,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     Optim$opt <- x
     Optim$opt$parameters_labels <- parameters_labels
     Optim$opt$transparameters_labels <- transparameters_labels
+    Optim$opt$lca_trans <- lca_trans
 
     #### Process the outputs ####
 

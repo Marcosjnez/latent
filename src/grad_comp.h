@@ -114,11 +114,9 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["grad"] = x.grad;
   if(compute == "grad") return result;
 
-  final_transform->jacobian(x, xtransforms);
-  // final_transform->outcomes(x, xtransforms);
+  final_transform->update_grad(x, xtransforms);
   result["grad"] = x.grad;
   result["g"] = x.g;
-  // result["matrices"] = xtransforms[x.ntransforms-1L]->matrices;
   if(compute == "g") return result;
 
   final_manifold->proj(x, xmanifolds);
@@ -126,13 +124,17 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   if(compute == "rg") return result;
 
   final_estimator->H(x, xestimators);
-  // result["hess"] = x.hess;
+  result["hess"] = x.hess;
   if(compute == "hess") return result;
 
-  final_transform->d2jacobian(x, xtransforms);
+  final_transform->update_hess(x, xtransforms);
   result["hess"] = x.hess;
   result["h"] = x.h;
   if(compute == "h") return result;
+
+  final_transform->dconstraints(x, xtransforms);
+  result["dconstr"] = x.mat_dconstraints;
+  if(compute == "dconstr") return result;
 
   final_estimator->outcomes(x, xestimators);
   result["doubles"] = std::get<0>(x.outputs_estimator);

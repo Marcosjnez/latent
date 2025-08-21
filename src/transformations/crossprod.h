@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 18/08/2025
+ * Modification date: 21/08/2025
  */
 
 // Crossproduct transformation:
@@ -11,7 +11,7 @@ class crossprod:public transformations {
 public:
 
   int p, q;
-  arma::mat X;
+  arma::mat X, gradmat;
 
   void transform() {
 
@@ -22,28 +22,30 @@ public:
 
   }
 
-  void jacobian() {
+  void update_grad() {
 
-    // jacob = arma::diagmat(transparameters);
-    arma::mat gradmat(p, q);
+    gradmat.set_size(p, q);
     std::memcpy(gradmat.memptr(), grad_in.memptr(), grad_in.n_elem * sizeof(double));
     grad_out = arma::vectorise(2*X * gradmat);
 
   }
 
-  void d2jacobian() {
+  void update_hess() {
 
-    jacob = arma::diagmat(transparameters);
+    jacob = arma::diagmat(arma::vectorise(2*X));
+    sum_djacob = 2*gradmat;
 
-    sum_djacob.set_size(indices_in[0].n_elem, indices_in[0].n_elem);
-    sum_djacob.zeros();
+    // jacob = arma::join_cols(
+    //   arma::kron(arma::eye(p, p), X.t()),
+    //   arma::kron(arma::eye(p, p), X.t()) * arma::kron(arma::eye(p, p), arma::eye(p, p))
+    // );
 
-    hess_out.set_size(indices_in[0].n_elem, indices_in[0].n_elem);
-    hess_out.zeros();
 
   }
 
   void dconstraints() {
+
+    constraints = false;
 
   }
 
