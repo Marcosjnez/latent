@@ -14,7 +14,7 @@ class bayesconst3: public estimators {
 public:
 
   int K;
-  double constant, prod_vars;
+  double alpha, constant, prod_vars;
   arma::vec vars, varshat, sds;
 
   void param() {
@@ -22,7 +22,7 @@ public:
     sds = transparameters;
     vars = sds % sds;
     prod_vars = arma::prod(vars);
-    constant = 1.00/K;
+    constant = alpha/K;
 
   }
 
@@ -75,10 +75,12 @@ bayesconst3* choose_bayesconst3(const Rcpp::List& estimator_setup) {
 
   bayesconst3* myestimator = new bayesconst3();
 
+  double alpha = estimator_setup["alpha"];
   int K = estimator_setup["K"];
   arma::vec varshat = estimator_setup["varshat"];
   std::vector<arma::uvec> indices = estimator_setup["indices"];
 
+  myestimator->alpha = alpha;
   myestimator->K = K;
   myestimator->varshat = varshat;
   myestimator->indices = indices;

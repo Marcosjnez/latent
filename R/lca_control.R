@@ -8,11 +8,23 @@ lca_control <- function(control) {
 
   # Control input
 
-  if(is.null(control$prior)) {
-    control$prior <- "bayesconst"
-  } else if(control$prior == "bayesconst") {
-  } else if(control$prior != "none") {
-    stop("Unkown prior")
+  if(isFALSE(control$penalties)) {
+
+    control$reg <- FALSE
+
+  } else {
+
+    control$reg <- TRUE
+
+    if(!is.list(control$penalties)) {
+
+      control$penalties <- list(
+        class = list(alpha = 1),
+        prob  = list(alpha = 1),
+        sd    = list(alpha = 1)
+      )
+
+    }
   }
 
   if(is.null(control$opt)) {

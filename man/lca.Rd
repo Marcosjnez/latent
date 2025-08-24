@@ -14,6 +14,8 @@ lca(data, item = rep("gaussian", ncol(data)), nclasses = 2L, model = NULL,
 
 \item{item}{Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.}
 
+\item{penalties}{list of penalty terms for the parameters.}
+
 \item{model}{List of parameter labels. See 'details' for more information.}
 
 \item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}

@@ -12,7 +12,7 @@ class bayesconst1: public estimators {
 
 public:
 
-  double constant;
+  double alpha, constant;
   arma::vec logtrans;
   arma::vec constant_logtrans;
 
@@ -20,7 +20,7 @@ public:
 
     logtrans = arma::trunc_log(transparameters);
     double K = logtrans.n_elem + 0.00;
-    constant = 1.00/K;
+    constant = alpha/K;
     constant_logtrans = constant*logtrans;
 
   }
@@ -78,8 +78,10 @@ bayesconst1* choose_bayesconst1(const Rcpp::List& estimator_setup) {
 
   bayesconst1* myestimator = new bayesconst1();
 
+  double alpha = estimator_setup["alpha"];
   std::vector<arma::uvec> indices = estimator_setup["indices"];
 
+  myestimator->alpha = alpha;
   myestimator->indices = indices;
 
   return myestimator;

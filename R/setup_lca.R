@@ -606,16 +606,15 @@ get_lca_structures <- function(data_list, full_model, control) {
                                  weights = weights,
                                  hess_indices = hess_indices)
 
-  # Choose whether using constant priors:
-  if(!is.null(control$prior)) {
-
-    if(control$prior == "bayesconst") {
+  # Choose whether using Bayes constants:
+  if(control$reg) {
 
       labels <- lca_trans$class
       indices <- match(labels, transparameters_labels)
       control_estimator[[2]] <- list(estimator = "bayesconst1",
                                      labels = labels,
-                                     indices = list(indices-1L))
+                                     indices = list(indices-1L),
+                                     alpha = control$penalties$class$alpha)
       G <- 3L
 
       if(any(item == "gaussian")) {
@@ -631,7 +630,8 @@ get_lca_structures <- function(data_list, full_model, control) {
                                          labels = labels,
                                          indices = list(indices-1L),
                                          K = nclasses,
-                                         varshat = varshat)
+                                         varshat = varshat,
+                                         alpha = control$penalties$sd$alpha)
           G <- G+1L
 
         }
@@ -658,12 +658,12 @@ get_lca_structures <- function(data_list, full_model, control) {
           control_estimator[[G]] <- list(estimator = "bayesconst2",
                                          labels = labels,
                                          indices = list(indices-1L),
-                                         pihat = pihat)
+                                         pihat = pihat,
+                                         alpha = control$penalties$prob$alpha)
           G <- G+1L
 
         }
       }
-    }
   }
 
   #### Return ####
