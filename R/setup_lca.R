@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2025
+# Modification date: 24/08/2025
 #'
 #' @title
 #' Get the default model for Latent Class Analysis.
@@ -201,8 +201,8 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     # Initial values for mu and s:
     # For mu, they will be the mean of the items
     # For s, they will be the sd of the items
-    init_mu <- rep(colMeans(data[, gauss], na.rm = TRUE), times = nclasses)
-    init_sd <- rep(apply(data[, gauss], MARGIN = 2, FUN = sd, na.rm = TRUE),
+    init_mu <- rep(colMeans(data[, gauss, drop = FALSE], na.rm = TRUE), times = nclasses)
+    init_sd <- rep(apply(data[, gauss, drop = FALSE], MARGIN = 2, FUN = sd, na.rm = TRUE),
                   times = nclasses)
     init_s <- log(init_sd)
     for(i in 1:control$rstarts) {
@@ -218,7 +218,7 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     multinom <- which(item == "multinomial")
     Jmulti <- length(multinom) # Number of multinomial items
     # Collect the number of response categories:
-    K <- apply(data[, multinom], MARGIN = 2, FUN = \(x) length(unique(x)))
+    K <- apply(data[, multinom, drop = FALSE], MARGIN = 2, FUN = \(x) length(unique(x)))
     Ks <- rep(K, times = nclasses)
     repitems <- rep(multinom, times = nclasses)
     repclasses <- rep(1:nclasses, each = Jmulti)
@@ -442,7 +442,7 @@ get_short_lca_model <- function(data_list, nclasses, item, lca_trans,
 
 }
 
-get_lca_structures <- function(data_list, full_model) {
+get_lca_structures <- function(data_list, full_model, control) {
 
   # Generate control_manifold, control_transform, and control_estimator
 
@@ -472,8 +472,12 @@ get_lca_structures <- function(data_list, full_model) {
                                  indices_out = list(indices_out-1L))
   k <- 2L
 
+  # pi_hat <- array(0, dim = dim(lca_trans$loglik))
+
   if(any(item == "gaussian")) {
 
+    gauss <- which(item == "gaussian")
+    Jgauss <- length(gauss) # Number of gaussian items
     gauss <- which(item == "gaussian")
     labels_in <- lca_trans$s
     labels_out <- lca_trans$sigma
@@ -562,6 +566,19 @@ get_lca_structures <- function(data_list, full_model) {
                                    labels_out = labels_out,
                                    indices_out = list(indices_out-1L))
 
+    # Get the proportion of times each category was selected in an item:
+    # Y <- data[, multinom, drop = FALSE] - 1L
+    # pi_hat_list <- vector("list", length = Jmulti)
+    # for(j in 1:Jmulti) {
+    #   pi_hat_list[[j]] <- count(Y[, j], nobs, K[j]) / nobs
+    # }
+    # # Replicate each proportion vector npatterns times and then replicate
+    # # the result nclasses times (This matchs the first peta_indices):
+    # pi_hat_vector <- rep(unlist(lapply(pi_hat_list, FUN = rep, times = npatterns)),
+    #               times = nclasses)
+    # pi_hat_vector <- pi_hat_vector[dummy_indices]
+    # pi_hat[, multinom, ] <- pi_hat_vector
+
   }
 
   #### Estimators ####
@@ -578,6 +595,7 @@ get_lca_structures <- function(data_list, full_model) {
   SJ <- npatterns*nitems
   hess_indices <- lapply(0:(nclasses - 1), function(i) {
     nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
+
   control_estimator <- list()
   control_estimator[[1]] <- list(estimator = "lca",
                                  labels = labels,
@@ -588,6 +606,66 @@ get_lca_structures <- function(data_list, full_model) {
                                  weights = weights,
                                  hess_indices = hess_indices)
 
+  # Choose whether using constant priors:
+  if(!is.null(control$prior)) {
+
+    if(control$prior == "bayesconst") {
+
+      labels <- lca_trans$class
+      indices <- match(labels, transparameters_labels)
+      control_estimator[[2]] <- list(estimator = "bayesconst1",
+                                     labels = labels,
+                                     indices = list(indices-1L))
+      G <- 3L
+
+      if(any(item == "gaussian")) {
+
+        Y <- data[, gauss, drop = FALSE]
+        sigma_class <- split(lca_trans$sigma, rep(1:nclasses, each = Jgauss))
+        varshat <- apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)
+        for(i in 1:nclasses) {
+
+          labels <- sigma_class[[i]]
+          indices <- match(labels, transparameters_labels)
+          control_estimator[[G]] <- list(estimator = "bayesconst3",
+                                         labels = labels,
+                                         indices = list(indices-1L),
+                                         K = nclasses,
+                                         varshat = varshat)
+          G <- G+1L
+
+        }
+
+      }
+
+      if(any(item == "multinomial")) {
+
+        # Get the proportion of times each category was selected in an item:
+        Y <- data[, multinom, drop = FALSE] - 1L
+        pi_hat_list <- vector("list", length = Jmulti)
+
+        for(j in 1:Jmulti) {
+          pi_hat_list[[j]] <- count(Y[, j], nobs, K[j]) / nobs
+        }
+
+        pi_hat_list <- rep(pi_hat_list, times = nclasses)
+
+        for(i in 1:length(pi_hat_list)) {
+
+          pihat <- pi_hat_list[[i]]
+          labels <- lca_trans$peta[[i]]
+          indices <- match(labels, transparameters_labels)
+          control_estimator[[G]] <- list(estimator = "bayesconst2",
+                                         labels = labels,
+                                         indices = list(indices-1L),
+                                         pihat = pihat)
+          G <- G+1L
+
+        }
+      }
+    }
+  }
+
   #### Return ####
 
   result <- list(control_manifold = control_manifold,
@@ -595,8 +673,4 @@ get_lca_structures <- function(data_list, full_model) {
                  control_estimator = control_estimator)
 
 }
-
-# indices <- control_transform[[11]]$indices_in[[2]]+1L
-# cbind(control_transform[[11]]$labels_in[indices],
-# control_transform[[11]]$labels_out)
 

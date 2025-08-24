@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 18/08/2025
+ * Modification date: 24/08/2025
  */
 
 class estimators {
@@ -61,6 +61,9 @@ public:
 #include "estimators/rotation/lclf.h"
 
 #include "estimators/lca/lca.h"
+#include "estimators/lca/bayesconst1.h"
+#include "estimators/lca/bayesconst2.h"
+#include "estimators/lca/bayesconst3.h"
 
 #include "estimators/lreg/lreg.h"
 
@@ -86,6 +89,9 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "xtarget",                     choose_xtarget                   },
   { "lclf",                        choose_lclf                      },
   { "lca",                         choose_lca                       },
+  { "bayesconst1",                 choose_bayesconst1               },
+  { "bayesconst2",                 choose_bayesconst2               },
+  { "bayesconst3",                 choose_bayesconst3               },
   { "lreg",                        choose_lreg                      },
   { "polycor",                     choose_polycor                   }
 };
@@ -297,9 +303,8 @@ public:
 
     for(int i=0; i < x.nestimators; ++i) {
 
-      arma::uvec indices = xestimators[i]->indices[i];
-      xestimators[i]->transparameters = x.transparameters.elem(indices);
       xestimators[i]->outcomes();
+
       std::get<0>(x.outputs_estimator)[i] = xestimators[i]->doubles;
       std::get<1>(x.outputs_estimator)[i] = xestimators[i]->vectors;
       std::get<2>(x.outputs_estimator)[i] = xestimators[i]->matrices;

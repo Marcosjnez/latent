@@ -165,6 +165,8 @@ public:
 
     for(int i=0; i < x.nmanifolds; ++i) {
 
+      xmanifolds[i]->outcomes();
+
       std::get<0>(x.outputs_manifold)[i] = xmanifolds[i]->doubles;
       std::get<1>(x.outputs_manifold)[i] = xmanifolds[i]->vectors;
       std::get<2>(x.outputs_manifold)[i] = xmanifolds[i]->matrices;

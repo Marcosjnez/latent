@@ -8,7 +8,7 @@
  * Latent class analysis
  */
 
-class lca: public estimators {
+class lca_bayesconst: public estimators {
 
 public:
 
@@ -28,6 +28,7 @@ public:
   arma::mat latentloglik;
   arma::mat posterior, logposterior;
   std::vector<arma::uvec> hess_indices;
+  double constant_class;
 
   void param() {
 
@@ -41,6 +42,8 @@ public:
     std::memcpy(loglik.memptr(), values.memptr(), sizeof(double) * values.n_elem);
 
     latentloglik.zeros();
+    double K = I + 0.00;
+    constant_class = (1.00/K);
 
     for(int s=0; s < S; ++s) {
       for(int i=0; i < I; ++i) {
@@ -60,7 +63,7 @@ public:
 
   void F() {
 
-    f = -arma::accu(logliks);
+    f = -arma::accu(logliks) - arma::accu(constant_class * logclasses);
 
   }
 
@@ -76,6 +79,7 @@ public:
         ditemloglik(s, i) -= arma::trunc_exp(logweights[s] + logposterior(s, i));
       }
     }
+    dclasses -= constant_class/classes;
 
     dloglik.zeros();
     for (arma::uword k = 0; k < I; ++k) {
@@ -96,7 +100,6 @@ public:
 
   void H() {
 
-    // Rcpp::stop("H not available");
     hess.set_size(transparameters.n_elem, transparameters.n_elem);
     hess.zeros();
 
@@ -105,7 +108,9 @@ public:
 
     arma::mat post1 = posterior; post1.each_row() /= classes.t();
     arma::mat post2 = post1; post2.each_col() %= weights;
-    hess(indices_classes, indices_classes) = post1.t() * post2;
+    arma::vec d2constant_class = constant_class/(classes % classes);
+    hess(indices_classes, indices_classes) = post1.t() * post2 +
+      diagmat(d2constant_class);
 
     for (int i = 0; i < I; ++i) {
       for (int k = i; k < I; ++k) {
@@ -174,9 +179,9 @@ public:
 
 };
 
-lca* choose_lca(const Rcpp::List& estimator_setup) {
+lca_bayesconst* choose_lca_bayesconst(const Rcpp::List& estimator_setup) {
 
-  lca* myestimator = new lca();
+  lca_bayesconst* myestimator = new lca_bayesconst();
 
   int S = estimator_setup["S"];
   int J = estimator_setup["J"];

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2025
+# Modification date: 24/08/2025
 #'
 #' @title
 #' Standard Errors
@@ -57,11 +57,11 @@ se <- function(fit, confidence = 0.95, digits = 2) {
   probs_selection <- match(probs, fit@Optim$opt$transparameters_labels)
   x <- fit@Optim$opt$transparameters[probs_selection]
   remove <- which(x > 0.99 | x < 0.01)
-  keep <- which(x < 0.99 & x > 0.01)
+  keep <- 1:nparams
   if(length(remove) > 0) {
-    indices_remove <- match(probs[remove], mylabels)
-    dconstraints <- dconstraints[-indices_remove, , drop = FALSE]
-    H <- H[-indices_remove, ][, -indices_remove]
+    keep <- match(probs[!remove], mylabels)
+    dconstraints <- dconstraints[keep, , drop = FALSE]
+    H <- H[keep, keep]
   }
   se <- vector(length = length(mylabels))
   C <- matrix(NA, nrow = nparams, ncol = nparams)
@@ -78,9 +78,10 @@ se <- function(fit, confidence = 0.95, digits = 2) {
   C[keep, keep] <- D_inv - D_inv %*% t(K) %*% solve(K %*% D_inv %*% t(K)) %*% K %*% D_inv
   se[keep] <- sqrt(diag(C[keep, keep]))
   names(se) <- mylabels
+  colnames(C) <- rownames(C) <- mylabels
 
-  indices <- match(mylabels, unlist(fit@modelInfo$prob_model))
-  se_user_model <- fill_list_with_vector(fit@modelInfo$prob_model, se[indices])
+  reorder <- match(unlist(fit@modelInfo$prob_model), mylabels)
+  se_user_model <- fill_list_with_vector(fit@modelInfo$prob_model, se[reorder])
   se_user_model <- allnumeric(se_user_model)
 
   nprob <- length(c(fit@Optim$opt$lca_trans$class,
@@ -90,19 +91,20 @@ se <- function(fit, confidence = 0.95, digits = 2) {
 
   types <- rep(c("prob", "linear", "sd"), times = c(nprob, nlinear, nsd))
 
+  x <- fit@Optim$opt$transparameters[selection]
   ci <- sapply(1:nparams, FUN = \(i) conf(x[i], se[i], confidence = confidence,
                                          type = types[i]))
   rownames(ci) <- c("lower", "upper")
   colnames(ci) <- mylabels
 
-  strings <- format(round(ci[, indices], digits = digits), nsmall = digits)
+  strings <- format(round(ci[, reorder], digits = digits), nsmall = digits)
   ci_ordered <- apply(strings, MARGIN = 2,
                       FUN = \(x) paste(x[1], x[2], sep = "-"))
   ci_user_model <- fill_list_with_vector(fit@modelInfo$prob_model, ci_ordered)
 
   result <- list()
   result$se <- se_user_model
-  result$vcov <- C
+  result$vcov <- C[reorder, reorder]
   result$ci <- ci_user_model
 
   return(result)

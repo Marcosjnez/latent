@@ -1,12 +1,19 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/06/2025
+# Modification date: 24/08/2025
 
 lca_control <- function(control) {
 
   # Auxiliary function for lca.R
 
   # Control input
+
+  if(is.null(control$prior)) {
+    control$prior <- "bayesconst"
+  } else if(control$prior == "bayesconst") {
+  } else if(control$prior != "none") {
+    stop("Unkown prior")
+  }
 
   if(is.null(control$opt)) {
     control$opt <- "lbfgs"

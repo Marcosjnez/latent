@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2025
+# Modification date: 22/08/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -125,6 +125,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   # Loop to create and fit the models for different nclasses:
   for(NK in 1:nmodels) {
 
+    # NK <- 1L
     print(paste0("Model nclasses = ", NCLASSES[NK]) )
 
     # Ensure that nclasses is an integer:
@@ -156,7 +157,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     # Generate the structures for optimization:
     structures <- get_lca_structures(data_list = data_list,
-                                     full_model = full_model)
+                                     full_model = full_model,
+                                     control = control)
     list2env(structures, envir = environment())
 
     #### Fit the model ####
