@@ -5,7 +5,7 @@ combine_est_se <- function(est, se, digits = 4) {
 
   format_matrix <- function(mat) {
     if (is.null(digits)) return(mat)
-    fmt <- function(x) format(round(x, digits = digits), nsmall = digits, trim = TRUE, scientific = FALSE)
+    fmt <- function(x) round(x, digits = digits)
     apply(mat, c(1, 2), fmt)
   }
 
@@ -50,7 +50,7 @@ combine_est_se <- function(est, se, digits = 4) {
         }
       }
 
-      M <- matrix(NA_character_, nrow = nr, ncol = 2 * nc,
+      M <- matrix(NA, nrow = nr, ncol = 2 * nc,
                   dimnames = list(rownames(E), NULL))
 
       E_fmt <- format_matrix(E)
