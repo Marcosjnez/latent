@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/08/2025
+# Modification date: 25/08/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -56,30 +56,23 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   #### Process the data ####
 
-  # Check if any column in "data" is an ordered factor and transform it into
-  # intergers starting at 0:
-  is_factor <- unlist(lapply(data, is.factor))
-  ncategorical <- sum(is_factor | item == "multinomial")
-  factor_names <- vector("list", length = ncategorical)
-  factor_indices <- unlist(lapply(data, is.factor))
+  # Check if any column in "data" is modeled with the multinomial model and
+  # transform it to a factor:
 
+  condition <- item == "multinomial"
+  factor_indices <- which(condition)
   # Save category names for data modeled with the multinomial model:
-  if(any(!is_factor & item == "multinomial")) {
-
-    factor_names[!factor_indices] <- lapply(data[, !factor_indices],
-                                            \(x) sort(unique(x)))
-
-  }
-
-  # Save category names for factor data:
-  if(any(is_factor)) {
-
-    factor_names[factor_indices] <- lapply(data[, factor_indices], levels)
-    data[] <- lapply(data, function(col) {
-      if (is.factor(col)) as.integer(col) - 1L else col
-    })
-
-  }
+  factor_names <- lapply(data[, factor_indices, drop = FALSE], levels)
+  # Transform into factors:
+  data[, factor_indices] <- lapply(data[, factor_indices, drop = FALSE],
+                                   FUN = factor)
+  data[, factor_indices] <- lapply(data[, factor_indices, drop = FALSE],
+                                   FUN = function(col) {
+                                     if (is.factor(col)) as.integer(col) - 1L else col
+                                   })
+  # Make sure to start at 0:
+  # data <- apply(data[, multinom, drop = FALSE], MARGIN = 2,
+  #               FUN = \(x) x - min(x))
 
   # Number of subjects:
   nobs <- nrow(data)

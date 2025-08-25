@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/08/2025
+# Modification date: 25/08/2025
 #'
 #' @title
 #' Standard Errors
@@ -56,10 +56,10 @@ se <- function(fit, confidence = 0.95, digits = 2) {
              unlist(fit@Optim$opt$lca_trans$peta))
   probs_selection <- match(probs, fit@Optim$opt$transparameters_labels)
   x <- fit@Optim$opt$transparameters[probs_selection]
-  remove <- which(x > 0.99 | x < 0.01)
+  remove <- which(x > 0.999 | x < 0.001)
   keep <- 1:nparams
   if(length(remove) > 0) {
-    keep <- match(probs[!remove], mylabels)
+    keep <- keep[-remove]
     dconstraints <- dconstraints[keep, , drop = FALSE]
     H <- H[keep, keep]
   }

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/08/2025
+# Modification date: 25/08/2025
 #'
 #' @title
 #' Get the default model for Latent Class Analysis.
@@ -641,7 +641,7 @@ get_lca_structures <- function(data_list, full_model, control) {
       if(any(item == "multinomial")) {
 
         # Get the proportion of times each category was selected in an item:
-        Y <- data[, multinom, drop = FALSE] - 1L
+        Y <- data[, multinom, drop = FALSE] # Make sure to start at 0
         pi_hat_list <- vector("list", length = Jmulti)
 
         for(j in 1:Jmulti) {
