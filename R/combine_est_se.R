@@ -72,3 +72,24 @@ combine_est_se <- function(est, se, digits = 4) {
 
   return(list(classes = classes, items = items))
 }
+
+combine_est_ci <- function(lower, est, upper, digits = 3) {
+  fmt <- function(x) formatC(round(x, digits = digits),
+                             format = "f", digits = digits)
+
+  # Combine class-level estimates
+  classes <- paste0(
+    fmt(est$classes),
+    " [", fmt(lower$classes), ", ", fmt(upper$classes), "]"
+  )
+
+  # Combine item-level estimates
+  items <- mapply(function(E, L, U) {
+    matrix(paste0(
+      fmt(E), " [", fmt(L), ", ", fmt(U), "]"
+    ), nrow = nrow(E), ncol = ncol(E),
+    dimnames = dimnames(E))
+  }, est$items, lower$items, upper$items, SIMPLIFY = FALSE)
+
+  list(classes = classes, items = items)
+}

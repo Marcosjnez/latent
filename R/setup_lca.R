@@ -391,7 +391,7 @@ get_short_lca_model <- function(data_list, nclasses, item, lca_trans,
     for(j in multinom) {
       items[[j]] <- matrix(NA, nrow = K[i], ncol = nclasses)
       # rownames(items[[j]]) <- paste("Category", 1:K[i], sep = "")
-      rownames(items[[j]]) <- data_list$factor_names[[j]]
+      rownames(items[[j]]) <- data_list$factor_names[[i]]
       colnames(items[[j]]) <- lca_trans$class
       i <- i+1L
     }
@@ -609,78 +609,91 @@ get_lca_structures <- function(data_list, full_model, control) {
   # Choose whether using Bayes constants:
   if(control$reg) {
 
+    # Bayes Constant for class probabilities:
+    alpha <- control$penalties$class$alpha
+    if(alpha != 0) {
+
       labels <- lca_trans$class
       indices <- match(labels, transparameters_labels)
       control_estimator[[2]] <- list(estimator = "bayesconst1",
                                      labels = labels,
                                      indices = list(indices-1L),
-                                     alpha = control$penalties$class$alpha)
-      G <- 3L
+                                     K = nclasses,
+                                     alpha = alpha)
+    }
 
-      if(any(item == "gaussian")) {
+    G <- length(control_estimator) + 1L
 
-        Y <- data[, gauss, drop = FALSE]
-        sigma_class <- split(lca_trans$sigma, rep(1:nclasses, each = Jgauss))
-        varshat <- apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)
-        for(i in 1:nclasses) {
+    # Bayes Constant for standard deviations:
+    alpha <- control$penalties$sd$alpha
+    if(any(item == "gaussian") & alpha != 0) {
 
-          labels <- sigma_class[[i]]
-          indices <- match(labels, transparameters_labels)
-          control_estimator[[G]] <- list(estimator = "bayesconst3",
-                                         labels = labels,
-                                         indices = list(indices-1L),
-                                         K = nclasses,
-                                         varshat = varshat,
-                                         alpha = control$penalties$sd$alpha)
-          G <- G+1L
+      Y <- data[, gauss, drop = FALSE]
+      sigma_class <- split(lca_trans$sigma, rep(1:nclasses, each = Jgauss))
+      varshat <- apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs
+      for(i in 1:nclasses) {
 
-        }
+        labels <- sigma_class[[i]]
+        indices <- match(labels, transparameters_labels)
+        control_estimator[[G]] <- list(estimator = "bayesconst3",
+                                       labels = labels,
+                                       indices = list(indices-1L),
+                                       K = nclasses,
+                                       varshat = varshat,
+                                       alpha = alpha)
+        G <- G+1L
 
       }
 
-      if(any(item == "multinomial")) {
+    }
 
-        # Get the proportion of times each category was selected in an item:
-        Y <- data[, multinom, drop = FALSE] # Make sure to start at 0
-        pi_hat_list <- vector("list", length = Jmulti)
+    # Bayes Constant for multinomial probabilities:
+    alpha <- control$penalties$prob$alpha
+    if(any(item == "multinomial") & alpha != 0) {
 
-        for(j in 1:Jmulti) {
-          pi_hat_list[[j]] <- count(Y[, j], nobs, K[j]) / nobs
-        }
-        pi_hat_list <- rep(pi_hat_list, times = nclasses)
+      # Get the proportion of times each category was selected in an item:
+      Y <- data[, multinom, drop = FALSE] # The min of each column should be 0
+      pi_hat_list <- vector("list", length = Jmulti)
 
-        # pihat <- unlist(pi_hat_list)
-        # selection <- split(1:(nclasses*Jmulti),
-        #                    f = rep(1:nclasses, each = Jmulti))
-        # for(i in 1:length(nclasses)) {
-        #
-        #   labels <- unlist(lca_trans$peta[selection[[i]]])
-        #   indices <- match(labels, transparameters_labels)
-        #   control_estimator[[G]] <- list(estimator = "bayesconst2",
-        #                                  labels = labels,
-        #                                  indices = list(indices-1L),
-        #                                  K = nclasses,
-        #                                  pihat = pihat,
-        #                                  alpha = control$penalties$prob$alpha)
-        #   G <- G+1L
-        #
-        # }
-
-        for(i in 1:length(pi_hat_list)) {
-
-          pihat <- pi_hat_list[[i]]
-          labels <- lca_trans$peta[[i]]
-          indices <- match(labels, transparameters_labels)
-          control_estimator[[G]] <- list(estimator = "bayesconst2",
-                                         labels = labels,
-                                         indices = list(indices-1L),
-                                         K = nclasses,
-                                         pihat = pihat,
-                                         alpha = control$penalties$prob$alpha)
-          G <- G+1L
-
-        }
+      # pi_hat_list <- apply(Y, 2, \(x) table(x)/nobs)
+      for(j in 1:Jmulti) { # Much faster
+        pi_hat_list[[j]] <- count(Y[, j], nobs, K[j]) / nobs
       }
+      pi_hat_list <- rep(pi_hat_list, times = nclasses)
+
+      for(i in 1:length(pi_hat_list)) {
+
+        pihat <- pi_hat_list[[i]]
+        labels <- lca_trans$peta[[i]]
+        indices <- match(labels, transparameters_labels)
+        control_estimator[[G]] <- list(estimator = "bayesconst2",
+                                       labels = labels,
+                                       indices = list(indices-1L),
+                                       K = nclasses,
+                                       pihat = pihat,
+                                       alpha = control$penalties$prob$alpha)
+        G <- G+1L
+
+      }
+
+      # pihat <- unlist(pi_hat_list)
+      # selection <- split(1:(nclasses*Jmulti),
+      #                    f = rep(1:nclasses, each = Jmulti))
+      # for(i in 1:length(nclasses)) {
+      #
+      #   labels <- unlist(lca_trans$peta[selection[[i]]])
+      #   indices <- match(labels, transparameters_labels)
+      #   control_estimator[[G]] <- list(estimator = "bayesconst2",
+      #                                  labels = labels,
+      #                                  indices = list(indices-1L),
+      #                                  K = nclasses,
+      #                                  pihat = pihat,
+      #                                  alpha = control$penalties$prob$alpha)
+      #   G <- G+1L
+      #
+      # }
+
+    }
   }
 
   #### Return ####

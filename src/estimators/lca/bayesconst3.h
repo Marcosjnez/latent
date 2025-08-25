@@ -15,20 +15,21 @@ public:
 
   int K;
   double alpha, constant, prod_vars;
-  arma::vec vars, varshat, sds;
+  arma::vec vars, varshat, sds, logvars;
 
   void param() {
 
     sds = transparameters;
     vars = sds % sds;
-    prod_vars = arma::prod(vars);
-    constant = alpha/K;
+    logvars = arma::trunc_log(vars);
+    // prod_vars = arma::prod(vars);
+    constant = alpha/(K + 0.00);
 
   }
 
   void F() {
 
-    f = 0.5*constant * (arma::trunc_log(prod_vars) + arma::accu(varshat/vars));
+    f = 0.5*constant * (arma::accu(logvars) + arma::accu(varshat/vars));
 
   }
 

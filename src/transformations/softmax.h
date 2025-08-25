@@ -58,10 +58,10 @@ public:
     dconstraints();
     vectors.resize(1);
     vectors[0] = dconstr;
-    // vectors[1] = arma::conv_to<arma::vec>::from(indices_out);
 
-    matrices.resize(1);
+    matrices.resize(2);
     matrices[0] = jacob;
+    matrices[1] = sum_djacob;
 
   }
 

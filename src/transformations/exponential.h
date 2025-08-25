@@ -41,8 +41,9 @@ public:
 
   void outcomes() {
 
-    matrices.resize(1);
+    matrices.resize(2);
     matrices[0] = jacob;
+    matrices[1] = sum_djacob;
 
   }
 

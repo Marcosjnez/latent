@@ -27,7 +27,7 @@
 #' None yet.
 #'
 #' @export
-se <- function(fit, confidence = 0.95, digits = 2) {
+se <- function(fit, confidence = 0.95, digits = 3) {
 
   control_manifold <- fit@Optim$control_manifold
   control_transform <- fit@Optim$control_transform
@@ -41,24 +41,125 @@ se <- function(fit, confidence = 0.95, digits = 2) {
                             control_optimizer = control_optimizer,
                             compute = "dconstr", eps = 1e-04)
 
+  raw_model <- standard_se(fit, computations, type = "model",
+                           confidence = confidence, digits = digits)
+  user_model <- standard_se(fit, computations, type = "user",
+                            confidence = confidence, digits = digits)
+  # user_model <- Visser_se(fit, computations,
+  #                         confidence = confidence, digits = digits)
+
+  result <- list(user_model = user_model,
+                 raw_model = raw_model)
+
+  return(result)
+
+}
+
+standard_se <- function(fit, computations, type = "user",
+                        confidence = 0.95, digits = 3) {
+
+  if(type == "user") {
+
+    all_labels <- c(fit@Optim$opt$lca_trans$class,
+                    unlist(fit@Optim$opt$lca_trans$peta),
+                    fit@Optim$opt$lca_trans$mu,
+                    fit@Optim$opt$lca_trans$sigma)
+    all_labels <- unname(all_labels)
+    # Model:
+    est <- fit@transformed_pars
+    reorder <- match(unlist(fit@modelInfo$prob_model), all_labels)
+
+  } else if(type == "model") {
+
+    all_labels <- c(fit@Optim$opt$lca_trans$theta,
+                    unlist(fit@Optim$opt$lca_trans$eta),
+                    fit@Optim$opt$lca_trans$mu,
+                    fit@Optim$opt$lca_trans$s)
+    all_labels <- unname(all_labels)
+    # Model:
+    est <- fit@parameters
+    reorder <- match(unlist(fit@modelInfo$model), all_labels)
+
+  } else {
+
+    stop("Unkown type")
+
+  }
+
+  nparam <- length(all_labels)
+
+  trans_labels <- fit@Optim$opt$transparameters_labels
+  selection <- match(all_labels, trans_labels)
+
+  C <- computations$vcov[selection, selection]
+  rownames(C) <- colnames(C) <- all_labels
+
+  # Variance-covariance matrix:
+  se <- computations$se[selection]
+  names(se) <- all_labels
+
+  # Standard errors:
+  se_list <- fill_list_with_vector(fit@modelInfo$model, se[reorder])
+  se_list <- allnumeric(se_list)
+  est_se <- combine_est_se(est, se_list, digits = digits)
+
+  # # Confidence limits:
+  # # Parameter types:
+  # types <- rep("linear", times = nparam)
+  # x <- fit@Optim$opt$parameters
+  # ci <- matrix(NA, nrow = 2, ncol = length(all_labels))
+  # ci[, selection] <- sapply(1:nparam, FUN = \(i) conf(x[i], se[selection][i],
+  #                                                     confidence = confidence,
+  #                                                     type = types[i]))
+  # rownames(ci) <- c("lower", "upper")
+  # colnames(ci) <- all_labels
+  #
+  # ci_lower <- fill_list_with_vector(fit@modelInfo$model,
+  #                                   ci[1, reorder])
+  # ci_lower <- allnumeric(ci_lower)
+  #
+  # ci_upper <- fill_list_with_vector(fit@modelInfo$model,
+  #                                   ci[2, reorder])
+  # ci_upper <- allnumeric(ci_upper)
+  #
+  # est_ci <- combine_est_ci(ci_lower, est, ci_upper, digits = digits)
+
+  # Return
+  result <- list()
+  result$est_se <- est_se
+  result$se <- se_list
+  # result$est_ci <- est_ci
+  # result$ci_lower <- ci_lower
+  # result$ci_upper <- ci_upper
+  result$vcov <- C
+
+  return(result)
+
+}
+
+Visser_se <- function(fit, computations,
+                      confidence = 0.95, digits = 3) {
+
   mylabels <- c(fit@Optim$opt$lca_trans$class,
                 unlist(fit@Optim$opt$lca_trans$peta),
                 fit@Optim$opt$lca_trans$mu,
                 fit@Optim$opt$lca_trans$sigma)
-  nparams <- length(mylabels)
-  selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
-  x <- fit@Optim$opt$transparameters[selection] # Parameters
-  H <- computations$hess[selection, selection]
-  rownames(H) <- colnames(H) <- mylabels
-  dconstraints <- computations$dconstr[selection, ]
 
   # Parameter types:
   nprob <- length(c(fit@Optim$opt$lca_trans$class,
                     unlist(fit@Optim$opt$lca_trans$peta)))
   nlinear <- length(fit@Optim$opt$lca_trans$mu)
   nsd <- length(fit@Optim$opt$lca_trans$sigma)
-
   types <- rep(c("prob", "linear", "sd"), times = c(nprob, nlinear, nsd))
+
+  nparams <- length(mylabels)
+  selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
+  # computations$se[selection]
+  x <- fit@Optim$opt$transparameters[selection] # Parameters
+  H <- computations$hess[selection, selection]
+  # eigen(H)$values
+  rownames(H) <- colnames(H) <- mylabels
+  dconstraints <- computations$dconstr[selection, ]
 
   # Remove probabilities close to 0 or 1 to avoid numerical problems:
   condition_remove <- types == "prob" & (x > 0.999 | x < 0.001)
@@ -80,6 +181,7 @@ se <- function(fit, confidence = 0.95, digits = 2) {
   # British Journal of Mathematical and Statistical Psychology, 53: 317-327.
   # https://doi.org/10.1348/000711000159240
 
+  # Variance-covariance matrix:
   K <- t(dconstraints)
   D <- H + t(K) %*% K
   D_inv <- solve(D)
@@ -88,34 +190,26 @@ se <- function(fit, confidence = 0.95, digits = 2) {
   names(se) <- mylabels
   colnames(C) <- rownames(C) <- mylabels
 
+  # Model:
+  est <- fit@transformed_pars
+
+  # Standard errors:
   reorder <- match(unlist(fit@modelInfo$prob_model), mylabels)
-  se_user_model <- fill_list_with_vector(fit@modelInfo$prob_model, se[reorder])
-  se_user_model <- allnumeric(se_user_model)
-
-  ci <- sapply(1:nparams, FUN = \(i) conf(x[i], se[i], confidence = confidence,
-                                         type = types[i]))
-  rownames(ci) <- c("lower", "upper")
-  colnames(ci) <- mylabels
-
-  strings <- format(round(ci[, reorder], digits = digits), nsmall = digits)
-  ci_ordered <- apply(strings, MARGIN = 2,
-                      FUN = \(x) paste(x[1], x[2], sep = "-"))
-  ci_user_model <- fill_list_with_vector(fit@modelInfo$prob_model, ci_ordered)
-
-  user_model <- fit@transformed_pars
-  est_se <- combine_est_se(user_model, se_user_model)
+  se <- fill_list_with_vector(fit@modelInfo$prob_model, se[reorder])
+  se <- allnumeric(se)
+  est_se <- combine_est_se(est, se, digits = digits)
+  C <- C[reorder, reorder]
 
   result <- list()
-  result$se <- se_user_model
-  result$vcov <- C[reorder, reorder]
-  result$ci <- ci_user_model
   result$est_se <- est_se
+  result$se <- se
+  result$vcov <- C
 
   return(result)
 
 }
 
-conf <- function(x, se, confidence, type) {
+conf <- function(x, se, confidence = 0.95, type = "linear") {
 
   z <- stats::qnorm((1+confidence)/2)
 
@@ -138,6 +232,7 @@ conf <- function(x, se, confidence, type) {
 
   } else if(type == "sd") {
 
+    se <- se/x
     lower <- exp(log(x) - z * se)
     upper <- exp(log(x) + z * se)
 

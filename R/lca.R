@@ -61,11 +61,11 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   condition <- item == "multinomial"
   factor_indices <- which(condition)
-  # Save category names for data modeled with the multinomial model:
-  factor_names <- lapply(data[, factor_indices, drop = FALSE], levels)
   # Transform into factors:
   data[, factor_indices] <- lapply(data[, factor_indices, drop = FALSE],
                                    FUN = factor)
+  # Save category names for data modeled with the multinomial model:
+  factor_names <- lapply(data[, factor_indices, drop = FALSE], levels)
   data[, factor_indices] <- lapply(data[, factor_indices, drop = FALSE],
                                    FUN = function(col) {
                                      if (is.factor(col)) as.integer(col) - 1L else col
@@ -215,6 +215,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     Optim$opt <- x
     Optim$opt$parameters_labels <- parameters_labels
     Optim$opt$transparameters_labels <- transparameters_labels
+    Optim$opt$lca_param <- lca_param
     Optim$opt$lca_trans <- lca_trans
 
     #### Process the outputs ####

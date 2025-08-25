@@ -35,7 +35,6 @@ public:
 
   void G() {
 
-    grad.set_size(transparameters.n_elem); grad.zeros();
     grad = -constant/transparameters;
 
   }
@@ -47,9 +46,6 @@ public:
   }
 
   void H() {
-
-    hess.set_size(transparameters.n_elem, transparameters.n_elem);
-    hess.zeros();
 
     arma::vec d2constant_logtrans = constant/(transparameters % transparameters);
     hess = diagmat(d2constant_logtrans);

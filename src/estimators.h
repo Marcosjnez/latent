@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 24/08/2025
+ * Modification date: 25/08/2025
  */
 
 class estimators {
@@ -113,26 +113,12 @@ public:
 
   void param(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
-    // x.latentloglik.zeros();
-    // x.latentpars = xestimators[1]->latentpars;
-
     for(int i=0; i < x.nestimators; ++i) {
 
       arma::uvec indices = xestimators[i]->indices[0];
       xestimators[i]->transparameters = x.transparameters.elem(indices);
-      // xestimators[i]->latentpars = x.latentpars;
-      // xestimators[i]->latentloglik = x.latentloglik;
 
       xestimators[i]->param();
-
-      // arma::vec v = xestimators[i]->latentpars;
-      // for (arma::uword j = 0; j < v.n_elem; ++j) {
-      //   Rprintf("%g \n", v[j]);
-      // }
-
-      // x.latentloglik += xestimators[i]->latentloglik;
-      // x.latentpars = xestimators[i]->latentpars; // ADD INDICES
-      // x.loglatentpars = xestimators[i]->loglatentpars; // ADD INDICES
 
     }
 
@@ -143,9 +129,6 @@ public:
     x.f = 0;
 
     for(int i=0; i < x.nestimators; ++i) {
-
-      // xestimators[i]->latentloglik = x.latentloglik;
-      // xestimators[i]->latentpars = x.latentpars; // ADD INDICES
 
       xestimators[i]->F();
       x.f += xestimators[i]->f;

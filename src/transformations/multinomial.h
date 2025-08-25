@@ -75,11 +75,9 @@ public:
 
   void outcomes() {
 
-    matrices.resize(1);
+    matrices.resize(2);
     matrices[0] = jacob;
-
-    cubes.resize(1);
-    cubes[0] = jacob2;
+    matrices[1] = sum_djacob;
 
   }
 

@@ -89,14 +89,12 @@ public:
 
   void dG() {
 
-    // Rcpp::stop("dG not available");
     dg.set_size(transparameters.n_elem); dg.zeros();
 
   }
 
   void H() {
 
-    // Rcpp::stop("H not available");
     hess.set_size(transparameters.n_elem, transparameters.n_elem);
     hess.zeros();
 
