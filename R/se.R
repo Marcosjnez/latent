@@ -47,24 +47,32 @@ se <- function(fit, confidence = 0.95, digits = 2) {
                 fit@Optim$opt$lca_trans$sigma)
   nparams <- length(mylabels)
   selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
+  x <- fit@Optim$opt$transparameters[selection] # Parameters
   H <- computations$hess[selection, selection]
   rownames(H) <- colnames(H) <- mylabels
   dconstraints <- computations$dconstr[selection, ]
 
+  # Parameter types:
+  nprob <- length(c(fit@Optim$opt$lca_trans$class,
+                    unlist(fit@Optim$opt$lca_trans$peta)))
+  nlinear <- length(fit@Optim$opt$lca_trans$mu)
+  nsd <- length(fit@Optim$opt$lca_trans$sigma)
+
+  types <- rep(c("prob", "linear", "sd"), times = c(nprob, nlinear, nsd))
+
   # Remove probabilities close to 0 or 1 to avoid numerical problems:
-  probs <- c(fit@Optim$opt$lca_trans$class,
-             unlist(fit@Optim$opt$lca_trans$peta))
-  probs_selection <- match(probs, fit@Optim$opt$transparameters_labels)
-  x <- fit@Optim$opt$transparameters[probs_selection]
-  remove <- which(x > 0.999 | x < 0.001)
-  keep <- 1:nparams
-  if(length(remove) > 0) {
-    keep <- keep[-remove]
-    dconstraints <- dconstraints[keep, , drop = FALSE]
-    H <- H[keep, keep]
-  }
+  condition_remove <- types == "prob" & (x > 0.999 | x < 0.001)
+  remove <- which(condition_remove)
+  keep <- which(!condition_remove)
+  dconstraints <- dconstraints[keep, , drop = FALSE]
+  H <- H[keep, keep]
   se <- vector(length = length(mylabels))
   C <- matrix(NA, nrow = nparams, ncol = nparams)
+
+  # Remove empty columns in the constraints matrix:
+  condition_remove <- colSums(dconstraints) < 1
+  keep_constr <- which(!condition_remove)
+  dconstraints <- dconstraints[, keep_constr, drop = FALSE]
 
   # The next formula is from the following paper:
   # Visser, I., Raijmakers, M.E.J. and Molenaar, P.C.M. (2000),
@@ -84,14 +92,6 @@ se <- function(fit, confidence = 0.95, digits = 2) {
   se_user_model <- fill_list_with_vector(fit@modelInfo$prob_model, se[reorder])
   se_user_model <- allnumeric(se_user_model)
 
-  nprob <- length(c(fit@Optim$opt$lca_trans$class,
-             unlist(fit@Optim$opt$lca_trans$peta)))
-  nlinear <- length(fit@Optim$opt$lca_trans$mu)
-  nsd <- length(fit@Optim$opt$lca_trans$sigma)
-
-  types <- rep(c("prob", "linear", "sd"), times = c(nprob, nlinear, nsd))
-
-  x <- fit@Optim$opt$transparameters[selection]
   ci <- sapply(1:nparams, FUN = \(i) conf(x[i], se[i], confidence = confidence,
                                          type = types[i]))
   rownames(ci) <- c("lower", "upper")
@@ -102,10 +102,14 @@ se <- function(fit, confidence = 0.95, digits = 2) {
                       FUN = \(x) paste(x[1], x[2], sep = "-"))
   ci_user_model <- fill_list_with_vector(fit@modelInfo$prob_model, ci_ordered)
 
+  user_model <- fit@transformed_pars
+  est_se <- combine_est_se(user_model, se_user_model)
+
   result <- list()
   result$se <- se_user_model
   result$vcov <- C[reorder, reorder]
   result$ci <- ci_user_model
+  result$est_se <- est_se
 
   return(result)
 

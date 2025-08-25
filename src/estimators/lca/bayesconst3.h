@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 24/08/2025
+ * Modification date: 25/08/2025
  */
 
 /*
@@ -60,6 +60,9 @@ public:
   }
 
   void outcomes() {
+
+    doubles.resize(1);
+    doubles[0] = f;
 
     // vectors.resize(1);
     //

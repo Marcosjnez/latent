@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 23/08/2025
+ * Modification date: 25/08/2025
  */
 
 /*
@@ -13,6 +13,7 @@ class bayesconst2: public estimators {
 public:
 
   double alpha;
+  int K;
   arma::vec constant, pihat;
   arma::vec logtrans;
   arma::vec constant_logtrans;
@@ -20,8 +21,8 @@ public:
   void param() {
 
     logtrans = arma::trunc_log(transparameters);
-    double K = logtrans.n_elem + 0.00;
-    constant = pihat * (alpha/K);
+    // double K = logtrans.n_elem + 0.00;
+    constant = pihat * (alpha/(K + 0.00));
     constant_logtrans = constant % logtrans;
 
   }
@@ -65,6 +66,9 @@ public:
 
   void outcomes() {
 
+    doubles.resize(1);
+    doubles[0] = f;
+
     // vectors.resize(1);
     //
     // matrices.resize(1);
@@ -80,9 +84,11 @@ bayesconst2* choose_bayesconst2(const Rcpp::List& estimator_setup) {
   bayesconst2* myestimator = new bayesconst2();
 
   double alpha = estimator_setup["alpha"];
+  int K = estimator_setup["K"];
   arma::vec pihat = estimator_setup["pihat"];
   std::vector<arma::uvec> indices = estimator_setup["indices"];
 
+  myestimator->K = K;
   myestimator->alpha = alpha;
   myestimator->pihat = pihat;
   myestimator->indices = indices;

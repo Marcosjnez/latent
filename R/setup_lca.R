@@ -647,8 +647,24 @@ get_lca_structures <- function(data_list, full_model, control) {
         for(j in 1:Jmulti) {
           pi_hat_list[[j]] <- count(Y[, j], nobs, K[j]) / nobs
         }
-
         pi_hat_list <- rep(pi_hat_list, times = nclasses)
+
+        # pihat <- unlist(pi_hat_list)
+        # selection <- split(1:(nclasses*Jmulti),
+        #                    f = rep(1:nclasses, each = Jmulti))
+        # for(i in 1:length(nclasses)) {
+        #
+        #   labels <- unlist(lca_trans$peta[selection[[i]]])
+        #   indices <- match(labels, transparameters_labels)
+        #   control_estimator[[G]] <- list(estimator = "bayesconst2",
+        #                                  labels = labels,
+        #                                  indices = list(indices-1L),
+        #                                  K = nclasses,
+        #                                  pihat = pihat,
+        #                                  alpha = control$penalties$prob$alpha)
+        #   G <- G+1L
+        #
+        # }
 
         for(i in 1:length(pi_hat_list)) {
 
@@ -658,6 +674,7 @@ get_lca_structures <- function(data_list, full_model, control) {
           control_estimator[[G]] <- list(estimator = "bayesconst2",
                                          labels = labels,
                                          indices = list(indices-1L),
+                                         K = nclasses,
                                          pihat = pihat,
                                          alpha = control$penalties$prob$alpha)
           G <- G+1L
