@@ -14,7 +14,8 @@ setClass("llca",
            transformed_pars   = "list",
            posterior          = "matrix",
            state              = "vector",
-           loglik             = "numeric", # loglik values and info
+           loglik             = "numeric", # loglik values
+           penalized_loglik   = "numeric", # penalized loglik
            loglik_case        = "numeric",
            summary_table      = "list",
            ClassConditional   = "list",
