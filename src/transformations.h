@@ -90,10 +90,9 @@ public:
     // Update the gradient after each parameter transformation:
     // Use the gradient of the transformed parameters (grad) to get the final gradient (g):
     // x.g = x.jacob.t() * x.grad;
-    // But avoid this multiplication to reduce computing cost
+    // This sequence avoids this multiplication to reduce computing cost
 
-    x.g.set_size(x.parameters.n_elem); x.g.zeros();
-
+    // Iterate up-down:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 
       arma::uvec indices_out = xtransformations[i]->indices_out[0];
@@ -106,15 +105,14 @@ public:
 
     }
 
+    // Gradient:
     x.g = x.grad(x.transparam2param);
 
   }
 
   void update_hess(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
-    x.h.set_size(x.parameters.n_elem, x.parameters.n_elem); x.h.zeros();
-
-    // Faster version:
+    // Faster version of hessian updating:
     for (int i = x.ntransforms - 1; i >= 0; --i) {
 
       const arma::uvec& indices_in  = xtransformations[i]->indices_in[0];
@@ -141,10 +139,12 @@ public:
 
     }
 
+    // Get the hessian and inverse hessian:
+    // Warning: if the hessian is not positive-definite, an approximation is done
     x.h = x.hess(x.transparam2param, x.transparam2param);
     x.inv_h = arma::inv_sympd(x.h, arma::inv_opts::allow_approx);
 
-    // Get the variance-covariance matrix:
+    // Get the variance-covariance matrix of everything:
     x.vcov.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
     x.vcov.zeros();
     x.vcov(x.transparam2param, x.transparam2param) = x.inv_h;
@@ -159,6 +159,7 @@ public:
 
     }
 
+    // Finally, get the standard errors:
     x.se = arma::sqrt(x.vcov.diag());
 
   }

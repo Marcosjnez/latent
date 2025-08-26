@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/08/2025
+# Modification date: 26/08/2025
 #'
 #' @title
 #' Standard Errors
@@ -48,8 +48,34 @@ se <- function(fit, confidence = 0.95, digits = 3) {
   # user_model <- Visser_se(fit, computations,
   #                         confidence = confidence, digits = digits)
 
+  se <- raw_model$se
+  nparam <- length(se)
+  labels <- rownames(raw_model$se)
+  selection <- match(labels, fit@Optim$opt$transparameters_labels)
+  x <- fit@Optim$opt$transparameters[selection]
+  types <- rep("linear", times = nparam)
+  ci <- sapply(1:nparam, FUN = \(i) conf(x[i], se[i],
+                                         confidence = confidence,
+                                         type = types[i]))
+
+  rownames(ci) <- c("lower", "upper")
+  colnames(ci) <- labels
+  est <- fit@parameters
+  reorder <- match(unlist(fit@modelInfo$model), labels)
+  ci_lower <- fill_list_with_vector(fit@modelInfo$model,
+                                    ci[1, reorder])
+  ci_lower <- allnumeric(ci_lower)
+  ci_upper <- fill_list_with_vector(fit@modelInfo$model,
+                                    ci[2, reorder])
+  ci_upper <- allnumeric(ci_upper)
+  est_ci <- combine_est_ci(ci_lower, est, ci_upper, digits = digits)
+
   result <- list(user_model = user_model,
                  raw_model = raw_model)
+
+  # result$est_ci <- est_ci
+  # result$ci_lower <- ci_lower
+  # result$ci_upper <- ci_upper
 
   return(result)
 
@@ -99,38 +125,15 @@ standard_se <- function(fit, computations, type = "user",
   names(se) <- all_labels
 
   # Standard errors:
-  se_list <- fill_list_with_vector(fit@modelInfo$model, se[reorder])
-  se_list <- allnumeric(se_list)
-  est_se <- combine_est_se(est, se_list, digits = digits)
+  se_model <- fill_list_with_vector(fit@modelInfo$model, se[reorder])
+  se_model <- allnumeric(se_model)
+  est_se <- combine_est_se(est, se_model, digits = digits)
 
-  # # Confidence limits:
-  # # Parameter types:
-  # types <- rep("linear", times = nparam)
-  # x <- fit@Optim$opt$parameters
-  # ci <- matrix(NA, nrow = 2, ncol = length(all_labels))
-  # ci[, selection] <- sapply(1:nparam, FUN = \(i) conf(x[i], se[selection][i],
-  #                                                     confidence = confidence,
-  #                                                     type = types[i]))
-  # rownames(ci) <- c("lower", "upper")
-  # colnames(ci) <- all_labels
-  #
-  # ci_lower <- fill_list_with_vector(fit@modelInfo$model,
-  #                                   ci[1, reorder])
-  # ci_lower <- allnumeric(ci_lower)
-  #
-  # ci_upper <- fill_list_with_vector(fit@modelInfo$model,
-  #                                   ci[2, reorder])
-  # ci_upper <- allnumeric(ci_upper)
-  #
-  # est_ci <- combine_est_ci(ci_lower, est, ci_upper, digits = digits)
-
-  # Return
+  # Return:
   result <- list()
   result$est_se <- est_se
-  result$se <- se_list
-  # result$est_ci <- est_ci
-  # result$ci_lower <- ci_lower
-  # result$ci_upper <- ci_upper
+  result$se_model <- se_model
+  result$se <- se
   result$vcov <- C
 
   return(result)
@@ -195,13 +198,14 @@ Visser_se <- function(fit, computations,
 
   # Standard errors:
   reorder <- match(unlist(fit@modelInfo$prob_model), mylabels)
-  se <- fill_list_with_vector(fit@modelInfo$prob_model, se[reorder])
-  se <- allnumeric(se)
-  est_se <- combine_est_se(est, se, digits = digits)
+  se_model <- fill_list_with_vector(fit@modelInfo$prob_model, se[reorder])
+  se_model <- allnumeric(se_model)
+  est_se <- combine_est_se(est, se_model, digits = digits)
   C <- C[reorder, reorder]
 
   result <- list()
   result$est_se <- est_se
+  result$se_model <- se_model
   result$se <- se
   result$vcov <- C
 
@@ -242,4 +246,3 @@ conf <- function(x, se, confidence = 0.95, type = "linear") {
   return(c(lower, upper))
 
 }
-

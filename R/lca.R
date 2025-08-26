@@ -92,12 +92,29 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   short2full <- match(do.call(paste, dt),
                       do.call(paste, counts_dt[, -c("index", "count"), with = FALSE]))
 
+  # Get the number of possible response patterns:
+  if(all(condition)) { # If all the items are multinomial...
+
+    # Count the number of categories:
+    Ks <- apply(data[, factor_indices, drop = FALSE], MARGIN = 2,
+                FUN = \(x) length(unique(x)))
+    # If all the items are multinomial, the number of possible patterns is:
+    npossible_patterns <- min(prod(Ks), nobs)
+
+  } else { # If any item is not multinomial...
+
+    npossible_patterns <- nobs
+
+  }
+
+
   # Put in a list the objects generated form the data:
   data_list <- vector("list")
   data_list$data <- data
   data_list$nobs <- nobs
   data_list$patterns <- patterns
   data_list$npatterns <- npatterns
+  data_list$npossible_patterns <- npossible_patterns
   data_list$nitems <- nitems
   data_list$weights <- weights
   data_list$full2short <- full2short
@@ -165,8 +182,9 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     modelInfo <- list(item = item,
                       nobs = nobs,
                       npatterns = npatterns,
+                      npossible_patterns = npossible_patterns,
                       nparam = nparam,
-                      df = npatterns - nparam,
+                      df = npossible_patterns - nparam,
                       ntrans = ntrans,
                       model = log_model,
                       prob_model = prob_model)
@@ -221,7 +239,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #### Process the outputs ####
 
     # Logarithm likelihood:
-    loglik <- -x$f
+    loglik <- -x$outputs$estimators$doubles[[1]]
+    penalized_loglik <- -x$f
     # Logarithm likelihood of each response pattern:
     loglik_case <- x$outputs$estimators$vectors[[1]][[3]]
     # Sum of logarithm likelihoods by response pattern:
@@ -315,6 +334,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                            posterior          = posterior,
                            state              = state,
                            loglik             = loglik, # loglik values and info
+                           penalized_loglik   = penalized_loglik,
                            loglik_case        = loglik_case,
                            summary_table      = summary_table,
                            ClassConditional   = ClassConditional,
