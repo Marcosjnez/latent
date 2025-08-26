@@ -27,7 +27,7 @@
 #' None yet.
 #'
 #' @export
-se <- function(fit, confidence = 0.95, digits = 2) {
+se <- function(fit, type = "user", digits = 2) {
 
   control_manifold <- fit@Optim$control_manifold
   control_transform <- fit@Optim$control_transform
@@ -39,82 +39,56 @@ se <- function(fit, confidence = 0.95, digits = 2) {
                             control_transform = control_transform,
                             control_estimator = control_estimator,
                             control_optimizer = control_optimizer,
-                            compute = "dconstr", eps = 1e-04)
+                            compute = "outcomes", eps = 1e-04)
 
-  model_se <- standard_se(fit, computations, type = "model",
-                          digits = digits)
-  user_se <- standard_se(fit, computations, type = "user",
-                         digits = digits)
+  se <- computations$se # standard erros
+  names(se) <- fit@Optim$opt$transparameters_labels
+
+  SE <- standard_se(fit, computations, type = type, digits = digits)
   # user_se <- Visser_se(fit, computations, digits = digits)
 
-  CI <- ci(fit = fit, model_se = model_se, confidence = confidence,
-           digits = digits)
-  model_ci <- CI$model_ci
-  user_ci <- CI$user_ci
-
-  result <- list(user_se = user_se,
-                 model_se = model_se,
-                 user_ci = user_ci,
-                 model_ci = model_ci)
+  result <- list(table = SE$table,
+                 table_se = SE$table_se,
+                 se = se)
 
   return(result)
 
 }
 
 standard_se <- function(fit, computations, type = "user",
-                        digits = 3) {
+                        digits = 2) {
+
+  # Select the parameters according to model type:
 
   if(type == "user") {
 
-    all_labels <- c(fit@Optim$opt$lca_trans$class,
-                    unlist(fit@Optim$opt$lca_trans$peta),
-                    fit@Optim$opt$lca_trans$mu,
-                    fit@Optim$opt$lca_trans$sigma)
-    all_labels <- unname(all_labels)
-    # Model:
+    model <- fit@modelInfo$prob_model
     est <- fit@transformed_pars
-    reorder <- match(unlist(fit@modelInfo$prob_model), all_labels)
 
   } else if(type == "model") {
 
-    all_labels <- c(fit@Optim$opt$lca_trans$theta,
-                    unlist(fit@Optim$opt$lca_trans$eta),
-                    fit@Optim$opt$lca_trans$mu,
-                    fit@Optim$opt$lca_trans$s)
-    all_labels <- unname(all_labels)
-    # Model:
+    model <- fit@modelInfo$model
     est <- fit@parameters
-    reorder <- match(unlist(fit@modelInfo$model), all_labels)
-
-  } else {
-
-    stop("Unkown type")
 
   }
 
-  nparam <- length(all_labels)
-
-  trans_labels <- fit@Optim$opt$transparameters_labels
-  selection <- match(all_labels, trans_labels)
-
-  C <- computations$vcov[selection, selection]
-  rownames(C) <- colnames(C) <- all_labels
-
-  # Variance-covariance matrix:
-  se <- computations$se[selection]
-  names(se) <- all_labels
+  mylabels <- unlist(model)
+  selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
 
   # Standard errors:
-  se_model <- fill_list_with_vector(fit@modelInfo$model, se[reorder])
-  se_model <- allnumeric(se_model)
-  est_se <- combine_est_se(est, se_model, digits = digits)
+  se <- computations$se[selection]
+  # names(se) <- mylabels
+
+  # Tables:
+  table_se <- fill_list_with_vector(model, se)
+  table_se <- allnumeric(table_se)
+  table <- combine_est_se(est, table_se, digits = digits)
 
   # Return:
   result <- list()
-  result$est_se <- est_se
-  result$se_model <- se_model
-  result$se <- se
-  result$vcov <- C
+  result$table <- table
+  result$table_se <- table_se
+  # result$se <- se
 
   return(result)
 
@@ -192,73 +166,78 @@ Visser_se <- function(fit, computations, digits = 2) {
 
 }
 
-conf <- function(x, se, confidence = 0.95) {
+ci <- function(fit, type = "user", confidence = 0.95, digits = 2) {
 
-  z <- stats::qnorm((1+confidence)/2)
+  # Compute standard errors:
+  control_manifold <- fit@Optim$control_manifold
+  control_transform <- fit@Optim$control_transform
+  control_estimator <- fit@Optim$control_estimator
+  control_optimizer <- fit@Optim$control
 
-  lower <- x - z * se
-  upper <- x + z * se
+  control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
+  computations <- grad_comp(control_manifold = control_manifold,
+                            control_transform = control_transform,
+                            control_estimator = control_estimator,
+                            control_optimizer = control_optimizer,
+                            compute = "outcomes")
 
-  return(c(lower, upper))
+  se <- computations$se # standard errors
+  names(se) <- fit@Optim$opt$transparameters_labels
 
-}
+  # Number of total parameters and transformed parameters:
+  ntrans <- length(fit@Optim$opt$transparameters)
+  # Initialize a vector of degrees of freedom:
+  ps <- rep(1, times = ntrans)
+  # slot for extracting the degrees of freedom from the transformations:
+  slot <- 2
+  # Get the indices of each transformed parameter:
+  indices <- unlist(lapply(fit@Optim$control_transform,
+                           FUN = \(x) x$indices_out[[1]]+1L))
+  # Update the degrees of freedom of each transformed parameter:
+  ps[indices] <- unlist(lapply(fit@Optim$opt$outputs$transformations$vectors,
+                               FUN = \(x) x[[slot]]))
 
-ci <- function(fit, model_se, confidence = 0.95, digits = 2) {
+  # Compute confidence intervals for each transformed parameter:
+  x <- fit@Optim$opt$transparameters
+  lower <- x - sqrt(qchisq(confidence, df = ps)) * se
+  upper <- x + sqrt(qchisq(confidence, df = ps)) * se
+  names(lower) <- names(upper) <- fit@Optim$opt$transparameters_labels
 
-  # Get the confidence intervals of the raw model:
-  se <- model_se$se
-  nparam <- length(se)
-  labels <- names(model_se$se)
-  selection <- match(labels, fit@Optim$opt$transparameters_labels)
-  x <- fit@Optim$opt$transparameters[selection]
-  ci <- sapply(1:nparam, FUN = \(i) conf(x[i], se[i],
-                                         confidence = confidence))
+  # Get confidence limits for the user model or raw model parameters:
 
-  rownames(ci) <- c("lower", "upper")
-  colnames(ci) <- labels
-  est <- fit@parameters
-  reorder <- match(unlist(fit@modelInfo$model), labels)
-  ci_lower <- fill_list_with_vector(fit@modelInfo$model,
-                                    ci[1, reorder])
-  ci_lower <- allnumeric(ci_lower)
-  ci_upper <- fill_list_with_vector(fit@modelInfo$model,
-                                    ci[2, reorder])
-  ci_upper <- allnumeric(ci_upper)
-  est_ci <- combine_est_ci(ci_lower, est, ci_upper, digits = digits)
+  # Select the parameters according to model type:
 
-  model_ci <- list(est_ci = est_ci,
-                   ci_lower = ci_lower,
-                   ci_upper = ci_upper)
+  if(type == "user") {
 
-  # Get the confidence intervals of the user model:
-  ci_lower2 <- ci_lower
-  ci_upper2 <- ci_upper
-  ci_lower2$classes <- soft(ci_lower$classes, 1.00)
-  ci_upper2$classes <- soft(ci_upper$classes, 1.00)
-  item <- fit@modelInfo$item
-  for(j in 1:length(item)) {
+    model <- fit@modelInfo$prob_model
+    est <- fit@transformed_pars
 
-    if(item[j] == "multinomial") {
-      ci_lower2$items[[j]] <- apply(ci_lower$items[[j]], MARGIN = 2,
-                                    FUN = soft, a = 1.00)
-      ci_upper2$items[[j]] <- apply(ci_upper$items[[j]], MARGIN = 2,
-                                    FUN = soft, a = 1.00)
-    } else if(item[j] == "gaussian") {
-      ci_lower2$items[[j]][2, ] <- exp(ci_lower$items[[j]][2, ])
-      ci_upper2$items[[j]][2, ] <- exp(ci_upper$items[[j]][2, ])
-    }
+  } else if(type == "model") {
+
+    model <- fit@modelInfo$model
+    est <- fit@parameters
 
   }
-  est <- fit@transformed_pars
-  est_ci2 <- combine_est_ci(ci_lower2, est, ci_upper2, digits = digits)
 
-  user_ci <- list(est_ci = est_ci2,
-                  ci_lower = ci_lower2,
-                  ci_upper = ci_upper2)
+  mylabels <- unlist(model)
+  selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
+
+  # Tables:
+  lower_ci <- fill_list_with_vector(model, lower[selection])
+  lower_ci <- allnumeric(lower_ci)
+  upper_ci <- fill_list_with_vector(model, upper[selection])
+  upper_ci <- allnumeric(upper_ci)
+
+  table <- combine_est_ci(lower_ci, est, upper_ci, digits = digits)
 
   # Return:
-  result <- list(user_ci = user_ci,
-                 model_ci = model_ci)
+  result <- list()
+  result$table <- table
+  result$lower_table <- lower_ci
+  result$upper_table <- upper_ci
+  result$lower <- lower
+  result$upper <- upper
+  result$se <- se
 
   return(result)
 

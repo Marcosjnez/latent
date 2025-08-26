@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 21/07/2025
+ * Modification date: 26/08/2025
  */
 
 double root_quad(double a, double b, double c) {

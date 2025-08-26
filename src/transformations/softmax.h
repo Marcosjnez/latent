@@ -56,8 +56,12 @@ public:
   void outcomes() {
 
     dconstraints();
-    vectors.resize(1);
+    int p = transparameters.n_elem;
+    arma::vec chisq_p(p, arma::fill::value(p));
+
+    vectors.resize(2);
     vectors[0] = dconstr;
+    vectors[1] = chisq_p;
 
     matrices.resize(2);
     matrices[0] = jacob;

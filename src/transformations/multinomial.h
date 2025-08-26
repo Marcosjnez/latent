@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 22/08/2025
+ * Modification date: 26/08/2025
  */
 
 // Logarithm multinomial probability transformation:
@@ -74,6 +74,13 @@ public:
   }
 
   void outcomes() {
+
+    int p = transparameters.n_elem;
+    arma::vec chisq_p(p, arma::fill::value(1.00));
+
+    vectors.resize(2);
+    vectors[0] = dconstr;
+    vectors[1] = chisq_p;
 
     matrices.resize(2);
     matrices[0] = jacob;

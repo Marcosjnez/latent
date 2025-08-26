@@ -41,6 +41,13 @@ public:
 
   void outcomes() {
 
+    int p = transparameters.n_elem;
+    arma::vec chisq_p(p, arma::fill::value(1.00));
+
+    vectors.resize(2);
+    vectors[0] = dconstr;
+    vectors[1] = chisq_p;
+
     matrices.resize(2);
     matrices[0] = jacob;
     matrices[1] = sum_djacob;

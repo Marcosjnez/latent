@@ -1,4 +1,4 @@
-combine_est_se <- function(est, se, digits = 4) {
+combine_est_se <- function(est, se, digits = 2) {
 
   est_suffix <- " (est)"
   se_suffix <- " (se)"
@@ -73,7 +73,7 @@ combine_est_se <- function(est, se, digits = 4) {
   return(list(classes = classes, items = items))
 }
 
-combine_est_ci <- function(lower, est, upper, digits = 3) {
+combine_est_ci <- function(lower, est, upper, digits = 2) {
   fmt <- function(x) formatC(round(x, digits = digits),
                              format = "f", digits = digits)
 
