@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/08/2025
+# Modification date: 26/08/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -106,7 +106,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     npossible_patterns <- nobs
 
   }
-
 
   # Put in a list the objects generated form the data:
   data_list <- vector("list")

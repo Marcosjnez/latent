@@ -189,6 +189,7 @@ arma::mat kdiag(arma::mat X) { // For geomin
 
 }
 
+// [[Rcpp::export]]
 arma::vec soft(arma::vec x, double a) {
 
   arma::vec x_trunc_exp = arma::trunc_exp(x);
@@ -246,7 +247,6 @@ double Dnorm(double x, double mu, double s2) {
   return arma::trunc_exp(-0.5*x*x/s2) / (SQRT2M_PI*sqrt(s2));
 }
 
-// [[Rcpp::export]]
 double logDnorm(double x, double mu, double s2) {
   x -= mu;
   return -0.5*x*x/s2 - arma::trunc_log(SQRT2M_PI*sqrt(s2));

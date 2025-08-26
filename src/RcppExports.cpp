@@ -11,16 +11,15 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// logDnorm
-double logDnorm(double x, double mu, double s2);
-RcppExport SEXP _latent_logDnorm(SEXP xSEXP, SEXP muSEXP, SEXP s2SEXP) {
+// soft
+arma::vec soft(arma::vec x, double a);
+RcppExport SEXP _latent_soft(SEXP xSEXP, SEXP aSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< double >::type s2(s2SEXP);
-    rcpp_result_gen = Rcpp::wrap(logDnorm(x, mu, s2));
+    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    rcpp_result_gen = Rcpp::wrap(soft(x, a));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -310,7 +309,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_latent_logDnorm", (DL_FUNC) &_latent_logDnorm, 3},
+    {"_latent_soft", (DL_FUNC) &_latent_soft, 2},
     {"_latent_optimizer", (DL_FUNC) &_latent_optimizer, 4},
     {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 8},
     {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 1},
