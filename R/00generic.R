@@ -8,7 +8,12 @@ setMethod("show", "llca", function(object) {
               object@Optim$iterations))
 
   # Print Estimator, Optimization, and Parameters section
-  cat(sprintf("  %-45s %s\n", "Estimator", "Multinomial"))
+  if(isFALSE(object@Optim$control$penalties)){
+    est <- "ML"
+  }else{
+    est <- "Penalized-ML"}
+
+  cat(sprintf("  %-45s %s\n", "Estimator", est))
   cat(sprintf("  %-45s %s\n", "Optimization method", object@Optim$control$opt))
   cat(sprintf("  %-45s %d\n\n", "Number of model parameters", object@modelInfo$nparam))
 
