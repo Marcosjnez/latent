@@ -17,10 +17,10 @@ setMethod("show", "llca", function(object) {
   cat(sprintf("  %-45s %d\n\n", "Number of response patterns", object@modelInfo$npatterns))
 
   # Print Model Test Section
-  if(sum(model@modelInfo$item != "multinomial") == 0){
-    ni <- model@summary_table$Observed
-    mi <- model@summary_table$Estimated
-    df <- model@modelInfo$df
+  if(sum(object@modelInfo$item != "multinomial") == 0){
+    ni <- object@summary_table$Observed
+    mi <- object@summary_table$Estimated
+    df <- object@modelInfo$df
     L2 <- 2*sum(ni*log(ni/mi))
     pv <- 1-pchisq(L2, df)
   }else{
