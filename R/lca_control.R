@@ -56,7 +56,7 @@ lca_control <- function(control) {
   }
 
   if(is.null(control$eps)) {
-    control$eps <- 1e-04
+    control$eps <- 1e-05
   }
 
   if(is.null(control$ss_fac)) {

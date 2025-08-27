@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 26/08/2025
+ * Modification date: 27/08/2025
  */
 
 // Logarithm multinomial probability transformation:
@@ -14,6 +14,7 @@ public:
   arma::vec small_logpeta;
   arma::vec logpeta;
   arma::uvec peta_indices;
+  arma::uvec removeNAs;
   arma::vec dloglik;
 
   void transform() {
@@ -23,6 +24,10 @@ public:
     small_logpeta = arma::trunc_log(small_peta); // JxIxK
     transparameters = small_logpeta.elem(peta_indices); // SxJxI
 
+    // Set to zero the missing data:
+    removeNAs = indices_in[2];
+    transparameters(removeNAs).zeros();
+
   }
 
   void update_grad() {
@@ -31,6 +36,8 @@ public:
     // jacob.zeros();
 
     dloglik = grad_in / small_peta(peta_indices);
+    // Set to zero the missing data:
+    dloglik.elem(removeNAs).zeros();
     grad_out.resize(indices_in[0].n_elem); grad_out.zeros();
     grad_out.elem(peta_indices) += dloglik;
 
@@ -52,6 +59,8 @@ public:
     arma::uvec rows = arma::regspace<arma::uvec>(0, n_out - 1);
     arma::uvec lin_peta = rows + peta_indices * n_out;
     arma::vec dpeta = 1/small_peta(peta_indices);
+    // Set to zero the missing data:
+    dpeta.elem(removeNAs).zeros();
     jacob.elem(lin_peta) += dpeta;
 
     // arma::vec djacob(n_in);

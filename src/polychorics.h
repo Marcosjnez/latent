@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 19/07/2025
+ * Modification date: 27/08/2025
  */
 
 #include <armadillo>
@@ -30,8 +30,8 @@ std::vector<int> count(const std::vector<int>& X, const int n, const int max_X) 
 
   // Populate table
   for (int i = 0; i < n; i++) {
-    // if(!std::isnan(X[i])) frequency[X[i]]++;
-    if(X[i] < max_X) frequency[X[i]]++;
+    if((!std::isnan(X[i])) && (X[i] < max_X)) frequency[X[i]]++;
+    // if(X[i] < max_X) frequency[X[i]]++;
   }
 
   // Return joint frequency table

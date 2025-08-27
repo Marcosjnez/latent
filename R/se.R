@@ -94,6 +94,17 @@ standard_se <- function(fit, computations, type = "user",
 
 }
 
+outer_se <- function(fit, computations, type = "user",
+                     digits = 2) {
+
+  fit2 <- lca(data = data, item = item, nclasses = nclasses,
+              penalties = penalties, control = control, do.fit = FALSE)
+  fit2@Optim$control_manifold
+  fit2@Optim$control_transform
+  fit2@Optim$control_estimator
+
+}
+
 Visser_se <- function(fit, computations, digits = 2) {
 
   mylabels <- c(fit@Optim$opt$lca_trans$class,

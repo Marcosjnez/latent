@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 22/08/2025
+ * Modification date: 27/08/2025
  */
 
 const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);
@@ -34,6 +34,7 @@ public:
 
   arma::uvec mu_indices;
   arma::uvec sigma_indices;
+  arma::uvec removeNAs;
   arma::vec y, mu, x, x2, sigma, sigma2, sigma3, sigma4;
 
   void transform() {
@@ -49,6 +50,10 @@ public:
     transparameters = -0.5 * x2/sigma2 -
       arma::trunc_log(sigma) - LOG2M_PI05;
 
+    // Set to zero the missing data:
+    removeNAs = indices_in[3];
+    transparameters(removeNAs).zeros();
+
   }
 
   void update_grad() {
@@ -59,6 +64,10 @@ public:
     sigma3 = sigma2 % sigma;
     arma::vec dmu = grad_in % x/sigma2;
     arma::vec dsigma = grad_in % (x2 - sigma2) / sigma3;
+
+    // Set to zero the missing data:
+    dmu.elem(removeNAs).zeros();
+    dsigma.elem(removeNAs).zeros();
 
     grad_out.resize(indices_in[0].n_elem); grad_out.zeros();
     grad_out(mu_indices) += dmu;
@@ -86,11 +95,18 @@ public:
     // jacob.cols(mu_indices) += arma::diagmat(x/sigma2);
     // jacob.cols(sigma_indices) += arma::diagmat((x2 - sigma2) / sigma3);
     // Vectorised version:
+    arma::vec dmu = x / sigma2;
+    arma::vec dsigma = (x2 - sigma2) / sigma3;
+
+    // Set to zero the missing data:
+    dmu.elem(removeNAs).zeros();
+    dsigma.elem(removeNAs).zeros();
+
     arma::uvec rows = arma::regspace<arma::uvec>(0, n_out - 1);
     arma::uvec lin_mu    = rows + mu_indices    * n_out;
     arma::uvec lin_sigma = rows + sigma_indices * n_out;
-    jacob.elem(lin_mu)    += x / sigma2;
-    jacob.elem(lin_sigma) += (x2 - sigma2) / sigma3;
+    jacob.elem(lin_mu)    += dmu;
+    jacob.elem(lin_sigma) += dsigma;
 
     // sigma4 = sigma3 % sigma;
     // sum_djacob(mu_indices, mu_indices) += arma::diagmat(-1.0/sigma2 % grad_in);
@@ -100,14 +116,22 @@ public:
     // Vectorised version:
     sigma4 = sigma3 % sigma;
     // diagonal (mu,mu)
+    arma::vec hmu = -1.0 / sigma2;
+    arma::vec hsigma = 1.0 / sigma2 - 3.0 * x2 / sigma4;
+    arma::vec hmusigma = -2.0 * x / sigma3;
+    // Set to zero the missing data:
+    hmu.elem(removeNAs).zeros();
+    hsigma.elem(removeNAs).zeros();
+    hmusigma.elem(removeNAs).zeros();
+
     lin_mu = mu_indices + mu_indices * n_in;
-    sum_djacob.elem(lin_mu) += (-1.0 / sigma2 % grad_in);
+    sum_djacob.elem(lin_mu) += hmu % grad_in;
     // diagonal (sigma,sigma)
     lin_sigma = sigma_indices + sigma_indices * n_in;
-    sum_djacob.elem(lin_sigma) += ((1.0 / sigma2 - 3.0 * x2 / sigma4) % grad_in);
+    sum_djacob.elem(lin_sigma) += hsigma % grad_in;
     // off-diagonal (mu,sigma)
     arma::uvec lin_mu_sigma = mu_indices + sigma_indices * n_in;
-    arma::vec vals_mu_sigma = (-2.0 * x / sigma3) % grad_in;
+    arma::vec vals_mu_sigma = hmusigma % grad_in;
     sum_djacob.elem(lin_mu_sigma) += vals_mu_sigma;
     // symmetric counterpart (sigma,mu)
     arma::uvec lin_sigma_mu = sigma_indices + mu_indices * n_in;

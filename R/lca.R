@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/08/2025
+# Modification date: 27/08/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -35,7 +35,9 @@
 lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                 penalties = NULL, model = NULL, control = NULL, do.fit = TRUE) {
 
+  # Check control parameters:
   control$penalties <- penalties
+  control <- lca_control(control)
 
   #### Initial input checks ####
 
@@ -100,6 +102,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                 FUN = \(x) length(unique(x)))
     # If all the items are multinomial, the number of possible patterns is:
     npossible_patterns <- min(prod(Ks), nobs)
+    # npossible_patterns <- min(prod(Ks), npatterns)
 
   } else { # If any item is not multinomial...
 
@@ -149,6 +152,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     ## store original call
     mc  <- match.call()
+
+
 
     #### Create the model ####
 
@@ -209,7 +214,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                              transformed_pars   = list(),
                              posterior          = matrix(),
                              state              = vector(),
-                             loglik             = numeric(), # loglik values and info
+                             loglik             = numeric(), # loglik values
+                             penalized_loglik   = numeric(),
                              loglik_case        = numeric(),
                              summary_table      = list(),
                              ClassConditional   = list(),
@@ -332,7 +338,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                            transformed_pars   = user_model,
                            posterior          = posterior,
                            state              = state,
-                           loglik             = loglik, # loglik values and info
+                           loglik             = loglik, # loglik values
                            penalized_loglik   = penalized_loglik,
                            loglik_case        = loglik_case,
                            summary_table      = summary_table,
