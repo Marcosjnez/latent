@@ -233,9 +233,24 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     lca_param$eta <- eta
 
     # Initial values for eta:
+
+    pi_hat_list <- vector("list", length = Jmulti)
+
+    # pi_hat_list <- apply(Y, 2, \(x) table(x)/nobs)
+    for(j in 1:Jmulti) { # Much faster
+      int_vector <- data[, multinom[j]]
+      int_vector <- int_vector[!is.na(int_vector)] # Remove missing values
+      nsize <- length(int_vector)
+      pi_hat_list[[j]] <- count(int_vector, nsize, K[j]) / nsize
+    }
+    eta_hat_list <- lapply(pi_hat_list, FUN = \(x) log(x)-log(x)[1])
+    eta_hat_list <- rep(eta_hat_list, times = nclasses)
+    pi_hat_list <- rep(pi_hat_list, times = nclasses)
+
     # eta is sampled from a normal distribution:
     for(i in 1:control$rstarts) {
-      init_eta <- rnorm(sum(Ks))
+      # init_eta <- rnorm(sum(Ks))
+      init_eta <- unlist(eta_hat_list) + rnorm(sum(Ks), 0, 0.1)
       init_param[[i]] <- c(init_param[[i]], init_eta)
     }
 
@@ -624,17 +639,6 @@ get_lca_structures <- function(data_list, full_model, control) {
   indices <- list()
   full_loglik <- c(lca_trans$loglik)
 
-  # if(anyNA(patterns)) {
-  #   # Get all the indices corresponding to missing item loglikelihoods:
-  #   removeNA <- which(is.na(patterns))
-  #   # The parameters of the NA subjects in an item for all nclasses:
-  #   removeNAs <- removeNA+(npatterns*nitems)*0:(nclasses-1L)
-  #   # These indices will be used to remove from the model the parameters
-  #   # corresponding to these item loglikelihoods
-  #   full_loglik_miss <- full_loglik[-removeNAs]
-  #   # full_loglik[removeNAs] # parameters that are removed
-  # }
-
   all_indices <- match(c(lca_trans$class, full_loglik), transparameters_labels)
   indices_classes <- match(lca_trans$class, transparameters_labels[all_indices])
   indices_items <- match(full_loglik, transparameters_labels[all_indices])
@@ -728,23 +732,6 @@ get_lca_structures <- function(data_list, full_model, control) {
         G <- G+1L
 
       }
-
-      # pihat <- unlist(pi_hat_list)
-      # selection <- split(1:(nclasses*Jmulti),
-      #                    f = rep(1:nclasses, each = Jmulti))
-      # for(i in 1:length(nclasses)) {
-      #
-      #   labels <- unlist(lca_trans$peta[selection[[i]]])
-      #   indices <- match(labels, transparameters_labels)
-      #   control_estimator[[G]] <- list(estimator = "bayesconst2",
-      #                                  labels = labels,
-      #                                  indices = list(indices-1L),
-      #                                  K = nclasses,
-      #                                  pihat = pihat,
-      #                                  alpha = control$penalties$prob$alpha)
-      #   G <- G+1L
-      #
-      # }
 
     }
   }

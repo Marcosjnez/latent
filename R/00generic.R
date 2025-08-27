@@ -19,7 +19,8 @@ setMethod("show", "llca", function(object) {
 
   # Print Number of Observations
   cat(sprintf("  %-45s %d\n\n", "Number of observations", object@modelInfo$nobs))
-  cat(sprintf("  %-45s %d\n\n", "Number of response patterns", object@modelInfo$npatterns))
+  cat(sprintf("  %-45s %d\n\n", "Number of response patterns (include NA)", object@modelInfo$npatterns))
+  cat(sprintf("  %-45s %d\n\n", "Number of possible patterns", object@modelInfo$npossible_patterns))
 
   # Print Model Test Section
   if(sum(object@modelInfo$item != "multinomial") == 0){

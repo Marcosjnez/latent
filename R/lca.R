@@ -99,7 +99,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     # Count the number of categories:
     Ks <- apply(data[, factor_indices, drop = FALSE], MARGIN = 2,
-                FUN = \(x) length(unique(x)))
+                FUN = \(x) length(unique(x[!is.na(x)])))
     # If all the items are multinomial, the number of possible patterns is:
     npossible_patterns <- min(prod(Ks), nobs)
     # npossible_patterns <- min(prod(Ks), npatterns)
@@ -152,8 +152,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     ## store original call
     mc  <- match.call()
-
-
 
     #### Create the model ####
 
