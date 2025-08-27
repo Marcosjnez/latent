@@ -41,13 +41,22 @@ print.lca <- function(model) {
   cat(sprintf("  %-45s %d\n\n", "Number of response patterns", model$modelInfo$npatterns))
 
   # Print Model Test Section
-  chisq <- -2*model$loglik
-  pval <- dchisq(chisq, df = model$modelInfo$df)
+  if(sum(model@modelInfo$item != "multinomial") == 0){
+    ni <- model@summary_table$Observed
+    mi <- model@summary_table$Estimated
+    df <- model@modelInfo$df
+    L2 <- 2*sum(ni*log(ni/mi))
+    pv <- 1-pchisq(L2, df)
+  }else{
+    L2 <- NA
+    pv <- NA
+    df <- NA
+  }
   cat("Model Test User Model:\n")
   cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
-  cat(sprintf("  %-45s %.3f\n", "Test statistic", chisq))
-  cat(sprintf("  %-45s %d\n", "Degrees of freedom", model$modelInfo$df))
-  cat(sprintf("  %-45s %.3f\n", "P-value (Chi-square)", pval))
+  cat(sprintf("  %-45s %.3f\n", "Test statistic", L2))
+  cat(sprintf("  %-45s %d\n", "Degrees of freedom", df))
+  cat(sprintf("  %-45s %.3f\n", "P-value (L2)", pv))
 
   invisible(model)
 
