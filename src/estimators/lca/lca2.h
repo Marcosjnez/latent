@@ -1,14 +1,14 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/08/2025
+ * Modification date: 29/08/2025
  */
 
 /*
  * Latent class analysis
  */
 
-class lca: public estimators {
+class lca2: public estimators {
 
 public:
 
@@ -77,7 +77,6 @@ public:
       }
     }
 
-    // Replicate ditemloglik across slices:
     dloglik.zeros();
     for (arma::uword k = 0; k < I; ++k) {
       dloglik.slice(k).each_col() = ditemloglik.col(k);
@@ -108,10 +107,11 @@ public:
 
     for (int i = 0; i < I; ++i) {
       for (int k = i; k < I; ++k) {
+        arma::vec term;
 
         if (i == k) {
 
-          arma::vec term = -weights % posterior.col(i) % (1.0 - posterior.col(k));
+          term = -weights % posterior.col(i) % (1.0 - posterior.col(k));
 
           arma::vec rep_vec = arma::repmat(term / classes(k), J, 1);
           hess.submat(hess_indices[i], arma::uvec{ static_cast<arma::uword>(k) }) = rep_vec;
@@ -122,7 +122,7 @@ public:
 
         } else {
 
-          arma::vec term = weights % posterior.col(i) % posterior.col(k);
+          term = weights % posterior.col(i) % posterior.col(k);
 
           arma::vec rep_vec = arma::repmat(term / classes(k), J, 1);
           hess.submat(hess_indices[i], arma::uvec{ static_cast<arma::uword>(k) }) = rep_vec;
@@ -175,9 +175,9 @@ public:
 
 };
 
-lca* choose_lca(const Rcpp::List& estimator_setup) {
+lca2* choose_lca2(const Rcpp::List& estimator_setup) {
 
-  lca* myestimator = new lca();
+  lca2* myestimator = new lca2();
 
   int S = estimator_setup["S"];
   int J = estimator_setup["J"];

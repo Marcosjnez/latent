@@ -40,6 +40,7 @@
 #include "optim.h"
 #include "optimizer.h"
 #include "grad_comp.h"
+#include "vcov.h"
 #include <R_ext/Utils.h>
 #include <Rinternals.h>
 #include <R_ext/Print.h>   // For Rprintf()
@@ -94,3 +95,11 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
                      Rcpp::List control_optimizer,
                      std::string compute = "all",
                      double eps = 1e-04);
+
+// [[Rcpp::export]]
+Rcpp::List vcov_all(Rcpp::List control_manifold,
+                    Rcpp::List control_transform,
+                    Rcpp::List control_estimator,
+                    Rcpp::List control_optimizer,
+                    arma::mat H);
+

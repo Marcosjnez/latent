@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/08/2025
+# Modification date: 29/08/2025
 #'
 #' @title
 #' Standard Errors
@@ -27,57 +27,46 @@
 #' None yet.
 #'
 #' @export
-se <- function(fit, type = "user", digits = 2) {
+se <- function(fit, type = "standard", model = "user", digits = 2) {
 
-  control_manifold <- fit@Optim$control_manifold
-  control_transform <- fit@Optim$control_transform
-  control_estimator <- fit@Optim$control_estimator
-  control_optimizer <- fit@Optim$control
+  # Select the parameters to display according to model type:
 
-  control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
-  computations <- grad_comp(control_manifold = control_manifold,
-                            control_transform = control_transform,
-                            control_estimator = control_estimator,
-                            control_optimizer = control_optimizer,
-                            compute = "outcomes", eps = 1e-04)
-
-  se <- computations$se # standard erros
-  names(se) <- fit@Optim$opt$transparameters_labels
-
-  SE <- standard_se(fit, computations, type = type, digits = digits)
-  # user_se <- Visser_se(fit, computations, digits = digits)
-
-  result <- list(table = SE$table,
-                 table_se = SE$table_se,
-                 se = se)
-
-  return(result)
-
-}
-
-standard_se <- function(fit, computations, type = "user",
-                        digits = 2) {
-
-  # Select the parameters according to model type:
-
-  if(type == "user") {
+  if(model == "user") {
 
     model <- fit@modelInfo$prob_model
     est <- fit@transformed_pars
 
-  } else if(type == "model") {
+  } else if(model == "model") {
 
     model <- fit@modelInfo$model
     est <- fit@parameters
 
+  } else {
+    stop("Unknown model")
   }
 
+  if(type == "standard") {
+
+    SE <- standard_se(fit = fit)
+    SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
+
+  } else if(type == "robust") {
+
+    H <- standard_se(fit = fit)$h
+    # Use H to compute vcov = solve(H) %*% B %*% solve(H):
+    SE <- robust_se(fit = fit, H = H)
+
+  } else {
+    stop("Unknown type")
+  }
+
+  # Select the parameter labels for the table:
   mylabels <- unlist(model)
   selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
 
   # Standard errors:
-  se <- computations$se[selection]
-  # names(se) <- mylabels
+  se <- SE$se[selection]
+  names(se) <- mylabels
 
   # Tables:
   table_se <- fill_list_with_vector(model, se)
@@ -88,111 +77,168 @@ standard_se <- function(fit, computations, type = "user",
   result <- list()
   result$table <- table
   result$table_se <- table_se
-  # result$se <- se
+  result$se <- c(SE$se)
+  result$vcov <- SE$vcov
+  result$B <- SE$B
 
   return(result)
 
 }
 
-outer_se <- function(fit, computations, type = "user",
-                     digits = 2) {
+standard_se <- function(fit) {
 
-  fit2 <- lca(data = data, item = item, nclasses = nclasses,
-              penalties = penalties, control = control, do.fit = FALSE)
-  fit2@Optim$control_manifold
-  fit2@Optim$control_transform
-  fit2@Optim$control_estimator
+  # Compute the variance-covariance matrix of the parameters:
 
-}
-
-Visser_se <- function(fit, computations, digits = 2) {
-
-  mylabels <- c(fit@Optim$opt$lca_trans$class,
-                unlist(fit@Optim$opt$lca_trans$peta),
-                fit@Optim$opt$lca_trans$mu,
-                fit@Optim$opt$lca_trans$sigma)
-
-  # Parameter types:
-  nprob <- length(c(fit@Optim$opt$lca_trans$class,
-                    unlist(fit@Optim$opt$lca_trans$peta)))
-  nlinear <- length(fit@Optim$opt$lca_trans$mu)
-  nsd <- length(fit@Optim$opt$lca_trans$sigma)
-  types <- rep(c("prob", "linear", "sd"), times = c(nprob, nlinear, nsd))
-
-  nparams <- length(mylabels)
-  selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
-  # computations$se[selection]
-  x <- fit@Optim$opt$transparameters[selection] # Parameters
-  H <- computations$hess[selection, selection]
-  # eigen(H)$values
-  rownames(H) <- colnames(H) <- mylabels
-  dconstraints <- computations$dconstr[selection, ]
-
-  # Remove probabilities close to 0 or 1 to avoid numerical problems:
-  condition_remove <- types == "prob" & (x > 0.999 | x < 0.001)
-  remove <- which(condition_remove)
-  keep <- which(!condition_remove)
-  dconstraints <- dconstraints[keep, , drop = FALSE]
-  H <- H[keep, keep]
-  se <- vector(length = length(mylabels))
-  C <- matrix(NA, nrow = nparams, ncol = nparams)
-
-  # Remove empty columns in the constraints matrix:
-  condition_remove <- colSums(dconstraints) < 1
-  keep_constr <- which(!condition_remove)
-  dconstraints <- dconstraints[, keep_constr, drop = FALSE]
-
-  # The next formula is from the following paper:
-  # Visser, I., Raijmakers, M.E.J. and Molenaar, P.C.M. (2000),
-  # Confidence intervals for hidden Markov model parameters.
-  # British Journal of Mathematical and Statistical Psychology, 53: 317-327.
-  # https://doi.org/10.1348/000711000159240
-
-  # Variance-covariance matrix:
-  K <- t(dconstraints)
-  D <- H + t(K) %*% K
-  D_inv <- solve(D)
-  C[keep, keep] <- D_inv - D_inv %*% t(K) %*% solve(K %*% D_inv %*% t(K)) %*% K %*% D_inv
-  se[keep] <- sqrt(diag(C[keep, keep]))
-  names(se) <- mylabels
-  colnames(C) <- rownames(C) <- mylabels
-
-  # Model:
-  est <- fit@transformed_pars
-
-  # Standard errors:
-  reorder <- match(unlist(fit@modelInfo$prob_model), mylabels)
-  se_model <- fill_list_with_vector(fit@modelInfo$prob_model, se[reorder])
-  se_model <- allnumeric(se_model)
-  est_se <- combine_est_se(est, se_model, digits = digits)
-  C <- C[reorder, reorder]
-
-  result <- list()
-  result$est_se <- est_se
-  result$se_model <- se_model
-  result$se <- se
-  result$vcov <- C
-
-  return(result)
-
-}
-
-ci <- function(fit, type = "user", confidence = 0.95, digits = 2) {
-
-  # Compute standard errors:
   control_manifold <- fit@Optim$control_manifold
   control_transform <- fit@Optim$control_transform
   control_estimator <- fit@Optim$control_estimator
   control_optimizer <- fit@Optim$control
 
   control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
-  computations <- grad_comp(control_manifold = control_manifold,
-                            control_transform = control_transform,
-                            control_estimator = control_estimator,
-                            control_optimizer = control_optimizer,
-                            compute = "outcomes")
+  control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
+  result <- vcov_all(control_manifold = control_manifold,
+                     control_transform = control_transform,
+                     control_estimator = control_estimator,
+                     control_optimizer = control_optimizer,
+                     H = matrix(, nrow = 0, ncol = 0))
 
-  se <- computations$se # standard errors
+  # Name the parameters:
+  names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
+    fit@Optim$opt$transparameters_labels
+
+  colnames(result$h) <- rownames(result$h) <-
+    fit@Optim$opt$parameters_labels
+
+  return(result)
+
+}
+
+robust_se <- function(fit, H) {
+
+  # Rearrange control_estimator to get the gradient per response pattern:
+
+  control_manifold <- fit@Optim$control_manifold
+  control_transform <- fit@Optim$control_transform
+  control_estimator <- fit@Optim$control_estimator
+  control_optimizer <- fit@Optim$control
+  control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
+  control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
+
+  transparameters_labels <- fit@Optim$opt$transparameters_labels
+  lca_trans <- fit@Optim$opt$lca_trans
+  full_loglik <- lca_trans$loglik
+  weights <- fit@Optim$data_list$weights
+  npatterns <- fit@Optim$data_list$npatterns
+  nitems <- fit@Optim$data_list$nitems
+  nparam <- fit@modelInfo$nparam
+  nobs <- fit@Optim$data_list$nobs
+
+  control_estimator <- control_estimator[-1]
+  K <- length(control_estimator)
+
+  for(s in 1:npatterns) {
+
+    all_indices <- match(c(lca_trans$class, full_loglik[s,,]), transparameters_labels)
+    labels <- transparameters_labels[all_indices]
+    indices_classes <- match(lca_trans$class, labels)
+    indices_items <- match(full_loglik[s,,], labels)
+    indices <- list()
+    indices[[1]] <- all_indices-1L
+    indices[[2]] <- indices_classes-1L
+    indices[[3]] <- indices_items-1L
+    SJ <- 1L*nitems
+    hess_indices <- lapply(0:(nclasses - 1), function(i) {
+      nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
+
+    control_estimator[[K+s]] <- list(estimator = "lca",
+                                     labels = labels,
+                                     indices = indices,
+                                     S = 1L,
+                                     J = nitems,
+                                     I = nclasses,
+                                     weights = weights[s],
+                                     hess_indices = hess_indices)
+
+  }
+
+  # nest <- K + npatterns
+  # weights <- c(rep(1, times = K), weights)
+  nest <- npatterns
+  f <- vector(length = nest)
+  g <- matrix(NA, nrow = nest, ncol = nparam)
+  B <- matrix(0, nrow = nparam, ncol = nparam)
+  for(s in 1:nest) {
+
+    computations <- grad_comp(control_manifold = control_manifold,
+                              control_transform = control_transform,
+                              control_estimator = control_estimator[-(1:K)][s],
+                              # control_estimator = control_estimator[s],
+                              control_optimizer = control_optimizer,
+                              compute = "g")
+    f[s] <- computations$f
+    g[s, ] <- computations$g
+    B <- B + weights[s]*(g[s, ]/weights[s]) %*% t(g[s, ]/weights[s])
+
+  }
+  # sum(f)
+  # fit@penalized_loglik
+  # colSums(g)
+  # c(fit@Optim$opt$rg)
+  B <- B*nobs/(nobs-1)
+  # eigen(B)$values
+
+  # Update the hessian:
+  newH <- H %*% solve(B) %*% H
+
+  # Recompute the variance-covariance matrix with this new hessian:
+  control_manifold <- fit@Optim$control_manifold
+  control_transform <- fit@Optim$control_transform
+  control_estimator <- fit@Optim$control_estimator
+  control_optimizer <- fit@Optim$control
+  control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
+  control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
+
+  result <- vcov_all(control_manifold = control_manifold,
+                           control_transform = control_transform,
+                           control_estimator = control_estimator,
+                           control_optimizer = control_optimizer,
+                           H = newH)
+
+  # Add B to the results:
+  result$B <- B
+
+  # Name the parameters:
+  names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
+    fit@Optim$opt$transparameters_labels
+
+  colnames(result$h) <- rownames(result$h) <-
+    colnames(result$B) <- rownames(result$B) <-
+    fit@Optim$opt$transparameters_labels <- fit@Optim$opt$parameters_labels
+
+
+  return(result)
+
+}
+
+ci <- function(fit, type = "standard", model = "user",
+               confidence = 0.95, digits = 2) {
+
+  if(type == "standard") {
+
+    SE <- standard_se(fit = fit)
+    SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
+
+  } else if(type == "robust") {
+
+    H <- standard_se(fit = fit)$h
+    # Use H to compute vcov = solve(H) %*% B %*% solve(H):
+    SE <- robust_se(fit = fit, H = H)
+
+  } else {
+    stop("Unknown type")
+  }
+
+  se <- c(SE$se) # standard errors
   names(se) <- fit@Optim$opt$transparameters_labels
 
   # Number of total parameters and transformed parameters:
@@ -209,7 +255,7 @@ ci <- function(fit, type = "user", confidence = 0.95, digits = 2) {
                                FUN = \(x) x[[slot]]))
 
   # Compute confidence intervals for each transformed parameter:
-  x <- fit@Optim$opt$transparameters
+  x <- c(fit@Optim$opt$transparameters)
   lower <- x - sqrt(qchisq(confidence, df = ps)) * se
   upper <- x + sqrt(qchisq(confidence, df = ps)) * se
   names(lower) <- names(upper) <- fit@Optim$opt$transparameters_labels
@@ -218,18 +264,19 @@ ci <- function(fit, type = "user", confidence = 0.95, digits = 2) {
 
   # Select the parameters according to model type:
 
-  if(type == "user") {
+  if(model == "user") {
 
     model <- fit@modelInfo$prob_model
     est <- fit@transformed_pars
 
-  } else if(type == "model") {
+  } else if(model == "model") {
 
     model <- fit@modelInfo$model
     est <- fit@parameters
 
   }
 
+  # Select the parameter labels for the table:
   mylabels <- unlist(model)
   selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
 
@@ -253,3 +300,4 @@ ci <- function(fit, type = "user", confidence = 0.95, digits = 2) {
   return(result)
 
 }
+

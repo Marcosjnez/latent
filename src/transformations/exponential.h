@@ -29,7 +29,11 @@ public:
     jacob = arma::diagmat(transparameters);
     sum_djacob = arma::diagmat(transparameters % grad_in);
 
-    // hess_out = jacob.t() * hess_in * jacob + sum_djacob;
+    // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
+
+  }
+
+  void update_vcov() {
 
   }
 

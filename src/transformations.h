@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 25/08/2025
+ * Modification date: 29/08/2025
  */
 
 // Transformations
@@ -14,7 +14,6 @@ public:
   arma::vec grad_in, grad_out, g;
   arma::mat jacob, sum_djacob, hess_in, hess_out, h;
   std::vector<arma::uvec> indices_in, indices_out;
-  arma::cube jacob2;
   bool constraints;
 
   std::vector<double> doubles;
@@ -29,6 +28,8 @@ public:
   virtual void update_grad() = 0;
 
   virtual void update_hess() = 0;
+
+  virtual void update_vcov() = 0;
 
   virtual void dconstraints() = 0;
 
@@ -81,6 +82,7 @@ public:
       xtransformations[i]->transform();
       arma::uvec indices_out = xtransformations[i]->indices_out[0];
       x.transparameters.elem(indices_out) = xtransformations[i]->transparameters;
+
     }
 
   }
@@ -135,13 +137,19 @@ public:
       // H += U^T H U + S:
       x.hess(indices_in, indices_in) += J.t() * x.hess(indices_out, indices_out) * J;
       x.hess(indices_in, indices_in) += S;
+
       x.hess = arma::symmatu(x.hess); // Ensure symmetry
 
     }
 
-    // Get the hessian and inverse hessian:
-    // Warning: if the hessian is not positive-definite, an approximation is done
+    // Get the hessian:
     x.h = x.hess(x.transparam2param, x.transparam2param);
+
+  }
+
+  void update_vcov(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+
+    // Approximate the inverse if the hessian is not positive-definite:
     x.inv_h = arma::inv_sympd(x.h, arma::inv_opts::allow_approx);
 
     // Get the variance-covariance matrix of everything:
@@ -218,7 +226,6 @@ public:
   }
 
 };
-
 
 // arma::mat jacob(x.transparameters.n_elem, x.transparameters.n_elem, arma::fill::eye);
 // arma::mat sum_djacob(x.transparameters.n_elem, x.transparameters.n_elem, arma::fill::zeros);

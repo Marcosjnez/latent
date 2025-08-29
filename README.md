@@ -28,7 +28,7 @@ If you have difficulties during the installation, check the following resources:
     
 Finally,
 
-    devtools::install_github("marcosjnez/latent")
+    devtools::install_github("marcosjnez/latent", force = TRUE)
 
 ## Funding
 

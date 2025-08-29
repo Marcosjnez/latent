@@ -12,20 +12,7 @@ arma::vec ldnorm(arma::vec x, arma::vec mean, arma::vec sd) {
   x -= mean;
   arma::vec sd2 = sd % sd;
   arma::vec lpd = -0.5 * x % x/sd2 - arma::trunc_log(SQRT2M_PI*sd);
-  // lpd.elem( arma::find_nonfinite(lpd) ).zeros();
   return lpd;
-}
-
-// [[Rcpp::export]]
-arma::mat reshape_block(const arma::vec& v, std::size_t k) {
-  // Reshape a vector as a block matrix with k columns
-  std::size_t n = v.n_elem;
-  std::size_t bs = n / k;
-  arma::mat M(n, k, arma::fill::zeros);
-  for (std::size_t t = 0; t < n; ++t) {
-    M(t, t / bs) = v(t);
-  }
-  return M;
 }
 
 class normal:public transformations {
@@ -58,7 +45,9 @@ public:
 
   void update_grad() {
 
-    // jacob.set_size(transparameters.n_elem, indices_in[0].n_elem);
+    // const arma::uword n_out = transparameters.n_elem;
+    // const arma::uword n_in  = indices_in[0].n_elem;
+    // jacob.set_size(n_out, n_in);
     // jacob.zeros();
 
     sigma3 = sigma2 % sigma;
@@ -137,7 +126,11 @@ public:
     arma::uvec lin_sigma_mu = sigma_indices + mu_indices * n_in;
     sum_djacob.elem(lin_sigma_mu) = sum_djacob.elem(lin_mu_sigma);
 
-    // hess_out = jacob.t() * hess_in * jacob + sum_djacob;
+    // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
+
+  }
+
+  void update_vcov() {
 
   }
 
@@ -172,12 +165,9 @@ normal* choose_normal(const Rcpp::List& trans_setup) {
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   arma::vec y = trans_setup["y"];
 
-  // arma::vec newgrad(indices_in[0].n_elem);
-
   mytrans->indices_in = indices_in;
   mytrans->indices_out = indices_out;
   mytrans->y = y;
-  // mytrans->newgrad = newgrad;
 
   return mytrans;
 

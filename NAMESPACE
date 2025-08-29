@@ -1,4 +1,5 @@
 useDynLib(latent, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
 importFrom(data.table, data.table, fread)
+importClassesFrom(Matrix, dgCMatrix)
 exportPattern("^[[:alpha:]]+")

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 25/08/2025
+ * Modification date: 28/08/2025
  */
 
 #include <tuple>
@@ -31,7 +31,8 @@ struct arguments_optim{
   bool convergence = false;
   arma::vec parameters, dparameters, g, dg, rg, drg, dH;
   arma::vec transparameters, dtransparameters, grad, dgrad;
-  arma::mat jacob, h, hess, B, inv_h, inv_hess, vcov;
+  arma::mat jacob, h, B, inv_h, inv_hess, vcov;
+  arma::mat hess; // Returned as dgCMatrix class type from Matrix package
   arma::mat posterior;
   arma::mat latentloglik;
   arma::vec latentpars, loglatentpars;

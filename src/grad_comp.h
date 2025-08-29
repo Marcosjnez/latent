@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 21/08/2025
+ * Modification date: 28/08/2025
  */
 
 Rcpp::List grad_comp(Rcpp::List control_manifold,
@@ -130,10 +130,13 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   final_transform->update_hess(x, xtransforms);
   result["hess"] = x.hess;
   result["h"] = x.h;
-  result["inv_h"] = x.inv_h;
+  if(compute == "h") return result;
+
+  final_transform->update_vcov(x, xtransforms);
   result["vcov"] = x.vcov;
   result["se"] = x.se;
-  if(compute == "h") return result;
+  result["inv_h"] = x.inv_h;
+  if(compute == "vcov") return result;
 
   final_transform->dconstraints(x, xtransforms);
   result["dconstr"] = x.mat_dconstraints;

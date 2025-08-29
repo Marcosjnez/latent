@@ -50,6 +50,10 @@ public:
 
   }
 
+  void update_vcov() {
+
+  }
+
   void dconstraints() {
 
     constraints = false;

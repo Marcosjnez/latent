@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 25/08/2025
+ * Modification date: 29/08/2025
  */
 
 class estimators {
@@ -12,7 +12,8 @@ public:
   arma::vec parameters, transparameters, dparameters;
   arma::mat g, dg;
   arma::mat grad, dgrad;
-  arma::mat hess, dparam_dS, modhessian;
+  arma::mat hess;
+  arma::mat dparam_dS, modhessian;
   arma::mat posterior, latentloglik;
   arma::vec uniquenesses;
   // arma::mat lambda, phi, psi, model, residuals;
@@ -61,6 +62,7 @@ public:
 #include "estimators/rotation/lclf.h"
 
 #include "estimators/lca/lca.h"
+#include "estimators/lca/lca2.h"
 #include "estimators/lca/bayesconst1.h"
 #include "estimators/lca/bayesconst2.h"
 #include "estimators/lca/bayesconst3.h"
@@ -89,6 +91,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "xtarget",                     choose_xtarget                   },
   { "lclf",                        choose_lclf                      },
   { "lca",                         choose_lca                       },
+  { "lca2",                        choose_lca2                      },
   { "bayesconst1",                 choose_bayesconst1               },
   { "bayesconst2",                 choose_bayesconst2               },
   { "bayesconst3",                 choose_bayesconst3               },

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 27/08/2025
+# Modification date: 29/08/2025
 #'
 #' @title
 #' Get the default model for Latent Class Analysis.
@@ -193,10 +193,10 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     repclasses <- rep(1:nclasses, each = Jgauss)
     mu <- paste("mu[", repitems, "|", repclasses, "]", sep = "")
     s <- paste("s[", repitems, "|", repclasses, "]", sep = "")
-    lca_param$mu <- mu
-    lca_param$s <- s
-    lca_trans$mu <- mu
-    lca_trans$s <- s
+    lca_param$mu <- matrix(mu, nrow = Jgauss, ncol = nclasses)
+    lca_param$s <- matrix(s, nrow = Jgauss, ncol = nclasses)
+    lca_trans$mu <- lca_param$mu
+    lca_trans$s <- lca_param$s
 
     # Initial values for mu and s:
     # For mu, they will be the mean of the items
@@ -275,7 +275,7 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     loglik_gauss <- paste("loglik[", repS, ",", Srepitems, ",", Srepclasses, "]",
                           sep = "")
     loglik_gauss <- array(loglik_gauss, dim = c(npatterns, Jgauss, nclasses))
-    lca_trans$sigma <- sigma
+    lca_trans$sigma <- matrix(sigma, nrow = Jgauss, ncol = nclasses)
     # lca_trans$loglik_gauss <- loglik_gauss
     lca_trans$loglik[, gauss, ] <- loglik_gauss
 

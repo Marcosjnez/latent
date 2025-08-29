@@ -41,7 +41,11 @@ public:
 
     sum_djacob = softmax_chain_second_term(transparameters, grad_in, jacob);
 
-    // hess_out = jacob.t() * hess_in * jacob + sum_djacob;
+    // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
+
+  }
+
+  void update_vcov() {
 
   }
 

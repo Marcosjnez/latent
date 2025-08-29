@@ -9,7 +9,7 @@ Author: Marcos Jiménez [fnd, cre],
   Vithor R. Franco [cre]
 Maintainer: Marcos Jiménez <m.j.jimenezhenriquez@vu.nl>, Mauricio Garnier-Villarreal <m.garniervillarreal@vu.nl>, Vithor R. Franco <vithorfranco@gmail.com>
 License: GPL-3
-Imports: Rcpp (>= 1.0.11), png, grid, data.table, lavaan
+Imports: Rcpp (>= 1.0.11), png, grid, data.table, lavaan, Matrix
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 7.3.2
 Encoding: UTF-8

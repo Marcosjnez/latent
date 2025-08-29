@@ -72,7 +72,11 @@ public:
     lin_peta = peta_indices + peta_indices * n_in;
     sum_djacob.elem(lin_peta) -= dpeta % dpeta % grad_in;
 
-    // hess_out = jacob.t() * hess_in * jacob + sum_djacob;
+    // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
+
+  }
+
+  void update_vcov() {
 
   }
 
