@@ -2,10 +2,19 @@
 
 setMethod("show", "llca", function(object) {
 
+
+  conv <- object@Optim$opt$convergence
   # Print header with model name and version
-  cat(sprintf("%s %s ended normally after %d iterations\n\n",
-              "latent", as.character( packageVersion('latent') ),
-              object@Optim$iterations))
+  if(conv){
+    cat(sprintf("%s %s converged after %d iterations\n\n",
+                "latent", as.character( packageVersion('latent') ),
+                object@Optim$opt$iterations))
+  }else{
+    cat(sprintf("%s %s did not converged after %d iterations\n\n",
+                "latent", as.character( packageVersion('latent') ),
+                object@Optim$opt$iterations))
+  }
+
 
   # Print Estimator, Optimization, and Parameters section
   if(isFALSE(object@Optim$control$penalties)){
@@ -36,7 +45,7 @@ setMethod("show", "llca", function(object) {
   }
   cat("Model Test User Model:\n")
   cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
-  cat(sprintf("  %-45s %.3f\n", "Test statistic", L2))
+  cat(sprintf("  %-45s %.3f\n", "Test statistic (L2)", L2))
   cat(sprintf("  %-45s %d\n", "Degrees of freedom", df))
   cat(sprintf("  %-45s %.3f\n", "P-value (L2)", pv))
 
