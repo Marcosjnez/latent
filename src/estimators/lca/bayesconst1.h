@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 25/08/2025
+ * Modification date: 31/08/2025
  */
 
 /*
@@ -14,55 +14,55 @@ public:
 
   int K;
   double alpha, constant;
-  arma::vec logtrans;
+  arma::vec trans, logtrans;
   arma::vec constant_logtrans;
 
-  void param() {
+  void param(arguments_optim& x) {
 
-    logtrans = arma::trunc_log(transparameters);
+    trans = x.transparameters(indices[0]);
+    logtrans = arma::trunc_log(trans);
     constant = alpha/(K + 0.00);
     constant_logtrans = constant*logtrans;
 
   }
 
-  void F() {
+  void F(arguments_optim& x) {
 
-    f = -arma::accu(constant_logtrans);
-
-  }
-
-  void G() {
-
-    grad.set_size(transparameters.n_elem); grad.zeros();
-    grad = -constant/transparameters;
+    f = arma::accu(constant_logtrans);
+    x.f -= f;
 
   }
 
-  void dG() {
+  void G(arguments_optim& x) {
+
+    x.grad.elem(indices[0]) -= constant/trans;
+
+  }
+
+  void dG(arguments_optim& x) {
 
     dg.set_size(transparameters.n_elem); dg.zeros();
 
   }
 
-  void H() {
+  void H(arguments_optim& x) {
 
-    hess.set_size(transparameters.n_elem, transparameters.n_elem);
-    hess.zeros();
-
-    arma::vec d2constant_logtrans = constant/(transparameters % transparameters);
-    hess = diagmat(d2constant_logtrans);
+    arma::vec d2constant_logtrans = constant/(trans % trans);
+    x.hess(indices[0], indices[0]) += diagmat(d2constant_logtrans);
 
   }
 
-  void E() { // Update the parameter estimates
+  void E(arguments_optim& x) { // Update the parameter estimates
+
+    x.loglik = f;
 
   }
 
-  void M() { // Update the posterior probabilities
+  void M(arguments_optim& x) { // Update the posterior probabilities
 
   }
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
     doubles.resize(1);
     doubles[0] = f;

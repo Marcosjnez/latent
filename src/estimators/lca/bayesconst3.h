@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 25/08/2025
+ * Modification date: 31/08/2025
  */
 
 /*
@@ -17,9 +17,9 @@ public:
   double alpha, constant, prod_vars;
   arma::vec vars, varshat, sds, logvars;
 
-  void param() {
+  void param(arguments_optim& x) {
 
-    sds = transparameters;
+    sds = x.transparameters(indices[0]);
     vars = sds % sds;
     logvars = arma::trunc_log(vars);
     // prod_vars = arma::prod(vars);
@@ -27,40 +27,43 @@ public:
 
   }
 
-  void F() {
+  void F(arguments_optim& x) {
 
-    f = 0.5*constant * (arma::accu(logvars) + arma::accu(varshat/vars));
-
-  }
-
-  void G() {
-
-    grad = -constant * (varshat/(vars % sds) - 1/sds);
+    f = -0.5*constant * (arma::accu(logvars) + arma::accu(varshat/vars));
+    x.f -= f;
 
   }
 
-  void dG() {
+  void G(arguments_optim& x) {
+
+    x.grad.elem(indices[0]) -= constant * (varshat/(vars % sds) - 1/sds);
+
+  }
+
+  void dG(arguments_optim& x) {
 
     dg.set_size(transparameters.n_elem); dg.zeros();
 
   }
 
-  void H() {
+  void H(arguments_optim& x) {
 
     arma::vec d2 = -constant * (1/vars - 3*varshat/(vars % vars));
-    hess = diagmat(d2);
+    x.hess(indices[0], indices[0]) += diagmat(d2);
 
   }
 
-  void E() { // Update the parameter estimates
+  void E(arguments_optim& x) { // Update the parameter estimates
+
+    x.loglik = f;
 
   }
 
-  void M() { // Update the posterior probabilities
+  void M(arguments_optim& x) { // Update the posterior probabilities
 
   }
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
     doubles.resize(1);
     doubles[0] = f;

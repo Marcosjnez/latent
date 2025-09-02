@@ -18,7 +18,7 @@ public:
   arma::uvec lambda_indices, psi_indices, theta_indices;
   int p, q;
 
-  void param() {
+  void param(arguments_optim& x) {
 
     lambda_indices = indices[1];
     psi_indices = indices[2];
@@ -54,13 +54,13 @@ public:
 
   }
 
-  void F() {
+  void F(arguments_optim& x) {
 
     f = 0.5*arma::accu(residuals % residuals % W);
 
   }
 
-  void G() {
+  void G(arguments_optim& x) {
 
     grad.set_size(transparameters.n_elem);
     grad.zeros();
@@ -94,7 +94,7 @@ public:
 
   }
 
-  void dG() {
+  void dG(arguments_optim& x) {
 
     // dX = arma::reshape(dparameters, q, q);
     dg.set_size(transparameters.n_elem); dg.zeros();
@@ -136,11 +136,11 @@ public:
 
   }
 
-  void E() {}
+  void E(arguments_optim& x) {}
 
-  void M() {}
+  void M(arguments_optim& x) {}
 
-  void H() {
+  void H(arguments_optim& x) {
 
     // x.hessian.set_size(x.parameters.n_elem, x.parameters.n_elem); x.hessian.zeros();
     //
@@ -240,7 +240,7 @@ public:
 
   }
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
     // x.uniquenesses = x.R.diag() - arma::diagvec(x.Rhat);
     // x.Rhat.diag() = x.R.diag();

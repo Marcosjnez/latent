@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/07/2025
+ * Modification date: 31/08/2025
  */
 
 /*
@@ -19,7 +19,7 @@ public:
   int p;
   double f0;
 
-  void param() {
+  void param(arguments_optim& x) {
 
     for(int i=0; i < p; ++i) {
       arma::uvec taus_indices = indices[i+1L];
@@ -52,13 +52,13 @@ public:
 
   }
 
-  void F() {
+  void F(arguments_optim& x) {
 
     f = f0;
 
   }
 
-  void G() {
+  void G(arguments_optim& x) {
 
     grad.set_size(transparameters.n_elem);
     grad.zeros();
@@ -107,15 +107,15 @@ public:
 
   }
 
-  void dG() {}
+  void dG(arguments_optim& x) {}
 
-  void E() {}
+  void E(arguments_optim& x) {}
 
-  void M() {}
+  void M(arguments_optim& x) {}
 
-  void H() {}
+  void H(arguments_optim& x) {}
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
     doubles.resize(1);
 

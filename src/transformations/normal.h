@@ -1,19 +1,12 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/08/2025
+ * Modification date: 31/08/2025
  */
 
 const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);
 
 // Logarithm gaussian density transformation:
-
-arma::vec ldnorm(arma::vec x, arma::vec mean, arma::vec sd) {
-  x -= mean;
-  arma::vec sd2 = sd % sd;
-  arma::vec lpd = -0.5 * x % x/sd2 - arma::trunc_log(SQRT2M_PI*sd);
-  return lpd;
-}
 
 class normal:public transformations {
 
@@ -21,128 +14,171 @@ public:
 
   arma::uvec mu_indices;
   arma::uvec sigma_indices;
-  arma::uvec removeNAs;
-  arma::vec y, mu, x, x2, sigma, sigma2, sigma3, sigma4;
+  arma::mat y, mu, sigma, sigma2, sigma3, sigma4;
+  int S, J, I;
+  int n_out;
+  int n_in;
 
-  void transform() {
+  void transform(arguments_optim& x) {
 
-    mu_indices = indices_in[1];
-    sigma_indices = indices_in[2];
-    mu = transparameters.elem(mu_indices);
-    sigma = transparameters.elem(sigma_indices);
-
-    x = y - mu;
+    arma::cube loglik(S, J, I, arma::fill::zeros);
+    mu = arma::reshape(x.transparameters(mu_indices), J, I);
+    sigma = arma::reshape(x.transparameters(sigma_indices), J, I);
     sigma2 = sigma % sigma;
-    x2 = arma::square(x);
-    transparameters = -0.5 * x2/sigma2 -
-      arma::trunc_log(sigma) - LOG2M_PI05;
+    arma::mat log_sigma = arma::trunc_log(sigma);
 
-    // Set to zero the missing data:
-    removeNAs = indices_in[3];
-    transparameters(removeNAs).zeros();
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s) {
+          if (std::isnan(y(s,j))) continue;
+          double x = y(s,j)-mu(j,i);
+          loglik(s,j,i) = -0.5 * x * x / sigma2(j,i) - log_sigma(j,i) - LOG2M_PI05;
+        }
+      }
+    }
+
+    x.transparameters.elem(indices_out[0]) = arma::vectorise(loglik);
 
   }
 
-  void update_grad() {
-
-    // const arma::uword n_out = transparameters.n_elem;
-    // const arma::uword n_in  = indices_in[0].n_elem;
-    // jacob.set_size(n_out, n_in);
-    // jacob.zeros();
+  void update_grad(arguments_optim& x) {
 
     sigma3 = sigma2 % sigma;
-    arma::vec dmu = grad_in % x/sigma2;
-    arma::vec dsigma = grad_in % (x2 - sigma2) / sigma3;
 
-    // Set to zero the missing data:
-    dmu.elem(removeNAs).zeros();
-    dsigma.elem(removeNAs).zeros();
+    arma::mat dmu(J, I, arma::fill::zeros);
+    arma::mat dsigma(J, I, arma::fill::zeros);
 
-    grad_out.resize(indices_in[0].n_elem); grad_out.zeros();
-    grad_out(mu_indices) += dmu;
-    grad_out(sigma_indices) += dsigma;
+    arma::vec grad = x.grad(indices_out[0]);
 
-    // The same but much slower:
-    // jacob.set_size(transparameters.n_elem, indices_in[0].n_elem);
-    // jacob.zeros();
-    // jacob.cols(mu_indices) += arma::diagmat(x/sigma2);
-    // jacob.cols(sigma_indices) += arma::diagmat((x2 - sigma2) / sigma3);
+    int k=0L;
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s, ++k) {
+          if (std::isnan(y(s,j))) continue;
+          double x = (y(s,j)-mu(j,i));
+          // arma::uword kk = static_cast<arma::uword>(k);
+          // arma::uword idx = indices_out[0](kk);
+          dmu(j,i) += grad(k) * x/sigma2(j,i);
+          dsigma(j,i) += grad(k) * (x*x - sigma2(j,i))/sigma3(j,i);
+        }
+      }
+    }
+
+    // Fill the gradient:
+    x.grad(mu_indices) += arma::vectorise(dmu);
+    x.grad(sigma_indices) += arma::vectorise(dsigma);
     // grad_out = jacob.t() * grad_in;
 
   }
 
-  void update_hess() {
+  void update_dgrad(arguments_optim& x) {
 
-    const arma::uword n_out = transparameters.n_elem;
-    const arma::uword n_in  = indices_in[0].n_elem;
+  }
 
+  void update_hess(arguments_optim& x) {
+
+    // Initialize the jacobian:
     jacob.set_size(n_out, n_in);
     jacob.zeros();
+
+    // Initialize sum_djacob:
     sum_djacob.set_size(n_in, n_in);
     sum_djacob.zeros();
 
-    // jacob.cols(mu_indices) += arma::diagmat(x/sigma2);
-    // jacob.cols(sigma_indices) += arma::diagmat((x2 - sigma2) / sigma3);
-    // Vectorised version:
-    arma::vec dmu = x / sigma2;
-    arma::vec dsigma = (x2 - sigma2) / sigma3;
+    arma::mat sigma4 = sigma3 % sigma;
+    arma::vec grad_out = x.grad(indices_out[0]);
+    arma::cube Grad_in(grad_out.memptr(), S, J, I, false);
 
-    // Set to zero the missing data:
-    dmu.elem(removeNAs).zeros();
-    dsigma.elem(removeNAs).zeros();
+    int ij_m = 0L;
+    int ij_s = J*I;
+    int k = 0L;
+    for (int i = 0; i < I; ++i) {
+      for (int j = 0; j < J; ++j, ++ij_m, ++ij_s) {
 
-    arma::uvec rows = arma::regspace<arma::uvec>(0, n_out - 1);
-    arma::uvec lin_mu    = rows + mu_indices    * n_out;
-    arma::uvec lin_sigma = rows + sigma_indices * n_out;
-    jacob.elem(lin_mu)    += dmu;
-    jacob.elem(lin_sigma) += dsigma;
+        // Accumulate G0, G1, G2 over s (skip NaNs in y)
+        double G0 = 0.0, G1 = 0.0, G2 = 0.0;
+        for (int s = 0; s < S; ++s, ++k) {
+          if (std::isnan(y(s,j))) continue;
+          const double x  = y(s,j) - mu(j,i);
+          jacob(k, ij_m) = x/sigma2(j,i);
+          jacob(k, ij_s) = (x*x - sigma2(j,i))/sigma3(j,i);
+          G0 += Grad_in(s,j,i);
+          G1 += Grad_in(s,j,i) * x;
+          G2 += Grad_in(s,j,i) * x * x;
+        }
 
-    // sigma4 = sigma3 % sigma;
-    // sum_djacob(mu_indices, mu_indices) += arma::diagmat(-1.0/sigma2 % grad_in);
-    // sum_djacob(sigma_indices, sigma_indices) += arma::diagmat((1/sigma2 - 3.0*x2/sigma4) % grad_in);
-    // sum_djacob(mu_indices, sigma_indices) += arma::diagmat(-2.0 % x /sigma3 % grad_in);
-    // sum_djacob(sigma_indices, mu_indices) = sum_djacob(mu_indices, sigma_indices);
-    // Vectorised version:
-    sigma4 = sigma3 % sigma;
-    // diagonal (mu,mu)
-    arma::vec hmu = -1.0 / sigma2;
-    arma::vec hsigma = 1.0 / sigma2 - 3.0 * x2 / sigma4;
-    arma::vec hmusigma = -2.0 * x / sigma3;
-    // Set to zero the missing data:
-    hmu.elem(removeNAs).zeros();
-    hsigma.elem(removeNAs).zeros();
-    hmusigma.elem(removeNAs).zeros();
+        // Diagonal blocks
+        sum_djacob(ij_m , ij_m) += - G0 / sigma2(j,i);
+        sum_djacob(ij_s, ij_s) +=   G0 / sigma2(j,i) - 3.0 * G2 / sigma4(j,i);
 
-    lin_mu = mu_indices + mu_indices * n_in;
-    sum_djacob.elem(lin_mu) += hmu % grad_in;
-    // diagonal (sigma,sigma)
-    lin_sigma = sigma_indices + sigma_indices * n_in;
-    sum_djacob.elem(lin_sigma) += hsigma % grad_in;
-    // off-diagonal (mu,sigma)
-    arma::uvec lin_mu_sigma = mu_indices + sigma_indices * n_in;
-    arma::vec vals_mu_sigma = hmusigma % grad_in;
-    sum_djacob.elem(lin_mu_sigma) += vals_mu_sigma;
-    // symmetric counterpart (sigma,mu)
-    arma::uvec lin_sigma_mu = sigma_indices + mu_indices * n_in;
-    sum_djacob.elem(lin_sigma_mu) = sum_djacob.elem(lin_mu_sigma);
+        // Off-diagonal (symmetric) block
+        const double mixed = - 2.0 * G1 / sigma3(j,i);
+        sum_djacob(ij_m, ij_s) += mixed;
+        sum_djacob(ij_s, ij_m) += mixed;
+
+      }
+    }
 
     // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
 
   }
 
-  void update_vcov() {
+  void update_vcov(arguments_optim& x) {
 
   }
 
-  void dconstraints() {
+  void dconstraints(arguments_optim& x) {
 
     constraints = false;
 
   }
 
-  void outcomes() {
+  void M(arguments_optim& x) {
 
-    int p = transparameters.n_elem;
+    // New number of subjects in each class:
+    arma::vec freqs_i = arma::sum(x.freqs, 0).t();
+    // Standardize the frequencies in each class:
+    arma::mat w = x.freqs;
+    w.each_row() /= freqs_i.t(); // Columns sum up to one
+
+    mu.resize(J, I); mu.zeros();
+    sigma.resize(J, I); sigma.zeros();
+    sigma2.resize(J, I); sigma.zeros();
+
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        mu(j,i) = arma::accu(y.col(j) % w.col(i)); // y.t() * w
+        arma::vec xdiff = y.col(j) - mu(j,i);
+        sigma2(j,i) = arma::accu(xdiff % xdiff % w.col(i));
+      }
+    }
+
+    sigma = arma::sqrt(sigma2);
+
+    // Block of transformations:
+
+    arma::cube loglik(S, J, I, arma::fill::zeros);
+    arma::mat log_sigma = arma::trunc_log(sigma);
+
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s) {
+          if (std::isnan(y(s,j))) continue;
+          double x = y(s,j)-mu(j,i);
+          loglik(s,j,i) = -0.5 * x * x / sigma2(j,i) - log_sigma(j,i) - LOG2M_PI05;
+        }
+      }
+    }
+
+    x.transparameters(mu_indices) = arma::vectorise(mu);
+    x.transparameters(sigma_indices) = arma::vectorise(sigma);
+    x.transparameters(indices_out[0]) = arma::vectorise(loglik);
+
+  }
+
+  void outcomes(arguments_optim& x) {
+
+    int p = indices_out[0].n_elem;
     arma::vec chisq_p(p, arma::fill::value(2.00));
 
     vectors.resize(2);
@@ -163,11 +199,29 @@ normal* choose_normal(const Rcpp::List& trans_setup) {
 
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
-  arma::vec y = trans_setup["y"];
+  arma::mat y = trans_setup["y"];
+  int S = trans_setup["S"];
+  int J = trans_setup["J"];
+  int I = trans_setup["I"];
+
+  arma::uvec mu_indices = indices_in[1];
+  arma::uvec sigma_indices = indices_in[2];
+  // arma::uvec item_indices = indices_in[3];
+  int n_in  = indices_in[0].n_elem;
+  int n_out = indices_out[0].n_elem;
 
   mytrans->indices_in = indices_in;
   mytrans->indices_out = indices_out;
+  mytrans->n_in = n_in;
+  mytrans->n_out = n_out;
+
+  mytrans->mu_indices = mu_indices;
+  mytrans->sigma_indices = sigma_indices;
+  // mytrans->item_indices = item_indices;
   mytrans->y = y;
+  mytrans->S = S;
+  mytrans->J = J;
+  mytrans->I = I;
 
   return mytrans;
 

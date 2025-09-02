@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 28/08/2025
+ * Modification date: 01/09/2025
  */
 
 Rcpp::List grad_comp(Rcpp::List control_manifold,
@@ -74,6 +74,23 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   }
 
   if(compute == "choose_estimator") return result;
+
+  Rprintf("78");
+  final_transform->transform(x, xtransforms);
+  Rprintf("80");
+  final_estimator->param(x, xestimators);
+  Rprintf("82");
+  final_estimator->E(x, xestimators);
+  Rprintf("84");
+  final_transform->M(x, xtransforms);
+  Rprintf("86");
+
+  // final_transform->transform(x, xtransforms);
+  // final_estimator->E(x, xestimators);
+  // final_transform->M(x, xtransforms);
+  // final_estimator->param(x, xestimators);
+  // final_estimator->F(x, xestimators); // Store f for outcomes()
+  // result["f"] = x.f;
 
   /*
    * Computations

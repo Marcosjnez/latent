@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 22/08/2025
+ * Modification date: 01/09/2025
  */
 
 // Crossproduct transformation:
@@ -13,27 +13,32 @@ public:
   int p, q;
   arma::mat X, gradmat;
 
-  void transform() {
+  void transform(arguments_optim& x) {
 
-    std::memcpy(X.memptr(), transparameters.memptr(),
-                transparameters.n_elem * sizeof(double));
-    arma::mat XtX = arma::symmatu(X.t() * X);
-    transparameters = arma::vectorise(XtX);
-
-  }
-
-  void update_grad() {
-
-    gradmat.set_size(p, q);
-    std::memcpy(gradmat.memptr(), grad_in.memptr(), grad_in.n_elem * sizeof(double));
-    grad_out = arma::vectorise(2*X * gradmat);
+    // std::memcpy(X.memptr(), x.transparameters(indices_in[0]).memptr(),
+    //             indices_in[0].n_elem * sizeof(double));
+    // arma::mat XtX = arma::symmatu(X.t() * X);
+    // x.transparameters(indices_out[0]) = arma::vectorise(XtX);
 
   }
 
-  void update_hess() {
+  void update_grad(arguments_optim& x) {
 
-    jacob = arma::diagmat(arma::vectorise(2*X));
-    sum_djacob = 2*gradmat;
+    // gradmat.set_size(p, q);
+    // std::memcpy(gradmat.memptr(), grad_in.memptr(), grad_in.n_elem * sizeof(double));
+    // grad_out = arma::vectorise(2*X * gradmat); grad_out.zeros();
+    // x.grad(indices_in[0]) += arma::vectorise(2*X * gradmat);
+
+  }
+
+  void update_dgrad(arguments_optim& x) {
+
+  }
+
+  void update_hess(arguments_optim& x) {
+
+    // jacob = arma::diagmat(arma::vectorise(2*X));
+    // sum_djacob = 2*gradmat;
 
     // jacob = arma::join_cols(
     //   arma::kron(arma::eye(p, p), X.t()),
@@ -43,17 +48,21 @@ public:
 
   }
 
-  void update_vcov() {
+  void update_vcov(arguments_optim& x) {
 
   }
 
-  void dconstraints() {
+  void dconstraints(arguments_optim& x) {
 
     constraints = false;
 
   }
 
-  void outcomes() {
+  void M(arguments_optim& x) {
+
+  }
+
+  void outcomes(arguments_optim& x) {
 
     arma::vec chisq_p(p, arma::fill::value(p));
 

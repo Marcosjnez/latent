@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 22/08/2025
+ * Modification date: 31/08/2025
  */
 
 /*
@@ -30,7 +30,7 @@ public:
   std::vector<arma::uvec> hess_indices;
   double constant_class;
 
-  void param() {
+  void param(arguments_optim& x) {
 
     indices_classes = indices[1];
     indices_items = indices[2];
@@ -61,13 +61,13 @@ public:
 
   }
 
-  void F() {
+  void F(arguments_optim& x) {
 
     f = -arma::accu(logliks) - arma::accu(constant_class * logclasses);
 
   }
 
-  void G() {
+  void G(arguments_optim& x) {
 
     grad.set_size(transparameters.n_elem); grad.zeros();
 
@@ -91,14 +91,14 @@ public:
     // grad.elem( arma::find_nonfinite(grad) ).zeros();
   }
 
-  void dG() {
+  void dG(arguments_optim& x) {
 
     // Rcpp::stop("dG not available");
     dg.set_size(transparameters.n_elem); dg.zeros();
 
   }
 
-  void H() {
+  void H(arguments_optim& x) {
 
     hess.set_size(transparameters.n_elem, transparameters.n_elem);
     hess.zeros();
@@ -149,15 +149,15 @@ public:
 
   }
 
-  void E() { // Update the parameter estimates
+  void E(arguments_optim& x) { // Update the parameter estimates
 
   }
 
-  void M() { // Update the posterior probabilities
+  void M(arguments_optim& x) { // Update the posterior probabilities
 
   }
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
     vectors.resize(5);
     vectors[0] = classes;

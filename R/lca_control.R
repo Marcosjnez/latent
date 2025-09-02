@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/08/2025
+# Modification date: 02/09/2025
 
 lca_control <- function(control) {
 
@@ -29,6 +29,14 @@ lca_control <- function(control) {
 
   if(is.null(control$opt)) {
     control$opt <- "lbfgs"
+  }
+
+  if(is.null(control$maxit_em)) {
+    control$maxit_em <- 100
+  }
+
+  if(is.null(control$rstarts_em)) {
+    control$rstarts_em <- 100
   }
 
   if(is.null(control$step_maxit)) {

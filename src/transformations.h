@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 29/08/2025
+ * Modification date: 01/09/2025
  */
 
 // Transformations
@@ -15,6 +15,7 @@ public:
   arma::mat jacob, sum_djacob, hess_in, hess_out, h;
   std::vector<arma::uvec> indices_in, indices_out;
   bool constraints;
+  arma::mat freqs;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
@@ -23,17 +24,21 @@ public:
   std::vector<std::vector<arma::vec>> list_vectors;
   std::vector<std::vector<arma::mat>> list_matrices;
 
-  virtual void transform() = 0;
+  virtual void transform(arguments_optim& x) = 0;
 
-  virtual void update_grad() = 0;
+  virtual void update_grad(arguments_optim& x) = 0;
 
-  virtual void update_hess() = 0;
+  virtual void update_dgrad(arguments_optim& x) = 0;
 
-  virtual void update_vcov() = 0;
+  virtual void update_hess(arguments_optim& x) = 0;
 
-  virtual void dconstraints() = 0;
+  virtual void update_vcov(arguments_optim& x) = 0;
 
-  virtual void outcomes() = 0;
+  virtual void dconstraints(arguments_optim& x) = 0;
+
+  virtual void M(arguments_optim& x) = 0;
+
+  virtual void outcomes(arguments_optim& x) = 0;
 
 };
 
@@ -77,11 +82,9 @@ public:
 
     for(int i=0; i < x.ntransforms; ++i) {
 
-      arma::uvec indices_in = xtransformations[i]->indices_in[0];
-      xtransformations[i]->transparameters = x.transparameters.elem(indices_in);
-      xtransformations[i]->transform();
-      arma::uvec indices_out = xtransformations[i]->indices_out[0];
-      x.transparameters.elem(indices_out) = xtransformations[i]->transparameters;
+      // arma::uvec indices_in = xtransformations[i]->indices_in[0];
+      // xtransformations[i]->transparameters = x.transparameters.elem(indices_in);
+      xtransformations[i]->transform(x);
 
     }
 
@@ -97,13 +100,7 @@ public:
     // Iterate up-down:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 
-      arma::uvec indices_out = xtransformations[i]->indices_out[0];
-      xtransformations[i]->grad_in = x.grad(indices_out);
-
-      xtransformations[i]->update_grad();
-
-      arma::uvec indices_in = xtransformations[i]->indices_in[0];
-      x.grad(indices_in) += xtransformations[i]->grad_out;
+      xtransformations[i]->update_grad(x);
 
     }
 
@@ -121,7 +118,7 @@ public:
       const arma::uvec& indices_out = xtransformations[i]->indices_out[0];
 
       // Compute the jacobian and sum_djacob of each transformation:
-      xtransformations[i]->update_hess();
+      xtransformations[i]->update_hess(x);
 
       // Update the hessian: H += H U + U^T H + U^T H U + S
       const arma::mat& J = xtransformations[i]->jacob;
@@ -179,7 +176,7 @@ public:
     // Count the number of sets of constrained parameters:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 
-      xtransformations[i]->dconstraints();
+      xtransformations[i]->dconstraints(x);
       if(xtransformations[i]->constraints) ++ nconstr;
 
     }
@@ -191,13 +188,27 @@ public:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 
       arma::uvec indices_out = xtransformations[i]->indices_out[0];
-      xtransformations[i]->dconstraints();
+      xtransformations[i]->dconstraints(x);
       if(xtransformations[i]->constraints) {
         x.mat_dconstraints.submat(indices_out, arma::uvec{ static_cast<arma::uword>(k) }) = xtransformations[i]->dconstr;
         ++k;
       };
 
     }
+
+  }
+
+  void M(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+
+    // Update the parameter estimates using the estimated posterior:
+
+    for(int i=0; i < x.ntransforms; ++i) {
+
+      xtransformations[i]->M(x);
+
+    }
+
+    x.parameters = x.transparameters(x.transparam2param);
 
   }
 
@@ -212,7 +223,7 @@ public:
 
     for(int i=0; i < x.ntransforms; ++i) {
 
-      xtransformations[i]->outcomes();
+      xtransformations[i]->outcomes(x);
 
       std::get<0>(x.outputs_transform)[i] = xtransformations[i]->doubles;
       std::get<1>(x.outputs_transform)[i] = xtransformations[i]->vectors;

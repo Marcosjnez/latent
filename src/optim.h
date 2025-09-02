@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/07/2025
+ * Modification date: 31/08/2025
  */
 
 typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::mat> optim_result;
@@ -618,7 +618,10 @@ optim_result em(arguments_optim x,
                 std::vector<manifolds*>& xmanifolds,
                 std::vector<estimators*>& xestimators) {
 
+  product_transform* final_transform;
   product_estimator* final_estimator;
+
+  final_transform->transform(x, xtransforms);
 
   x.convergence = false;
   arma::vec loglik(x.maxit); loglik[0] = x.loglik;
@@ -627,24 +630,35 @@ optim_result em(arguments_optim x,
   do {
 
     ++x.iterations;
+
+    final_estimator->param(x, xestimators);
+    final_estimator->F(x, xestimators); // Store f for outcomes()
     final_estimator->E(x, xestimators);
-    final_estimator->M(x, xestimators);
+    // Rprintf("loglik = %g \n", x.loglik);
     loglik[x.iterations] = x.loglik;
+
     double diff = loglik[x.iterations]-loglik[x.iterations-1];
     x.ng = sqrt(arma::accu(diff*diff));
     if (x.ng < x.eps) {
       x.convergence = true;
       break;
     }
+
+    final_transform->M(x, xtransforms);
+
     // Rf_error("617");
 
   } while(x.iterations < x.maxit);
 
-  // final_estimator->outcomes(x, xestimators);
+  // Rf_error("652");
+  // final_transform->transform(x, xtransforms);
+  final_estimator->param(x, xestimators);
+  final_estimator->F(x, xestimators); // Store f for outcomes()
+  // x.f = -x.loglik;
 
   optim_result result = std::make_tuple(x.parameters,
                                         x.transparameters,
-                                        x.loglik,
+                                        x.f,
                                         x.iterations,
                                         x.convergence,
                                         x.ng, x.rg, x.posterior);
@@ -751,6 +765,10 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   arma::uvec transparam2param = control_optimizer["transparam2param"];
   x.param2transparam = param2transparam;
   x.transparam2param = transparam2param;
+
+  x.grad.set_size(x.ntransparam);
+  x.dgrad.set_size(x.ntransparam);
+  // x.hess.set_size(x.ntransparam, x.ntransparam);
 
   if(control_optimizer.containsElementNamed("posterior")) {
     std::vector<arma::mat> post = control_optimizer["posterior"];

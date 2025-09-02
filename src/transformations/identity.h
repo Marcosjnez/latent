@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 22/08/2025
+ * Modification date: 01/09/2025
  */
 
 // Identity (no transformation):
@@ -13,7 +13,7 @@ public:
   // arma::vec X;
   // arma::uvec vector_indices;
 
-  void transform() {
+  void transform(arguments_optim& x) {
 
     // Rf_error("id 18");
     // X = parameters;
@@ -22,7 +22,7 @@ public:
 
   }
 
-  void update_grad() {
+  void update_grad(arguments_optim& x) {
 
     // Rprintf("vector_indices:\n");
     // for (arma::uword i = 0; i < vector_indices.n_elem; ++i) {
@@ -46,21 +46,29 @@ public:
 
   }
 
-  void update_hess() {
+  void update_dgrad(arguments_optim& x) {
 
   }
 
-  void update_vcov() {
+  void update_hess(arguments_optim& x) {
 
   }
 
-  void dconstraints() {
+  void update_vcov(arguments_optim& x) {
+
+  }
+
+  void dconstraints(arguments_optim& x) {
 
     constraints = false;
 
   }
 
-  void outcomes() {
+  void M(arguments_optim& x) {
+
+  }
+
+  void outcomes(arguments_optim& x) {
 
     matrices.resize(2);
     matrices[0] = jacob;

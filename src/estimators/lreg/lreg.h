@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 29/04/2025
+ * Modification date: 31/08/2025
  */
 
 /*
@@ -20,43 +20,43 @@ public:
   arma::mat predictors;
   arma::vec res;
 
-  void param() {
+  void param(arguments_optim& x) {
 
     res = Y - predictors * transparameters;
 
   }
 
-  void F() {
+  void F(arguments_optim& x) {
 
     f = arma::accu(res % res);
 
   }
 
-  void G() {
+  void G(arguments_optim& x) {
 
     grad = -2 * predictors.t() * res;
 
   }
 
-  void dG() {
+  void dG(arguments_optim& x) {
 
     dX = dparameters;
     dg = 2 * predictors.t() * (predictors * dX);
 
   }
 
-  void H() {
+  void H(arguments_optim& x) {
 
     // Rcpp::stop("H not available");
     // hess = 2 * predictors.t() * predictors;
 
   }
 
-  void E() {}
+  void E(arguments_optim& x) {}
 
-  void M() {}
+  void M(arguments_optim& x) {}
 
-  void outcomes() {}
+  void outcomes(arguments_optim& x) {}
 
 };
 

@@ -62,7 +62,7 @@ se <- function(fit, type = "standard", model = "user", digits = 2) {
 
   # Select the parameter labels for the table:
   mylabels <- unlist(model)
-  selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
+  selection <- match(mylabels, fit@modelInfo$transparameters_labels)
 
   # Standard errors:
   se <- SE$se[selection]
@@ -104,10 +104,10 @@ standard_se <- function(fit) {
 
   # Name the parameters:
   names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
-    fit@Optim$opt$transparameters_labels
+    fit@modelInfo$transparameters_labels
 
   colnames(result$h) <- rownames(result$h) <-
-    fit@Optim$opt$parameters_labels
+    fit@modelInfo$parameters_labels
 
   return(result)
 
@@ -124,8 +124,8 @@ robust_se <- function(fit, H) {
   control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
 
-  transparameters_labels <- fit@Optim$opt$transparameters_labels
-  lca_trans <- fit@Optim$opt$lca_trans
+  transparameters_labels <- fit@modelInfo$transparameters_labels
+  lca_trans <- fit@modelInfo$lca_trans
   full_loglik <- lca_trans$loglik
   weights <- fit@Optim$data_list$weights
   npatterns <- fit@Optim$data_list$npatterns
@@ -138,14 +138,11 @@ robust_se <- function(fit, H) {
 
   for(s in 1:npatterns) {
 
-    all_indices <- match(c(lca_trans$class, full_loglik[s,,]), transparameters_labels)
-    labels <- transparameters_labels[all_indices]
-    indices_classes <- match(lca_trans$class, labels)
-    indices_items <- match(full_loglik[s,,], labels)
-    indices <- list()
-    indices[[1]] <- all_indices-1L
-    indices[[2]] <- indices_classes-1L
-    indices[[3]] <- indices_items-1L
+    labels <- c(lca_trans$class, full_loglik[s,,])
+    all_indices <- match(labels, transparameters_labels)
+    indices_classes <- match(lca_trans$class, transparameters_labels)
+    indices_items <- match(full_loglik[s,,], transparameters_labels)
+    indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L)
     SJ <- 1L*nitems
     hess_indices <- lapply(0:(nclasses - 1), function(i) {
       nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
@@ -209,11 +206,11 @@ robust_se <- function(fit, H) {
 
   # Name the parameters:
   names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
-    fit@Optim$opt$transparameters_labels
+    fit@modelInfo$transparameters_labels
 
   colnames(result$h) <- rownames(result$h) <-
     colnames(result$B) <- rownames(result$B) <-
-    fit@Optim$opt$transparameters_labels <- fit@Optim$opt$parameters_labels
+    fit@modelInfo$transparameters_labels <- fit@modelInfo$parameters_labels
 
 
   return(result)
@@ -239,7 +236,7 @@ ci <- function(fit, type = "standard", model = "user",
   }
 
   se <- c(SE$se) # standard errors
-  names(se) <- fit@Optim$opt$transparameters_labels
+  names(se) <- fit@modelInfo$transparameters_labels
 
   # Number of total parameters and transformed parameters:
   ntrans <- length(fit@Optim$opt$transparameters)
@@ -258,7 +255,7 @@ ci <- function(fit, type = "standard", model = "user",
   x <- c(fit@Optim$opt$transparameters)
   lower <- x - sqrt(qchisq(confidence, df = ps)) * se
   upper <- x + sqrt(qchisq(confidence, df = ps)) * se
-  names(lower) <- names(upper) <- fit@Optim$opt$transparameters_labels
+  names(lower) <- names(upper) <- fit@modelInfo$transparameters_labels
 
   # Get confidence limits for the user model or raw model parameters:
 
@@ -278,7 +275,7 @@ ci <- function(fit, type = "standard", model = "user",
 
   # Select the parameter labels for the table:
   mylabels <- unlist(model)
-  selection <- match(mylabels, fit@Optim$opt$transparameters_labels)
+  selection <- match(mylabels, fit@modelInfo$transparameters_labels)
 
   # Tables:
   lower_ci <- fill_list_with_vector(model, lower[selection])

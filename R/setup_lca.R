@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 29/08/2025
+# Modification date: 02/09/2025
 #'
 #' @title
 #' Get the default model for Latent Class Analysis.
@@ -212,6 +212,7 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
 
   }
 
+  pi_hat_list <- list()
   # Model for multinomial items:
   if(any(item == "multinomial")) {
 
@@ -219,35 +220,32 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     Jmulti <- length(multinom) # Number of multinomial items
     # Collect the number of response categories:
     K <- unlist(lapply(data_list$factor_names, FUN = length))
-    Ks <- rep(K, times = nclasses)
-    repitems <- rep(multinom, times = nclasses)
-    repclasses <- rep(1:nclasses, each = Jmulti)
-    repitemsK <- rep(repitems, times = Ks)
-    repclassesK <- rep(repclasses, times = Ks)
-    KsJ <- lapply(Ks, FUN = \(x) 1:x)
-    eta <- paste("eta[", repitemsK, "|", repclassesK, "|", unlist(KsJ), "]",
-                 sep = "")
-    eta <- split(eta, rep(seq_along(Ks), Ks))
+    eta <- vector("list", length = Jmulti)
+    for(j in 1:Jmulti) {
+      eta[[j]] <- matrix(NA, nrow = K[j], ncol = nclasses)
+      eta[[j]][] <- paste("eta[", j, "|" , rep(1:nclasses, each = K[j]),
+                          "|", 1:K[j], "]", sep = "")
+    }
     lca_trans$eta <- eta
-    eta <- lapply(eta, function(x) { x[1] <- 0; x })
-    lca_param$eta <- eta
+    lca_param$eta <- lapply(eta, FUN = \(x) {x[1,] <- 0; return(x)})
 
     # Initial values for eta:
 
-    pi_hat_list <- vector("list", length = Jmulti)
+    pi_hat_list <- eta_hat_list <- vector("list", length = Jmulti)
 
     # pi_hat_list <- apply(Y, 2, \(x) table(x)/nobs)
     for(j in 1:Jmulti) { # Much faster
       int_vector <- data[, multinom[j]]
       int_vector <- int_vector[!is.na(int_vector)] # Remove missing values
       nsize <- length(int_vector)
-      pi_hat_list[[j]] <- count(int_vector, nsize, K[j]) / nsize
+      props <- count(int_vector, nsize, K[j]) / nsize
+      pi_hat_list[[j]] <- props %*% t(rep(1, nclasses))
+      log_props <- log(props)
+      eta_hat_list[[j]] <- (log_props-log_props[1]) %*% t(rep(1, nclasses))
     }
-    eta_hat_list <- lapply(pi_hat_list, FUN = \(x) log(x)-log(x)[1])
-    eta_hat_list <- rep(eta_hat_list, times = nclasses)
-    pi_hat_list <- rep(pi_hat_list, times = nclasses)
 
     # eta is sampled from a normal distribution:
+    Ks <- length(unlist(eta_hat_list))
     for(i in 1:control$rstarts) {
       # init_eta <- rnorm(sum(Ks))
       init_eta <- unlist(eta_hat_list) + rnorm(sum(Ks), 0, 0.1)
@@ -292,10 +290,13 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     repS <- rep(1:npatterns, times  = Jmulti*nclasses)
     loglik_multinom <- paste("loglik[", repS, ",", Srepitems, ",", Srepclasses, "]", sep = "")
     loglik_multinom <- array(loglik_multinom, dim = c(npatterns, Jmulti, nclasses))
-    peta <- paste("peta[", repitemsK, "|", repclassesK, "|", unlist(KsJ), "]", sep = "")
-    peta <- split(peta, rep(seq_along(Ks), Ks))
+    peta <- vector("list", length = Jmulti)
+    for(j in 1:Jmulti) {
+      peta[[j]] <- matrix(NA, nrow = K[j], ncol = nclasses)
+      peta[[j]][] <- paste("peta[", j, "|" , rep(1:nclasses, each = K[j]),
+                           "|", 1:K[j], "]", sep = "")
+    }
     lca_trans$peta <- peta
-    # lca_trans$loglik_multinom <- loglik_multinom
     lca_trans$loglik[, multinom, ] <- loglik_multinom
 
   }
@@ -359,6 +360,7 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
                  ntrans = ntrans,
                  lca_param = lca_param,
                  lca_trans = lca_trans,
+                 pi_hat_list = pi_hat_list,
                  control = control)
 
   return(result)
@@ -411,8 +413,8 @@ get_short_lca_model <- function(data_list, nclasses, item, lca_trans,
     }
 
     # Fill the multinomial model:
-    peta_sorted <- sort(unlist(lca_trans$peta))
-    items[multinom] <- fill_list_with_vector(items[multinom], peta_sorted)
+    items[multinom] <- fill_list_with_vector(items[multinom],
+                                             unlist(lca_trans$peta))
 
   }
 
@@ -438,8 +440,8 @@ get_short_lca_model <- function(data_list, nclasses, item, lca_trans,
   if(any(item == "multinomial")) {
 
     # Fill the multinomial model:
-    eta_sorted <- sort(unlist(lca_trans$eta))
-    items[multinom] <- fill_list_with_vector(items[multinom], eta_sorted)
+    items[multinom] <- fill_list_with_vector(items[multinom],
+                                             unlist(lca_trans$eta))
 
   }
 
@@ -486,13 +488,10 @@ get_lca_structures <- function(data_list, full_model, control) {
                                  indices_out = list(indices_out-1L))
   k <- 2L
 
-  # pi_hat <- array(0, dim = dim(lca_trans$loglik))
-
   if(any(item == "gaussian")) {
 
     gauss <- which(item == "gaussian")
     Jgauss <- length(gauss) # Number of gaussian items
-    gauss <- which(item == "gaussian")
     labels_in <- lca_trans$s
     labels_out <- lca_trans$sigma
     indices_in <- match(labels_in, transparameters_labels)
@@ -504,37 +503,28 @@ get_lca_structures <- function(data_list, full_model, control) {
                                    indices_out = list(indices_out-1L))
     k <- k+1L
 
-    # Check for missingness:
-    Y <- patterns[, gauss]
-    removeNAs <- c()
-    if(anyNA(patterns[, gauss])) {
-      removeNA <- which(is.na(c(Y)))
-      Y[removeNA] <- 0 # Assign a 0 to all the NAs, remove later
-      # Get all the indices corresponding to missing item loglikelihoods:
-      # The parameters of the NA subjects in an item for all nclasses:
-      multiplying_factor <- (npatterns*Jgauss)*0:(nclasses-1L)
-      removeNAs <- c(sapply(removeNA, FUN = \(x) x + multiplying_factor))
-      # These indices will be used to remove from the model the parameters
-      # corresponding to these item loglikelihoods
-    }
-
     labels_in <- c(lca_trans$mu, lca_trans$sigma)
-    labels_out <- lca_trans$loglik[, gauss, ]
     indices_in <- match(labels_in, transparameters_labels)
+    indices_in_mu <- match(lca_trans$mu, transparameters_labels)
+    indices_in_sigma <- match(lca_trans$sigma, transparameters_labels)
+
+    labels_out <- lca_trans$loglik[, gauss, ]
     indices_out <- match(labels_out, transparameters_labels)
-    mu_indices <- match(lca_trans$mu, transparameters_labels[indices_in])
-    mu_indices <- rep(mu_indices, each = npatterns)
-    sigma_indices <- match(lca_trans$sigma, transparameters_labels[indices_in])
-    sigma_indices <- rep(sigma_indices, each = npatterns)
-    indices_in <- list(indices_in-1L, mu_indices-1L, sigma_indices-1L,
-                       removeNAs-1L)
-    y <- rep(c(patterns[, gauss]), times = nclasses)
+
+    indices_in <- list(indices_in-1L, indices_in_mu-1L, indices_in_sigma-1L)
+    indices_out <- list(indices_out-1L)
+
+    y <- as.matrix(patterns[, gauss])
+
     control_transform[[k]] <- list(transform = "normal",
                                    labels_in = labels_in,
                                    indices_in = indices_in,
                                    labels_out = labels_out,
-                                   indices_out = list(indices_out-1L),
-                                   y = y)
+                                   indices_out = indices_out,
+                                   y = y,
+                                   S = npatterns,
+                                   J = Jgauss,
+                                   I = nclasses)
     k <- k+1L
 
   }
@@ -544,108 +534,62 @@ get_lca_structures <- function(data_list, full_model, control) {
     # All of this is redundant in get_full_lca_model:
     multinom <- which(item == "multinomial")
     Jmulti <- length(multinom) # Number of multinomial items
-    K <- unlist(lapply(data_list$factor_names, FUN = length))
-    Ks <- rep(K, times = nclasses)
 
-    for(i in 1:(Jmulti*nclasses)) {
+    # Softmax transformations:
+    for(j in 1:Jmulti) {
+      for(i in 1:nclasses) {
 
-      labels_in <- lca_trans$eta[[i]]
-      labels_out <- lca_trans$peta[[i]]
-      indices_in <- match(labels_in, transparameters_labels)
-      indices_out <- match(labels_out, transparameters_labels)
-      control_transform[[k]] <- list(transform = "softmax",
-                                     labels_in = labels_in,
-                                     indices_in = list(indices_in-1L),
-                                     labels_out = labels_out,
-                                     indices_out = list(indices_out-1L))
-      k <- k+1L
+        labels_in <- lca_trans$eta[[j]][, i]
+        labels_out <- lca_trans$peta[[j]][, i]
+        indices_in <- match(labels_in, transparameters_labels)
+        indices_out <- match(labels_out, transparameters_labels)
+        control_transform[[k]] <- list(transform = "softmax",
+                                       labels_in = labels_in,
+                                       indices_in = list(indices_in-1L),
+                                       labels_out = labels_out,
+                                       indices_out = list(indices_out-1L))
+        k <- k+1L
 
+      }
     }
 
+    # Multinomial transformation:
     labels_in <- unname(unlist(lca_trans$peta))
     labels_out <- c(lca_trans$loglik[, multinom, ])
-    indices_in <- match(labels_in, transparameters_labels) # JxIxK
-    indices_out <- match(labels_out, transparameters_labels) # SxJxI
-    p_indices <- match(labels_in, transparameters_labels[indices_in])
-    cumsumKs <- c(0, cumsum(Ks))
-    # For each datapoint, create a vector of possible peta contributions to the likelihood:
-    peta_indices <- c()
-    for(ks in 1:length(Ks)) {
-      selection <- (cumsumKs[ks]+1L):cumsumKs[ks+1L]
-      peta_indices <- c(peta_indices, rep(p_indices[selection], times = npatterns))
-    }
+    indices_in <- match(labels_in, transparameters_labels)
+    indices_out <- match(labels_out, transparameters_labels)
+    indices_eta <- match(unname(unlist(lca_trans$eta)),
+                         transparameters_labels)
 
-    # Check for missingness:
-    Y <- patterns[, multinom]
-    removeNAs <- c()
-    if(anyNA(patterns[, multinom])) {
-      removeNA <- which(is.na(c(Y)))
-      Y[removeNA] <- 0 # Assign a 0 to all the NAs, remove later
-      # Get all the indices corresponding to missing item loglikelihoods:
-      # The parameters of the NA subjects in an item for all nclasses:
-      multiplying_factor <- (npatterns*Jmulti)*0:(nclasses-1L)
-      removeNAs <- c(sapply(removeNA, FUN = \(x) x + multiplying_factor))
-      # These indices will be used to remove from the model the parameters
-      # corresponding to these item loglikelihoods
-    }
-
-    # Create a dummy vector indicating which peta contributes to the likelihood:
-    df <- as.data.frame(Y) # Assume no missigness, remove later
-    dummy <- c()
-    for(j in 1:Jmulti) {
-      mat <- model.matrix(~ factor(df[,j])-1)
-      dummy <- c(dummy, c(t(mat)))
-    }
-    dummy <- rep(dummy, times = nclasses)
-    dummy_indices <- which(as.logical(dummy))
-    # dummy <- unname(cumsum(rep(K, each = npatterns)) - K[1] + c(patterns[, multinom]))
-    # dummy_indices2 <- rep(dummy, Jmulti) + rep(seq(0L, Jmulti-1L) * (max(dummy) + 1L),
-    #                                          each = npatterns*Jmulti)
-    # petas contributing to the likelihood for each (by class):
-    peta_indices <- peta_indices[dummy_indices]
-
-    # Remove the indices and parameters corresponding to missing item logliks:
-    # if(anyNA(patterns[, multinom])) {
-    #   peta_indices <- peta_indices[-removeNAs]
-    #   indices_out <- indices_out[-removeNAs]
-    #   labels_out <- labels_out[-removeNAs]
-    # }
-
-    indices_in <- list(indices_in-1L, peta_indices-1L, removeNAs-1L)
+    indices_in <- list(indices_in-1L, indices_eta-1L)
+    indices_out <- list(indices_out-1L)
+    y <- as.matrix(patterns[, multinom])
+    K <- unlist(lapply(data_list$factor_names, FUN = length))
 
     control_transform[[k]] <- list(transform = "multinomial",
                                    labels_in = labels_in,
                                    indices_in = indices_in,
                                    labels_out = labels_out,
-                                   indices_out = list(indices_out-1L))
-
-    # Get the proportion of times each category was selected in an item:
-    # Y <- data[, multinom, drop = FALSE] - 1L
-    # pi_hat_list <- vector("list", length = Jmulti)
-    # for(j in 1:Jmulti) {
-    #   pi_hat_list[[j]] <- count(Y[, j], nobs, K[j]) / nobs
-    # }
-    # # Replicate each proportion vector npatterns times and then replicate
-    # # the result nclasses times (This matchs the first peta_indices):
-    # pi_hat_vector <- rep(unlist(lapply(pi_hat_list, FUN = rep, times = npatterns)),
-    #               times = nclasses)
-    # pi_hat_vector <- pi_hat_vector[dummy_indices]
-    # pi_hat[, multinom, ] <- pi_hat_vector
+                                   indices_out = indices_out,
+                                   y = y,
+                                   S = npatterns,
+                                   J = Jmulti,
+                                   I = nclasses,
+                                   K = K)
 
   }
 
   #### Estimators ####
 
-  indices <- list()
-  full_loglik <- c(lca_trans$loglik)
+  item_loglik <- c(lca_trans$loglik)
 
-  all_indices <- match(c(lca_trans$class, full_loglik), transparameters_labels)
-  indices_classes <- match(lca_trans$class, transparameters_labels[all_indices])
-  indices_items <- match(full_loglik, transparameters_labels[all_indices])
-  indices[[1]] <- all_indices-1L
-  indices[[2]] <- indices_classes-1L
-  indices[[3]] <- indices_items-1L
-  labels <- transparameters_labels[all_indices]
+  labels <- c(lca_trans$class, item_loglik)
+  all_indices <- match(labels, transparameters_labels)
+  indices_classes <- match(lca_trans$class, transparameters_labels)
+  indices_items <- match(item_loglik, transparameters_labels)
+  indices_theta <- match(lca_trans$theta, transparameters_labels)
+  indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
+                  indices_theta-1L)
   SJ <- npatterns*nitems
   hess_indices <- lapply(0:(nclasses - 1), function(i) {
     nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
@@ -705,32 +649,21 @@ get_lca_structures <- function(data_list, full_model, control) {
     alpha <- control$penalties$prob$alpha
     if(any(item == "multinomial") & alpha != 0) {
 
-      # Get the proportion of times each category was selected in an item:
-      # Y <- data[, multinom, drop = FALSE] # The min of each column should be 0
-      pi_hat_list <- vector("list", length = Jmulti)
+      for(j in 1:Jmulti) {
+        for(i in 1:nclasses) {
 
-      # pi_hat_list <- apply(Y, 2, \(x) table(x)/nobs)
-      for(j in 1:Jmulti) { # Much faster
-        int_vector <- data[, multinom[j]]
-        int_vector <- int_vector[!is.na(int_vector)] # Remove missing values
-        nsize <- length(int_vector)
-        pi_hat_list[[j]] <- count(int_vector, nsize, K[j]) / nsize
-      }
-      pi_hat_list <- rep(pi_hat_list, times = nclasses)
+          pihat <- pi_hat_list[[j]][, i]
+          labels <- lca_trans$peta[[j]][, i]
+          indices <- match(labels, transparameters_labels)
+          control_estimator[[G]] <- list(estimator = "bayesconst2",
+                                         labels = labels,
+                                         indices = list(indices-1L),
+                                         K = nclasses,
+                                         pihat = pihat,
+                                         alpha = control$penalties$prob$alpha)
+          G <- G+1L
 
-      for(i in 1:length(pi_hat_list)) {
-
-        pihat <- pi_hat_list[[i]]
-        labels <- lca_trans$peta[[i]]
-        indices <- match(labels, transparameters_labels)
-        control_estimator[[G]] <- list(estimator = "bayesconst2",
-                                       labels = labels,
-                                       indices = list(indices-1L),
-                                       K = nclasses,
-                                       pihat = pihat,
-                                       alpha = control$penalties$prob$alpha)
-        G <- G+1L
-
+        }
       }
 
     }

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 03/02/2025
+ * Modification date: 31/08/2025
  */
 
 /*
@@ -22,13 +22,13 @@ public:
   arma::uvec vector_indices, lambda_indices, targetlambda_indices, indices_q, indices_diag_q,
   indices_diag_p, phi_indices, targetphi_indices, psi_indices, targetpsi_indices;
 
-  void param() {
+  void param(arguments_optim& x) {
 
     vector = parameters;
 
   }
 
-  void F() {
+  void F(arguments_optim& x) {
 
     sqrt_vector = sqrt(vector);
     arma::mat sc = arma::diagmat(1/sqrt_vector);
@@ -42,7 +42,7 @@ public:
 
   }
 
-  void G() {
+  void G(arguments_optim& x) {
 
     arma::mat A = eigvec(arma::span::all, arma::span(p-q, p-1));
     arma::vec eigenvalues = eigval(arma::span(p-q, p-1));
@@ -50,25 +50,25 @@ public:
 
   }
 
-  void dG() {
+  void dG(arguments_optim& x) {
 
     // Rcpp::stop("dG not available");
     dg.set_size(parameters.n_elem); dg.zeros();
 
   }
 
-  void H() {
+  void H(arguments_optim& x) {
 
     // Rcpp::stop("H not available");
     hess.set_size(parameters.n_elem, parameters.n_elem); hess.zeros();
 
   }
 
-  void E() {}
+  void E(arguments_optim& x) {}
 
-  void M() {}
+  void M(arguments_optim& x) {}
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
     arma::vec eigval;
     arma::mat eigvec;

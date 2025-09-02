@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/08/2025
+ * Modification date: 02/09/2025
  */
 
 // Logarithm multinomial probability transformation:
@@ -10,85 +10,166 @@ class multinomial:public transformations {
 
 public:
 
-  arma::vec small_peta;
-  arma::vec small_logpeta;
-  arma::vec logpeta;
-  arma::uvec peta_indices;
-  arma::uvec removeNAs;
+  arma::vec trans, logtrans;
+  std::vector<arma::mat> peta, eta, dpeta, indices;
+  arma::uvec K;
   arma::vec dloglik;
+  arma::mat y;
+  int S, J, I;
+  int n_in, n_out;
 
-  void transform() {
+  void transform(arguments_optim& x) {
 
-    small_peta = transparameters; // JxIxK
-    peta_indices = indices_in[1]; // SxJxIxK indices
-    small_logpeta = arma::trunc_log(small_peta); // JxIxK
-    transparameters = small_logpeta.elem(peta_indices); // SxJxI
+    trans = x.transparameters(indices_in[0]);
+    logtrans = arma::trunc_log(trans);
 
-    // Set to zero the missing data:
-    removeNAs = indices_in[2];
-    transparameters(removeNAs).zeros();
+    arma::cube loglik(S, J, I, arma::fill::zeros);
+    int l=0;
+    for(int j=0; j < J; ++j) {
+      for(int i=0; i < I; ++i) {
+        for(int k=0; k < K[j]; ++k, ++l) {
+          peta[j](k,i) = trans(l);
+          eta[j](k,i) = logtrans(l);
+        }
+      }
+    }
+
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s) {
+          if (std::isnan(y(s,j))) continue;
+          int value = y(s,j);
+          loglik(s,j,i) = eta[j](value,i);
+        }
+      }
+    }
+
+    x.transparameters.elem(indices_out[0]) = arma::vectorise(loglik);
 
   }
 
-  void update_grad() {
+  void update_grad(arguments_optim& x) {
 
     // jacob.set_size(transparameters.n_elem, parameters.n_elem);
     // jacob.zeros();
 
-    dloglik = grad_in / small_peta(peta_indices);
-    // Set to zero the missing data:
-    dloglik.elem(removeNAs).zeros();
-    grad_out.resize(indices_in[0].n_elem); grad_out.zeros();
-    grad_out.elem(peta_indices) += dloglik;
+    dloglik = x.grad(indices_out[0]);
+
+    for(int j=0; j < J; ++j) {
+      dpeta[j].zeros();
+    }
+
+    int l=0L;
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s, ++l) {
+          if (std::isnan(y(s,j))) continue;
+          int value = y(s,j);
+          dpeta[j](value,i) += dloglik(l)/peta[j](value,i);
+        }
+      }
+    }
+
+    arma::vec v = arma::vec();  // initialize empty vector
+    for (int j = 0; j < J; ++j) {
+      v = arma::join_cols(v, arma::vectorise(dpeta[j]));
+    }
+
+    x.grad(indices_in[0]) += v;
 
   }
 
-  void update_hess() {
+  void update_dgrad(arguments_optim& x) {
 
-    const arma::uword n_out = transparameters.n_elem;
-    const arma::uword n_in  = indices_in[0].n_elem;
+  }
+
+  void update_hess(arguments_optim& x) {
 
     jacob.set_size(n_out, n_in);
     jacob.zeros();
     sum_djacob.set_size(n_in, n_in);
     sum_djacob.zeros();
 
-    // jacob.cols(peta_indices) += arma::diagmat(1/small_peta(peta_indices));
-
-    // Vectorised version:
-    arma::uvec rows = arma::regspace<arma::uvec>(0, n_out - 1);
-    arma::uvec lin_peta = rows + peta_indices * n_out;
-    arma::vec dpeta = 1/small_peta(peta_indices);
-    // Set to zero the missing data:
-    dpeta.elem(removeNAs).zeros();
-    jacob.elem(lin_peta) += dpeta;
-
-    // arma::vec djacob(n_in);
-    // djacob.elem(peta_indices) += (1/small_peta(peta_indices))
-    //   % (1/small_peta(peta_indices)) % grad_in;
-    // sum_djacob = arma::diagmat(-djacob);
-
-    // Vectorised version:
-    lin_peta = peta_indices + peta_indices * n_in;
-    sum_djacob.elem(lin_peta) -= dpeta % dpeta % grad_in;
+    int l = 0L;
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s, ++l) {
+          if (std::isnan(y(s,j))) continue;
+          int value = y(s,j);
+          int index = indices[j](value,i);
+          jacob(l, index) = 1/peta[j](value,i);
+          sum_djacob(index, index) -= dloglik(l)/(peta[j](value,i)*peta[j](value,i));
+        }
+      }
+    }
 
     // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
 
   }
 
-  void update_vcov() {
+  void update_vcov(arguments_optim& x) {
 
   }
 
-  void dconstraints() {
+  void dconstraints(arguments_optim& x) {
 
     constraints = false;
 
   }
 
-  void outcomes() {
+  void M(arguments_optim& x) {
 
-    int p = transparameters.n_elem;
+    // New number of subjects in each class:
+    arma::vec freqs_i = arma::sum(x.freqs, 0).t();
+    // Standardize the frequencies in each class:
+    arma::mat w = x.freqs;
+    w.each_row() /= freqs_i.t(); // Columns sum up to one
+
+    for(int j=0; j < J; ++j) {
+      peta[j].zeros();
+      for(int i=0; i < I; ++i) {
+        for(int s=0; s < S; ++s) {
+          if (std::isnan(y(s,j))) continue;
+          int value = y(s,j);
+          peta[j](value,i) += w(s,i);
+        }
+        eta[j].col(i) = arma::trunc_log(peta[j].col(i));
+      }
+    }
+
+    arma::cube loglik(S, J, I, arma::fill::zeros);
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s) {
+          if (std::isnan(y(s,j))) continue;
+          int value = y(s,j);
+          loglik(s,j,i) = eta[j](value,i);
+        }
+      }
+    }
+
+    for(int j=0; j < J; ++j) {
+      for(int i=0; i < I; ++i) {
+        eta[j].col(i) -= eta[j](0,i);
+      }
+    }
+
+    arma::vec allpeta = arma::vec();
+    arma::vec alleta = arma::vec();
+    for (int j = 0; j < J; ++j) {
+      allpeta = arma::join_cols(allpeta, arma::vectorise(peta[j]));
+      alleta = arma::join_cols(alleta, arma::vectorise(eta[j]));
+    }
+
+    x.transparameters.elem(indices_in[1]) = alleta;
+    x.transparameters.elem(indices_in[0]) = allpeta;
+    x.transparameters.elem(indices_out[0]) = arma::vectorise(loglik);
+
+  }
+
+  void outcomes(arguments_optim& x) {
+
+    int p = indices_out[0].n_elem;
     arma::vec chisq_p(p, arma::fill::value(1.00));
 
     vectors.resize(2);
@@ -109,9 +190,48 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
 
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  arma::mat y = trans_setup["y"];
+  arma::uvec K = trans_setup["K"];
+  int S = trans_setup["S"];
+  int J = trans_setup["J"];
+  int I = trans_setup["I"];
+
+  int n_in  = indices_in[0].n_elem;
+  int n_out = indices_out[0].n_elem;
+  // arma::uvec peta_indices = indices_in[1]; // SxJxIxK indices
+  // arma::uvec removeNAs = indices_in[2];
+  std::vector<arma::mat> peta(J);
+  for(int j=0; j < J; ++j) {
+    peta[j].resize(K(j), I);
+    peta[j].zeros();
+  }
+  std::vector<arma::mat> eta = peta;
+  std::vector<arma::mat> dpeta = peta;
+  std::vector<arma::mat> indices = peta;
+  int l=0;
+  for(int j=0; j < J; ++j) {
+    for(int i=0; i < I; ++i) {
+      for(int k=0; k < K[j]; ++k, ++l) {
+        indices[j](k,i) = l;
+      }
+    }
+  }
 
   mytrans->indices_in = indices_in;
   mytrans->indices_out = indices_out;
+  mytrans->n_in = n_in;
+  mytrans->n_out = n_out;
+  // mytrans->peta_indices = peta_indices;
+  // mytrans->removeNAs = removeNAs;
+  mytrans->y = y;
+  mytrans->S = S;
+  mytrans->J = J;
+  mytrans->I = I;
+  mytrans->K = K;
+  mytrans->peta = peta;
+  mytrans->eta = eta;
+  mytrans->dpeta = dpeta;
+  mytrans->indices = indices;
 
   return mytrans;
 

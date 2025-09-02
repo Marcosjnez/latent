@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 27/08/2025
+# Modification date: 02/09/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -141,7 +141,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   for(NK in 1:nmodels) {
 
     # NK <- 1L
-    print(paste0("Model nclasses = ", NCLASSES[NK]) )
+    # print(paste0("Model nclasses = ", NCLASSES[NK]) )
 
     # Ensure that nclasses is an integer:
     nclasses <- as.integer(NCLASSES[NK])
@@ -189,7 +189,11 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                       df = npossible_patterns - nparam,
                       ntrans = ntrans,
                       model = log_model,
-                      prob_model = prob_model)
+                      prob_model = prob_model,
+                      parameters_labels = parameters_labels,
+                      transparameters_labels = transparameters_labels,
+                      lca_param = lca_param,
+                      lca_trans = lca_trans)
 
     # Data for the optimization algorithms:
     Optim <- list(data = data,
@@ -225,6 +229,29 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     }
 
+    if(control$opt == "em-lbfgs") {
+
+      maxit <- control$maxit
+      rstarts <- control$rstarts
+
+      control$opt <- "em"
+      control$maxit <- control$maxit_em
+      control$rstarts <- control$rstarts_em
+      # Perform EM and collect the parameter estimates:
+      x <- optimizer(control_manifold = control_manifold,
+                     control_transform = control_transform,
+                     control_estimator = control_estimator,
+                     control_optimizer = control)
+      # Reset:
+      control$opt <- "lbfgs"
+      control$maxit <- maxit
+      control$rstarts <- rstarts
+      control$cores <- min(rstarts, control$cores)
+      control$parameters[[1]] <- list(x$parameters)
+      control$transparameters[[1]] <- list(x$transparameters)
+
+    }
+
     # Perform the optimization (fit the model):
     x <- optimizer(control_manifold = control_manifold,
                    control_transform = control_transform,
@@ -234,15 +261,11 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Collect all the information about the optimization:
 
     Optim$opt <- x
-    Optim$opt$parameters_labels <- parameters_labels
-    Optim$opt$transparameters_labels <- transparameters_labels
-    Optim$opt$lca_param <- lca_param
-    Optim$opt$lca_trans <- lca_trans
 
     #### Process the outputs ####
 
     # Logarithm likelihood:
-    loglik <- -x$outputs$estimators$doubles[[1]]
+    loglik <- x$outputs$estimators$doubles[[1]]
     penalized_loglik <- -x$f
     # Logarithm likelihood of each response pattern:
     loglik_case <- x$outputs$estimators$vectors[[1]][[3]]

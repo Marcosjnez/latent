@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/02/2025
+ * Modification date: 31/08/2025
  */
 
 /*
@@ -19,7 +19,7 @@ public:
   arma::mat X = arma::mat(q, q);
   arma::mat dX = arma::mat(q, q);
 
-  void param() {
+  void param(arguments_optim& x) {
 
     X = arma::reshape(parameters, q, q);
 
@@ -40,13 +40,13 @@ public:
 
   }
 
-  void F() {
+  void F(arguments_optim& x) {
 
     f = 0.5*arma::accu(f1 % f1);
 
   }
 
-  void G() {
+  void G(arguments_optim& x) {
 
     gL = Weight % f1;
 
@@ -62,7 +62,7 @@ public:
 
   }
 
-  void dG() {
+  void dG(arguments_optim& x) {
 
     dX = arma::reshape(dparameters, q, q);
     g = arma::reshape(g, q, q);
@@ -89,18 +89,18 @@ public:
 
   }
 
-  void H() {
+  void H(arguments_optim& x) {
 
     // Rcpp::stop("H not available");
     hess.set_size(parameters.n_elem, parameters.n_elem); hess.zeros();
 
   }
 
-  void E() {}
+  void E(arguments_optim& x) {}
 
-  void M() {}
+  void M(arguments_optim& x) {}
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
     /*
      * Compute the modified hessian (modhessian)

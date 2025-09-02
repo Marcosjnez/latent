@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 28/08/2025
+ * Modification date: 31/08/2025
  */
 
 #include <tuple>
@@ -34,6 +34,7 @@ struct arguments_optim{
   arma::mat jacob, h, B, inv_h, inv_hess, vcov;
   arma::mat hess; // Returned as dgCMatrix class type from Matrix package
   arma::mat posterior;
+  arma::mat freqs;
   arma::mat latentloglik;
   arma::vec latentpars, loglatentpars;
   arma::vec weights;

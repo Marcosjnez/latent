@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 29/08/2025
+ * Modification date: 31/08/2025
  */
 
 class estimators {
@@ -22,6 +22,7 @@ public:
   std::vector<arma::mat> conditionals; // conditionals_hat
 
   std::vector<arma::uvec> indices;
+  arma::mat freqs;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
@@ -30,21 +31,21 @@ public:
   std::vector<std::vector<arma::vec>> list_vectors;
   std::vector<std::vector<arma::mat>> list_matrices;
 
-  virtual void param() = 0;
+  virtual void param(arguments_optim& x) = 0;
 
-  virtual void F() = 0;
+  virtual void F(arguments_optim& x) = 0;
 
-  virtual void G() = 0;
+  virtual void G(arguments_optim& x) = 0;
 
-  virtual void dG() = 0;
+  virtual void dG(arguments_optim& x) = 0;
 
-  virtual void E() = 0;
+  virtual void E(arguments_optim& x) = 0;
 
-  virtual void M() = 0;
+  virtual void M(arguments_optim& x) = 0;
 
-  virtual void H() = 0;
+  virtual void H(arguments_optim& x) = 0;
 
-  virtual void outcomes() = 0;
+  virtual void outcomes(arguments_optim& x) = 0;
 
 };
 
@@ -118,10 +119,7 @@ public:
 
     for(int i=0; i < x.nestimators; ++i) {
 
-      arma::uvec indices = xestimators[i]->indices[0];
-      xestimators[i]->transparameters = x.transparameters.elem(indices);
-
-      xestimators[i]->param();
+      xestimators[i]->param(x);
 
     }
 
@@ -133,8 +131,7 @@ public:
 
     for(int i=0; i < x.nestimators; ++i) {
 
-      xestimators[i]->F();
-      x.f += xestimators[i]->f;
+      xestimators[i]->F(x);
 
     }
 
@@ -142,14 +139,11 @@ public:
 
   void G(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
-    x.grad.set_size(x.transparameters.n_elem); x.grad.zeros();
+    x.grad.zeros();
 
     for(int i=0; i < x.nestimators; ++i) {
 
-      xestimators[i]->G();
-
-      arma::uvec indices = xestimators[i]->indices[0];
-      x.grad.elem(indices) += xestimators[i]->grad;
+      xestimators[i]->G(x);
 
     }
 
@@ -157,14 +151,14 @@ public:
 
   void dG(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
-    x.dg.set_size(x.transparameters.n_elem); x.dg.zeros();
+    x.dg.zeros();
 
     for(int i=0; i < x.nestimators; ++i) {
 
       arma::uvec indices = xestimators[i]->indices[0];
       xestimators[i]->dparameters = x.dparameters.elem(indices);
       xestimators[i]->g = x.grad.elem(indices); // Maybe delete PROBLEMS
-      xestimators[i]->dG();
+      xestimators[i]->dG(x);
       x.dg.elem(indices) += xestimators[i]->dg;
 
     }
@@ -173,14 +167,13 @@ public:
 
   void H(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
-    int nhessian = x.transparameters.n_elem;
-    x.hess.set_size(nhessian, nhessian); x.hess.zeros();
+    int ntrans = x.transparameters.n_elem;
+    x.hess.set_size(ntrans, ntrans);
+    x.hess.zeros();
 
     for(int i=0; i < x.nestimators; ++i) {
 
-      xestimators[i]->H();
-      arma::uvec indices = xestimators[i]->indices[0];
-      x.hess(indices, indices) += xestimators[i]->hess;
+      xestimators[i]->H(x);
 
     }
 
@@ -188,42 +181,15 @@ public:
 
   void E(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
-    x.latentloglik.zeros();
+    // Update the log-likelihood and the estimated posterior using the
+    // parameter estimates:
+
+    // x.posterior.zeros();
+    x.loglik = 0.00;
 
     for(int i=0; i < x.nestimators; ++i) {
 
-      // Rprintf("Posterior:\n");
-      // Rprintf("%zu ", x.posterior.n_rows);
-      // Rprintf("%zu ", x.posterior.n_cols);
-      // Rprintf("\n\n");
-
-        arma::mat freqs = x.posterior; // S x nclasses
-        x.weights = xestimators[0]->weights;
-        freqs.each_col() %= x.weights;
-        arma::vec post_total = arma::sum(freqs, 0).t();
-        x.latentpars = post_total / arma::accu(post_total);
-        x.loglatentpars = trunc_log(x.latentpars);
-
-        xestimators[i]->latentpars = x.latentpars;
-        xestimators[i]->loglatentpars = x.loglatentpars;
-        xestimators[i]->posterior = x.posterior;
-        xestimators[i]->E();
-
-        // Rprintf("Indices:\n");
-        // for (arma::uword i = 0; i < indices.n_elem; ++i) {
-        //   Rprintf("%u ", indices[i]);
-        // }
-        // Rprintf("\n\n");
-        //
-        // Rprintf("xestimators[i]->transparameters.n_elem:\n");
-        // Rprintf("%zu ", xestimators[i]->transparameters.n_elem);
-        // Rprintf("\n\n");
-        //
-        // Rf_error("812");
-
-        arma::uvec indices = xestimators[i]->indices[0];
-        x.transparameters.elem(indices) = xestimators[i]->transparameters;
-        x.latentloglik += xestimators[i]->latentloglik;
+      xestimators[i]->E(x);
 
     }
 
@@ -231,50 +197,18 @@ public:
 
   void M(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
-    // x.loglik = 0.00;
+    // // Update the parameter estimates using the estimated posterior:
     //
     // for(int i=0; i < x.nestimators; ++i) {
     //
-    //   xestimators[i]->latentloglik = x.latentloglik;
-    //
+    //   xestimators[i]->posterior = x.posterior;
+    //   arma::uvec indices = xestimators[i]->indices[0];
+    //   xestimators[i]->transparameters = x.transparameters.elem(indices);
     //   xestimators[i]->M();
-    //   x.loglik += xestimators[i]->loglik;
-    //   x.posterior = xestimators[i]->posterior;
+    //
+    //   x.transparameters.elem(indices) = xestimators[i]->transparameters;
     //
     // }
-    //
-    // x.loglik /= x.nestimators;
-
-    // For each response pattern, compute its joint and marginal probabilities:
-    int S = x.latentloglik.n_rows;
-    arma::vec mid(S);
-    x.latentpars = xestimators[0]->latentpars;
-    x.loglatentpars = xestimators[0]->loglatentpars;
-    x.weights = xestimators[0]->weights;
-    // for(int s=0; s < S; ++s) {
-    //   x.posterior.row(s) = arma::trunc_exp(x.latentloglik.row(s) + x.latentpars.t()); // P(data |X = c) P(X = c)
-    //   mid[s] = arma::accu(x.posterior.row(s)); // P(data)
-    // }
-
-    x.posterior = x.latentloglik;
-    x.posterior.each_row() += x.loglatentpars.t();
-    x.posterior = arma::trunc_exp(x.posterior);
-    mid = arma::sum(x.posterior, 1);
-
-    x.posterior.each_col() /= mid; // P(X = c | data) = P(data | X = c) P(X = c) / P(data)
-
-    // Rprintf("n:\n");
-    // Rprintf("%zu ", x.n.n_elem);
-    // Rprintf("%zu ", x.n.n_cols);
-    // Rprintf("\n\n");
-    //
-    // Rprintf("mid:\n");
-    // Rprintf("%zu ", mid.n_rows);
-    // Rprintf("%zu ", mid.n_cols);
-    // Rprintf("\n\n");
-
-    arma::vec logliks = x.weights % arma::trunc_log(mid);
-    x.loglik = -arma::accu(logliks);
 
   }
 
@@ -289,7 +223,7 @@ public:
 
     for(int i=0; i < x.nestimators; ++i) {
 
-      xestimators[i]->outcomes();
+      xestimators[i]->outcomes(x);
 
       std::get<0>(x.outputs_estimator)[i] = xestimators[i]->doubles;
       std::get<1>(x.outputs_estimator)[i] = xestimators[i]->vectors;
