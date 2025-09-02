@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 02/09/2025
  */
 
 // By default, this optimizer performs minimization
@@ -132,6 +132,31 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::nanoseconds elapsed_ns = end - start;
   double elapsed_sec = elapsed_ns.count() / 1e9;  // Convert to seconds
+
+  // Pick up the best x.pick rstarts:
+  if (x.pick > 0L) {
+
+    Rcpp::List result(x.pick);
+    arma::uvec indices = arma::sort_index(xf);
+
+    for (int i = 0; i < x.pick; ++i) {
+      const auto &t = x2[ indices(i) ];  // assume tuple<arma::vec, arma::vec, double, int, bool>
+
+      Rcpp::List it = Rcpp::List::create(
+        Rcpp::Named("parameters")       = std::get<0>(t),
+        Rcpp::Named("transparameters")  = std::get<1>(t),
+        Rcpp::Named("f")                = std::get<2>(t),
+        Rcpp::Named("iterations")       = std::get<3>(t),
+        Rcpp::Named("convergence")      = std::get<4>(t)
+      );
+
+      result[i] = it;  // store this iteration
+
+    }
+
+    return result;
+
+  }
 
   // Choose the optimization process with the smallest objective value:
   arma::uword index_minimum = index_min(xf);

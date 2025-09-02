@@ -142,7 +142,9 @@ robust_se <- function(fit, H) {
     all_indices <- match(labels, transparameters_labels)
     indices_classes <- match(lca_trans$class, transparameters_labels)
     indices_items <- match(full_loglik[s,,], transparameters_labels)
-    indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L)
+    indices_theta <- match(lca_trans$theta, transparameters_labels)
+    indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
+                    indices_theta-1L)
     SJ <- 1L*nitems
     hess_indices <- lapply(0:(nclasses - 1), function(i) {
       nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })

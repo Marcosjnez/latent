@@ -75,15 +75,15 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
 
   if(compute == "choose_estimator") return result;
 
-  Rprintf("78");
-  final_transform->transform(x, xtransforms);
-  Rprintf("80");
-  final_estimator->param(x, xestimators);
-  Rprintf("82");
-  final_estimator->E(x, xestimators);
-  Rprintf("84");
-  final_transform->M(x, xtransforms);
-  Rprintf("86");
+  // Rprintf("78");
+  // final_transform->transform(x, xtransforms);
+  // Rprintf("80");
+  // final_estimator->param(x, xestimators);
+  // Rprintf("82");
+  // final_estimator->E(x, xestimators);
+  // Rprintf("84");
+  // final_transform->M(x, xtransforms);
+  // Rprintf("86");
 
   // final_transform->transform(x, xtransforms);
   // final_estimator->E(x, xestimators);

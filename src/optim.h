@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 02/09/2025
  */
 
 typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::mat> optim_result;
@@ -846,7 +846,10 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
     bool print = control_optimizer["print"];
     x.print = print;
   }
-
+  if(control_optimizer.containsElementNamed("pick")) {
+    int pick = control_optimizer["pick"];
+    x.pick = pick; // Pick the "pick" number of rstarts with minimum objective
+  }
   // Select the optimization algorithm:
 
   optim* algorithm;
@@ -879,9 +882,13 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
 
     algorithm = new EM();
 
+  } else if(x.optimizer == "em-lbfgs") {
+
+    algorithm = new EM();
+
   } else {
 
-    Rcpp::stop("Available optimization rutines for factor extraction: \n grad, lbfgs, newton, em");
+    Rcpp::stop("Available optimization routines: \n grad, lbfgs, newton, em, em-lbfgs");
 
   }
 

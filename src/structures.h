@@ -97,6 +97,8 @@ struct arguments_optim{
     std::vector<std::vector<std::vector<arma::mat>>>
   > outputs_estimator;
 
+  int pick = 0L;
+
   int nparam, ntransparam, nrow_post, ncol_post;
   arma::uvec param2transparam, transparam2param;
 

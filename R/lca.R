@@ -141,7 +141,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   for(NK in 1:nmodels) {
 
     # NK <- 1L
-    # print(paste0("Model nclasses = ", NCLASSES[NK]) )
+    print(paste0("Model nclasses = ", NCLASSES[NK]) )
 
     # Ensure that nclasses is an integer:
     nclasses <- as.integer(NCLASSES[NK])
@@ -231,24 +231,38 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     if(control$opt == "em-lbfgs") {
 
-      maxit <- control$maxit
-      rstarts <- control$rstarts
+      # Run first EM and then LBFGS:
 
+      # Backup for LBFGS:
+      maxit_lbfgs <- control$maxit
+
+      # Setup for EM:
       control$opt <- "em"
       control$maxit <- control$maxit_em
-      control$rstarts <- control$rstarts_em
-      # Perform EM and collect the parameter estimates:
+      control$cores <- min(control$rstarts, control$cores)
+
+      # Perform EM:
       x <- optimizer(control_manifold = control_manifold,
                      control_transform = control_transform,
                      control_estimator = control_estimator,
                      control_optimizer = control)
-      # Reset:
+
+      # Reset everything for LBFGS:
+      # Put as many rstarts in LBFGS as number of selected iterations in EM:
+      rstarts_lbfgs <- control$pick
+      control$rstarts <- rstarts_lbfgs
+      control$pick <- 0L # Set to 0L to get a full output next time
       control$opt <- "lbfgs"
-      control$maxit <- maxit
-      control$rstarts <- rstarts
-      control$cores <- min(rstarts, control$cores)
-      control$parameters[[1]] <- list(x$parameters)
-      control$transparameters[[1]] <- list(x$transparameters)
+      control$maxit <- maxit_lbfgs # Reset number of iteration for LBFGS
+      control$cores <- min(rstarts_lbfgs, control$cores)
+
+      # Update the initial parameters values for LBFGS:
+      control$parameters <- control$transparameters <-
+        vector("list", length = rstarts_lbfgs)
+      for(i in 1:rstarts_lbfgs) {
+        control$parameters[[i]] <- x[[i]]$parameters
+        control$transparameters[[i]] <- x[[i]]$transparameters
+      }
 
     }
 

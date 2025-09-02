@@ -27,18 +27,6 @@ lca_control <- function(control) {
     }
   }
 
-  if(is.null(control$opt)) {
-    control$opt <- "lbfgs"
-  }
-
-  if(is.null(control$maxit_em)) {
-    control$maxit_em <- 100
-  }
-
-  if(is.null(control$rstarts_em)) {
-    control$rstarts_em <- 100
-  }
-
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L
   }
@@ -75,16 +63,41 @@ lca_control <- function(control) {
     control$maxit <- 1000L
   }
 
-  if(is.null(control$rstarts)) {
-    control$rstarts <- 16L
-  }
-
   if(is.null(control$cores)) {
-    control$cores <- 1L
+    control$cores <- parallel::detectCores()-1L
   }
 
   if(is.null(control$tcg_maxit)) {
     control$tcg_maxit <- 10L
+  }
+
+  if(is.null(control$opt)) {
+    control$opt <- "em-lbfgs"
+  }
+
+  if(control$opt == "em-lbfgs") {
+
+    if(is.null(control$em_rstarts)) {
+      control$em_rstarts <- 50
+    }
+
+    if(is.null(control$maxit_em)) {
+      control$maxit_em <- 250L
+    }
+
+    if(is.null(control$rstarts)) {
+      control$rstarts <- 5L
+    }
+
+    # Save number of rstarts to store and compute in lbfgs
+    control$pick <- control$rstarts
+    # In "em-lbfgs", use at least as many em_rstarts as rstarts in lbgfs
+    control$rstarts <- max(control$em_rstarts, control$rstarts)
+
+  }
+
+  if(is.null(control$rstarts)) {
+    control$rstarts <- 16L
   }
 
   return(control)
