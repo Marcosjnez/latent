@@ -1,10 +1,10 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/08/2025
+ * Modification date: 03/09/2025
  */
 
-#include <armadillo>
+// #include <armadillo>
 #include <iostream>
 #include <array>
 #include <cmath>
