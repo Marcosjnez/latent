@@ -101,7 +101,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     Ks <- apply(data[, factor_indices, drop = FALSE], MARGIN = 2,
                 FUN = \(x) length(unique(x[!is.na(x)])))
     # If all the items are multinomial, the number of possible patterns is:
-    npossible_patterns <- min(prod(Ks), nobs)
+    npossible_patterns <- min(prod(Ks)-1, nobs)
     # npossible_patterns <- min(prod(Ks), npatterns)
 
   } else { # If any item is not multinomial...
@@ -219,7 +219,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                              loglik             = numeric(), # loglik values
                              penalized_loglik   = numeric(),
                              loglik_case        = numeric(),
-                             summary_table      = list(),
+                             summary_table      = data.frame(),
                              ClassConditional   = list(),
                              RespConditional    = list(),
                              probCat            = list()
@@ -235,10 +235,12 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
       # Backup for LBFGS:
       maxit_lbfgs <- control$maxit
+      eps_lbfgs <- control$eps
 
       # Setup for EM:
       control$opt <- "em"
       control$maxit <- control$maxit_em
+      control$eps <- control$em_eps
       control$cores <- min(control$rstarts, control$cores)
 
       # Perform EM:
@@ -254,7 +256,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
       control$pick <- 0L # Set to 0L to get a full output next time
       control$opt <- "lbfgs"
       control$maxit <- maxit_lbfgs # Reset number of iteration for LBFGS
-      control$cores <- min(rstarts_lbfgs, control$cores)
+      control$eps <- eps_lbfgs # Reset tolerance value for LBFGS
 
       # Update the initial parameters values for LBFGS:
       control$parameters <- control$transparameters <-
@@ -266,6 +268,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     }
 
+    control$cores <- min(control$rstarts, control$cores)
     # Perform the optimization (fit the model):
     x <- optimizer(control_manifold = control_manifold,
                    control_transform = control_transform,
@@ -287,8 +290,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     loglik_pattern <- weights * loglik_case
 
     ## Summary table with information for each response pattern ##
-    # Estimated counts for each response pattern:
-    estimated <- round(exp(loglik_case) * nobs, 0)
+    # Estimated "counts" for each response pattern:
+    estimated <- exp(loglik_case) * nobs
     # Posterior:
     posterior <- exp(matrix(x$outputs$estimators$matrices[[1]][[2]],
                             nrow = npatterns, ncol = nclasses))

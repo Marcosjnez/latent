@@ -9,15 +9,14 @@ latInspect <- function(object,
   # object must inherit from class llca
   stopifnot(inherits(object, "llca"))
 
-
-
   # be case insensitive
   what <- tolower(what)
 
-
   ### result objects
   if (what == "classconditional" ||
-      what == "profile") {
+      what == "profile" ||
+      what == "items" ||
+      what == "item") {
 
     temp <- object@ClassConditional
 
@@ -27,8 +26,10 @@ latInspect <- function(object,
 
     return(temp)
 
-
-  } else if (what == "classes"){
+  } else if (what == "classes" ||
+             what == "class" ||
+             what == "cluster" ||
+             what == "clusters") {
 
     temp <- round(object@transformed_pars$classes, digits)
     names(temp) <- paste0("Class", 1:length(temp))
@@ -49,30 +50,39 @@ latInspect <- function(object,
 
     object@Optim$convergence
 
-  } else if (what == "data"){
+  } else if (what == "data") {
 
-    object@Optim$data_list$dt
+    object@Optim$data
 
-  } else if (what == "posterior"){
+  } else if (what == "pattern") {
+
+    cbind(object@Optim$data_list$patterns,
+          times = object@Optim$data_list$weights)
+
+  } else if (what == "table") {
+
+    object@summary_table
+
+  } else if (what == "posterior") {
 
     round(object@posterior, digits)
 
-  } else if (what == "state"){
+  } else if (what == "state") {
 
     object@state
 
   }else if (what == "loglik_case" ||
-            what == "casell"){
+            what == "casell") {
 
     object@loglik_case
 
   } else if (what == "loglik" ||
              what == "ll" ||
-             what == "LL"){
+             what == "LL") {
 
     object@loglik
 
-  } else if (what == "probcat"){
+  } else if (what == "probcat") {
 
     temp <- object@probCat
 
@@ -80,7 +90,7 @@ latInspect <- function(object,
       temp[[j]] <- round(temp[[j]], digits)
     }
 
-  } else if (what == "timing"){
+  } else if (what == "timing") {
 
     object@timing
 

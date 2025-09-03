@@ -98,9 +98,11 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
    * OPTIMIZATION
    */
 
-  // Perform multiple random starts:
+  // Perform the optimization from multiple random starting values:
 
-  arma::vec xf(rstarts); // vector containing the cost function of each random start
+  // Vector containing the loss function of each random start:
+  arma::vec xf(rstarts);
+  // We will select the optimization with minimum loss value
   std::vector<optim_result> x2(rstarts);
   std::vector<arguments_optim> args(rstarts);
 
@@ -133,14 +135,15 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   std::chrono::nanoseconds elapsed_ns = end - start;
   double elapsed_sec = elapsed_ns.count() / 1e9;  // Convert to seconds
 
-  // Pick up the best x.pick rstarts:
+  // Return just the best x.pick rstarts:
   if (x.pick > 0L) {
 
     Rcpp::List result(x.pick);
     arma::uvec indices = arma::sort_index(xf);
 
     for (int i = 0; i < x.pick; ++i) {
-      const auto &t = x2[ indices(i) ];  // assume tuple<arma::vec, arma::vec, double, int, bool>
+
+      const auto &t = x2[ indices(i) ];
 
       Rcpp::List it = Rcpp::List::create(
         Rcpp::Named("parameters")       = std::get<0>(t),
@@ -151,33 +154,34 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
       );
 
       result[i] = it;  // store this iteration
-
+      // tuple<arma::vec, arma::vec, double, int, bool>
     }
 
     return result;
 
   }
 
-  // Choose the optimization process with the smallest objective value:
+  // Choose the optimization with the smallest objective value:
   arma::uword index_minimum = index_min(xf);
   optim_result x1 = x2[index_minimum];
 
   product_manifold* final_manifold;
   product_transform* final_transform;
   product_estimator* final_estimator;
-  // Rf_error("141");
+
+  // Store the outputs generated from each function type and class:
   final_manifold->outcomes(args[index_minimum], xmanifolds[index_minimum]);
   final_transform->outcomes(args[index_minimum], xtransforms[index_minimum]);
   final_estimator->outcomes(args[index_minimum], xestimators[index_minimum]);
-  // Rf_error("143");
 
-  arma::vec opt_param = std::get<0>(x1);
-  arma::vec opt_transparam = std::get<1>(x1);
-  double f = std::get<2>(x1);
-  int iterations = std::get<3>(x1);
-  bool convergence = std::get<4>(x1);
-  double ng = std::get<5>(x1);
-  arma::mat rg = std::get<6>(x1);
+  // Extract the information from the fitted object:
+  arma::vec opt_param = std::get<0>(x1); // Parameter estimates
+  arma::vec opt_transparam = std::get<1>(x1); // Transformed parameters
+  double f = std::get<2>(x1); // Minimum value of the loss function
+  int iterations = std::get<3>(x1); // Number of iterations
+  bool convergence = std::get<4>(x1); // Convergence
+  double ng = std::get<5>(x1); // Norm of the gradient
+  arma::mat rg = std::get<6>(x1); // Gradient vector
   result["parameters"] = opt_param;
   result["transparameters"] = opt_transparam;
   result["f"] = f;
@@ -185,13 +189,10 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   result["convergence"] = convergence;
   result["ng"] = ng;
   result["rg"] = rg;
-  // result["doubles"] = args[index_minimum].doubles;
-  // result["vectors"] = args[index_minimum].vectors;
-  // result["matrices"] = args[index_minimum].matrices;
-  // result["list_matrices"] = args[index_minimum].list_matrices;
   result["posterior"] = args[index_minimum].posterior;
   result["elapsed"] = elapsed_sec;
 
+  // Store all the outputs of each manifold class:
   Rcpp::List outputsMani;
   outputsMani["doubles"] = std::get<0>(args[index_minimum].outputs_manifold);
   outputsMani["vectors"] = std::get<1>(args[index_minimum].outputs_manifold);
@@ -200,6 +201,7 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   outputsMani["list_vectors"] = std::get<4>(args[index_minimum].outputs_manifold);
   outputsMani["list_matrices"] = std::get<5>(args[index_minimum].outputs_manifold);
 
+  // Store all the outputs of each transformation class:
   Rcpp::List outputsTrans;
   outputsTrans["doubles"] = std::get<0>(args[index_minimum].outputs_transform);
   outputsTrans["vectors"] = std::get<1>(args[index_minimum].outputs_transform);
@@ -208,6 +210,7 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   outputsTrans["list_vectors"] = std::get<4>(args[index_minimum].outputs_transform);
   outputsTrans["list_matrices"] = std::get<5>(args[index_minimum].outputs_transform);
 
+  // Store all the outputs of each estimator class:
   Rcpp::List outputsEst;
   outputsEst["doubles"] = std::get<0>(args[index_minimum].outputs_estimator);
   outputsEst["vectors"] = std::get<1>(args[index_minimum].outputs_estimator);
@@ -216,6 +219,7 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   outputsEst["list_vectors"] = std::get<4>(args[index_minimum].outputs_estimator);
   outputsEst["list_matrices"] = std::get<5>(args[index_minimum].outputs_estimator);
 
+  // Store all the outputs in a list:
   Rcpp::List outputs;
   outputs["manifolds"] = outputsMani;
   outputs["transformations"] = outputsTrans;

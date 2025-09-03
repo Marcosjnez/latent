@@ -13,7 +13,7 @@ nclasses <- 3L
 # control <- list(opt = "em-lbfgs", maxit = 1000, rstarts = 1L,
 #                 maxit_em = 250, rstarts_em = 50L,
 #                 cores = 32L, eps = 1e-05)
-fit <- lca(data = data, item = item, nclasses = nclasses,
+fit <- lca(data = data, item = item, nclasses = 1:nclasses,
            penalties = TRUE, control = NULL, do.fit = TRUE)
 fit@timing
 fit@loglik # -2754.643
@@ -21,6 +21,11 @@ fit@penalized_loglik # -2759.507
 fit@Optim$opt$iterations
 fit@transformed_pars
 fit@parameters
+
+getfit(fit)
+
+latInspect(fit, what = "classes", digits = 3)
+latInspect(fit, what = "pattern", digits = 3)
 
 SE <- se(fit, type = "standard", model = "user", digits = 4)
 SE$table
@@ -83,7 +88,7 @@ nclasses <- 3L
 #                 maxit_em = 250, rstarts_em = 50L,
 #                 cores = 32L, eps = 1e-05)
 fit <- lca(data = data, item = item, nclasses = nclasses,
-           penalties = NULL, control = NULL, do.fit = TRUE)
+           penalties = TRUE, control = NULL, do.fit = TRUE)
 fit@timing
 fit@loglik # -5784.701
 fit@penalized_loglik # -5795.573

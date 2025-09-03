@@ -17,7 +17,7 @@ setClass("llca",
            loglik             = "numeric", # loglik values
            penalized_loglik   = "numeric", # penalized loglik
            loglik_case        = "numeric",
-           summary_table      = "list",
+           summary_table      = "data.frame",
            ClassConditional   = "list",
            RespConditional    = "list",
            probCat            = "list"

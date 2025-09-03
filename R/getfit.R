@@ -1,6 +1,7 @@
 # Author: Marcos Jimenez
+# Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/05/2025
+# Modification date: 03/09/2025
 #'
 #' @title
 #' Fit indices
@@ -67,11 +68,15 @@ getfit0 <- function(model, digits=3){
   }
 
   ##
-  if(sum(model@modelInfo$item != "multinomial") == 0){
+  # if(sum(model@modelInfo$item != "multinomial") == 0){
+  if(all(model@modelInfo$item == "multinomial")){
     ni <- model@summary_table$Observed
     mi <- model@summary_table$Estimated
     df <- model@modelInfo$df
-    L2 <- 2*sum(ni*log(ni/mi))
+    term <- ni*log(ni/mi)
+    # Set to zero Inf terms due to 0 values in Estimated
+    term[is.infinite(term)] <- 0
+    L2 <- 2*sum(term)
     pv <- 1-pchisq(L2, df)
   }else{
     L2 <- NA
@@ -89,9 +94,12 @@ getfit0 <- function(model, digits=3){
   SABIC <- -2 * loglik + (k * log(((nobs + 2)/24)))
   ICL <- icl_default(model@posterior, BIC )
 
-
-  entropyR2 <- entropy.R2(model@transformed_pars$classes,
-                          model@posterior)
+  if(nclasses < 2) {
+    entropyR2 <- 1.00 # To match LG output
+  } else {
+    entropyR2 <- entropy.R2(model@transformed_pars$classes,
+                            model@posterior)
+  }
 
   result <- c(nclasses = nclasses,
               npar = k, nobs = nobs,
