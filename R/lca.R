@@ -225,7 +225,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                              probCat            = list()
       )
 
-      next
+      next # Go to the next model with a different value of "nclasses"
 
     }
 
@@ -244,10 +244,10 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
       control$cores <- min(control$rstarts, control$cores)
 
       # Perform EM:
-      x <- optimizer(control_manifold = control_manifold,
-                     control_transform = control_transform,
-                     control_estimator = control_estimator,
-                     control_optimizer = control)
+      xEM <- optimizer(control_manifold = control_manifold,
+                       control_transform = control_transform,
+                       control_estimator = control_estimator,
+                       control_optimizer = control)
 
       # Reset everything for LBFGS:
       # Put as many rstarts in LBFGS as number of selected iterations in EM:
@@ -262,8 +262,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
       control$parameters <- control$transparameters <-
         vector("list", length = rstarts_lbfgs)
       for(i in 1:rstarts_lbfgs) {
-        control$parameters[[i]] <- x[[i]]$parameters
-        control$transparameters[[i]] <- x[[i]]$transparameters
+        control$parameters[[i]] <- xEM[[i]]$parameters
+        control$transparameters[[i]] <- xEM[[i]]$transparameters
       }
 
     }
@@ -366,10 +366,16 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     rownames(posterior) <- names(state) <-
       names(loglik_case) <- rownames(data)
 
+    if(control$opt == "em-lbfgs") {
+      elapsed <- xEM$elapsed + x$elapsed
+    } else {
+      elapsed <- x$elapsed
+    }
+
     llca_list[[NK]] <- new("llca",
                            version            = as.character( packageVersion('latent') ),
                            call               = mc, # matched call
-                           timing             = x$elapsed, # timing information
+                           timing             = elapsed, # timing information
                            modelInfo          = modelInfo, # modelInfo
                            Optim              = Optim, # Optim
                            parameters         = raw_model,
@@ -390,13 +396,11 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   class(llca_list) <- "llca.list"
 
-  if(nmodels == 1){
+  if(nmodels == 1) {
     return(llca_list[[1]])
-  }else{
+  } else{
     return(llca_list)
   }
-
-  return(result)
 
 }
 

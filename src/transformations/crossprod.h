@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 01/09/2025
+ * Modification date: 06/09/2025
  */
 
 // Crossproduct transformation:
@@ -11,23 +11,28 @@ class crossprod:public transformations {
 public:
 
   int p, q;
-  arma::mat X, gradmat;
+  arma::mat X, grad_out;
+  arma::uvec lower_diag;
 
   void transform(arguments_optim& x) {
 
-    // std::memcpy(X.memptr(), x.transparameters(indices_in[0]).memptr(),
-    //             indices_in[0].n_elem * sizeof(double));
+    X = arma::reshape(x.transparameters(indices_in[0]), p, q);
     // arma::mat XtX = arma::symmatu(X.t() * X);
-    // x.transparameters(indices_out[0]) = arma::vectorise(XtX);
+    arma::mat XtX = X.t() * X;
+    x.transparameters(indices_out[0]) = arma::vectorise(XtX.elem(lower_diag));
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    // gradmat.set_size(p, q);
-    // std::memcpy(gradmat.memptr(), grad_in.memptr(), grad_in.n_elem * sizeof(double));
-    // grad_out = arma::vectorise(2*X * gradmat); grad_out.zeros();
-    // x.grad(indices_in[0]) += arma::vectorise(2*X * gradmat);
+    // grad_out = arma::reshape(x.grad(indices_out[0]), p, q);
+    // grad_out *= 0.50; // Do not double-count the symmetric part
+    // grad_out.diag() *= 2; // Restore the diagonal
+    grad_out.elem(lower_diag) = x.grad(indices_out[0]);
+    grad_out = arma::symmatl(grad_out);
+    grad_out *= 0.50; // Do not double-count the symmetric part
+    grad_out.diag() *= 2; // Restore the diagonal
+    x.grad(indices_in[0]) += arma::vectorise(2*X * grad_out);
 
   }
 
@@ -37,14 +42,9 @@ public:
 
   void update_hess(arguments_optim& x) {
 
-    // jacob = arma::diagmat(arma::vectorise(2*X));
-    // sum_djacob = 2*gradmat;
-
-    // jacob = arma::join_cols(
-    //   arma::kron(arma::eye(p, p), X.t()),
-    //   arma::kron(arma::eye(p, p), X.t()) * arma::kron(arma::eye(p, p), arma::eye(p, p))
-    // );
-
+    jacob = arma::diagmat(arma::vectorise(2*X));
+    jacob = jacob.rows(lower_diag);
+    sum_djacob = arma::diagmat(2*arma::vectorise(grad_out));
 
   }
 
@@ -88,12 +88,16 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
   int q = trans_setup["q"];
 
   arma::mat X(p, q);
+  arma::mat grad_out(q, q, arma::fill::zeros);
+  arma::uvec lower_diag = arma::trimatl_ind(arma::size(grad_out));
 
   mytrans->indices_in = indices_in;
   mytrans->indices_out = indices_out;
   mytrans->p = p;
   mytrans->q = q;
   mytrans->X = X;
+  mytrans->grad_out = grad_out;
+  mytrans->lower_diag = lower_diag;
 
   return mytrans;
 

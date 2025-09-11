@@ -1,8 +1,9 @@
-# Author: Marcos Jimenez
+# Author: Mauricio Garnier-Villarreal
+# Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/05/2025
+# Modification date: 11/09/2025
 
-getmodel_cfa <- function(obj) {
+getmodel_fromlavaan <- function(obj) {
 
   ng <- obj@Data@ngroups
   tech <- lavaan::lavTech(obj)

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 19/07/2025
+# Modification date: 07/09/2025
 
 correlation <- function(data, item_names = colnames(data),
                         cor = "pearson", estimator = "uls",
@@ -22,13 +22,13 @@ correlation <- function(data, item_names = colnames(data),
 
       if(estimator == "uls") {
         W <- matrix(1, nrow = q, ncol = q)
-        diag(W) <- 0
+        # diag(W) <- 0
         result$W <- W
       } else if(estimator == "dwls") {
         asymp <- asymptotic_normal(R)
         W <- matrix(diag(asymp), nrow = q, ncol = q)
         W <- 1 / W
-        diag(W) <- 0
+        # diag(W) <- 0
         result$W <- W
       }
 
@@ -39,13 +39,13 @@ correlation <- function(data, item_names = colnames(data),
 
       if(estimator == "uls") {
         W <- matrix(1, nrow = q, ncol = q)
-        diag(W) <- 0
+        # diag(W) <- 0
         result$W <- W
       } else if(estimator == "dwls") {
         asymp <- asymptotic_general(X)
         W <- matrix(diag(asymp), nrow = q, ncol = q)
         W <- 1 / W
-        diag(W) <- 0
+        # diag(W) <- 0
         result$W <- W
       }
 
@@ -60,7 +60,7 @@ correlation <- function(data, item_names = colnames(data),
 
       if(estimator == "uls") {
         W <- matrix(1, nrow = q, ncol = q)
-        diag(W) <- 0
+        # diag(W) <- 0
         result$W <- W
       } else if(estimator == "dwls") {
         warning("The full data was not provided. The variance of the polychoric
@@ -68,7 +68,7 @@ correlation <- function(data, item_names = colnames(data),
         asymp <- asymptotic_normal(R)
         W <- matrix(diag(asymp), nrow = q, ncol = q)
         W <- 1 / W
-        diag(W) <- 0
+        # diag(W) <- 0
         result$W <- W
       }
 
@@ -100,12 +100,12 @@ correlation <- function(data, item_names = colnames(data),
 
       if(estimator == "uls") {
         W <- matrix(1, nrow = q, ncol = q)
-        diag(W) <- 0
+        # diag(W) <- 0
         result$W <- W
       } else if(estimator == "dwls") {
         W <- 1 / DACOV2(p, R, polychorics$contingency_tables,
                         polychorics$thresholds, polychorics$cumulative_freqs)
-        diag(W) <- 0
+        # diag(W) <- 0
         result$W <- W
       }
     }

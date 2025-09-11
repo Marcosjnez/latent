@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 19/07/2025
+# Modification date: 05/09/2025
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
@@ -30,365 +30,185 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "uls",
                   missing = "pairwise.complete.obs", W = NULL, std.lv = FALSE,
                   positive = FALSE, do.fit = TRUE, control = NULL) {
 
+  # Check the arguments to control_optimizer and create defaults:
+  control <- cfast_control(control)
+
   # Extract the lavaan model:
-  extract_fit <- lavaan::cfa(model = model, data = data,
+  model_syntax <- model
+  extract_fit <- lavaan::cfa(model = model_syntax, data = data,
                              sample.cov = sample.cov, std.lv = std.lv,
                              do.fit = FALSE, group = group)
   item_names <- unique(extract_fit@ParTable$rhs[extract_fit@ParTable$op == "=~"])
   # Model for the parameters:
-  matrices_param <- getmodel_cfa(extract_fit)
+  model <- getmodel_fromlavaan(extract_fit)
 
-  if(!is.list(matrices_param[[1]])) {
-    matrices_param <- list(matrices_param)
+  if(!is.list(model[[1]])) {
+    model <- list(model)
   }
-  ngroups <- length(matrices_param)
-
-  # Collect the parameter labels:
-  vector_matrices_param <- unname(unlist(matrices_param))
-  all_paramlabels <- is.na(suppressWarnings(as.numeric(vector_matrices_param)))
-  parameter_labels <- unique(vector_matrices_param[all_paramlabels])
-  # Prepare the vector of fixed parameters and their indices:
-  fixed_indices <- which(!all_paramlabels)
-  fixed_values <- as.numeric(vector_matrices_param[fixed_indices])
-
-  if(positive) { # Redefine the model to find a positive-semidefinite solution
-
-    targetpsi <- vector("list", length = ngroups)
-    targettheta <- vector("list", length = ngroups)
-
-    for(i in 1:ngroups) {
-
-      p <- nrow(matrices_param[[i]]$lambda)
-      q <- ncol(matrices_param[[i]]$lambda)
-
-      param_psi <- suppressWarnings(as.numeric(matrices_param[[i]]$psi))
-      param_theta <- suppressWarnings(as.numeric(matrices_param[[i]]$theta))
-
-      # Generate the indicator matrix of cells that are freely estimated. These
-      # matrices are passed to the pobl manifold:
-      targetpsi[[i]] <- matrix(as.numeric(is.na(param_psi)), nrow = q, ncol = q)
-      targettheta[[i]] <- matrix(as.numeric(is.na(param_theta)), nrow = p, ncol = p)
-
-      # The model parameters must be modified if psi and theta are constrained
-      # to be positive-semidefinite:
-      psi_labels <- matrix(paste("g", i, ".pj.psi", 1:(q*q), sep = ""), nrow = q, ncol = q)
-      matrices_param[[i]]$psi <- psi_labels
-      theta_labels <- matrix(paste("g", i, ".pj.theta", 1:(p*p), sep = ""), nrow = p, ncol = p)
-      matrices_param[[i]]$theta <- theta_labels
-
-    }
-
-    # Update the parameter labels:
-    vector_matrices_param <- unname(unlist(matrices_param))
-    all_paramlabels <- is.na(suppressWarnings(as.numeric(vector_matrices_param)))
-    parameter_labels <- unique(vector_matrices_param[all_paramlabels])
-
-  }
+  ngroups <- length(model)
 
   # Get the correlation and weight matrices:
   correl <- vector("list", length = ngroups)
   if(ngroups > 1) {
     data_split <- split(data, data[[group]])
     for(i in 1:ngroups) {
-      correl[[i]] <- correlation(data_split[[i]], item_names, cor,
-                                 estimator, missing)
+      correl[[i]] <- correlation(data = data_split[[i]], item_names = item_names,
+                                 cor = cor, estimator = estimator, missing = missing)
     }
   } else {
-    correl[[1]] <- correlation(data, item_names, cor,
-                               estimator, missing)
+    correl[[1]] <- correlation(data = data, item_names = item_names, cor = cor,
+                               estimator = estimator, missing = missing)
   }
 
-  # Build the model for the transformed parameters:
-  matrices_trans <- matrices_param
-  init <- vector("list", length = ngroups)
+  nitems <- length(item_names)
+  nfactors <- ncol(model[[1]]$lambda)
+  data_list <- vector("list")
+  data_list$data <- data
+  data_list$nobs <- nobs
+  data_list$ngroups <- ngroups
+  data_list$nitems <- nitems
+  data_list$nfactors <- nfactors
+  data_list$correl <- correl
+  data_list$positive <- positive
+
+  ## store original call
+  mc  <- match.call()
+
+  #### Create the model ####
+
+  # Get the model specification:
+  full_model <- get_full_cfa_model(data_list = data_list,
+                                   model = model,
+                                   control = control)
+  list2env(full_model, envir = environment())
+
+  #### Create the structures ####
+
+  # Generate the structures for optimization:
+  structures <- get_cfa_structures(data_list = data_list,
+                                   full_model = full_model,
+                                   control = control)
+  list2env(structures, envir = environment())
+
+  #### Fit the model ####
+
+  # Model information:
+  modelInfo <- list(nobs = nobs,
+                    nparam = nparam,
+                    # df = npossible_patterns - nparam,
+                    ntrans = ntrans,
+                    parameters_labels = parameters_labels,
+                    transparameters_labels = transparameters_labels,
+                    cfa_param = cfa_param,
+                    cfa_trans = cfa_trans)
+
+  # Data for the optimization algorithms:
+  Optim <- list(data = data,
+                data_list = data_list,
+                control_manifold = control_manifold,
+                control_transform = control_transform,
+                control_estimator = control_estimator,
+                control = control)
+
+  if(!do.fit) {
+
+    lcfa_list <- new("lcfa",
+                     version            = as.character( packageVersion('latent') ),
+                     call               = mc, # matched call
+                     timing             = numeric(), # timing information
+                     modelInfo          = modelInfo, # modelInfo
+                     Optim              = Optim, # Optim
+                     parameters         = list(),
+                     transformed_pars   = list(),
+                     loglik             = numeric(), # loglik values
+                     penalized_loglik   = numeric(),
+                     loss               = numeric(),
+                     penalized_loss     = numeric()
+    )
+
+    return(lcfa_list)
+
+  }
+
+  control$cores <- min(control$rstarts, control$cores)
+  # Perform the optimization (fit the model):
+  x <- optimizer(control_manifold = control_manifold,
+                 control_transform = control_transform,
+                 control_estimator = control_estimator,
+                 control_optimizer = control)
+
+  # Collect all the information about the optimization:
+
+  Optim$opt <- x
+  elapsed <- x$elapsed
+
+  if(estimator == "uls" || estimator == "dwls") {
+    loss <- x$f
+    penalized_loss <- x$f
+    loglik <- numeric()
+    penalized_loglik <- numeric()
+  } else if(estimator == "ml") {
+    loss <- x$f
+    penalized_loss <- x$f
+    loglik <- -loss
+    penalized_loglik <- -penalized_loss
+  }
+
+  #### Process the outputs ####
+
+  matrices <- outputs <- vector("list", length = ngroups)
 
   for(i in 1:ngroups) {
 
-    p <- nrow(matrices_trans[[i]]$lambda)
-    q <- ncol(matrices_trans[[i]]$lambda)
-    # lambda:
-    lambda_labels <- matrix(paste("g", i, ".lambda", 1:(p*q), sep = ""), nrow = p, ncol = q)
-    matrices_trans[[i]]$lambda <- lambda_labels
-
-    # psi:
-    psi_labels <- matrix(paste("g", i, ".psi", 1:(q*q), sep = ""), nrow = q, ncol = q)
-    matrices_trans[[i]]$psi <- psi_labels
-
-    # theta:
-    theta_labels <- matrix(paste("g", i, ".theta", 1:(p*p), sep = ""), nrow = p, ncol = p)
-    matrices_trans[[i]]$theta <- theta_labels
-
-    if(positive) { # Force a positive-semidefinite solution?
-
-      init[[i]]$lambda <- rorth(p, q)
-      init[[i]]$psi <- rpoblq(q, q, targetpsi[[i]])
-      init[[i]]$theta <- rpoblq(p, p, targettheta[[i]])
-
-    } else {
-
-      u <- 1/diag(solve(correl[[i]]$R))
-      init[[i]]$lambda <- rorth(p, q)
-      init[[i]]$psi <- diag(q)
-      init[[i]]$theta <- diag(u)
-
-    }
-
-  }
-
-  # Collect the transformed parameters labels (including the parameter labels):
-  vector_matrices_trans <- unname(unlist(matrices_trans))
-  transparameter_labels <- unique(c(parameter_labels, vector_matrices_trans))
-
-  # Initialize the vector of parameters
-  nparameters <- length(parameter_labels)
-  ntransparameters <- length(parameter_labels)
-
-  # Relate the transformed parameters to the parameters:
-  param2trans <- match(transparameter_labels, parameter_labels)
-  param2trans <- param2trans[!is.na(param2trans)]
-
-  # Relate the parameters to the transformed parameters:
-  trans2param <- match(parameter_labels, transparameter_labels)
-
-  # Put the initial parameter values in their place:
-  transparameters <- unlist(init)
-  indices <- match(parameter_labels, vector_matrices_param)
-  parameters <- transparameters[indices]
-  names(parameters) <- parameter_labels
-  # Fix the transformed parameters according to the user:
-  transparameters[fixed_indices] <- fixed_values
-  transparameters <- c(parameters, transparameters)
-
-  # Check the arguments to control_optimizer and create defaults:
-  control <- cfast_control(control)
-
-  # Create the list of manifolds:
-  control_manifold <- list()
-  k <- 1L
-  if(positive) {
-
-    for(i in 1:ngroups) {
-
-      indices_lambda <- match(unique(c(matrices_param[[i]]$lambda)),
-                              parameter_labels)
-      indices_lambda <- indices_lambda[!is.na(indices_lambda)]
-      labels <- parameter_labels[indices_lambda]
-      control_manifold[[k]] <- list(manifold = "euclidean",
-                                    parameters = labels,
-                                    indices = list(indices_lambda-1L))
-      k <- k+1L
-
-      indices_psi <- match(unique(c(matrices_param[[i]]$psi)),
-                           parameter_labels)
-      indices_psi <- indices_psi[!is.na(indices_psi)]
-      labels <- parameter_labels[indices_psi]
-      control_manifold[[k]] <- list(manifold = "poblq",
-                                    parameters = labels,
-                                    indices = list(indices_psi-1L),
-                                    target = targetpsi[[i]])
-      k <- k+1L
-
-      indices_theta <- match(unique(c(matrices_param[[i]]$theta)),
-                             parameter_labels)
-      indices_theta <- indices_theta[!is.na(indices_theta)]
-      labels <- parameter_labels[indices_theta]
-      control_manifold[[k]] <- list(manifold = "poblq",
-                                    parameters = labels,
-                                    indices = list(indices_theta-1L),
-                                    target = targettheta[[i]])
-      k <- k+1L
-
-    }
-
-  } else {
-
-    indices <- 1:nparameters
-    labels <- parameter_labels[indices]
-    control_manifold[[k]] <- list(manifold = "euclidean",
-                                  parameters = labels,
-                                  indices = list(indices-1L))
-    k <- k+1L
-
-  }
-
-  # Create the list of transformations:
-  control_transform <- list()
-  k <- 1L
-  for(i in 1:ngroups) {
-    if(positive) {
-
-      positions <- which(matrices_param[[i]]$lambda %in% parameter_labels)
-      labels_in <- matrices_param[[i]]$lambda[positions]
-      labels_out <- matrices_trans[[i]]$lambda[positions]
-      indices_in <- match(labels_in, transparameter_labels)
-      indices_out <- match(labels_out, transparameter_labels)
-      control_transform[[k]] <- list(transform = "identity",
-                                     labels_in = labels_in,
-                                     indices_in = list(indices_in-1L),
-                                     labels_out = labels_out,
-                                     indices_out = list(indices_out-1L))
-      k <- k+1L
-
-      labels_in <- c(matrices_param[[i]]$psi)
-      labels_out <- c(matrices_trans[[i]]$psi)
-      indices_in <- match(labels_in, transparameter_labels)
-      indices_out <- match(labels_out, transparameter_labels)
-      control_transform[[k]] <- list(transform = "crossprod",
-                                     labels_in = labels_in,
-                                     indices_in = list(indices_in-1L),
-                                     labels_out = labels_out,
-                                     indices_out = list(indices_out-1L),
-                                     p = nrow(matrices_trans[[i]]$psi),
-                                     q = ncol(matrices_trans[[i]]$psi))
-      k <- k+1L
-
-      labels_in <- c(matrices_param[[i]]$theta)
-      labels_out <- c(matrices_trans[[i]]$theta)
-      indices_in <- match(labels_in, transparameter_labels)
-      indices_out <- match(labels_out, transparameter_labels)
-      control_transform[[k]] <- list(transform = "crossprod",
-                                     labels_in = labels_in,
-                                     indices_in = list(indices_in-1L),
-                                     labels_out = labels_out,
-                                     indices_out = list(indices_out-1L),
-                                     p = nrow(matrices_trans[[i]]$theta),
-                                     q = ncol(matrices_trans[[i]]$theta))
-      k <- k+1L
-
-    } else {
-
-      all_param <- unname(unlist(matrices_param[[i]]))
-      all_trans <- unname(unlist(matrices_trans[[i]]))
-
-      positions <- which(all_param %in% parameter_labels)
-      labels_in <- all_param[positions]
-      labels_out <- all_trans[positions]
-      indices_in <- match(labels_in, transparameter_labels)
-      indices_out <- match(labels_out, transparameter_labels)
-      control_transform[[k]] <- list(transform = "identity",
-                                     labels_in = labels_in,
-                                     indices_in = list(indices_in-1L),
-                                     labels_out = labels_out,
-                                     indices_out = list(indices_out-1L))
-      k <- k+1L
-
-    }
-  }
-
-  control_estimator <- list()
-  k <- 1L
-  for(i in 1:ngroups) {
-
-    all_param <- unname(unlist(matrices_param[[i]]))
-    all_trans <- unname(unlist(matrices_trans[[i]]))
-
-    indices_all <- match(all_trans, transparameter_labels)
-
-    indices_lambda <- match(matrices_trans[[i]]$lambda,
-                            transparameter_labels[indices_all])
-
-    indices_psi <- match(matrices_trans[[i]]$psi,
-                         transparameter_labels[indices_all])
-
-    indices_theta <- match(matrices_trans[[i]]$theta,
-                           transparameter_labels[indices_all])
-
-    indices <- list(indices = indices_all-1L,
-                    indices_lambda = indices_lambda-1L,
-                    indices_psi = indices_psi-1L,
-                    indices_theta = indices_theta-1L)
-    labels <- transparameter_labels[indices_all]
-
-    if(estimator == "uls" || estimator == "dwls") {
-      cfa_estimator <- "cfa_dwls"
-    } else if(estimator == "ml") {
-      cfa_estimator <- "cfa_ml"
-    }
-
-    control_estimator[[k]] <- list(estimator = cfa_estimator,
-                                   labels = labels,
-                                   indices = indices,
-                                   R = correl[[i]]$R,
-                                   W = correl[[i]]$W,
-                                   nfactors = nrow(matrices_trans[[i]]$psi))
-    k <- k+1L
-
-  }
-
-  control$parameters <- list(parameters)
-  control$transparameters <- list(transparameters)
-  control$param2transparam <- param2trans-1L
-  control$transparam2param <- trans2param-1L
-
-  if(do.fit) {
-
-    x <- optimizer(control_manifold = control_manifold,
-                   control_transform = control_transform,
-                   control_estimator = control_estimator,
-                   control_optimizer = control)
-
-  } else {
-
-    x <- vector("list")
-    x$control_manifold <- control_manifold
-    x$control_transform <- control_transform
-    x$control_estimator <- control_estimator
-    x$control <- control
-    x$parameters <- parameters
-    x$transparameters <- transparameters
-    x$model <- matrices_param
-    x$model_full <- matrices_trans
-    x$parameter_labels <- parameter_labels
-    x$transparameter_labels <- transparameter_labels
-
-    return(x)
-
-  }
-
-  x$control_manifold <- control_manifold
-  x$control_transform <- control_transform
-  x$control_estimator <- control_estimator
-  x$control <- control
-
-  outputs <- vector("list", length = ngroups)
-
-  for(i in 1:ngroups) {
-
-    p <- nrow(x$control_estimator[[i]]$R)
-    q <- control_estimator[[i]]$nfactors
+    p <- nitems
+    q <- nfactors
 
     # Arrange lambda parameter estimates:
-    outputs[[i]]$lambda <- matrix(x$outputs$estimators$matrices[[i]][[1]], p, q)
+    matrices[[i]]$lambda <- matrix(x$outputs$estimators$matrices[[i]][[1]], p, q)
 
     # Arrange psi parameter estimates:
-    outputs[[i]]$psi <- matrix(x$outputs$estimators$matrices[[i]][[2]], q, q)
+    matrices[[i]]$psi <- matrix(x$outputs$estimators$matrices[[i]][[2]], q, q)
 
     # Arrange theta parameter estimates:
-    outputs[[i]]$theta <- matrix(x$outputs$estimators$matrices[[i]][[3]], p, p)
+    matrices[[i]]$theta <- matrix(x$outputs$estimators$matrices[[i]][[3]], p, p)
     # uniquenesses_hat[[i]] <- diag(psi_hat[[i]])
 
-    # Model matrix:
-    outputs[[i]]$model <- matrix(x$outputs$estimators$matrices[[i]][[4]], p, p)
-
-    # Residual matrix:
-    outputs[[i]]$residuals <- matrix(x$outputs$estimators$matrices[[i]][[5]], p, p)
-
-    # Weight matrix:
-    if(x$control_estimator[[i]]$estimator == "uls" ||
-       x$control_estimator[[i]]$estimator == "dwls") {
-      outputs[[i]]$W <- matrix(x$outputs$estimators$matrices[[i]][[6]], p, p)
-    }
-
-    # Uniquenesses:
-    outputs[[i]]$uniquenesses <- c(x$outputs$estimators$vectors[[i]][[1]])
+    # # Model matrix:
+    # outputs[[i]]$model <- matrix(x$outputs$estimators$matrices[[i]][[4]], p, p)
+    #
+    # # Residual matrix:
+    # outputs[[i]]$residuals <- matrix(x$outputs$estimators$matrices[[i]][[5]], p, p)
+    #
+    # # Weight matrix:
+    # if(control_estimator[[i]]$estimator == "uls" ||
+    #    control_estimator[[i]]$estimator == "dwls") {
+    #   outputs[[i]]$W <- matrix(x$outputs$estimators$matrices[[i]][[6]], p, p)
+    # }
+    #
+    # # Uniquenesses:
+    # outputs[[i]]$uniquenesses <- c(x$outputs$estimators$vectors[[i]][[1]])
 
   }
 
-  x$model <- matrices_param
-  x$model_full <- matrices_trans
-  x$outputs <- outputs
+  #### Return ####
 
-  return(x)
+  lcfa_list <- new("lcfa",
+                   version            = as.character( packageVersion('latent') ),
+                   call               = mc, # matched call
+                   timing             = elapsed, # timing information
+                   modelInfo          = modelInfo, # modelInfo
+                   Optim              = Optim, # Optim
+                   parameters         = matrices,
+                   transformed_pars   = matrices,
+                   loglik             = loglik, # loglik values
+                   penalized_loglik   = penalized_loglik,
+                   loss               = loss,
+                   penalized_loss     = penalized_loss
+  )
+
+  # class(lcfa_list) <- "lcfa.list"
+
+  return(lcfa_list)
 
 }
 

@@ -24,5 +24,20 @@ setClass("llca",
          )
 )
 
+setClass("lcfa",
+         slots = c(
+           version            = "character", # version
+           call               = "call", # matched call
+           timing             = "numeric", # timing information
+           modelInfo          = "list", # modelInfo
+           Optim              = "list", # opt
+           parameters         = "list",
+           transformed_pars   = "list",
+           loglik             = "numeric", # loglik values
+           penalized_loglik   = "numeric", # penalized loglik
+           loss               = "numeric",
+           penalized_loss     = "numeric"
+         )
+)
 
 

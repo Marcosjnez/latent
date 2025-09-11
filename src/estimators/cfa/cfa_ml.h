@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
- * email: marcosjnezhquez@gmail.com
- * Modification date: 16/07/2025
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 07/09/2025
  */
 
 /*
@@ -15,23 +15,20 @@ public:
   Ri_res_Ri, lambda_psi, glambda, gpsi, gtheta,
   dlambda, dglambda, dpsi, dgpsi, dtheta, dgtheta;
   arma::uvec lambda_indices, psi_indices, theta_indices;
+  arma::uvec lower_psi, lower_theta;
   double logdetR;
   int p, q;
 
   void param(arguments_optim& x) {
 
-    lambda_indices = indices[1];
-    psi_indices = indices[2];
-    theta_indices = indices[3];
-
-    lambda = arma::reshape(transparameters(lambda_indices), p, q);
-    psi = arma::reshape(transparameters(psi_indices), q, q);
-    theta = arma::reshape(transparameters(theta_indices), p, p);
-
+    lambda = arma::reshape(x.transparameters(lambda_indices), p, q);
+    // psi = arma::reshape(x.transparameters(psi_indices), q, q);
+    // theta = arma::reshape(x.transparameters(theta_indices), p, p);
+    psi.elem(lower_psi) = x.transparameters(psi_indices);
+    theta.elem(lower_theta) = x.transparameters(theta_indices);
     psi = arma::symmatl(psi);
     theta = arma::symmatl(theta);
 
-    p = lambda.n_rows;
     Rhat = lambda * psi * lambda.t() + theta;
     if(!Rhat.is_sympd()) {
       arma::vec eigval;
@@ -48,35 +45,29 @@ public:
 
     f = arma::log_det_sympd(Rhat) - logdetR +
       arma::accu(R % Rhat_inv) - p;
+    x.f += f;
 
   }
 
   void G(arguments_optim& x) {
-
-    grad.set_size(transparameters.n_elem);
-    grad.zeros();
 
     residuals = R - Rhat;
     Ri_res_Ri = 2*Rhat_inv * -residuals * Rhat_inv;
     lambda_psi = lambda * psi;
 
     glambda = Ri_res_Ri * lambda_psi;
-    gpsi = 0.5*lambda.t() * Ri_res_Ri * lambda;
-    // gpsi.diag() *= 0.5;
+    gpsi = lambda.t() * Ri_res_Ri * lambda;
+    gpsi.diag() *= 0.5;
 
     arma::mat dlogdetRhatdU = 2*Rhat_inv;
-    // dlogdetRhatdU.diag() *= 0.5;
+    dlogdetRhatdU.diag() *= 0.5;
     arma::mat dRhat_invdU = 2*(-Rhat_inv * R * Rhat_inv);
-    // dRhat_invdU.diag() *= 0.5;
-    gtheta = 0.5*dRhat_invdU + 0.5*dlogdetRhatdU;
+    dRhat_invdU.diag() *= 0.5;
+    gtheta = dRhat_invdU + dlogdetRhatdU;
 
-    grad(lambda_indices) += arma::vectorise(glambda);
-    // if(positive) {
-    //   g(T_indexes) += gphi.elem(targetT_indexes);
-    // } else {
-    grad(psi_indices) += arma::vectorise(gpsi);
-    // }
-    grad(theta_indices) += arma::vectorise(gtheta);
+    x.grad.elem(lambda_indices) += arma::vectorise(glambda);
+    x.grad.elem(psi_indices) += arma::vectorise(gpsi(lower_psi));
+    x.grad.elem(theta_indices) += arma::vectorise(gtheta(lower_theta));
 
   }
 
@@ -274,6 +265,13 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   arma::mat psi(q, q, arma::fill::zeros);
   arma::mat theta(p, p, arma::fill::zeros);
 
+  arma::uvec lambda_indices = indices[1];
+  arma::uvec psi_indices = indices[2];
+  arma::uvec theta_indices = indices[3];
+
+  arma::uvec lower_psi = arma::trimatl_ind(arma::size(psi));
+  arma::uvec lower_theta = arma::trimatl_ind(arma::size(theta));
+
   myestimator->indices = indices;
   myestimator->R = R;
   myestimator->logdetR = logdetR;
@@ -282,6 +280,11 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   myestimator->theta = theta;
   myestimator->p = p;
   myestimator->q = q;
+  myestimator->lambda_indices = lambda_indices;
+  myestimator->psi_indices = psi_indices;
+  myestimator->theta_indices = theta_indices;
+  myestimator->lower_psi = lower_psi;
+  myestimator->lower_theta = lower_theta;
 
   return myestimator;
 

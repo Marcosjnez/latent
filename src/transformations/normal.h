@@ -145,11 +145,27 @@ public:
     sigma.resize(J, I); sigma.zeros();
     sigma2.resize(J, I); sigma.zeros();
 
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        mu(j,i) = arma::accu(y.col(j) % w.col(i)); // y.t() * w
-        arma::vec xdiff = y.col(j) - mu(j,i);
-        sigma2(j,i) = arma::accu(xdiff % xdiff % w.col(i));
+    // for(int i=0; i < I; ++i) {
+    //   for(int j=0; j < J; ++j) {
+    //     // for(int s=0; s < S; ++s) {
+    //     //   if (std::isnan(y(s,j))) continue;
+    //     //   mu(j,i) += y(s,j) * w(s,i); // y.t() * w
+    //     //   double x = y(s,j) - mu(j,i);
+    //     //   sigma2(j,i) += x * x * w(s,i);
+    //     // }
+    //     mu(j,i) = arma::accu(y.col(j) % w.col(i));
+    //     arma::vec xdiff = y.col(j) - mu(j,i);
+    //     sigma2(j,i) = arma::accu(xdiff % xdiff % w.col(i));
+    //   }
+    // }
+
+    for (int i = 0; i < I; ++i) {
+      for (int j = 0; j < J; ++j) {
+        arma::vec yj = y.col(j);
+        arma::vec wi = w.col(i);
+        arma::uvec idx = arma::find_finite(yj);
+        mu(j,i)     = arma::dot(yj.elem(idx), wi.elem(idx));
+        sigma2(j,i) = arma::dot(arma::square(yj.elem(idx) - mu(j,i)), wi.elem(idx));
       }
     }
 

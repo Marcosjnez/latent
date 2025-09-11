@@ -157,6 +157,7 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
       // tuple<arma::vec, arma::vec, double, int, bool>
     }
 
+    result["elapsed"] = elapsed_sec;
     return result;
 
   }

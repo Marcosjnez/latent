@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 16/07/2025
+ * Modification date: 07/09/2025
  */
 
 /*
@@ -16,40 +16,20 @@ public:
   lambda_psi, W_residuals, glambda, W_residuals_lambda, gpsi, gtheta,
   dlambda, dglambda, dpsi, dgpsi, dtheta, dgtheta;
   arma::uvec lambda_indices, psi_indices, theta_indices;
+  arma::uvec lower_psi, lower_theta;
   int p, q;
 
   void param(arguments_optim& x) {
 
-    lambda_indices = indices[1];
-    psi_indices = indices[2];
-    theta_indices = indices[3];
-
-    lambda = arma::reshape(transparameters(lambda_indices), p, q);
-    psi = arma::reshape(transparameters(psi_indices), q, q);
-    theta = arma::reshape(transparameters(theta_indices), p, p);
-
+    lambda = arma::reshape(x.transparameters(lambda_indices), p, q);
+    // psi = arma::reshape(x.transparameters(psi_indices), q, q);
+    // theta = arma::reshape(x.transparameters(theta_indices), p, p);
+    psi.elem(lower_psi) = x.transparameters(psi_indices);
+    theta.elem(lower_theta) = x.transparameters(theta_indices);
     psi = arma::symmatl(psi);
     theta = arma::symmatl(theta);
 
     Rhat = lambda * psi * lambda.t() + theta;
-    // for (arma::uword i = 0; i < lambda.n_rows; ++i) {
-    //   for (arma::uword j = 0; j < lambda.n_cols; ++j) {
-    //     Rprintf("%8.4f ", lambda(i, j));
-    //   }
-    //   Rprintf("\n");
-    // }
-    // for (arma::uword i = 0; i < psi.n_rows; ++i) {
-    //   for (arma::uword j = 0; j < psi.n_cols; ++j) {
-    //     Rprintf("%8.4f ", psi(i, j));
-    //   }
-    //   Rprintf("\n");
-    // }
-    // for (arma::uword i = 0; i < theta.n_rows; ++i) {
-    //   for (arma::uword j = 0; j < theta.n_cols; ++j) {
-    //     Rprintf("%8.4f ", theta(i, j));
-    //   }
-    //   Rprintf("\n");
-    // }
     residuals = R - Rhat;
 
   }
@@ -57,40 +37,27 @@ public:
   void F(arguments_optim& x) {
 
     f = 0.5*arma::accu(residuals % residuals % W);
+    x.f += f;
 
   }
 
   void G(arguments_optim& x) {
 
-    grad.set_size(transparameters.n_elem);
-    grad.zeros();
-
     lambda_psi = lambda * psi;
     W_residuals = W % residuals;
     glambda = -2* W_residuals * lambda_psi;
     W_residuals_lambda = W_residuals * lambda;
-    gpsi = -lambda.t() * W_residuals_lambda;
-    // gpsi.diag() *= 0.5;
-    gtheta = -W_residuals;
-    // gtheta.diag() *= 0.5;
+    gpsi = -2*lambda.t() * W_residuals_lambda;
+    gpsi.diag() *= 0.5;
+    gtheta = -2*W_residuals;
+    gtheta.diag() *= 0.5;
 
-    // Rprintf("%zu", grad.n_elem);
-    // Rprintf("\n\n");
-    // Rprintf("grad:\n");
-    // for (arma::uword i = 0; i < grad.n_elem; ++i) {
-    //   Rprintf("%u ", grad[i]);
-    // }
-    // Rprintf("\n\n");
-
-    // Rf_error("60");
-    grad(lambda_indices) += arma::vectorise(glambda);
-    // Rf_error("53");
-    // if(positive) {
-    //   g(T_indexes) += gphi.elem(targetT_indexes);
-    // } else {
-    grad(psi_indices) += arma::vectorise(gpsi);
-    // }
-    grad(theta_indices) += arma::vectorise(gtheta);
+    x.grad.elem(lambda_indices) += arma::vectorise(glambda);
+    x.grad.elem(psi_indices) += arma::vectorise(gpsi(lower_psi));
+    x.grad.elem(theta_indices) += arma::vectorise(gtheta(lower_theta));
+    // The symmetric part will be counted twice in the += operation, so
+    // the correct derivatives for the nondiagonal elements in psi and theta
+    // are 2*gpsi and 2*gtheta
 
   }
 
@@ -280,6 +247,13 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
   arma::mat psi(q, q, arma::fill::zeros);
   arma::mat theta(p, p, arma::fill::zeros);
 
+  arma::uvec lambda_indices = indices[1];
+  arma::uvec psi_indices = indices[2];
+  arma::uvec theta_indices = indices[3];
+
+  arma::uvec lower_psi = arma::trimatl_ind(arma::size(psi));
+  arma::uvec lower_theta = arma::trimatl_ind(arma::size(theta));
+
   myestimator->indices = indices;
   myestimator->R = R;
   myestimator->W = W;
@@ -288,6 +262,11 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
   myestimator->theta = theta;
   myestimator->p = p;
   myestimator->q = q;
+  myestimator->lambda_indices = lambda_indices;
+  myestimator->psi_indices = psi_indices;
+  myestimator->theta_indices = theta_indices;
+  myestimator->lower_psi = lower_psi;
+  myestimator->lower_theta = lower_theta;
 
   return myestimator;
 

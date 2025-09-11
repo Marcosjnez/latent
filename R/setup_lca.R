@@ -1,114 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 02/09/2025
-#'
-#' @title
-#' Get the default model for Latent Class Analysis.
-#' @description
-#'
-#' Get the default model for Latent Class Analysis.
-#'
-#' @usage
-#'
-#' setup_lca(data, item, nclasses, model, control)
-#'
-#' @param data data.frame or matrix of response.
-#' @param item Character vector with the model for each item.
-#' @param nclasses Number of latent classes.
-#' @param model List of parameter labels. See 'details' for more information.
-#' @param constraints Should the model be checked for identification? Defaults to TRUE.
-#'
-#' @details \code{get_lca} generates the model for the probability of belonging
-#' to the classes and the conditional response probabilities. These models may
-#' be modified by the user to set equality constraints or to fix parameters.
-#'
-#' @return List with the following objects:
-#' \item{none}{.}
-#' \item{none}{.}
-#'
-#' @references
-#'
-#' None yet.
-#'
-#' @export
-setup_lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-                      model = NULL, control = NULL) {
-
-  #### Initial input checks ####
-
-  # Check that data is either a data.frame or a matrix:
-  if(!is.data.frame(data) & !is.matrix(data)) {
-    stop("data must be a matrix or data.frame")
-  }
-
-  # Number of items:
-  nitems <- ncol(data)
-
-  # Check that item is a character vector with a string for each column of data:
-  if(!is.character(item) || length(item) != nitems) {
-
-    stop("item must be a character vector with as many elements as columns in data")
-
-  }
-
-  #### Process the data ####
-
-  # Number of subjects:
-  nobs <- nrow(data)
-  # Convert data to a data.table object:
-  dt <- data.table::as.data.table(data)
-  ## Collect some information from the data ##
-  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
-  # Data matrix with the unique response patterns:
-  patterns <- as.matrix(counts_dt[, names(dt), with = FALSE])
-  # Number of unique response patterns:
-  npatterns <- nrow(counts_dt)
-  # Counts of each response pattern:
-  weights <- counts_dt$count
-  # Indices to map the original data to the matrix of unique patterns:
-  full2short <- counts_dt$index
-  # Indices to map the matrix of unique patterns to the original data:
-  short2full <- match(do.call(paste, dt),
-                      do.call(paste, counts_dt[, -c("index", "count"), with = FALSE]))
-
-  # Put in a list the objects generated form the data:
-  data_list <- vector("list")
-  data_list$dt <- dt
-  data_list$patterns <- patterns
-  data_list$npatterns <- npatterns
-  data_list$nitems <- nitems
-  data_list$weights <- weights
-  data_list$full2short <- full2short
-  data_list$short2full <- short2full
-
-  #### Create the model ####
-
-  # Get the model specification:
-  full_model <- get_full_lca_model(data_list = data_list, item = item,
-                                   nclasses = nclasses, lca_trans = lca_trans,
-                                   model = model, control = control)
-  list2env(full_model, envir = environment())
-
-  # Get the short model specification (in logarithm and probability scale) with
-  # labels for each parameter:
-  short_model <- get_short_lca_model(data = data, item = item, nclasses = nclasses,
-                                     lca_trans = lca_trans, model = model)
-
-  #### Create the structures ####
-
-  # Generate the structures for optimization:
-  structures <- get_lca_structures(data_list = data_list,
-                                   full_model = full_model)
-
-  #### Return ####
-
-  result <- list(full_model = full_model,
-                 short_model = short_model,
-                 structures = structures)
-
-  return(result)
-
-}
+# Modification date: 08/09/2025
 
 fill_list_with_vector <- function(lst, values) {
 
@@ -141,7 +33,7 @@ assign_recursive(lst)
 
 allnumeric <- function(lst) {
 
-  # Transform all elements in a list into numeric values
+  # Transform all elements of a list into numeric values
   lst <- rapply(
     lst,
     function(x) {
@@ -318,7 +210,8 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
   transparameters_labels <- unique(c(parameters_labels, vector_trans))
   ntrans <- length(transparameters_labels)
 
-  # Create the initial values for the parameters:
+  #### Create the initial values for the parameters ####
+
   parameters <- vector("list", length = control$rstarts)
   select_params <- match(parameters_labels, vector_param)
   for(i in 1:control$rstarts) {
@@ -326,7 +219,8 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     names(parameters[[i]]) <- parameters_labels
   }
 
-  # Create the initial values for the transformed parameters:
+  #### Create the initial values for the transformed parameters ####
+
   free_indices <- match(parameters_labels, transparameters_labels)
   fixed_indices <- match(fixed_labels, transparameters_labels)
   transparameters <- vector("list", length = control$rstarts)
@@ -336,7 +230,8 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
     transparameters[[i]][fixed_indices] <- fixed_values
   }
 
-  # Relate the transformed parameters to the parameters:
+  #### Relate the transformed parameters to the parameters ####
+
   param2trans <- match(transparameters_labels, parameters_labels)
   param2trans <- param2trans[!is.na(param2trans)]
   # Relate the parameters to the transformed parameters:
@@ -353,10 +248,8 @@ get_full_lca_model <- function(data_list, nclasses, item, model = NULL,
   #### Return ####
 
   result <- list(parameters_labels = parameters_labels,
-                 # parameters = parameters,
                  nparam = nparam,
                  transparameters_labels = transparameters_labels,
-                 # transparameters = transparameters,
                  ntrans = ntrans,
                  lca_param = lca_param,
                  lca_trans = lca_trans,
@@ -675,5 +568,20 @@ get_lca_structures <- function(data_list, full_model, control) {
                  control_transform = control_transform,
                  control_estimator = control_estimator)
 
+  return(result)
+
 }
 
+get_lca_covariate_model <- function(fit, X) {
+
+  p <- ncol(X)
+
+  thetas <- fit@modelInfo$model$classes
+
+
+}
+
+# ng <- obj@Data@ngroups
+# tech <- lavaan::lavTech(obj)
+# par_mat <- lavaan::lavMatrixRepresentation(lavaan::partable(obj),
+#                                            representation = "LISREL")
