@@ -10,18 +10,22 @@
 #'
 #' @usage
 #'
-#' lca(data, item = rep("gaussian", ncol(data)), nclasses = 2L, model = NULL,
-#'     do.fit = TRUE, control = list(opt = "lbfgs", rstarts = 30L, cores = 1L))
+#' lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
+#'     penalties = NULL, model = NULL, control = NULL, do.fit = TRUE)
 #'
 #' @param data data frame or matrix.
 #' @param nclasses Number of latent classes.
 #' @param item Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.
-#' @param penalties list of penalty terms for the parameters.
+#' @param penalties list of penalty terms for the parameters or a boolean indicating if penalization should be calculated.
 #' @param model List of parameter labels. See 'details' for more information.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #'
-#' @details \code{lca} estimates models with categorical and continuous data.
+#' @details \code{lca} estimates models with with categorical, continuous, or mixed indicators.
+#' For the 'control' argument, the user can provide the following additional arguments:
+#'   - opt: the optimization algorithm used. The possible values are "em" (expectation-maximization) or "lbfgs" (Approximate Gauss-Newton method).
+#'   - rstarts: the number of random starting values for the parameters. Defaults to 30.
+#'   - cores: the number of CPU cores that should be used to assess the starting values. Defaults to 1.
 #'
 #' @return List with the following objects:
 #' \item{parameters}{The model for the logarithm probabilities of the classes.}
