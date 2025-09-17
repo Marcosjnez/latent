@@ -103,40 +103,39 @@ arma::uvec consecutive(int lower, int upper) {
 
 // Derivatives wrt model correlation
 
-arma::mat gLRhat(arma::mat Lambda, arma::mat Phi) {
+arma::mat gLRhat(arma::mat lambda, arma::mat psi) {
 
-  int p = Lambda.n_rows;
-  int q = Lambda.n_cols;
+  int p = lambda.n_rows;
+  int q = lambda.n_cols;
   arma::mat I(p, p, arma::fill::eye);
-  arma::mat LP = Lambda * Phi;
+  arma::mat LP = lambda * psi;
   arma::mat g1 = arma::kron(LP, I);
   arma::mat g21 = arma::kron(I, LP);
   arma::mat g2 = g21 * dxt(p, q);
-  arma::mat g = g1 + g2;
+  arma::mat J = g1 + g2;
 
-  return g;
+  return J;
 
 }
 
-arma::mat gPRhat(arma::mat Lambda, arma::mat Phi) {
+arma::mat gPRhat(arma::mat lambda, int q) {
 
-  int q = Phi.n_cols;
-  arma::mat g1 = arma::kron(Lambda, Lambda);
+  arma::mat g1 = arma::kron(lambda, lambda);
   arma::mat g2 = g1 * dxt(q, q);
-  arma::mat g_temp = g1 + g2;
-  arma::uvec indexes_diag_q(q);
-  for(int i=0; i < q; ++i) indexes_diag_q[i] = i * q + i;
-  g_temp.cols(indexes_diag_q) *= 0.5;
+  arma::mat J = g1 + g2;
+  arma::uvec indices_diag_q(q);
+  for(int i=0; i < q; ++i) indices_diag_q[i] = i * q + i;
+  J.cols(indices_diag_q) *= 0.5;
 
-  return g_temp;
+  return J;
 }
 
 arma::mat gURhat(int p) {
 
-  arma::mat gPsi = dxt(p, p);
-  gPsi.diag().ones();
+  arma::mat J = dxt(p, p);
+  J.diag().ones();
 
-  return gPsi;
+  return J;
 
 }
 

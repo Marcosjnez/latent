@@ -10,20 +10,21 @@ class column_space:public transformations {
 
 public:
 
-  arma::mat X;
-  arma::vec coefficients, linear_preds;
+  arma::mat X, coefficients, linear_preds;
 
   void transform(arguments_optim& x) {
 
-    coefficients = x.transparameters(indices_in[0]);
+    arma::vec values = x.transparameters(indices_in[0]);
+    std::memcpy(coefficients.memptr(), values.memptr(), sizeof(double) * values.n_elem);
     linear_preds = X * coefficients;
-    x.transparameters.elem(indices_out[0]) = linear_preds;
+    x.transparameters.elem(indices_out[0]) = arma::vectorise(linear_preds);
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    jacob = X;
+    arma::mat I(coefficients.n_cols, coefficients.n_cols, arma::fill::eye);
+    jacob = arma::kron(I, X);
     // grad_out = jacob.t() * grad_in; grad_out.zeros();
     // Fill the gradient:
     x.grad(indices_in[0]) += arma::vectorise(jacob.t() * x.grad(indices_out[0]));
@@ -92,9 +93,13 @@ column_space* choose_column_space(const Rcpp::List& trans_setup) {
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   arma::mat X = trans_setup["X"];
 
+  int q = indices_in[0].n_elem / X.n_cols;
+  arma::mat coefficients(X.n_cols, q);
+
   mytrans->indices_in = indices_in;
   mytrans->indices_out = indices_out;
   mytrans->X = X;
+  mytrans->coefficients = coefficients;
 
   return mytrans;
 

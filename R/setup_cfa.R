@@ -64,7 +64,7 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
     psi_labels[nonfixed[[i]]$psi] <- model[[i]]$psi[nonfixed[[i]]$psi]
     cfa_trans[[i]]$psi <- matrix(psi_labels, nrow = nfactors, ncol = nfactors)
     # Force symmetry:
-    cfa_trans[[i]]$psi[upper.tri(cfa_trans[[i]]$psi)] <- cfa_trans[[i]]$psi[lower.tri(cfa_trans[[i]]$psi)]
+    # cfa_trans[[i]]$psi[upper.tri(cfa_trans[[i]]$psi)] <- cfa_trans[[i]]$psi[lower.tri(cfa_trans[[i]]$psi)]
 
     # Theta:
     theta_labels <- paste("g", i, ".theta[", rep(1:nitems, times = nitems),
@@ -72,7 +72,7 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
     theta_labels[nonfixed[[i]]$theta] <- model[[i]]$theta[nonfixed[[i]]$theta]
     cfa_trans[[i]]$theta <- matrix(theta_labels, nrow = nitems, ncol = nitems)
     # Force symmetry:
-    cfa_trans[[i]]$theta[upper.tri(cfa_trans[[i]]$theta)] <- cfa_trans[[i]]$theta[lower.tri(cfa_trans[[i]]$theta)]
+    # cfa_trans[[i]]$theta[upper.tri(cfa_trans[[i]]$theta)] <- cfa_trans[[i]]$theta[lower.tri(cfa_trans[[i]]$theta)]
 
     # Untransformed parameters:
 
@@ -92,14 +92,14 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
       # Psi:
       cfa_param[[i]]$psi <- cfa_trans[[i]]$psi
       # Force symmetry:
-      cfa_param[[i]]$psi[upper.tri(cfa_param[[i]]$psi)] <- cfa_param[[i]]$psi[lower.tri(cfa_param[[i]]$psi)]
+      # cfa_param[[i]]$psi[upper.tri(cfa_param[[i]]$psi)] <- cfa_param[[i]]$psi[lower.tri(cfa_param[[i]]$psi)]
       # Insert fixed values in the model:
       cfa_param[[i]]$psi[fixed[[i]]$psi] <- model[[i]]$psi[fixed[[i]]$psi]
 
       # Theta:
       cfa_param[[i]]$theta <- cfa_trans[[i]]$theta
       # Force symmetry:
-      cfa_param[[i]]$theta[upper.tri(cfa_param[[i]]$theta)] <- cfa_param[[i]]$theta[lower.tri(cfa_param[[i]]$theta)]
+      # cfa_param[[i]]$theta[upper.tri(cfa_param[[i]]$theta)] <- cfa_param[[i]]$theta[lower.tri(cfa_param[[i]]$theta)]
       # Insert fixed values in the model:
       cfa_param[[i]]$theta[fixed[[i]]$theta] <- model[[i]]$theta[fixed[[i]]$theta]
 

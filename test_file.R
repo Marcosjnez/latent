@@ -51,13 +51,9 @@ data <- empathy[, 1:6]
 
 item <- rep("gaussian", ncol(data))
 
-nmiss <- 30
-missrow <- sample(1:nrow(data), size = nmiss)
-misscol <- sample(1:ncol(data), size = nmiss, replace = TRUE)
-for(i in 1:nmiss) data[missrow[i], misscol[i]] <- NA
-# control <- list(opt = "em", rstarts = 50L, maxit = )
 fit <- lca(data = data, item = item, nclasses = nclasses,
            penalties = TRUE, control = NULL, do.fit = TRUE)
+
 fit@timing
 fit@loglik # -1841.336
 fit@penalized_loglik # -1844.333
@@ -142,12 +138,12 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
-estimator = "uls"
+estimator = "ml"
 control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 1L,
                 cores = 1L, eps = 1e-05)
 fit <- cfast(data, model = model,
              estimator = estimator, cor = "pearson",
-             std.lv = TRUE, positive = FALSE,
+             std.lv = TRUE, positive = TRUE,
              control = control, do.fit = TRUE)
 
 fit@loglik # -0.283407 (ML)
@@ -155,6 +151,7 @@ fit@loss # 0.1574787 (ULS) / 0.283407 (ML)
 fit@Optim$opt$iterations
 
 fit@transformed_pars
+round(fit@transformed_pars[[1]]$theta, 3)
 
 #### Multigroup CFA ####
 

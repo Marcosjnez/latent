@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 07/09/2025
+ * Modification date: 17/09/2025
  */
 
 /*
@@ -109,73 +109,68 @@ public:
 
   void H(arguments_optim& x) {
 
-    // x.hessian.set_size(x.parameters.n_elem, x.parameters.n_elem); x.hessian.zeros();
-    //
-    // x.w = arma::vectorise(x.W);
-    // // Rcpp::Rcout << "hlambda" << std::endl;
-    // // Lambda
-    // x.dlambda_dRhat_W = gLRhat(x.lambda, x.phi);
-    // x.dlambda_dRhat_W.each_col() %= x.w;
-    // x.lambda_phit_kron_Ip = arma::kron(x.lambda_phi.t(), x.Ip);
-    // arma::mat g1 = 2*x.lambda_phit_kron_Ip * x.dlambda_dRhat_W;
-    // arma::mat g2 = -2*arma::kron(x.phi, x.W_residuals);
-    // arma::mat hlambda = g1 + g2;
-    // x.hlambda = hlambda; //(x.lambda_indexes, x.lambda_indexes);
-    // x.hessian(x.lambda_indexes, x.lambda_indexes) += x.hlambda(x.target_indexes, x.target_indexes);
-    //
-    // // Rcpp::Rcout << "hphi" << std::endl;
-    // // Phi
-    // arma::mat LL = 2*arma::kron(x.lambda, x.lambda).t();
-    // x.dphi_dRhat_W = gPRhat(x.lambda, x.phi, x.indexes_q);
-    // x.dphi_dRhat_W.each_col() %= x.w;
-    // arma::mat hphi_temp = LL * x.dphi_dRhat_W;
-    // hphi_temp.rows(x.indexes_diag_q) *= 0.5;
-    // x.hphi = hphi_temp; //(x.phi_indexes, x.phi_indexes);
-    // x.hessian(x.phi_indexes, x.phi_indexes) += x.hphi(x.targetphi_indexes, x.targetphi_indexes);
-    //
-    // // Rcpp::Rcout << "hpsi" << std::endl;
-    // // Psi
-    // x.dpsi_dRhat_W = gURhat(x.psi);
-    // x.dpsi_dRhat_W.each_col() %= x.w;
-    // arma::mat W2 = 2*x.W;
-    // W2.diag() *= 0.5;
-    // arma::vec w2 = arma::vectorise(W2);
-    // arma::mat hpsi = arma::diagmat(w2);
-    // x.hpsi = hpsi; //(x.psi_indexes, x.psi_indexes);
-    // x.hessian(x.psi_indexes, x.psi_indexes) += x.hpsi(x.targetpsi_indexes, x.targetpsi_indexes);
-    //
-    // // Rcpp::Rcout << "dlambda_dphi" << std::endl;
-    // // Lambda & Phi
-    // g1 = 2*x.lambda_phit_kron_Ip * x.dphi_dRhat_W;
-    // arma::mat g21 = -2*arma::kron(x.Iq, x.W_residuals_lambda);
-    // arma::mat dtg21 = g21 * dxt(x.q, x.q);
-    // g2 = g21 + dtg21;
-    // g2.cols(x.indexes_diag_q) -= dtg21.cols(x.indexes_diag_q);
-    // arma::mat dlambda_dphi_temp = g1 + g2;
-    // x.dlambda_dphi = dlambda_dphi_temp; //(x.lambda_indexes, x.phi_indexes);
-    // x.hessian(x.lambda_indexes, x.phi_indexes) += x.dlambda_dphi(x.target_indexes, x.targetphi_indexes);
-    //
-    // // Rcpp::Rcout << "dlambda_dpsi" << std::endl;
-    // // Lambda & Psi
-    // arma::mat dlambda_dpsi_temp = 2*x.lambda_phit_kron_Ip * x.dpsi_dRhat_W;
-    // x.dlambda_dpsi = dlambda_dpsi_temp; //(x.lambda_indexes, x.psi_indexes);
-    // x.hessian(x.lambda_indexes, x.psi_indexes) += x.dlambda_dpsi(x.target_indexes, x.targetpsi_indexes);
-    //
-    // // Rcpp::Rcout << "dpsi_dphi" << std::endl;
-    // // Phi & Psi
-    // arma::mat dpsi_dphi_temp = x.dphi_dRhat_W;
-    // dpsi_dphi_temp.rows(x.indexes_diag_p) *= 0.5;
-    // dpsi_dphi_temp *= 2;
-    // x.dpsi_dphi = dpsi_dphi_temp; //(x.psi_indexes, x.phi_indexes);
-    // x.hessian(x.psi_indexes, x.phi_indexes) += x.dpsi_dphi(x.targetpsi_indexes, x.targetphi_indexes);
-    //
-    // x.hessian = arma::symmatu(x.hessian);
+    arma::mat Ip(p, p, arma::fill::eye);
+    arma::mat Iq(q, q, arma::fill::eye);
+    arma::vec w = arma::vectorise(W);
+    arma::uvec indices_p = arma::trimatl_ind(arma::size(theta));
+    arma::uvec indices_q = arma::trimatl_ind(arma::size(psi));
+
+    arma::uvec indices_diag_q(q);
+    for(int i=0; i < q; ++i) indices_diag_q[i] = i * q + i;
+    arma::uvec indices_diag_p(p);
+    for(int i=0; i < p; ++i) indices_diag_p[i] = i * p + i;
+
+    // Lambda
+    arma::mat dlambda_dRhat_W = gLRhat(lambda, psi);
+    dlambda_dRhat_W.each_col() %= w;
+    arma::mat lambda_psit_kron_Ip = arma::kron(lambda_psi.t(), Ip);
+    arma::mat g1 = 2*lambda_psit_kron_Ip * dlambda_dRhat_W;
+    arma::mat g2 = -2*arma::kron(psi, W_residuals);
+    arma::mat hlambda = g1 + g2;
+    x.hess(lambda_indices, lambda_indices) += hlambda;
+
+    // Psi
+    arma::mat LL = 2*arma::kron(lambda, lambda).t();
+    arma::mat dpsi_dRhat_W = gPRhat(lambda, q);
+    dpsi_dRhat_W.each_col() %= w;
+    arma::mat hpsi = LL * dpsi_dRhat_W;
+    hpsi.rows(indices_diag_q) *= 0.5;
+    x.hess(psi_indices, psi_indices) += hpsi(lower_psi, lower_psi);
+
+    // Theta
+    arma::mat dtheta_dRhat_W = gURhat(p);
+    dtheta_dRhat_W.each_col() %= w;
+    arma::mat W2 = 2*W;
+    W2.diag() *= 0.5;
+    arma::vec w2 = arma::vectorise(W2);
+    arma::mat htheta = arma::diagmat(w2);
+    x.hess(theta_indices, theta_indices) += htheta(lower_theta, lower_theta);
+
+    // Lambda & Psi
+    g1 = 2*lambda_psit_kron_Ip * dpsi_dRhat_W;
+    arma::mat g21 = -2*arma::kron(Iq, W_residuals_lambda);
+    arma::mat dtg21 = g21 * dxt(q, q);
+    g2 = g21 + dtg21;
+    g2.cols(indices_diag_q) -= dtg21.cols(indices_diag_q);
+    arma::mat dlambda_dpsi = g1 + g2;
+    x.hess(lambda_indices, psi_indices) += dlambda_dpsi.cols(lower_psi);
+
+    // Lambda & Theta
+    arma::mat dlambda_dtheta = 2*lambda_psit_kron_Ip * dtheta_dRhat_W;
+    x.hess(lambda_indices, theta_indices) += dlambda_dtheta.cols(lower_theta);
+
+    // Psi & Theta
+    arma::mat dtheta_dpsi = 2*arma::kron(lambda.t(), lambda.t());
+    dlambda_dtheta.each_row() %= w.t();
+    x.hess(psi_indices, theta_indices) += dtheta_dpsi(lower_psi, lower_theta);
+
+    x.hess = arma::symmatu(x.hess);
 
     /*
      * Join all the derivatives such that
-     * hLambda           dlambda_dphi   dlambda_dpsi
-     * dlambda_dphi.t()  hphi           dpsi_dphi.t()
-     * dlambda_dpsi.t()   dpsi_dphi      hpsi
+     * hLambda              dlambda_dpsi   dlambda_dtheta
+     * dlambda_dpsi.t()     hpsi           dtheta_dpsi.t()
+     * dlambda_dtheta.t()   dtheta_dpsi    htheta
      */
 
     // x.dLPU_dS.set_size(x.parameters.n_elem, x.p*x.p); x.dLPU_dS.zeros();

@@ -119,7 +119,7 @@ public:
 
     // Rcpp::Rcout << "hphi" << std::endl;
     // Phi
-    arma::mat dRhat_dP = gPRhat(lambda, phi);
+    arma::mat dRhat_dP = gPRhat(lambda, q);
     arma::mat dRi_res_Ri_dP = dRi_res_Ri_dRhat * dRhat_dP;
     hphi = arma::kron(lambda.t(), lambda.t()) * dRi_res_Ri_dP;
     hphi.rows(indices_diag_q) *= 0.5;
