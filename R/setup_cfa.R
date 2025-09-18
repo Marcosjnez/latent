@@ -113,6 +113,9 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
       target_theta[[i]] <- matrix(0, nrow = nitems, ncol = nitems)
       target_theta[[i]][nonfixed[[i]]$theta] <- 1
 
+      targets <- unlist(c(target_psi, target_theta))
+      nparam <- nparam - length(targets == 0)
+
     }
 
   }

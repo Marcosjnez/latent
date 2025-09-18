@@ -21,7 +21,7 @@
 #'               speed   =~ x7 + x8 + x9 '
 #'
 #' fit <- cfast(model = HS.model, data = HolzingerSwineford1939)
-#' summary(fit, fit.measures = TRUE)
+#' summary(fit, digits = 3L)
 #'}
 #'
 #' @export
@@ -69,7 +69,7 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "uls",
 
   # Data and structure information:
   nitems <- length(item_names)
-  npatterns <- 0.5*nitems*(nitems+1)
+  npatterns <- 0.5*nitems*(nitems+1) * ngroups
   nfactors <- ncol(model[[1]]$lambda)
   data_list <- vector("list")
   data_list$data <- data
@@ -154,15 +154,15 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "uls",
   elapsed <- x$elapsed
 
   if(estimator == "uls" || estimator == "dwls") {
-    loss <- x$f
-    penalized_loss <- x$f
+    loss <- x$f / ngroups
+    penalized_loss <- x$f / ngroups
     loglik <- numeric()
     penalized_loglik <- numeric()
   } else if(estimator == "ml") {
-    loss <- x$f
-    penalized_loss <- x$f
-    loglik <- -loss
-    penalized_loglik <- -penalized_loss
+    loss <- x$f / ngroups
+    penalized_loss <- x$f / ngroups
+    loglik <- -loss / ngroups
+    penalized_loglik <- -penalized_loss / ngroups
   }
 
   #### Process the outputs ####

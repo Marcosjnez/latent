@@ -21,7 +21,7 @@ HS.model <- ' visual  =~ x1 + x2 + x3
               speed   =~ x7 + x8 + x9 '
 
 fit <- cfast(model = HS.model, data = HolzingerSwineford1939)
-summary(fit, fit.measures = TRUE)
+summary(fit, digits = 3L)
 }
 
 }

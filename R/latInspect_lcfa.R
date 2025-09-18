@@ -64,7 +64,8 @@ latInspect.lcfa <- function(fit,
 
     return(groups)
 
-  } else if(what == "rhat") {
+  } else if(what == "rhat" ||
+            what == "model") {
 
     return(rhat)
 
@@ -83,7 +84,8 @@ latInspect.lcfa <- function(fit,
 
   } else if(what == "uniquenesses") {
 
-    return(diag(theta))
+    u <- lapply(theta, FUN = \(x) diag(x))
+    return(u)
 
   } else {
 
