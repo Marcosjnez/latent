@@ -60,14 +60,14 @@ summary.lcfa <- function(fit, digits = 3) {
   N <- fit@modelInfo$nobs
   cat(sprintf("  %-45s %d\n\n", "Number of observations", fit@modelInfo$nobs))
 
-  df <- fit@modelInfo$df
+  dof <- fit@modelInfo$dof
   loglik <- fit@loss
   X2 <- loglik*N
-  pval <- 1-pchisq(X2, df = df)
+  pval <- 1-pchisq(X2, df = dof)
   cat("Model Test User Model:\n")
   cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
   cat(sprintf("  %-45s %.3f\n", "Test statistic (Chi-square)", X2))
-  cat(sprintf("  %-45s %d\n", "Degrees of freedom", df))
+  cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
   cat(sprintf("  %-45s %.3f\n", "P-value (Chi-square)", pval))
 
   #### Summary stats ####

@@ -63,18 +63,18 @@ summary.llca <- function(fit, digits = 3) {
   if(sum(fit@modelInfo$item != "multinomial") == 0) {
     ni <- fit@summary_table$Observed
     mi <- fit@summary_table$Estimated
-    df <- fit@modelInfo$df
+    dof <- fit@modelInfo$dof
     L2 <- 2*sum(ni*log(ni/mi))
-    pv <- 1-pchisq(L2, df)
+    pv <- 1-pchisq(L2, dof)
   } else {
     L2 <- NA
     pv <- NA
-    df <- NA
+    dof <- NA
   }
   cat("Model Test User Model:\n")
   cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
   cat(sprintf("  %-45s %.3f\n", "Test statistic (L2)", L2))
-  cat(sprintf("  %-45s %d\n", "Degrees of freedom", df))
+  cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
   cat(sprintf("  %-45s %.3f\n", "P-value (L2)", pv))
 
   invisible(fit)

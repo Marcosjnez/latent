@@ -33,7 +33,7 @@ getfit.lcfa <- function(model, digits = 3) {
   nitems <- model@Optim$data_list$nitems
   nfactors <- model@Optim$data_list$nfactors
   nparam <- model@modelInfo$nparam
-  df <- model@modelInfo$df
+  dof <- model@modelInfo$dof
   S <- model@Optim$data_list$correl[[1]]$R
 
   # Compute fit statistics if using ML:
@@ -51,16 +51,16 @@ getfit.lcfa <- function(model, digits = 3) {
     est <- "ML"
     loglik <- model@loss
     X2 <- loglik*nobs
-    pval <- 1-pchisq(X2, df = df)
+    pval <- 1-pchisq(X2, df = dof)
     # Compute loss value
     Sigma <- diag(nitems) # Identity model
     F_id <- log(det(Sigma)) - log(det(S))
     X2_id <- F_id*nobs
-    df_id <- nitems
-    t1 <- max(c(X2 - df, 0))
-    t2 <- max(c(X2 - df, X2_id - df_id, 0))
+    dof_id <- nitems
+    t1 <- max(c(X2 - dof, 0))
+    t2 <- max(c(X2 - dof, X2_id - dof_id, 0))
     CFI <- 1-t1/t2
-    RMSEA <- sqrt(c(loglik/df - 1/nobs, 0))
+    RMSEA <- sqrt(c(loglik/dof - 1/nobs, 0))
 
   }
 
@@ -75,7 +75,7 @@ getfit.lcfa <- function(model, digits = 3) {
               npar = nparam, nobs = nobs,
               loglik = loglik,
               chisq = X2,
-              df = df,
+              dof = dof,
               pvalue = pval,
               cfi = CFI,
               rmsea = RMSEA,

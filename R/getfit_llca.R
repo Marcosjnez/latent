@@ -87,16 +87,16 @@ getfit0 <- function(model, digits = 3) {
   if(all(model@modelInfo$item == "multinomial")){
     ni <- model@summary_table$Observed
     mi <- model@summary_table$Estimated
-    df <- model@modelInfo$df
+    dof <- model@modelInfo$dof
     term <- ni*log(ni/mi)
     # Set to zero Inf terms due to 0 values in Estimated
     term[is.infinite(term)] <- 0
     L2 <- 2*sum(term)
-    pv <- 1-pchisq(L2, df)
+    pv <- 1-pchisq(L2, dof)
   }else{
     L2 <- NA
     pv <- NA
-    df <- NA
+    dof <- NA
   }
 
   nobs <- model@modelInfo$nobs
@@ -121,7 +121,7 @@ getfit0 <- function(model, digits = 3) {
               loglik = loglik,
               penalized_loglik = penalized_loglik,
               L2 = L2,
-              df = df, pvalue = pv,
+              dof = dof, pvalue = pv,
               AIC = AIC, BIC = BIC, AIC3 = AIC3,
               CAIC = CAIC, KIC = KIC, SABIC = SABIC,
               ICL = ICL,

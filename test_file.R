@@ -9,7 +9,7 @@ library(latent)
 data <- gss82
 item <- rep("multinomial", ncol(data))
 
-nclasses <- 1:3L
+nclasses <- 3L
 
 nmiss <- 30
 missrow <- sample(1:nrow(data), size = nmiss)
@@ -227,6 +227,7 @@ inspect(fit2, what = "std")
 #### CFA (nonpositive definite) ####
 
 library(latent)
+library(lavaan)
 
 data <- HolzingerSwineford1939
 
@@ -237,8 +238,13 @@ model <- 'visual  =~ x1 + x2 + x3
           x1 ~~ x4
           x4 ~~ x5
           x4 ~~ x6'
-
 estimator = "ml"
+
+fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "ml",
+            std.lv = TRUE, std.ov = TRUE)
+fit2
+inspect(fit2, what = "est")
+
 control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 100L,
                 cores = 16L, eps = 1e-05)
 fit <- cfast(data, model = model,
@@ -256,19 +262,8 @@ fit
 # Get fit indices:
 getfit(fit)
 
-# Get a summary:
-summary(fit)
-
 # Inspect model objects:
 latInspect(fit, what = "loadings", digits = 3)
 latInspect(fit, what = "psi", digits = 3)
 latInspect(fit, what = "uniquenesses", digits = 3)
 latInspect(fit, what = "model", digits = 3)
-
-library(lavaan)
-fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "ml",
-            std.lv = TRUE, std.ov = TRUE)
-summary(fit2, fit.measures = FALSE)
-fitMeasures(fit2)
-inspect(fit2, what = "est")
-modindices(fit2)

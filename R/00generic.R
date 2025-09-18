@@ -32,18 +32,18 @@ setMethod("show", "llca", function(fit) {
   if(sum(fit@modelInfo$item != "multinomial") == 0){
     ni <- fit@summary_table$Observed
     mi <- fit@summary_table$Estimated
-    df <- fit@modelInfo$df
-    L2 <- 2*sum(ni*log(ni/mi))
-    pv <- 1-pchisq(L2, df)
+    dof <- fit@modelInfo$dof
+    L2 <- abs(2*sum(ni*log(ni/mi)))
+    pv <- 1-pchisq(L2, dof)
   }else{
     L2 <- NA
     pv <- NA
-    df <- NA
+    dof <- NA
   }
   cat("Model Test User Model:\n")
   cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
   cat(sprintf("  %-45s %.3f\n", "Test statistic (L2)", L2))
-  cat(sprintf("  %-45s %d\n", "Degrees of freedom", df))
+  cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
   cat(sprintf("  %-45s %.3f\n", "P-value (L2)", pv))
 
   invisible(fit)
@@ -81,14 +81,14 @@ setMethod("show", "lcfa", function(fit) {
   N <- fit@modelInfo$nobs
   cat(sprintf("  %-45s %d\n\n", "Number of observations", fit@modelInfo$nobs))
 
-  df <- fit@modelInfo$df
-  loglik <- fit@loss
+  dof <- fit@modelInfo$dof
+  loglik <- abs(fit@loss)
   X2 <- loglik*N
-  pval <- 1-pchisq(X2, df = df)
+  pval <- 1-pchisq(X2, df = dof)
   cat("Model Test User Model:\n")
   cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
   cat(sprintf("  %-45s %.3f\n", "Test statistic (Chi-square)", X2))
-  cat(sprintf("  %-45s %d\n", "Degrees of freedom", df))
+  cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
   cat(sprintf("  %-45s %.3f\n", "P-value (Chi-square)", pval))
 
   invisible(fit)
