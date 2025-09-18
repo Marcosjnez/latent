@@ -39,6 +39,7 @@
 lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                 penalties = NULL, model = NULL, control = NULL, do.fit = TRUE) {
 
+  # model = NULL
   # Check control parameters:
   control$penalties <- penalties
   control <- lca_control(control)
@@ -135,11 +136,12 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   nmodels <- length(NCLASSES)
 
   llca_list <- list()
+  initial_control <- control
 
   # Loop to create and fit the models for different nclasses:
   for(NK in 1:nmodels) {
 
-    # NK <- 1L
+    # NK <- 2L
     print(paste0("Model nclasses = ", NCLASSES[NK]) )
 
     # Ensure that nclasses is an integer:
@@ -278,6 +280,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     Optim$opt <- x
 
+    control <- initial_control
+
     #### Process the outputs ####
 
     # Logarithm likelihood:
@@ -310,9 +314,9 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     summary_table <- summary_table[do.call(order, as.data.frame(summary_table)), ]
     rownames(summary_table) <- paste("pattern", 1:nrow(summary_table), sep = "")
     # Update the patterns and weights in data_list:
-    data_list$patterns <- summary_table[, 1:nitems, drop = FALSE]
-    rownames(data_list$patterns) <- rownames(summary_table)
-    data_list$weights <- summary_table$Observed
+    # data_list$patterns <- summary_table[, 1:nitems, drop = FALSE]
+    # rownames(data_list$patterns) <- rownames(summary_table)
+    # data_list$weights <- summary_table$Observed
 
     # Check the existence of gaussian items:
     gauss <- "gaussian" %in% item

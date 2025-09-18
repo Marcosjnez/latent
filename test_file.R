@@ -9,13 +9,13 @@ library(latent)
 data <- gss82
 item <- rep("multinomial", ncol(data))
 
-nclasses <- 3L
+nclasses <- 1:3L
 
 nmiss <- 30
 missrow <- sample(1:nrow(data), size = nmiss)
 misscol <- sample(1:ncol(data), size = nmiss, replace = TRUE)
 for(i in 1:nmiss) data[missrow[i], misscol[i]] <- NA
-# control <- list(opt = "em", rstarts = 50L)
+control <- list(opt = "lbfgs", rstarts = 50L)
 
 fit <- lca(data = data, item = item, nclasses = nclasses,
            penalties = TRUE, control = NULL, do.fit = TRUE)
