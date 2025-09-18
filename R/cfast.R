@@ -33,6 +33,13 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "uls",
   # Check the arguments to control_optimizer and create defaults:
   control <- cfast_control(control)
 
+  if(is.null(nobs)) {
+    if(nrow(data) == ncol(data)) {
+      stop("Please, provide the number of observations in nobs.")
+    }
+    nobs <- nrow(data)
+  }
+
   # Extract the lavaan model:
   model_syntax <- model
   extract_fit <- lavaan::cfa(model = model_syntax, data = data,
@@ -60,13 +67,16 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "uls",
                                estimator = estimator, missing = missing)
   }
 
+  # Data and structure information:
   nitems <- length(item_names)
+  npatterns <- 0.5*nitems*(nitems+1)
   nfactors <- ncol(model[[1]]$lambda)
   data_list <- vector("list")
   data_list$data <- data
   data_list$nobs <- nobs
   data_list$ngroups <- ngroups
   data_list$nitems <- nitems
+  data_list$npatterns <- npatterns
   data_list$nfactors <- nfactors
   data_list$correl <- correl
   data_list$positive <- positive
@@ -95,7 +105,8 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "uls",
   # Model information:
   modelInfo <- list(nobs = nobs,
                     nparam = nparam,
-                    # df = npossible_patterns - nparam,
+                    npatterns = npatterns,
+                    df = npatterns - nparam,
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,

@@ -311,6 +311,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     rownames(summary_table) <- paste("pattern", 1:nrow(summary_table), sep = "")
     # Update the patterns and weights in data_list:
     data_list$patterns <- summary_table$Pattern
+    rownames(data_list$patterns) <- rownames(summary_table)
     data_list$weights <- summary_table$Observed
 
     # Check the existence of gaussian items:

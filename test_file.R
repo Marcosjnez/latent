@@ -30,6 +30,9 @@ fit
 # Get fit indices:
 getfit(fit)
 
+# Get a summary:
+summary(fit)
+
 # Inspect model objects:
 latInspect(fit, what = "classes", digits = 3)
 latInspect(fit, what = "profile", digits = 3)
@@ -138,20 +141,42 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
-estimator = "ml"
+estimator = "uls"
 control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 1L,
                 cores = 1L, eps = 1e-05)
 fit <- cfast(data, model = model,
              estimator = estimator, cor = "pearson",
-             std.lv = TRUE, positive = TRUE,
+             std.lv = TRUE, positive = FALSE,
              control = control, do.fit = TRUE)
 
 fit@loglik # -0.283407 (ML)
 fit@loss # 0.1574787 (ULS) / 0.283407 (ML)
 fit@Optim$opt$iterations
 
-fit@transformed_pars
-round(fit@transformed_pars[[1]]$theta, 3)
+# Plot model fit info:
+fit
+
+# Get fit indices:
+getfit(fit)
+
+# Get a summary:
+summary(fit)
+
+lapply(fit@transformed_pars, FUN = \(x) round(x$lambda, 3))
+lapply(fit@transformed_pars, FUN = \(x) round(x$psi, 3))
+lapply(fit@transformed_pars, FUN = \(x) round(x$theta, 3))
+
+SE <- se(fit, type = "standard", model = "user", digits = 3)
+round(cbind(SE$se, SE$z, SE$pval), 3)
+getfit(fit)
+
+library(lavaan)
+fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "uls",
+            std.lv = TRUE, std.ov = TRUE)
+summary(fit2, fit.measures = FALSE)
+fitMeasures(fit2)
+inspect(fit2, what = "est")
+inspect(fit2, what = "std")
 
 #### Multigroup CFA ####
 

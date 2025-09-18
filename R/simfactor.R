@@ -296,12 +296,10 @@ groot_ml <- function(x, delta, G) {
   return(g)
 
 }
-dxt <- function(X) {
+dxt <- function(p, q) {
 
   # derivative wrt transpose (just a permutation matrix)
 
-  p <- nrow(X)
-  q <- ncol(X)
   pq <- p*q
 
   res <- array(0, dim = c(pq, pq))
@@ -316,25 +314,26 @@ dxt <- function(X) {
   return(res)
 
 }
-gLRhat <- function(Lambda, Phi) {
+gLRhat <- function(lambda, phi) {
 
   # derivative of Lambda wrt Rhat
 
-  p <- nrow(Lambda)
-  g1 <- (Lambda %*% Phi) %x% diag(p)
-  g21 <- diag(p) %x% (Lambda %*% Phi)
-  g2 <- g21 %*% dxt(Lambda)
+  p <- nrow(lambda)
+  q <- ncol(lambda)
+  g1 <- (lambda %*% phi) %x% diag(p)
+  g21 <- diag(p) %x% (lambda %*% phi)
+  g2 <- g21 %*% dxt(p, q)
   g <- g1 + g2
 
   return(g)
 
 }
-gPRhat <- function(Lambda, Phi) {
+gPRhat <- function(lambda, q) {
 
-  g1 <- Lambda %x% Lambda
-  g2 <- g1 %*% dxt(Phi)
+  g1 <- lambda %x% lambda
+  g2 <- g1 %*% dxt(q, q)
   g <- g1 + g2
-  g <- g[, which(lower.tri(Phi)), drop = FALSE]
+  g <- g[, which(lower.tri(diag(q))), drop = FALSE]
 
   return(g)
 
@@ -357,13 +356,13 @@ gURhat <- function(p) {
 
   pcov <- p*(p+1)*0.5
 
-  Psi <- diag(p)
-  gPsi <- diag(p) %x% diag(p)
-  gPsi <- gPsi + dxt(Psi) %*% gPsi
-  gPsi <- gPsi[, lower.tri(Psi, diag = TRUE), drop = FALSE]
-  gPsi[gPsi != 0] <- 1
+  theta <- diag(p)
+  gtheta <- diag(p) %x% diag(p)
+  gtheta <- gtheta + dxt(p, p) %*% gtheta
+  gtheta <- gtheta[, lower.tri(theta, diag = TRUE), drop = FALSE]
+  gtheta[theta != 0] <- 1
 
-  return(gPsi)
+  return(gtheta)
 
 }
 cudeck <- function(R, lambda, Phi, Psi,
@@ -404,7 +403,7 @@ cudeck <- function(R, lambda, Phi, Psi,
   } else {
 
     dS_dL <- gLRhat(lambda, Phi)[, which(lambda != 0)]
-    dS_dP <- gPRhat(lambda, Phi)[, which(Phi[lower.tri(Phi)] != 0)]
+    dS_dP <- gPRhat(lambda, q)[, which(Phi[lower.tri(Phi)] != 0)]
     dS_dU <- gURhat(p)[, which(Psi[lower.tri(Psi, diag = TRUE)] != 0)]
     gS <- cbind(dS_dL, dS_dP, dS_dU)
 
