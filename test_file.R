@@ -191,7 +191,7 @@ control <- list(opt = "lbfgs", maxit = 1000, rstarts = 1L, cores = 1L,
                 eps = 1e-05)
 fit <- cfast(data, model = model, group = group,
              estimator = estimator, cor = "pearson",
-             std.lv = TRUE, positive = FALSE,
+             std.lv = TRUE, positive = TRUE,
              control = control, do.fit = TRUE)
 
 fit@loglik # -0.7809653 (ml)
@@ -233,18 +233,14 @@ data <- HolzingerSwineford1939
 model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9
-          x1 ~~ x3
           x1 ~~ x5
           x1 ~~ x4
           x4 ~~ x5
-          x4 ~~ x6
-          x6 ~~ x9
-          x7 ~~ x8
-          x3 ~~ x9'
+          x4 ~~ x6'
 
 estimator = "ml"
-control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 10L,
-                cores = 1L, eps = 1e-05)
+control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 100L,
+                cores = 16L, eps = 1e-05)
 fit <- cfast(data, model = model,
              estimator = estimator, cor = "pearson",
              std.lv = TRUE, positive = TRUE,

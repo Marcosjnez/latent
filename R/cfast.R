@@ -25,9 +25,9 @@
 #'}
 #'
 #' @export
-cfast <- function(data, model = NULL, cor = "pearson", estimator = "uls",
+cfast <- function(data, model = NULL, cor = "pearson", estimator = "ml",
                   group = NULL, sample.cov = NULL, nobs = NULL,
-                  missing = "pairwise.complete.obs", W = NULL, std.lv = FALSE,
+                  missing = "pairwise.complete.obs", W = NULL, std.lv = TRUE,
                   positive = FALSE, do.fit = TRUE, control = NULL) {
 
   # Check the arguments to control_optimizer and create defaults:
@@ -104,9 +104,9 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "uls",
 
   # Model information:
   modelInfo <- list(nobs = nobs,
-                    nparam = nparam,
+                    nparam = nparam - rest,
                     npatterns = npatterns,
-                    df = npatterns - nparam,
+                    df = npatterns - nparam + rest,
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,

@@ -15,7 +15,8 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
   #### Parameters of the model for each group ####
 
   # Initialize the target matrices for positive-definite constraints:
-  target_psi <- target_theta <- vector("list", length = ngroups)
+  target_psi <- target_theta <- targets <- vector("list", length = ngroups)
+  rest <- 0L
 
   for(i in 1:ngroups) {
 
@@ -113,9 +114,13 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
       target_theta[[i]] <- matrix(0, nrow = nitems, ncol = nitems)
       target_theta[[i]][nonfixed[[i]]$theta] <- 1
 
-      targets <- unlist(c(target_psi, target_theta))
-      nparam <- nparam - length(targets == 0)
-
+      q <- nfactors
+      p <- nitems
+      lower_psi <- lower.tri(diag(q), diag = TRUE)
+      lower_theta <- lower.tri(diag(p), diag = TRUE)
+      targets[[i]] <- unlist(c(target_psi[[i]][lower_psi],
+                               target_theta[[i]][lower_theta]))
+      rest <- rest + 0.5*q*(q-1) + 0.5*p*(p-1) + sum(targets[[i]] == 0)
     }
 
   }
@@ -211,6 +216,7 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
                  fixed = fixed,
                  nonfixed = nonfixed,
                  init_trans = init_trans,
+                 rest = rest,
                  control = control)
 
   return(result)
