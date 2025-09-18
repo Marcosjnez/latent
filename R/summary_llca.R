@@ -33,22 +33,27 @@ summary.llca <- function(fit, digits = 3) {
 
   conv <- fit@Optim$opt$convergence
   # Print header with model name and version
-  if(conv){
+  if(conv) {
+
     cat(sprintf("%s %s converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
                 fit@Optim$opt$iterations))
-  }else{
+
+  } else {
+
     cat(sprintf("%s %s did not converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
                 fit@Optim$opt$iterations))
+
   }
 
 
   # Print Estimator, Optimization, and Parameters section
-  if(isFALSE(fit@Optim$control$penalties)){
+  if(isFALSE(fit@Optim$control$penalties)) {
     est <- "ML"
-  }else{
-    est <- "Penalized-ML"}
+  } else {
+    est <- "Penalized-ML"
+  }
 
   cat(sprintf("  %-45s %s\n", "Estimator", est))
   cat(sprintf("  %-45s %s\n", "Optimization method", fit@Optim$control$opt))

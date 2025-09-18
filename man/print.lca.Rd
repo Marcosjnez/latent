@@ -12,7 +12,7 @@ control = list(opt = "lbfgs", rstarts = 30L, cores = 1L))
 }
 \value{
 Stuff:
-\item{df}{Degrees of freedom}
+\item{dof}{Degrees of freedom}
 }
 \description{
 Print the information of latent class models.
