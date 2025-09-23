@@ -44,7 +44,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = -arma::trace(HL2.t() * HL2) / 4;
+    // f = -arma::trace(HL2.t() * HL2) / 4;
+    f = -arma::accu(HL2 % HL2) / 4;
 
   }
 

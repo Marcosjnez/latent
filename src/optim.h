@@ -105,8 +105,13 @@ void wolfe(arguments_optim& x,
 
 // Conjugate-gradient method to solve the Riemannian Newton equation:
 
-void tcg(arguments_optim& x, product_manifold* final_manifold, product_estimator* final_estimator,
-         std::vector<manifolds*>& xmanifolds, std::vector<estimators*>& xestimators,
+void tcg(arguments_optim& x,
+         product_transform* final_transform,
+         product_manifold* final_manifold,
+         product_estimator* final_estimator,
+         std::vector<transformations*>& xtransforms,
+         std::vector<manifolds*>& xmanifolds,
+         std::vector<estimators*>& xestimators,
          arma::vec& dir, bool& att_bnd, double ng, arma::vec c, double rad) {
 
   /*
@@ -133,6 +138,7 @@ void tcg(arguments_optim& x, product_manifold* final_manifold, product_estimator
 
     // final_estimator->param(x, xestimators); // Unnecessary
     final_estimator->dG(x, xestimators);
+    final_transform->update_dgrad(x, xtransforms);
     final_manifold->param(x, xmanifolds);
     // final_manifold->proj(x, xmanifolds); // Unnecessary
     final_manifold->hess(x, xmanifolds);
@@ -462,12 +468,14 @@ optim_result ntr(arguments_optim x,
                  std::vector<estimators*>& xestimators) {
 
   product_manifold* final_manifold;
+  product_transform* final_transform;
   product_estimator* final_estimator;
 
   // Ensure initial parameters are ok:
   final_manifold->param(x, xmanifolds);
   final_manifold->retr(x, xmanifolds);
   final_manifold->param(x, xmanifolds);
+  final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
 
   /*
@@ -488,6 +496,7 @@ optim_result ntr(arguments_optim x,
 
   // Gradient
   final_estimator->G(x, xestimators);
+  final_transform->update_grad(x, xtransforms);
 
   // Riemannian gradient
   final_manifold->proj(x, xmanifolds);
@@ -521,14 +530,16 @@ optim_result ntr(arguments_optim x,
   do {
 
     // subsolver
-    tcg(x, final_manifold, final_estimator, xmanifolds, xestimators,
-        dir, att_bnd, x.ng, c, rad); // Update x.dparameters, x.dg, and x.dH
+    tcg(x, final_transform, final_manifold, final_estimator,
+        xtransforms, xmanifolds, xestimators, dir, att_bnd, x.ng, c, rad); // Update x.dparameters, x.dg, and x.dH
+
     x.dparameters = dir;
     x.dir = dir;
     new_x = x;
     new_x.parameters += dir;
 
     final_estimator->dG(x, xestimators);
+    final_transform->update_dgrad(x, xtransforms);
     final_manifold->param(x, xmanifolds);
     final_manifold->hess(x, xmanifolds);
 
@@ -538,6 +549,7 @@ optim_result ntr(arguments_optim x,
     final_manifold->param(new_x, xmanifolds);
     final_manifold->retr(new_x, xmanifolds);
     // Parameterization
+    final_transform->transform(x, xtransforms);
     final_estimator->param(new_x, xestimators);
     final_estimator->F(new_x, xestimators);
 
@@ -569,8 +581,10 @@ optim_result ntr(arguments_optim x,
       x = new_x;
 
       // update gradient
+      final_transform->transform(x, xtransforms); // Unnecessary
       final_estimator->param(x, xestimators); // Unnecessary
       final_estimator->G(x, xestimators);
+      final_transform->update_grad(x, xtransforms);
       // Riemannian gradient
       final_manifold->param(x, xmanifolds);
       final_manifold->proj(x, xmanifolds);
@@ -748,44 +762,31 @@ public:
 
 optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
 
-  // if(control_optimizer.containsElementNamed("parameters")) {
-    std::vector<arma::vec> params = control_optimizer["parameters"];
-    x.nparam = params[0].n_elem;
-    x.dir.set_size(x.nparam); x.dir.zeros();
-    x.parameters.set_size(x.nparam);
-  // }
+  // Store the parameters:
+  std::vector<arma::vec> params = control_optimizer["parameters"];
+  x.nparam = params[0].n_elem;
+  x.dir.set_size(x.nparam); x.dir.zeros();
+  x.parameters.set_size(x.nparam);
 
-  // if(control_optimizer.containsElementNamed("transparameters")) {
-    std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
-    x.ntransparam = transparameters[0].n_elem;
-    x.transparameters.set_size(x.ntransparam);
-  // }
+  // Store the transformed parameters:
+  std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
+  x.ntransparam = transparameters[0].n_elem;
+  x.transparameters.set_size(x.ntransparam);
 
+  // Store the indices relating parameters and transformed parameters:
   arma::uvec param2transparam = control_optimizer["param2transparam"];
   arma::uvec transparam2param = control_optimizer["transparam2param"];
   x.param2transparam = param2transparam;
   x.transparam2param = transparam2param;
 
+  // Initialize objects:
   x.grad.set_size(x.ntransparam);
   x.dgrad.set_size(x.ntransparam);
+  x.dg.set_size(x.nparam);
+  x.dtransparameters.set_size(x.ntransparam);
   // x.hess.set_size(x.ntransparam, x.ntransparam);
 
-  if(control_optimizer.containsElementNamed("posterior")) {
-    std::vector<arma::mat> post = control_optimizer["posterior"];
-    x.nrow_post = post[0].n_rows;
-    x.ncol_post = post[0].n_cols;
-    x.posterior.set_size(x.nrow_post, x.ncol_post);
-    x.latentloglik.set_size(x.nrow_post, x.ncol_post);
-  }
-
-  if(control_optimizer.containsElementNamed("nlatent")) {
-    int S = control_optimizer["S"];
-    int nlatent = control_optimizer["nlatent"];
-    x.latentloglik.set_size(S, nlatent);
-    x.latentpars.set_size(nlatent);
-    x.loglatentpars.set_size(nlatent);
-  }
-
+  // Pass optimization parameters to the x structure:
   if(control_optimizer.containsElementNamed("opt")) {
     std::string opt = control_optimizer["opt"];
     x.optimizer = opt;
@@ -850,16 +851,21 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
     int pick = control_optimizer["pick"];
     x.pick = pick; // Pick the "pick" number of rstarts with minimum objective
   }
-  // Select the optimization algorithm:
+
+  // Select the optimization algorithm and set defaults:
 
   optim* algorithm;
   if(x.optimizer == "grad") {
 
     if(control_optimizer.containsElementNamed("c1")) {
+
       double c1 = control_optimizer["c1"];
       x.c1 = c1;
+
     } else {
+
       x.c1 = 0.5;
+
     }
 
     algorithm = new RGD();
@@ -867,17 +873,23 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   } else if(x.optimizer == "lbfgs") {
 
     if(control_optimizer.containsElementNamed("c1")) {
+
       double c1 = control_optimizer["c1"];
       x.c1 = c1;
+
     } else {
+
       // x.c1 = 10e-04;
       x.c1 = 0.5;
+
     }
 
     algorithm = new LBFGS();
 
   } else if(x.optimizer == "newton") {
+
     algorithm = new RNTR();
+
   } else if(x.optimizer == "em") {
 
     algorithm = new EM();

@@ -1,14 +1,14 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 23/09/2025
  */
 
 /*
- * Latent class analysis
+ * Latent class analysis with expanded class probabilities
  */
 
-class lca2: public estimators {
+class lca_cov: public estimators {
 
 public:
 
@@ -17,10 +17,11 @@ public:
   int I; // Number of latent classes
   arma::uvec indices_classes;
   arma::uvec indices_items;
+  arma::uvec indices_theta;
   arma::vec weights; // Number of repetitions of each response pattern
   arma::vec logweights;
-  arma::vec classes;
-  arma::vec logclasses;
+  arma::mat classes;
+  arma::mat logclasses;
   arma::vec logliks;
   arma::vec loglik_case;
   arma::mat jointlogp;
@@ -31,13 +32,12 @@ public:
 
   void param(arguments_optim& x) {
 
-    indices_classes = indices[1];
-    indices_items = indices[2];
-    classes = transparameters(indices_classes);
+    // classes = x.transparameters.elem(indices_classes);
+    arma::vec cl = x.transparameters.elem(indices_classes);
+    classes = arma::reshape(cl, S, I);
     logclasses = arma::trunc_log(classes);
 
-    // loglik(transparameters(indices_items).memptr(), S, J, I);
-    arma::vec values = transparameters(indices_items);
+    arma::vec values = x.transparameters.elem(indices_items);
     std::memcpy(loglik.memptr(), values.memptr(), sizeof(double) * values.n_elem);
 
     latentloglik.zeros();
@@ -48,7 +48,7 @@ public:
           latentloglik(s, i) += loglik(s, j, i);
         }
       }
-      jointlogp.row(s) = latentloglik.row(s) + logclasses.t();
+      jointlogp.row(s) = latentloglik.row(s) + logclasses.row(s);
       double max_vector = jointlogp.row(s).max();
       loglik_case(s) = max_vector +
         arma::trunc_log(arma::accu(arma::trunc_exp(jointlogp.row(s) - max_vector)));
@@ -60,31 +60,35 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = -arma::accu(logliks);
+    f = arma::accu(logliks);
+    x.f -= f;
 
   }
 
   void G(arguments_optim& x) {
 
-    grad.set_size(transparameters.n_elem); grad.zeros();
+    // grad.set_size(transparameters.n_elem); grad.zeros();
 
-    arma::vec dclasses(I, arma::fill::zeros);
+    arma::mat dclasses(S, I, arma::fill::zeros);
     arma::mat ditemloglik(S, I, arma::fill::zeros);
     for(int s=0; s < S; ++s) {
       for(int i=0; i < I; ++i) {
-        dclasses(i) -= arma::trunc_exp(logweights[s] + latentloglik(s, i) - loglik_case(s));
+        dclasses(s, i) -= arma::trunc_exp(logweights[s] + latentloglik(s, i) - loglik_case(s));
         ditemloglik(s, i) -= arma::trunc_exp(logweights[s] + logposterior(s, i));
       }
     }
 
+    // Replicate ditemloglik across slices:
     dloglik.zeros();
     for (arma::uword k = 0; k < I; ++k) {
       dloglik.slice(k).each_col() = ditemloglik.col(k);
     }
 
-    grad.elem(indices_classes) += dclasses;
-    grad.elem(indices_items) += arma::vectorise(dloglik);
+    x.grad.elem(indices_classes) += arma::vectorise(dclasses);
+    x.grad.elem(indices_items) += arma::vectorise(dloglik);
     // grad.elem( arma::find_nonfinite(grad) ).zeros();
+    // x.grad.elem(indices[0]) += grad;
+
   }
 
   void dG(arguments_optim& x) {
@@ -95,46 +99,50 @@ public:
 
   void H(arguments_optim& x) {
 
-    hess.set_size(transparameters.n_elem, transparameters.n_elem);
-    hess.zeros();
-
     arma::mat posterior = arma::trunc_exp(logposterior);
     arma::mat M(J, J, arma::fill::ones);
 
-    arma::mat post1 = posterior; post1.each_row() /= classes.t();
+    arma::mat post1 = posterior / classes;
     arma::mat post2 = post1; post2.each_col() %= weights;
-    hess(indices_classes, indices_classes) = post1.t() * post2;
 
+    // FIX this
+    x.hess(indices_classes, indices_classes) += post1.t() * post2;
+
+    std::vector<arma::uvec> hess_indices2(hess_indices.size());
+    for(int i=0; i < hess_indices.size(); ++i) {
+      hess_indices2[i] = indices[0](hess_indices[i]);
+    }
+
+    int n = indices[0][0];
     for (int i = 0; i < I; ++i) {
       for (int k = i; k < I; ++k) {
-        arma::vec term;
 
         if (i == k) {
 
-          term = -weights % posterior.col(i) % (1.0 - posterior.col(k));
+          arma::vec term = -weights % posterior.col(i) % (1.0 - posterior.col(k));
 
           arma::vec rep_vec = arma::repmat(term / classes(k), J, 1);
-          hess.submat(hess_indices[i], arma::uvec{ static_cast<arma::uword>(k) }) = rep_vec;
-          hess.submat(arma::uvec{ static_cast<arma::uword>(k) }, hess_indices[i]) = rep_vec.t();
+          x.hess.submat(hess_indices2[i], arma::uvec{ n+k }) += rep_vec;
+          x.hess.submat(arma::uvec{ n+k }, hess_indices2[i]) += rep_vec.t();
 
           arma::mat block = arma::kron(M, arma::diagmat(term));
-          hess.submat(hess_indices[i], hess_indices[k]) = block;
+          x.hess.submat(hess_indices2[i], hess_indices2[k]) = block;
 
         } else {
 
-          term = weights % posterior.col(i) % posterior.col(k);
+          arma::vec term = weights % posterior.col(i) % posterior.col(k);
 
           arma::vec rep_vec = arma::repmat(term / classes(k), J, 1);
-          hess.submat(hess_indices[i], arma::uvec{ static_cast<arma::uword>(k) }) = rep_vec;
-          hess.submat(arma::uvec{ static_cast<arma::uword>(k) }, hess_indices[i]) = rep_vec.t();
+          x.hess.submat(hess_indices2[i], arma::uvec{ n+k }) += rep_vec;
+          x.hess.submat(arma::uvec{ n+k }, hess_indices2[i]) += rep_vec.t();
 
           arma::vec rep_vec2 = arma::repmat(term / classes(i), J, 1);
-          hess.submat(hess_indices[k], arma::uvec{ static_cast<arma::uword>(i) }) = rep_vec2;
-          hess.submat(arma::uvec{ static_cast<arma::uword>(i) }, hess_indices[k]) = rep_vec2.t();
+          x.hess.submat(hess_indices2[k], arma::uvec{ n+i }) += rep_vec2;
+          x.hess.submat(arma::uvec{ n+i }, hess_indices2[k]) += rep_vec2.t();
 
           arma::mat block = arma::kron(M, arma::diagmat(term));
-          hess.submat(hess_indices[i], hess_indices[k]) = block;
-          hess.submat(hess_indices[k], hess_indices[i]) = block;
+          x.hess.submat(hess_indices2[i], hess_indices2[k]) += block;
+          x.hess.submat(hess_indices2[k], hess_indices2[i]) += block;
 
         }
       }
@@ -142,11 +150,30 @@ public:
 
   }
 
-  void E(arguments_optim& x) { // Update the parameter estimates
+  void M(arguments_optim& x) { // Update the parameter estimates
 
   }
 
-  void M(arguments_optim& x) { // Update the posterior probabilities
+  void E(arguments_optim& x) { // Update the loglik and posterior
+
+    // Estimated posterior:
+    x.posterior = arma::trunc_exp(logposterior);
+    // New hypothetical frequencies:
+    x.freqs = x.posterior;
+    x.freqs.each_col() %= weights;
+    x.loglik = f;
+
+    // Update the class probabilities:
+    // New number of subjects in each class:
+    arma::vec freqs_i = arma::sum(x.freqs, 0).t();
+    // New proportion of subjects in each class:
+    classes = freqs_i / arma::accu(freqs_i);
+    logclasses = arma::trunc_log(classes);
+    // Put a zero in the first element:
+    logclasses -= logclasses(0);
+
+    x.transparameters(indices_classes) = classes;
+    x.transparameters(indices_theta) = logclasses;
 
   }
 
@@ -155,17 +182,17 @@ public:
     doubles.resize(1);
     doubles[0] = f;
 
-    vectors.resize(5);
-    vectors[0] = classes;
-    vectors[1] = logclasses;
-    vectors[2] = loglik_case;
-    vectors[3] = logliks;
-    vectors[4] = weights;
+    vectors.resize(3);
+    vectors[0] = loglik_case;
+    vectors[1] = logliks;
+    vectors[2] = weights;
 
-    matrices.resize(3);
+    matrices.resize(5);
     matrices[0] = latentloglik;
     matrices[1] = logposterior;
     matrices[2] = jointlogp;
+    matrices[3] = classes;
+    matrices[4] = logclasses;
 
     cubes.resize(2);
     cubes[0] = loglik;
@@ -175,9 +202,9 @@ public:
 
 };
 
-lca2* choose_lca2(const Rcpp::List& estimator_setup) {
+lca_cov* choose_lca_cov(const Rcpp::List& estimator_setup) {
 
-  lca2* myestimator = new lca2();
+  lca_cov* myestimator = new lca_cov();
 
   int S = estimator_setup["S"];
   int J = estimator_setup["J"];
@@ -186,7 +213,7 @@ lca2* choose_lca2(const Rcpp::List& estimator_setup) {
   arma::vec weights = estimator_setup["weights"];
   std::vector<arma::uvec> hess_indices = estimator_setup["hess_indices"];
 
-  arma::vec classes(I);
+  arma::mat classes(S, I);
   arma::vec logliks(S, arma::fill::zeros);
   arma::vec loglik_case(S, arma::fill::zeros);
   arma::cube loglik(S, J, I, arma::fill::zeros);
@@ -196,6 +223,9 @@ lca2* choose_lca2(const Rcpp::List& estimator_setup) {
   arma::mat posterior(S, I, arma::fill::zeros);
   arma::mat logposterior(S, I, arma::fill::zeros);
   arma::vec logweights = arma::trunc_log(weights);
+  arma::uvec indices_classes = indices[1];
+  arma::uvec indices_items = indices[2];
+  arma::uvec indices_theta = indices[3];
 
   myestimator->S = S;
   myestimator->J = J;
@@ -203,6 +233,9 @@ lca2* choose_lca2(const Rcpp::List& estimator_setup) {
   myestimator->weights = weights;
   myestimator->logweights = logweights;
   myestimator->indices = indices;
+  myestimator->indices_classes = indices_classes;
+  myestimator->indices_items = indices_items;
+  myestimator->indices_theta = indices_theta;
   myestimator->hess_indices = hess_indices;
 
   myestimator->classes = classes;

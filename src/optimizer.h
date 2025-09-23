@@ -1,75 +1,38 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 02/09/2025
+ * Modification date: 20/09/2025
  */
 
-// By default, this optimizer performs minimization
+// By default, this optimizer performs minimization of a loss function
 
 Rcpp::List optimizer(Rcpp::List control_manifold,
                      Rcpp::List control_transform,
                      Rcpp::List control_estimator,
                      Rcpp::List control_optimizer) {
 
-  /*
-   * parameters: list of vectors of starting values
-   */
-
-  /* control_manifold: list of manifolds
-   * Each list projects a set of parameters onto a manifold
-   * NOTE: each list must contain nonoverlapping parameters
-   * manifold_indices: list of indices that relate sets of parameters to manifolds
-   */
-
-  /* control_estimator: list of estimators
-   * estimator_indices: list of indices that relate sets of parameters to estimators
-   * estimator_target: list of indices that relate estimators to parameters
-   */
-
-  /* control_optimizer: list of parameters for the optimizer
-   */
-
-  /*
-   * rstarts: number of independent repetitions of the optimization
-   */
-
-  /*
-   * cores: number of cores
-   */
-
-  // Rf_error("STOP");
-
   Rcpp::List result;
   arguments_optim x;
 
   // Starting values for parameters:
-  std::vector<arma::vec> parameters;
-  if(control_optimizer.containsElementNamed("parameters")) {
-    std::vector<arma::vec> params = control_optimizer["parameters"];
-    parameters = params;
-  }
-  // Starting values for transparameters:
-  std::vector<arma::vec> transparameters;
-  if(control_optimizer.containsElementNamed("transparameters")) {
-    std::vector<arma::vec> params = control_optimizer["transparameters"];
-    transparameters = params;
-  }
-  // Starting values for posterior:
-  std::vector<arma::mat> posterior;
-  if(control_optimizer.containsElementNamed("posterior")) {
-    std::vector<arma::mat> post = control_optimizer["posterior"];
-    posterior = post;
-  }
+  std::vector<arma::vec> parameters = control_optimizer["parameters"];
 
+  // Starting values for transparameters:
+  std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
+
+  // Number of different starting values and cores:
   int rstarts = control_optimizer["rstarts"];
   int cores = control_optimizer["cores"];
 
+  // Size of model structures:
   x.nmanifolds = control_manifold.size();
   x.ntransforms = control_transform.size();
   x.nestimators = control_estimator.size();
 
+  // Check parameters for the optimizer:
   optim* algorithm = choose_optim(x, control_optimizer);
 
+  // Initialize as many model structures as random starts:
   std::vector<std::vector<manifolds*>> xmanifolds(rstarts,
                                                   std::vector<manifolds*>(x.nmanifolds));
   std::vector<std::vector<transformations*>> xtransforms(rstarts,
@@ -77,6 +40,7 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   std::vector<std::vector<estimators*>> xestimators(rstarts,
                                                     std::vector<estimators*>(x.nestimators));
 
+  // Check and setup each model structure:
   for(int j=0; j < rstarts; ++j) {
 
     for(int i=0; i < x.nmanifolds; ++i) {
@@ -102,40 +66,36 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
 
   // Vector containing the loss function of each random start:
   arma::vec xf(rstarts);
-  // We will select the optimization with minimum loss value
+  // We will select the optimization procedure with minimum loss value
   std::vector<optim_result> x2(rstarts);
   std::vector<arguments_optim> args(rstarts);
 
+  // Start the clock:
   auto start = std::chrono::high_resolution_clock::now();
 
+  // Set up the parallelization:
   #ifdef _OPENMP
     omp_set_num_threads(cores);
     #pragma omp parallel for
   #endif
-  for (int i=0; i < rstarts; ++i) {
+  for(int i=0; i < rstarts; ++i) {
 
     args[i] = x;
 
-    if(!parameters.empty()) {
-      args[i].parameters = parameters[i];
-    }
-    if(!transparameters.empty()) {
-      args[i].transparameters = transparameters[i];
-    }
-    if(!posterior.empty()) {
-      args[i].posterior = posterior[i];
-    }
+    args[i].parameters = parameters[i];
+    args[i].transparameters = transparameters[i];
 
     x2[i] = algorithm->optimize(args[i], xtransforms[i], xmanifolds[i], xestimators[i]);
     xf[i] = std::get<2>(x2[i]);
 
   }
 
+  // Stop the clock:
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::nanoseconds elapsed_ns = end - start;
   double elapsed_sec = elapsed_ns.count() / 1e9;  // Convert to seconds
 
-  // Return just the best x.pick rstarts:
+  // Return the best x.pick rstarts:
   if (x.pick > 0L) {
 
     Rcpp::List result(x.pick);
@@ -162,10 +122,11 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
 
   }
 
-  // Choose the optimization with the smallest objective value:
+  // Choose the optimization procedure with the smallest objective value:
   arma::uword index_minimum = index_min(xf);
   optim_result x1 = x2[index_minimum];
 
+  // Compute some outcomes:
   product_manifold* final_manifold;
   product_transform* final_transform;
   product_estimator* final_estimator;

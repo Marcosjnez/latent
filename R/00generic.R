@@ -33,7 +33,7 @@ setMethod("show", "llca", function(fit) {
     ni <- fit@summary_table$Observed
     mi <- fit@summary_table$Estimated
     dof <- fit@modelInfo$dof
-    L2 <- abs(2*sum(ni*log(ni/mi)))
+    L2 <- 2*sum(ni*log(ni/mi))
     pv <- 1-pchisq(L2, dof)
   }else{
     L2 <- NA

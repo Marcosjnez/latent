@@ -22,8 +22,6 @@ public:
   void param(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters(lambda_indices), p, q);
-    // psi = arma::reshape(x.transparameters(psi_indices), q, q);
-    // theta = arma::reshape(x.transparameters(theta_indices), p, p);
     psi.elem(lower_psi) = x.transparameters(psi_indices);
     theta.elem(lower_theta) = x.transparameters(theta_indices);
     psi = arma::symmatl(psi);

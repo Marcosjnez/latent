@@ -11,10 +11,10 @@ item <- rep("multinomial", ncol(data))
 
 nclasses <- 3L
 
-nmiss <- 30
-missrow <- sample(1:nrow(data), size = nmiss)
-misscol <- sample(1:ncol(data), size = nmiss, replace = TRUE)
-for(i in 1:nmiss) data[missrow[i], misscol[i]] <- NA
+# nmiss <- 30
+# missrow <- sample(1:nrow(data), size = nmiss)
+# misscol <- sample(1:ncol(data), size = nmiss, replace = TRUE)
+# for(i in 1:nmiss) data[missrow[i], misscol[i]] <- NA
 control <- list(opt = "lbfgs", rstarts = 50L)
 
 fit <- lca(data = data, item = item, nclasses = nclasses,
@@ -141,17 +141,28 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
-estimator = "ml"
-control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 1L,
+estimator = "uls"
+control <- list(opt = "newton", maxit = 1000L, rstarts = 1L,
                 cores = 1L, eps = 1e-05)
 fit <- cfast(data, model = model,
              estimator = estimator, cor = "pearson",
              std.lv = TRUE, positive = FALSE,
-             control = control, do.fit = TRUE)
+             control = NULL, do.fit = TRUE)
+
+control_manifold <- fit@Optim$control_manifold
+control_transform <- fit@Optim$control_transform
+control_estimator <- fit@Optim$control_estimator
+control <- fit@Optim$control
+
+x <- grad_comp(control_manifold, control_transform,
+               control_estimator, control, eps = 1e-04,
+               compute = "dgrad")
+x$f
 
 fit@loglik # -0.283407 (ML)
 fit@loss # 0.1574787 (ULS) / 0.283407 (ML)
 fit@Optim$opt$iterations
+fit@timing
 
 # Plot model fit info:
 fit
@@ -165,7 +176,7 @@ summary(fit)
 # Inspect model objects:
 latInspect(fit, what = "loadings", digits = 3)
 latInspect(fit, what = "psi", digits = 3)
-latInspect(fit, what = "uniquenesses", digits = 3)
+latInspect(fit, what = "theta", digits = 3)
 latInspect(fit, what = "model", digits = 3)
 
 library(lavaan)
@@ -173,8 +184,10 @@ fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "ml",
             std.lv = TRUE, std.ov = TRUE)
 summary(fit2, fit.measures = FALSE)
 fitMeasures(fit2)
-inspect(fit2, what = "est")
+inspect(fit2, what = "se")
 
+SE <- se(fit, digits = 3)
+SE$table_se
 #### Multigroup CFA ####
 
 library(latent)
@@ -245,7 +258,7 @@ fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "ml",
 fit2
 inspect(fit2, what = "est")
 
-control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 100L,
+control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 1000L,
                 cores = 16L, eps = 1e-05)
 fit <- cfast(data, model = model,
              estimator = estimator, cor = "pearson",

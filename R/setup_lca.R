@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/09/2025
+# Modification date: 23/09/2025
 
 fill_list_with_vector <- function(lst, values) {
 
@@ -590,7 +590,7 @@ get_full_lca_covariate_model <- function(data_list, nclasses, item,
                   rep(1:nclasses, each = p), sep = "")
   lca_param$beta <- matrix(labels, nrow = p, ncol = nclasses)
   lca_trans$beta <- lca_param$beta
-  lca_param$beta[1, ] <- "1"
+  lca_param$beta[, 1] <- "0"
 
   # Initial values for the log coefficients (betas):
   # betas are sampled from a normal distribution:
@@ -825,7 +825,7 @@ get_lca_covariate_structures <- function(data_list, full_model, control) {
                                  indices_in = list(indices_in-1L),
                                  labels_out = labels_out,
                                  indices_out = list(indices_out-1L),
-                                 X = X)
+                                 X = cov_patterns)
   k <- k+1L
 
   # thetas to classes:
@@ -942,51 +942,49 @@ get_lca_covariate_structures <- function(data_list, full_model, control) {
   control_estimator <- list()
   item_loglik <- lca_trans$loglik
   k <- 0L
-  for(s in 1:npatterns) {
-
-    labels <- c(lca_trans$class[s, ], item_loglik[s,,])
-    all_indices <- match(labels, transparameters_labels)
-    indices_classes <- match(lca_trans$class[s, ], transparameters_labels)
-    indices_items <- match(item_loglik[s,,], transparameters_labels)
-    indices_theta <- match(lca_trans$theta[s,], transparameters_labels)
-    indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
-                    indices_theta-1L)
-    SJ <- 1L*nitems
-    hess_indices <- lapply(0:(nclasses - 1), function(i) {
-      nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
-
-    control_estimator[[k+s]] <- list(estimator = "lca",
-                                     labels = labels,
-                                     indices = indices,
-                                     S = 1L,
-                                     J = nitems,
-                                     I = nclasses,
-                                     weights = weights[s],
-                                     hess_indices = hess_indices)
-
-  }
-
-  # item_loglik <- c(lca_trans$loglik)
-  # labels <- c(lca_trans$class, item_loglik)
-  # all_indices <- match(labels, transparameters_labels)
-  # indices_classes <- match(lca_trans$class, transparameters_labels)
-  # indices_items <- match(item_loglik, transparameters_labels)
-  # indices_theta <- match(lca_trans$theta, transparameters_labels)
-  # indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
-  #                 indices_theta-1L)
-  # SJ <- npatterns*nitems
-  # hess_indices <- lapply(0:(nclasses - 1), function(i) {
-  #   nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
+  # for(s in 1:npatterns) {
   #
-  # control_estimator <- list()
-  # control_estimator[[1]] <- list(estimator = "lca",
-  #                                labels = labels,
-  #                                indices = indices,
-  #                                S = npatterns,
-  #                                J = nitems,
-  #                                I = nclasses,
-  #                                weights = weights,
-  #                                hess_indices = hess_indices)
+  #   labels <- c(lca_trans$class[s, ], item_loglik[s,,])
+  #   all_indices <- match(labels, transparameters_labels)
+  #   indices_classes <- match(lca_trans$class[s, ], transparameters_labels)
+  #   indices_items <- match(item_loglik[s,,], transparameters_labels)
+  #   indices_theta <- match(lca_trans$theta[s,], transparameters_labels)
+  #   indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
+  #                   indices_theta-1L)
+  #   SJ <- 1L*nitems
+  #   hess_indices <- lapply(0:(nclasses - 1), function(i) {
+  #     nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
+  #
+  #   control_estimator[[k+s]] <- list(estimator = "lca",
+  #                                    labels = labels,
+  #                                    indices = indices,
+  #                                    S = 1L,
+  #                                    J = nitems,
+  #                                    I = nclasses,
+  #                                    weights = weights[s],
+  #                                    hess_indices = hess_indices)
+  #
+  # }
+
+  labels <- c(lca_trans$class, item_loglik)
+  all_indices <- match(labels, transparameters_labels)
+  indices_classes <- match(lca_trans$class, transparameters_labels)
+  indices_items <- match(item_loglik, transparameters_labels)
+  indices_theta <- match(lca_trans$theta, transparameters_labels)
+  indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
+                  indices_theta-1L)
+  SJ <- npatterns*nitems
+  hess_indices <- lapply(0:(nclasses - 1), function(i) {
+    nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
+
+  control_estimator[[1]] <- list(estimator = "lca_cov",
+                                   labels = labels,
+                                   indices = indices,
+                                   S = npatterns,
+                                   J = nitems,
+                                   I = nclasses,
+                                   weights = weights,
+                                   hess_indices = hess_indices)
 
   # Choose whether using Bayes constants:
   if(control$reg) {

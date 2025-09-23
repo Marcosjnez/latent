@@ -46,14 +46,19 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   if(compute == "choose_optim") return result;
 
   std::vector<arma::vec> parameters_list = control_optimizer["parameters"];
-  std::vector<arma::vec> transparameters_list = control_optimizer["transparameters"];
   arma::vec parameters = parameters_list[0];
-  arma::vec transparameters = transparameters_list[0];
   x.parameters = parameters;
-  x.transparameters = transparameters;
-
   result["parameters"] = x.parameters;
+
+  std::vector<arma::vec> transparameters_list = control_optimizer["transparameters"];
+  arma::vec transparameters = transparameters_list[0];
+  x.transparameters = transparameters;
   result["transparameters"] = x.transparameters;
+
+  // std::vector<arma::vec> dparameters_list = control_optimizer["dparameters"];
+  // arma::vec dparameters = dparameters_list[0];
+  x.dtransparameters = arma::randu(transparameters.n_elem);
+  // result["dparameters"] = x.dparameters;
 
   if(compute == "pre_setup") return result;
 
@@ -140,20 +145,28 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["rg"] = x.rg;
   if(compute == "rg") return result;
 
-  final_estimator->H(x, xestimators);
-  result["hess"] = x.hess;
-  if(compute == "hess") return result;
+  final_estimator->dG(x, xestimators);
+  result["dgrad"] = x.dgrad;
+  if(compute == "dgrad") return result;
 
-  final_transform->update_hess(x, xtransforms);
-  result["hess"] = x.hess;
-  result["h"] = x.h;
-  if(compute == "h") return result;
+  final_transform->update_dgrad(x, xtransforms);
+  result["dg"] = x.dg;
+  if(compute == "dg") return result;
 
-  final_transform->update_vcov(x, xtransforms);
-  result["vcov"] = x.vcov;
-  result["se"] = x.se;
-  result["inv_h"] = x.inv_h;
-  if(compute == "vcov") return result;
+  // final_estimator->H(x, xestimators);
+  // result["hess"] = x.hess;
+  // if(compute == "hess") return result;
+  //
+  // final_transform->update_hess(x, xtransforms);
+  // result["hess"] = x.hess;
+  // result["h"] = x.h;
+  // if(compute == "h") return result;
+  //
+  // final_transform->update_vcov(x, xtransforms);
+  // result["vcov"] = x.vcov;
+  // result["se"] = x.se;
+  // result["inv_h"] = x.inv_h;
+  // if(compute == "vcov") return result;
 
   final_transform->dconstraints(x, xtransforms);
   result["dconstr"] = x.mat_dconstraints;
@@ -168,7 +181,6 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["list_matrices"] = std::get<5>(x.outputs_estimator);
   if(compute == "outcomes") return result;
 
-  result["dg"] = x.dg;
   // result["J"] = xtransforms[0]->jacob;
 
   /*
@@ -177,26 +189,6 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
 
   product_transform* T1;
   product_estimator* F1;
-  // double eps = 1e-04;
-
-  // Check the gradient of the transformed parameters:
-  // transparameters = x.transparameters;
-  // arma::vec numgrad(transparameters.n_elem);
-  // for(int i = 0; i < transparameters.n_elem; ++i) {
-  //   x.transparameters = transparameters; x.transparameters[i] += eps;
-  //   // T1->transform(x, xtransforms);
-  //   F1->param(x, xestimators);
-  //   F1->F(x, xestimators);
-  //   double f1 = x.f;
-  //   x.transparameters = transparameters; x.transparameters[i] -= eps;
-  //   // T1->transform(x, xtransforms);
-  //   F1->param(x, xestimators);
-  //   F1->F(x, xestimators);
-  //   double f0 = x.f;
-  //   numgrad[i] = (f1-f0) / (2*eps);
-  // }
-  //
-  // result["numgrad"] = numgrad;
 
   // Check the gradient:
   arma::vec numg(parameters.n_elem);
@@ -214,7 +206,30 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
     numg[i] = (f1-f0) / (2*eps);
   }
 
+  x.parameters = parameters;
   result["numg"] = numg;
+
+  // Check the differential of the gradient:
+  // arma::vec numdg(dparameters.n_elem);
+  // for(int i = 0; i < dparameters.n_elem; ++i) {
+  //   x.dparameters = dparameters; x.dparameters[i] += eps;
+  //   T1->transform(x, xtransforms);
+  //   F1->param(x, xestimators);
+  //   F1->F(x, xestimators);
+  //   F1->G(x, xestimators);
+  //   T1->update_grad(x, xtransforms);
+  //   double g1 = x.g;
+  //   x.dparameters = dparameters; x.dparameters[i] -= eps;
+  //   T1->transform(x, xtransforms);
+  //   F1->param(x, xestimators);
+  //   F1->F(x, xestimators);
+  //   F1->G(x, xestimators);
+  //   T1->update_grad(x, xtransforms);
+  //   double g0 = x.g;
+  //   numg[i] = (g1-g0) / (2*eps);
+  // }
+  //
+  // result["numdg"] = numdg;
 
   // final_estimator->E(x, xestimators);
   // final_estimator->M(x, xestimators);

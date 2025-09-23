@@ -111,6 +111,20 @@ public:
 
   }
 
+  void update_dgrad(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+
+    // Iterate up-down:
+    for(int i=x.ntransforms-1L; i > -1L ; --i) {
+
+      xtransformations[i]->update_dgrad(x);
+
+    }
+
+    // Differential of the gradient:
+    x.dg = x.dgrad(x.transparam2param);
+
+  }
+
   void update_hess(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
     // Faster version of hessian updating:

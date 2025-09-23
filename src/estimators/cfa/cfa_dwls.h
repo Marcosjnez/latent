@@ -22,8 +22,6 @@ public:
   void param(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters(lambda_indices), p, q);
-    // psi = arma::reshape(x.transparameters(psi_indices), q, q);
-    // theta = arma::reshape(x.transparameters(theta_indices), p, p);
     psi.elem(lower_psi) = x.transparameters(psi_indices);
     theta.elem(lower_theta) = x.transparameters(theta_indices);
     psi = arma::symmatl(psi);
@@ -55,25 +53,14 @@ public:
     x.grad.elem(lambda_indices) += arma::vectorise(glambda);
     x.grad.elem(psi_indices) += arma::vectorise(gpsi(lower_psi));
     x.grad.elem(theta_indices) += arma::vectorise(gtheta(lower_theta));
-    // The symmetric part will be counted twice in the += operation, so
-    // the correct derivatives for the nondiagonal elements in psi and theta
-    // are 2*gpsi and 2*gtheta
 
   }
 
   void dG(arguments_optim& x) {
 
-    // dX = arma::reshape(dparameters, q, q);
-    dg.set_size(transparameters.n_elem); dg.zeros();
-
-    // dlambda.fill(dparameters(lambda_indices));
-    // dphi.fill(dparameters(phi_indices));
-    // dpsi.fill(dparameters(psi_indices));
-
-    dlambda = arma::reshape(dparameters(lambda_indices), p, q);
-    dpsi = arma::reshape(dparameters(psi_indices), q, q);
-    dtheta = arma::reshape(dparameters(theta_indices), q, q);
-
+    dlambda = arma::reshape(x.dtransparameters(lambda_indices), p, q);
+    dpsi = arma::reshape(x.dtransparameters(psi_indices), q, q);
+    dtheta = arma::reshape(x.dtransparameters(theta_indices), q, q);
     dpsi = arma::symmatl(dpsi);
     dtheta = arma::symmatl(dtheta);
 
@@ -93,13 +80,13 @@ public:
     dgtheta = 2*W % dtheta;
     dgtheta.diag() *= 0.5;
 
-    dg(lambda_indices) += arma::vectorise(dglambda);
+    x.dgrad(lambda_indices) += arma::vectorise(dglambda);
     // if(positive) {
     //   dg(T_indexes) += dgphi.elem(targetT_indexes);
     // } else {
-    dg(psi_indices) += arma::vectorise(dgpsi);
+    x.dgrad(psi_indices) += arma::vectorise(dgpsi(lower_psi));
     // }
-    dg(theta_indices) += arma::vectorise(dgtheta);
+    x.dgrad(theta_indices) += arma::vectorise(dgtheta(lower_theta));
 
   }
 

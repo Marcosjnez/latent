@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 23/09/2025
  */
 
 class estimators {
@@ -63,7 +63,7 @@ public:
 #include "estimators/rotation/lclf.h"
 
 #include "estimators/lca/lca.h"
-#include "estimators/lca/lca2.h"
+#include "estimators/lca/lca_cov.h"
 #include "estimators/lca/bayesconst1.h"
 #include "estimators/lca/bayesconst2.h"
 #include "estimators/lca/bayesconst3.h"
@@ -92,12 +92,12 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "xtarget",                     choose_xtarget                   },
   { "lclf",                        choose_lclf                      },
   { "lca",                         choose_lca                       },
-  { "lca2",                        choose_lca2                      },
   { "bayesconst1",                 choose_bayesconst1               },
   { "bayesconst2",                 choose_bayesconst2               },
   { "bayesconst3",                 choose_bayesconst3               },
   { "lreg",                        choose_lreg                      },
-  { "polycor",                     choose_polycor                   }
+  { "polycor",                     choose_polycor                   },
+  { "lca_cov",                     choose_lca_cov                   }
 };
 
 estimators* choose_estimator(const Rcpp::List& estimator_setup) {
@@ -151,17 +151,15 @@ public:
 
   void dG(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
-    x.dg.zeros();
+    x.dgrad.zeros();
 
     for(int i=0; i < x.nestimators; ++i) {
 
-      arma::uvec indices = xestimators[i]->indices[0];
-      xestimators[i]->dparameters = x.dparameters.elem(indices);
-      xestimators[i]->g = x.grad.elem(indices); // Maybe delete PROBLEMS
       xestimators[i]->dG(x);
-      x.dg.elem(indices) += xestimators[i]->dg;
 
     }
+
+    // x.dg = x.dgrad(x.transparam2param);
 
   }
 

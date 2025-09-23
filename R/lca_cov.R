@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/09/2025
+# Modification date: 23/09/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -74,7 +74,8 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                                    FUN = function(col) {
                                      if (is.factor(col)) as.integer(col) - 1L else col
                                    })
-  dt <- cbind(data, X)
+  dt <- cbind(X, data)
+  pcov <- ncol(X)
 
   # Number of subjects:
   nobs <- nrow(dt)
@@ -83,7 +84,9 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   ## Collect some information from the data ##
   counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
   # Data matrix with the unique response patterns:
-  patterns <- as.matrix(counts_dt[, names(dt), with = FALSE])
+  patterns <- as.matrix(counts_dt[, names(dt), with = FALSE])[, -(1:pcov) , drop = FALSE]
+  # Covariates with unique patterns:
+  cov_patterns <- as.matrix(counts_dt[, names(dt), with = FALSE])[, 1:pcov, drop = FALSE]
   # Number of unique response patterns:
   npatterns <- nrow(counts_dt)
   # Counts of each response pattern:
@@ -116,6 +119,7 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   data_list$X <- X
   data_list$nobs <- nobs
   data_list$patterns <- patterns
+  data_list$cov_patterns <- cov_patterns
   data_list$npatterns <- npatterns
   data_list$npossible_patterns <- npossible_patterns
   data_list$nitems <- nitems
@@ -271,8 +275,6 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                    control_estimator = control_estimator,
                    control_optimizer = control)
 
-    return(x)
-
     # Collect all the information about the optimization:
 
     Optim$opt <- x
@@ -325,7 +327,8 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # raw_model <- fill_list_with_vector(log_model, out)
     # raw_model <- allnumeric(raw_model)
 
-    ClassConditional <- user_model$items
+    # ClassConditional <- user_model$items
+    ClassConditional <- list()
     RespConditional <- probCat <- list() # Only for full multinomial models
 
     # Additional outputs for full multinomial models:
