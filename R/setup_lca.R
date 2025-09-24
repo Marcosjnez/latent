@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 23/09/2025
+# Modification date: 24/09/2025
 
 fill_list_with_vector <- function(lst, values) {
 
@@ -589,6 +589,8 @@ get_full_lca_covariate_model <- function(data_list, nclasses, item,
   labels <- paste("b", rep(1:p, times = nclasses), "|",
                   rep(1:nclasses, each = p), sep = "")
   lca_param$beta <- matrix(labels, nrow = p, ncol = nclasses)
+  rownames(lca_param$beta) <- colnames(X)
+  colnames(lca_param$beta) <- paste("Class", 1:nclasses, sep = "")
   lca_trans$beta <- lca_param$beta
   lca_param$beta[, 1] <- "0"
 
@@ -793,6 +795,97 @@ get_full_lca_covariate_model <- function(data_list, nclasses, item,
 
 }
 
+get_short_lca_covariare_model <- function(data_list, nclasses, item,
+                                          lca_trans, model = NULL) {
+
+  # This function displays the reduced LCA model in logarithm and probability
+  # scales. This is a short version of the full model syntax created with
+  # get_full_lca_covariate_model.
+
+  # Create a short summary model:
+
+  data <- data_list$data
+  gauss <- which(item == "gaussian")
+  multinom <- which(item == "multinomial")
+  K <- lapply(data_list$factor_names, FUN = length)
+  nitems <- ncol(data)
+  items <- vector("list", length = nitems)
+  names(items) <- colnames(data)
+
+  #### Transformed parameters model ####
+
+  if(any(item == "gaussian")) {
+
+    for(j in gauss) {
+      items[[j]] <- matrix(NA, nrow = 2, ncol = nclasses)
+      rownames(items[[j]]) <- c("Means", "Sigma")
+      colnames(items[[j]]) <- paste("Class", 1:nclasses, sep = "")
+    }
+    # Fill the gaussian model:
+    mu_sorted <- sort(lca_trans$mu)
+    sigma_sorted <- sort(lca_trans$sigma)
+    out <- c(rbind(mu_sorted, sigma_sorted))
+    items[gauss] <- fill_list_with_vector(items[gauss], out)
+
+  }
+
+  if(any(item == "multinomial")) {
+
+    i <- 1L
+    for(j in multinom) {
+      items[[j]] <- matrix(NA, nrow = K[[i]], ncol = nclasses)
+      # rownames(items[[j]]) <- paste("Category", 1:K[i], sep = "")
+      rownames(items[[j]]) <- data_list$factor_names[[i]]
+      colnames(items[[j]]) <- lca_trans$class
+      i <- i+1L
+    }
+
+    # Fill the multinomial model:
+    items[multinom] <- fill_list_with_vector(items[multinom],
+                                             unlist(lca_trans$peta))
+
+  }
+
+  prob_model <- list()
+  prob_model$classes <- lca_trans$class
+  prob_model$items <- items
+
+  #### Parameters model ####
+
+  if(any(item == "gaussian")) {
+
+    for(j in gauss) {
+      rownames(items[[j]]) <- c("Means", "logSigma")
+    }
+
+    # Fill the gaussian model:
+    s_sorted <- sort(lca_trans$s)
+    out <- c(rbind(mu_sorted, s_sorted))
+    items[gauss] <- fill_list_with_vector(items[gauss], out)
+
+  }
+
+  if(any(item == "multinomial")) {
+
+    # Fill the multinomial model:
+    items[multinom] <- fill_list_with_vector(items[multinom],
+                                             unlist(lca_trans$eta))
+
+  }
+
+  log_model <- list()
+  log_model$beta <- lca_trans$beta
+  log_model$items <- items
+
+  #### Return ####
+
+  # Return the model in the logarithm and probability scales:
+  result <- list(prob_model = prob_model, log_model = log_model)
+
+  return(result)
+
+}
+
 get_lca_covariate_structures <- function(data_list, full_model, control) {
 
   # Generate control_manifold, control_transform, and control_estimator
@@ -942,29 +1035,6 @@ get_lca_covariate_structures <- function(data_list, full_model, control) {
   control_estimator <- list()
   item_loglik <- lca_trans$loglik
   k <- 0L
-  # for(s in 1:npatterns) {
-  #
-  #   labels <- c(lca_trans$class[s, ], item_loglik[s,,])
-  #   all_indices <- match(labels, transparameters_labels)
-  #   indices_classes <- match(lca_trans$class[s, ], transparameters_labels)
-  #   indices_items <- match(item_loglik[s,,], transparameters_labels)
-  #   indices_theta <- match(lca_trans$theta[s,], transparameters_labels)
-  #   indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
-  #                   indices_theta-1L)
-  #   SJ <- 1L*nitems
-  #   hess_indices <- lapply(0:(nclasses - 1), function(i) {
-  #     nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
-  #
-  #   control_estimator[[k+s]] <- list(estimator = "lca",
-  #                                    labels = labels,
-  #                                    indices = indices,
-  #                                    S = 1L,
-  #                                    J = nitems,
-  #                                    I = nclasses,
-  #                                    weights = weights[s],
-  #                                    hess_indices = hess_indices)
-  #
-  # }
 
   labels <- c(lca_trans$class, item_loglik)
   all_indices <- match(labels, transparameters_labels)
@@ -993,13 +1063,26 @@ get_lca_covariate_structures <- function(data_list, full_model, control) {
     alpha <- control$penalties$class$alpha
     if(alpha != 0) {
 
-      labels <- lca_trans$class
-      indices <- match(labels, transparameters_labels)
-      control_estimator[[2]] <- list(estimator = "bayesconst1",
-                                     labels = labels,
-                                     indices = list(indices-1L),
-                                     K = nclasses,
-                                     alpha = alpha)
+      # Get the indices corresponding to the unique covariate patterns:
+      dt_uniq_X <- data.table::as.data.table(cov_patterns)
+      counts_X <- dt_uniq_X[, .(index = .I[1], count = .N), by = names(dt_uniq_X)]
+      uniques <- counts_X$index
+      U <- length(uniques)
+      G <- 2
+
+      for(i in uniques) {
+
+        labels <- lca_trans$class[i, ]
+        indices <- match(labels, transparameters_labels)
+        control_estimator[[G]] <- list(estimator = "bayesconst1U0",
+                                       labels = labels,
+                                       indices = list(indices-1L),
+                                       K = nclasses,
+                                       alpha = alpha,
+                                       U = U)
+        G <- G+1L
+
+      }
     }
 
     G <- length(control_estimator) + 1L

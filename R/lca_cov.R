@@ -116,6 +116,7 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   # Put in a list the objects generated form the data:
   data_list <- vector("list")
   data_list$dt <- data
+  data_list$data <- data
   data_list$X <- X
   data_list$nobs <- nobs
   data_list$patterns <- patterns
@@ -163,10 +164,10 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     # Get the short model specification (in logarithm and probability scale) with
     # labels for each parameter:
-    # short_model <- get_short_lca_model(data_list = data_list, nclasses = nclasses,
-    #                                    item = item, lca_trans = lca_trans,
-    #                                    model = model)
-    # list2env(short_model, envir = environment())
+    short_model <- get_short_lca_covariare_model(data_list = data_list, nclasses = nclasses,
+                                       item = item, lca_trans = lca_trans,
+                                       model = model)
+    list2env(short_model, envir = environment())
 
     #### Create the structures ####
 
@@ -316,19 +317,18 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Check the existence of multinomial items:
     multin <- "multinomial" %in% item
 
-    # # Create the parameter table:
-    # selection <- match(unlist(prob_model), transparameters_labels)
-    # out <- x$transparameters[selection]
-    # user_model <- fill_list_with_vector(prob_model, out)
-    # user_model <- allnumeric(user_model)
-    #
-    # selection <- match(unlist(log_model), transparameters_labels)
-    # out <- x$transparameters[selection]
-    # raw_model <- fill_list_with_vector(log_model, out)
-    # raw_model <- allnumeric(raw_model)
+    # Create the parameter table:
+    selection <- match(unlist(prob_model), transparameters_labels)
+    out <- x$transparameters[selection]
+    user_model <- fill_list_with_vector(prob_model, out)
+    user_model <- allnumeric(user_model)
 
-    # ClassConditional <- user_model$items
-    ClassConditional <- list()
+    selection <- match(unlist(log_model), transparameters_labels)
+    out <- x$transparameters[selection]
+    raw_model <- fill_list_with_vector(log_model, out)
+    raw_model <- allnumeric(raw_model)
+
+    ClassConditional <- user_model$items
     RespConditional <- probCat <- list() # Only for full multinomial models
 
     # Additional outputs for full multinomial models:
@@ -379,8 +379,8 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                            timing             = elapsed, # timing information
                            modelInfo          = modelInfo, # modelInfo
                            Optim              = Optim, # Optim
-                           # parameters         = raw_model,
-                           # transformed_pars   = user_model,
+                           parameters         = raw_model,
+                           transformed_pars   = user_model,
                            posterior          = posterior,
                            state              = state,
                            loglik             = loglik, # loglik values

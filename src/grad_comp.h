@@ -153,20 +153,20 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["dg"] = x.dg;
   if(compute == "dg") return result;
 
-  // final_estimator->H(x, xestimators);
-  // result["hess"] = x.hess;
-  // if(compute == "hess") return result;
-  //
-  // final_transform->update_hess(x, xtransforms);
-  // result["hess"] = x.hess;
-  // result["h"] = x.h;
-  // if(compute == "h") return result;
-  //
-  // final_transform->update_vcov(x, xtransforms);
-  // result["vcov"] = x.vcov;
-  // result["se"] = x.se;
-  // result["inv_h"] = x.inv_h;
-  // if(compute == "vcov") return result;
+  final_estimator->H(x, xestimators);
+  result["hess"] = x.hess;
+  if(compute == "hess") return result;
+
+  final_transform->update_hess(x, xtransforms);
+  result["hess"] = x.hess;
+  result["h"] = x.h;
+  if(compute == "h") return result;
+
+  final_transform->update_vcov(x, xtransforms);
+  result["vcov"] = x.vcov;
+  result["se"] = x.se;
+  result["inv_h"] = x.inv_h;
+  if(compute == "vcov") return result;
 
   final_transform->dconstraints(x, xtransforms);
   result["dconstr"] = x.mat_dconstraints;
