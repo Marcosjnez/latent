@@ -118,6 +118,7 @@ lca_cov <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   data_list$dt <- data
   data_list$data <- data
   data_list$X <- X
+  data_list$item <- item
   data_list$nobs <- nobs
   data_list$patterns <- patterns
   data_list$cov_patterns <- cov_patterns

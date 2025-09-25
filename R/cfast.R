@@ -80,6 +80,7 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "ml",
   data_list$nfactors <- nfactors
   data_list$correl <- correl
   data_list$positive <- positive
+  data_list$estimator <- estimator
 
   ## store original call
   mc  <- match.call()

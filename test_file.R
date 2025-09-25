@@ -6,18 +6,19 @@ devtools::install_github("marcosjnez/latent", force = TRUE)
 
 library(latent)
 
-data <- gss82
-item <- rep("multinomial", ncol(data))
-
-nclasses <- 3L
+# data <- gss82
+# item <- rep("multinomial", ncol(data))
+#
+# nclasses <- 3L
 
 # nmiss <- 30
 # missrow <- sample(1:nrow(data), size = nmiss)
 # misscol <- sample(1:ncol(data), size = nmiss, replace = TRUE)
 # for(i in 1:nmiss) data[missrow[i], misscol[i]] <- NA
-control <- list(opt = "lbfgs", rstarts = 50L)
+# control <- list(opt = "lbfgs", rstarts = 50L)
 
-fit <- lca(data = data, item = item, nclasses = nclasses,
+fit <- lca(data = gss82, nclasses = 3L,
+           item = rep("multinomial", ncol(gss82)),
            penalties = TRUE, control = NULL, do.fit = TRUE)
 fit@timing
 fit@loglik # -2754.643
@@ -49,12 +50,8 @@ CI$table
 
 library(latent)
 
-nclasses <- 4L
-data <- empathy[, 1:6]
-
-item <- rep("gaussian", ncol(data))
-
-fit <- lca(data = data, item = item, nclasses = nclasses,
+fit <- lca(data = empathy[, 1:6], nclasses = 4L,
+           item = rep("gaussian", ncol(empathy[, 1:6])),
            penalties = TRUE, control = NULL, do.fit = TRUE)
 
 fit@timing
@@ -82,34 +79,24 @@ CI$table
 #### Mixed LCA (multinomial and gaussian) ####
 
 library(latent)
-data <- cancer[, 1:6]
-names(data)
-
-item <- c("gaussian", "gaussian",
-          "multinomial", "multinomial",
-          "gaussian", "gaussian")
-
-nclasses <- 3L
-
-# Regularization:
-penalties <- list(
-  class = list(alpha = 1), # Regularization for class probabilities
-  prob  = list(alpha = 1), # Regularization for conditional probabilities
-  sd    = list(alpha = 1) # Regularization for standard deviations
-)
 
 # Control parameters for the optimizer:
-control <- list(opt = "em-lbfgs",
-                rstarts_em = 50L, # Number of random starts with EM
-                rstarts = 10L, # Number of random starts with LBFGS
-                cores = 32L) # Number of cores
+# control <- list(opt = "em-lbfgs",
+#                 rstarts_em = 50L, # Number of random starts with EM
+#                 rstarts = 10L, # Number of random starts with LBFGS
+#                 cores = 32L) # Number of cores
 # The em-lbfgs optimizer runs EM 50 times, then pick up the 10 sets of
 # parameter values with best loglik, and submits these sets to LBFGS to get
 # the final convergence
 
-fit <- lca(data = data, item = item, nclasses = nclasses,
-           penalties = penalties, control = control,
-           do.fit = TRUE)
+fit <- lca(data = cancer[, 1:6], nclasses = 3L,
+           item = c("gaussian", "gaussian",
+                    "multinomial", "multinomial",
+                    "gaussian", "gaussian"),
+           penalties = list(class = list(alpha = 1), # Regularization for class probabilities
+                            prob  = list(alpha = 1), # Regularization for conditional probabilities
+                            sd    = list(alpha = 1)), # Regularization for standard deviations
+           control = NULL, do.fit = TRUE)
 fit@timing
 fit@loglik # -5784.701
 fit@penalized_loglik # -5795.573
@@ -135,17 +122,14 @@ CI$table
 
 library(latent)
 
-data <- HolzingerSwineford1939
-
 model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
-estimator = "uls"
-control <- list(opt = "newton", maxit = 1000L, rstarts = 1L,
-                cores = 1L, eps = 1e-05)
-fit <- cfast(data, model = model,
-             estimator = estimator, cor = "pearson",
+# control <- list(opt = "newton", maxit = 1000L, rstarts = 1L,
+#                 cores = 1L, eps = 1e-05)
+fit <- cfast(HolzingerSwineford1939, model = model,
+             estimator = "uls", cor = "pearson",
              std.lv = TRUE, positive = FALSE,
              control = NULL, do.fit = TRUE)
 
@@ -192,20 +176,16 @@ SE$table_se
 
 library(latent)
 
-data <- lavaan::HolzingerSwineford1939
-
 model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
-estimator = "ml"
-group <- "school"
-control <- list(opt = "lbfgs", maxit = 1000, rstarts = 1L, cores = 1L,
-                eps = 1e-05)
-fit <- cfast(data, model = model, group = group,
-             estimator = estimator, cor = "pearson",
-             std.lv = TRUE, positive = TRUE,
-             control = control, do.fit = TRUE)
+# control <- list(opt = "lbfgs", maxit = 1000, rstarts = 1L, cores = 1L,
+#                 eps = 1e-05)
+fit <- cfast(HolzingerSwineford1939, model = model,
+             group = "school", estimator = "ml", cor = "pearson",
+             std.lv = TRUE, positive = FALSE,
+             control = NULL, do.fit = TRUE)
 
 fit@loglik # -0.7809653 (ml)
 fit@loss # 0.4269743 (uls) / 0.7809653 (ml)
@@ -229,8 +209,9 @@ latInspect(fit, what = "rhat", digits = 3)
 SE <- se(fit, type = "standard", model = "user", digits = 3)
 
 library(lavaan)
-fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "ml",
-            std.lv = TRUE, std.ov = TRUE, group = group)
+fit2 <- cfa(model, data = HolzingerSwineford1939,
+            estimator = "ml", group = "school",
+            std.lv = TRUE, std.ov = TRUE)
 fit2
 summary(fit2, fit.measures = FALSE)
 fitMeasures(fit2)
@@ -242,8 +223,6 @@ inspect(fit2, what = "std")
 library(latent)
 library(lavaan)
 
-data <- HolzingerSwineford1939
-
 model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9
@@ -251,22 +230,21 @@ model <- 'visual  =~ x1 + x2 + x3
           x1 ~~ x4
           x4 ~~ x5
           x4 ~~ x6'
-estimator = "ml"
 
-fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "ml",
-            std.lv = TRUE, std.ov = TRUE)
+fit2 <- cfa(model, data = HolzingerSwineford1939,
+            estimator = "ml", std.lv = TRUE, std.ov = TRUE)
 fit2
 inspect(fit2, what = "est")
 
-control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 1000L,
-                cores = 16L, eps = 1e-05)
-fit <- cfast(data, model = model,
-             estimator = estimator, cor = "pearson",
-             std.lv = TRUE, positive = TRUE,
-             control = control, do.fit = TRUE)
+# control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 1000L,
+#                 cores = 16L, eps = 1e-05)
+fit <- cfast(data = HolzingerSwineford1939, model = model,
+             estimator = "uls", cor = "pearson",
+             std.lv = TRUE, positive = TRUE, do.fit = TRUE,
+             control = NULL)
 
-fit@loglik # -0.283407 (ML)
-fit@loss # 0.1574787 (ULS) / 0.283407 (ML)
+fit@loglik # -0.2459153 (ML)
+fit@loss # 0.1414338 (ULS) / 0.2459153 (ML)
 fit@Optim$opt$iterations
 
 # Plot model fit info:

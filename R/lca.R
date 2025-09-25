@@ -118,6 +118,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   # Put in a list the objects generated form the data:
   data_list <- vector("list")
   data_list$data <- data
+  data_list$item <- item
   data_list$nobs <- nobs
   data_list$patterns <- patterns
   data_list$npatterns <- npatterns
