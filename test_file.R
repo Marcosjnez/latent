@@ -126,12 +126,16 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
-# control <- list(opt = "newton", maxit = 1000L, rstarts = 1L,
-#                 cores = 1L, eps = 1e-05)
+set.seed(1)
 fit <- cfast(HolzingerSwineford1939, model = model,
-             estimator = "uls", cor = "pearson",
-             std.lv = TRUE, positive = FALSE,
-             control = NULL, do.fit = TRUE)
+             estimator = "ml", cor = "pearson", do.fit = TRUE,
+             positive = TRUE,
+             control = list(opt = "lbfgs", maxit = 1000L, logdetw = 1e-04))
+fit@loglik
+fit@penalized_loglik
+fit@Optim$opt$iterations
+
+fit@parameters
 
 control_manifold <- fit@Optim$control_manifold
 control_transform <- fit@Optim$control_transform
@@ -140,8 +144,9 @@ control <- fit@Optim$control
 
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control, eps = 1e-04,
-               compute = "dgrad")
+               compute = "all")
 x$f
+round(c(x$g)-c(x$numg), 4)
 
 fit@loglik # -0.283407 (ML)
 fit@loss # 0.1574787 (ULS) / 0.283407 (ML)
@@ -239,11 +244,12 @@ inspect(fit2, what = "est")
 # control <- list(opt = "lbfgs", maxit = 1000L, rstarts = 1000L,
 #                 cores = 16L, eps = 1e-05)
 fit <- cfast(data = HolzingerSwineford1939, model = model,
-             estimator = "uls", cor = "pearson",
+             estimator = "ml", cor = "pearson",
              std.lv = TRUE, positive = TRUE, do.fit = TRUE,
-             control = NULL)
+             control = list(opt = "lbfgs", maxit = 1000L, logdetw = 1/81^2))
 
 fit@loglik # -0.2459153 (ML)
+fit@penalized_loglik # -0.2459153 (ML)
 fit@loss # 0.1414338 (ULS) / 0.2459153 (ML)
 fit@Optim$opt$iterations
 
@@ -258,3 +264,15 @@ latInspect(fit, what = "loadings", digits = 3)
 latInspect(fit, what = "psi", digits = 3)
 latInspect(fit, what = "uniquenesses", digits = 3)
 latInspect(fit, what = "model", digits = 3)
+
+theta <- latInspect(fit, what = "theta", digits = 3)[[1]]
+det(theta)
+eigen(theta)$values
+sum(eigen(theta)$values)
+solve(theta)
+
+psi <- latInspect(fit, what = "psi", digits = 3)[[1]]
+det(psi)
+eigen(psi)$values
+sum(eigen(psi)$values)
+solve(psi)

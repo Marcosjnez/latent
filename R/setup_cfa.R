@@ -367,6 +367,21 @@ get_cfa_structures <- function(data_list, full_model, control) {
                                    nfactors = nrow(cfa_trans[[i]]$psi))
     k <- k+1L
 
+    if(positive) {
+
+      lower_indices <- which(lower.tri(cfa_trans[[i]]$theta, diag = TRUE))
+      labels <- cfa_trans[[i]]$theta[lower_indices]
+      indices <- match(labels, transparameters_labels)
+      control_estimator[[k]] <- list(estimator = "logdetmat",
+                                     labels = labels,
+                                     indices = list(indices-1L),
+                                     lower_indices = lower_indices-1L,
+                                     p = nrow(cfa_trans[[i]]$theta),
+                                     logdetw = control$logdetw)
+      k <- k+1L
+
+    }
+
   }
 
   #### Return ####

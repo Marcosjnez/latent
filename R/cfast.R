@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/09/2025
+# Modification date: 26/09/2025
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.

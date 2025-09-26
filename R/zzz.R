@@ -10,8 +10,9 @@
       img <- png::readPNG(path)
       grid::grid.raster(img)
     }
-    packageStartupMessage("👻 Welcome to latent!")
   }
+
+  packageStartupMessage("👻 Welcome to latent!")
 
   version <- as.character(utils::packageVersion(pkgname))
   msg <- sprintf("
