@@ -60,6 +60,10 @@ cfast_control <- function(control) {
     control$tcg_maxit <- 10L
   }
 
+  if(is.null(control$logdetw)) {
+    control$logdetw <- 1e-03
+  }
+
   return(control)
 
 }

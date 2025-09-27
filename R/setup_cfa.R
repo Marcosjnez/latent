@@ -151,31 +151,37 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
 
   # Collect the unique nontransformed parameters and the unique transformed parameters:
 
-  init_trans <- vector("list", length = ngroups)
+  init_trans <- vector("list", length = control$rstarts)
 
-  for(i in 1:ngroups) {
+  for(rs in 1:control$rstarts) {
 
-    init_trans[[i]]$lambda <- rorth(nitems, nfactors)
-    init_trans[[i]]$lambda[fixed[[i]]$lambda] <- fixed_values[[i]]$lambda
+    init_trans[[rs]] <- vector("list", length = ngroups)
 
-    if(positive) {
+    for(i in 1:ngroups) {
 
-      init_trans[[i]]$pj_psi <- rpoblq(nfactors, nfactors, target = target_psi[[i]])
-      init_trans[[i]]$pj_theta <- rpoblq(nitems, nitems, target = target_theta[[i]])
+      init_trans[[rs]][[i]]$lambda <- rorth(nitems, nfactors)
+      init_trans[[rs]][[i]]$lambda[fixed[[i]]$lambda] <- fixed_values[[i]]$lambda
 
-      init_trans[[i]]$psi <- crossprod(init_trans[[i]]$pj_psi)
+      if(positive) {
 
-      init_trans[[i]]$theta <- crossprod(init_trans[[i]]$pj_theta)
+        init_trans[[rs]][[i]]$pj_psi <- rpoblq(nfactors, nfactors, target = target_psi[[i]])
+        init_trans[[rs]][[i]]$pj_theta <- rpoblq(nitems, nitems, target = target_theta[[i]])
 
-    } else {
+        init_trans[[rs]][[i]]$psi <- crossprod(init_trans[[rs]][[i]]$pj_psi)
 
-      P <- diag(nfactors)
-      init_trans[[i]]$psi <- P
-      init_trans[[i]]$psi[fixed[[i]]$psi] <- fixed_values[[i]]$psi
+        init_trans[[rs]][[i]]$theta <- crossprod(init_trans[[rs]][[i]]$pj_theta)
 
-      U <- diag(1/diag(solve(correl[[i]]$R)))
-      init_trans[[i]]$theta <- U
-      init_trans[[i]]$theta[fixed[[i]]$theta] <- fixed_values[[i]]$theta
+      } else {
+
+        P <- diag(nfactors)
+        init_trans[[rs]][[i]]$psi <- P
+        init_trans[[rs]][[i]]$psi[fixed[[i]]$psi] <- fixed_values[[i]]$psi
+
+        U <- diag(1/diag(solve(correl[[i]]$R)))
+        init_trans[[rs]][[i]]$theta <- U
+        init_trans[[rs]][[i]]$theta[fixed[[i]]$theta] <- fixed_values[[i]]$theta
+
+      }
 
     }
 
@@ -186,12 +192,13 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
   # Indices of the unique transparameters in init_trans:
   trans_inds <- match(transparameters_labels, vector_trans)
   init_inds <- match(parameters_labels, vector_trans)
-  for(i in 1:control$rstarts) {
 
-    transparameters[[i]] <- unlist(init_trans)[trans_inds]
-    names(transparameters[[i]]) <- transparameters_labels
-    parameters[[i]] <- unlist(init_trans)[init_inds]
-    names(parameters[[i]]) <- parameters_labels
+  for(rs in 1:control$rstarts) {
+
+    transparameters[[rs]] <- unlist(init_trans[[rs]])[trans_inds]
+    names(transparameters[[rs]]) <- transparameters_labels
+    parameters[[rs]] <- unlist(init_trans[[rs]])[init_inds]
+    names(parameters[[rs]]) <- parameters_labels
 
   }
 
@@ -369,10 +376,21 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
     if(positive) {
 
+      lower_indices <- which(lower.tri(cfa_trans[[i]]$psi, diag = TRUE))
+      labels <- cfa_trans[[i]]$psi[lower_indices]
+      indices <- match(labels, transparameters_labels)
+      control_estimator[[k]] <- list(estimator = "logdetmat2",
+                                     labels = labels,
+                                     indices = list(indices-1L),
+                                     lower_indices = lower_indices-1L,
+                                     p = nrow(cfa_trans[[i]]$psi),
+                                     logdetw = control$logdetw)
+      k <- k+1L
+
       lower_indices <- which(lower.tri(cfa_trans[[i]]$theta, diag = TRUE))
       labels <- cfa_trans[[i]]$theta[lower_indices]
       indices <- match(labels, transparameters_labels)
-      control_estimator[[k]] <- list(estimator = "logdetmat",
+      control_estimator[[k]] <- list(estimator = "logdetmat2",
                                      labels = labels,
                                      indices = list(indices-1L),
                                      lower_indices = lower_indices-1L,

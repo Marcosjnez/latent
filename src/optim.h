@@ -310,6 +310,7 @@ optim_result lbfgs(arguments_optim x,
   // Parameterization
   // final_estimator->param(x, xestimators);
   final_estimator->F(x, xestimators);
+  double f0 = x.f;
   // Rprintf("307= %g \n", x.f);
   // update the gradient
   final_estimator->G(x, xestimators);
@@ -366,6 +367,14 @@ optim_result lbfgs(arguments_optim x,
     // armijo(x, final_manifold, final_estimator, xmanifolds, xestimators);
     wolfe(x, final_transform, final_manifold, final_estimator,
           xtransforms, xmanifolds, xestimators);
+
+    // Stop early if the optimization diverges:
+    if (x.f > f0) {
+      x.convergence = false;
+      break;
+    }
+    f0 = x.f;
+
     // Rprintf("363= %g \n", x.f);
 
     // for (arma::uword i = 0; i < x.parameters.n_elem; ++i) {

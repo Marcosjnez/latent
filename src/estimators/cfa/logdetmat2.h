@@ -1,26 +1,27 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 26/09/2025
+ * Modification date: 27/09/2025
  */
 
 /*
  * Logarithm of determinant of a matrix
  */
 
-class logdetmat: public estimators {
+class logdetmat2: public estimators {
 
 public:
 
   arma::mat X;
   arma::uvec lower_indices;
-  double logdetw;
+  double tr, logdetw;
   int p;
 
   void param(arguments_optim& x) {
 
     X.elem(lower_indices) = x.transparameters(indices[0]);
     X = arma::symmatl(X);
+    tr = arma::trace(X);
 
   }
 
@@ -31,7 +32,7 @@ public:
     // bool ok = arma::log_det(val, sign, X);
     // f = val;
 
-    f = logdetw * arma::log_det_sympd(X);
+    f = logdetw * (arma::log_det_sympd(X) - p*std::log(tr/p));
     x.f -= f;
 
   }
@@ -40,7 +41,10 @@ public:
 
     arma::mat Xinv = 2*arma::inv_sympd(X, arma::inv_opts::allow_approx);
     Xinv.diag() *= 0.5;
-    x.grad.elem(indices[0]) -= logdetw * Xinv.elem(lower_indices);
+    arma::mat Xtr(p, p, arma::fill::eye);
+    Xtr.diag() *= p/tr;
+    x.grad.elem(indices[0]) -= logdetw * (Xinv.elem(lower_indices) -
+      Xtr.elem(lower_indices));
 
   }
 
@@ -72,9 +76,9 @@ public:
 
 };
 
-logdetmat* choose_logdetmat(const Rcpp::List& estimator_setup) {
+logdetmat2* choose_logdetmat2(const Rcpp::List& estimator_setup) {
 
-  logdetmat* myestimator = new logdetmat();
+  logdetmat2* myestimator = new logdetmat2();
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::uvec lower_indices = estimator_setup["lower_indices"];

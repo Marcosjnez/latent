@@ -37,7 +37,7 @@ getfit.lcfa <- function(model, digits = 3) {
   S <- model@Optim$data_list$correl[[1]]$R
 
   # Compute fit statistics if using ML:
-  if(is.null(model@loglik)) {
+  if(length(model@loglik) == 0) {
 
     est <- "ULS"
     loglik <- NULL
@@ -60,7 +60,7 @@ getfit.lcfa <- function(model, digits = 3) {
     t1 <- max(c(X2 - dof, 0))
     t2 <- max(c(X2 - dof, X2_id - dof_id, 0))
     CFI <- 1-t1/t2
-    RMSEA <- sqrt(c(loglik/dof - 1/nobs, 0))
+    RMSEA <- sqrt(max(c(loglik/dof - 1/nobs, 0)))
 
   }
 

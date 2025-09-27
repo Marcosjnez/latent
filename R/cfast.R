@@ -43,7 +43,9 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "ml",
   # Extract the lavaan model:
   model_syntax <- model
   extract_fit <- lavaan::cfa(model = model_syntax, data = data,
-                             sample.cov = sample.cov, std.lv = std.lv,
+                             sample.cov = sample.cov,
+                             sample.nobs = nobs,
+                             std.lv = std.lv,
                              do.fit = FALSE, group = group)
   item_names <- unique(extract_fit@ParTable$rhs[extract_fit@ParTable$op == "=~"])
   # Model for the parameters:
@@ -58,13 +60,28 @@ cfast <- function(data, model = NULL, cor = "pearson", estimator = "ml",
   correl <- vector("list", length = ngroups)
   if(ngroups > 1) {
     data_split <- split(data, data[[group]])
-    for(i in 1:ngroups) {
-      correl[[i]] <- correlation(data = data_split[[i]], item_names = item_names,
-                                 cor = cor, estimator = estimator, missing = missing)
-    }
   } else {
-    correl[[1]] <- correlation(data = data, item_names = item_names, cor = cor,
-                               estimator = estimator, missing = missing)
+    data_split <- list()
+    data_split[[1]] <- data
+  }
+
+  # if(is.null(sample.cov)) {
+  # }
+
+  for(ng in 1:ngroups) {
+
+    if(is.null(sample.cov)) {
+
+      correl[[ng]] <- correlation(data = data_split[[ng]], item_names = item_names,
+                                  cor = cor, estimator = estimator, missing = missing)
+    } else {
+
+      correl[[ng]]$R <- sample.cov
+      p <- nrow(sample.cov)
+      correl[[ng]]$W <- matrix(1, nrow = p, ncol = p)
+
+    }
+
   }
 
   # Data and structure information:
