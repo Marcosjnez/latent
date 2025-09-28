@@ -29,17 +29,10 @@ setMethod("show", "llca", function(fit) {
   cat(sprintf("  %-45s %d\n\n", "Number of possible patterns", fit@modelInfo$npossible_patterns))
 
   # Print Model Test Section
-  if(sum(fit@modelInfo$item != "multinomial") == 0){
-    ni <- fit@summary_table$Observed
-    mi <- fit@summary_table$Estimated
-    dof <- fit@modelInfo$dof
-    L2 <- 2*sum(ni*log(ni/mi))
-    pv <- 1-pchisq(L2, dof)
-  }else{
-    L2 <- NA
-    pv <- NA
-    dof <- NA
-  }
+  fit_ind <- getfit(fit)
+  L2 <- fit_ind[["L2"]]
+  pv <- fit_ind[["pvalue"]]
+  dof <- fit_ind[["dof"]]
 
   cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
 

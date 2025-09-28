@@ -73,14 +73,14 @@ getfit0 <- function(model, digits = 3) {
   }
 
   ##
+  penalized <- isFALSE(fit@Optim$control$penalties) == FALSE
+
+  ##
   ##
   nclasses <- ncol(model@posterior)
   k <- model@modelInfo$nparam
   loglik <- model@loglik
-  penalized_loglik <- model@penalized_loglik
-  if(loglik == penalized_loglik){
-    penalized_loglik <- NA
-  }
+
 
   ##
   # if(sum(model@modelInfo$item != "multinomial") == 0){
@@ -116,16 +116,43 @@ getfit0 <- function(model, digits = 3) {
                             model@posterior)
   }
 
-  result <- c(nclasses = nclasses,
-              npar = k, nobs = nobs,
-              loglik = loglik,
-              penalized_loglik = penalized_loglik,
-              L2 = L2,
-              dof = dof, pvalue = pv,
-              AIC = AIC, BIC = BIC, AIC3 = AIC3,
-              CAIC = CAIC, KIC = KIC, SABIC = SABIC,
-              ICL = ICL,
-              R2_entropy = entropyR2)
+  if(penalized){
+    penalized_loglik <- model@penalized_loglik
+
+    AICp  <- (-2 * penalized_loglik) + (k * 2)
+    AIC3p <- (-2 * penalized_loglik) + (k * 3)
+    BICp <- k * log(sum(nobs)) - 2 * penalized_loglik
+    CAICp <- -2 * penalized_loglik + (k * (log(nobs) + 1))
+    KICp <- -2 * penalized_loglik + (3 * (k + 1))
+    SABICp <- -2 * penalized_loglik + (k * log(((nobs + 2)/24)))
+    ICLp <- icl_default(model@posterior, BICp )
+
+    result <- c(nclasses = nclasses,
+                npar = k, nobs = nobs,
+                loglik = loglik,
+                penalized_loglik = penalized_loglik,
+                L2 = L2,
+                dof = dof, pvalue = pv,
+                AIC = AIC, BIC = BIC, AIC3 = AIC3,
+                CAIC = CAIC, KIC = KIC, SABIC = SABIC,
+                ICL = ICL,
+                AICp = AICp, BICp = BICp, AIC3p = AIC3p,
+                CAICp = CAICp, KICp = KICp, SABICp = SABICp,
+                ICLp = ICLp,
+                R2_entropy = entropyR2)
+
+  }else{
+    result <- c(nclasses = nclasses,
+                npar = k, nobs = nobs,
+                loglik = loglik,
+                L2 = L2,
+                dof = dof, pvalue = pv,
+                AIC = AIC, BIC = BIC, AIC3 = AIC3,
+                CAIC = CAIC, KIC = KIC, SABIC = SABIC,
+                ICL = ICL,
+                R2_entropy = entropyR2)
+  }
+
 
   return(round(result, digits = digits))
 
