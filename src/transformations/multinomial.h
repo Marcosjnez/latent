@@ -109,6 +109,21 @@ public:
 
   void update_vcov(arguments_optim& x) {
 
+    jacob.set_size(n_out, n_in);
+    jacob.zeros();
+
+    int l = 0L;
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s, ++l) {
+          if (std::isnan(y(s,j))) continue;
+          int value = y(s,j);
+          int index = indices[j](value,i);
+          jacob(l, index) = 1/peta[j](value,i);
+        }
+      }
+    }
+
   }
 
   void dconstraints(arguments_optim& x) {

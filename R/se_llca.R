@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 29/08/2025
+# Modification date: 05/10/2025
 #'
 #' @title
 #' Standard Errors
@@ -53,9 +53,8 @@ se.llca <- function(fit, type = "standard", model = "user", digits = 2) {
 
   } else if(type == "robust") {
 
-    H <- standard_se(fit = fit)$h
     # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-    SE <- robust_se(fit = fit, H = H)
+    SE <- robust_se(fit = fit)
 
   } else {
     stop("Unknown type")
@@ -94,27 +93,45 @@ standard_se <- function(fit) {
   control_transform <- fit@Optim$control_transform
   control_estimator <- fit@Optim$control_estimator
   control_optimizer <- fit@Optim$control
-
   control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
-  result <- vcov_all(control_manifold = control_manifold,
+
+  # Calculate the Hessian matrix using numerical approximations:
+  G <- function(parameters) {
+
+    control_optimizer$parameters[[1]] <- parameters
+    g <- get_grad(control_manifold = control_manifold,
+                  control_transform = control_transform,
+                  control_estimator = control_estimator,
+                  control_optimizer = control_optimizer)$g
+
+    return(g)
+
+  }
+
+  H <- numDeriv::jacobian(func = G, x = fit@Optim$opt$parameters)
+  H <- 0.5*(H + t(H)) # Force symmetry
+
+  # Get the variance-covariance matrix between the parameters:
+  result <- get_vcov(control_manifold = control_manifold,
                      control_transform = control_transform,
                      control_estimator = control_estimator,
                      control_optimizer = control_optimizer,
-                     H = matrix(, nrow = 0, ncol = 0))
+                     H = H)
 
   # Name the parameters:
+  result$se <- as.vector(result$se)
   names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
     fit@modelInfo$transparameters_labels
 
-  colnames(result$h) <- rownames(result$h) <-
-    fit@modelInfo$parameters_labels
+  colnames(H) <- rownames(H) <- fit@modelInfo$parameters_labels
+  result$h <- H
 
   return(result)
 
 }
 
-robust_se <- function(fit, H) {
+robust_se <- function(fit) {
 
   # Rearrange control_estimator to get the gradient per response pattern:
 
@@ -124,6 +141,22 @@ robust_se <- function(fit, H) {
   control_optimizer <- fit@Optim$control
   control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
+
+  # Calculate the Hessian matrix using numerical approximations:
+  G <- function(parameters) {
+
+    control_optimizer$parameters[[1]] <- parameters
+    g <- get_grad(control_manifold = control_manifold,
+                  control_transform = control_transform,
+                  control_estimator = control_estimator,
+                  control_optimizer = control_optimizer)$g
+
+    return(g)
+
+  }
+
+  H <- numDeriv::jacobian(func = G, x = fit@Optim$opt$parameters)
+  H <- 0.5*(H + t(H)) # Force symmetry
 
   transparameters_labels <- fit@modelInfo$transparameters_labels
   lca_trans <- fit@modelInfo$lca_trans
@@ -135,15 +168,16 @@ robust_se <- function(fit, H) {
   nobs <- fit@Optim$data_list$nobs
 
   control_estimator <- control_estimator[-1]
+  nclasses <- ncol(fit@modelInfo$lca_trans$class)
   K <- length(control_estimator)
 
   for(s in 1:npatterns) {
 
-    labels <- c(lca_trans$class, full_loglik[s,,])
+    labels <- c(lca_trans$class[s, ], full_loglik[s,,])
     all_indices <- match(labels, transparameters_labels)
-    indices_classes <- match(lca_trans$class, transparameters_labels)
+    indices_classes <- match(lca_trans$class[s, ], transparameters_labels)
     indices_items <- match(full_loglik[s,,], transparameters_labels)
-    indices_theta <- match(lca_trans$theta, transparameters_labels)
+    indices_theta <- match(lca_trans$theta[s, ], transparameters_labels)
     indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
                     indices_theta-1L)
     SJ <- 1L*nitems
@@ -198,11 +232,12 @@ robust_se <- function(fit, H) {
   control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
 
-  result <- vcov_all(control_manifold = control_manifold,
-                           control_transform = control_transform,
-                           control_estimator = control_estimator,
-                           control_optimizer = control_optimizer,
-                           H = newH)
+  # Get the variance-covariance matrix between the parameters:
+  result <- get_vcov(control_manifold = control_manifold,
+                     control_transform = control_transform,
+                     control_estimator = control_estimator,
+                     control_optimizer = control_optimizer,
+                     H = newH)
 
   # Add B to the results:
   result$B <- B
@@ -211,10 +246,12 @@ robust_se <- function(fit, H) {
   names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
     fit@modelInfo$transparameters_labels
 
-  colnames(result$h) <- rownames(result$h) <-
+  colnames(newH) <- rownames(newH) <-
     colnames(result$B) <- rownames(result$B) <-
     fit@modelInfo$transparameters_labels <- fit@modelInfo$parameters_labels
 
+  result$H <- H
+  result$HBinvH <- newH
 
   return(result)
 
@@ -230,9 +267,8 @@ ci <- function(fit, type = "standard", model = "user",
 
   } else if(type == "robust") {
 
-    H <- standard_se(fit = fit)$h
     # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-    SE <- robust_se(fit = fit, H = H)
+    SE <- robust_se(fit = fit)
 
   } else {
     stop("Unknown type")

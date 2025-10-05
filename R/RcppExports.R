@@ -53,8 +53,16 @@ grad_comp <- function(control_manifold, control_transform, control_estimator, co
     .Call(`_latent_grad_comp`, control_manifold, control_transform, control_estimator, control_optimizer, compute, eps)
 }
 
-vcov_all <- function(control_manifold, control_transform, control_estimator, control_optimizer, H) {
-    .Call(`_latent_vcov_all`, control_manifold, control_transform, control_estimator, control_optimizer, H)
+get_grad <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
+    .Call(`_latent_get_grad`, control_manifold, control_transform, control_estimator, control_optimizer)
+}
+
+get_hess <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
+    .Call(`_latent_get_hess`, control_manifold, control_transform, control_estimator, control_optimizer)
+}
+
+get_vcov <- function(control_manifold, control_transform, control_estimator, control_optimizer, H) {
+    .Call(`_latent_get_vcov`, control_manifold, control_transform, control_estimator, control_optimizer, H)
 }
 
 real_sqrtmat <- function(R) {

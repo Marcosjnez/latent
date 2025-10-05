@@ -179,9 +179,37 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// vcov_all
-Rcpp::List vcov_all(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, arma::mat H);
-RcppExport SEXP _latent_vcov_all(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP HSEXP) {
+// get_grad
+Rcpp::List get_grad(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
+RcppExport SEXP _latent_get_grad(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_grad(control_manifold, control_transform, control_estimator, control_optimizer));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_hess
+Rcpp::List get_hess(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
+RcppExport SEXP _latent_get_hess(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_hess(control_manifold, control_transform, control_estimator, control_optimizer));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_vcov
+Rcpp::List get_vcov(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, arma::mat H);
+RcppExport SEXP _latent_get_vcov(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP HSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -190,7 +218,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type H(HSEXP);
-    rcpp_result_gen = Rcpp::wrap(vcov_all(control_manifold, control_transform, control_estimator, control_optimizer, H));
+    rcpp_result_gen = Rcpp::wrap(get_vcov(control_manifold, control_transform, control_estimator, control_optimizer, H));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -337,7 +365,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_roblq", (DL_FUNC) &_latent_roblq, 2},
     {"_latent_rpoblq", (DL_FUNC) &_latent_rpoblq, 3},
     {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 6},
-    {"_latent_vcov_all", (DL_FUNC) &_latent_vcov_all, 5},
+    {"_latent_get_grad", (DL_FUNC) &_latent_get_grad, 4},
+    {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 4},
+    {"_latent_get_vcov", (DL_FUNC) &_latent_get_vcov, 5},
     {"_latent_real_sqrtmat", (DL_FUNC) &_latent_real_sqrtmat, 1},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},
     {"_latent_joint_frequency_table", (DL_FUNC) &_latent_joint_frequency_table, 5},

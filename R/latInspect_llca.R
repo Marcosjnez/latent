@@ -52,13 +52,22 @@ latInspect.llca <- function(fit,
 
     return(temp)
 
-  } else if (what == "classes" ||
-             what == "class" ||
+  } else if (what == "class" ||
+             what == "classes" ||
              what == "cluster" ||
              what == "clusters") {
 
-    temp <- round(fit@transformed_pars$classes, digits)
+    classes <- colMeans(fit@transformed_pars$classes)
+    temp <- round(classes, digits)
     names(temp) <- paste0("Class", 1:length(temp))
+
+    return(temp)
+
+  } else if (what == "fullclasses") {
+
+    temp <- round(fit@transformed_pars$classes, digits)
+    colnames(temp) <- paste0("Class", 1:length(temp))
+    rownames(temp) <- rownames(fit@Optim$data)
 
     return(temp)
 

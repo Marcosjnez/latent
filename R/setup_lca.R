@@ -677,6 +677,8 @@ get_full_lca_covariate_model <- function(data_list, nclasses, item,
 
   lca_trans$theta <- matrix(NA, nrow = npatterns, ncol = nclasses)
   lca_trans$class <- matrix(NA, nrow = npatterns, ncol = nclasses)
+  colnames(lca_trans$class) <- colnames(lca_trans$theta) <-
+    paste("Class", 1:nclasses, sep = "")
 
   for(s in 1:npatterns) {
 
@@ -836,7 +838,7 @@ get_short_lca_covariare_model <- function(data_list, nclasses, item,
       items[[j]] <- matrix(NA, nrow = K[[i]], ncol = nclasses)
       # rownames(items[[j]]) <- paste("Category", 1:K[i], sep = "")
       rownames(items[[j]]) <- data_list$factor_names[[i]]
-      colnames(items[[j]]) <- lca_trans$class
+      colnames(items[[j]]) <- paste("Class", 1:nclasses, sep = "")
       i <- i+1L
     }
 
@@ -876,6 +878,7 @@ get_short_lca_covariare_model <- function(data_list, nclasses, item,
   log_model <- list()
   log_model$beta <- lca_trans$beta
   log_model$items <- items
+  rownames(log_model$beta) <- colnames(data_list$cov_patterns2)
 
   #### Return ####
 
@@ -918,7 +921,7 @@ get_lca_covariate_structures <- function(data_list, full_model, control) {
                                  indices_in = list(indices_in-1L),
                                  labels_out = labels_out,
                                  indices_out = list(indices_out-1L),
-                                 X = cov_patterns)
+                                 X = cov_patterns2)
   k <- k+1L
 
   # thetas to classes:
@@ -1064,7 +1067,7 @@ get_lca_covariate_structures <- function(data_list, full_model, control) {
     if(alpha != 0) {
 
       # Get the indices corresponding to the unique covariate patterns:
-      dt_uniq_X <- data.table::as.data.table(cov_patterns)
+      dt_uniq_X <- data.table::as.data.table(cov_patterns2)
       counts_X <- dt_uniq_X[, .(index = .I[1], count = .N), by = names(dt_uniq_X)]
       uniques <- counts_X$index
       U <- length(uniques)

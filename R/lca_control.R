@@ -8,6 +8,8 @@ lca_control <- function(control) {
 
   # Control input
 
+  control$opt <- "lbfgs" # FORCE LBFGS
+
   if(isFALSE(control$penalties)) {
 
     control$reg <- FALSE

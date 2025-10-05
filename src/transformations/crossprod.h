@@ -50,6 +50,9 @@ public:
 
   void update_vcov(arguments_optim& x) {
 
+    jacob = arma::diagmat(arma::vectorise(2*X));
+    jacob = jacob.rows(lower_diag);
+
   }
 
   void dconstraints(arguments_optim& x) {

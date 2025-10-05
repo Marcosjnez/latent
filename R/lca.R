@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 02/09/2025
+# Modification date: 05/10/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -10,22 +10,19 @@
 #'
 #' @usage
 #'
-#' lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-#'     penalties = NULL, model = NULL, control = NULL, do.fit = TRUE)
+#' lca(data, item = rep("gaussian", ncol(data)), X = NULL, nclasses = 2L,
+#'     model = NULL, do.fit = TRUE, control = NULL, verbose = TRUE)
 #'
 #' @param data data frame or matrix.
 #' @param nclasses Number of latent classes.
 #' @param item Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.
-#' @param penalties list of penalty terms for the parameters or a boolean indicating if penalization should be calculated.
+#' @param X Matrix of covariates.
+#' @param penalties list of penalty terms for the parameters.
 #' @param model List of parameter labels. See 'details' for more information.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #'
-#' @details \code{lca} estimates models with with categorical, continuous, or mixed indicators.
-#' For the 'control' argument, the user can provide the following additional arguments:
-#'   - opt: the optimization algorithm used. The possible values are "em" (expectation-maximization) or "lbfgs" (Approximate Gauss-Newton method).
-#'   - rstarts: the number of random starting values for the parameters. Defaults to 30.
-#'   - cores: the number of CPU cores that should be used to assess the starting values. Defaults to 1.
+#' @details \code{lca} estimates models with categorical and continuous data.
 #'
 #' @return List with the following objects:
 #' \item{parameters}{The model for the logarithm probabilities of the classes.}
@@ -37,27 +34,61 @@
 #'
 #' @export
 lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-                penalties = NULL, model = NULL, control = NULL, do.fit = TRUE) {
+                X = NULL, penalties = NULL, model = NULL, do.fit = TRUE,
+                control = NULL, verbose = TRUE) {
 
-  # model = NULL
   # Check control parameters:
   control$penalties <- penalties
   control <- lca_control(control)
 
   #### Initial input checks ####
 
+  # Number of subjects:
+  nobs <- nrow(data)
+  # Number of items:
+  nitems <- ncol(data)
+
   # Check that data is either a data.frame or a matrix:
   if(!is.data.frame(data) & !is.matrix(data)) {
     stop("data must be a matrix or data.frame")
   }
 
-  # Number of items:
-  nitems <- ncol(data)
-
   # Check that item is a character vector with a string for each column of data:
   if(!is.character(item) || length(item) != nitems) {
 
     stop("item must be a character vector with as many elements as columns in data")
+
+  }
+
+  # Process the covariates:
+  if(is.null(X)) {
+
+    X <- matrix(1, nrow = nobs, ncol = 1L)
+    colnames(X) <- "(Intercept)"
+
+  } else {
+
+    # Check that X is either a data.frame or a matrix:
+    if(!is.data.frame(X) & !is.matrix(X)) {
+      stop("data must be a matrix or data.frame")
+    }
+
+    if(nrow(X) != nobs) {
+      stop("Number of cases in the data and covariates do not match")
+    }
+
+    # Transform characters into factors:
+    X_df <- as.data.frame(X)
+    X_df[] <- lapply(X_df, function(x) if (is.character(x)) factor(x) else x)
+
+    # Create the design matrix:
+    X <- model.matrix(~ . + 1, X_df)
+
+    # Put an underscore between the variable names and their level names:
+    for (v in names(X_df)[sapply(X_df, is.factor)]) {
+      i <- which(startsWith(colnames(X), v))
+      colnames(X)[i] <- paste0(v, "_", make.names(levels(X_df[[v]]))[seq_along(i)])
+    }
 
   }
 
@@ -77,27 +108,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                                    FUN = function(col) {
                                      if (is.factor(col)) as.integer(col) - 1L else col
                                    })
-  # Make sure to start at 0:
-  # data <- apply(data[, multinom, drop = FALSE], MARGIN = 2,
-  #               FUN = \(x) x - min(x))
-
-  # Number of subjects:
-  nobs <- nrow(data)
-  # Convert data to a data.table object:
-  dt <- data.table::as.data.table(data)
-  ## Collect some information from the data ##
-  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
-  # Data matrix with the unique response patterns:
-  patterns <- as.matrix(counts_dt[, names(dt), with = FALSE])
-  # Number of unique response patterns:
-  npatterns <- nrow(counts_dt)
-  # Counts of each response pattern:
-  weights <- counts_dt$count
-  # Indices to map the original data to the matrix of unique patterns:
-  full2short <- counts_dt$index
-  # Indices to map the matrix of unique patterns to the original data:
-  short2full <- match(do.call(paste, dt),
-                      do.call(paste, counts_dt[, -c("index", "count"), with = FALSE]))
 
   # Get the number of possible response patterns:
   if(all(condition)) { # If all the items are multinomial...
@@ -115,12 +125,52 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   }
 
+  # Combine the data and the covariates:
+  dt <- cbind(X, data)
+  pcov <- ncol(X) # Number of covariates
+
+  # Convert data to a data.table object:
+  dt <- data.table::as.data.table(dt)
+
+  ## Collect some information from the data ##
+  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
+  # Data matrix with the unique response patterns:
+  patterns <- as.matrix(counts_dt[, names(dt), with = FALSE])[, -(1:pcov) , drop = FALSE]
+  # Covariates with unique response patterns:
+  cov_patterns2 <- as.matrix(counts_dt[, names(dt), with = FALSE])[, 1:pcov , drop = FALSE]
+  # Number of unique response patterns:
+  npatterns <- nrow(counts_dt)
+  # Counts of each response pattern:
+  weights <- counts_dt$count
+  # Indices to map the original data to the matrix of unique patterns:
+  full2short <- counts_dt$index
+  # Indices to map the matrix of unique patterns to the original data:
+  short2full <- match(do.call(paste, dt),
+                      do.call(paste, counts_dt[, -c("index", "count"), with = FALSE]))
+
+  ## Collect some information from the covariates ##
+  cov_dt <- data.table::as.data.table(X)
+  counts_cov_dt <- cov_dt[, .(index = .I[1], count = .N), by = names(cov_dt)]
+  # Covariates with unique patterns:
+  cov_patterns <- as.matrix(counts_cov_dt[, names(cov_dt), with = FALSE])
+  # Number of unique covariate patterns:
+  ncov_patterns <- nrow(cov_patterns)
+  # Indices to map the original data to the matrix of unique patterns:
+  cov_full2short <- counts_cov_dt$index
+  # Indices to map the matrix of unique patterns to the original data:
+  cov_short2full <- match(do.call(paste, cov_dt),
+                          do.call(paste, counts_cov_dt[, -c("index", "count"),
+                                                       with = FALSE]))
+
   # Put in a list the objects generated form the data:
   data_list <- vector("list")
+  data_list$dt <- data
   data_list$data <- data
+  data_list$X <- X
   data_list$item <- item
   data_list$nobs <- nobs
   data_list$patterns <- patterns
+  data_list$cov_patterns2 <- cov_patterns2
   data_list$npatterns <- npatterns
   data_list$npossible_patterns <- npossible_patterns
   data_list$nitems <- nitems
@@ -129,6 +179,10 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   data_list$short2full <- short2full
   data_list$factor_indices <- factor_indices
   data_list$factor_names <- factor_names
+  data_list$cov_patterns <- cov_patterns
+  data_list$ncov_patterns <- ncov_patterns
+  data_list$cov_full2short <- cov_full2short
+  data_list$cov_short2full <- cov_short2full
 
   #### Initialize objects to store all the models ####
 
@@ -137,13 +191,16 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   nmodels <- length(NCLASSES)
 
   llca_list <- list()
-  initial_control <- control
 
   # Loop to create and fit the models for different nclasses:
   for(NK in 1:nmodels) {
 
-    # NK <- 2L
-    print(paste0("Model nclasses = ", NCLASSES[NK]) )
+    # NK <- 1L
+    if(verbose) {
+
+      print(paste0("Model nclasses = ", NCLASSES[NK]) )
+
+    }
 
     # Ensure that nclasses is an integer:
     nclasses <- as.integer(NCLASSES[NK])
@@ -158,24 +215,24 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #### Create the model ####
 
     # Get the model specification:
-    full_model <- get_full_lca_model(data_list = data_list, nclasses = nclasses,
-                                     item = item, model = model,
-                                     control = control)
+    full_model <- get_full_lca_covariate_model(data_list = data_list, nclasses = nclasses,
+                                               item = item, model = model,
+                                               control = control)
     list2env(full_model, envir = environment())
 
     # Get the short model specification (in logarithm and probability scale) with
     # labels for each parameter:
-    short_model <- get_short_lca_model(data_list = data_list, nclasses = nclasses,
-                                       item = item, lca_trans = lca_trans,
-                                       model = model)
+    short_model <- get_short_lca_covariare_model(data_list = data_list, nclasses = nclasses,
+                                                 item = item, lca_trans = lca_trans,
+                                                 model = model)
     list2env(short_model, envir = environment())
 
     #### Create the structures ####
 
     # Generate the structures for optimization:
-    structures <- get_lca_structures(data_list = data_list,
-                                     full_model = full_model,
-                                     control = control)
+    structures <- get_lca_covariate_structures(data_list = data_list,
+                                               full_model = full_model,
+                                               control = control)
     list2env(structures, envir = environment())
 
     #### Fit the model ####
@@ -281,8 +338,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     Optim$opt <- x
 
-    control <- initial_control
-
     #### Process the outputs ####
 
     # Logarithm likelihood:
@@ -314,10 +369,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Sort the patterns by increasing order:
     summary_table <- summary_table[do.call(order, as.data.frame(summary_table)), ]
     rownames(summary_table) <- paste("pattern", 1:nrow(summary_table), sep = "")
-    # Update the patterns and weights in data_list:
-    # data_list$patterns <- summary_table[, 1:nitems, drop = FALSE]
-    # rownames(data_list$patterns) <- rownames(summary_table)
-    # data_list$weights <- summary_table$Observed
 
     # Check the existence of gaussian items:
     gauss <- "gaussian" %in% item
@@ -341,7 +392,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Additional outputs for full multinomial models:
     if(all(item == "multinomial")) {
 
-      classes <- user_model$classes
+      classes <- colMeans(user_model$classes)
       conditionals <- user_model$items
 
       probCat <- lapply(conditionals, FUN = \(mat) {
@@ -402,6 +453,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   }
 
+  #### Return ####
+
   class(llca_list) <- "llca.list"
 
   if(nmodels == 1) {
@@ -412,8 +465,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
 }
 
-# Andres Chull, fit indices
-# missing data CFA EFA LCA
+# Andres Chull,
 # Estimated values
-
-# parameters package R
+# parameters R package

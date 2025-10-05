@@ -57,14 +57,6 @@ public:
 
   void M(arguments_optim& x) {
 
-    // // New number of subjects in each class:
-    // arma::vec freqs_i = arma::sum(x.freqs, 0).t();
-    //
-    // // New proportion of subjects in each class:
-    // x.transparameters(indices_out[0]) = freqs_i / arma::accu(freqs_i);
-    // x.transparameters(indices_in[0]) = arma::trunc_log(x.transparameters(indices_out[0]));
-
-
   }
 
   void outcomes(arguments_optim& x) {

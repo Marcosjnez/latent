@@ -1,26 +1,13 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 28/08/2025
+ * Modification date: 05/10/2025
  */
 
-Rcpp::List vcov_all(Rcpp::List control_manifold,
+Rcpp::List get_grad(Rcpp::List control_manifold,
                     Rcpp::List control_transform,
                     Rcpp::List control_estimator,
-                    Rcpp::List control_optimizer,
-                    arma::mat H) {
-
-  /*
-   * parameters: vector of parameters
-   */
-
-  /* control_manifold: list of manifolds
-   * Each list projects a set of parameters onto a manifold
-   * NOTE: each list must contain nonoverlapping parameters
-   */
-
-  /* control_estimator: list of estimators
-   */
+                    Rcpp::List control_optimizer) {
 
   Rcpp::List result;
   arguments_optim x;
@@ -73,15 +60,12 @@ Rcpp::List vcov_all(Rcpp::List control_manifold,
   final_estimator->G(x, xestimators);
   final_transform->update_grad(x, xtransforms);
   final_manifold->proj(x, xmanifolds);
-  final_estimator->H(x, xestimators);
-  final_transform->update_hess(x, xtransforms);
-  if(!H.is_empty()) {
-    x.h = H;
-  }
-  final_transform->update_vcov(x, xtransforms);
-  result["vcov"] = x.vcov;
-  result["se"] = x.se;
-  result["h"] = x.h;
+  // final_estimator->H(x, xestimators);
+  // final_transform->update_hess(x, xtransforms);
+  // final_transform->update_vcov(x, xtransforms);
+
+  result["grad"] = x.grad;
+  result["g"] = x.g;
 
   return result;
 

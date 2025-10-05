@@ -6,11 +6,6 @@ devtools::install_github("marcosjnez/latent", force = TRUE)
 
 library(latent)
 
-# data <- gss82
-# item <- rep("multinomial", ncol(data))
-#
-# nclasses <- 3L
-
 # nmiss <- 30
 # missrow <- sample(1:nrow(data), size = nmiss)
 # misscol <- sample(1:ncol(data), size = nmiss, replace = TRUE)

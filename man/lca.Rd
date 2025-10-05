@@ -4,8 +4,8 @@
 \alias{lca}
 \title{Latent Class Analysis.}
 \usage{
-lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-    penalties = NULL, model = NULL, control = NULL, do.fit = TRUE)
+lca(data, item = rep("gaussian", ncol(data)), X = NULL, nclasses = 2L,
+    model = NULL, do.fit = TRUE, control = NULL, verbose = TRUE)
 }
 \arguments{
 \item{data}{data frame or matrix.}
@@ -14,13 +14,15 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
 \item{item}{Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.}
 
-\item{penalties}{list of penalty terms for the parameters or a boolean indicating if penalization should be calculated.}
+\item{X}{Matrix of covariates.}
+
+\item{penalties}{list of penalty terms for the parameters.}
 
 \item{model}{List of parameter labels. See 'details' for more information.}
 
-\item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
-
 \item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+
+\item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
 }
 \value{
 List with the following objects:
@@ -31,11 +33,7 @@ List with the following objects:
 Estimate latent class models with gaussian and multinomial item models.
 }
 \details{
-\code{lca} estimates models with with categorical, continuous, or mixed indicators.
-For the 'control' argument, the user can provide the following additional arguments:
-  - opt: the optimization algorithm used. The possible values are "em" (expectation-maximization) or "lbfgs" (Approximate Gauss-Newton method).
-  - rstarts: the number of random starting values for the parameters. Defaults to 30.
-  - cores: the number of CPU cores that should be used to assess the starting values. Defaults to 1.
+\code{lca} estimates models with categorical and continuous data.
 }
 \references{
 None yet.

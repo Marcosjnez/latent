@@ -125,6 +125,27 @@ public:
 
   void update_vcov(arguments_optim& x) {
 
+    // Initialize the jacobian:
+    jacob.set_size(n_out, n_in);
+    jacob.zeros();
+
+    int ij_m = 0L;
+    int ij_s = J*I;
+    int k = 0L;
+    for (int i = 0; i < I; ++i) {
+      for (int j = 0; j < J; ++j, ++ij_m, ++ij_s) {
+
+        double G0 = 0.0, G1 = 0.0, G2 = 0.0;
+        for (int s = 0; s < S; ++s, ++k) {
+          if (std::isnan(y(s,j))) continue;
+          const double x  = y(s,j) - mu(j,i);
+          jacob(k, ij_m) = x/sigma2(j,i);
+          jacob(k, ij_s) = (x*x - sigma2(j,i))/sigma3(j,i);
+        }
+
+      }
+    }
+
   }
 
   void dconstraints(arguments_optim& x) {

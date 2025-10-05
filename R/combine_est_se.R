@@ -10,15 +10,15 @@ combine_est_se <- function(est, se, digits = 2) {
   }
 
   # Combine class probabilities
-  if (!is.null(est$classes) && !is.null(se$classes)) {
-    classes <- rbind(est$classes, se$classes)
-    rownames(classes) <- c("est", "se")
-    colnames(classes) <- names(est$classes)
-    classes <- t(classes)
-    classes <- format_matrix(classes)
-  } else {
-    classes <- NULL
-  }
+  # if (!is.null(est$classes) && !is.null(se$classes)) {
+  #   classes <- rbind(est$classes, se$classes)
+  #   rownames(classes) <- c("est", "se")
+  #   colnames(classes) <- names(est$classes)
+  #   classes <- t(classes)
+  #   classes <- format_matrix(classes)
+  # } else {
+  #   classes <- NULL
+  # }
 
   # Combine item parameters
   combine_item_est_se <- function(est_items, se_items) {
@@ -68,28 +68,31 @@ combine_est_se <- function(est, se, digits = 2) {
     return(out)
   }
 
+  classes <- combine_item_est_se(est[1], se[1])
+
   items <- combine_item_est_se(est$items, se$items)
 
   return(list(classes = classes, items = items))
 }
 
 combine_est_ci <- function(lower, est, upper, digits = 2) {
+
   fmt <- function(x) formatC(round(x, digits = digits),
                              format = "f", digits = digits)
 
-  # Combine class-level estimates
-  classes <- paste0(
-    fmt(est$classes),
-    " [", fmt(lower$classes), ", ", fmt(upper$classes), "]"
-  )
-
-  # Combine item-level estimates
-  items <- mapply(function(E, L, U) {
+  LEU <- function(E, L, U) {
     matrix(paste0(
       fmt(E), " [", fmt(L), ", ", fmt(U), "]"
     ), nrow = nrow(E), ncol = ncol(E),
     dimnames = dimnames(E))
-  }, est$items, lower$items, upper$items, SIMPLIFY = FALSE)
+  }
+
+  # Combine class-level estimates
+  classes <- LEU(est[[1]], lower[[1]], upper[[1]])
+
+  # Combine item-level estimates
+  items <- mapply(LEU, est$items, lower$items, upper$items,
+                  SIMPLIFY = FALSE)
 
   list(classes = classes, items = items)
 }

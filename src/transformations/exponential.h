@@ -43,6 +43,8 @@ public:
 
   void update_vcov(arguments_optim& x) {
 
+    jacob = arma::diagmat(trans);
+
   }
 
   void dconstraints(arguments_optim& x) {
@@ -53,7 +55,7 @@ public:
 
   void M(arguments_optim& x) {
 
-    x.transparameters(indices_in[0]) = arma::trunc_log(x.transparameters(indices_out[0]));
+    // x.transparameters(indices_in[0]) = arma::trunc_log(x.transparameters(indices_out[0]));
 
   }
 
