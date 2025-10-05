@@ -62,8 +62,8 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lca</span><span class="op">(</span><span class="va">data</span>, nclasses <span class="op">=</span> <span class="fl">2L</span>, item <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"gaussian"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    penalties <span class="op">=</span> <span class="cn">NULL</span>, model <span class="op">=</span> <span class="cn">NULL</span>, control <span class="op">=</span> <span class="cn">NULL</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lca</span><span class="op">(</span><span class="va">data</span>, item <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"gaussian"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span>, X <span class="op">=</span> <span class="cn">NULL</span>, nclasses <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>    model <span class="op">=</span> <span class="cn">NULL</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control <span class="op">=</span> <span class="cn">NULL</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -82,20 +82,24 @@
 <dd><p>Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.</p></dd>
 
 
+<dt id="arg-x">X<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
+<dd><p>Matrix of covariates.</p></dd>
+
+
 <dt id="arg-penalties">penalties<a class="anchor" aria-label="anchor" href="#arg-penalties"></a></dt>
-<dd><p>list of penalty terms for the parameters or a boolean indicating if penalization should be calculated.</p></dd>
+<dd><p>list of penalty terms for the parameters.</p></dd>
 
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
 <dd><p>List of parameter labels. See 'details' for more information.</p></dd>
 
 
-<dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
-<dd><p>List of control parameters for the optimization algorithm. See 'details' for more information.</p></dd>
-
-
 <dt id="arg-do-fit">do.fit<a class="anchor" aria-label="anchor" href="#arg-do-fit"></a></dt>
 <dd><p>TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.</p></dd>
+
+
+<dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
+<dd><p>List of control parameters for the optimization algorithm. See 'details' for more information.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -110,11 +114,7 @@
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>lca</code> estimates models with with categorical, continuous, or mixed indicators.
-For the 'control' argument, the user can provide the following additional arguments:
-  - opt: the optimization algorithm used. The possible values are "em" (expectation-maximization) or "lbfgs" (Approximate Gauss-Newton method).
-  - rstarts: the number of random starting values for the parameters. Defaults to 30.
-  - cores: the number of CPU cores that should be used to assess the starting values. Defaults to 1.</p>
+    <p><code>lca</code> estimates models with categorical and continuous data.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
