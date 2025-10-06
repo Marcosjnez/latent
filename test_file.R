@@ -147,7 +147,7 @@ SE <- se(fit, type = "standard", model = "user", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "user",
+CI <- ci(fit, type = "standard", model = "model",
          confidence = 0.95, digits = 2)
 CI$table
 

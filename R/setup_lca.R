@@ -4,30 +4,30 @@
 
 fill_list_with_vector <- function(lst, values) {
 
-# Insert a vector of values in an arbitrary list lst
+  # Insert a vector of values in an arbitrary list lst
 
-i <- 1
+  i <- 1
 
-assign_recursive <- function(x) {
-  if (is.list(x)) {
-    lapply(x, assign_recursive)
-  } else if (is.matrix(x)) {
-    dims <- dim(x)
-    n <- prod(dims)
-    x[] <- values[i:(i + n - 1)]
-    i <<- i + n
-    x
-  } else if (is.atomic(x)) {
-    n <- length(x)
-    x[] <- values[i:(i + n - 1)]
-    i <<- i + n
-    x
-  } else {
-    stop("Unsupported type")
+  assign_recursive <- function(x) {
+    if (is.list(x)) {
+      lapply(x, assign_recursive)
+    } else if (is.matrix(x)) {
+      dims <- dim(x)
+      n <- prod(dims)
+      x[] <- values[i:(i + n - 1)]
+      i <<- i + n
+      x
+    } else if (is.atomic(x)) {
+      n <- length(x)
+      x[] <- values[i:(i + n - 1)]
+      i <<- i + n
+      x
+    } else {
+      stop("Unsupported type")
+    }
   }
-}
 
-assign_recursive(lst)
+  assign_recursive(lst)
 
 }
 
@@ -51,7 +51,7 @@ allnumeric <- function(lst) {
 }
 
 get_full_lca_model <- function(data_list, nclasses, item,
-                                         model = NULL, control = NULL) {
+                               model = NULL, control = NULL) {
   # Generate the model syntax and initial parameter values
 
   list2env(data_list, envir = environment())
@@ -276,7 +276,7 @@ get_full_lca_model <- function(data_list, nclasses, item,
 }
 
 get_short_lca_model <- function(data_list, nclasses, item,
-                                          lca_trans, model = NULL) {
+                                lca_trans, model = NULL) {
 
   # This function displays the reduced LCA model in logarithm and probability
   # scales. This is a short version of the full model syntax created with
@@ -529,13 +529,13 @@ get_lca_structures <- function(data_list, full_model, control) {
     nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
 
   control_estimator[[1]] <- list(estimator = "lca_cov",
-                                   labels = labels,
-                                   indices = indices,
-                                   S = npatterns,
-                                   J = nitems,
-                                   I = nclasses,
-                                   weights = weights,
-                                   hess_indices = hess_indices)
+                                 labels = labels,
+                                 indices = indices,
+                                 S = npatterns,
+                                 J = nitems,
+                                 I = nclasses,
+                                 weights = weights,
+                                 hess_indices = hess_indices)
 
   # Choose whether using Bayes constants:
   if(control$reg) {

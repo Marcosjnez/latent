@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 29/08/2025
+# Modification date: 06/10/2025
 #'
 #' @title
 #' Standard Errors
@@ -42,7 +42,8 @@ latInspect.llca <- function(fit,
 
   if (what == "profile") {
 
-    classes <- colMeans(fit@transformed_pars$class)
+    weights <- fit@Optim$data_list$weights
+    classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
     temp <- fit@ClassConditional
 
     for(j in 1:length(temp)){
@@ -68,7 +69,8 @@ latInspect.llca <- function(fit,
              what == "cluster" ||
              what == "clusters") {
 
-    classes <- colMeans(fit@transformed_pars$class)
+    weights <- fit@Optim$data_list$weights
+    classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
     temp <- round(classes, digits)
     names(temp) <- paste0("Class", 1:length(temp))
 
@@ -79,6 +81,20 @@ latInspect.llca <- function(fit,
     temp <- round(fit@transformed_pars$class, digits)
     colnames(temp) <- paste0("Class", 1:ncol(temp))
     rownames(temp) <- rownames(fit@Optim$data)
+
+    return(temp)
+
+  } else if (what == "beta"  ||
+             what == "betas" ||
+             what == "coef"  ||
+             what == "coefs" ||
+             what == "coef"  ||
+             what == "coefficient" ||
+             what == "coefficients") {
+
+    temp <- round(fit@transformed_pars$beta, digits)
+    colnames(temp) <- paste0("Class", 1:ncol(temp))
+    rownames(temp) <- colnames(fit@Optim$data_list$cov_patterns)
 
     return(temp)
 
