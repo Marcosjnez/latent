@@ -1,3 +1,7 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 06/10/2025
+
 #### Install latent ####
 
 devtools::install_github("marcosjnez/latent", force = TRUE)
@@ -139,7 +143,7 @@ fit
 getfit(fit)
 
 # Inspect model objects:
-latInspect(fit, what = "classes", digits = 3)
+latInspect(fit, what = "classes", digits = 5)
 latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
 
@@ -160,7 +164,7 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 fit <- cfast(HolzingerSwineford1939, model = model,
-             estimator = "ml", cor = "pearson", do.fit = TRUE)
+             estimator = "uls", cor = "pearson", do.fit = TRUE)
 fit@loglik
 fit@penalized_loglik
 fit@Optim$opt$iterations
@@ -197,10 +201,10 @@ latInspect(fit, what = "theta", digits = 3)
 latInspect(fit, what = "model", digits = 3)
 
 library(lavaan)
-fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "ml",
+fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "uls",
             std.lv = TRUE, std.ov = TRUE)
 summary(fit2, fit.measures = FALSE)
-fitMeasures(fit2)
+fitMeasures(fit2, digits = 5)
 inspect(fit2, what = "se")
 
 SE <- se(fit, digits = 3)

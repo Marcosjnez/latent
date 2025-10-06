@@ -1,3 +1,7 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 06/10/2025
+
 combine_est_se <- function(est, se, digits = 2) {
 
   est_suffix <- " (est)"
@@ -9,19 +13,9 @@ combine_est_se <- function(est, se, digits = 2) {
     apply(mat, c(1, 2), fmt)
   }
 
-  # Combine class probabilities
-  # if (!is.null(est$classes) && !is.null(se$classes)) {
-  #   classes <- rbind(est$classes, se$classes)
-  #   rownames(classes) <- c("est", "se")
-  #   colnames(classes) <- names(est$classes)
-  #   classes <- t(classes)
-  #   classes <- format_matrix(classes)
-  # } else {
-  #   classes <- NULL
-  # }
-
   # Combine item parameters
   combine_item_est_se <- function(est_items, se_items) {
+
     stopifnot(is.list(est_items), is.list(se_items))
     item_names <- intersect(names(est_items), names(se_items))
     out <- vector("list", length(item_names))
@@ -63,9 +57,11 @@ combine_est_se <- function(est, se, digits = 2) {
       colnames(M) <- as.vector(rbind(paste0(cls, est_suffix),
                                      paste0(cls, se_suffix)))
       out[[nm]] <- M
+
     }
 
     return(out)
+
   }
 
   classes <- combine_item_est_se(est[1], se[1])
@@ -73,6 +69,7 @@ combine_est_se <- function(est, se, digits = 2) {
   items <- combine_item_est_se(est$items, se$items)
 
   return(list(classes = classes, items = items))
+
 }
 
 combine_est_ci <- function(lower, est, upper, digits = 2) {
@@ -95,4 +92,5 @@ combine_est_ci <- function(lower, est, upper, digits = 2) {
                   SIMPLIFY = FALSE)
 
   list(classes = classes, items = items)
+
 }

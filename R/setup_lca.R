@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/09/2025
+# Modification date: 06/10/2025
 
 fill_list_with_vector <- function(lst, values) {
 
@@ -624,8 +624,3 @@ get_lca_structures <- function(data_list, full_model, control) {
   return(result)
 
 }
-
-# ng <- obj@Data@ngroups
-# tech <- lavaan::lavTech(obj)
-# par_mat <- lavaan::lavMatrixRepresentation(lavaan::partable(obj),
-#                                            representation = "LISREL")

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 06/10/2025
  */
 
 const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);

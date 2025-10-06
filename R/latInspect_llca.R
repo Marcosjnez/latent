@@ -1,4 +1,5 @@
-# Author: Marcos Jimenez
+# Author: Mauricio Garnier-Villarreal
+# Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 06/10/2025
 #'
@@ -46,11 +47,11 @@ latInspect.llca <- function(fit,
     classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
     temp <- fit@ClassConditional
 
-    for(j in 1:length(temp)){
+    for(j in 1:length(temp)) {
       temp[[j]] <- round(temp[[j]], digits)
     }
 
-    return(list(classes, temp))
+    return(list(class = classes, item = temp))
 
   } else if (what == "classconditional" ||
              what == "items" ||

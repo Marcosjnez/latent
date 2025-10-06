@@ -40,11 +40,24 @@ getfit.lcfa <- function(model, digits = 3) {
   if(length(model@loglik) == 0) {
 
     est <- "ULS"
-    loglik <- NULL
-    X2 <- NULL
+    # loglik <- NULL
+    # X2 <- NULL
+    # pval <- NULL
+    # CFI <- NULL
+    # RMSEA <- NULL
+
+    loglik <- model@loss
+    X2 <- loglik*(nobs-1L)
     pval <- NULL
-    CFI <- NULL
-    RMSEA <- NULL
+    # Compute loss value
+    Sigma <- diag(nitems) # Identity model
+    F_id <- 0.5*sum((S - Sigma)^2)
+    X2_id <- F_id*(nobs-1L)
+    dof_id <- nitems
+    t1 <- max(c(X2 - dof, 0))
+    t2 <- max(c(X2 - dof, X2_id - dof_id, 0))
+    CFI <- 1-t1/t2
+    RMSEA <- sqrt(max(c(loglik/dof - 1/nobs, 0)))
 
   } else {
 

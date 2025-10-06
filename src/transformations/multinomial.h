@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 02/09/2025
+ * Modification date: 06/10/2025
  */
 
 // Logarithm multinomial probability transformation:
