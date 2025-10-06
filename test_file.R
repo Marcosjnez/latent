@@ -113,6 +113,44 @@ CI <- ci(fit, type = "standard", model = "user",
          confidence = 0.95, digits = 2)
 CI$table
 
+#### LCA with covariates (gaussian) ####
+
+# EM for covariates
+# POBLQ in multigroup
+# Automatic creation of structures
+
+library(latent)
+
+data <- empathy[, 1:6]
+X <- as.matrix(empathy[, 7:8])
+
+fit <- lca(data = data, X = X, item = rep("gaussian", ncol(data)),
+           nclasses = 4L, penalties = TRUE,
+           control = NULL, do.fit = TRUE)
+fit@timing
+fit@loglik # -1798.885
+fit@penalized_loglik # -1801.996
+fit@Optim$opt$iterations
+
+# Plot model fit info:
+fit
+
+# Get fit indices:
+getfit(fit)
+
+# Inspect model objects:
+latInspect(fit, what = "classes", digits = 3)
+latInspect(fit, what = "profile", digits = 3)
+latInspect(fit, what = "posterior", digits = 3)
+
+SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE$table
+
+# Get confidence intervals:
+CI <- ci(fit, type = "standard", model = "user",
+         confidence = 0.95, digits = 2)
+CI$table
+
 #### CFA ####
 
 library(latent)
@@ -226,16 +264,19 @@ model <- 'visual  =~ x1 + x2 + x3
           x4 ~~ x5
           x4 ~~ x6'
 
+# With lavaan:
 fit2 <- cfa(model, data = HolzingerSwineford1939,
             estimator = "ml", std.lv = TRUE, std.ov = TRUE)
 fit2
 inspect(fit2, what = "est")
 fitmeasures(fit2, fit.measures = c("cfi", "tli", "rmsea", "srmr"))
 
+# With latent:
 fit <- cfast(data = HolzingerSwineford1939, model = model,
              estimator = "ml", cor = "pearson",
              std.lv = TRUE, positive = TRUE, do.fit = TRUE,
-             control = list(opt = "lbfgs", maxit = 1000L, logdetw = 1e-03,
+             control = list(opt = "lbfgs", maxit = 1000L,
+                            logdetw = 1e-03,
                             cores = 10L, rstarts = 10L))
 
 fit@loglik # -0.2459153 (ML)
@@ -243,19 +284,6 @@ fit@penalized_loglik # -0.2459153 (ML)
 fit@loss # 0.1414338 (ULS) / 0.2459153 (ML)
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
-
-# control_manifold <- fit@Optim$control_manifold
-# control_transform <- fit@Optim$control_transform
-# control_estimator <- fit@Optim$control_estimator
-# control <- fit@Optim$control
-#
-# x <- grad_comp(control_manifold, control_transform,
-#                control_estimator, control, eps = 1e-04,
-#                compute = "all")
-# x$f
-# round(c(x$g)-c(x$numg), 4)
-# cbind(round(c(x$g)-c(x$numg), 4),
-# fit@modelInfo$parameters_labels)
 
 # Plot model fit info:
 fit

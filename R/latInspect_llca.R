@@ -39,10 +39,21 @@ latInspect.llca <- function(fit,
   what <- tolower(what)
 
   ### result fits
-  if (what == "classconditional" ||
-      what == "profile" ||
-      what == "items" ||
-      what == "item") {
+
+  if (what == "profile") {
+
+    classes <- colMeans(fit@transformed_pars$class)
+    temp <- fit@ClassConditional
+
+    for(j in 1:length(temp)){
+      temp[[j]] <- round(temp[[j]], digits)
+    }
+
+    return(list(classes, temp))
+
+  } else if (what == "classconditional" ||
+             what == "items" ||
+             what == "item") {
 
     temp <- fit@ClassConditional
 
@@ -57,7 +68,7 @@ latInspect.llca <- function(fit,
              what == "cluster" ||
              what == "clusters") {
 
-    classes <- colMeans(fit@transformed_pars$classes)
+    classes <- colMeans(fit@transformed_pars$class)
     temp <- round(classes, digits)
     names(temp) <- paste0("Class", 1:length(temp))
 
@@ -65,8 +76,8 @@ latInspect.llca <- function(fit,
 
   } else if (what == "fullclasses") {
 
-    temp <- round(fit@transformed_pars$classes, digits)
-    colnames(temp) <- paste0("Class", 1:length(temp))
+    temp <- round(fit@transformed_pars$class, digits)
+    colnames(temp) <- paste0("Class", 1:ncol(temp))
     rownames(temp) <- rownames(fit@Optim$data)
 
     return(temp)

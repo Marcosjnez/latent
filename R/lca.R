@@ -215,24 +215,24 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #### Create the model ####
 
     # Get the model specification:
-    full_model <- get_full_lca_covariate_model(data_list = data_list, nclasses = nclasses,
-                                               item = item, model = model,
-                                               control = control)
+    full_model <- get_full_lca_model(data_list = data_list, nclasses = nclasses,
+                                     item = item, model = model,
+                                     control = control)
     list2env(full_model, envir = environment())
 
     # Get the short model specification (in logarithm and probability scale) with
     # labels for each parameter:
-    short_model <- get_short_lca_covariare_model(data_list = data_list, nclasses = nclasses,
-                                                 item = item, lca_trans = lca_trans,
-                                                 model = model)
+    short_model <- get_short_lca_model(data_list = data_list, nclasses = nclasses,
+                                       item = item, lca_trans = lca_trans,
+                                       model = model)
     list2env(short_model, envir = environment())
 
     #### Create the structures ####
 
     # Generate the structures for optimization:
-    structures <- get_lca_covariate_structures(data_list = data_list,
-                                               full_model = full_model,
-                                               control = control)
+    structures <- get_lca_structures(data_list = data_list,
+                                     full_model = full_model,
+                                     control = control)
     list2env(structures, envir = environment())
 
     #### Fit the model ####
@@ -271,6 +271,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                              timing             = numeric(), # timing information
                              modelInfo          = modelInfo, # modelInfo
                              Optim              = Optim, # Optim
+                             user_model         = list(),
                              parameters         = list(),
                              transformed_pars   = list(),
                              posterior          = matrix(),
@@ -348,6 +349,10 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Sum of logarithm likelihoods by response pattern:
     loglik_pattern <- weights * loglik_case
 
+    transformed_pars <- fill_list_with_vector(modelInfo$lca_trans,
+                                              Optim$opt$transparameters)
+    transformed_pars <- allnumeric(transformed_pars)
+
     ## Summary table with information for each response pattern ##
     # Estimated "counts" for each response pattern:
     estimated <- exp(loglik_case) * nobs
@@ -392,7 +397,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Additional outputs for full multinomial models:
     if(all(item == "multinomial")) {
 
-      classes <- colMeans(user_model$classes)
+      classes <- colMeans(modelInfo$lca_trans$class)
       conditionals <- user_model$items
 
       probCat <- lapply(conditionals, FUN = \(mat) {
@@ -437,8 +442,9 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                            timing             = elapsed, # timing information
                            modelInfo          = modelInfo, # modelInfo
                            Optim              = Optim, # Optim
+                           user_model         = user_model,
                            parameters         = raw_model,
-                           transformed_pars   = user_model,
+                           transformed_pars   = transformed_pars,
                            posterior          = posterior,
                            state              = state,
                            loglik             = loglik, # loglik values

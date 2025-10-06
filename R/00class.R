@@ -10,6 +10,7 @@ setClass("llca",
            timing             = "numeric", # timing information
            modelInfo          = "list", # modelInfo
            Optim              = "list", # opt
+           user_model         = "list",
            parameters         = "list",
            transformed_pars   = "list",
            posterior          = "matrix",

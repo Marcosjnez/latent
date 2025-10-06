@@ -35,7 +35,7 @@ se.llca <- function(fit, type = "standard", model = "user", digits = 2) {
   if(model == "user") {
 
     model <- fit@modelInfo$prob_model
-    est <- fit@transformed_pars
+    est <- fit@user_model
 
   } else if(model == "model") {
 
@@ -303,7 +303,7 @@ ci <- function(fit, type = "standard", model = "user",
   if(model == "user") {
 
     model <- fit@modelInfo$prob_model
-    est <- fit@transformed_pars
+    est <- fit@user_model
 
   } else if(model == "model") {
 
