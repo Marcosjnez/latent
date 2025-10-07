@@ -82,7 +82,7 @@ correlation <- function(data, item_names = colnames(data),
       result$R <- R
       result$thresholds <- taus
       result$cumprop <- cumprop
-      results$contingency_tables <- n
+      result$contingency_tables <- n
       if(any(eigen(R)$values < 0)) {
         warning("The matrix of polychoric correlations was non-positive
                 definite with the two-step method. \n
