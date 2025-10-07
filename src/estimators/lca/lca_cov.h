@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 23/09/2025
+ * Modification date: 07/10/2025
  */
 
 /*
@@ -32,7 +32,6 @@ public:
 
   void param(arguments_optim& x) {
 
-    // classes = x.transparameters.elem(indices_classes);
     arma::vec cl = x.transparameters.elem(indices_classes);
     classes = arma::reshape(cl, S, I);
     logclasses = arma::trunc_log(classes);

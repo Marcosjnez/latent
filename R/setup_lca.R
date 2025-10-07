@@ -222,7 +222,7 @@ get_full_lca_model <- function(data_list, nclasses, item,
   # Arrange transparameter labels:
   vector_trans <- unname(unlist(lca_trans))
   fixed_labels <- vector_trans[1:length(vector_param)][!indicator]
-  transparameters_labels <- unique(c(parameters_labels, vector_trans))
+  transparameters_labels <- unique(c(vector_trans, parameters_labels))
   ntrans <- length(transparameters_labels)
 
   #### Create the initial values for the parameters ####

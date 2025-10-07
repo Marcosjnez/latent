@@ -45,6 +45,7 @@ public:
 #include "transformations/identity.h"
 #include "transformations/softmax.h"
 #include "transformations/exponential.h"
+#include "transformations/logarithm.h"
 #include "transformations/normal.h"
 #include "transformations/crossprod.h"
 #include "transformations/multinomial.h"
@@ -57,6 +58,7 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "identity",     choose_identity     },
   { "softmax",     choose_softmax     },
   { "exponential", choose_exponential },
+  { "logarithm", choose_logarithm },
   { "normal",   choose_normal   },
   { "crossprod", choose_crossprod },
   { "multinomial", choose_multinomial },

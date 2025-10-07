@@ -143,9 +143,24 @@ fit
 getfit(fit)
 
 # Inspect model objects:
+latInspect(fit, what = "coefs", digits = 5)
 latInspect(fit, what = "classes", digits = 5)
 latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
+
+predict(fit, new = cbind(1, 1.571))
+fitted(fit)
+
+fit@parameters$beta
+fit@transformed_pars$beta
+fit@modelInfo$lca_param$beta
+fit@modelInfo$lca_trans$beta
+c(fit@transformed_pars)
+
+X0 <- cbind(1, 1, 1.571)
+Z0 <- X0 %*% fit@parameters$beta
+P0 <- latent::soft(Z0, a = 1)
+round(c(P0), 7)
 
 SE <- se(fit, type = "standard", model = "user", digits = 4)
 SE$table
