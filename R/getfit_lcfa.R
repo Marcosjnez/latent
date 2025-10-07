@@ -77,9 +77,9 @@ getfit.lcfa <- function(model, digits = 3) {
 
   }
 
-  lambda <- fit@transformed_pars[[1]]$lambda
-  psi <- fit@transformed_pars[[1]]$psi
-  theta <- fit@transformed_pars[[1]]$theta
+  lambda <- model@transformed_pars[[1]]$lambda
+  psi <- model@transformed_pars[[1]]$psi
+  theta <- model@transformed_pars[[1]]$theta
   rhat <- lambda %*% psi %*% t(lambda) + theta
   residuals <- (S-rhat)[lower.tri(S, diag = TRUE)]
   SRMR <- sqrt(mean(residuals^2))
