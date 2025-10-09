@@ -1,10 +1,10 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/10/2025
+# Modification date: 09/10/2025
 
 #### Install latent ####
 
-devtools::install_github("marcosjnez/latent", force = TRUE)
+# devtools::install_github("marcosjnez/latent", force = TRUE)
 
 #### LCA (multinomial) ####
 
@@ -41,6 +41,10 @@ latInspect(fit, what = "posterior", digits = 3)
 latInspect(fit, what = "table", digits = 3)
 latInspect(fit, what = "pattern", digits = 3)
 
+# Get standard errors:
+SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE$table
+
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", model = "user",
          confidence = 0.95, digits = 2)
@@ -71,6 +75,10 @@ latInspect(fit, what = "coefs", digits = 3)
 latInspect(fit, what = "classes", digits = 3)
 latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
+
+# Get standard errors:
+SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE$table
 
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", model = "user",
@@ -115,6 +123,10 @@ latInspect(fit, what = "classes", digits = 3)
 latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
 
+# Get standard errors:
+SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE$table
+
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", model = "user",
          confidence = 0.95, digits = 2)
@@ -155,11 +167,12 @@ latInspect(fit, what = "posterior", digits = 3)
 predict(fit, new = cbind(1, 1.571))
 fitted(fit)
 
+# Get standard errors:
 SE <- se(fit, type = "standard", model = "user", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "model",
+CI <- ci(fit, type = "standard", model = "user",
          confidence = 0.95, digits = 2)
 CI$table
 

@@ -4,8 +4,9 @@
 \alias{lca}
 \title{Latent Class Analysis.}
 \usage{
-lca(data, item = rep("gaussian", ncol(data)), X = NULL, nclasses = 2L,
-    model = NULL, method = "1step", do.fit = TRUE, control = NULL, verbose = TRUE)
+lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
+    X = NULL, method = "1step", penalties = TRUE, model = NULL,
+    do.fit = TRUE, control = NULL, verbose = TRUE)
 }
 \arguments{
 \item{data}{data frame or matrix.}
@@ -20,20 +21,79 @@ lca(data, item = rep("gaussian", ncol(data)), X = NULL, nclasses = 2L,
 
 \item{model}{List of parameter labels. See 'details' for more information.}
 
+\item{method}{Method to estimate the covariates. Defaults to "1step".}
+
 \item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
 
 \item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+
+\item{verbose}{Print information of model estimation. Defaults to FALSE.}
 }
 \value{
 List with the following objects:
-\item{parameters}{The model for the logarithm probabilities of the classes.}
-\item{f}{Logarithm likelihood at the maximum.}
+\item{version}{Version number of 'latent' when the model was estimated.}
+\item{call}{Code used to estimate the model.}
+\item{ModelInfo}{Model information.}
+\item{Optim}{Output of the optimizer.}
+\item{user_model}{Structure with most relevant parameters.}
+\item{parameters}{Structure with all model parameters.}
+\item{transparameters}{Structure with all transformed model parameters.}
+\item{posterior}{Posterior probability of class membership.}
+\item{state}{Class with highest posterior probability.}
+\item{loglik}{Logarithm likelihood of the model.}
+\item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
+\item{loglik_case}{Logarithm likelihood of each pattern.}
+\item{summary_table}{Table of summaries of the fitted model. Useful when all the items are 'multinomial'.}
+\item{ClassConditional}{Parameters that are conditional on the class memberships.}
+\item{ResponseConditional}{Probability of class memberships conditional on item response. Only available when all the items have a 'multinomial' likelihood.}
+\item{probCat}{Marginal probability of an item response. Only available when all the items have a 'multinomial' likelihood.}
 }
 \description{
-Estimate latent class models with gaussian and multinomial item models.
+Estimate latent class models with gaussian and multinomial item models,
+with or without covariates to predict class membership.
 }
 \details{
 \code{lca} estimates models with categorical and continuous data.
+}
+\examples{
+
+\dontrun{
+
+fit <- lca(data = gss82, nclasses = 3L,
+           item = rep("multinomial", ncol(gss82)),
+           penalties = TRUE, do.fit = TRUE)
+fit@timing
+fit@loglik # -2754.643
+fit@penalized_loglik # -2759.507
+fit@Optim$opt$iterations
+
+# Plot model fit info:
+fit
+
+# Get fit indices:
+getfit(fit)
+
+# Get a summary:
+summary(fit)
+
+# Inspect model objects:
+latInspect(fit, what = "coefs", digits = 3)
+latInspect(fit, what = "classes", digits = 3)
+latInspect(fit, what = "profile", digits = 3)
+latInspect(fit, what = "posterior", digits = 3)
+latInspect(fit, what = "table", digits = 3)
+latInspect(fit, what = "pattern", digits = 3)
+
+# Get standard errors:
+SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE$table
+
+# Get confidence intervals:
+CI <- ci(fit, type = "standard", model = "user",
+        confidence = 0.95, digits = 2)
+CI$table
+}
+
 }
 \references{
 None yet.
