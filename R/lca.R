@@ -129,10 +129,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                                         ncol = 1)
     fit2@modelInfo$lca_param
     fit2@modelInfo <- fit3@modelInfo
-    fit2@Optim$control_manifold <- fit3@Optim$control_manifold
-    fit2@Optim$control_transform <- fit3@Optim$control_transform
-    fit2@Optim$control_estimator <- fit3@Optim$control_estimator
-    fit2@Optim$control <- fit3@Optim$control
 
     return(fit2)
 
@@ -353,15 +349,15 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                       parameters_labels = parameters_labels,
                       transparameters_labels = transparameters_labels,
                       lca_param = lca_param,
-                      lca_trans = lca_trans)
+                      lca_trans = lca_trans,
+                      control_manifold = control_manifold,
+                      control_transform = control_transform,
+                      control_estimator = control_estimator,
+                      control = control)
 
     # Data for the optimization algorithms:
     Optim <- list(data = data,
-                  data_list = data_list,
-                  control_manifold = control_manifold,
-                  control_transform = control_transform,
-                  control_estimator = control_estimator,
-                  control = control)
+                  data_list = data_list)
 
     # Fit the model or just get the model specification:
     if(!do.fit) {

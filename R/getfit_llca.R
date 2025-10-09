@@ -73,7 +73,7 @@ getfit0 <- function(model, digits = 3) {
   }
 
   ##
-  penalized <- isFALSE(fit@Optim$control$penalties) == FALSE
+  penalized <- isFALSE(fit@modelInfo$control$penalties) == FALSE
 
   ##
   ##

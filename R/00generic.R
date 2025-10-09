@@ -19,13 +19,13 @@ setMethod("show", "llca", function(fit) {
 
 
   # Print Estimator, Optimization, and Parameters section
-  if(isFALSE(fit@Optim$control$penalties)){
+  if(isFALSE(fit@modelInfo$control$penalties)){
     est <- "ML"
   }else{
     est <- "Penalized-ML"}
 
   cat(sprintf("  %-45s %s\n", "Estimator", est))
-  cat(sprintf("  %-45s %s\n", "Optimization method", fit@Optim$control$opt))
+  cat(sprintf("  %-45s %s\n", "Optimization method", fit@modelInfo$control$opt))
   cat(sprintf("  %-45s %d\n\n", "Number of model parameters", fit@modelInfo$nparam))
 
   # Print Number of Observations

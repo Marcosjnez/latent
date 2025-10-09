@@ -89,10 +89,10 @@ standard_se <- function(fit) {
 
   # Compute the variance-covariance matrix of the parameters:
 
-  control_manifold <- fit@Optim$control_manifold
-  control_transform <- fit@Optim$control_transform
-  control_estimator <- fit@Optim$control_estimator
-  control_optimizer <- fit@Optim$control
+  control_manifold <- fit@modelInfo$control_manifold
+  control_transform <- fit@modelInfo$control_transform
+  control_estimator <- fit@modelInfo$control_estimator
+  control_optimizer <- fit@modelInfo$control
   control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
 
@@ -135,10 +135,10 @@ robust_se <- function(fit) {
 
   # Rearrange control_estimator to get the gradient per response pattern:
 
-  control_manifold <- fit@Optim$control_manifold
-  control_transform <- fit@Optim$control_transform
-  control_estimator <- fit@Optim$control_estimator
-  control_optimizer <- fit@Optim$control
+  control_manifold <- fit@modelInfo$control_manifold
+  control_transform <- fit@modelInfo$control_transform
+  control_estimator <- fit@modelInfo$control_estimator
+  control_optimizer <- fit@modelInfo$control
   control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
 
@@ -225,10 +225,10 @@ robust_se <- function(fit) {
   newH <- H %*% solve(B) %*% H
 
   # Recompute the variance-covariance matrix with this new hessian:
-  control_manifold <- fit@Optim$control_manifold
-  control_transform <- fit@Optim$control_transform
-  control_estimator <- fit@Optim$control_estimator
-  control_optimizer <- fit@Optim$control
+  control_manifold <- fit@modelInfo$control_manifold
+  control_transform <- fit@modelInfo$control_transform
+  control_estimator <- fit@modelInfo$control_estimator
+  control_optimizer <- fit@modelInfo$control
   control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
 
@@ -284,7 +284,7 @@ ci <- function(fit, type = "standard", model = "user",
   # slot for extracting the degrees of freedom from the transformations:
   slot <- 2
   # Get the indices of each transformed parameter:
-  indices <- unlist(lapply(fit@Optim$control_transform,
+  indices <- unlist(lapply(fit@modelInfo$control_transform,
                            FUN = \(x) x$indices_out[[1]]+1L))
   # Update the degrees of freedom of each transformed parameter:
   ps[indices] <- unlist(lapply(fit@Optim$opt$outputs$transformations$vectors,
