@@ -5,7 +5,7 @@
 \title{Latent Class Analysis.}
 \usage{
 lca(data, item = rep("gaussian", ncol(data)), X = NULL, nclasses = 2L,
-    model = NULL, do.fit = TRUE, control = NULL, verbose = TRUE)
+    model = NULL, method = "1step", do.fit = TRUE, control = NULL, verbose = TRUE)
 }
 \arguments{
 \item{data}{data frame or matrix.}

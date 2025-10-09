@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/10/2025
+# Modification date: 09/10/2025
 
 fill_list_with_vector <- function(lst, values) {
 
@@ -52,6 +52,7 @@ allnumeric <- function(lst) {
 
 get_full_lca_model <- function(data_list, nclasses, item,
                                model = NULL, control = NULL) {
+
   # Generate the model syntax and initial parameter values
 
   list2env(data_list, envir = environment())
@@ -109,8 +110,8 @@ get_full_lca_model <- function(data_list, nclasses, item,
 
   }
 
-  pi_hat_list <- list()
   # Model for multinomial items:
+  pi_hat_list <- list()
   if(any(item == "multinomial")) {
 
     multinom <- which(item == "multinomial")
@@ -149,6 +150,24 @@ get_full_lca_model <- function(data_list, nclasses, item,
       init_param[[i]] <- c(init_param[[i]], init_eta)
     }
 
+  }
+
+  # Replace the parameter structures by custom structures in model:
+
+  if(!is.null(model$beta)) {
+    lca_param$beta <- as.character(model$beta)
+  }
+
+  if(!is.null(model$mu)) {
+    lca_param$mu <- as.character(model$mu)
+  }
+
+  if(!is.null(model$s)) {
+    lca_param$s <- as.character(model$s)
+  }
+
+  if(!is.null(model$eta)) {
+    lca_param$eta <- as.character(model$eta)
   }
 
   #### Model for the transformed parameters ####
@@ -236,20 +255,26 @@ get_full_lca_model <- function(data_list, nclasses, item,
 
   #### Create the initial values for the transformed parameters ####
 
+  # Indices of free parameters:
   free_indices <- match(parameters_labels, transparameters_labels)
+  # Indices of fixed parameters:
   fixed_indices <- match(fixed_labels, transparameters_labels)
+
+  # Initialize the vector of transformed parameters:
   transparameters <- vector("list", length = control$rstarts)
-  for(i in 1:control$rstarts) {
+  for(i in 1:control$rstarts) { # For each random start i...
     transparameters[[i]] <- vector(length = ntrans)
+    # Copy the parameter values to the transparameters:
     transparameters[[i]][free_indices] <- parameters[[i]]
-    transparameters[[i]][fixed_indices] <- fixed_values
+    transparameters[[i]][fixed_indices] <- fixed_values # Fixed parameters
   }
 
   #### Relate the transformed parameters to the parameters ####
 
-  param2trans <- match(transparameters_labels, parameters_labels)
-  param2trans <- param2trans[!is.na(param2trans)]
   # Relate the parameters to the transformed parameters:
+  param2trans <- match(transparameters_labels, parameters_labels)
+  param2trans <- param2trans[!is.na(param2trans)] # Remove NAs
+  # Relate the transformed parameters to the parameters:
   trans2param <- match(parameters_labels, transparameters_labels)
 
   #### Set up the optimizer ####

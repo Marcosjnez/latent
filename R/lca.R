@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/10/2025
+# Modification date: 09/10/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -11,7 +11,7 @@
 #' @usage
 #'
 #' lca(data, item = rep("gaussian", ncol(data)), X = NULL, nclasses = 2L,
-#'     model = NULL, do.fit = TRUE, control = NULL, verbose = TRUE)
+#'     model = NULL, method = "1step", do.fit = TRUE, control = NULL, verbose = TRUE)
 #'
 #' @param data data frame or matrix.
 #' @param nclasses Number of latent classes.
@@ -34,8 +34,48 @@
 #'
 #' @export
 lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-                X = NULL, penalties = NULL, model = NULL, do.fit = TRUE,
-                control = NULL, verbose = TRUE) {
+                X = NULL, penalties = NULL, model = NULL, method = "1step",
+                do.fit = TRUE, control = NULL, verbose = TRUE) {
+
+  if(method == "2step") {
+
+    if(length(nclasses) > 1) {
+      stop("The 2step method must be run with a single value of nclasses")
+    }
+
+    # Fit the model without covariates:
+    fit1 <- lca(data, nclasses = nclasses, item = item,
+                X = NULL, penalties = penalties, model = NULL, method = "1step",
+                do.fit = do.fit, control = control, verbose = FALSE)
+
+    # Fix the item parameters and estimate the beta coefficients:
+    model <- fit1@transformed_pars
+    model$beta <- NULL
+    fit2 <- lca(data, nclasses = nclasses, item = item,
+                X = X, penalties = penalties, model = model, method = "1step",
+                do.fit = do.fit, control = control, verbose = verbose)
+
+    # Get the modelInfo from the full model:
+    fit3 <- lca(data, nclasses = nclasses, item = item,
+                X = X, penalties = penalties, model = NULL, method = "1step",
+                do.fit = FALSE, control = control, verbose = FALSE)
+
+    # Update the opt and modelInfo data of fit2:
+    fit2@Optim$opt$parameters <- matrix(c(fit2@Optim$opt$parameters,
+                                          fit2@transformed_pars$mu,
+                                          fit2@transformed_pars$s,
+                                          fit2@transformed_pars$eta),
+                                        ncol = 1)
+    fit2@modelInfo$lca_param
+    fit2@modelInfo <- fit3@modelInfo
+    fit2@Optim$control_manifold <- fit3@Optim$control_manifold
+    fit2@Optim$control_transform <- fit3@Optim$control_transform
+    fit2@Optim$control_estimator <- fit3@Optim$control_estimator
+    fit2@Optim$control <- fit3@Optim$control
+
+    return(fit2)
+
+  }
 
   # Check control parameters:
   control$penalties <- penalties
@@ -397,7 +437,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Additional outputs for full multinomial models:
     if(all(item == "multinomial")) {
 
-      classes <- colMeans(modelInfo$lca_trans$class)
+      classes <- colMeans(transformed_pars$class)
       conditionals <- user_model$items
 
       probCat <- lapply(conditionals, FUN = \(mat) {
@@ -471,6 +511,3 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
 }
 
-# Andres Chull,
-# Estimated values
-# parameters R package
