@@ -66,7 +66,7 @@ with or without covariates to predict class membership.</p>
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lca</span><span class="op">(</span><span class="va">data</span>, nclasses <span class="op">=</span> <span class="fl">2L</span>, item <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"gaussian"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    X <span class="op">=</span> <span class="cn">NULL</span>, method <span class="op">=</span> <span class="st">"1step"</span>, penalties <span class="op">=</span> <span class="cn">TRUE</span>, model <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>    X <span class="op">=</span> <span class="cn">NULL</span>, penalties <span class="op">=</span> <span class="cn">TRUE</span>, model <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>    do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control <span class="op">=</span> <span class="cn">NULL</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -96,10 +96,6 @@ with or without covariates to predict class membership.</p>
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
 <dd><p>List of parameter labels. See 'details' for more information.</p></dd>
-
-
-<dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
-<dd><p>Method to estimate the covariates. Defaults to "1step".</p></dd>
 
 
 <dt id="arg-do-fit">do.fit<a class="anchor" aria-label="anchor" href="#arg-do-fit"></a></dt>

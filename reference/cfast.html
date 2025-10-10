@@ -62,12 +62,106 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">cfast</span><span class="op">(</span><span class="va">data</span>, model <span class="op">=</span> <span class="cn">NULL</span>, cor <span class="op">=</span> <span class="st">"pearson"</span>, estimator <span class="op">=</span> <span class="st">"ml"</span>,</span>
-<span>group <span class="op">=</span> <span class="cn">NULL</span>, sample.cov <span class="op">=</span> <span class="cn">NULL</span>, nobs <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>missing <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>, W <span class="op">=</span> <span class="cn">NULL</span>, std.lv <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>positive <span class="op">=</span> <span class="cn">FALSE</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">cfast</span><span class="op">(</span><span class="va">data</span>, model <span class="op">=</span> <span class="cn">NULL</span>, cor <span class="op">=</span> <span class="st">"pearson"</span>,</span>
+<span>estimator <span class="op">=</span> <span class="st">"ml"</span>, group <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>sample.cov <span class="op">=</span> <span class="cn">NULL</span>, nobs <span class="op">=</span> <span class="cn">NULL</span>, W <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>positive <span class="op">=</span> <span class="cn">FALSE</span>, penalties <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>missing <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>,</span>
+<span>std.lv <span class="op">=</span> <span class="cn">FALSE</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
+
+
+<dl><dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
+<dd><p>data frame or matrix.</p></dd>
+
+
+<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
+<dd><p>lavaan's model syntax.</p></dd>
+
+
+<dt id="arg-cor">cor<a class="anchor" aria-label="anchor" href="#arg-cor"></a></dt>
+<dd><p>Correlation types: "pearson" and "poly". Defaults to "pearson".</p></dd>
+
+
+<dt id="arg-estimator">estimator<a class="anchor" aria-label="anchor" href="#arg-estimator"></a></dt>
+<dd><p>Available estimators: "ml", "uls", and "dwls". Defaults to "ml".</p></dd>
+
+
+<dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
+<dd><p>.</p></dd>
+
+
+<dt id="arg-sample-cov">sample.cov<a class="anchor" aria-label="anchor" href="#arg-sample-cov"></a></dt>
+<dd><p>Covariance matrix between the items. Defaults to NULL.</p></dd>
+
+
+<dt id="arg-nobs">nobs<a class="anchor" aria-label="anchor" href="#arg-nobs"></a></dt>
+<dd><p>Number of observations. Defaults to NULL.</p></dd>
+
+
+<dt id="arg-w">W<a class="anchor" aria-label="anchor" href="#arg-w"></a></dt>
+<dd><p>Custom weight matrix for "dwls". Defaults to NULL.</p></dd>
+
+
+<dt id="arg-positive">positive<a class="anchor" aria-label="anchor" href="#arg-positive"></a></dt>
+<dd><p>Force at least positive-semidefinite solutions. Defaults to FALSE</p></dd>
+
+
+<dt id="arg-penalties">penalties<a class="anchor" aria-label="anchor" href="#arg-penalties"></a></dt>
+<dd><p>list of penalty terms for the parameters.</p></dd>
+
+
+<dt id="arg-missing">missing<a class="anchor" aria-label="anchor" href="#arg-missing"></a></dt>
+<dd><p>Method to handle missing data.</p></dd>
+
+
+<dt id="arg-std-lv">std.lv<a class="anchor" aria-label="anchor" href="#arg-std-lv"></a></dt>
+<dd><p>Provide the parameters of the standardized model.</p></dd>
+
+
+<dt id="arg-do-fit">do.fit<a class="anchor" aria-label="anchor" href="#arg-do-fit"></a></dt>
+<dd><p>TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.</p></dd>
+
+
+<dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
+<dd><p>List of control parameters for the optimization algorithm. See 'details' for more information.</p></dd>
+
+</dl></div>
+    <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    <p>List with the following objects:</p>
+<dl><dt>version</dt>
+<dd><p>Version number of 'latent' when the model was estimated.</p></dd>
+
+<dt>call</dt>
+<dd><p>Code used to estimate the model.</p></dd>
+
+<dt>ModelInfo</dt>
+<dd><p>Model information.</p></dd>
+
+<dt>Optim</dt>
+<dd><p>Output of the optimizer.</p></dd>
+
+<dt>parameters</dt>
+<dd><p>Structure with all model parameters.</p></dd>
+
+<dt>transparameters</dt>
+<dd><p>Structure with all transformed model parameters.</p></dd>
+
+<dt>loglik</dt>
+<dd><p>Logarithm likelihood of the model.</p></dd>
+
+<dt>penalized_loglik</dt>
+<dd><p>Logarithm likelihood + logarithm priors of the model.</p></dd>
+
+</dl></div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p><code>cfast</code> estimates confirmatory factor models.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
