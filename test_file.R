@@ -143,7 +143,16 @@ library(latent)
 data <- empathy[, 1:6]
 X <- as.matrix(empathy[, 7:8]) # Covariates
 
-fit <- lca(data = data, X = X,  method = "2step",
+fit0 <- lca(data = data, X = NULL, model = NULL,
+           item = rep("gaussian", ncol(data)),
+           nclasses = 4L, penalties = TRUE,
+           control = NULL, do.fit = TRUE)
+fit0@timing
+fit0@loglik # -1798.885
+fit0@penalized_loglik # -1801.996
+fit0@Optim$opt$iterations
+
+fit <- lca(data = data, X = X, model = fit0,
            item = rep("gaussian", ncol(data)),
            nclasses = 4L, penalties = TRUE,
            control = NULL, do.fit = TRUE)
@@ -151,6 +160,8 @@ fit@timing
 fit@loglik # -1798.885
 fit@penalized_loglik # -1801.996
 fit@Optim$opt$iterations
+
+t(apply(fit@transformed_pars$beta, 1, FUN = \(x) x -sum(x)/4))
 
 # Plot model fit info:
 fit
@@ -164,7 +175,8 @@ latInspect(fit, what = "classes", digits = 5)
 latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
 
-predict(fit, new = cbind(1, 1.571))
+predict(fit, new = rbind(c(1, 1.571),
+                         c(1, 2)))
 fitted(fit)
 
 # Get standard errors:
@@ -185,9 +197,9 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 fit <- cfast(HolzingerSwineford1939, model = model,
-             estimator = "uls", cor = "pearson", do.fit = TRUE)
-fit@loglik
-fit@penalized_loglik
+             estimator = "ml", cor = "pearson", do.fit = TRUE)
+fit@loglik # -0.283407
+fit@penalized_loglik # -0.283407
 fit@Optim$opt$iterations
 
 # control_manifold <- fit@Optim$control_manifold
@@ -230,6 +242,7 @@ inspect(fit2, what = "se")
 
 SE <- se(fit, digits = 3)
 SE$table_se
+
 #### Multigroup CFA ####
 
 library(latent)
@@ -245,8 +258,8 @@ fit <- cfast(HolzingerSwineford1939, model = model,
              std.lv = TRUE, positive = FALSE,
              control = NULL, do.fit = TRUE)
 
-fit@loglik # -0.7809653 (ml)
-fit@loss # 0.4269743 (uls) / 0.7809653 (ml)
+fit@loglik # -0.1919254 (ml)
+fit@loss # 0.2027554 (uls) / 0.3838508 (ml)
 fit@Optim$opt$iterations
 
 # Plot model fit info:
@@ -299,14 +312,15 @@ fitmeasures(fit2, fit.measures = c("cfi", "tli", "rmsea", "srmr"))
 # With latent:
 fit <- cfast(data = HolzingerSwineford1939, model = model,
              estimator = "ml", cor = "pearson",
-             std.lv = TRUE, positive = TRUE, do.fit = TRUE,
+             positive = TRUE, penalties = TRUE,
+             std.lv = TRUE, do.fit = TRUE,
              control = list(opt = "lbfgs", maxit = 1000L,
-                            logdetw = 1e-03,
+                            # logdetw = 1e-03,
                             cores = 10L, rstarts = 10L))
 
-fit@loglik # -0.2459153 (ML)
-fit@penalized_loglik # -0.2459153 (ML)
-fit@loss # 0.1414338 (ULS) / 0.2459153 (ML)
+fit@loglik # -0.249485 (ML)
+fit@penalized_loglik # -0.249485 (ML)
+fit@loss # 0.1441886 (ULS) / 0.249485 (ML)
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
 

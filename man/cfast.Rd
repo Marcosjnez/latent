@@ -4,13 +4,58 @@
 \alias{cfast}
 \title{Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.}
 \usage{
-cfast(data, model = NULL, cor = "pearson", estimator = "ml",
-group = NULL, sample.cov = NULL, nobs = NULL,
-missing = "pairwise.complete.obs", W = NULL, std.lv = FALSE,
-positive = FALSE, do.fit = TRUE, control = NULL)
+cfast(data, model = NULL, cor = "pearson",
+estimator = "ml", group = NULL,
+sample.cov = NULL, nobs = NULL, W = NULL,
+positive = FALSE, penalties = TRUE,
+missing = "pairwise.complete.obs",
+std.lv = FALSE, do.fit = TRUE, control = NULL)
+}
+\arguments{
+\item{data}{data frame or matrix.}
+
+\item{model}{lavaan's model syntax.}
+
+\item{cor}{Correlation types: "pearson" and "poly". Defaults to "pearson".}
+
+\item{estimator}{Available estimators: "ml", "uls", and "dwls". Defaults to "ml".}
+
+\item{group}{.}
+
+\item{sample.cov}{Covariance matrix between the items. Defaults to NULL.}
+
+\item{nobs}{Number of observations. Defaults to NULL.}
+
+\item{W}{Custom weight matrix for "dwls". Defaults to NULL.}
+
+\item{positive}{Force at least positive-semidefinite solutions. Defaults to FALSE}
+
+\item{penalties}{list of penalty terms for the parameters.}
+
+\item{missing}{Method to handle missing data.}
+
+\item{std.lv}{Provide the parameters of the standardized model.}
+
+\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+
+\item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+}
+\value{
+List with the following objects:
+\item{version}{Version number of 'latent' when the model was estimated.}
+\item{call}{Code used to estimate the model.}
+\item{ModelInfo}{Model information.}
+\item{Optim}{Output of the optimizer.}
+\item{parameters}{Structure with all model parameters.}
+\item{transparameters}{Structure with all transformed model parameters.}
+\item{loglik}{Logarithm likelihood of the model.}
+\item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
 }
 \description{
 Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+}
+\details{
+\code{cfast} estimates confirmatory factor models.
 }
 \examples{
 

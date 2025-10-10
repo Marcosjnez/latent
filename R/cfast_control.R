@@ -12,6 +12,28 @@ cfast_control <- function(control) {
     control$opt <- "lbfgs"
   }
 
+  if(isFALSE(control$penalties)) {
+
+    control$reg <- FALSE
+
+  } else if(isTRUE(control$penalties)) {
+
+    control$reg <- TRUE
+
+    control$penalties <- list(
+      logdet = list(w = 1e-03)
+    )
+
+  } else if(is.list(control$penalties)) {
+
+    control$reg <- TRUE
+
+  } else {
+
+    stop("penalties should be TRUE, FALSE, or a list")
+
+  }
+
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L
   }
@@ -58,10 +80,6 @@ cfast_control <- function(control) {
 
   if(is.null(control$tcg_maxit)) {
     control$tcg_maxit <- 10L
-  }
-
-  if(is.null(control$logdetw)) {
-    control$logdetw <- 1e-03
   }
 
   return(control)

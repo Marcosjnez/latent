@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/09/2025
+# Modification date: 10/10/2025
 
 get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
 
@@ -374,7 +374,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
                                    nfactors = nrow(cfa_trans[[i]]$psi))
     k <- k+1L
 
-    if(positive) {
+    if(positive & control$reg) {
 
       lower_indices <- which(lower.tri(cfa_trans[[i]]$psi, diag = TRUE))
       labels <- cfa_trans[[i]]$psi[lower_indices]
@@ -384,7 +384,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
                                      indices = list(indices-1L),
                                      lower_indices = lower_indices-1L,
                                      p = nrow(cfa_trans[[i]]$psi),
-                                     logdetw = control$logdetw)
+                                     logdetw = control$penalties$logdet$w)
       k <- k+1L
 
       lower_indices <- which(lower.tri(cfa_trans[[i]]$theta, diag = TRUE))
@@ -395,7 +395,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
                                      indices = list(indices-1L),
                                      lower_indices = lower_indices-1L,
                                      p = nrow(cfa_trans[[i]]$theta),
-                                     logdetw = control$logdetw)
+                                     logdetw = control$penalties$logdet$w)
       k <- k+1L
 
     }

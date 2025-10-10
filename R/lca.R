@@ -12,14 +12,13 @@
 #' @usage
 #'
 #' lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-#'     X = NULL, method = "1step", penalties = TRUE, model = NULL,
+#'     X = NULL, penalties = TRUE, model = NULL,
 #'     do.fit = TRUE, control = NULL, verbose = TRUE)
 #'
 #' @param data data frame or matrix.
 #' @param nclasses Number of latent classes.
 #' @param item Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.
 #' @param X Matrix of covariates.
-#' @param method Method to estimate the covariates. Defaults to "1step".
 #' @param penalties list of penalty terms for the parameters.
 #' @param model List of parameter labels. See 'details' for more information.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
@@ -91,46 +90,20 @@
 #'
 #' @export
 lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-                X = NULL, penalties = NULL, model = NULL, method = "1step",
+                X = NULL, penalties = NULL, model = NULL,
                 do.fit = TRUE, control = NULL, verbose = TRUE) {
 
-  if(method == "2step") {
+  if(class(model) == "llca") {
 
-    if(is.null(X)) {
-      stop("For the 2-step method, please, provide predictors in the argument X.")
-    }
-
-    if(length(nclasses) > 1) {
-      stop("The 2step method must be run with a single value of nclasses")
-    }
+    model_list <- model@transformed_pars
+    model_list$beta <- NULL
 
     # Fit the model without covariates:
-    fit1 <- lca(data, nclasses = nclasses, item = item,
-                X = NULL, penalties = penalties, model = NULL, method = "1step",
-                do.fit = do.fit, control = control, verbose = FALSE)
+    fit <- lca(data, nclasses = nclasses, item = item,
+               X = X, penalties = penalties, model = model_list,
+               do.fit = do.fit, control = control, verbose = verbose)
 
-    # Fix the item parameters and estimate the beta coefficients:
-    model <- fit1@transformed_pars
-    model$beta <- NULL
-    fit2 <- lca(data, nclasses = nclasses, item = item,
-                X = X, penalties = penalties, model = model, method = "1step",
-                do.fit = do.fit, control = control, verbose = verbose)
-
-    # Get the modelInfo from the full model:
-    fit3 <- lca(data, nclasses = nclasses, item = item,
-                X = X, penalties = penalties, model = NULL, method = "1step",
-                do.fit = FALSE, control = control, verbose = FALSE)
-
-    # Update the opt and modelInfo data of fit2:
-    fit2@Optim$opt$parameters <- matrix(c(fit2@Optim$opt$parameters,
-                                          fit2@transformed_pars$mu,
-                                          fit2@transformed_pars$s,
-                                          fit2@transformed_pars$eta),
-                                        ncol = 1)
-    fit2@modelInfo$lca_param
-    fit2@modelInfo <- fit3@modelInfo
-
-    return(fit2)
+    return(fit)
 
   }
 

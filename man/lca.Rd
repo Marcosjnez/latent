@@ -5,7 +5,7 @@
 \title{Latent Class Analysis.}
 \usage{
 lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-    X = NULL, method = "1step", penalties = TRUE, model = NULL,
+    X = NULL, penalties = TRUE, model = NULL,
     do.fit = TRUE, control = NULL, verbose = TRUE)
 }
 \arguments{
@@ -20,8 +20,6 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 \item{penalties}{list of penalty terms for the parameters.}
 
 \item{model}{List of parameter labels. See 'details' for more information.}
-
-\item{method}{Method to estimate the covariates. Defaults to "1step".}
 
 \item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
 
