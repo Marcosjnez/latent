@@ -35,7 +35,7 @@ getfit.llca <- function(object, digits = 3) {
     class(out) <- "getfit.llca"
 
   #}
-  #if(is(object) == "llca.list"){
+  #if(is(object) == "llcalist"){
   #  out <- t(sapply(object, getfit0, digits=digits))
 
   #  class(out) <- "getfit.llca.list"
@@ -45,11 +45,11 @@ getfit.llca <- function(object, digits = 3) {
 
 }
 
-getfit.llca.list <- function(object, digits = 3) {
+getfit.llcalist <- function(object, digits = 3) {
 
     out <- t(sapply(object, getfit0, digits=digits))
 
-    class(out) <- "getfit.llca.list"
+    class(out) <- "getfit.llcalist"
 
   return(out)
 
