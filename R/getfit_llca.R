@@ -32,7 +32,7 @@ getfit.llca <- function(object, digits = 3) {
     out <- getfit0(object, digits = digits)
   }
   if(is(object) == "llca.list"){
-    out <- t(sapply(fit, getfit0, digits=digits))
+    out <- t(sapply(object, getfit0, digits=digits))
   }
 
   class(out) <- "getfit.llca"
@@ -73,7 +73,7 @@ getfit0 <- function(model, digits = 3) {
   }
 
   ##
-  penalized <- isFALSE(fit@modelInfo$control$penalties) == FALSE
+  penalized <- isFALSE(model@modelInfo$control$penalties) == FALSE
 
   ##
   ##
@@ -112,8 +112,8 @@ getfit0 <- function(model, digits = 3) {
   if(nclasses < 2) {
     entropyR2 <- 1.00 # To match LG output
   } else {
-    weights <- fit@Optim$data_list$weights
-    classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
+    weights <- model@Optim$data_list$weights
+    classes <- colSums(model@transformed_pars$class * weights) / sum(weights)
     entropyR2 <- entropy.R2(classes, model@posterior)
   }
 
