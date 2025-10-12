@@ -28,17 +28,28 @@
 #' @method getfit llca
 #' @export
 getfit.llca <- function(object, digits = 3) {
-  if(is(object) == "llca" ){
+
+  #if(is(object) == "llca" ){
     out <- getfit0(object, digits = digits)
 
     class(out) <- "getfit.llca"
 
-  }
-  if(is(object) == "llca.list"){
+  #}
+  #if(is(object) == "llca.list"){
+  #  out <- t(sapply(object, getfit0, digits=digits))
+
+  #  class(out) <- "getfit.llca.list"
+  #}
+
+  return(out)
+
+}
+
+getfit.llca.list <- function(object, digits = 3) {
+
     out <- t(sapply(object, getfit0, digits=digits))
 
     class(out) <- "getfit.llca.list"
-  }
 
   return(out)
 
