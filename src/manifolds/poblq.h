@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2025
+ * Modification date: 12/10/2025
  */
 
 // Partially Oblique manifold:
@@ -16,30 +16,33 @@ public:
   arma::mat A, Phi, dP;
   arma::uvec oblq_indices;
   arma::mat target;
+  arma::vec parameters, dir, dparameters;
+  arma::mat g, dg;
 
-  void param() {
+  void param(arguments_optim& x) {
 
+    parameters = x.parameters(indices[0]);
     X = arma::reshape(parameters, q, q);
     Phi = X.t() * X;
 
   }
 
-  void proj() {
+  void proj(arguments_optim& x) {
 
-    g.reshape(q, q);
+    g = arma::reshape(x.g.elem(indices[0]), q, q);
     arma::mat c1 = X.t() * g;
     arma::mat X0 = c1 + c1.t();
     A = lyap_sym(Phi, X0);
     A(oblq_indices).zeros();
     arma::mat N = X * A;
-    rg = g - N;
+    x.rg.elem(indices[0]) = arma::vectorise(g - N);
 
   }
 
-  void hess() {
+  void hess(arguments_optim& x) {
 
-    g.reshape(q, q);
-    dg.reshape(q, q);
+    dg = arma::reshape(x.dg.elem(indices[0]), q, q);
+    dparameters = x.dparameters.elem(indices[0]);
     dX = arma::reshape(dparameters, q, q);
     dP = X.t() * dX;
     dP += dX.t();
@@ -60,11 +63,11 @@ public:
     arma::mat A = lyap_sym(Phi, X0);
     A(oblq_indices).zeros();
     arma::mat N = X * A;
-    dH = drg - N;
+    x.dH.elem(indices[0]) = arma::vectorise(drg - N);
 
   }
 
-  void retr() {
+  void retr(arguments_optim& x) {
 
     arma::vec indicator = target.diag();
     arma::mat target2 = target; // Do not modify the original target
@@ -91,14 +94,15 @@ public:
     X.cols(ones) = Xstd.cols(ones);
     parameters = arma::vectorise(X);
     // parameters = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::diagvec(X.t() * X))));
+    x.parameters(indices[0]) = parameters;
 
   }
 
-  void dconstraints() {
+  void dconstraints(arguments_optim& x) {
 
   }
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
   }
 

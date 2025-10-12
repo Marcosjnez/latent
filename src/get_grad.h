@@ -26,13 +26,6 @@ Rcpp::List get_grad(Rcpp::List control_manifold,
 
   optim* algorithm = choose_optim(x, control_optimizer);
 
-  std::vector<arma::vec> parameters_list = control_optimizer["parameters"];
-  std::vector<arma::vec> transparameters_list = control_optimizer["transparameters"];
-  arma::vec parameters = parameters_list[0];
-  arma::vec transparameters = transparameters_list[0];
-  x.parameters = parameters;
-  x.transparameters = transparameters;
-
   for(int i=0; i < x.nmanifolds; ++i) {
     xmanifolds[i] = choose_manifold(control_manifold[i]);
   }

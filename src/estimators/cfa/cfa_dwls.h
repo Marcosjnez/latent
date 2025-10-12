@@ -44,6 +44,14 @@ public:
     lambda_psi = lambda * psi;
     W_residuals = W % residuals;
     glambda = -2* W_residuals * lambda_psi;
+
+    // dW_residuals = -W % (dlambda * lambda_psi.t() +
+    //   lambda_psi * dlambda.t());
+    // dg1 = dW_residuals * lambda_psi;
+    // dlambda_psi = dlambda * psi;
+    // dg2 = W_residuals * dlambda_psi;
+    // dglambda = -2*(dg1 + dg2);
+
     W_residuals_lambda = W_residuals * lambda;
     gpsi = -2*lambda.t() * W_residuals_lambda;
     gpsi.diag() *= 0.5;
@@ -59,8 +67,8 @@ public:
   void dG(arguments_optim& x) {
 
     dlambda = arma::reshape(x.dtransparameters(lambda_indices), p, q);
-    dpsi = arma::reshape(x.dtransparameters(psi_indices), q, q);
-    dtheta = arma::reshape(x.dtransparameters(theta_indices), q, q);
+    dpsi.elem(lower_psi) = x.dtransparameters(psi_indices);
+    dtheta.elem(lower_theta) = x.dtransparameters(theta_indices);
     dpsi = arma::symmatl(dpsi);
     dtheta = arma::symmatl(dtheta);
 
@@ -80,13 +88,13 @@ public:
     dgtheta = 2*W % dtheta;
     dgtheta.diag() *= 0.5;
 
-    x.dgrad(lambda_indices) += arma::vectorise(dglambda);
+    x.dgrad.elem(lambda_indices) += arma::vectorise(dglambda);
     // if(positive) {
     //   dg(T_indexes) += dgphi.elem(targetT_indexes);
     // } else {
-    x.dgrad(psi_indices) += arma::vectorise(dgpsi(lower_psi));
+    x.dgrad.elem(psi_indices) += arma::vectorise(dgpsi(lower_psi));
     // }
-    x.dgrad(theta_indices) += arma::vectorise(dgtheta(lower_theta));
+    x.dgrad.elem(theta_indices) += arma::vectorise(dgtheta(lower_theta));
 
   }
 
@@ -249,6 +257,9 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
   myestimator->theta_indices = theta_indices;
   myestimator->lower_psi = lower_psi;
   myestimator->lower_theta = lower_theta;
+  myestimator->dlambda = lambda;
+  myestimator->dpsi = psi;
+  myestimator->dtheta = theta;
 
   return myestimator;
 

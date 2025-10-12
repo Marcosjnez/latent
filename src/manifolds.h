@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2025
+ * Modification date: 12/10/2025
  */
 
 // Manifolds
@@ -13,16 +13,14 @@ public:
   // Objects that will be exported from manifolds:
 
   // Random: Provide these in product_manifold:
-  arma::vec parameters, dparameters;
-  arma::mat g, dg, rg, dH;
+  // arma::vec parameters, dparameters;
+  arma::vec dparameters;
+  arma::mat dH;
 
   // Fixed: Provide these in choose_manifold:
   std::vector<arma::uvec> indices; // Which parameters are projected onto the manifold (used in product_manifold)
   std::size_t q;
   arma::mat PhiTarget;
-
-  double ss;
-  arma::vec dir;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
@@ -31,17 +29,17 @@ public:
   std::vector<std::vector<arma::vec>> list_vectors;
   std::vector<std::vector<arma::mat>> list_matrices;
 
-  virtual void param() = 0;
+  virtual void param(arguments_optim& x) = 0;
 
-  virtual void proj() = 0;
+  virtual void proj(arguments_optim& x) = 0;
 
-  virtual void hess() = 0;
+  virtual void hess(arguments_optim& x) = 0;
 
-  virtual void retr() = 0;
+  virtual void retr(arguments_optim& x) = 0;
 
-  virtual void dconstraints() = 0;
+  virtual void dconstraints(arguments_optim& x) = 0;
 
-  virtual void outcomes() = 0;
+  virtual void outcomes(arguments_optim& x) = 0;
 
 };
 
@@ -87,9 +85,7 @@ public:
 
     for(int i=0; i < x.nmanifolds; ++i) {
 
-      arma::uvec indices = xmanifolds[i]->indices[0];
-      xmanifolds[i]->parameters = x.parameters.elem(indices);
-      xmanifolds[i]->param();
+      xmanifolds[i]->param(x);
 
     }
 
@@ -97,14 +93,11 @@ public:
 
   void proj(arguments_optim& x, std::vector<manifolds*>& xmanifolds) {
 
-    x.rg.set_size(x.parameters.n_elem); x.rg.zeros();
+    x.rg.zeros();
 
     for(int i=0; i < x.nmanifolds; ++i) {
 
-      arma::uvec indices = xmanifolds[i]->indices[0];
-      xmanifolds[i]->g = x.g.elem(indices);
-      xmanifolds[i]->proj();
-      x.rg.elem(indices) += arma::vectorise(xmanifolds[i]->rg);
+      xmanifolds[i]->proj(x);
 
     }
 
@@ -112,17 +105,11 @@ public:
 
   void hess(arguments_optim& x, std::vector<manifolds*>& xmanifolds) {
 
-    x.dH.set_size(x.parameters.n_elem); x.dH.zeros();
+    x.dH.zeros();
 
     for(int i=0; i < x.nmanifolds; ++i) {
 
-      arma::uvec indices = xmanifolds[i]->indices[0];
-      xmanifolds[i]->dparameters = x.dparameters.elem(indices);
-      xmanifolds[i]->g = x.g.elem(indices);
-      xmanifolds[i]->dg = x.dg.elem(indices);
-      // xmanifolds[i]->rg = x.rg.elem(indices); // Maybe not necessary
-      xmanifolds[i]->hess();
-      x.dH.elem(indices) += arma::vectorise(xmanifolds[i]->dH);
+      xmanifolds[i]->hess(x);
 
     }
 
@@ -132,13 +119,7 @@ public:
 
     for(int i=0; i < x.nmanifolds; ++i) {
 
-      arma::uvec indices = xmanifolds[i]->indices[0];
-      xmanifolds[i]->ss = x.ss;
-      xmanifolds[i]->dir = x.dir(indices);
-      xmanifolds[i]->parameters = x.parameters.elem(indices); // Maybe not necessary
-      xmanifolds[i]->retr();
-      // x.dir(indices) = xmanifolds[i]->dir;
-      x.parameters.elem(indices) = xmanifolds[i]->parameters;
+      xmanifolds[i]->retr(x);
 
     }
 
@@ -165,7 +146,7 @@ public:
 
     for(int i=0; i < x.nmanifolds; ++i) {
 
-      xmanifolds[i]->outcomes();
+      xmanifolds[i]->outcomes(x);
 
       std::get<0>(x.outputs_manifold)[i] = xmanifolds[i]->doubles;
       std::get<1>(x.outputs_manifold)[i] = xmanifolds[i]->vectors;

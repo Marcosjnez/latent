@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2025
+ * Modification date: 12/10/2025
  */
 
 // Oblique manifold:
@@ -12,44 +12,48 @@ public:
 
   arma::mat X = arma::mat(q, q);
   arma::mat dX = arma::mat(q, q);
+  arma::vec parameters, dir, dparameters;
+  arma::mat g, dg;
 
-  void param() {
+  void param(arguments_optim& x) {
 
+    parameters = x.parameters(indices[0]);
     X = arma::reshape(parameters, q, q);
 
   }
 
-  void proj() {
+  void proj(arguments_optim& x) {
 
-    g.reshape(q, q);
-    rg = g - X * arma::diagmat(X.t() * g);
+    g = arma::reshape(x.g.elem(indices[0]), q, q);
+    x.rg.elem(indices[0]) = arma::vectorise(g - X * arma::diagmat(X.t() * g));
 
   }
 
-  void hess() {
+  void hess(arguments_optim& x) {
 
-    g.reshape(q, q);
-    dg.reshape(q, q);
+    dg = arma::reshape(x.dg.elem(indices[0]), q, q);
+    dparameters = x.dparameters.elem(indices[0]);
     dX = arma::reshape(dparameters, q, q);
-    dH = dg - dX * arma::diagmat(X.t() * g) -
-      X * arma::diagmat(X.t() * dg);
+    x.dH.elem(indices[0]) = arma::vectorise(dg - dX * arma::diagmat(X.t() * g) -
+      X * arma::diagmat(X.t() * dg));
     // arma::mat drg = dg - dX * arma::diagmat( X.t() * g) - X * arma::diagmat(dX.t() * g) -
     // X * arma::diagmat(X.t() * dg);
     // dH = drg - X * arma::diagmat(X.t() * drg);
 
   }
 
-  void retr() {
+  void retr(arguments_optim& x) {
 
     parameters = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::sum(X % X, 0))));
+    x.parameters(indices[0]) = parameters;
 
   }
 
-  void dconstraints() {
+  void dconstraints(arguments_optim& x) {
 
   }
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
   }
 

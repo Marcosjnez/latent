@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 01/09/2025
+ * Modification date: 11/10/2025
  */
 
 Rcpp::List grad_comp(Rcpp::List control_manifold,
@@ -10,21 +10,6 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
                      Rcpp::List control_optimizer,
                      std::string compute,
                      double eps) {
-
-  /*
-   * parameters: vector of parameters
-   */
-
-  /* control_manifold: list of manifolds
-   * Each list projects a set of parameters onto a manifold
-   * NOTE: each list must contain nonoverlapping parameters
-   * manifold_indices: list of indices that relate sets of parameters to manifolds
-   */
-
-  /* control_estimator: list of estimators
-   * estimator_indices: list of indices that relate sets of parameters to estimators
-   * estimator_target: list of indices that relate estimators to parameters
-   */
 
   Rcpp::List result;
   arguments_optim x;
@@ -45,20 +30,17 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   optim* algorithm = choose_optim(x, control_optimizer);
   if(compute == "choose_optim") return result;
 
-  std::vector<arma::vec> parameters_list = control_optimizer["parameters"];
-  arma::vec parameters = parameters_list[0];
-  x.parameters = parameters;
   result["parameters"] = x.parameters;
+  arma::vec parameters = x.parameters;
 
-  std::vector<arma::vec> transparameters_list = control_optimizer["transparameters"];
-  arma::vec transparameters = transparameters_list[0];
-  x.transparameters = transparameters;
   result["transparameters"] = x.transparameters;
+  arma::vec transparameters = x.transparameters;
 
-  // std::vector<arma::vec> dparameters_list = control_optimizer["dparameters"];
-  // arma::vec dparameters = dparameters_list[0];
-  x.dtransparameters = arma::randu(transparameters.n_elem);
-  // result["dparameters"] = x.dparameters;
+  result["dparameters"] = x.dparameters;
+  arma::vec dparameters = x.dparameters;
+
+  result["dtransparameters"] = x.dtransparameters;
+  arma::vec dtransparameters = x.dtransparameters;
 
   if(compute == "pre_setup") return result;
 
@@ -145,13 +127,13 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["rg"] = x.rg;
   if(compute == "rg") return result;
 
-  // final_estimator->dG(x, xestimators);
-  // result["dgrad"] = x.dgrad;
-  // if(compute == "dgrad") return result;
-  //
-  // final_transform->update_dgrad(x, xtransforms);
-  // result["dg"] = x.dg;
-  // if(compute == "dg") return result;
+  final_estimator->dG(x, xestimators);
+  result["dgrad"] = x.dgrad;
+  if(compute == "dgrad") return result;
+
+  final_transform->update_dgrad(x, xtransforms);
+  result["dg"] = x.dg;
+  if(compute == "dg") return result;
 
   // final_estimator->H(x, xestimators);
   // result["hess"] = x.hess;
@@ -210,26 +192,23 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["numg"] = numg;
 
   // Check the differential of the gradient:
-  // arma::vec numdg(dparameters.n_elem);
-  // for(int i = 0; i < dparameters.n_elem; ++i) {
-  //   x.dparameters = dparameters; x.dparameters[i] += eps;
-  //   T1->transform(x, xtransforms);
-  //   F1->param(x, xestimators);
-  //   F1->F(x, xestimators);
-  //   F1->G(x, xestimators);
-  //   T1->update_grad(x, xtransforms);
-  //   double g1 = x.g;
-  //   x.dparameters = dparameters; x.dparameters[i] -= eps;
-  //   T1->transform(x, xtransforms);
-  //   F1->param(x, xestimators);
-  //   F1->F(x, xestimators);
-  //   F1->G(x, xestimators);
-  //   T1->update_grad(x, xtransforms);
-  //   double g0 = x.g;
-  //   numg[i] = (g1-g0) / (2*eps);
-  // }
-  //
-  // result["numdg"] = numdg;
+  x.parameters = parameters + eps*dparameters;
+  T1->transform(x, xtransforms);
+  F1->param(x, xestimators);
+  F1->F(x, xestimators);
+  F1->G(x, xestimators);
+  T1->update_grad(x, xtransforms);
+  arma::vec g1 = x.g;
+  x.parameters = parameters - eps*dparameters;
+  T1->transform(x, xtransforms);
+  F1->param(x, xestimators);
+  F1->F(x, xestimators);
+  F1->G(x, xestimators);
+  T1->update_grad(x, xtransforms);
+  arma::vec g0 = x.g;
+  arma::vec numdg = (g1-g0) / (2*eps);
+
+  result["numdg"] = numdg;
 
   // final_estimator->E(x, xestimators);
   // final_estimator->M(x, xestimators);

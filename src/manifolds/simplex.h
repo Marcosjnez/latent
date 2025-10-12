@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2025
+ * Modification date: 12/10/2025
  */
 
 // Multinomial manifold (simplex):
@@ -12,23 +12,29 @@ public:
 
   arma::vec X;
   arma::vec dX;
+  arma::vec parameters, dir, g, dg;
 
-  void param() {
+  void param(arguments_optim& x) {
 
+    parameters = x.parameters(indices[0]);
     X = parameters;
+    dir = x.dir(indices[0]);
 
   }
 
-  void proj() {
+  void proj(arguments_optim& x) {
 
+    g = x.g.elem(indices[0]);
     arma::vec xegrad = X % g;
     double v = arma::accu(xegrad);
-    rg = xegrad - X * v;
+    x.rg.elem(indices[0]) = xegrad - X * v;
 
   }
 
-  void hess() {
+  void hess(arguments_optim& x) {
 
+    dg = x.dg.elem(indices[0]);
+    x.dH.elem(indices[0]) = x.dg.elem(indices[0]);
     // dX = dparameters;
     // arma::mat drg = -dX * X.t() * g - X * dX.t() * g;
     // // dH = drg - X * X.t() * drg;
@@ -38,7 +44,7 @@ public:
 
   }
 
-  void retr() {
+  void retr(arguments_optim& x) {
 
     // Rf_error("OK 37");
     double alpha = arma::accu(dir);
@@ -55,11 +61,11 @@ public:
     dir = dir - alpha * X;
     // Rf_error("OK 50");
 
-    X = X + ss*dir;
+    X = X + x.ss*dir;
     // Rf_error("OK 53");
     arma::vec Y(X.size());
     for(int j=0; j < X.size(); ++j) {
-      Y[j] = X[j] * exp(ss * (dir[j] / X[j]));
+      Y[j] = X[j] * exp(x.ss * (dir[j] / X[j]));
     }
     Y = Y / arma::accu(Y);
 
@@ -67,14 +73,15 @@ public:
     // Rf_error("OK 61");
     Y.elem(arma::find(Y < eps)).fill(eps);
     parameters = Y;
+    x.parameters(indices[0]) = parameters;
 
   }
 
-  void dconstraints() {
+  void dconstraints(arguments_optim& x) {
 
   }
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
   }
 

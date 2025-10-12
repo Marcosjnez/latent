@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 02/09/2025
+ * Modification date: 11/10/2025
  */
 
 typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::mat> optim_result;
@@ -771,28 +771,35 @@ public:
 
 optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
 
-  // Store the parameters:
-  std::vector<arma::vec> params = control_optimizer["parameters"];
-  x.nparam = params[0].n_elem;
-  x.dir.set_size(x.nparam); x.dir.zeros();
-  x.parameters.set_size(x.nparam);
-
-  // Store the transformed parameters:
-  std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
-  x.ntransparam = transparameters[0].n_elem;
-  x.transparameters.set_size(x.ntransparam);
-
   // Store the indices relating parameters and transformed parameters:
   arma::uvec param2transparam = control_optimizer["param2transparam"];
   arma::uvec transparam2param = control_optimizer["transparam2param"];
   x.param2transparam = param2transparam;
   x.transparam2param = transparam2param;
 
+  // Store the parameters:
+  std::vector<arma::vec> params = control_optimizer["parameters"];
+  x.nparam = params[0].n_elem;
+  x.parameters = params[0];
+  x.dir.set_size(x.nparam); x.dir.zeros();
+
+  // Store the transformed parameters:
+  std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
+  x.ntransparam = transparameters[0].n_elem;
+  x.transparameters = transparameters[0];
+  x.transparameters(x.transparam2param) = x.parameters;
+
+  // Initial values for dparameters:
+  x.dparameters = arma::randu(x.nparam);
+  x.dtransparameters.set_size(x.ntransparam);
+  x.dtransparameters.zeros();
+  x.dtransparameters(x.transparam2param) = x.dparameters;
+
   // Initialize objects:
   x.grad.set_size(x.ntransparam);
   x.dgrad.set_size(x.ntransparam);
-  x.dg.set_size(x.nparam);
-  x.dtransparameters.set_size(x.ntransparam);
+  x.rg.set_size(x.nparam);
+  x.dH.set_size(x.nparam);
   // x.hess.set_size(x.ntransparam, x.ntransparam);
 
   // Pass optimization parameters to the x structure:

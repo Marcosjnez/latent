@@ -165,8 +165,6 @@ public:
 
     }
 
-    // x.dg = x.dgrad(x.transparam2param);
-
   }
 
   void H(arguments_optim& x, std::vector<estimators*>& xestimators) {

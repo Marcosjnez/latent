@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2025
+ * Modification date: 12/10/2025
  */
 
 // Orthogonal manifold:
@@ -12,44 +12,48 @@ public:
 
   arma::mat X = arma::mat(q, q);
   arma::mat dX = arma::mat(q, q);
+  arma::vec parameters, dir, dparameters;
+  arma::mat g, dg;
 
-  void param() {
+  void param(arguments_optim& x) {
 
+    parameters = x.parameters(indices[0]);
     X = arma::reshape(parameters, q, q);
 
   }
 
-  void proj() {
+  void proj(arguments_optim& x) {
 
-    g.reshape(q, q);
-    rg = X * skew(X.t() * g);
+    g = arma::reshape(x.g.elem(indices[0]), q, q);
+    x.rg.elem(indices[0]) = arma::vectorise(X * skew(X.t() * g));
 
   }
 
-  void hess() {
+  void hess(arguments_optim& x) {
 
-    g.reshape(q, q);
-    dg.reshape(q, q);
+    dg = arma::reshape(x.dg.elem(indices[0]), q, q);
+    dparameters = x.dparameters.elem(indices[0]);
     dX = arma::reshape(dparameters, q, q);
     arma::mat drg = dg - dX * symm(X.t() * g);
-    dH = X * skew(X.t() * drg);
+    x.dH.elem(indices[0]) = arma::vectorise(X * skew(X.t() * drg));
 
   }
 
-  void retr() {
+  void retr(arguments_optim& x) {
 
     arma::mat Q, R;
     arma::qr_econ(Q, R, X);
 
     parameters = arma::vectorise(Q);
+    x.parameters(indices[0]) = parameters;
 
   }
 
-  void dconstraints() {
+  void dconstraints(arguments_optim& x) {
 
   }
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
   }
 

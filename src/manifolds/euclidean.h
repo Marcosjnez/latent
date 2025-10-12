@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2025
+ * Modification date: 12/10/2025
  */
 
 // Euclidean manifold:
@@ -12,36 +12,36 @@ public:
 
   arma::vec X;
   arma::vec dX;
+  arma::vec parameters, dir, g, dg;
 
-  void param() {
+  void param(arguments_optim& x) {
 
+    parameters = x.parameters(indices[0]);
     // X = parameters;
 
   }
 
-  void proj() {
+  void proj(arguments_optim& x) {
 
-    rg = g;
-
-  }
-
-  void hess() {
-
-    dH = dg;
+    x.rg.elem(indices[0]) = x.g.elem(indices[0]);
 
   }
 
-  void retr() {
+  void hess(arguments_optim& x) {
 
-    parameters = parameters;
-
-  }
-
-  void dconstraints() {
+    x.dH.elem(indices[0]) = x.dg.elem(indices[0]);
 
   }
 
-  void outcomes() {
+  void retr(arguments_optim& x) {
+
+  }
+
+  void dconstraints(arguments_optim& x) {
+
+  }
+
+  void outcomes(arguments_optim& x) {
 
   }
 

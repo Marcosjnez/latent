@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2025
+ * Modification date: 12/10/2025
  */
 
 // Unit manifold (Sphere):
@@ -12,42 +12,48 @@ public:
 
   arma::vec X;
   arma::vec dX;
+  arma::vec parameters, dir, g, dg, dparameters;
 
-  void param() {
+  void param(arguments_optim& x) {
 
+    parameters = x.parameters(indices[0]);
     X = parameters;
 
   }
 
-  void proj() {
+  void proj(arguments_optim& x) {
 
+    g = x.g.elem(indices[0]);
     double v = arma::accu(X % g);
-    rg = g - X * v;
+    x.rg.elem(indices[0]) = g - X * v;
 
   }
 
-  void hess() {
+  void hess(arguments_optim& x) {
 
+    dg = x.dg.elem(indices[0]);
+    dparameters = x.dparameters.elem(indices[0]);
     dX = dparameters;
     arma::mat drg = -dX * X.t() * g - X * dX.t() * g;
     // dH = drg - X * X.t() * drg;
     double v2 = arma::accu(X % g);
     arma::vec term = drg - v2 * dX;
-    dH = term - X * v2;
+    x.dH.elem(indices[0]) = term - X * v2;
 
   }
 
-  void retr() {
+  void retr(arguments_optim& x) {
 
     parameters = X / sqrt(arma::accu(X % X));
+    x.parameters(indices[0]) = parameters;
 
   }
 
-  void dconstraints() {
+  void dconstraints(arguments_optim& x) {
 
   }
 
-  void outcomes() {
+  void outcomes(arguments_optim& x) {
 
   }
 
