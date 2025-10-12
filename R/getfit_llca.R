@@ -30,12 +30,15 @@
 getfit.llca <- function(object, digits = 3) {
   if(is(object) == "llca" ){
     out <- getfit0(object, digits = digits)
+
+    class(out) <- "getfit.llca"
+
   }
   if(is(object) == "llca.list"){
     out <- t(sapply(object, getfit0, digits=digits))
-  }
 
-  class(out) <- "getfit.llca"
+    class(out) <- "getfit.llca.list"
+  }
 
   return(out)
 
