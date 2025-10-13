@@ -155,15 +155,7 @@ getfit.llca <- function(model, digits = 3) {
 #' @export
 getfit.llcalist <- function(model, digits = 3) {
 
-  nmodels <- length(model)
-  out <- vector("list", length = nmodels)
-  for(i in 1:nmodels) {
-
-    out[[i]] <- getfit.llca(model[[i]], digits = digits)
-    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
-                        sep = "")
-
-  }
+  out <- t(sapply(model, getfit.llca, digits=digits))
 
   class(out) <- "getfit.llcalist"
 
