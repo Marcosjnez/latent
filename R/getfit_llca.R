@@ -1,7 +1,7 @@
-# Author: Marcos Jimenez
 # Author: Mauricio Garnier-Villarreal
+# Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 03/09/2025
+# Modification date: 13/10/2025
 #'
 #' @title
 #' Fit indices
@@ -27,35 +27,8 @@
 #'
 #' @method getfit llca
 #' @export
-getfit.llca <- function(object, digits = 3) {
 
-  #if(is(object) == "llca" ){
-    out <- getfit0(object, digits = digits)
-
-    class(out) <- "getfit.llca"
-
-  #}
-  #if(is(object) == "llcalist"){
-  #  out <- t(sapply(object, getfit0, digits=digits))
-
-  #  class(out) <- "getfit.llca.list"
-  #}
-
-  return(out)
-
-}
-
-getfit.llcalist <- function(object, digits = 3) {
-
-    out <- t(sapply(object, getfit0, digits=digits))
-
-    class(out) <- "getfit.llcalist"
-
-  return(out)
-
-}
-
-getfit0 <- function(model, digits = 3) {
+getfit.llca <- function(model, digits = 3) {
 
   icl_default <- function (post_prob, BIC){
     tryCatch({
@@ -168,7 +141,32 @@ getfit0 <- function(model, digits = 3) {
                 R2_entropy = entropyR2)
   }
 
+  if(!is.null(digits)) {
+    result <- round(result, digits = digits)
+  }
 
-  return(round(result, digits = digits))
+  class(result) <- "getfit.llca"
+
+  return(result)
+
+}
+
+#' @method getfit llcalist
+#' @export
+getfit.llcalist <- function(model, digits = 3) {
+
+  nmodels <- length(model)
+  out <- vector("list", length = nmodels)
+  for(i in 1:nmodels) {
+
+    out[[i]] <- getfit.llca(model[[i]], digits = digits)
+    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
+                        sep = "")
+
+  }
+
+  class(out) <- "getfit.llcalist"
+
+  return(out)
 
 }

@@ -24,11 +24,31 @@
 #' None yet.
 #'
 #' @export
-fitted.llca <- function(model) {
+fitted.llca <- function(model, digits = NULL) {
 
   X <- model@Optim$data_list$X
-  P0 <- predict.llca(model = model, new = X[, -1])
+  P0 <- predict.llca(model = model, new = X[, -1], digits = digits)
 
   return(P0)
+
+}
+
+#' @method fitted llcalist
+#' @export
+fitted.llcalist <- function(model, digits = NULL) {
+
+  nmodels <- length(model)
+  out <- vector("list", length = nmodels)
+  for(i in 1:nmodels) {
+
+    out[[i]] <- fitted.llca(model[[i]], digits = digits)
+    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
+                           sep = "")
+
+  }
+
+  class(out) <- "fitted.llcalist"
+
+  return(out)
 
 }

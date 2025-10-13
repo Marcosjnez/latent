@@ -25,9 +25,9 @@
 #' None yet.
 #'
 #' @export
-predict.llca <- function(model, new = NULL) {
+predict.llca <- function(model, new = NULL, digits = NULL) {
 
-  if(is.null(new)) {
+  if(is.null(new) || ncol(new) == 0) {
 
     X <- model@Optim$data_list$X
 
@@ -55,10 +55,39 @@ predict.llca <- function(model, new = NULL) {
   }
 
   Z0 <- X %*% model@parameters$beta
-  P0 <- t(apply(Z0, MARGIN = 1, FUN = latent::soft, a = 1.00))
+  linpreds <- apply(Z0, MARGIN = 1, FUN = latent::soft, a = 1.00)
+  if(is.vector(linpreds)) {
+    P0 <- matrix(linpreds, ncol = 1)
+  } else {
+    P0 <- t(linpreds)
+  }
   rownames(P0) <- rownames(X)
   colnames(P0) <- colnames(model@transformed_pars$class)
 
+  if(!is.null(digits)) {
+    P0 <- round(P0, digits = digits)
+  }
+
   return(P0)
+
+}
+
+#' @method predict llcalist
+#' @export
+predict.llcalist <- function(model, digits = NULL) {
+
+  nmodels <- length(model)
+  out <- vector("list", length = nmodels)
+  for(i in 1:nmodels) {
+
+    out[[i]] <- predict.llca(model[[i]], digits = digits)
+    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
+                           sep = "")
+
+  }
+
+  class(out) <- "predict.llcalist"
+
+  return(out)
 
 }

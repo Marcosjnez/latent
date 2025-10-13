@@ -2,26 +2,26 @@
 % Please edit documentation in R/latInspect_llca.R
 \name{latInspect.llca}
 \alias{latInspect.llca}
-\title{Standard Errors}
+\title{Inspect objects from fitted lca models.}
 \usage{
-se(fit)
+latInspect(fit)
 }
 \arguments{
 \item{fit}{model fitted with lca.}
 
-\item{confidence}{Coverage of the confidence interval.}
+\item{digits}{Number of digits to print.}
 }
 \value{
-List with the following objects:
-\item{vcov}{Variance-covariance matrix between the parameters.}
-\item{se}{Standard errors.}
-\item{SE}{Standard errors in the model list.}
+List with one of the following objects:
+\item{class}{.}
+\item{posterior}{.}
+\item{profile}{.}
 }
 \description{
-Compute standard errors.
+Inspect objects.
 }
 \details{
-Compute standard errors.
+Extract objects from fitted lca object.
 }
 \references{
 None yet.

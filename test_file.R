@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/10/2025
+# Modification date: 13/10/2025
 
 #### Install latent ####
 
@@ -16,13 +16,22 @@ library(latent)
 # for(i in 1:nmiss) data[missrow[i], misscol[i]] <- NA
 # control <- list(opt = "lbfgs", rstarts = 50L)
 
-fit <- lca(data = gss82, nclasses = 3L,
+fit <- lca(data = gss82, nclasses = 1:3L,
            item = rep("multinomial", ncol(gss82)),
            penalties = TRUE, control = NULL, do.fit = TRUE)
 fit@timing
 fit@loglik # -2754.643
 fit@penalized_loglik # -2759.507
 fit@Optim$opt$iterations
+
+class(fit)
+print(fit)
+show(fit)
+fit
+getfit(fit)
+fitted(fit)
+latInspect(fit, what = "profile")
+summary(fit)
 
 # Plot model fit info:
 fit

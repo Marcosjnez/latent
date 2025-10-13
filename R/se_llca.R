@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/10/2025
+# Modification date: 13/10/2025
 #'
 #' @title
 #' Standard Errors
@@ -82,6 +82,27 @@ se.llca <- function(fit, type = "standard", model = "user", digits = 2) {
   result$B <- SE$B
 
   return(result)
+
+}
+
+#' @method se llcalist
+#' @export
+se.llcalist <- function(model, digits = 3) {
+
+  nmodels <- length(model)
+  out <- vector("list", length = nmodels)
+  for(i in 1:nmodels) {
+
+    out[[i]] <- se.llca(model[[i]], type = type, model = model,
+                        digits = digits)
+    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
+                           sep = "")
+
+  }
+
+  class(out) <- "se.llcalist"
+
+  return(out)
 
 }
 

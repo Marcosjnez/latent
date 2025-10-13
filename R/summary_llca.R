@@ -1,7 +1,7 @@
-# Author: Marcos Jimenez
 # Author: Mauricio Garnier-Villarreal
+# Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 03/09/2025
+# Modification date: 13/10/2025
 #'
 #' @title
 #' Fit indices
@@ -82,6 +82,28 @@ summary.llca <- function(fit, digits = 3) {
   cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
   cat(sprintf("  %-45s %.3f\n", "P-value (L2)", pv))
 
-  invisible(fit)
+  result <- latInspect(fit, what = "profile")
+
+  invisible(result)
+
+}
+
+#' @method summary llcalist
+#' @export
+summary.llcalist <- function(model, digits = 3) {
+
+  nmodels <- length(model)
+  out <- vector("list", length = nmodels)
+  for(i in 1:nmodels) {
+
+    out[[i]] <- summary.llca(model[[i]], digits = digits)
+    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
+                           sep = "")
+
+  }
+
+  class(out) <- "summary.llcalist"
+
+  invisible(out)
 
 }

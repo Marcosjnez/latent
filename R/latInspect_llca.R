@@ -1,27 +1,27 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/10/2025
+# Modification date: 13/10/2025
 #'
 #' @title
-#' Standard Errors
+#' Inspect objects from fitted lca models.
 #' @description
 #'
-#' Compute standard errors.
+#' Inspect objects.
 #'
 #' @usage
 #'
-#' se(fit)
+#' latInspect(fit)
 #'
 #' @param fit model fitted with lca.
-#' @param confidence Coverage of the confidence interval.
+#' @param digits Number of digits to print.
 #'
-#' @details Compute standard errors.
+#' @details Extract objects from fitted lca object.
 #'
-#' @return List with the following objects:
-#' \item{vcov}{Variance-covariance matrix between the parameters.}
-#' \item{se}{Standard errors.}
-#' \item{SE}{Standard errors in the model list.}
+#' @return List with one of the following objects:
+#' \item{class}{.}
+#' \item{posterior}{.}
+#' \item{profile}{.}
 #'
 #' @references
 #'
@@ -47,8 +47,11 @@ latInspect.llca <- function(fit,
     classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
     temp <- fit@ClassConditional
 
-    for(j in 1:length(temp)) {
-      temp[[j]] <- round(temp[[j]], digits)
+    if(!is.null(digits)) {
+      for(j in 1:length(temp)) {
+        temp[[j]] <- round(temp[[j]], digits = digits)
+      }
+      classes <- round(classes, digits = digits)
     }
 
     return(list(class = classes, item = temp))
@@ -59,8 +62,10 @@ latInspect.llca <- function(fit,
 
     temp <- fit@ClassConditional
 
-    for(j in 1:length(temp)){
-      temp[[j]] <- round(temp[[j]], digits)
+    if(!is.null(digits)) {
+      for(j in 1:length(temp)) {
+        temp[[j]] <- round(temp[[j]], digits = digits)
+      }
     }
 
     return(temp)
@@ -71,17 +76,24 @@ latInspect.llca <- function(fit,
              what == "clusters") {
 
     weights <- fit@Optim$data_list$weights
-    classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
-    temp <- round(classes, digits)
+    temp <- colSums(fit@transformed_pars$class * weights) / sum(weights)
     names(temp) <- paste0("Class", 1:length(temp))
+
+    if(!is.null(digits)) {
+      temp <- round(temp, digits = digits)
+    }
 
     return(temp)
 
   } else if (what == "fullclasses") {
 
-    temp <- round(fit@transformed_pars$class, digits)
+    temp <- fit@transformed_pars$class
     colnames(temp) <- paste0("Class", 1:ncol(temp))
     rownames(temp) <- rownames(fit@Optim$data)
+
+    if(!is.null(digits)) {
+      temp <- round(temp, digits = digits)
+    }
 
     return(temp)
 
@@ -93,9 +105,13 @@ latInspect.llca <- function(fit,
              what == "coefficient" ||
              what == "coefficients") {
 
-    temp <- round(fit@transformed_pars$beta, digits)
+    temp <- fit@transformed_pars$beta
     colnames(temp) <- paste0("Class", 1:ncol(temp))
     rownames(temp) <- colnames(fit@Optim$data_list$cov_patterns)
+
+    if(!is.null(digits)) {
+      temp <- round(temp, digits = digits)
+    }
 
     return(temp)
 
@@ -111,24 +127,32 @@ latInspect.llca <- function(fit,
 
   } else if (what == "convergence") {
 
-    fit@Optim$convergence
+    return(fit@Optim$convergence)
 
   } else if (what == "data") {
 
-    fit@Optim$data
+    return(fit@Optim$data)
 
   } else if (what == "pattern") {
 
-    cbind(fit@Optim$data_list$patterns,
-          times = fit@Optim$data_list$weights)
+    temp <- cbind(fit@Optim$data_list$patterns,
+                  times = fit@Optim$data_list$weights)
+
+    return(temp)
 
   } else if (what == "table") {
 
-    fit@summary_table
+    return(fit@summary_table)
 
   } else if (what == "posterior") {
 
-    round(fit@posterior, digits)
+    temp <- fit@posterior
+
+    if(!is.null(digits)) {
+      temp <- round(temp, digits = digits)
+    }
+
+    return(temp)
 
   } else if (what == "state") {
 
@@ -137,28 +161,49 @@ latInspect.llca <- function(fit,
   }else if (what == "loglik_case" ||
             what == "casell") {
 
-    fit@loglik_case
+    return(fit@loglik_case)
 
   } else if (what == "loglik" ||
              what == "ll" ||
              what == "LL") {
 
-    fit@loglik
+    return(fit@loglik)
 
   } else if (what == "probcat") {
 
     temp <- fit@probCat
 
-    for(j in 1:length(temp)){
-      temp[[j]] <- round(temp[[j]], digits)
+    if(!is.null(digits)) {
+      for(j in 1:length(temp)) {
+        temp[[j]] <- round(temp[[j]], digits = digits)
+      }
     }
 
   } else if (what == "timing") {
 
-    fit@timing
+    return(fit@timing)
 
   }
 
-
 }
 
+#' @method latInspect llcalist
+#' @export
+latInspect.llcalist <- function(model, what = "classconditional",
+                                digits = 3) {
+
+  nmodels <- length(model)
+  out <- vector("list", length = nmodels)
+  for(i in 1:nmodels) {
+
+    out[[i]] <- latInspect.llca(model[[i]], what = what, digits = digits)
+    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
+                           sep = "")
+
+  }
+
+  class(out) <- "latInspect.llcalist"
+
+  return(out)
+
+}

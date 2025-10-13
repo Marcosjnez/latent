@@ -310,7 +310,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     result <- vector("list") # Initialize the object to be returned
 
     # Model information:
-    modelInfo <- list(item = item,
+    modelInfo <- list(nclasses = nclasses,
+                      item = item,
                       nobs = nobs,
                       npatterns = npatterns,
                       npossible_patterns = npossible_patterns,
