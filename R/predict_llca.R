@@ -68,7 +68,7 @@ predict.llca <- function(model, new = NULL, digits = NULL) {
     P0 <- round(P0, digits = digits)
   }
 
-  return(P0)
+  return(data.frame(X[,-1], P0) )
 
 }
 
