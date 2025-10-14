@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 17/09/2025
+ * Modification date: 14/10/2025
  */
 
 /*
@@ -71,17 +71,9 @@ public:
 
   void dG(arguments_optim& x) {
 
-    // dX = arma::reshape(dparameters, q, q);
-    dg.set_size(transparameters.n_elem); dg.zeros();
-
-    // dlambda.fill(dparameters(lambda_indices));
-    // dphi.fill(dparameters(phi_indices));
-    // dpsi.fill(dparameters(psi_indices));
-
-    dlambda = arma::reshape(dparameters(lambda_indices), p, q);
-    dpsi = arma::reshape(dparameters(psi_indices), q, q);
-    dtheta = arma::reshape(dparameters(theta_indices), q, q);
-
+    dlambda = arma::reshape(x.dtransparameters(lambda_indices), p, q);
+    dpsi.elem(lower_psi) = x.dtransparameters(psi_indices);
+    dtheta.elem(lower_theta) = x.dtransparameters(theta_indices);
     dpsi = arma::symmatl(dpsi);
     dtheta = arma::symmatl(dtheta);
 
@@ -111,13 +103,9 @@ public:
     ddRhat_inv.diag() *= 0.5;
     dgpsi = ddlogdetRhat + ddRhat_inv;
 
-    dg(lambda_indices) += arma::vectorise(dglambda);
-    // if(positive) {
-    //   dg(T_indexes) += dgpsi.elem(targetT_indexes);
-    // } else {
-    dg(psi_indices) += arma::vectorise(dgpsi);
-    // }
-    dg(theta_indices) += arma::vectorise(dgtheta);
+    x.dgrad.elem(lambda_indices) += arma::vectorise(dglambda);
+    x.dgrad.elem(psi_indices) += arma::vectorise(dgpsi(lower_psi));
+    x.dgrad.elem(theta_indices) += arma::vectorise(dgtheta(lower_theta));
 
   }
 
@@ -280,6 +268,9 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   myestimator->theta_indices = theta_indices;
   myestimator->lower_psi = lower_psi;
   myestimator->lower_theta = lower_theta;
+  myestimator->dlambda = lambda;
+  myestimator->dpsi = psi;
+  myestimator->dtheta = theta;
 
   return myestimator;
 

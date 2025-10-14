@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/10/2025
+# Modification date: 14/10/2025
 
 #### Install latent ####
 
@@ -153,9 +153,9 @@ data <- empathy[, 1:6]
 X <- as.matrix(empathy[, 7:8]) # Covariates
 
 fit0 <- lca(data = data, X = NULL, model = NULL,
-           item = rep("gaussian", ncol(data)),
-           nclasses = 4L, penalties = TRUE,
-           control = NULL, do.fit = TRUE)
+            item = rep("gaussian", ncol(data)),
+            nclasses = 4L, penalties = TRUE,
+            control = NULL, do.fit = TRUE)
 fit0@timing
 fit0@loglik # -1798.885
 fit0@penalized_loglik # -1801.996
@@ -207,7 +207,7 @@ model <- 'visual  =~ x1 + x2 + x3
 
 set.seed(2025)
 fit <- cfast(HolzingerSwineford1939, model = model,
-             estimator = "uls", cor = "pearson", do.fit = TRUE,
+             estimator = "ml", cor = "pearson", do.fit = FALSE,
              control = list(opt = "newton", maxit = 1000, tcg_maxit = 10))
 fit@loglik # -0.283407
 fit@penalized_loglik # -0.283407
