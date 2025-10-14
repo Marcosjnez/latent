@@ -205,12 +205,15 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
+set.seed(2025)
 fit <- cfast(HolzingerSwineford1939, model = model,
-             estimator = "uls", cor = "pearson", do.fit = TRUE)
+             estimator = "uls", cor = "pearson", do.fit = TRUE,
+             control = list(opt = "newton", maxit = 1000, tcg_maxit = 10))
 fit@loglik # -0.283407
 fit@penalized_loglik # -0.283407
 fit@loss # 0.1574787
 fit@Optim$opt$iterations
+fit@timing
 
 control_manifold <- fit@Optim$control_manifold
 control_transform <- fit@Optim$control_transform
@@ -226,50 +229,16 @@ x$f
 round(c(x$g)-c(x$numg), 4)
 round(c(x$dg)-c(x$numdg), 4)
 round(c(x$dg)/c(x$numdg), 4)
-
-S <- fit@Optim$control_estimator[[1]]$R
-rhat <- latInspect(fit, what = "model", digits = 9)[[1]]
-residuals <- S-rhat
-0.5*sum(residuals*residuals)
-psi <- latInspect(fit, what = "psi", digits = 9)[[1]]
-lambda <- latInspect(fit, what = "lambda", digits = 9)[[1]]
-
-allX <- x$dtransparameters
-dlambda <- matrix(allX[fit@Optim$control_estimator[[1]]$indices[[2]]+1L], 9, 3)
-dtheta <- matrix(0, 9, 9)
-dtheta[lower.tri(dtheta, diag = TRUE)] <-
-  allX[fit@Optim$control_estimator[[1]]$indices[[4]]+1L]
-dtheta[upper.tri(dtheta, diag = FALSE)] <- t(dtheta)[upper.tri(dtheta, diag = FALSE)]
-dtheta <- 2*dtheta; diag(dtheta) <- 0.5*diag(dtheta)
-W <- matrix(1, 9, 9)
-# diag(W) <- 0
-W_residuals <- W*residuals
-lambda_psi <- lambda %*% psi
-dg1 <- -2*W_residuals %*% dlambda %*% psi
-W_dresiduals <- -W * (dlambda %*% t(lambda_psi) + lambda_psi %*% t(dlambda))
-dg2 <- -2*W_dresiduals %*% lambda_psi
-dglambda <- dg1 + dg2
-dglambda
-
-x$dtransparameters[fit@Optim$control$transparam2param + 1L]
-c(x$dparameters)
-x$dgrad[fit@Optim$control$transparam2param + 1L]
-c(x$dg)
-
-X <- x$dparameters
-parameters <- fit@Optim$opt$parameters
-eps <- 1e-09
-
-control$parameters[[1]] <- parameters + eps*X
-g1 <- c(get_grad(control_manifold, control_transform, control_estimator, control)$g)
-control$parameters[[1]] <- parameters - eps*X
-g0 <- c(get_grad(control_manifold, control_transform, control_estimator, control)$g)
-control$parameters[[1]] <- parameters
-c(get_grad(control_manifold, control_transform, control_estimator, control)$g)
 c(x$g)
-(g1-g0)/(2*eps)
-c(x$numdg)
+c(x$rg)
 c(x$dg)
+c(x$dH)
+
+control$parameters[[1]] <- fit@Optim$opt$parameters
+control$transparameters[[1]] <- fit@Optim$opt$transparameters
+H <- get_hess(control_manifold, control_transform,
+              control_estimator, control)
+c(H$h %*% x$dparameters)
 
 fit@loglik # -0.283407 (ML)
 fit@loss # 0.1574787 (ULS) / 0.283407 (ML)

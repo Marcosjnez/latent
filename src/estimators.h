@@ -158,6 +158,7 @@ public:
   void dG(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
     x.dgrad.zeros();
+    x.dtransparameters(x.transparam2param) = x.dparameters;
 
     for(int i=0; i < x.nestimators; ++i) {
 

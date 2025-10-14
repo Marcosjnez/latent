@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/10/2025
+ * Modification date: 14/10/2025
  */
 
 typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::mat> optim_result;
@@ -51,12 +51,16 @@ void armijo(arguments_optim& x,
 // Line-search algorithm satisfying the Wolfe conditions:
 
 void wolfe(arguments_optim& x,
-           product_transform* final_transform,
-           product_manifold* final_manifold,
-           product_estimator* final_estimator,
+           // product_transform* final_transform,
+           // product_manifold* final_manifold,
+           // product_estimator* final_estimator,
            std::vector<transformations*>& xtransforms,
            std::vector<manifolds*>& xmanifolds,
            std::vector<estimators*>& xestimators) {
+
+  product_manifold* final_manifold;
+  product_transform* final_transform;
+  product_estimator* final_estimator;
 
   // x.ss = std::max(x.ss_min, x.ss * x.ss_fac);
   // x.ss = x.ss*2;
@@ -106,27 +110,28 @@ void wolfe(arguments_optim& x,
 // Conjugate-gradient method to solve the Riemannian Newton equation:
 
 void tcg(arguments_optim& x,
-         product_transform* final_transform,
-         product_manifold* final_manifold,
-         product_estimator* final_estimator,
          std::vector<transformations*>& xtransforms,
          std::vector<manifolds*>& xmanifolds,
          std::vector<estimators*>& xestimators,
-         arma::vec& dir, bool& att_bnd, double ng, arma::vec c, double rad) {
+         bool& att_bnd, arma::vec c, double rad) {
 
   /*
    * Truncated conjugate gradient sub-solver for the trust-region sub-problem
    * From Liu (Algorithm 4; 2020)
    */
 
-  dir.zeros();
+  product_manifold* final_manifold;
+  product_transform* final_transform;
+  product_estimator* final_estimator;
+
+  x.dir.zeros();
   arma::vec dir0;
 
   double alpha, rr0, tau, beta, dHd;
   x.dparameters = -x.rg; // Initial search direction
   arma::vec r = x.dparameters; // Initial residual
-  double rr = ng * ng;
-  double tol = ng * std::min(pow(ng, c[0]), c[1]);
+  double rr = x.ng * x.ng;
+  double tol = x.ng * std::min(pow(x.ng, c[0]), c[1]);
 
   int iter = 0;
 
@@ -134,22 +139,23 @@ void tcg(arguments_optim& x,
   // final_estimator->param(x, xestimators); // Unnecessary
   // final_estimator->G(x, xestimators); // Unnecessary
 
-  do {
+  // final_manifold->param(x, xmanifolds); // Unnecessary
+  // final_estimator->param(x, xestimators); // Unnecessary
+  final_estimator->dG(x, xestimators);
+  final_transform->update_dgrad(x, xtransforms);
+  final_manifold->param(x, xmanifolds);
+  final_manifold->hess(x, xmanifolds);
 
-    // final_estimator->param(x, xestimators); // Unnecessary
-    final_estimator->dG(x, xestimators);
-    final_transform->update_dgrad(x, xtransforms);
-    final_manifold->param(x, xmanifolds);
-    // final_manifold->proj(x, xmanifolds); // Unnecessary
-    final_manifold->hess(x, xmanifolds);
+  do {
 
     dHd = arma::accu(x.dparameters % x.dH);
 
     if(dHd <= 0) {
 
-      tau = root_quad(arma::accu(x.dparameters % x.dparameters), 2 * arma::accu(dir % x.dparameters),
-                      arma::accu(dir % dir) - rad * rad); // Solve equation 39
-      dir = dir + tau * x.dparameters;
+      tau = root_quad(arma::accu(x.dparameters % x.dparameters),
+                      2 * arma::accu(x.dir % x.dparameters),
+                      arma::accu(x.dir % x.dir) - rad * rad); // Solve equation 39
+      x.dir += tau * x.dparameters;
       att_bnd = true;
 
       break;
@@ -158,14 +164,15 @@ void tcg(arguments_optim& x,
 
     rr0 = rr;
     alpha = rr0 / dHd;
-    dir0 = dir;
-    dir = dir + alpha * x.dparameters; // update proposal
+    dir0 = x.dir;
+    x.dir += alpha * x.dparameters; // update proposal
 
-    if (sqrt(arma::accu(dir % dir)) >= rad) {
+    if (sqrt(arma::accu(x.dir % x.dir)) >= rad) {
 
-      tau = root_quad(arma::accu(x.dparameters % x.dparameters), 2 * arma::accu(dir0 % x.dparameters),
+      tau = root_quad(arma::accu(x.dparameters % x.dparameters),
+                      2 * arma::accu(dir0 % x.dparameters),
                       arma::accu(dir0 % dir0) - rad * rad); // Solve equation 39
-      dir = dir0 + tau * x.dparameters;
+      x.dir = dir0 + tau * x.dparameters;
       att_bnd = true;
 
       break;
@@ -184,10 +191,16 @@ void tcg(arguments_optim& x,
 
     beta = rr / rr0;
     x.dparameters = r + beta * x.dparameters;
-    x.dir = dir;
     iter += 1;
 
+    final_estimator->dG(x, xestimators);
+    final_transform->update_dgrad(x, xtransforms);
+    final_manifold->param(x, xmanifolds);
+    final_manifold->hess(x, xmanifolds);
+
   } while (iter < x.tcg_maxit);
+
+  x.dparameters = x.dir;
 
 }
 
@@ -231,8 +244,7 @@ optim_result gd(arguments_optim x,
     // x.ss *= 2;
 
     // armijo(x, final_manifold, final_estimator, xmanifolds, xestimators);
-    wolfe(x, final_transform, final_manifold, final_estimator,
-          xtransforms, xmanifolds, xestimators);
+    wolfe(x, xtransforms, xmanifolds, xestimators);
 
     // update gradient
     // final_estimator->param(x, xestimators); // param() was called in armijo
@@ -269,8 +281,6 @@ optim_result gd(arguments_optim x,
     }
 
   } while (x.iterations < x.maxit);
-
-  // final_estimator->outcomes(x, xestimators);
 
   optim_result result = std::make_tuple(x.parameters,
                                         x.transparameters,
@@ -365,8 +375,7 @@ optim_result lbfgs(arguments_optim x,
     // Rprintf("\n");
 
     // armijo(x, final_manifold, final_estimator, xmanifolds, xestimators);
-    wolfe(x, final_transform, final_manifold, final_estimator,
-          xtransforms, xmanifolds, xestimators);
+    wolfe(x, xtransforms, xmanifolds, xestimators);
 
     // Stop early if the optimization diverges:
     if (x.f > f0) {
@@ -456,8 +465,6 @@ optim_result lbfgs(arguments_optim x,
 
   } while (x.iterations < x.maxit);
 
-  // final_estimator->outcomes(x, xestimators);
-
   optim_result result = std::make_tuple(x.parameters,
                                         x.transparameters,
                                         x.f,
@@ -483,32 +490,23 @@ optim_result ntr(arguments_optim x,
   // Ensure initial parameters are ok:
   final_manifold->param(x, xmanifolds);
   final_manifold->retr(x, xmanifolds);
-  final_manifold->param(x, xmanifolds);
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
 
-  /*
-   * Riemannian trust-region algorithm
-   * From Liu (Algorithm 2; 2020)
-   */
-
-  // Parameterization
-  // final_manifold->param(x, xmanifolds);
-  // final_manifold->retr(x, xmanifolds);
-  // final_manifold->param(x, xmanifolds);
-  // final_estimator->param(x, xestimators);
-
   // Objective
   final_estimator->F(x, xestimators);
-
-  // Rcpp::Rcout << "x.f = " << x.f << std::endl;
-
   // Gradient
   final_estimator->G(x, xestimators);
   final_transform->update_grad(x, xtransforms);
-
   // Riemannian gradient
   final_manifold->proj(x, xmanifolds);
+
+  /*
+   * Riemannian newton trust-region algorithm
+   * From Liu (Algorithm 2; 2020)
+   */
+
+  // Rcpp::Rcout << "x.f = " << x.f << std::endl;
 
   x.ng = sqrt(arma::accu(x.rg % x.rg));
 
@@ -533,19 +531,12 @@ optim_result ntr(arguments_optim x,
   x.iterations = 0;
   double goa, preddiff;
 
-  arguments_optim new_x;
-  arma::vec dir(x.parameters.n_elem);
+  x.convergence = false;
 
   do {
 
     // subsolver
-    tcg(x, final_transform, final_manifold, final_estimator,
-        xtransforms, xmanifolds, xestimators, dir, att_bnd, x.ng, c, rad); // Update x.dparameters, x.dg, and x.dH
-
-    x.dparameters = dir;
-    x.dir = dir;
-    new_x = x;
-    new_x.parameters += dir;
+    tcg(x, xtransforms, xmanifolds, xestimators, att_bnd, c, rad); // Update x.dparameters, x.dg, and x.dH
 
     final_estimator->dG(x, xestimators);
     final_transform->update_dgrad(x, xtransforms);
@@ -554,11 +545,13 @@ optim_result ntr(arguments_optim x,
 
     preddiff = - arma::accu(x.dparameters % ( x.rg + 0.5 * x.dH) );
 
+    arguments_optim new_x = x;
+    new_x.parameters += x.dir;
     // Projection onto the manifold
     final_manifold->param(new_x, xmanifolds);
     final_manifold->retr(new_x, xmanifolds);
     // Parameterization
-    final_transform->transform(x, xtransforms);
+    final_transform->transform(new_x, xtransforms);
     final_estimator->param(new_x, xestimators);
     final_estimator->F(new_x, xestimators);
 
@@ -570,7 +563,7 @@ optim_result ntr(arguments_optim x,
 
     } else {
 
-      goa = (x.f - new_x.f) / preddiff;
+      goa = x.df / preddiff;
 
     }
 
@@ -590,12 +583,9 @@ optim_result ntr(arguments_optim x,
       x = new_x;
 
       // update gradient
-      final_transform->transform(x, xtransforms); // Unnecessary
-      final_estimator->param(x, xestimators); // Unnecessary
       final_estimator->G(x, xestimators);
       final_transform->update_grad(x, xtransforms);
       // Riemannian gradient
-      final_manifold->param(x, xmanifolds);
       final_manifold->proj(x, xmanifolds);
 
       x.ng = sqrt(arma::accu(x.rg % x.rg));
@@ -604,24 +594,23 @@ optim_result ntr(arguments_optim x,
 
     ++x.iterations;
 
-    if(x.print) {
-      Rcpp::Rcout << "Iteration = " << x.iterations << std::endl;
-      Rcpp::Rcout << "f = " << x.f << std::endl;
-      Rcpp::Rcout << "step size = " << x.ss << std::endl;
-      Rcpp::Rcout << "step iters = " << x.step_iteration << std::endl;
-      Rcpp::Rcout << "ng = " << x.ng << std::endl;
-      Rcpp::Rcout << "dif = " << std::sqrt(x.df*x.df) << std::endl;
-      Rcpp::Rcout << "" << std::endl;
-    }
+    // if(x.print) {
+    //   Rcpp::Rcout << "Iteration = " << x.iterations << std::endl;
+    //   Rcpp::Rcout << "f = " << x.f << std::endl;
+    //   Rcpp::Rcout << "step size = " << x.ss << std::endl;
+    //   Rcpp::Rcout << "step iters = " << x.step_iteration << std::endl;
+    //   Rcpp::Rcout << "ng = " << x.ng << std::endl;
+    //   Rcpp::Rcout << "dif = " << std::sqrt(x.df*x.df) << std::endl;
+    //   Rcpp::Rcout << "" << std::endl;
+    // }
 
-    if (x.ng < x.eps | std::sqrt(x.df*x.df) < x.df_eps) {
+    // if (x.ng < x.eps | std::sqrt(x.df*x.df) < x.df_eps) {
+    if (x.ng < x.eps) {
       x.convergence = true;
       break;
     }
 
   } while (x.iterations < x.maxit);
-
-  // final_estimator->outcomes(x, xestimators);
 
   optim_result result = std::make_tuple(x.parameters,
                                         x.transparameters,

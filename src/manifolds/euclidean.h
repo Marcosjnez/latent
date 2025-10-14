@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 12/10/2025
+ * Modification date: 14/10/2025
  */
 
 // Euclidean manifold:
@@ -10,14 +10,7 @@ class euclidean:public manifolds {
 
 public:
 
-  arma::vec X;
-  arma::vec dX;
-  arma::vec parameters, dir, g, dg;
-
   void param(arguments_optim& x) {
-
-    parameters = x.parameters(indices[0]);
-    // X = parameters;
 
   }
 
