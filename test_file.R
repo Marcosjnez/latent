@@ -141,7 +141,7 @@ X <- as.matrix(empathy[, 7:8]) # Covariates
 
 fit0 <- lca(data = data, X = NULL, model = NULL,
             item = rep("gaussian", ncol(data)),
-            nclasses = 4L, penalties = TRUE,
+            nclasses = 1:4L, penalties = TRUE,
             control = NULL, do.fit = TRUE)
 fit0@timing
 fit0@loglik # -1798.885
@@ -310,6 +310,67 @@ fit <- lcfa(data = HolzingerSwineford1939, model = model,
 fit@loglik # -0.249485 (ML)
 fit@penalized_loglik # -0.249485 (ML)
 fit@loss # 0.1441886 (ULS) / 0.249485 (ML)
+fit@Optim$opt$iterations
+fit@Optim$opt$convergence
+fit@timing
+
+# Plot model fit info:
+fit
+
+# Get fit indices:
+getfit(fit)
+
+# Inspect model objects:
+latInspect(fit, what = "loadings", digits = 3)
+latInspect(fit, what = "psi", digits = 3)
+latInspect(fit, what = "uniquenesses", digits = 3)
+latInspect(fit, what = "model", digits = 3)
+
+theta <- latInspect(fit, what = "theta", digits = 3)[[1]]
+det(theta)
+eigen(theta)$values
+sum(eigen(theta)$values)
+# solve(theta)
+
+psi <- latInspect(fit, what = "psi", digits = 3)[[1]]
+det(psi)
+eigen(psi)$values
+sum(eigen(psi)$values)
+# solve(psi)
+
+#### Multigroup CFA (nonpositive definite) ####
+
+library(latent)
+library(lavaan)
+
+model <- 'visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9
+          x1 ~~ x5
+          x1 ~~ x4
+          x4 ~~ x5
+          x4 ~~ x6'
+
+# With lavaan:
+fit2 <- cfa(model, data = HolzingerSwineford1939,
+            group = "school", estimator = "ml",
+            std.lv = TRUE, std.ov = TRUE)
+fit2
+inspect(fit2, what = "est")
+fitmeasures(fit2, fit.measures = c("cfi", "tli", "rmsea", "srmr"))
+
+# With latent:
+fit <- lcfa(data = HolzingerSwineford1939, model = model,
+            estimator = "ml", cor = "pearson",
+            positive = TRUE, penalties = TRUE,
+            group = "school", std.lv = TRUE, do.fit = TRUE,
+            control = list(opt = "lbfgs", maxit = 1000L,
+                           # logdetw = 1e-03,
+                           cores = 10L, rstarts = 10L))
+
+fit@loglik # -0.1678072 (ML)
+fit@penalized_loglik # -0.1678072 (ML)
+fit@loss # 0.1871894 (ULS) / 0.1678072 (ML)
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
 fit@timing
