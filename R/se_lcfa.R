@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 29/08/2025
+# Modification date: 23/10/2025
 #'
 #' @title
 #' Standard Errors
@@ -33,10 +33,10 @@ se.lcfa <- function(fit, type = "standard", model = "user", digits = 2) {
   # x <- standard_se(fit)
   # x$se
 
-  # control_manifold <- fit@Optim$control_manifold
-  # control_transform <- fit@Optim$control_transform
-  # control_estimator <- fit@Optim$control_estimator
-  # control_optimizer <- fit@Optim$control
+  # control_manifold <- fit@modelInfo$control_manifold
+  # control_transform <- fit@modelInfo$control_transform
+  # control_estimator <- fit@modelInfo$control_estimator
+  # control_optimizer <- fit@modelInfo$control
   # control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
   # control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
   # computations <- grad_comp(control_manifold = control_manifold,

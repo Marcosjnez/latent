@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/09/2025
+ * Modification date: 27/10/2025
  */
 
 class estimators {
@@ -63,13 +63,10 @@ public:
 #include "estimators/rotation/lclf.h"
 
 #include "estimators/lca/lca.h"
-#include "estimators/lca/lca_cov.h"
-#include "estimators/lca/bayesconst1.h"
 #include "estimators/lca/bayesconst2.h"
 #include "estimators/lca/bayesconst3.h"
-#include "estimators/lca/bayesconst1U0.h"
+#include "estimators/lca/bayesconst1.h"
 #include "estimators/cfa/logdetmat.h"
-#include "estimators/cfa/logdetmat2.h"
 
 #include "estimators/lreg/lreg.h"
 
@@ -98,12 +95,9 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "bayesconst1",                 choose_bayesconst1               },
   { "bayesconst2",                 choose_bayesconst2               },
   { "bayesconst3",                 choose_bayesconst3               },
-  { "bayesconst1U0",               choose_bayesconst1U0             },
   { "logdetmat",                   choose_logdetmat                 },
-  { "logdetmat2",                  choose_logdetmat2                },
   { "lreg",                        choose_lreg                      },
-  { "polycor",                     choose_polycor                   },
-  { "lca_cov",                     choose_lca_cov                   }
+  { "polycor",                     choose_polycor                   }
 };
 
 estimators* choose_estimator(const Rcpp::List& estimator_setup) {
@@ -158,7 +152,6 @@ public:
   void dG(arguments_optim& x, std::vector<estimators*>& xestimators) {
 
     x.dgrad.zeros();
-    x.dtransparameters(x.transparam2param) = x.dparameters;
 
     for(int i=0; i < x.nestimators; ++i) {
 

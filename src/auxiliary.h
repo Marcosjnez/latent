@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 26/08/2025
+ * Modification date: 27/10/2025
  */
 
 double root_quad(double a, double b, double c) {
@@ -66,27 +66,6 @@ arma::vec orthogonalize(arma::mat X, arma::vec x) {
   // x /= sqrt(arma::accu(x % x));
 
   return x;
-
-}
-
-arma::mat lyap_sym(arma::mat Y, arma::mat Q) {
-
-  // Solve the lyapunov equation YX + XY = Q with symmetric Q and X:
-
-  int q = Y.n_cols;
-  arma::vec I(q, arma::fill::ones);
-
-  arma::vec eigval;
-  arma::mat eigvec;
-  arma::eig_sym(eigval, eigvec, Y);
-
-  arma::mat M = eigvec.t() * Q * eigvec;
-  arma::mat W1 = I * eigval.t();
-  arma::mat W = W1 + W1.t();
-  arma::mat YY = M / W;
-  arma::mat A = eigvec * YY * eigvec.t();
-
-  return A;
 
 }
 
@@ -249,6 +228,35 @@ double Dnorm(double x, double mu, double s2) {
 double logDnorm(double x, double mu, double s2) {
   x -= mu;
   return -0.5*x*x/s2 - arma::trunc_log(SQRT2M_PI*sqrt(s2));
+}
+
+// [[Rcpp::export]]
+arma::mat duplication(int p, bool halflower = true) {
+
+  // Duplication matrix
+
+  int pp = p*p;
+
+  arma::mat res(pp, pp);
+  arma::mat null(p, p, arma::fill::zeros);
+
+  for(int i=0; i < pp; ++i) {
+    null.zeros();
+    null(i) = 1;
+    null = arma::symmatl(null);
+    res.col(i) = arma::vectorise(null);
+  }
+
+  arma::uvec lower_indices = arma::trimatl_ind( arma::size(null) );
+
+  if(halflower) {
+    arma::uvec lower = arma::trimatl_ind( arma::size(null), -1 );
+    res.cols(lower) *= 0.5;
+
+  }
+
+  return res.cols(lower_indices);
+
 }
 
 // arma::mat center_mat(arma::mat X) {

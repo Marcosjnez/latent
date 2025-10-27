@@ -1,11 +1,11 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 27/10/2025
  */
 
 /*
- * Latent class analysis
+ * Latent class analysis with expanded class probabilities
  */
 
 class lca: public estimators {
@@ -16,37 +16,38 @@ public:
   int J; // cols of Y (number of items)
   int I; // Number of latent classes
   arma::uvec indices_classes;
-  arma::uvec indices_items;
+  arma::uvec indices_itemloglik;
   arma::uvec indices_theta;
   arma::vec weights; // Number of repetitions of each response pattern
   arma::vec logweights;
-  arma::vec classes;
-  arma::vec logclasses;
+  arma::mat classes;
+  arma::mat logclasses;
   arma::vec logliks;
   arma::vec loglik_case;
   arma::mat jointlogp;
-  arma::cube loglik, dloglik;
+  arma::cube itemloglik, gitemloglik, ditemloglik;
   arma::mat latentloglik;
   arma::mat posterior, logposterior;
   std::vector<arma::uvec> hess_indices;
 
   void param(arguments_optim& x) {
 
-    classes = x.transparameters.elem(indices_classes);
+    arma::vec cl = x.transparameters.elem(indices_classes);
+    classes = arma::reshape(cl, S, I);
     logclasses = arma::trunc_log(classes);
 
-    arma::vec values = x.transparameters.elem(indices_items);
-    std::memcpy(loglik.memptr(), values.memptr(), sizeof(double) * values.n_elem);
+    arma::vec values = x.transparameters.elem(indices_itemloglik);
+    std::memcpy(itemloglik.memptr(), values.memptr(), sizeof(double) * values.n_elem);
 
     latentloglik.zeros();
 
     for(int s=0; s < S; ++s) {
       for(int i=0; i < I; ++i) {
         for(int j=0; j < J; ++j) {
-          latentloglik(s, i) += loglik(s, j, i);
+          latentloglik(s, i) += itemloglik(s, j, i);
         }
       }
-      jointlogp.row(s) = latentloglik.row(s) + logclasses.t();
+      jointlogp.row(s) = latentloglik.row(s) + logclasses.row(s);
       double max_vector = jointlogp.row(s).max();
       loglik_case(s) = max_vector +
         arma::trunc_log(arma::accu(arma::trunc_exp(jointlogp.row(s) - max_vector)));
@@ -65,33 +66,35 @@ public:
 
   void G(arguments_optim& x) {
 
-    // grad.set_size(transparameters.n_elem); grad.zeros();
-
-    arma::vec dclasses(I, arma::fill::zeros);
-    arma::mat ditemloglik(S, I, arma::fill::zeros);
+    arma::mat gclasses(S, I, arma::fill::zeros);
+    arma::mat glatentloglik(S, I, arma::fill::zeros);
     for(int s=0; s < S; ++s) {
       for(int i=0; i < I; ++i) {
-        dclasses(i) -= arma::trunc_exp(logweights[s] + latentloglik(s, i) - loglik_case(s));
-        ditemloglik(s, i) -= arma::trunc_exp(logweights[s] + logposterior(s, i));
+        gclasses(s, i) -= arma::trunc_exp(logweights[s] + latentloglik(s, i) - loglik_case(s));
+        glatentloglik(s, i) -= arma::trunc_exp(logweights[s] + logposterior(s, i));
       }
     }
 
-    // Replicate ditemloglik across slices:
-    dloglik.zeros();
+    // Replicate glatentloglik across slices:
     for (arma::uword k = 0; k < I; ++k) {
-      dloglik.slice(k).each_col() = ditemloglik.col(k);
+      gitemloglik.slice(k).each_col() = glatentloglik.col(k);
     }
 
-    x.grad.elem(indices_classes) += dclasses;
-    x.grad.elem(indices_items) += arma::vectorise(dloglik);
-    // grad.elem( arma::find_nonfinite(grad) ).zeros();
-    // x.grad.elem(indices[0]) += grad;
+    x.grad.elem(indices_classes) += arma::vectorise(gclasses);
+    x.grad.elem(indices_itemloglik) += arma::vectorise(gitemloglik);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dg.set_size(transparameters.n_elem); dg.zeros();
+    arma::mat dclasses = arma::reshape(x.dtransparameters(indices_classes), S, I);
+    arma::vec values = x.dtransparameters(indices_itemloglik);
+    std::memcpy(ditemloglik.memptr(), values.memptr(), sizeof(double) * values.n_elem);
+
+    arma::mat dgclasses;
+    arma::cube dgitems(S, J, I, arma::fill::zeros);
+    x.dgrad.elem(indices_classes) += arma::vectorise(dgclasses);
+    x.dgrad.elem(indices_itemloglik) += arma::vectorise(dgitems);
 
   }
 
@@ -100,9 +103,10 @@ public:
     arma::mat posterior = arma::trunc_exp(logposterior);
     arma::mat M(J, J, arma::fill::ones);
 
-    arma::mat post1 = posterior; post1.each_row() /= classes.t();
+    arma::mat post1 = posterior / classes;
     arma::mat post2 = post1; post2.each_col() %= weights;
 
+    // FIX this
     x.hess(indices_classes, indices_classes) += post1.t() * post2;
 
     std::vector<arma::uvec> hess_indices2(hess_indices.size());
@@ -179,21 +183,21 @@ public:
     doubles.resize(1);
     doubles[0] = f;
 
-    vectors.resize(5);
-    vectors[0] = classes;
-    vectors[1] = logclasses;
-    vectors[2] = loglik_case;
-    vectors[3] = logliks;
-    vectors[4] = weights;
+    vectors.resize(3);
+    vectors[0] = loglik_case;
+    vectors[1] = logliks;
+    vectors[2] = weights;
 
-    matrices.resize(3);
+    matrices.resize(5);
     matrices[0] = latentloglik;
     matrices[1] = logposterior;
     matrices[2] = jointlogp;
+    matrices[3] = classes;
+    matrices[4] = logclasses;
 
     cubes.resize(2);
-    cubes[0] = loglik;
-    cubes[1] = dloglik;
+    cubes[0] = itemloglik;
+    cubes[1] = gitemloglik;
 
   }
 
@@ -210,18 +214,19 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
   arma::vec weights = estimator_setup["weights"];
   std::vector<arma::uvec> hess_indices = estimator_setup["hess_indices"];
 
-  arma::vec classes(I);
+  arma::mat classes(S, I);
   arma::vec logliks(S, arma::fill::zeros);
   arma::vec loglik_case(S, arma::fill::zeros);
-  arma::cube loglik(S, J, I, arma::fill::zeros);
-  arma::cube dloglik(S, J, I, arma::fill::zeros);
+  arma::cube itemloglik(S, J, I, arma::fill::zeros);
+  arma::cube gitemloglik(S, J, I, arma::fill::zeros);
+  arma::cube ditemloglik(S, J, I, arma::fill::zeros);
   arma::mat latentloglik(S, I, arma::fill::zeros);
   arma::mat jointlogp(S, I, arma::fill::zeros);
   arma::mat posterior(S, I, arma::fill::zeros);
   arma::mat logposterior(S, I, arma::fill::zeros);
   arma::vec logweights = arma::trunc_log(weights);
   arma::uvec indices_classes = indices[1];
-  arma::uvec indices_items = indices[2];
+  arma::uvec indices_itemloglik = indices[2];
   arma::uvec indices_theta = indices[3];
 
   myestimator->S = S;
@@ -231,15 +236,16 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
   myestimator->logweights = logweights;
   myestimator->indices = indices;
   myestimator->indices_classes = indices_classes;
-  myestimator->indices_items = indices_items;
+  myestimator->indices_itemloglik = indices_itemloglik;
   myestimator->indices_theta = indices_theta;
   myestimator->hess_indices = hess_indices;
 
   myestimator->classes = classes;
   myestimator->logliks = logliks;
   myestimator->loglik_case = loglik_case;
-  myestimator->loglik = loglik;
-  myestimator->dloglik = dloglik;
+  myestimator->itemloglik = itemloglik;
+  myestimator->gitemloglik = gitemloglik;
+  myestimator->ditemloglik = ditemloglik;
   myestimator->latentloglik = latentloglik;
   myestimator->jointlogp = jointlogp;
   myestimator->posterior = posterior;

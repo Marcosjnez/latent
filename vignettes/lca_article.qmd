@@ -66,6 +66,23 @@ $$
 
 Notice that this last expression is just the posterior, $P(x_g \mid y_m)$, weighted by $n$.
 
+## Directional derivatives of first-order derivatives
+
+$$
+d \Bigg[ \frac{\partial \ell\ell}{\partial P(x_g)} \Bigg] \;=\; n \,\frac{P(\mathbf{y}) \; d\big[\prod_{j=1}^{J} P(y_j \mid x_g)\big] - d\big[P(\mathbf{y})\big] \; \prod_{j=1}^{J} P(y_j \mid x_g)}{P(\mathbf{y})^2},
+$$
+where
+
+$$
+d\big[\prod_{j=1}^{J} P(y_j \mid x_g)\big] = \frac{\prod_{j=1}^{J} P(y_j \mid x_g)}{P(y_j \mid x_g) \, d\big[P(y_j \mid x_g)\big]},
+$$
+and
+
+$$
+d\big[P(\mathbf{y})\big] = \sum_{k=1}^{K} d\big[P(x_k)] \, \prod_{j=1}^{J} P(y_j \mid x_k) +
+\sum_{k=1}^{K} P(x_k) \, d\big[\prod_{j=1}^{J} P(y_j \mid x_k)].
+$$
+
 ## Second-order derivatives
 
 For classes $g,h$,

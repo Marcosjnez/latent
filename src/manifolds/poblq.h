@@ -1,8 +1,29 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 12/10/2025
+ * Modification date: 23/10/2025
  */
+
+arma::mat lyap_sym(arma::mat Y, arma::mat Q) {
+
+  // Solve the lyapunov equation YX + XY = Q with symmetric Q and X:
+
+  int q = Y.n_cols;
+  arma::vec I(q, arma::fill::ones);
+
+  arma::vec eigval;
+  arma::mat eigvec;
+  arma::eig_sym(eigval, eigvec, Y);
+
+  arma::mat M = eigvec.t() * Q * eigvec;
+  arma::mat W1 = I * eigval.t();
+  arma::mat W = W1 + W1.t();
+  arma::mat YY = M / W;
+  arma::mat A = eigvec * YY * eigvec.t();
+
+  return A;
+
+}
 
 // Partially Oblique manifold:
 
@@ -11,18 +32,17 @@ class poblq:public manifolds {
 public:
 
   std::size_t q;
-  arma::mat X = arma::mat(q, q);
-  arma::mat dX = arma::mat(q, q);
+  arma::mat X;
+  arma::mat dX;
   arma::mat A, Phi, dP;
   arma::uvec oblq_indices;
   arma::mat target;
-  arma::vec parameters, dir, dparameters;
+  arma::vec dir;
   arma::mat g, dg;
 
   void param(arguments_optim& x) {
 
-    parameters = x.parameters(indices[0]);
-    X = arma::reshape(parameters, q, q);
+    X = arma::reshape(x.parameters(indices[0]), q, q);
     Phi = X.t() * X;
 
   }
@@ -42,8 +62,7 @@ public:
   void hess(arguments_optim& x) {
 
     dg = arma::reshape(x.dg.elem(indices[0]), q, q);
-    dparameters = x.dparameters.elem(indices[0]);
-    dX = arma::reshape(dparameters, q, q);
+    dX = arma::reshape(x.dparameters.elem(indices[0]), q, q);
     dP = X.t() * dX;
     dP += dX.t();
 
@@ -92,9 +111,8 @@ public:
     arma::mat Xstd = X * arma::diagmat(1 / sqrt(arma::diagvec(X.t() * X)));
     arma::uvec ones = arma::find(indicator == 0);
     X.cols(ones) = Xstd.cols(ones);
-    parameters = arma::vectorise(X);
     // parameters = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::diagvec(X.t() * X))));
-    x.parameters(indices[0]) = parameters;
+    x.parameters(indices[0]) = arma::vectorise(X);
 
   }
 

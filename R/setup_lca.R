@@ -553,7 +553,7 @@ get_lca_structures <- function(data_list, full_model, control) {
   hess_indices <- lapply(0:(nclasses - 1), function(i) {
     nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
 
-  control_estimator[[1]] <- list(estimator = "lca_cov",
+  control_estimator[[1]] <- list(estimator = "lca",
                                  labels = labels,
                                  indices = indices,
                                  S = npatterns,
@@ -580,7 +580,7 @@ get_lca_structures <- function(data_list, full_model, control) {
 
         labels <- lca_trans$class[i, ]
         indices <- match(labels, transparameters_labels)
-        control_estimator[[G]] <- list(estimator = "bayesconst1U0",
+        control_estimator[[G]] <- list(estimator = "bayesconst1",
                                        labels = labels,
                                        indices = list(indices-1L),
                                        K = nclasses,

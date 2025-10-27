@@ -5,6 +5,10 @@ soft <- function(x, a) {
     .Call(`_latent_soft`, x, a)
 }
 
+duplication <- function(p, halflower = TRUE) {
+    .Call(`_latent_duplication`, p, halflower)
+}
+
 optimizer <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
     .Call(`_latent_optimizer`, control_manifold, control_transform, control_estimator, control_optimizer)
 }
@@ -43,6 +47,10 @@ rorth <- function(p, q) {
 
 roblq <- function(p, q) {
     .Call(`_latent_roblq`, p, q)
+}
+
+lyap_sym <- function(Y, Q) {
+    .Call(`_latent_lyap_sym`, Y, Q)
 }
 
 rpoblq <- function(p, q, target) {

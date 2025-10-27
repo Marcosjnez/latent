@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/10/2025
+ * Modification date: 27/10/2025
  */
 
 /*
@@ -67,13 +67,6 @@ public:
     dtheta = arma::symmatl(dtheta);
 
     // dglambda:
-    // arma::mat dg1 = -2*W_residuals * dlambda * psi;
-    // arma::mat W_dresiduals = -W % (dlambda * lambda_psi.t() +
-    //   lambda_psi * dlambda.t());
-    // arma::mat dg2 = -2*W_dresiduals * lambda_psi;
-    // dglambda = dg1 + dg2;
-
-    // dglambda:
     arma::mat dR = -( dlambda * psi * lambda.t() +
                       lambda * psi * dlambda.t() +
                       lambda * dpsi * lambda.t() +
@@ -83,19 +76,10 @@ public:
     dglambda = -2.0 * ( dA * lambda_psi + W_residuals * dB );
 
     // dgpsi:
-    // W_dresiduals = -W % (lambda * dpsi * lambda.t());
-    // dgpsi = -2*lambda.t() * W_dresiduals * lambda;
-    // dgpsi.diag() *= 0.5;
-
-    // dgpsi:
     dgpsi = -2.0 * ( dlambda.t() * W_residuals * lambda +
                      lambda.t() * dA * lambda +
                      lambda.t() * W_residuals * dlambda );
     dgpsi.diag() *= 0.5;
-
-    // dgtheta:
-    // dgtheta = 2*W % dtheta;
-    // dgtheta.diag() *= 0.5;
 
     // dgtheta:
     dgtheta = -2*(W % dR);
@@ -208,10 +192,8 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    // x.uniquenesses = x.R.diag() - arma::diagvec(x.Rhat);
-    // x.Rhat.diag() = x.R.diag();
-
     doubles.resize(1);
+    doubles[0] = f;
 
     vectors.resize(1);
     vectors[0] = theta.diag();

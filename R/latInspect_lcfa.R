@@ -43,10 +43,15 @@ latInspect.lcfa <- function(fit,
   theta <- lapply(fit@transformed_pars, FUN = \(x) round(x$theta, digits = digits))
 
   ngroups <- fit@Optim$data_list$ngroups
-  rhat <- vector("list", length = ngroups)
+  rhat <- resids <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
-    rhat[[i]] <- round(lambda[[i]] %*% psi[[i]] %*% t(lambda[[i]]) +
-                         theta[[i]], digits = digits)
+
+    p <- sqrt(length(fit@Optim$opt$outputs$estimators$matrices[[i]][[4]]))
+    temp <- fit@Optim$opt$outputs$estimators$matrices[[i]][[4]]
+    rhat[[i]] <- matrix(round(temp, digits = digits), nrow = p, ncol = p)
+    temp <- fit@Optim$opt$outputs$estimators$matrices[[i]][[5]]
+    resids[[i]] <- matrix(round(temp, digits = digits), nrow = p, ncol = p)
+
   }
 
   if(what == "est" ||
@@ -68,6 +73,11 @@ latInspect.lcfa <- function(fit,
             what == "model") {
 
     return(rhat)
+
+  } else if(what == "resid" ||
+            what == "residuals") {
+
+    return(resids)
 
   } else if(what == "lambda" ||
             what == "loadings") {

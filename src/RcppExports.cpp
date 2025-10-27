@@ -23,6 +23,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// duplication
+arma::mat duplication(int p, bool halflower);
+RcppExport SEXP _latent_duplication(SEXP pSEXP, SEXP halflowerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    Rcpp::traits::input_parameter< bool >::type halflower(halflowerSEXP);
+    rcpp_result_gen = Rcpp::wrap(duplication(p, halflower));
+    return rcpp_result_gen;
+END_RCPP
+}
 // optimizer
 Rcpp::List optimizer(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
 RcppExport SEXP _latent_optimizer(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
@@ -147,6 +159,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type p(pSEXP);
     Rcpp::traits::input_parameter< int >::type q(qSEXP);
     rcpp_result_gen = Rcpp::wrap(roblq(p, q));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lyap_sym
+arma::mat lyap_sym(arma::mat Y, arma::mat Q);
+RcppExport SEXP _latent_lyap_sym(SEXP YSEXP, SEXP QSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Q(QSEXP);
+    rcpp_result_gen = Rcpp::wrap(lyap_sym(Y, Q));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -353,6 +377,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_latent_soft", (DL_FUNC) &_latent_soft, 2},
+    {"_latent_duplication", (DL_FUNC) &_latent_duplication, 2},
     {"_latent_optimizer", (DL_FUNC) &_latent_optimizer, 4},
     {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 8},
     {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 1},
@@ -363,6 +388,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_poblq", (DL_FUNC) &_latent_poblq, 2},
     {"_latent_rorth", (DL_FUNC) &_latent_rorth, 2},
     {"_latent_roblq", (DL_FUNC) &_latent_roblq, 2},
+    {"_latent_lyap_sym", (DL_FUNC) &_latent_lyap_sym, 2},
     {"_latent_rpoblq", (DL_FUNC) &_latent_rpoblq, 3},
     {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 6},
     {"_latent_get_grad", (DL_FUNC) &_latent_get_grad, 4},

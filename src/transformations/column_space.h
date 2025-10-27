@@ -31,6 +31,10 @@ public:
 
   }
 
+  void update_dparam(arguments_optim& x) {
+
+  }
+
   void update_dgrad(arguments_optim& x) {
 
   }

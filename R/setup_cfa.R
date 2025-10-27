@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/10/2025
+# Modification date: 27/10/2025
 
 get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
 
@@ -65,7 +65,7 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
     psi_labels[nonfixed[[i]]$psi] <- model[[i]]$psi[nonfixed[[i]]$psi]
     cfa_trans[[i]]$psi <- matrix(psi_labels, nrow = nfactors, ncol = nfactors)
     # Force symmetry:
-    # cfa_trans[[i]]$psi[upper.tri(cfa_trans[[i]]$psi)] <- cfa_trans[[i]]$psi[lower.tri(cfa_trans[[i]]$psi)]
+    cfa_trans[[i]]$psi[upper.tri(cfa_trans[[i]]$psi)] <- cfa_trans[[i]]$psi[lower.tri(cfa_trans[[i]]$psi)]
 
     # Theta:
     theta_labels <- paste("g", i, ".theta[", rep(1:nitems, times = nitems),
@@ -73,7 +73,7 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
     theta_labels[nonfixed[[i]]$theta] <- model[[i]]$theta[nonfixed[[i]]$theta]
     cfa_trans[[i]]$theta <- matrix(theta_labels, nrow = nitems, ncol = nitems)
     # Force symmetry:
-    # cfa_trans[[i]]$theta[upper.tri(cfa_trans[[i]]$theta)] <- cfa_trans[[i]]$theta[lower.tri(cfa_trans[[i]]$theta)]
+    cfa_trans[[i]]$theta[upper.tri(cfa_trans[[i]]$theta)] <- cfa_trans[[i]]$theta[lower.tri(cfa_trans[[i]]$theta)]
 
     # Untransformed parameters:
 
@@ -374,12 +374,16 @@ get_cfa_structures <- function(data_list, full_model, control) {
                                    nfactors = nrow(cfa_trans[[i]]$psi))
     k <- k+1L
 
-    if(positive & control$reg) {
+  }
+
+  if(positive & control$reg) {
+
+    for(i in 1:ngroups) {
 
       lower_indices <- which(lower.tri(cfa_trans[[i]]$psi, diag = TRUE))
       labels <- cfa_trans[[i]]$psi[lower_indices]
       indices <- match(labels, transparameters_labels)
-      control_estimator[[k]] <- list(estimator = "logdetmat2",
+      control_estimator[[k]] <- list(estimator = "logdetmat",
                                      labels = labels,
                                      indices = list(indices-1L),
                                      lower_indices = lower_indices-1L,
@@ -390,7 +394,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
       lower_indices <- which(lower.tri(cfa_trans[[i]]$theta, diag = TRUE))
       labels <- cfa_trans[[i]]$theta[lower_indices]
       indices <- match(labels, transparameters_labels)
-      control_estimator[[k]] <- list(estimator = "logdetmat2",
+      control_estimator[[k]] <- list(estimator = "logdetmat",
                                      labels = labels,
                                      indices = list(indices-1L),
                                      lower_indices = lower_indices-1L,

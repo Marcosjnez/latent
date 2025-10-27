@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 03/09/2025
+ * Modification date: 27/10/2025
  */
 
 // #define ARMA_NO_DEBUG
@@ -86,6 +86,9 @@ arma::mat rorth(int p, int q);
 
 // [[Rcpp::export]]
 arma::mat roblq(int p, int q);
+
+// [[Rcpp::export]]
+arma::mat lyap_sym(arma::mat Y, arma::mat Q);
 
 // [[Rcpp::export]]
 arma::mat rpoblq(int p, int q, arma::mat target);

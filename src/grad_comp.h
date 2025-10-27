@@ -127,6 +127,10 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["rg"] = x.rg;
   if(compute == "rg") return result;
 
+  final_transform->update_dparam(x, xtransforms);
+  result["dtransparameters"] = x.dtransparameters;
+  if(compute == "dtransparameters") return result;
+
   final_estimator->dG(x, xestimators);
   result["dgrad"] = x.dgrad;
   if(compute == "dgrad") return result;

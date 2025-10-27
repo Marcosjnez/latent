@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/10/2025
+ * Modification date: 27/10/2025
  */
 
 /*
@@ -27,7 +27,8 @@ public:
     psi = arma::symmatl(psi);
     theta = arma::symmatl(theta);
 
-    Rhat = lambda * psi * lambda.t() + theta;
+    lambda_psi = lambda * psi;
+    Rhat = lambda_psi * lambda.t() + theta;
     if(!Rhat.is_sympd()) {
       arma::vec eigval;
       arma::mat eigvec;
@@ -51,17 +52,16 @@ public:
 
     residuals = R - Rhat;
     Ri_res_Ri = 2*Rhat_inv * -residuals * Rhat_inv;
-    lambda_psi = lambda * psi;
 
     glambda = Ri_res_Ri * lambda_psi;
+
     gpsi = lambda.t() * Ri_res_Ri * lambda;
     gpsi.diag() *= 0.5;
 
-    arma::mat dlogdetRhatdU = 2*Rhat_inv;
-    dlogdetRhatdU.diag() *= 0.5;
-    arma::mat dRhat_invdU = 2*(-Rhat_inv * R * Rhat_inv);
-    dRhat_invdU.diag() *= 0.5;
-    gtheta = dRhat_invdU + dlogdetRhatdU;
+    arma::mat dlogdetRhatdU = Rhat_inv;
+    arma::mat dRhat_invdU = -Rhat_inv * R * Rhat_inv;
+    gtheta = 2*(dRhat_invdU + dlogdetRhatdU);
+    gtheta.diag() *= 0.5;
 
     x.grad.elem(lambda_indices) += arma::vectorise(glambda);
     x.grad.elem(psi_indices) += arma::vectorise(gpsi(lower_psi));
@@ -77,31 +77,33 @@ public:
     dpsi = arma::symmatl(dpsi);
     dtheta = arma::symmatl(dtheta);
 
+    arma::mat dR = -( dlambda * psi * lambda.t() +
+      lambda * psi * dlambda.t() +
+      lambda * dpsi * lambda.t() +
+      dtheta );
+
     // dglambda:
-    arma::mat dRhat = dlambda * lambda_psi.t() + lambda_psi * dlambda.t();
-    arma::mat dresiduals = -dRhat;
+    arma::mat dresiduals = dR;
     arma::mat dRhat_inv = -Rhat_inv * -dresiduals * Rhat_inv;
     arma::mat dRi_res_Ri = 2*(dRhat_inv * -residuals * Rhat_inv +
       Rhat_inv * -residuals * dRhat_inv + Rhat_inv * -dresiduals * Rhat_inv);
-    dglambda = Ri_res_Ri * dlambda * psi + dRi_res_Ri * lambda_psi;
+    dglambda = Ri_res_Ri * dlambda * psi +
+               Ri_res_Ri * lambda * dpsi +
+               dRi_res_Ri * lambda_psi;
 
     // dgpsi:
-    dRhat = lambda * dpsi * lambda.t();
-    dresiduals = -dRhat;
-    dRhat_inv = -Rhat_inv * -dresiduals * Rhat_inv;
-    dRi_res_Ri = 2*(dRhat_inv * -residuals * Rhat_inv + Rhat_inv * -residuals * dRhat_inv +
-      Rhat_inv * -dresiduals * Rhat_inv);
-    dgpsi = lambda.t() * dRi_res_Ri * lambda;
+    dgpsi = lambda.t() * dRi_res_Ri * lambda +
+            dlambda.t() * Ri_res_Ri * lambda +
+            lambda.t() * Ri_res_Ri * dlambda;
     dgpsi.diag() *= 0.5;
 
     // dgtheta:
-    dRhat = dtheta;
-    dRhat_inv = -Rhat_inv * dRhat * Rhat_inv;
-    arma::mat ddlogdetRhat = 2*dRhat_inv.t();
-    ddlogdetRhat.diag() *= 0.5;
-    arma::mat ddRhat_inv = 2*(-dRhat_inv * R * Rhat_inv + -Rhat_inv * R * dRhat_inv);
-    ddRhat_inv.diag() *= 0.5;
-    dgpsi = ddlogdetRhat + ddRhat_inv;
+    arma::mat ddlogdetRhat = dRhat_inv.t();
+    // arma::mat ddRhat_inv = -dRhat_inv * R * Rhat_inv + -Rhat_inv * R * dRhat_inv;
+    arma::mat ddRhat_invdU = -dRhat_inv * R * Rhat_inv +
+                             -Rhat_inv * R * dRhat_inv;
+    dgtheta = 2*(ddRhat_invdU + ddlogdetRhat);
+    dgtheta.diag() *= 0.5;
 
     x.dgrad.elem(lambda_indices) += arma::vectorise(dglambda);
     x.dgrad.elem(psi_indices) += arma::vectorise(dgpsi(lower_psi));
@@ -212,8 +214,8 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    // x.uniquenesses = x.R.diag() - arma::diagvec(x.Rhat);
-    // x.Rhat.diag() = x.R.diag();
+    doubles.resize(1);
+    doubles[0] = f;
 
     vectors.resize(1);
     vectors[0] = theta.diag();

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 08/09/2025
+ * Modification date: 27/10/2025
  */
 
 // Transformations
@@ -27,6 +27,8 @@ public:
   virtual void transform(arguments_optim& x) = 0;
 
   virtual void update_grad(arguments_optim& x) = 0;
+
+  virtual void update_dparam(arguments_optim& x) = 0;
 
   virtual void update_dgrad(arguments_optim& x) = 0;
 
@@ -86,8 +88,6 @@ public:
 
     for(int i=0; i < x.ntransforms; ++i) {
 
-      // arma::uvec indices_in = xtransformations[i]->indices_in[0];
-      // xtransformations[i]->transparameters = x.transparameters.elem(indices_in);
       xtransformations[i]->transform(x);
 
     }
@@ -101,7 +101,7 @@ public:
     // x.g = x.jacob.t() * x.grad;
     // This sequence avoids this multiplication to reduce computing cost
 
-    // Iterate up-down:
+    // Iterate top-down:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 
       xtransformations[i]->update_grad(x);
@@ -113,9 +113,22 @@ public:
 
   }
 
+  void update_dparam(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+
+    x.dtransparameters.zeros();
+    x.dtransparameters(x.transparam2param) = x.dparameters;
+
+    for(int i=0; i < x.ntransforms; ++i) {
+
+      xtransformations[i]->update_dparam(x);
+
+    }
+
+  }
+
   void update_dgrad(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
-    // Iterate up-down:
+    // Iterate top-down:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 
       xtransformations[i]->update_dgrad(x);

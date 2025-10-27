@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/10/2025
+# Modification date: 27/10/2025
 
 #### Install latent ####
 
@@ -16,22 +16,15 @@ library(latent)
 # for(i in 1:nmiss) data[missrow[i], misscol[i]] <- NA
 # control <- list(opt = "lbfgs", rstarts = 50L)
 
-fit <- lca(data = gss82, nclasses = 1:3L,
+fit <- lca(data = gss82, nclasses = 3L,
            item = rep("multinomial", ncol(gss82)),
            penalties = TRUE, control = NULL, do.fit = TRUE)
 fit@timing
 fit@loglik # -2754.643
 fit@penalized_loglik # -2759.507
 fit@Optim$opt$iterations
-
-class(fit)
-print(fit)
-show(fit)
-fit
-getfit(fit)
-fitted(fit)
-latInspect(fit, what = "profile")
-summary(fit)
+fit@Optim$opt$convergence
+fit@timing
 
 # Plot model fit info:
 fit
@@ -51,7 +44,7 @@ latInspect(fit, what = "table", digits = 3)
 latInspect(fit, what = "pattern", digits = 3)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE <- se(fit, type = "robust", model = "user", digits = 4)
 SE$table
 
 # Get confidence intervals:
@@ -72,6 +65,7 @@ fit@loglik # -1841.336
 fit@penalized_loglik # -1844.333
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
+fit@timing
 
 # Plot model fit info:
 fit
@@ -98,15 +92,6 @@ CI$table
 
 library(latent)
 
-# Control parameters for the optimizer:
-# control <- list(opt = "em-lbfgs",
-#                 rstarts_em = 50L, # Number of random starts with EM
-#                 rstarts = 10L, # Number of random starts with LBFGS
-#                 cores = 32L) # Number of cores
-# The em-lbfgs optimizer runs EM 50 times, then pick up the 10 sets of
-# parameter values with best loglik, and submits these sets to LBFGS to get
-# the final convergence
-
 fit <- lca(data = cancer[, 1:6], nclasses = 3L,
            item = c("gaussian", "gaussian",
                     "multinomial", "multinomial",
@@ -119,6 +104,8 @@ fit@timing
 fit@loglik # -5784.701
 fit@penalized_loglik # -5795.573
 fit@Optim$opt$iterations
+fit@Optim$opt$convergence
+fit@timing
 
 # Plot model fit info:
 fit
@@ -160,6 +147,8 @@ fit0@timing
 fit0@loglik # -1798.885
 fit0@penalized_loglik # -1801.996
 fit0@Optim$opt$iterations
+fit@Optim$opt$convergence
+fit@timing
 
 fit <- lca(data = data, X = X, model = fit0,
            item = rep("gaussian", ncol(data)),
@@ -169,6 +158,7 @@ fit@timing
 fit@loglik # -1798.885
 fit@penalized_loglik # -1801.996
 fit@Optim$opt$iterations
+fit@Optim$opt$convergence
 
 t(apply(fit@transformed_pars$beta, 1, FUN = \(x) x -sum(x)/4))
 
@@ -206,43 +196,14 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 set.seed(2025)
-fit <- cfast(HolzingerSwineford1939, model = model,
-             estimator = "ml", cor = "pearson", do.fit = FALSE,
-             control = list(opt = "newton", maxit = 1000, tcg_maxit = 10))
+fit <- lcfa(HolzingerSwineford1939, model = model,
+            estimator = "ml", cor = "pearson", do.fit = TRUE,
+            control = NULL)
 fit@loglik # -0.283407
 fit@penalized_loglik # -0.283407
 fit@loss # 0.1574787
 fit@Optim$opt$iterations
-fit@timing
-
-control_manifold <- fit@Optim$control_manifold
-control_transform <- fit@Optim$control_transform
-control_estimator <- fit@Optim$control_estimator
-control <- fit@Optim$control
-control$parameters[[1]] <- fit@Optim$opt$parameters
-control$transparameters[[1]] <- fit@Optim$opt$transparameters
-set.seed(2025)
-x <- grad_comp(control_manifold, control_transform,
-               control_estimator, control, eps = 1e-04,
-               compute = "all")
-x$f
-round(c(x$g)-c(x$numg), 4)
-round(c(x$dg)-c(x$numdg), 4)
-round(c(x$dg)/c(x$numdg), 4)
-c(x$g)
-c(x$rg)
-c(x$dg)
-c(x$dH)
-
-control$parameters[[1]] <- fit@Optim$opt$parameters
-control$transparameters[[1]] <- fit@Optim$opt$transparameters
-H <- get_hess(control_manifold, control_transform,
-              control_estimator, control)
-c(H$h %*% x$dparameters)
-
-fit@loglik # -0.283407 (ML)
-fit@loss # 0.1574787 (ULS) / 0.283407 (ML)
-fit@Optim$opt$iterations
+fit@Optim$opt$convergence
 fit@timing
 
 # Plot model fit info:
@@ -280,14 +241,15 @@ model <- 'visual  =~ x1 + x2 + x3
 
 # control <- list(opt = "lbfgs", maxit = 1000, rstarts = 1L, cores = 1L,
 #                 eps = 1e-05)
-fit <- cfast(HolzingerSwineford1939, model = model,
-             group = "school", estimator = "ml", cor = "pearson",
-             std.lv = TRUE, positive = FALSE,
-             control = NULL, do.fit = TRUE)
+fit <- lcfa(HolzingerSwineford1939, model = model,
+            group = "school", estimator = "ml", cor = "pearson",
+            std.lv = TRUE, do.fit = TRUE, control = NULL)
 
 fit@loglik # -0.1919254 (ml)
 fit@loss # 0.2027554 (uls) / 0.3838508 (ml)
 fit@Optim$opt$iterations
+fit@Optim$opt$convergence
+fit@timing
 
 # Plot model fit info:
 fit
@@ -337,19 +299,20 @@ inspect(fit2, what = "est")
 fitmeasures(fit2, fit.measures = c("cfi", "tli", "rmsea", "srmr"))
 
 # With latent:
-fit <- cfast(data = HolzingerSwineford1939, model = model,
-             estimator = "ml", cor = "pearson",
-             positive = TRUE, penalties = TRUE,
-             std.lv = TRUE, do.fit = TRUE,
-             control = list(opt = "lbfgs", maxit = 1000L,
-                            # logdetw = 1e-03,
-                            cores = 10L, rstarts = 10L))
+fit <- lcfa(data = HolzingerSwineford1939, model = model,
+            estimator = "ml", cor = "pearson",
+            positive = TRUE, penalties = TRUE,
+            std.lv = TRUE, do.fit = TRUE,
+            control = list(opt = "lbfgs", maxit = 1000L,
+                           # logdetw = 1e-03,
+                           cores = 10L, rstarts = 10L))
 
 fit@loglik # -0.249485 (ML)
 fit@penalized_loglik # -0.249485 (ML)
 fit@loss # 0.1441886 (ULS) / 0.249485 (ML)
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
+fit@timing
 
 # Plot model fit info:
 fit

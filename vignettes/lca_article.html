@@ -136,6 +136,19 @@ P(x_g)\, \prod_{j=1}^{J} P(y_j \mid x_g).
 \]</span></p>
 <p>Notice that this last expression is just the posterior, <span class="math inline">\(P(x_g \mid y_m)\)</span>, weighted by <span class="math inline">\(n\)</span>.</p>
 </section>
+<section id="directional-derivatives-of-first-order-derivatives" class="level2">
+<h2 class="anchored" data-anchor-id="directional-derivatives-of-first-order-derivatives">Directional derivatives of first-order derivatives</h2>
+<p><span class="math display">\[
+d \Bigg[ \frac{\partial \ell\ell}{\partial P(x_g)} \Bigg] \;=\; n \,\frac{P(\mathbf{y}) \; d\big[\prod_{j=1}^{J} P(y_j \mid x_g)\big] - d\big[P(\mathbf{y})\big] \; \prod_{j=1}^{J} P(y_j \mid x_g)}{P(\mathbf{y})^2},
+\]</span> where</p>
+<p><span class="math display">\[
+d\big[\prod_{j=1}^{J} P(y_j \mid x_g)\big] = \frac{\prod_{j=1}^{J} P(y_j \mid x_g)}{P(y_j \mid x_g) \, d\big[P(y_j \mid x_g)\big]},
+\]</span> and</p>
+<p><span class="math display">\[
+d\big[P(\mathbf{y})\big] = \sum_{k=1}^{K} d\big[P(x_k)] \, \prod_{j=1}^{J} P(y_j \mid x_k) +
+\sum_{k=1}^{K} P(x_k) \, d\big[\prod_{j=1}^{J} P(y_j \mid x_k)].
+\]</span></p>
+</section>
 <section id="second-order-derivatives" class="level2">
 <h2 class="anchored" data-anchor-id="second-order-derivatives">Second-order derivatives</h2>
 <p>For classes <span class="math inline">\(g,h\)</span>, <span class="math display">\[

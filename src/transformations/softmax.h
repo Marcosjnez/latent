@@ -34,9 +34,12 @@ public:
   void update_grad(arguments_optim& x) {
 
     jacob = arma::diagmat(probs) - probs * probs.t();
-    // grad_out = jacob.t() * grad_in; grad_out.zeros();
     // Fill the gradient:
     x.grad(indices_in[0]) += arma::vectorise(jacob.t() * x.grad(indices_out[0]));
+
+  }
+
+  void update_dparam(arguments_optim& x) {
 
   }
 

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/10/2025
+ * Modification date: 27/10/2025
  */
 
 typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::mat> optim_result;
@@ -51,9 +51,6 @@ void armijo(arguments_optim& x,
 // Line-search algorithm satisfying the Wolfe conditions:
 
 void wolfe(arguments_optim& x,
-           // product_transform* final_transform,
-           // product_manifold* final_manifold,
-           // product_estimator* final_estimator,
            std::vector<transformations*>& xtransforms,
            std::vector<manifolds*>& xmanifolds,
            std::vector<estimators*>& xestimators) {
@@ -141,6 +138,7 @@ void tcg(arguments_optim& x,
 
   // final_manifold->param(x, xmanifolds); // Unnecessary
   // final_estimator->param(x, xestimators); // Unnecessary
+  final_transform->update_dparam(x, xtransforms);
   final_estimator->dG(x, xestimators);
   final_transform->update_dgrad(x, xtransforms);
   final_manifold->param(x, xmanifolds);
@@ -193,6 +191,7 @@ void tcg(arguments_optim& x,
     x.dparameters = r + beta * x.dparameters;
     iter += 1;
 
+    final_transform->update_dparam(x, xtransforms);
     final_estimator->dG(x, xestimators);
     final_transform->update_dgrad(x, xtransforms);
     final_manifold->param(x, xmanifolds);
@@ -538,6 +537,7 @@ optim_result ntr(arguments_optim x,
     // subsolver
     tcg(x, xtransforms, xmanifolds, xestimators, att_bnd, c, rad); // Update x.dparameters, x.dg, and x.dH
 
+    final_transform->update_dparam(x, xtransforms);
     final_estimator->dG(x, xestimators);
     final_transform->update_dgrad(x, xtransforms);
     final_manifold->param(x, xmanifolds);
