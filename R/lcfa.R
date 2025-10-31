@@ -63,15 +63,26 @@ lcfa <- function(data, model = NULL, cor = "pearson",
 
   # Check the arguments to control_optimizer and create defaults:
   control$penalties <- penalties
+<<<<<<< HEAD
   control <- lcfa_control(control)
+=======
+  control <- cfast_control(control)
+>>>>>>> a477adb2d036f2cba10c502007a902bdd60c3fde
 
   # Extract the lavaan model:
   model_syntax <- model
   LAV <- lavaan::cfa(model = model_syntax, data = data,
+<<<<<<< HEAD
                      sample.cov = sample.cov,
                      sample.nobs = nobs,
                      std.lv = std.lv,
                      do.fit = FALSE, group = group)
+=======
+                             sample.cov = sample.cov,
+                             sample.nobs = nobs,
+                             std.lv = std.lv,
+                             do.fit = FALSE, group = group)
+>>>>>>> a477adb2d036f2cba10c502007a902bdd60c3fde
   #item_names <- unique(LAV@ParTable$rhs[LAV@ParTable$op == "=~"])
 
   # extract slots from dummy lavaan object
