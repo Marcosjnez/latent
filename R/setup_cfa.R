@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 27/10/2025
+# Modification date: 31/10/2025
 
 get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
 
@@ -65,7 +65,7 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
     psi_labels[nonfixed[[i]]$psi] <- model[[i]]$psi[nonfixed[[i]]$psi]
     cfa_trans[[i]]$psi <- matrix(psi_labels, nrow = nfactors, ncol = nfactors)
     # Force symmetry:
-    cfa_trans[[i]]$psi[upper.tri(cfa_trans[[i]]$psi)] <- cfa_trans[[i]]$psi[lower.tri(cfa_trans[[i]]$psi)]
+    cfa_trans[[i]]$psi[upper.tri(cfa_trans[[i]]$psi)] <- t(cfa_trans[[i]]$psi)[upper.tri(cfa_trans[[i]]$psi)]
 
     # Theta:
     theta_labels <- paste("g", i, ".theta[", rep(1:nitems, times = nitems),
@@ -73,7 +73,7 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
     theta_labels[nonfixed[[i]]$theta] <- model[[i]]$theta[nonfixed[[i]]$theta]
     cfa_trans[[i]]$theta <- matrix(theta_labels, nrow = nitems, ncol = nitems)
     # Force symmetry:
-    cfa_trans[[i]]$theta[upper.tri(cfa_trans[[i]]$theta)] <- cfa_trans[[i]]$theta[lower.tri(cfa_trans[[i]]$theta)]
+    cfa_trans[[i]]$theta[upper.tri(cfa_trans[[i]]$theta)] <- t(cfa_trans[[i]]$theta)[upper.tri(cfa_trans[[i]]$theta)]
 
     # Untransformed parameters:
 
@@ -92,19 +92,22 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
 
       # Psi:
       cfa_param[[i]]$psi <- cfa_trans[[i]]$psi
-      # Force symmetry:
-      # cfa_param[[i]]$psi[upper.tri(cfa_param[[i]]$psi)] <- cfa_param[[i]]$psi[lower.tri(cfa_param[[i]]$psi)]
       # Insert fixed values in the model:
       cfa_param[[i]]$psi[fixed[[i]]$psi] <- model[[i]]$psi[fixed[[i]]$psi]
 
       # Theta:
       cfa_param[[i]]$theta <- cfa_trans[[i]]$theta
-      # Force symmetry:
-      # cfa_param[[i]]$theta[upper.tri(cfa_param[[i]]$theta)] <- cfa_param[[i]]$theta[lower.tri(cfa_param[[i]]$theta)]
       # Insert fixed values in the model:
       cfa_param[[i]]$theta[fixed[[i]]$theta] <- model[[i]]$theta[fixed[[i]]$theta]
 
     }
+
+    # Model matrix:
+    model_labels <- paste("g", i, ".model[", rep(1:nitems, times = nitems),
+                          ",", rep(1:nitems, each = nitems), "]", sep = "")
+    cfa_trans[[i]]$model <- matrix(model_labels, nrow = nitems, ncol = nitems)
+    # Force symmetry:
+    cfa_trans[[i]]$model[upper.tri(cfa_trans[[i]]$model)] <- t(cfa_trans[[i]]$model)[upper.tri(cfa_trans[[i]]$model)]
 
     # Create the target matrices for positive-definite constraints:
     if(positive) {
@@ -121,6 +124,7 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
       targets[[i]] <- unlist(c(target_psi[[i]][lower_psi],
                                target_theta[[i]][lower_theta]))
       rest <- rest + 0.5*q*(q-1) + 0.5*p*(p-1) + sum(targets[[i]] == 0)
+
     }
 
   }
@@ -182,6 +186,11 @@ get_full_cfa_model <- function(data_list, model = NULL, control = NULL) {
         init_trans[[rs]][[i]]$theta[fixed[[i]]$theta] <- fixed_values[[i]]$theta
 
       }
+
+      Lambda <- init_trans[[rs]][[i]]$lambda
+      Phi <- init_trans[[rs]][[i]]$psi
+      Theta <- init_trans[[rs]][[i]]$theta
+      init_trans[[rs]][[i]]$model <- Lambda %*% Phi %*% t(Lambda) + Theta
 
     }
 
@@ -333,6 +342,37 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
     }
 
+    # Model matrix correlation:
+    lower_psi <- lower.tri(cfa_trans[[i]]$psi, diag = TRUE)
+    lower_theta <- lower.tri(cfa_trans[[i]]$theta, diag = TRUE)
+    indices_lambda <- match(cfa_trans[[i]]$lambda,
+                            transparameters_labels)
+    indices_psi <- match(cfa_trans[[i]]$psi[lower_psi],
+                         transparameters_labels)
+    indices_theta <- match(cfa_trans[[i]]$theta[lower_theta],
+                           transparameters_labels)
+    indices_all <- c(indices_lambda, indices_psi, indices_theta)
+    indices_in <- list(indices = indices_all-1L,
+                       indices_lambda = indices_lambda-1L,
+                       indices_psi = indices_psi-1L,
+                       indices_theta = indices_theta-1L)
+    labels_in <- transparameters_labels[indices_all]
+
+    lower_diag <- lower.tri(cfa_trans[[i]]$model, diag = TRUE)
+    indices_model <- match(cfa_trans[[i]]$model[lower_diag],
+                           transparameters_labels)
+    labels_out <- transparameters_labels[indices_model]
+    indices_out <- list(indices = indices_model-1L)
+
+    control_transform[[k]] <- list(transform = "factor_cor",
+                                   labels_in = labels_in,
+                                   indices_in = indices_in,
+                                   labels_out = labels_out,
+                                   indices_out = indices_out,
+                                   p = nrow(correl[[i]]$R),
+                                   q = nrow(cfa_trans[[i]]$psi))
+    k <- k+1L
+
   }
 
   #### Estimators ####
@@ -342,22 +382,11 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   for(i in 1:ngroups) {
 
-    lower_psi <- lower.tri(cfa_trans[[i]]$psi, diag = TRUE)
-    lower_theta <- lower.tri(cfa_trans[[i]]$theta, diag = TRUE)
-
-    indices_lambda <- match(cfa_trans[[i]]$lambda,
-                            transparameters_labels)
-    indices_psi <- match(cfa_trans[[i]]$psi[lower_psi],
+    lower_diag <- lower.tri(cfa_trans[[i]]$model, diag = TRUE)
+    indices_model <- match(cfa_trans[[i]]$model[lower_diag],
                          transparameters_labels)
-    indices_theta <- match(cfa_trans[[i]]$theta[lower_theta],
-                           transparameters_labels)
-    indices_all <- c(indices_lambda, indices_psi, indices_theta)
-
-    indices <- list(indices = indices_all-1L,
-                    indices_lambda = indices_lambda-1L,
-                    indices_psi = indices_psi-1L,
-                    indices_theta = indices_theta-1L)
-    labels <- transparameters_labels[indices_all]
+    labels <- transparameters_labels[indices_model]
+    indices <- list(indices = indices_model-1L)
 
     estimator <- tolower(estimator)
     if(estimator == "uls" || estimator == "dwls") {
@@ -371,7 +400,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
                                    indices = indices,
                                    R = correl[[i]]$R,
                                    W = correl[[i]]$W,
-                                   nfactors = nrow(cfa_trans[[i]]$psi))
+                                   q = nrow(cfa_trans[[i]]$psi))
     k <- k+1L
 
   }

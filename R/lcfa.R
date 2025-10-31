@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 27/10/2025
+# Modification date: 31/10/2025
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
@@ -63,39 +63,49 @@ lcfa <- function(data, model = NULL, cor = "pearson",
 
   # Check the arguments to control_optimizer and create defaults:
   control$penalties <- penalties
-  control <- cfast_control(control)
-
-  if(is.null(nobs)) {
-    if(nrow(data) == ncol(data)) {
-      stop("Please, provide the number of observations in nobs.")
-    }
-    nobs <- nrow(data)
-  }
+  control <- lcfa_control(control)
 
   # Extract the lavaan model:
   model_syntax <- model
-  extract_fit <- lavaan::cfa(model = model_syntax, data = data,
-                             sample.cov = sample.cov,
-                             sample.nobs = nobs,
-                             std.lv = std.lv,
-                             do.fit = FALSE, group = group)
-  item_names <- unique(extract_fit@ParTable$rhs[extract_fit@ParTable$op == "=~"])
-  # Model for the parameters:
-  model <- getmodel_fromlavaan(extract_fit)
+  LAV <- lavaan::cfa(model = model_syntax, data = data,
+                     sample.cov = sample.cov,
+                     sample.nobs = nobs,
+                     std.lv = std.lv,
+                     do.fit = FALSE, group = group)
+  #item_names <- unique(LAV@ParTable$rhs[LAV@ParTable$op == "=~"])
 
-  if(!is.list(model[[1]])) {
+  # extract slots from dummy lavaan object
+  lavpartable    <- LAV@ParTable
+  lavmodel       <- LAV@Model
+  lavdata        <- LAV@Data
+  lavoptions     <- LAV@Options
+  lavsamplestats <- LAV@SampleStats
+  lavcache       <- LAV@Cache
+  timing         <- LAV@timing
+
+  ngroups <- lavmodel@ngroups
+  item_names <- lavdata@ov.names[[1]]
+
+  if(ngroups > 1){
+    nobs <- lavdata@nobs
+  }else{
+    nobs <- lavdata@nobs[[1]]
+  }
+
+
+  # Model for the parameters:
+  model <- getmodel_fromlavaan(LAV)
+
+  if(ngroups == 1) {
     model <- list(model)
   }
-  ngroups <- length(model)
 
   # Get the correlation and weight matrices:
   correl <- vector("list", length = ngroups)
-  if(ngroups > 1) {
-    data_split <- split(data, data[[group]])
-  } else {
-    data_split <- list()
-    data_split[[1]] <- data
-  }
+
+  data_split <- lapply(lavdata@X,
+                       function(x){colnames(x) <- item_names;x} )
+
 
   # if(is.null(sample.cov)) {
   # }
@@ -117,11 +127,12 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   }
 
   # Data and structure information:
-  nitems <- length(item_names)
+  nitems <- lavmodel@nvar
   npatterns <- 0.5*nitems*(nitems+1) * ngroups
   nfactors <- ncol(model[[1]]$lambda)
+
   data_list <- vector("list")
-  data_list$data <- data
+  data_list$data <- data # should this be a list for multiple groups?
   data_list$nobs <- nobs
   data_list$ngroups <- ngroups
   data_list$nitems <- nitems
@@ -218,27 +229,29 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   #### Process the outputs ####
 
   matrices <- outputs <- vector("list", length = ngroups)
+  all_transforms <- unlist(lapply(modelInfo$control_transform, FUN = \(x) x$transform))
+  indices_factor_cor <- which(all_transforms == "factor_cor")
 
   for(i in 1:ngroups) {
 
     p <- nitems
     q <- nfactors
+    j <- indices_factor_cor[i]
 
     # Arrange lambda parameter estimates:
-    matrices[[i]]$lambda <- matrix(x$outputs$estimators$matrices[[i]][[1]], p, q)
+    matrices[[i]]$lambda <- matrix(x$outputs$transformations$matrices[[j]][[1]], p, q)
 
     # Arrange psi parameter estimates:
-    matrices[[i]]$psi <- matrix(x$outputs$estimators$matrices[[i]][[2]], q, q)
+    matrices[[i]]$psi <- matrix(x$outputs$transformations$matrices[[j]][[2]], q, q)
 
     # Arrange theta parameter estimates:
-    matrices[[i]]$theta <- matrix(x$outputs$estimators$matrices[[i]][[3]], p, p)
-    # uniquenesses_hat[[i]] <- diag(psi_hat[[i]])
+    matrices[[i]]$theta <- matrix(x$outputs$transformations$matrices[[j]][[3]], p, p)
 
     # Model matrix:
-    outputs[[i]]$model <- matrix(x$outputs$estimators$matrices[[i]][[4]], p, p)
+    outputs[[i]]$model <- matrix(x$outputs$transformations$matrices[[j]][[4]], p, p)
 
     # Residual matrix:
-    outputs[[i]]$residuals <- matrix(x$outputs$estimators$matrices[[i]][[5]], p, p)
+    # outputs[[i]]$residuals <- matrix(x$outputs$transformations$matrices[[j]][[5]], p, p)
     #
     # # Weight matrix:
     # if(control_estimator[[i]]$estimator == "uls" ||
@@ -247,7 +260,7 @@ lcfa <- function(data, model = NULL, cor = "pearson",
     # }
     #
     # Uniquenesses:
-    outputs[[i]]$uniquenesses <- c(x$outputs$estimators$vectors[[i]][[1]])
+    outputs[[i]]$uniquenesses <- c(x$outputs$transformations$vectors[[j]][[1]])
 
   }
 
@@ -278,6 +291,30 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   # class(lcfa_list) <- "lcfa.list"
 
   return(lcfa_list)
+
+  ## for lavaan like object
+  ## need to fill in these objects into the lav dummy objects
+  ## will take me longer to find how to match these slots
+  # lcfa <- new("lcfa",
+  #             version      = as.character( packageVersion('latent') ),
+  #             call         = mc,                  # match.call
+  #             timing       = timing,              # list
+  #             Options      = lavoptions,          # list
+  #             ParTable     = lavpartable,         # list
+  #             pta          = LAV@pta,             # list
+  #             Data         = lavdata,             # S4 class
+  #             SampleStats  = lavsamplestats,      # S4 class
+  #             Model        = lavmodel,            # S4 class
+  #             Cache        = lavcache,            # list
+  #             Fit          = lavfit,              # S4 class
+  #             boot         = list(),
+  #             optim        = lavoptim,
+  #             implied      = lavimplied,          # list
+  #             vcov         = lavvcov,
+  #             external     = extslot,             # can add extra info from latent
+  #             test         = TEST                 # copied for now
+  # )
+
 
 }
 

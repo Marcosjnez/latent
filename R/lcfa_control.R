@@ -1,10 +1,10 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/06/2025
+# Modification date: 27/10/2025
 
-cfast_control <- function(control) {
+lcfa_control <- function(control) {
 
-  # Auxiliary function for cfast.R
+  # Auxiliary function for lcfa.R
 
   # Control input
 

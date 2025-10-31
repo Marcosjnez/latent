@@ -139,9 +139,9 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["dg"] = x.dg;
   if(compute == "dg") return result;
 
-  final_manifold->hess(x, xmanifolds);
-  result["dH"] = x.dH;
-  if(compute == "dH") return result;
+  // final_manifold->hess(x, xmanifolds);
+  // result["dH"] = x.dH;
+  // if(compute == "dH") return result;
 
   // final_estimator->H(x, xestimators);
   // result["hess"] = x.hess;

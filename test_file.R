@@ -199,6 +199,27 @@ set.seed(2025)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml", cor = "pearson", do.fit = TRUE,
             control = NULL)
+# fit@modelInfo$cfa_trans[[1]]$theta == t(fit@modelInfo$cfa_trans[[1]]$theta)
+# fit@modelInfo$cfa_trans[[1]]$psi == t(fit@modelInfo$cfa_trans[[1]]$psi)
+# fit@modelInfo$cfa_trans[[1]]$model == t(fit@modelInfo$cfa_trans[[1]]$model)
+
+control_manifold <- fit@modelInfo$control_manifold
+control_transform <- fit@modelInfo$control_transform
+control_estimator <- fit@modelInfo$control_estimator
+control <- fit@modelInfo$control
+x <- get_grad(control_manifold, control_transform,
+               control_estimator, control)
+x$g
+
+x <- grad_comp(control_manifold, control_transform,
+               control_estimator, control, eps = 1e-04,
+               compute = "all")
+x$f
+round(c(x$g)-c(x$numg), 6)
+round((c(x$g)-c(x$numg)) / c(x$numg), 6)
+round(c(x$g)/c(x$numg), 6)
+
+
 fit@loglik # -0.283407
 fit@penalized_loglik # -0.283407
 fit@loss # 0.1574787
@@ -360,13 +381,11 @@ inspect(fit2, what = "est")
 fitmeasures(fit2, fit.measures = c("cfi", "tli", "rmsea", "srmr"))
 
 # With latent:
-fit <- lcfa(data = HolzingerSwineford1939, model = model,
+fit <- lcfa(data = HolzingerSwineford1939,
+            model = model, group = "school",
             estimator = "ml", cor = "pearson",
             positive = TRUE, penalties = TRUE,
-            group = "school", std.lv = TRUE, do.fit = TRUE,
-            control = list(opt = "lbfgs", maxit = 1000L,
-                           # logdetw = 1e-03,
-                           cores = 10L, rstarts = 10L))
+            std.lv = TRUE, control = NULL)
 
 fit@loglik # -0.1678072 (ML)
 fit@penalized_loglik # -0.1678072 (ML)
@@ -386,6 +405,9 @@ latInspect(fit, what = "loadings", digits = 3)
 latInspect(fit, what = "psi", digits = 3)
 latInspect(fit, what = "uniquenesses", digits = 3)
 latInspect(fit, what = "model", digits = 3)
+
+ps <- fit@transformed_pars[[2]]$pj_psi
+crossprod(ps)
 
 theta <- latInspect(fit, what = "theta", digits = 3)[[1]]
 det(theta)

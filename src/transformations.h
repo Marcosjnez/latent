@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/10/2025
+ * Modification date: 30/10/2025
  */
 
 // Transformations
@@ -52,6 +52,7 @@ public:
 #include "transformations/crossprod.h"
 #include "transformations/multinomial.h"
 #include "transformations/column_space.h"
+#include "transformations/factor_cor.h"
 
 using TransformFactory =
   std::function< transformations*(const Rcpp::List&) >;
@@ -64,7 +65,8 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "normal",   choose_normal   },
   { "crossprod", choose_crossprod },
   { "multinomial", choose_multinomial },
-  { "column_space", choose_column_space }
+  { "column_space", choose_column_space },
+  { "factor_cor", choose_factor_cor }
 };
 
 transformations* choose_transform(const Rcpp::List& trans_setup) {
