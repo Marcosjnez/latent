@@ -44,4 +44,8 @@ setClass("lcfa",
          )
 )
 
+#setClass("lcfa",
+#         contains = "lavaan"
+#)
+
 
