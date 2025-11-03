@@ -377,10 +377,10 @@ optim_result lbfgs(arguments_optim x,
     wolfe(x, xtransforms, xmanifolds, xestimators);
 
     // Stop early if the optimization diverges:
-    if (x.f > f0) {
-      x.convergence = false;
-      break;
-    }
+    // if (x.f > f0) {
+    //   x.convergence = false;
+    //   break;
+    // }
     f0 = x.f;
 
     // Rprintf("363= %g \n", x.f);

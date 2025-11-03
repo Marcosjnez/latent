@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 30/10/2025
+ * Modification date: 03/11/2025
  */
 
 /*
@@ -15,6 +15,7 @@ public:
   arma::mat R, Rhat, dRhat, residuals, W, W_residuals;
   arma::uvec lower_diag;
   int p, q;
+  double w, loglik = 0.00;
 
   void param(arguments_optim& x) {
 
@@ -28,7 +29,7 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = 0.5*arma::accu(residuals % W_residuals);
+    f = w*0.5*arma::accu(residuals % W_residuals);
     x.f += f;
 
   }
@@ -38,7 +39,7 @@ public:
     arma::mat temp = -2*W_residuals;
     temp.diag() *= 0.5;
 
-    x.grad.elem(indices[0]) += arma::vectorise(temp(lower_diag));
+    x.grad.elem(indices[0]) += w*arma::vectorise(temp(lower_diag));
 
   }
 
@@ -50,7 +51,7 @@ public:
     arma::mat dgRhat = 2*W % dRhat;
     dgRhat.diag() *= 0.5;
 
-    x.dgrad.elem(indices[0]) += arma::vectorise(dgRhat(lower_diag));
+    x.dgrad.elem(indices[0]) += w*arma::vectorise(dgRhat(lower_diag));
 
   }
 
@@ -64,14 +65,16 @@ public:
     hx.diag() *= 0.5;
     hx = arma::diagmat(arma::vectorise(hx.elem(lower_diag)));
 
-    x.hess(indices[0], indices[0]) += hx;
+    x.hess(indices[0], indices[0]) += w*hx;
 
   }
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(1);
+    doubles.resize(3);
     doubles[0] = f;
+    doubles[1] = loglik;
+    doubles[2] = w;
 
     matrices.resize(2);
     matrices[0] = residuals;
@@ -88,6 +91,7 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat R = estimator_setup["R"];
   arma::mat W = estimator_setup["W"];
+  double w = estimator_setup["w"];
   int q = estimator_setup["q"];
 
   int p = R.n_rows;
@@ -99,6 +103,7 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
   myestimator->q = q;
   myestimator->R = R;
   myestimator->W = W;
+  myestimator->w = w;
   myestimator->Rhat = Rhat;
   myestimator->dRhat = Rhat;
   myestimator->lower_diag = lower_diag;

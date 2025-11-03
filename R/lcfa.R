@@ -9,10 +9,10 @@
 #'
 #' lcfa(data, model = NULL, cor = "pearson",
 #' estimator = "ml", group = NULL,
-#' sample.cov = NULL, nobs = NULL, W = NULL,
+#' sample.cov = NULL, nobs = NULL,
 #' positive = FALSE, penalties = TRUE,
 #' missing = "pairwise.complete.obs",
-#' std.lv = FALSE, do.fit = TRUE, control = NULL)
+#' std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
 #'
 #' @param data data frame or matrix.
 #' @param model lavaan's model syntax.
@@ -21,13 +21,13 @@
 #' @param group .
 #' @param sample.cov Covariance matrix between the items. Defaults to NULL.
 #' @param nobs Number of observations. Defaults to NULL.
-#' @param W Custom weight matrix for "dwls". Defaults to NULL.
 #' @param positive Force at least positive-semidefinite solutions. Defaults to FALSE
 #' @param penalties list of penalty terms for the parameters.
 #' @param missing Method to handle missing data.
 #' @param std.lv Provide the parameters of the standardized model.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
+#' @param ... Additional lavaan arguments. See ?lavaan for more information.
 #'
 #' @details \code{cfast} estimates confirmatory factor models.
 #'
@@ -56,34 +56,26 @@
 #' @export
 lcfa <- function(data, model = NULL, cor = "pearson",
                  estimator = "ml", group = NULL,
-                 sample.cov = NULL, nobs = NULL, W = NULL,
+                 sample.cov = NULL, nobs = NULL,
                  positive = FALSE, penalties = TRUE,
                  missing = "pairwise.complete.obs",
-                 std.lv = TRUE, do.fit = TRUE, control = NULL) {
+                 std.lv = TRUE, do.fit = TRUE, control = NULL,
+                 ...) {
 
   # Check the arguments to control_optimizer and create defaults:
   control$penalties <- penalties
-<<<<<<< HEAD
   control <- lcfa_control(control)
-=======
-  control <- cfast_control(control)
->>>>>>> a477adb2d036f2cba10c502007a902bdd60c3fde
 
   # Extract the lavaan model:
   model_syntax <- model
   LAV <- lavaan::cfa(model = model_syntax, data = data,
-<<<<<<< HEAD
                      sample.cov = sample.cov,
                      sample.nobs = nobs,
                      std.lv = std.lv,
-                     do.fit = FALSE, group = group)
-=======
-                             sample.cov = sample.cov,
-                             sample.nobs = nobs,
-                             std.lv = std.lv,
-                             do.fit = FALSE, group = group)
->>>>>>> a477adb2d036f2cba10c502007a902bdd60c3fde
-  #item_names <- unique(LAV@ParTable$rhs[LAV@ParTable$op == "=~"])
+                     do.fit = FALSE, group = group,
+                     ...)
+
+  LAV@Options$positive <- positive
 
   # extract slots from dummy lavaan object
   lavpartable    <- LAV@ParTable
@@ -93,65 +85,63 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   lavsamplestats <- LAV@SampleStats
   lavcache       <- LAV@Cache
   timing         <- LAV@timing
+  ngroups        <- LAV@Model@ngroups
+  item_names     <- LAV@Data@ov.names
+  nobs           <- LAV@Data@nobs
+  group_label    <- LAV@Data@group.label
+  X              <- LAV@Data@X
 
-  ngroups <- lavmodel@ngroups
-  item_names <- lavdata@ov.names[[1]]
-
-  if(ngroups > 1){
-    nobs <- lavdata@nobs
-  }else{
-    nobs <- lavdata@nobs[[1]]
-  }
-
-
-  # Model for the parameters:
-  model <- getmodel_fromlavaan(LAV)
-
-  if(ngroups == 1) {
-    model <- list(model)
+  # Rename columns:
+  for(i in 1:ngroups) {
+    colnames(X[[i]]) <- item_names[[i]]
   }
 
   # Get the correlation and weight matrices:
   correl <- vector("list", length = ngroups)
+  names(X) <- names(correl) <- group_label
 
-  data_split <- lapply(lavdata@X,
-                       function(x){colnames(x) <- item_names;x} )
+  # Model for the parameters:
+  model <- getmodel_fromlavaan(LAV)
 
+  if(ngroups == 1) model <- list(model)
 
-  # if(is.null(sample.cov)) {
-  # }
-
-  for(ng in 1:ngroups) {
+  # Estimate the correlation matrix for each group:
+  for(i in 1:ngroups) {
 
     if(is.null(sample.cov)) {
 
-      correl[[ng]] <- correlation(data = data_split[[ng]], item_names = item_names,
-                                  cor = cor, estimator = estimator, missing = missing)
+      correl[[i]] <- correlation(data = X[[i]],
+                                 item_names = item_names[[i]],
+                                 cor = cor,
+                                 estimator = estimator,
+                                 missing = missing)
+
     } else {
 
-      correl[[ng]]$R <- sample.cov
+      correl[[i]]$R <- sample.cov
       p <- nrow(sample.cov)
-      correl[[ng]]$W <- matrix(1, nrow = p, ncol = p)
+      correl[[i]]$W <- matrix(1, nrow = p, ncol = p)
 
     }
 
   }
 
   # Data and structure information:
-  nitems <- lavmodel@nvar
-  npatterns <- 0.5*nitems*(nitems+1) * ngroups
-  nfactors <- ncol(model[[1]]$lambda)
+  nitems <- as.list(lavmodel@nvar)
+  npatterns <- lapply(nitems, FUN = \(p) 0.5*p*(p+1))
+  nfactors <- lapply(model, FUN = \(x) ncol(x$lambda))
 
   data_list <- vector("list")
-  data_list$data <- data # should this be a list for multiple groups?
-  data_list$nobs <- nobs
   data_list$ngroups <- ngroups
+  data_list$data <- X
+  data_list$nobs <- nobs
   data_list$nitems <- nitems
   data_list$npatterns <- npatterns
   data_list$nfactors <- nfactors
   data_list$correl <- correl
   data_list$positive <- positive
   data_list$estimator <- estimator
+  data_list$group_label <- group_label
 
   ## store original call
   mc  <- match.call()
@@ -172,13 +162,13 @@ lcfa <- function(data, model = NULL, cor = "pearson",
                                    control = control)
   list2env(structures, envir = environment())
 
-  #### Fit the model ####
+  #### Collect all the model information ####
 
   # Model information:
   modelInfo <- list(nobs = nobs,
                     nparam = nparam - rest,
                     npatterns = npatterns,
-                    dof = npatterns - nparam + rest,
+                    dof = sum(unlist(npatterns)) - nparam + rest,
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,
@@ -188,6 +178,8 @@ lcfa <- function(data, model = NULL, cor = "pearson",
                     control_transform = control_transform,
                     control_estimator = control_estimator,
                     control = control)
+
+  #### Fit the model ####
 
   # Data for the optimization algorithms:
   Optim <- list(data = data,
@@ -225,63 +217,67 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   Optim$opt <- x
   elapsed <- x$elapsed
 
-  if(estimator == "uls" || estimator == "dwls") {
-    loss <- x$f / ngroups
-    penalized_loss <- x$f / ngroups
-    loglik <- numeric()
-    penalized_loglik <- numeric()
-  } else if(estimator == "ml") {
-    loss <- x$f / ngroups
-    penalized_loss <- x$f / ngroups
-    loglik <- -loss / ngroups
-    penalized_loglik <- -penalized_loss / ngroups
-  }
+  #### Estimated model structures ####
 
-  #### Process the outputs ####
+  # Create the structures of untransformed parameters:
+  indices_pars <- match(modelInfo$parameters_labels,
+                        unlist(modelInfo$cfa_param))
+  vv <- rep(0, times = length(unlist(modelInfo$cfa_param)))
+  vv[indices_pars] <- Optim$opt$parameters
+  parameters <- fill_list_with_vector(modelInfo$cfa_param, vv)
+  parameters <- allnumeric(parameters)
+  # FIXED PARAMETERS?
 
-  matrices <- outputs <- vector("list", length = ngroups)
-  all_transforms <- unlist(lapply(modelInfo$control_transform, FUN = \(x) x$transform))
-  indices_factor_cor <- which(all_transforms == "factor_cor")
-
-  for(i in 1:ngroups) {
-
-    p <- nitems
-    q <- nfactors
-    j <- indices_factor_cor[i]
-
-    # Arrange lambda parameter estimates:
-    matrices[[i]]$lambda <- matrix(x$outputs$transformations$matrices[[j]][[1]], p, q)
-
-    # Arrange psi parameter estimates:
-    matrices[[i]]$psi <- matrix(x$outputs$transformations$matrices[[j]][[2]], q, q)
-
-    # Arrange theta parameter estimates:
-    matrices[[i]]$theta <- matrix(x$outputs$transformations$matrices[[j]][[3]], p, p)
-
-    # Model matrix:
-    outputs[[i]]$model <- matrix(x$outputs$transformations$matrices[[j]][[4]], p, p)
-
-    # Residual matrix:
-    # outputs[[i]]$residuals <- matrix(x$outputs$transformations$matrices[[j]][[5]], p, p)
-    #
-    # # Weight matrix:
-    # if(control_estimator[[i]]$estimator == "uls" ||
-    #    control_estimator[[i]]$estimator == "dwls") {
-    #   outputs[[i]]$W <- matrix(x$outputs$estimators$matrices[[i]][[6]], p, p)
-    # }
-    #
-    # Uniquenesses:
-    outputs[[i]]$uniquenesses <- c(x$outputs$transformations$vectors[[j]][[1]])
-
-  }
-
+  # Create the structures of transformed parameters:
   indices_trans <- match(modelInfo$transparameters_labels,
                          unlist(modelInfo$cfa_trans))
   vv <- rep(0, times = length(unlist(modelInfo$cfa_trans)))
   vv[indices_trans] <- Optim$opt$transparameters
-  transformed_pars <- fill_list_with_vector(modelInfo$cfa_trans,
-                                            vv)
+  transformed_pars <- fill_list_with_vector(modelInfo$cfa_trans, vv)
   transformed_pars <- allnumeric(transformed_pars)
+
+  #### Process the fit information ####
+
+  # Get the indices of the estimator structures "cfa_dwls" and "cfa_ml":
+  all_estimators <- unlist(lapply(modelInfo$control_estimator, FUN = \(x) x$estimator))
+  indices_cfa <- which(all_estimators == "cfa_dwls" | all_estimators == "cfa_ml")
+
+  # Get the indices of the estimator structures "logdetmat" (penalties):
+  indices_logdetmat <- which(all_estimators == "logdetmat")
+
+  # Initialize the objects to be returned:
+  loss <- penalized_loss <- loglik <- penalized_loglik <- penalty <-
+    vector("list", length = ngroups)
+
+  # For each group, extract the loss, penalized loss, loglik and penalized loglik
+  for(i in 1:ngroups) {
+
+    k <- indices_cfa[i]
+
+    loss[[i]] <- c(x$outputs$estimators$doubles[[k]][[1]])
+    loglik[[i]] <- c(x$outputs$estimators$doubles[[k]][[2]])
+
+    # If there are penalties, add the penalties to the loss or loglik:
+    if(length(indices_logdetmat) > 0) {
+
+      l <- indices_logdetmat[i]
+      penalty[[i]] <- c(x$outputs$estimators$doubles[[l]][[1]])
+      penalized_loss[[i]] <- loss[[i]] + penalty[[i]]
+      penalized_loglik[[i]] <- loglik[[i]] + penalty[[i]]
+
+    } else {
+
+      penalized_loss[[i]] <- loss[[i]]
+      penalized_loglik[[i]] <- loglik[[i]]
+
+    }
+
+  }
+
+  loss <- sum(unlist(loss))
+  penalized_loss <- sum(unlist(penalized_loss))
+  loglik <- sum(unlist(loglik))
+  penalized_loglik <- sum(unlist(penalized_loglik))
 
   #### Return ####
 
@@ -291,7 +287,7 @@ lcfa <- function(data, model = NULL, cor = "pearson",
                    timing             = elapsed, # timing information
                    modelInfo          = modelInfo, # modelInfo
                    Optim              = Optim, # Optim
-                   parameters         = matrices,
+                   parameters         = parameters,
                    transformed_pars   = transformed_pars,
                    loglik             = loglik, # loglik values
                    penalized_loglik   = penalized_loglik,
@@ -311,19 +307,21 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   #             call         = mc,                  # match.call
   #             timing       = timing,              # list
   #             Options      = lavoptions,          # list
-  #             ParTable     = lavpartable,         # list
+  #             ParTable     = lavpartable,         # list *
   #             pta          = LAV@pta,             # list
   #             Data         = lavdata,             # S4 class
   #             SampleStats  = lavsamplestats,      # S4 class
-  #             Model        = lavmodel,            # S4 class
+  #             Model        = lavmodel,            # S4 class *
   #             Cache        = lavcache,            # list
-  #             Fit          = lavfit,              # S4 class
+  #             Fit          = lavfit,              # S4 class *
   #             boot         = list(),
   #             optim        = lavoptim,
-  #             implied      = lavimplied,          # list
+  #             implied      = lavimplied,          # list *
   #             vcov         = lavvcov,
-  #             external     = extslot,             # can add extra info from latent
-  #             test         = TEST                 # copied for now
+  #             test         = TEST,                       *
+  #             h1           = h1,
+  #             internal     = internal,
+  #             external     = extslot              # can add extra info from latent
   # )
 
 

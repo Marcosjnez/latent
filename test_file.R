@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 27/10/2025
+# Modification date: 01/11/2025
 
 #### Install latent ####
 
@@ -199,26 +199,61 @@ set.seed(2025)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml", cor = "pearson", do.fit = TRUE,
             control = NULL)
-# fit@modelInfo$cfa_trans[[1]]$theta == t(fit@modelInfo$cfa_trans[[1]]$theta)
-# fit@modelInfo$cfa_trans[[1]]$psi == t(fit@modelInfo$cfa_trans[[1]]$psi)
-# fit@modelInfo$cfa_trans[[1]]$model == t(fit@modelInfo$cfa_trans[[1]]$model)
+latInspect(fit, "loglik")
+latInspect(fit, "loss")
+
+# With lavaan:
+fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
+                    estimator = "ml",
+                    std.lv = TRUE, std.ov = TRUE)
+fit2@h1
+fit2@Fit@fx*2
+fit@loss
+sum(latInspect(fit, "resid")[[1]][lower.tri(R, diag = TRUE)]^2)
+R <- latInspect(fit, "resid")[[1]]
+S <- diag(sqrt(rep(300/301, 9))) %*% R %*% diag(sqrt(rep(300/301, 9)))
+sum(S[lower.tri(R, diag = TRUE)]^2)
+0.5*sum(S^2)
+0.5*sum(R^2)
+sum(S[lower.tri(R, diag = FALSE)]^2)
+sum(S[lower.tri(S, diag = FALSE)]^2)
+
+
+n <- nrow(HolzingerSwineford1939)
+p <- 9
+R <- fit@Optim$data_list$corre[[1]]$R
+Rhat <- latInspect(fit, what = "model")[[1]]
+S <- diag(sqrt(fit2@SampleStats@var[[1]])) %*% R %*% diag(sqrt(fit2@SampleStats@var[[1]]))
+Shat <- diag(sqrt(fit2@SampleStats@var[[1]])) %*% Rhat %*% diag(sqrt(fit2@SampleStats@var[[1]]))
+- 0.5*n*p*log(2*pi) -
+  0.5*n*log(det(Shat)) -
+  0.5*n*sum(diag(S %*% solve(Shat)))
+
+fit2@loglik$loglik
+
+
+
+
+lavaan::inspect(fit2, what = "est")$lambda
+latInspect(fit, what = "lambda")
+lavaan::inspect(fit2, what = "est")$psi
+latInspect(fit, what = "psi")
+lavaan::inspect(fit2, what = "est")$theta
+latInspect(fit, what = "uniquenesses")
 
 control_manifold <- fit@modelInfo$control_manifold
 control_transform <- fit@modelInfo$control_transform
 control_estimator <- fit@modelInfo$control_estimator
 control <- fit@modelInfo$control
-x <- get_grad(control_manifold, control_transform,
-               control_estimator, control)
-x$g
-
+control$parameters[[1]] <- fit@Optim$opt$parameters
+control$transparameters[[1]] <- fit@Optim$opt$transparameters
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control, eps = 1e-04,
                compute = "all")
 x$f
-round(c(x$g)-c(x$numg), 6)
-round((c(x$g)-c(x$numg)) / c(x$numg), 6)
-round(c(x$g)/c(x$numg), 6)
-
+round(c(x$g) - c(x$numg), 6)
+round(c(x$g) / c(x$numg), 6)
+round(c(x$dg) - c(x$numdg), 6)
 
 fit@loglik # -0.283407
 fit@penalized_loglik # -0.283407
@@ -260,17 +295,27 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
-# control <- list(opt = "lbfgs", maxit = 1000, rstarts = 1L, cores = 1L,
-#                 eps = 1e-05)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             group = "school", estimator = "ml", cor = "pearson",
             std.lv = TRUE, do.fit = TRUE, control = NULL)
 
-fit@loglik # -0.1919254 (ml)
-fit@loss # 0.2027554 (uls) / 0.3838508 (ml)
+latInspect(fit, "w")
+latInspect(fit, "loglik")
+
+fit@loglik # -3422.946 (ml)
+fit@loss # 0.4055109 (uls) / 0.7677016 (ml)
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
 fit@timing
+
+# With lavaan:
+fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
+                    group = "school", estimator = "ml",
+                    std.lv = TRUE, std.ov = TRUE)
+fit2
+fit2@h1
+fit2@Fit@fx*2
+fit@loss
 
 # Plot model fit info:
 fit

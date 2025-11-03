@@ -16,6 +16,7 @@ public:
   arma::uvec lower_indices;
   double tr, logdetw;
   int p;
+  double loglik = 0.00;
 
   void param(arguments_optim& x) {
 
@@ -70,8 +71,9 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(1);
+    doubles.resize(2);
     doubles[0] = f;
+    doubles[1] = loglik;
 
   };
 

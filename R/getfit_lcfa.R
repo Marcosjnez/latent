@@ -1,7 +1,7 @@
 # Author: Marcos Jimenez
 # Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 03/09/2025
+# Modification date: 03/11/2025
 #'
 #' @title
 #' Fit indices
@@ -29,7 +29,7 @@
 #' @export
 getfit.lcfa <- function(model, digits = 3) {
 
-  nobs <- model@modelInfo$nobs
+  nobs <- sum(unlist(model@modelInfo$nobs))
   nitems <- model@Optim$data_list$nitems
   nfactors <- model@Optim$data_list$nfactors
   nparam <- model@modelInfo$nparam
@@ -47,7 +47,8 @@ getfit.lcfa <- function(model, digits = 3) {
     # RMSEA <- NULL
 
     loglik <- model@loss
-    X2 <- loglik*(nobs-1L)
+    # X2 <- loglik*(nobs-1L)
+    X2 <- model@loss*(nobs-1L)
     pval <- NULL
     # Compute loss value
     Sigma <- diag(nitems) # Identity model

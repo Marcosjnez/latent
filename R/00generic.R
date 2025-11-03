@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/10/2025
+# Modification date: 03/11/2025
 
 setMethod("show", "llca", function(object) {
 
@@ -54,11 +54,11 @@ setMethod("show", "lcfa", function(object) {
 
   conv <- object@Optim$opt$convergence
   # Print header with model name and version
-  if(conv){
+  if(conv) {
     cat(sprintf("%s %s converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
                 object@Optim$opt$iterations))
-  }else{
+  } else {
     cat(sprintf("%s %s did not converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
                 object@Optim$opt$iterations))
@@ -68,6 +68,10 @@ setMethod("show", "lcfa", function(object) {
   N <- object@modelInfo$nobs
   dof <- object@modelInfo$dof
 
+  opt_method <- object@modelInfo$control$opt
+  nparam <- object@modelInfo$nparam
+  npatterns <- sum(unlist(object@modelInfo$npatterns))
+  nobs <- sum(unlist(object@modelInfo$nobs))
 
   # Print Estimator, Optimization, and Parameters section
   if(length(object@loglik) == 0) {
@@ -81,8 +85,9 @@ setMethod("show", "lcfa", function(object) {
 
   } else {
 
-    loglik <- abs(object@loss)
-    X2 <- loglik*N
+    loglik <- object@loglik
+    # X2 <- 2*loglik
+    X2 <- object@loss*nobs
     pval <- 1-pchisq(X2, df = dof)
     est <- "ML"
     test_message <- sprintf("  %-45s %.3f\n", "Test statistic (Chi-square)", X2)
@@ -91,12 +96,12 @@ setMethod("show", "lcfa", function(object) {
   }
 
   cat(sprintf("  %-45s %s\n", "Estimator", est))
-  cat(sprintf("  %-45s %s\n", "Optimization method", object@Optim$control$opt))
-  cat(sprintf("  %-45s %d\n\n", "Number of model parameters", object@modelInfo$nparam))
-  cat(sprintf("  %-45s %d\n\n", "Number of patterns", object@modelInfo$npatterns))
+  cat(sprintf("  %-45s %s\n", "Optimization method", opt_method))
+  cat(sprintf("  %-45s %d\n\n", "Number of model parameters", nparam))
+  cat(sprintf("  %-45s %d\n\n", "Number of patterns", npatterns))
 
   # Print Number of Observations
-  cat(sprintf("  %-45s %d\n\n", "Number of observations", object@modelInfo$nobs))
+  cat(sprintf("  %-45s %d\n\n", "Number of observations", nobs))
 
   cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
 

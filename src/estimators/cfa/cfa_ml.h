@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/10/2025
+ * Modification date: 03/11/2025
  */
 
 /*
@@ -14,8 +14,8 @@ public:
 
   arma::mat R, Rhat, residuals, dRhat, Rhat_inv, Ri_R_Ri, gRhat;
   arma::uvec lower_diag;
-  double logdetR;
-  int p, q;
+  double w, logdetR, loglik;
+  int p, q, n;
 
   void param(arguments_optim& x) {
 
@@ -35,8 +35,7 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = arma::log_det_sympd(Rhat) - logdetR +
-      arma::accu(R % Rhat_inv) - p;
+    f = w*(arma::log_det_sympd(Rhat) - logdetR + arma::accu(R % Rhat_inv) - p);
     x.f += f;
 
   }
@@ -48,7 +47,7 @@ public:
     arma::mat temp = 2*gRhat;
     temp.diag() *= 0.5;
 
-    x.grad.elem(indices[0]) += arma::vectorise(temp(lower_diag));
+    x.grad.elem(indices[0]) += w*arma::vectorise(temp(lower_diag));
 
   }
 
@@ -63,7 +62,7 @@ public:
                           Rhat_inv * R * dRhat_inv));
     dgRhat.diag() *= 0.5;
 
-    x.dgrad.elem(indices[0]) += arma::vectorise(dgRhat(lower_diag));
+    x.dgrad.elem(indices[0]) += w*arma::vectorise(dgRhat(lower_diag));
 
   }
 
@@ -78,17 +77,24 @@ public:
     hx.rows(lower_diag) *= 2;
     hx = arma::diagmat(arma::vectorise(hx.elem(lower_diag)));
 
-    x.hess(indices[0], indices[0]) += hx;
+    x.hess(indices[0], indices[0]) += w*hx;
 
   }
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(1);
+    doubles.resize(3);
+    loglik = -w*(0.5*n*p*std::log(2*arma::datum::pi) -
+                 0.5*n*arma::log_det_sympd(Rhat) -
+                 0.5*n*arma::trace(R*Rhat_inv));
     doubles[0] = f;
+    doubles[1] = loglik;
+    doubles[2] = w;
 
     matrices.resize(2);
+    arma::mat W;
     matrices[0] = R - Rhat;
+    matrices[1] = W;
 
   };
 
@@ -100,7 +106,9 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat R = estimator_setup["R"];
+  double w = estimator_setup["w"];
   int q = estimator_setup["q"];
+  int n = estimator_setup["n"];
 
   int p = R.n_rows;
   double logdetR = arma::log_det_sympd(R);
@@ -110,7 +118,9 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   myestimator->indices = indices;
   myestimator->p = p;
   myestimator->q = q;
+  myestimator->n = n;
   myestimator->R = R;
+  myestimator->w = w;
   myestimator->logdetR = logdetR;
   myestimator->Rhat = Rhat;
   myestimator->dRhat = Rhat;

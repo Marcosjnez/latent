@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 29/08/2025
+# Modification date: 02/11/2025
 #'
 #' @title
 #' Standard Errors
@@ -38,19 +38,68 @@ latInspect.lcfa <- function(fit,
   # be case insensitive
   what <- tolower(what)
 
-  lambda <- lapply(fit@transformed_pars, FUN = \(x) round(x$lambda, digits = digits))
-  psi <- lapply(fit@transformed_pars, FUN = \(x) round(x$psi, digits = digits))
-  theta <- lapply(fit@transformed_pars, FUN = \(x) round(x$theta, digits = digits))
-
+  # Number of groups:
   ngroups <- fit@Optim$data_list$ngroups
-  rhat <- resids <- vector("list", length = ngroups)
+  nitems <- fit@Optim$data_list$nitems
+  nfactors <- fit@Optim$data_list$nfactors
+  group_label <- fit@Optim$data_list$group_label
+
+  # Get the indices of the transformation structures "factor_cor". These are the
+  # structures that contain the model parameters:
+  all_transforms <- unlist(lapply(fit@modelInfo$control_transform, FUN = \(x) x$transform))
+  indices_factor_cor <- which(all_transforms == "factor_cor")
+
+  # Get the indices of the estimator structures "cfa_dwls" and "cfa_ml":
+  all_estimators <- unlist(lapply(fit@modelInfo$control_estimator, FUN = \(x) x$estimator))
+  indices_cfa <- which(all_estimators == "cfa_dwls" | all_estimators == "cfa_ml")
+
+  # Get the indices of the estimator structures "logdetmat" (penalties):
+  indices_logdetmat <- which(all_estimators == "logdetmat")
+
+  # Initialize the objects to be returned:
+  lambda <- psi <- theta <- uniquenesses <- model <- resids <- W <- w <-
+    loss <- penalized_loss <- loglik <- penalized_loglik <- penalty <-
+    vector("list", length = ngroups)
+  names(lambda) <- names(psi) <- names(theta) <- names(uniquenesses) <-
+    names(model) <- names(resids) <- names(W) <- names(w) <- names(loss) <-
+    names(penalized_loss) <- names(loglik) <- names(penalized_loglik) <-
+    names(penalty) <- group_label
+
+  x <- fit@Optim$opt
+
   for(i in 1:ngroups) {
 
-    p <- sqrt(length(fit@Optim$opt$outputs$estimators$matrices[[i]][[4]]))
-    temp <- fit@Optim$opt$outputs$estimators$matrices[[i]][[4]]
-    rhat[[i]] <- matrix(round(temp, digits = digits), nrow = p, ncol = p)
-    temp <- fit@Optim$opt$outputs$estimators$matrices[[i]][[5]]
-    resids[[i]] <- matrix(round(temp, digits = digits), nrow = p, ncol = p)
+    p <- nitems[[i]]
+    q <- nfactors[[i]]
+    j <- indices_factor_cor[i]
+    k <- indices_cfa[i]
+
+    loss[[i]] <- c(x$outputs$estimators$doubles[[k]][[1]])
+    loglik[[i]] <- c(x$outputs$estimators$doubles[[k]][[2]])
+    w[[i]] <- c(x$outputs$estimators$doubles[[k]][[3]])
+
+    # If there are penalties, add the penalties to the loss or loglik:
+    if(length(indices_logdetmat) > 0) {
+
+      l <- indices_logdetmat[i]
+      penalty[[i]] <- c(x$outputs$estimators$doubles[[l]][[1]])
+      penalized_loss[[i]] <- loss[[i]] + penalty[[i]]
+      penalized_loglik[[i]] <- loglik[[i]] + penalty[[i]]
+
+    } else {
+
+      penalized_loss[[i]] <- loss[[i]]
+      penalized_loglik[[i]] <- loglik[[i]]
+
+    }
+
+    lambda[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[1]], p, q)
+    psi[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[2]], q, q)
+    theta[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[3]], p, p)
+    uniquenesses[[i]] <- c(x$outputs$transformations$vectors[[j]][[1]])
+    model[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[4]], p, p)
+    resids[[i]] <- matrix(x$outputs$estimators$matrices[[k]][[1]], p, p)
+    W[[i]] <- matrix(x$outputs$estimators$matrices[[k]][[2]], p, p)
 
   }
 
@@ -72,7 +121,7 @@ latInspect.lcfa <- function(fit,
   } else if(what == "rhat" ||
             what == "model") {
 
-    return(rhat)
+    return(model)
 
   } else if(what == "resid" ||
             what == "residuals") {
@@ -94,8 +143,29 @@ latInspect.lcfa <- function(fit,
 
   } else if(what == "uniquenesses") {
 
-    u <- lapply(theta, FUN = \(x) diag(x))
-    return(u)
+    return(uniquenesses)
+
+  } else if(what == "W") {
+
+    return(W)
+
+  } else if(what == "weights") {
+
+    return(w)
+
+  } else if(what == "loss" ||
+            what == "f") {
+
+    return(list(loss = loss, penalized_loss = penalized_loss))
+
+  } else if(what == "loglik") {
+
+    return(list(loglik = loglik, penalized_loglik = penalized_loglik))
+
+  } else if(what == "fit") {
+
+    return(list(loss = loss, penalized_loss = penalized_loss,
+                loglik = loglik, penalized_loglik = penalized_loglik))
 
   } else {
 
