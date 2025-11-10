@@ -44,29 +44,50 @@ bibliography: references.bib
 
 * Free and open-source alternatives (e.g., poLCA, depmixS4, lavaan, mirt) are computationally slow and support a limited range of models.
 
-![](\figures\thinking.jpg){width=100px style="vertical-align:middle; margin-right:0.5em;"} So… what are we doing about it?
+![](\figures\thinking.jpg){width=200px style="vertical-align:middle; margin-right:0.5em;"} So… what are we doing about it?
 
-We are building a free, open-source, efficient, and flexible software. ![](\figures\pirate.jpg){width=100px style="vertical-align:middle; margin-right:0.5em;"}
+We are building a free, open-source, efficient, and flexible software. ![](\figures\pirate.jpg){width=200px style="vertical-align:middle; margin-right:0.5em;"}
 
 # The latent R package
 
 ::: {.columns}
 ::: {.column width="70%"}
-* Unified and flexible syntax
 
-* Few arguments for a straightforward analysis
+<details markdown="1">
+<summary>Unified and flexible syntax</summary>
 
-* lavaan syntax for Structural Equation Models
+- Few arguments for a straightforward analysis  
 
-* Customizable models
+```{r eval=FALSE, echo=TRUE}
+latent::lca(data, nclasses = 1:3)
+```
 
-* High-performance computing
+- lavaan syntax for Structural Equation Models
 
-* Core functions written in C++ with the armadillo library
+```{r eval=FALSE, echo=TRUE}
+HS.model <- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
+```
 
-* Parallelization of multiple random starts to address local maxima
+- Customizable models 
+![](\figures\fixing.png){width=100%}
+
+</details>
+
+<details markdown="1">
+<summary>High-performance computing</summary>
+
+- Core functions written in C++ with the armadillo library
+![](\figures\armadillo.png){width=100%}
+
+- Parallelization of multiple random starts to address local maxima  
+![](\figures\local_maxima.png){width=100%}
+
+</details>
+ 
 :::
-
 ::: {.column width="30%"}
 ![](\figures\standard.png){width=100%}
 
@@ -575,3 +596,30 @@ for(i in seq_along(compare)) {
 # Legend for interpretation
 legend("topleft", legend=compare, col=color, lty=1, lwd=2, bty="p")
 ```
+
+# Work in progress
+
+::: {.columns}
+::: {.column width="60%"}
+
+- (Exploratory) Structural Equation Modeling
+
+- (Multidimensional) Item Response Theory
+
+- Hidden Markov Models
+
+Release date? Soon
+
+Download the beta version at https://github.com/Marcosjnez/latent
+
+Contact: m.j.jimenezhenriquez@vu.nl
+
+:::
+::: {.column width="40%"}
+
+![](\figures\chef.jpg){width=300px style="vertical-align:middle; margin-right:0.5em;"}
+
+:::
+:::
+
+![](\figures\qr_repository.png){width=200px style="vertical-align:middle; margin-right:0.5em;"}

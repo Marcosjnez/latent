@@ -10,14 +10,14 @@
 
 library(latent)
 
-fit <- lca(data = gss82, nclasses = c(3, 2),
+fit <- lca(data = gss82, nclasses = 3,
            # multinomial = c("X1", "X2"),
            # poisson = ,
            # beta = ,
            # mimic = "LG",
            # model = formula(X1 ~ 1 + cluster1,
            #                 X2 ~ 1 + cluster2),
-           # item = rep("multinomial", ncol(gss82)),
+           item = rep("multinomial", ncol(gss82)),
            penalties = TRUE, control = NULL, do.fit = TRUE)
 fit@timing
 fit@loglik # -2754.643
