@@ -54,6 +54,10 @@ public:
 
   }
 
+  void jacobian(arguments_optim& x) {
+
+  }
+
   void update_hess(arguments_optim& x) {
 
   }
@@ -65,10 +69,6 @@ public:
   void dconstraints(arguments_optim& x) {
 
     constraints = false;
-
-  }
-
-  void M(arguments_optim& x) {
 
   }
 

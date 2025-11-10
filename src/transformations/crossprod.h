@@ -57,6 +57,13 @@ public:
 
   }
 
+  void jacobian(arguments_optim& x) {
+
+    arma::mat I(p, p, arma::fill::eye);
+    jacob = 2*Dp.t() * arma::kron(I, X.t());
+
+  }
+
   void update_hess(arguments_optim& x) {
 
     Rf_error("wrong sum_djacob");
@@ -97,10 +104,6 @@ public:
   void dconstraints(arguments_optim& x) {
 
     constraints = false;
-
-  }
-
-  void M(arguments_optim& x) {
 
   }
 

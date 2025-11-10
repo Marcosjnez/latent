@@ -6,10 +6,10 @@
 \usage{
 lcfa(data, model = NULL, cor = "pearson",
 estimator = "ml", group = NULL,
-sample.cov = NULL, nobs = NULL, W = NULL,
+sample.cov = NULL, nobs = NULL,
 positive = FALSE, penalties = TRUE,
 missing = "pairwise.complete.obs",
-std.lv = FALSE, do.fit = TRUE, control = NULL)
+std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
 }
 \arguments{
 \item{data}{data frame or matrix.}
@@ -26,8 +26,6 @@ std.lv = FALSE, do.fit = TRUE, control = NULL)
 
 \item{nobs}{Number of observations. Defaults to NULL.}
 
-\item{W}{Custom weight matrix for "dwls". Defaults to NULL.}
-
 \item{positive}{Force at least positive-semidefinite solutions. Defaults to FALSE}
 
 \item{penalties}{list of penalty terms for the parameters.}
@@ -39,6 +37,8 @@ std.lv = FALSE, do.fit = TRUE, control = NULL)
 \item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
 
 \item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+
+\item{...}{Additional lavaan arguments. See ?lavaan for more information.}
 }
 \value{
 List with the following objects:

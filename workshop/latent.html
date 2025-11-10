@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Mauricio Garnier-Villarreal, Marcos Jimenez, &amp; Vithor Rosa Franco">
+<meta name="dcterms.date" content="2025-10-11">
+
+<title>latent: an R library for Latent Variable Modeling</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="latent_files/libs/clipboard/clipboard.min.js"></script>
+<script src="latent_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="latent_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="latent_files/libs/quarto-html/popper.min.js"></script>
+<script src="latent_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="latent_files/libs/quarto-html/anchor.min.js"></script>
+<link href="latent_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="latent_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="latent_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="latent_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="latent_files/libs/bootstrap/bootstrap-69068d508be6f64da2a33a1019267a2d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="latent_files/libs/kePrint-0.0.1/kePrint.js"></script>
+
+<link href="latent_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="latent.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">latent: an R library for Latent Variable Modeling</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Mauricio Garnier-Villarreal, Marcos Jimenez, &amp; Vithor Rosa Franco </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">October 11, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="lca-with-latent-categorical-continuous-indicators" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> LCA with latent (categorical &amp; Continuous indicators)</h1>
+<ul>
+<li><a href="#latent-variable-model">Latent Variable Models</a></li>
+<li><a href="#latent-class-analysis-lca">Latent Class Analysis (LCA)</a>
+<ul>
+<li><a href="#person-centered-vs-variable-centered">Person-centered vs Variable-centered</a></li>
+<li><a href="#terminology">Terminology</a></li>
+</ul></li>
+<li><a href="#latent"><code>latent</code></a>
+<ul>
+<li><a href="#latent-installation">First step: Install and load the package</a></li>
+</ul></li>
+<li><a href="#categorical-indicator-example">Categorical indicator example</a>
+<ul>
+<li><a href="#latent-syntax"><code>latent</code> syntax</a>
+<ul>
+<li><a href="#model-fit-indices">Model Fit Indices</a></li>
+<li><a href="#classification-diagnostics">Classification Diagnostics</a></li>
+<li><a href="#interpreting-the-final-class-solution">Interpreting the Final Class Solution</a></li>
+</ul></li>
+<li><a href="#class-enumeration">Exploratory LCA</a></li>
+</ul></li>
+<li><a href="#references">References</a></li>
+</ul>
+</section>
+<section id="current-software-limitations-for-latent-variable-modeling" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Current software limitations for Latent Variable Modeling</h1>
+<ul>
+<li><p>Commercial software (e.g., Mplus) is expensive and not open-source (e.g., LatenGOLD).</p></li>
+<li><p>Free and open-source alternatives (e.g., poLCA, depmixS4, lavaan, mirt) are computationally slow and support a limited range of models.</p></li>
+</ul>
+<p><img src="\figures\thinking.jpg" class="img-fluid" style="vertical-align:middle; margin-right:0.5em;" width="100"> So… what are we doing about it?</p>
+<p>We are building a free, open-source, efficient, and flexible software. <img src="\figures\pirate.jpg" class="img-fluid" style="vertical-align:middle; margin-right:0.5em;" width="100"></p>
+</section>
+<section id="the-latent-r-package" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> The latent R package</h1>
+<div class="columns">
+<div class="column" style="width:70%;">
+<ul>
+<li><p>Unified and flexible syntax</p></li>
+<li><p>Few arguments for a straightforward analysis</p></li>
+<li><p>lavaan syntax for Structural Equation Models</p></li>
+<li><p>Customizable models</p></li>
+<li><p>High-performance computing</p></li>
+<li><p>Core functions written in C++ with the armadillo library</p></li>
+<li><p>Parallelization of multiple random starts to address local maxima</p></li>
+</ul>
+</div><div class="column" style="width:30%;">
+<p><img src="\figures\standard.png" class="img-fluid" style="width:100.0%"></p>
+<p><img src="\figures\load.png" class="img-fluid" style="width:100.0%"></p>
+</div>
+</div>
+</section>
+<section id="latent-variable-models" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Latent Variable Models</h1>
+<p>A latent variable model is a way of connecting things we can measure directly (called observed or manifest variables) to hidden qualities we cannot measure directly (called latent variables). These models are used in many areas like biology, computer science, and social sciences. For example, in psychology they can take answers from many survey questions and combine them into a smaller set of traits such as extraversion, and in language analysis they can find hidden “topics” in large groups of texts. The basic idea is that people’s answers on the observed measures come from their position on the hidden traits, and once we account for those traits the observed measures are assumed to be unrelated to each other. Latent variable models can involve either categorical or continuous observed and hidden variables, as below:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table caption-top table-sm table-striped small" data-quarto-postprocess="true">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Latent variables</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Continuous (Manifest)</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Categorical (Manifest)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Continuous</td>
+<td style="text-align: left;">Factor Analysis</td>
+<td style="text-align: left;">Item Response Theory</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Categorical</td>
+<td style="text-align: left;">Latent Profile Analysis</td>
+<td style="text-align: left;">Latent Class Analysis</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The names used for latent variable models often come from the traditions of the fields where they were first developed. Therfore, as you might have seen already, there are several terms related to these types of models. Here we have a short list of terms to keep in mind when talking about these models</p>
+<ul>
+<li>Mixture: general terms to denote models that identify <strong>unknown groups</strong> defined by some probabilistic model.</li>
+<li>LCA: latent class analysis, mixture model that defines a categorical latent variable that describes the heterogeneity between groups. Usually applied only with categorical indicators</li>
+<li>LPA: latent profile analysis, same as LCA, but usually applied with continuous indicators</li>
+<li>Latent variable: an unobserved variable, that cannot be measured with direct items. This variable is the reason people answer in a certain the way the observed indicators. Corrected for (some) measuremet error</li>
+<li>Indicator: observed item that helps approximate the latent variable</li>
+</ul>
+<p>You see that there is a distinction between LCA and LPA, but this is historical to the time when software could only estimate models with all indicators being categorical or continuous. Now we can estimate categorical latent variables with categorical, continuous, or a mix of these indicators. With our package <code>latent</code>, we want to bring all of these approaches together in one place so that you can run a wide range of latent variable models without worrying about the jargon from different disciplines. For this reason, we will use the general term LCA for categorical latent variable model, independent of the type of indicator. With that in mind, let’s get started by walking through our first tutorial on LCA.</p>
+</section>
+<section id="latent-class-analysis-lca" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Latent Class Analysis (LCA)</h1>
+<p>Latent class analysis (LCA) is an umbrella term that refers to a number of techniques for estimating unobserved group membership based on a parametric model of one or more observed indicators of group membership. The types of LCA have become quite popular across scientific fields, most notably finite Gaussian mixture modeling and latent profile analysis. Vermunt &amp; Magidson (2004) defined LCA more generally as virtually any statistical model where “some of the parameters […] differ across unobserved subgroups”.</p>
+<p>In general terms, we can think of LCA as an <strong>unknown group</strong> analysis, where you think that there is heterogeneity in the data due to differences from these <strong>unknown group</strong>, and we want to first identify these groups, and describe how they are different between each other. This way defining the most homogeneous groups, and heterogeneous between them.</p>
+<section id="person-centered-vs-variable-centered" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="person-centered-vs-variable-centered"><span class="header-section-number">5.1</span> Person-centered vs Variable-centered</h2>
+<p>LCA is part of person-centered methods. Person-centered approaches describe similarities and differences among individuals with respect to how variables relate with each other and are predicated on the assumption that the population is heterogeneous with respect with the relationships between variables. Statistical techniques oriented toward categorizing individuals by patterns of associations among variables, such as LCA and cluster analysis, are person-centered. Variable-centered approaches describe associations among variables and are predicated on the assumption that the population is homogeneous with respect to the relationships between variables. In other words, each association between one variable and another in a variable-centered approach is assumed to hold for all individuals within the population. Statistical techniques oriented toward evaluating the relative importance of predictor variables, such as multivariate regression and structural equation modeling, are variable-centered (Masyn, 2013).</p>
+<p>An interesting extension of this, is that any variable-centered approach can be made into a person-centered by defining a model that differs in function of their parameters. For example, we can have a multivariate regression (variable-centered), and we can have a mixture multivariate regression (person-centered). Where for the second we assume that the regression parameters differ across <strong>unknown groups</strong>.</p>
+</section>
+</section>
+<section id="latent" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> <code>latent</code></h1>
+<p>For this tutorial we will use the package <code>latent</code>. We developed this package to have the ability to provide the most adequate estimation methods for all the latent variable models. In regards to LCA, currently, you can fit a model with categorical, continuous, or mixed indicators. Other <em>R</em> packages, such as <code>depmixS4</code> and <code>poLCA</code> allow fitting the same or similar models. However, in the future, <code>latent</code> will also include other types of latent variable models that are not implemented in these packages. Our goal is to provide users with a unified platform that contains all the latent variable models that may be of interest to them, reducing the need to install several different packages.</p>
+<section id="first-step-install-and-load-the-package" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="first-step-install-and-load-the-package"><span class="header-section-number">6.1</span> First step: Install and load the package</h2>
+<p>While several functions are already implemented in <code>latent</code>, there are still some necessary improvements before it can be submitted to <em>CRAN</em>. Therefore, you have to follow the installation instructions from the <em>GitHub</em> repository: <a href="https://github.com/Marcosjnez/latent">Marcosjnez/latent</a>. If you are using Linux or Windows, the following code should be enough. If you are using Mac, please refer to the repository on additional details that may be necessary.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Install and load latent====</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># devtools::install_github("marcosjnez/latent", force = TRUE)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(latent)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>👻 Welcome to latent!</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+      __      __             __
+     / /_____/ /____  ____  / /_
+    / / __  / __/ _ \/ __ \/ __/
+   / / /_/ / /_/  __/ / / / /_
+  /_/\____/\__/\___/_/ /_/\__/   version 0.1.0
+
+Type 'citation("latent")' for citing this package in publications.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Report bugs at m.j.jimenezhenriquez@vu.nl</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>For tutorials, visit marcosjnez.github.io/latent/</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="categorical-indicator-example" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Categorical indicator example</h1>
+<p>For this analysis, we will employ the <strong>gss82</strong> example data set included in the <code>latent</code> package. Sourced from the <code>poLCA</code> package, this data comes from 1,202 white respondents to the 1982 General Social Survey (the data set was previously featured in McCutcheon, 1987, p.&nbsp;30).</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Get the dataset from the package</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> gss82</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>  PURPOSE    ACCURACY UNDERSTA   COOPERAT
+1    Good Mostly true     Good Interested
+2    Good Mostly true     Good Interested
+3    Good Mostly true     Good Interested
+4    Good Mostly true     Good Interested
+5    Good Mostly true     Good Interested
+6    Good Mostly true     Good Interested</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1202    4</code></pre>
+</div>
+</div>
+<p>Looking into the data attributes, we see that it includes the respondents opinions on four key areas: the purpose of surveys (good, depends, or a waste), the accuracy of surveys (mostly true or not true), their understanding of the questions (good, or fair/poor), and their cooperativeness during the interview (interested, cooperative, or impatient).</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Print the levels of each variable</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(data), <span class="cf">function</span>(i) {</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">levels</span>(data[,i])</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]
+[1] "Good"          "Depends"       "Waste of time"
+
+[[2]]
+[1] "Mostly true" "Not true"   
+
+[[3]]
+[1] "Good"      "Fair/Poor"
+
+[[4]]
+[1] "Interested"  "Cooperative" "Impatient"  </code></pre>
+</div>
+</div>
+<p>For didactic purpose, we include missing values randomly to some observations. Because LCA is a person-centered approach, missing values are also considered as potential information for clustering individuals.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Generate 30 random missing observations</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Set seed for reproducibility</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the number of missing cases</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>nmiss <span class="ot">&lt;-</span> <span class="dv">30</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Select nmiss rows to transform to NA</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>missrow <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(data), <span class="at">size =</span> nmiss)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Select nmiss columns to transform to NA</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>misscol <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(data), <span class="at">size =</span> nmiss, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Loop over possible missingness</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nmiss) {</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  data[missrow[i], misscol[i]] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>After including missing values, we can assess the proportion of each response per variable, achieving less than 1% of missing values for each variable. Looking at the proportion distribution of the four indicators, we see that with the exception of the second indicator, all the variables present a major preference for one answer over another.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Loop over columns to check distribution of data</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(data), <span class="cf">function</span>(i) {</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">table</span>(data[,i], <span class="at">useNA=</span><span class="st">"always"</span>) <span class="sc">|&gt;</span> <span class="fu">prop.table</span>() <span class="sc">|&gt;</span> <span class="fu">round</span>(<span class="at">digits=</span><span class="dv">3</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]
+
+         Good       Depends Waste of time          &lt;NA&gt; 
+        0.760         0.085         0.149         0.006 
+
+[[2]]
+
+Mostly true    Not true        &lt;NA&gt; 
+      0.519       0.474       0.007 
+
+[[3]]
+
+     Good Fair/Poor      &lt;NA&gt; 
+    0.812     0.182     0.006 
+
+[[4]]
+
+ Interested Cooperative   Impatient        &lt;NA&gt; 
+      0.834       0.130       0.029       0.007 </code></pre>
+</div>
+</div>
+<section id="latent-syntax" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="latent-syntax"><span class="header-section-number">7.1</span> <code>latent</code> syntax</h2>
+<p>When working with <code>latent</code>, we will use the <code>lca()</code> function for LCA. If we look at its helps page <code>?lca</code>, the main necessary arguments are: (i) data, the data frame or matrix with the indicators to be included in the analysis; (ii) nclasses, the number of latent classes to be estimated; (iii) item, character vector with the model for each item (i.e., “gaussian” or “multinomial”; defaults to “gaussian” for all the items); (iv) penalties, list of penalty terms for the parameters; (v) model, list of parameter labels; (vi) control, list of control parameters for the optimization algorithm; and (vii) do.fit, TRUE to fit the model and FALSE to return only the model setup (defaults to TRUE).</p>
+<p>In the example below, we create an object called <code>item</code> as the character vector with the model for each item, with all defined as <code>"multinomial"</code> (as all items are discrete). Then, we create a <code>nclasses</code> object with an arbitrary value of <code>3</code>, meaning we want the model to estimate three latent classes. We do not change the <code>control</code> argument and use the default value for the <code>do.fit</code> argument (as we want to effectively fit the model to the data). The <code>penalties</code> argument indicates if the prior distribution correction (Vermunt &amp; Magidson, 2016) should be applied to the log-likelihood.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Define that the items are categorical</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>item <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="st">"multinomial"</span>, <span class="fu">ncol</span>(data))</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Define the number of latent classes</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>nclasses <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Fit the multinomial model to the dataset</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> latent<span class="sc">::</span><span class="fu">lca</span>(<span class="at">data =</span> data, <span class="at">item =</span> item, <span class="at">nclasses =</span> nclasses,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">penalties =</span> <span class="cn">TRUE</span>, <span class="at">control =</span> <span class="cn">NULL</span>, <span class="at">do.fit =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Model nclasses = 3"</code></pre>
+</div>
+</div>
+<p>Congratulation! You have run your first LCA with <code>latent</code>. A basic summary of the results can be returned with the <code>print</code> method:</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic summary</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>latent 0.1.0 converged after 88 iterations
+
+  Estimator                                     Penalized-ML
+  Optimization method                           lbfgs
+  Number of model parameters                    20
+
+  Number of observations                        1202
+
+  Number of response patterns (include NA)      51
+
+  Number of possible patterns                   35
+
+  ------------------------------------------------------
+
+Model Test User Model:
+  Test statistic (L2)                           -306.915
+  Degrees of freedom                            15
+  P-value (L2)                                  1.000</code></pre>
+</div>
+</div>
+<p>The user can also choose to return some specific results/properties of the model. <code>latent</code> uses the <code>S4</code> object oriented system and, therefore, you can check what is returned by its objects using <code>@</code>. Below, we show how to extract the time taken to fit the model, the estimated loglikelihood, the penalized loglikelihood, and the number of optimization iterations.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Time taken to fit the model</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">@</span>timing</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.0225203</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimated loglikelihood</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">@</span>loglik</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -2731.536</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimated penalized loglikelihood</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">@</span>penalized_loglik</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -2736.392</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Number of optimization iterations</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">@</span>Optim<span class="sc">$</span>opt<span class="sc">$</span>iterations</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 88</code></pre>
+</div>
+</div>
+<p>Additionaly, <code>latent</code> has some specific functions that help with gathering useful information resulting from fitting the model to the data, such as fit indices or fitted latent states/scores. In this case, the structure of the package resembles the structure of <code>lavaan</code>, establishing a common coding approach for assessing equivalent properties (i.e., latent states/scores, conditional probabilities/factor loadings) for different types of latent variable models.</p>
+<section id="fit-indices" class="level3" data-number="7.1.1">
+<h3 data-number="7.1.1" class="anchored" data-anchor-id="fit-indices"><span class="header-section-number">7.1.1</span> Fit indices</h3>
+<p>The <code>getfit</code> function is used for extracting several fit indices for the model. Apart from the model’s number of latent classes, number of parameters, and (penalized) log-likelihood (<span class="math inline">\(LL\)</span>), several derived statistics are also provided. The <span class="math inline">\(L2\)</span> test statistics and the corresponding degrees of freedom (<span class="math inline">\(df\)</span>) and <em>p</em>-value are provided for traditional assessment of the model. We also include the <span class="math inline">\(R^2\)</span>. These statistics evaluate the in-sample predictive accuracy, meaning that they provide an assessment of the models ability to predict the observed outcomes based on the same data that was use to build up the model.</p>
+<p>The other fit indices provided are based on Information Criteria (IC) methods, which are aimed at evaluating the model’s out-of-sample predictive accuracy, adjusting for overfitting. Ideally, out-of-sample predictive accuracy requires that we estimate the model with a subsample and them use this fit to predict the scores of a new sample. However, IC’s approximate this approach by their different penalty metrics. We discuss IC-based fit indices in more details in the <a href="#class-enumeration">Exploratory LCA</a> section. Below, we present the output of the <code>getfit</code> function.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Get fit indices</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>latent<span class="sc">::</span><span class="fu">getfit</span>(fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>        nclasses             npar             nobs           loglik 
+           3.000           20.000         1202.000        -2731.536 
+penalized_loglik               L2              dof           pvalue 
+       -2736.392         -306.915           15.000            1.000 
+             AIC              BIC             AIC3             CAIC 
+        5503.073         5604.908         5523.073         5624.908 
+             KIC            SABIC              ICL             AICp 
+        5526.073         5541.380        -5963.647         5512.784 
+            BICp            AIC3p            CAICp             KICp 
+        5614.619         5532.784         5634.619         5535.784 
+          SABICp             ICLp       R2_entropy 
+        5551.091        -5973.359            0.578 
+attr(,"class")
+[1] "getfit.llca"</code></pre>
+</div>
+</div>
+</section>
+<section id="inspect" class="level3" data-number="7.1.2">
+<h3 data-number="7.1.2" class="anchored" data-anchor-id="inspect"><span class="header-section-number">7.1.2</span> Inspect</h3>
+<p><code>latent</code> has a <code>latInspect</code> function that allows the user to easilly “inspect” the model for specific informations that could be useful for assessing the model or even doing follow up analyses. For example, with the argument <code>what</code> equal to <code>"classes"</code>, the function will return the marginal probability of each class. Here we see that the first class concentrates 62% percent of the respondents, while the other two classes almost equally divide the remainder 38%.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Inspect model objects</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Overall probabilities for each class</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>latent<span class="sc">::</span><span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"classes"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Class1 Class2 Class3 
+ 0.622  0.182  0.197 </code></pre>
+</div>
+</div>
+<p>With the argument <code>what</code> equal to <code>"profile"</code>, the function will return the conditional probability of each class per item. Here we see that the Classes 1 and 3 are usually more common for respondents that provide positive attitudes towards survey taking in all the items. Class 2, on the other hand, is overall related with negative attitudes towards survey taking in all the items.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The probability of each class per response per item</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>latent<span class="sc">::</span><span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"profile"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>$class
+Class1 Class2 Class3 
+ 0.622  0.182  0.197 
+
+$item
+$item$PURPOSE
+              Class1 Class2 Class3
+Good           0.890  0.167  0.923
+Depends        0.052  0.223  0.065
+Waste of time  0.058  0.610  0.013
+
+$item$ACCURACY
+            Class1 Class2 Class3
+Mostly true  0.618  0.045  0.662
+Not true     0.382  0.955  0.338
+
+$item$UNDERSTA
+          Class1 Class2 Class3
+Good       0.996  0.749  0.314
+Fair/Poor  0.004  0.251  0.686
+
+$item$COOPERAT
+            Class1 Class2 Class3
+Interested   0.943  0.641  0.696
+Cooperative  0.057  0.256  0.249
+Impatient    0.000  0.103  0.055</code></pre>
+</div>
+</div>
+<p>With the argument <code>what</code> equal to <code>"posterior"</code>, the function will return the probability of each class given the respondent’s response pattern. Because this is a data set with predictions made for all the respondents, we only present the first six rows. For all of these respondents, one can see that they are most likely to be from the first latent group.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Posterior probability for each respondent</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(latent<span class="sc">::</span><span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"posterior"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>  P(Class1|Y) P(Class2|Y) P(Class3|Y)
+1       0.922       0.002       0.076
+2       0.922       0.002       0.076
+3       0.922       0.002       0.076
+4       0.917       0.010       0.073
+5       0.922       0.002       0.076
+6       0.922       0.002       0.076</code></pre>
+</div>
+</div>
+<p>With the argument <code>what</code> equal to <code>"state"</code>, the function will return the class with the highest probability for each respondent. This vector is usually applied in follow up inferential analysis to assess how well the classes can be used to make predictions or to explain another variable of interest. Here, we simply calculate the observed proportion of each class, which should be similar to the marginal probability of the classes, as shown before.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Most likely class - the latent "state"</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>latent<span class="sc">::</span><span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"state"</span>) <span class="sc">|&gt;</span> <span class="fu">table</span>() <span class="sc">|&gt;</span> <span class="fu">prop.table</span>() <span class="sc">|&gt;</span> <span class="fu">round</span>(<span class="at">digits=</span><span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    1     2     3 
+0.671 0.185 0.144 </code></pre>
+</div>
+</div>
+<p>With the argument <code>what</code> equal to <code>"pattern"</code>, the function will return a data set with all the observed data patterns and the frequency each of them were observed. Here we see that three of the six response patterns include <code>NA</code>, which are therefore considered as different patterns which could also be different associated with one of the latent classes.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># All the observed response patterns</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(latent<span class="sc">::</span><span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"pattern"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>     PURPOSE ACCURACY UNDERSTA COOPERAT times
+[1,]       0        0        0        0   412
+[2,]      NA        0        0        0     4
+[3,]       0        0       NA        0     4
+[4,]       0        0        0       NA     1
+[5,]       0        0        0        1    35
+[6,]       0        0        0        2     2</code></pre>
+</div>
+</div>
+<p>With the argument <code>what</code> equal to <code>"table"</code>, the function will return a complete data set with additional information about each response pattern. Specifically, we have the estimated frequency, posterior probability for each class (given the response pattern), the most likely category, and the log-likelihood specific to each case, and for each response pattern.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Complete information table for each response pattern</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(latent<span class="sc">::</span><span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"table"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>         PURPOSE ACCURACY UNDERSTA COOPERAT Observed  Estimated P(Class1|Y)
+pattern1       1        1        1        1      412 417.690354 0.922499540
+pattern2       1        1        1        2       35  35.032620 0.668880659
+pattern3       1        1        1        3        2   2.652643 0.016392923
+pattern4       1        1        1       NA        1 455.375616 0.897710090
+pattern5       1        1        2        1       70  70.925639 0.024130674
+pattern6       1        1        2        2       24  24.847354 0.004188835
+         P(Class2|Y) P(Class3|Y) State loglik_case loglik_pattern
+pattern1 0.001882532  0.07561793     1  -1.0570017   -435.4847158
+pattern2 0.008956236  0.32216311     1  -3.5354625   -123.7411871
+pattern3 0.047489842  0.93611723     3  -6.1161858    -12.2323715
+pattern4 0.002692392  0.09959752     1  -0.9706195     -0.9706195
+pattern5 0.003717531  0.97215179     3  -2.8301101   -198.1077083
+pattern6 0.004234274  0.99157689     3  -3.8789909    -93.0957804</code></pre>
+</div>
+</div>
+</section>
+<section id="confidence-intervals" class="level3" data-number="7.1.3">
+<h3 data-number="7.1.3" class="anchored" data-anchor-id="confidence-intervals"><span class="header-section-number">7.1.3</span> Confidence intervals</h3>
+<p>One can also extract the estimated confidence intervals for any parameter using the dedicated function <code>ci</code>. In the code below, we use the <code>"standard"</code> method for estimating the 95% CIs, and print the results using only 2 <code>digits</code>. The result returned from the function is the same as the <code>classes</code> and <code>profile</code> return from the <code>latInspect</code> function, but this time including the CIs.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Get confidence intervals</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>CI <span class="ot">&lt;-</span> latent<span class="sc">::</span><span class="fu">ci</span>(fit, <span class="at">type =</span> <span class="st">"standard"</span>, <span class="at">model =</span> <span class="st">"user"</span>,</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">confidence =</span> <span class="fl">0.95</span>, <span class="at">digits =</span> <span class="dv">2</span>)</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>CI<span class="sc">$</span>table</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>$classes
+            Class1              Class2                 Class3                
+(Intercept) "0.00 [0.00, 0.00]" "-1.23 [-1.66, -0.80]" "-1.15 [-1.80, -0.50]"
+
+$items
+$items$PURPOSE
+              Class1              Class2               Class3              
+Good          "0.89 [0.83, 0.95]" "0.17 [-0.11, 0.44]" "0.92 [0.82, 1.03]" 
+Depends       "0.05 [0.02, 0.09]" "0.22 [0.10, 0.34]"  "0.06 [-0.01, 0.14]"
+Waste of time "0.06 [0.02, 0.10]" "0.61 [0.37, 0.85]"  "0.01 [-0.05, 0.08]"
+
+$items$ACCURACY
+            Class1              Class2               Class3             
+Mostly true "0.62 [0.56, 0.68]" "0.04 [-0.08, 0.17]" "0.66 [0.53, 0.79]"
+Not true    "0.38 [0.32, 0.44]" "0.96 [0.83, 1.08]"  "0.34 [0.21, 0.47]"
+
+$items$UNDERSTA
+          Class1               Class2              Class3              
+Good      "1.00 [0.95, 1.04]"  "0.75 [0.65, 0.84]" "0.31 [-0.07, 0.70]"
+Fair/Poor "0.00 [-0.04, 0.05]" "0.25 [0.16, 0.35]" "0.69 [0.30, 1.07]" 
+
+$items$COOPERAT
+            Class1               Class2              Class3              
+Interested  "0.94 [0.89, 1.00]"  "0.64 [0.52, 0.76]" "0.70 [0.57, 0.82]" 
+Cooperative "0.06 [0.00, 0.11]"  "0.26 [0.15, 0.36]" "0.25 [0.14, 0.36]" 
+Impatient   "0.00 [-0.00, 0.00]" "0.10 [0.03, 0.17]" "0.05 [-0.00, 0.11]"</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="exploratory-lca" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="exploratory-lca"><span class="header-section-number">7.2</span> Exploratory LCA</h2>
+<p>In exploratory LCA, a sequence of models is fitted to the data with each additional model estimating one more class than the previous model. These models are then compared and the best solution is selected as the final class solution. In some cases, prior theory can inform the researcher about the number of classes to expect.</p>
+<p>From a sequence of models, the final class solution is chosen based on both theoretical and statistical criteria. Theory should drive the selection of indicator variables, inform the expectations and reflect on the findings. In addition to this, there are several statistical criteria to consider in model selection. These include but are not limited to likelihood ratio tests, information criteria, and the Bayes factor (Masyn, 2013).</p>
+<p>Relative model fit can be examined using the likelihood ratio test. This is only appropriate when the two models we wish to compare are nested. The likelihood ratio test statistic is computed as the difference in maximum log-likelihoods of the two models, with the test degrees of freedom being the difference in the degrees of freedom of the two compared models. The test statistic follows the <span class="math inline">\(\chi^2\)</span> distribution, and we want it to be non-significant in order to give support to the simpler model. The likelihood ratio test can only compare two nested models at a time (Collins &amp; Lanza, 2010).</p>
+<p>Here we show how to use <code>latent</code> syntax in <em>R</em> to run the model for a sequence of LCA’s, with increasing number of classes, from 2 to 6.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Define the number of latent classes</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>nClassesVec <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">6</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Control parameters</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>control <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">opt =</span> <span class="st">"lbfgs"</span>, <span class="at">rstarts =</span> <span class="dv">100</span>, <span class="at">cores=</span><span class="dv">15</span>)</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Fit the multinomial model to the dataset</span></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>fitMult <span class="ot">&lt;-</span> latent<span class="sc">::</span><span class="fu">lca</span>(<span class="at">data =</span> data, <span class="at">item =</span> item, <span class="at">nclasses =</span> nClassesVec,</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>                       <span class="at">penalties =</span> <span class="cn">TRUE</span>, <span class="at">control =</span> <span class="cn">NULL</span>, <span class="at">do.fit =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Model nclasses = 2"
+[1] "Model nclasses = 3"
+[1] "Model nclasses = 4"
+[1] "Model nclasses = 5"
+[1] "Model nclasses = 6"</code></pre>
+</div>
+</div>
+<p>The object <code>fitMult</code> is a list, where each element is one model fitted with the given number of latent classes, in the same order as <code>nClassesVec</code>. Therefore, to extract the fit indices for each model, we can process <code>fitMult</code> with a <code>for</code> loop or some function from the <code>apply</code> family. For our purpose, we use the <code>sapply</code> function to create a matrix with all the fit indices for each model. With this table, we can use any of the fit indices to decide what is the optimal number of classes.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Get fit indices per model</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>fitPerModel <span class="ot">&lt;-</span> <span class="fu">sapply</span>(fitMult, <span class="cf">function</span>(i) {</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  latent<span class="sc">::</span><span class="fu">getfit</span>(i)</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in pchisq(L2, dof): Se han producido NaNs</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Identify each model per column</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(fitPerModel) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"Model_nC_"</span>,nClassesVec)</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the resulting table</span></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>fitPerModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 Model_nC_2 Model_nC_3 Model_nC_4 Model_nC_5 Model_nC_6
+nclasses              2.000      3.000      4.000      5.000      6.000
+npar                 13.000     20.000     27.000     34.000     41.000
+nobs               1202.000   1202.000   1202.000   1202.000   1202.000
+loglik            -2758.471  -2731.536  -2723.791  -2722.031  -2720.895
+penalized_loglik  -2762.652  -2736.392  -2729.158  -2727.866  -2726.885
+L2                 -253.047   -306.915   -322.407   -325.927   -328.198
+dof                  22.000     15.000      8.000      1.000     -6.000
+pvalue                1.000      1.000      1.000      1.000        NaN
+AIC                5542.941   5503.073   5501.581   5512.061   5523.790
+BIC                5609.134   5604.908   5639.058   5685.180   5732.552
+AIC3               5555.941   5523.073   5528.581   5546.061   5564.790
+CAIC               5622.134   5624.908   5666.058   5719.180   5773.552
+KIC                5558.941   5526.073   5531.581   5549.061   5567.790
+SABIC              5567.841   5541.380   5553.296   5577.183   5602.320
+ICL               -5832.576  -5963.647  -6273.259  -6299.522  -6445.697
+AICp               5551.305   5512.784   5512.315   5523.732   5535.771
+BICp               5617.498   5614.619   5649.792   5696.851   5744.532
+AIC3p              5564.305   5532.784   5539.315   5557.732   5576.771
+CAICp              5630.498   5634.619   5676.792   5730.851   5785.532
+KICp               5567.305   5535.784   5542.315   5560.732   5579.771
+SABICp             5576.205   5551.091   5564.030   5588.854   5614.300
+ICLp              -5840.939  -5973.358  -6283.993  -6311.193  -6457.678
+R2_entropy            0.560      0.578      0.493      0.488      0.488</code></pre>
+</div>
+</div>
+<p>Fit indices typically used for determining the optimal number of classes include the Akaike Information Criterion (AIC) and the Bayesian Information Criterion (BIC). Both information criteria are based on the <span class="math inline">\(Deviance = -2LL\)</span> (which is lower for better fitting models), and add a penalty for the number of parameters (thus incentivizing simpler models). This helps balance model fit and model complexity. The lower the value of an information criterion, the better the overall fit of the model.</p>
+<p>In contrast, the in-sample predictive accuracy indices, on the other hand, are positively biased, meaning that they will present better model fit than it has in reality. ICs correct for this positive bias by evaluating the models accuracy approximating the out-of-sample predictive accuracy, meaning that it is the ability to predict the outcome for observations that are not part of the training model. For example <span class="math inline">\(R^2\)</span> will increase even if an added predictors are unnecessary, while IC’s will show worst fit when a predictor (complexity) is unnecessary (McElreath, 2020)</p>
+<p>In comparison to AIC, the BIC applies a stronger penalty for model complexity that scales logarithmically with the sample size. The literature suggests the BIC may be the most appropriate information criterion to use for model comparison (Nylund-Gibson &amp; Choi, 2018; Masyn, 2013). However, that are many alternatives to the traditional AIC and BIC, including some of the indices already included in <code>latent</code>: AIC3, CAIC, KIC, and SABIC. Each of these are based on different ways of calculating the complexity penalization.</p>
+<p>Because of their different rationales for calculating penalization, information criteria may occasionally contradict each other, so it is important to identify a suitable strategy to reconcile them. One option is to select a specific fit index before analyzing the data. Another option is to always prefer the most parsimonious model that has best fit according to any of the available fit indices. Yet another option is to incorporate information from multiple fit indices using the analytic hierarchy process. Finally, one might make an elbow plot and compare multiple information criteria (Nylund-Gibson &amp; Choi, 2018).</p>
+<p>A disadvantage of the IC’s is that we do not have standard errors for them, so we only have the absolute values without a measure of their variability. So, the difference between models IC can be very small, still indicating that the model with the lower value is “better”, but if this difference is very small can considered them “functionally equal”, and you should take into consideration the interpretability of the model.</p>
+<p>LCA studies commonly report <span class="math inline">\(-2LL\)</span> of the final class solution. This is a basic fit measure used to compute most information criteria. However, since log-likelihood is not penalized for model complexity, it will continuously fall with the addition of more classes.</p>
+<p>Below, we provide a code to extract the ICs for each model fitted to the data. Then, we create an elbow plot including all the indices. Each index is represented by a line of a different color. It is possible to see that, for almost all the models, increasing from 2 to 3 classes provide a better fit. But increasing to 4 or more classes will usually result in a worse fit. Therefore, a parsimonious decision in this scenario would be to consider the model with 3 classes to be the best model possible for this data set.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Prepare dataset of fit indices per model</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Indices to compare</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>compare <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"AIC"</span>, <span class="st">"BIC"</span>, <span class="st">"AIC3"</span>, <span class="st">"CAIC"</span>, <span class="st">"KIC"</span>, <span class="st">"SABIC"</span>)</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>color   <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"red"</span>, <span class="st">"gold"</span>, <span class="st">"darkgreen"</span>, <span class="st">"blue"</span>, <span class="st">"magenta"</span>, <span class="st">"darkgray"</span>)</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>indices <span class="ot">&lt;-</span> fitPerModel[compare,]</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>forPlot <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x=</span><span class="fu">rep</span>(nClassesVec, <span class="at">each=</span><span class="fu">length</span>(compare)),</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>                      <span class="at">index=</span>compare, <span class="at">y=</span><span class="fu">c</span>(indices))</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Create the plot</span></span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic point plot</span></span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(forPlot<span class="sc">$</span>y <span class="sc">~</span> forPlot<span class="sc">$</span>x, <span class="at">xlab=</span><span class="st">"Class Solution"</span>, <span class="at">ylab=</span><span class="st">"Value"</span>,</span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">"Elbow Plot of Information Criteria per Class Solution"</span>)</span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Add default grid</span></span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a><span class="fu">grid</span>()</span>
+<span id="cb49-14"><a href="#cb49-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Draw lines for each index</span></span>
+<span id="cb49-15"><a href="#cb49-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(compare)) {</span>
+<span id="cb49-16"><a href="#cb49-16" aria-hidden="true" tabindex="-1"></a>  what <span class="ot">&lt;-</span> compare[i]</span>
+<span id="cb49-17"><a href="#cb49-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(forPlot[forPlot<span class="sc">$</span>index <span class="sc">==</span> what,<span class="st">"y"</span>] <span class="sc">~</span> forPlot[forPlot<span class="sc">$</span>index <span class="sc">==</span> what,<span class="st">"x"</span>],</span>
+<span id="cb49-18"><a href="#cb49-18" aria-hidden="true" tabindex="-1"></a>        <span class="at">col=</span>color[i], <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb49-19"><a href="#cb49-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb49-20"><a href="#cb49-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Legend for interpretation</span></span>
+<span id="cb49-21"><a href="#cb49-21" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topleft"</span>, <span class="at">legend=</span>compare, <span class="at">col=</span>color, <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">bty=</span><span class="st">"p"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="latent_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

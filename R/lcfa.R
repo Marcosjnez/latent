@@ -89,6 +89,8 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   item_names     <- LAV@Data@ov.names
   nobs           <- LAV@Data@nobs
   group_label    <- LAV@Data@group.label
+  item_label     <- LAV@Data@ov.names
+  factor_label   <- replicate(ngroups, list(LAV@Model@dimNames[[1]][[2]]))
   X              <- LAV@Data@X
 
   # Rename columns:
@@ -142,6 +144,8 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   data_list$positive <- positive
   data_list$estimator <- estimator
   data_list$group_label <- group_label
+  data_list$item_label <- item_label
+  data_list$factor_label <- factor_label
 
   ## store original call
   mc  <- match.call()
@@ -306,7 +310,7 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   #             version      = as.character( packageVersion('latent') ),
   #             call         = mc,                  # match.call
   #             timing       = timing,              # list
-  #             Options      = lavoptions,          # list
+  #             Options      = lavoptions,          # list *
   #             ParTable     = lavpartable,         # list *
   #             pta          = LAV@pta,             # list
   #             Data         = lavdata,             # S4 class
@@ -317,7 +321,7 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   #             boot         = list(),
   #             optim        = lavoptim,
   #             implied      = lavimplied,          # list *
-  #             vcov         = lavvcov,
+  #             vcov         = lavvcov,                    *
   #             test         = TEST,                       *
   #             h1           = h1,
   #             internal     = internal,

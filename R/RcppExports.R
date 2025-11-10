@@ -9,6 +9,10 @@ duplication <- function(p, halflower = TRUE) {
     .Call(`_latent_duplication`, p, halflower)
 }
 
+mytest <- function(p) {
+    .Call(`_latent_mytest`, p)
+}
+
 optimizer <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
     .Call(`_latent_optimizer`, control_manifold, control_transform, control_estimator, control_optimizer)
 }

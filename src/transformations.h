@@ -32,13 +32,13 @@ public:
 
   virtual void update_dgrad(arguments_optim& x) = 0;
 
+  virtual void jacobian(arguments_optim& x) = 0;
+
   virtual void update_hess(arguments_optim& x) = 0;
 
   virtual void update_vcov(arguments_optim& x) = 0;
 
   virtual void dconstraints(arguments_optim& x) = 0;
-
-  virtual void M(arguments_optim& x) = 0;
 
   virtual void outcomes(arguments_optim& x) = 0;
 
@@ -142,8 +142,21 @@ public:
 
   }
 
+  void jacobian(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+
+    x.transparameters(x.transparam2param) = x.parameters;
+
+    for(int i=0; i < x.ntransforms; ++i) {
+
+      xtransformations[i]->jacobian(x);
+
+    }
+
+  }
+
   void update_hess(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
+    // This assumes that the jacobian is already computed
     // Faster version of hessian updating:
     for (int i = x.ntransforms - 1; i >= 0; --i) {
 
@@ -179,6 +192,7 @@ public:
 
   void update_vcov(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
+    // This assumes that the jacobian is already computed
     // Approximate the inverse if the hessian is not positive-definite:
     x.inv_h = arma::inv_sympd(x.h, arma::inv_opts::allow_approx);
 
@@ -231,20 +245,6 @@ public:
       };
 
     }
-
-  }
-
-  void M(arguments_optim& x, std::vector<transformations*>& xtransformations) {
-
-    // Update the parameter estimates using the estimated posterior:
-
-    for(int i=0; i < x.ntransforms; ++i) {
-
-      xtransformations[i]->M(x);
-
-    }
-
-    x.parameters = x.transparameters(x.transparam2param);
 
   }
 

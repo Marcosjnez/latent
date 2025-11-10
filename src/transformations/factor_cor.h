@@ -16,7 +16,8 @@ public:
 
   arma::mat R, Rhat, lambda, psi, theta, lambda_psi, glambda, gpsi, gtheta,
   dlambda, dglambda, dpsi, dRhat, dgpsi, dtheta, dgtheta;
-  arma::uvec lambda_indices, psi_indices, theta_indices;
+  arma::uvec lambda_indices, psi_indices, theta_indices,
+  diag_psi, diag_theta;
   arma::uvec lower_psi, lower_theta;
 
   void transform(arguments_optim& x) {
@@ -51,6 +52,30 @@ public:
     x.grad.elem(lambda_indices) += arma::vectorise(glambda);
     x.grad.elem(psi_indices) += arma::vectorise(gpsi(lower_psi));
     x.grad.elem(theta_indices) += arma::vectorise(gtheta(lower_theta));
+
+    // arma::mat I_p = arma::eye(p, p);
+    //
+    // arma::mat J_lambda = arma::kron(lambda_psi.t(), I_p);
+    // arma::mat J_psi    = arma::kron(lambda.t(), lambda.t());
+    // arma::mat J_theta  = arma::eye(p*p, p*p);
+    //
+    // // Halve the diagonal entries:
+    // J_psi.rows(diag_psi) *= 0.5;
+    // J_theta.rows(diag_theta) *= 0.5;
+    //
+    // // Remove duplicated entries for psi and theta:
+    // J_psi = J_psi.rows(lower_psi);
+    // J_theta = J_theta.rows(lower_theta);
+    //
+    // // Multiply the jacobians by the duplication matrix:
+    // jacob = 2 * arma::join_cols(J_lambda, J_psi, J_theta) * Dp;
+    //
+    // J_lambda *= Dp;
+    // J_psi *= Dp;
+    // J_theta *= Dp;
+    // x.grad.elem(lambda_indices) += J_lambda*x.grad(indices_out[0]);
+    // x.grad.elem(psi_indices) += J_psi*x.grad(indices_out[0]);
+    // x.grad.elem(theta_indices) += J_theta*x.grad(indices_out[0]);
 
   }
 
@@ -98,18 +123,29 @@ public:
 
   }
 
+  void jacobian(arguments_optim& x) {
+
+    arma::mat I_p = arma::eye(p, p);
+
+    arma::mat J_lambda = arma::kron(lambda_psi.t(), I_p);
+    arma::mat J_psi    = arma::kron(lambda.t(), lambda.t());
+    arma::mat J_theta  = arma::eye(p*p, p*p);
+
+    // Halve the diagonal entries:
+    J_psi.rows(diag_psi) *= 0.5;
+    J_theta.rows(diag_theta) *= 0.5;
+
+    // Remove duplicated entries for psi and theta:
+    J_psi = J_psi.rows(lower_psi);
+    J_theta = J_theta.rows(lower_theta);
+
+    // Multiply the jacobians by a duplication matrix:
+    jacob = 2 * arma::join_cols(J_lambda, J_psi, J_theta) * Dp;
+
+  }
+
   void update_hess(arguments_optim& x) {
 
-    // Rf_error("wrong sum_djacob");
-    // arma::mat I(p, p, arma::fill::eye);
-    // jacob = 2*Dp.t() * arma::kron(I, X.t());
-    // int pp = p*p;
-    // int q = 0.5*p*(p-1);
-    //
-    // sum_djacob.resize(pp, pp);
-    // sum_djacob.zeros();
-    // arma::mat dX(p, p, arma::fill::zeros);
-    //
     // sum_djacob = 2*arma::diagmat(arma::vectorise(grad_out));
 
   }
@@ -124,10 +160,6 @@ public:
   void dconstraints(arguments_optim& x) {
 
     constraints = false;
-
-  }
-
-  void M(arguments_optim& x) {
 
   }
 
@@ -160,6 +192,7 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
   arma::mat lambda(p, q, arma::fill::zeros);
   arma::mat psi(q, q, arma::fill::zeros);
   arma::mat theta(p, p, arma::fill::zeros);
+  arma::mat Dp = duplication(p, true);
 
   arma::uvec lambda_indices = indices_in[1];
   arma::uvec psi_indices = indices_in[2];
@@ -169,6 +202,11 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
   arma::uvec lower_theta = arma::trimatl_ind(arma::size(theta));
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(grad_out));
 
+  arma::uvec diag_psi   = arma::regspace<arma::uvec>(0, q - 1) * q
+  + arma::regspace<arma::uvec>(0, q - 1);
+  arma::uvec diag_theta = arma::regspace<arma::uvec>(0, p - 1) * p
+  + arma::regspace<arma::uvec>(0, p - 1);
+
   mytrans->indices_in = indices_in;
   mytrans->indices_out = indices_out;
   mytrans->p = p;
@@ -177,6 +215,7 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
   mytrans->lambda = lambda;
   mytrans->psi = psi;
   mytrans->theta = theta;
+  mytrans->Dp = Dp;
   mytrans->dpsi = psi;
   mytrans->dtheta = theta;
   mytrans->lambda_indices = lambda_indices;
@@ -185,6 +224,8 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
   mytrans->lower_psi = lower_psi;
   mytrans->lower_theta = lower_theta;
   mytrans->lower_diag = lower_diag;
+  mytrans->diag_psi = diag_psi;
+  mytrans->diag_theta = diag_theta;
 
   return mytrans;
 

@@ -43,6 +43,8 @@ latInspect.lcfa <- function(fit,
   nitems <- fit@Optim$data_list$nitems
   nfactors <- fit@Optim$data_list$nfactors
   group_label <- fit@Optim$data_list$group_label
+  item_label <- fit@Optim$data_list$item_label
+  factor_label <- fit@Optim$data_list$factor_label
 
   # Get the indices of the transformation structures "factor_cor". These are the
   # structures that contain the model parameters:
@@ -93,6 +95,7 @@ latInspect.lcfa <- function(fit,
 
     }
 
+    # Extract model parameters:
     lambda[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[1]], p, q)
     psi[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[2]], q, q)
     theta[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[3]], p, p)
@@ -100,6 +103,14 @@ latInspect.lcfa <- function(fit,
     model[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[4]], p, p)
     resids[[i]] <- matrix(x$outputs$estimators$matrices[[k]][[1]], p, p)
     W[[i]] <- matrix(x$outputs$estimators$matrices[[k]][[2]], p, p)
+
+    # Name model parameters:
+    colnames(lambda[[i]]) <- colnames(psi[[i]]) <- rownames(psi[[i]]) <-
+      factor_label[[i]]
+    rownames(lambda[[i]]) <- rownames(theta[[i]]) <- colnames(theta[[i]]) <-
+      rownames(model[[i]]) <- colnames(model[[i]]) <- rownames(resids[[i]]) <-
+      colnames(resids[[i]]) <- rownames(W[[i]]) <- colnames(W[[i]]) <-
+      names(uniquenesses[[i]]) <- item_label[[i]]
 
   }
 

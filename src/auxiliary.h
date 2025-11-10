@@ -259,6 +259,14 @@ arma::mat duplication(int p, bool halflower = true) {
 
 }
 
+// [[Rcpp::export]]
+arma::uvec mytest(int p) {
+
+  arma::uvec diag_ind   = arma::regspace<arma::uvec>(0, p - 1) * p
+  + arma::regspace<arma::uvec>(0, p - 1);
+  return diag_ind;
+}
+
 // arma::mat center_mat(arma::mat X) {
 //   return X.each_row() - arma::mean(X, 0);
 // }

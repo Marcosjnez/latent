@@ -77,6 +77,10 @@ public:
 
   }
 
+  void jacobian(arguments_optim& x) {
+
+  }
+
   void update_hess(arguments_optim& x) {
 
     // Initialize the jacobian:
@@ -153,65 +157,6 @@ public:
   void dconstraints(arguments_optim& x) {
 
     constraints = false;
-
-  }
-
-  void M(arguments_optim& x) {
-
-    // New number of subjects in each class:
-    arma::vec freqs_i = arma::sum(x.freqs, 0).t();
-    // Standardize the frequencies in each class:
-    arma::mat w = x.freqs;
-    w.each_row() /= freqs_i.t(); // Columns sum up to one
-
-    mu.resize(J, I); mu.zeros();
-    sigma.resize(J, I); sigma.zeros();
-    sigma2.resize(J, I); sigma.zeros();
-
-    // for(int i=0; i < I; ++i) {
-    //   for(int j=0; j < J; ++j) {
-    //     // for(int s=0; s < S; ++s) {
-    //     //   if (std::isnan(y(s,j))) continue;
-    //     //   mu(j,i) += y(s,j) * w(s,i); // y.t() * w
-    //     //   double x = y(s,j) - mu(j,i);
-    //     //   sigma2(j,i) += x * x * w(s,i);
-    //     // }
-    //     mu(j,i) = arma::accu(y.col(j) % w.col(i));
-    //     arma::vec xdiff = y.col(j) - mu(j,i);
-    //     sigma2(j,i) = arma::accu(xdiff % xdiff % w.col(i));
-    //   }
-    // }
-
-    for (int i = 0; i < I; ++i) {
-      for (int j = 0; j < J; ++j) {
-        arma::vec yj = y.col(j);
-        arma::vec wi = w.col(i);
-        arma::uvec idx = arma::find_finite(yj);
-        mu(j,i)     = arma::dot(yj.elem(idx), wi.elem(idx));
-        sigma2(j,i) = arma::dot(arma::square(yj.elem(idx) - mu(j,i)), wi.elem(idx));
-      }
-    }
-
-    sigma = arma::sqrt(sigma2);
-
-    // Block of transformations:
-
-    arma::cube loglik(S, J, I, arma::fill::zeros);
-    arma::mat log_sigma = arma::trunc_log(sigma);
-
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s) {
-          if (std::isnan(y(s,j))) continue;
-          double x = y(s,j)-mu(j,i);
-          loglik(s,j,i) = -0.5 * x * x / sigma2(j,i) - log_sigma(j,i) - LOG2M_PI05;
-        }
-      }
-    }
-
-    x.transparameters(mu_indices) = arma::vectorise(mu);
-    x.transparameters(sigma_indices) = arma::vectorise(sigma);
-    x.transparameters(indices_out[0]) = arma::vectorise(loglik);
 
   }
 

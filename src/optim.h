@@ -623,7 +623,7 @@ optim_result ntr(arguments_optim x,
 
 }
 
-// Newton Trust-region algorithm:
+// Expectation Maximization:
 
 optim_result em(arguments_optim x,
                 std::vector<transformations*>& xtransforms,
@@ -656,7 +656,7 @@ optim_result em(arguments_optim x,
       break;
     }
 
-    final_transform->M(x, xtransforms);
+    // final_transform->M(x, xtransforms);
 
     // Rf_error("617");
 

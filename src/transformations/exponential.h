@@ -36,6 +36,12 @@ public:
 
   }
 
+  void jacobian(arguments_optim& x) {
+
+    jacob = arma::diagmat(trans);
+
+  }
+
   void update_hess(arguments_optim& x) {
 
     jacob = arma::diagmat(trans);
@@ -54,12 +60,6 @@ public:
   void dconstraints(arguments_optim& x) {
 
     constraints = false;
-
-  }
-
-  void M(arguments_optim& x) {
-
-    // x.transparameters(indices_in[0]) = arma::trunc_log(x.transparameters(indices_out[0]));
 
   }
 

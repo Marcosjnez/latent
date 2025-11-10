@@ -21,9 +21,6 @@ public:
 
   void update_grad(arguments_optim& x) {
 
-    // jacob = arma::diagmat(trans);
-    // g = jacob.t() * grad;
-    // Fill the gradient:
     x.grad(indices_in[0]) += x.grad(indices_out[0]) / x.transparameters(indices_in[0]);
 
   }
@@ -33,6 +30,12 @@ public:
   }
 
   void update_dgrad(arguments_optim& x) {
+
+  }
+
+  void jacobian(arguments_optim& x) {
+
+    jacob = arma::diagmat(1/x.transparameters(indices_in[0]));
 
   }
 
@@ -54,12 +57,6 @@ public:
   void dconstraints(arguments_optim& x) {
 
     constraints = false;
-
-  }
-
-  void M(arguments_optim& x) {
-
-    // x.transparameters(indices_in[0]) = arma::trunc_log(x.transparameters(indices_out[0]));
 
   }
 

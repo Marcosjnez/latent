@@ -47,6 +47,12 @@ public:
 
   }
 
+  void jacobian(arguments_optim& x) {
+
+    jacob = arma::diagmat(probs) - probs * probs.t();
+
+  }
+
   void update_hess(arguments_optim& x) {
 
     sum_djacob = softmax_chain_second_term(probs, x.grad(indices_out[0]), jacob);
@@ -64,18 +70,6 @@ public:
     constraints = true;
     dconstr.set_size(indices_out[0].n_elem);
     dconstr.ones();
-
-  }
-
-  void M(arguments_optim& x) {
-
-    // // New number of subjects in each class:
-    // arma::vec freqs_i = arma::sum(x.freqs, 0).t();
-    //
-    // // New proportion of subjects in each class:
-    // x.transparameters(indices_out[0]) = freqs_i / arma::accu(freqs_i);
-    // x.transparameters(indices_in[0]) = arma::trunc_log(x.transparameters(indices_out[0]));
-
 
   }
 

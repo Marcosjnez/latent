@@ -87,6 +87,25 @@ public:
 
   }
 
+  void jacobian(arguments_optim& x) {
+
+    jacob.set_size(n_out, n_in);
+    jacob.zeros();
+
+    int l = 0L;
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s, ++l) {
+          if (std::isnan(y(s,j))) continue;
+          int value = y(s,j);
+          int index = indices[j](value,i);
+          jacob(l, index) = 1/peta[j](value,i);
+        }
+      }
+    }
+
+  }
+
   void update_hess(arguments_optim& x) {
 
     jacob.set_size(n_out, n_in);
@@ -133,56 +152,6 @@ public:
   void dconstraints(arguments_optim& x) {
 
     constraints = false;
-
-  }
-
-  void M(arguments_optim& x) {
-
-    // New number of subjects in each class:
-    arma::vec freqs_i = arma::sum(x.freqs, 0).t();
-    // Standardize the frequencies in each class:
-    arma::mat w = x.freqs;
-    w.each_row() /= freqs_i.t(); // Columns sum up to one
-
-    for(int j=0; j < J; ++j) {
-      peta[j].zeros();
-      for(int i=0; i < I; ++i) {
-        for(int s=0; s < S; ++s) {
-          if (std::isnan(y(s,j))) continue;
-          int value = y(s,j);
-          peta[j](value,i) += w(s,i);
-        }
-        eta[j].col(i) = arma::trunc_log(peta[j].col(i));
-      }
-    }
-
-    arma::cube loglik(S, J, I, arma::fill::zeros);
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s) {
-          if (std::isnan(y(s,j))) continue;
-          int value = y(s,j);
-          loglik(s,j,i) = eta[j](value,i);
-        }
-      }
-    }
-
-    for(int j=0; j < J; ++j) {
-      for(int i=0; i < I; ++i) {
-        eta[j].col(i) -= eta[j](0,i);
-      }
-    }
-
-    arma::vec allpeta = arma::vec();
-    arma::vec alleta = arma::vec();
-    for (int j = 0; j < J; ++j) {
-      allpeta = arma::join_cols(allpeta, arma::vectorise(peta[j]));
-      alleta = arma::join_cols(alleta, arma::vectorise(eta[j]));
-    }
-
-    x.transparameters.elem(indices_in[1]) = alleta;
-    x.transparameters.elem(indices_in[0]) = allpeta;
-    x.transparameters.elem(indices_out[0]) = arma::vectorise(loglik);
 
   }
 

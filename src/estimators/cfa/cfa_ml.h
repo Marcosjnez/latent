@@ -84,7 +84,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(3);
-    loglik = -w*(0.5*n*p*std::log(2*arma::datum::pi) -
+    loglik = (-0.5*n*p*std::log(2*arma::datum::pi) -
                  0.5*n*arma::log_det_sympd(Rhat) -
                  0.5*n*arma::trace(R*Rhat_inv));
     doubles[0] = f;
