@@ -1,0 +1,117 @@
+# latent: Latent Class and Factor Analysis Models
+
+Fit measurement models with discrete or continuous latent variables.
+
+# Installation in Windows and Linux
+
+``` R
+devtools::install_github("marcosjnez/latent", force = TRUE)
+```
+
+# Installation in macOS
+
+Install the `macrtools` R package of James Balamuta:
+
+``` R
+# install.packages("remotes")
+remotes::install_github("coatless-mac/macrtools")
+```
+
+Install Command Line Tools and the R Compilation Toolchain (this will
+take some minutes):
+
+``` R
+macrtools::macos_rtools_install()
+```
+
+Get OpenMP support:
+
+``` R
+macrtools::openmp_install()
+```
+
+If you have difficulties during the installation, check the following
+resources:
+
+- <https://mac.thecoatlessprofessor.com/macrtools/index.html>
+- <https://mac.thecoatlessprofessor.com/macrtools/reference/openmp.html>
+
+Finally,
+
+``` R
+devtools::install_github("marcosjnez/latent", force = TRUE)
+```
+
+## Funding
+
+The package development is supported by the “DYNANSE: Righting the
+Wrongs. A Life Course Dynamics Approach for Non-Standard Employment”
+project, which has received funding from the European Research Council
+(ERC) under the European Union’s Horizon 2020 research and innovation
+programme (grant agreement No 864471).
+
+# Package index
+
+## All functions
+
+- [`HolzingerSwineford1939`](https://marcosjnez.github.io/latent/reference/HolzingerSwineford1939.md)
+  : Example dataset: HolzingerSwineford1939
+- [`cancer`](https://marcosjnez.github.io/latent/reference/cancer.md) :
+  Example dataset: cancer
+- [`lcfa()`](https://marcosjnez.github.io/latent/reference/cfast.md) :
+  Wrapper to the lcfa function to fit a Confirmatory Factor Analysis
+  (CFA) model with lavaan syntax.
+- [`empathy`](https://marcosjnez.github.io/latent/reference/empathy.md)
+  : Example dataset: empathy
+- [`fitted()`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
+  : Fitted values for Latent Class Analysis.
+- [`getfit()`](https://marcosjnez.github.io/latent/reference/getfit.lcfa.md)
+  : Fit indices
+- [`getfit()`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
+  : Fit indices
+- [`gss82`](https://marcosjnez.github.io/latent/reference/gss82.md) :
+  Example dataset: gss82
+- [`hexaco`](https://marcosjnez.github.io/latent/reference/hexaco.md) :
+  Example dataset: hexaco
+- [`se()`](https://marcosjnez.github.io/latent/reference/latInspect.lcfa.md)
+  : Standard Errors
+- [`latInspect()`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
+  : Inspect objects from fitted lca models.
+- [`latent-package`](https://marcosjnez.github.io/latent/reference/latent-package.md)
+  [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
+  : An R package for Latent Variable Modeling
+- [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md) :
+  Latent Class Analysis.
+- [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
+  Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+- [`predict()`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
+  : Predicted values for Latent Class Analysis.
+- [`se_cfa()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md)
+  : Standard Errors
+- [`se()`](https://marcosjnez.github.io/latent/reference/se.llca.md) :
+  Standard Errors
+- [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
+  : Simulate factor structures with misspecification errors.
+- [`getfit()`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)
+  : Fit indices
+- [`getfit()`](https://marcosjnez.github.io/latent/reference/summary.llca.md)
+  : Fit indices
+- [`values`](https://marcosjnez.github.io/latent/reference/values.md) :
+  Example dataset: values
+
+# Articles
+
+### All vignettes
+
+- [The Confirmatory Factor
+  model](https://marcosjnez.github.io/latent/articles/cfa_article.md):
+- [The Confirmatory Factor
+  model](https://marcosjnez.github.io/latent/articles/cfa_tutorial.md):
+- [The Exploratory Factor
+  model](https://marcosjnez.github.io/latent/articles/efa_article.md):
+- [The Exploratory Factor
+  model](https://marcosjnez.github.io/latent/articles/efa_tutorial.md):
+- [The Latent Class
+  Model](https://marcosjnez.github.io/latent/articles/lca_article.md):
+- [The Latent Class
+  model](https://marcosjnez.github.io/latent/articles/lca_tutorial.md):
