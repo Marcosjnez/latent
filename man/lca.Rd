@@ -17,7 +17,7 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
 \item{X}{Matrix of covariates.}
 
-\item{penalties}{list of penalty terms for the parameters.}
+\item{penalties}{Boolean or list of penalty terms for the parameters.}
 
 \item{model}{List of parameter labels. See 'details' for more information.}
 

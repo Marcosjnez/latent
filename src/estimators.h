@@ -39,10 +39,6 @@ public:
 
   virtual void dG(arguments_optim& x) = 0;
 
-  virtual void E(arguments_optim& x) = 0;
-
-  virtual void M(arguments_optim& x) = 0;
-
   virtual void H(arguments_optim& x) = 0;
 
   virtual void outcomes(arguments_optim& x) = 0;
@@ -172,39 +168,6 @@ public:
       xestimators[i]->H(x);
 
     }
-
-  }
-
-  void E(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
-    // Update the log-likelihood and the estimated posterior using the
-    // parameter estimates:
-
-    // x.posterior.zeros();
-    x.loglik = 0.00;
-
-    for(int i=0; i < x.nestimators; ++i) {
-
-      xestimators[i]->E(x);
-
-    }
-
-  }
-
-  void M(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
-    // // Update the parameter estimates using the estimated posterior:
-    //
-    // for(int i=0; i < x.nestimators; ++i) {
-    //
-    //   xestimators[i]->posterior = x.posterior;
-    //   arma::uvec indices = xestimators[i]->indices[0];
-    //   xestimators[i]->transparameters = x.transparameters.elem(indices);
-    //   xestimators[i]->M();
-    //
-    //   x.transparameters.elem(indices) = xestimators[i]->transparameters;
-    //
-    // }
 
   }
 

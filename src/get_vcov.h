@@ -64,6 +64,7 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
   final_transform->update_grad(x, xtransforms);
   final_manifold->proj(x, xmanifolds);
   // final_estimator->H(x, xestimators);
+  final_transform->jacobian(x, xtransforms);
   // final_transform->update_hess(x, xtransforms);
   final_transform->update_vcov(x, xtransforms);
 

@@ -196,7 +196,8 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
   }
 
-  # Create the vectors of parameters and transformed parameters:
+  #### Create the vectors of parameters and transformed parameters ####
+
   parameters <- transparameters <- vector("list", length = control$rstarts)
   # Indices of the unique transparameters in init_trans:
   trans_inds <- match(transparameters_labels, vector_trans)

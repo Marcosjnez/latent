@@ -10,15 +10,15 @@ class oblq:public manifolds {
 
 public:
 
+  std::size_t q;
   arma::mat X = arma::mat(q, q);
   arma::mat dX = arma::mat(q, q);
-  arma::vec parameters, dir, dparameters;
+  arma::vec dir, dparameters;
   arma::mat g, dg;
 
   void param(arguments_optim& x) {
 
-    parameters = x.parameters(indices[0]);
-    X = arma::reshape(parameters, q, q);
+    X = arma::reshape(x.parameters(indices[0]), q, q);
 
   }
 
@@ -44,8 +44,7 @@ public:
 
   void retr(arguments_optim& x) {
 
-    parameters = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::sum(X % X, 0))));
-    x.parameters(indices[0]) = parameters;
+    x.parameters(indices[0]) = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::sum(X % X, 0))));
 
   }
 

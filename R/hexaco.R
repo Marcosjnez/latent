@@ -17,15 +17,15 @@
 #'
 #' \dontrun{
 #' # Check samples and sample sizes
-#' samples <- unique(icases$sample) # industry mooc fire student dutch
-#' Ns <- sapply(samples, FUN = function(x) sum(icases$sample == x))
+#' samples <- unique(hexaco$sample) # industry mooc fire student dutch
+#' Ns <- sapply(samples, FUN = function(x) sum(hexaco$sample == x))
 #' names(Ns) <- samples
 #'
 #' # Subset the items pertaining to the HEXACO-100
 #' selection <- 5:104
-#' full <- icases[, selection]
+#' full <- hexaco[, selection]
 #'
-#' mooc <- full[icases$sample == samples[2], ]
+#' mooc <- full[hexaco$sample == samples[2], ]
 #' dim(mooc)
 #'
 #' model.EM <- "FEA ~= hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2

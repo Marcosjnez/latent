@@ -61,19 +61,18 @@ public:
 
   }
 
-  void E(arguments_optim& x) {}
-
-  void M(arguments_optim& x) {}
-
   void H(arguments_optim& x) {
+
+    Rf_error("H not available");
 
   }
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(2);
+    doubles.resize(3);
     doubles[0] = f;
     doubles[1] = loglik;
+    doubles[2] = logdetw;
 
   };
 

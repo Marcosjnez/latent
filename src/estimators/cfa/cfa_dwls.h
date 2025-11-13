@@ -55,10 +55,6 @@ public:
 
   }
 
-  void E(arguments_optim& x) {}
-
-  void M(arguments_optim& x) {}
-
   void H(arguments_optim& x) {
 
     arma::mat hx = 2*W;

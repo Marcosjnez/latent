@@ -14,7 +14,7 @@ fit <- lca(data = gss82, nclasses = 3,
            # multinomial = c("X1", "X2"),
            # poisson = ,
            # beta = ,
-           # mimic = "LG",
+           # mimic = "LT",
            # model = formula(X1 ~ 1 + cluster1,
            #                 X2 ~ 1 + cluster2),
            item = rep("multinomial", ncol(gss82)),
@@ -44,11 +44,11 @@ latInspect(fit, what = "posterior", digits = 3)
 latInspect(fit, what = "table", digits = 3)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE <- se(fit, type = "standard", model = "model", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "user",
+CI <- ci(fit, type = "standard", model = "model",
          confidence = 0.95, digits = 2)
 CI$table
 

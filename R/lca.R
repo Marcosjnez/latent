@@ -19,7 +19,7 @@
 #' @param nclasses Number of latent classes.
 #' @param item Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.
 #' @param X Matrix of covariates.
-#' @param penalties list of penalty terms for the parameters.
+#' @param penalties Boolean or list of penalty terms for the parameters.
 #' @param model List of parameter labels. See 'details' for more information.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
@@ -90,7 +90,7 @@
 #'
 #' @export
 lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-                X = NULL, penalties = NULL, model = NULL,
+                X = NULL, penalties = TRUE, model = NULL,
                 do.fit = TRUE, control = NULL, verbose = TRUE) {
 
   if(class(model) == "llca") {

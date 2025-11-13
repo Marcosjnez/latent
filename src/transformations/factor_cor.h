@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 30/10/2025
+ * Modification date: 10/11/2025
  */
 
 // factor_cor transformation:
@@ -146,6 +146,7 @@ public:
 
   void update_hess(arguments_optim& x) {
 
+    Rf_error("sum_djacob not available");
     // sum_djacob = 2*arma::diagmat(arma::vectorise(grad_out));
 
   }

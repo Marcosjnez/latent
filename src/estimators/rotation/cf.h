@@ -110,10 +110,6 @@ public:
 
   }
 
-  void E(arguments_optim& x) {}
-
-  void M(arguments_optim& x) {}
-
   void outcomes(arguments_optim& x) {
 
     /*

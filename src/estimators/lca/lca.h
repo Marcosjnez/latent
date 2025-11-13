@@ -151,33 +151,6 @@ public:
 
   }
 
-  void M(arguments_optim& x) { // Update the parameter estimates
-
-  }
-
-  void E(arguments_optim& x) { // Update the loglik and posterior
-
-    // Estimated posterior:
-    x.posterior = arma::trunc_exp(logposterior);
-    // New hypothetical frequencies:
-    x.freqs = x.posterior;
-    x.freqs.each_col() %= weights;
-    x.loglik = f;
-
-    // Update the class probabilities:
-    // New number of subjects in each class:
-    arma::vec freqs_i = arma::sum(x.freqs, 0).t();
-    // New proportion of subjects in each class:
-    classes = freqs_i / arma::accu(freqs_i);
-    logclasses = arma::trunc_log(classes);
-    // Put a zero in the first element:
-    logclasses -= logclasses(0);
-
-    x.transparameters(indices_classes) = classes;
-    x.transparameters(indices_theta) = logclasses;
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     doubles.resize(1);

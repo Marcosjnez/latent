@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/10/2025
+ * Modification date: 12/11/2025
  */
 
 typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::mat> optim_result;
@@ -625,59 +625,59 @@ optim_result ntr(arguments_optim x,
 
 // Expectation Maximization:
 
-optim_result em(arguments_optim x,
-                std::vector<transformations*>& xtransforms,
-                std::vector<manifolds*>& xmanifolds,
-                std::vector<estimators*>& xestimators) {
-
-  product_transform* final_transform;
-  product_estimator* final_estimator;
-
-  final_transform->transform(x, xtransforms);
-
-  x.convergence = false;
-  arma::vec loglik(x.maxit); loglik[0] = x.loglik;
-  x.iterations = 0L;
-
-  do {
-
-    ++x.iterations;
-
-    final_estimator->param(x, xestimators);
-    final_estimator->F(x, xestimators); // Store f for outcomes()
-    final_estimator->E(x, xestimators);
-    // Rprintf("loglik = %g \n", x.loglik);
-    loglik[x.iterations] = x.loglik;
-
-    double diff = loglik[x.iterations]-loglik[x.iterations-1];
-    x.ng = sqrt(arma::accu(diff*diff));
-    if (x.ng < x.eps) {
-      x.convergence = true;
-      break;
-    }
-
-    // final_transform->M(x, xtransforms);
-
-    // Rf_error("617");
-
-  } while(x.iterations < x.maxit);
-
-  // Rf_error("652");
-  // final_transform->transform(x, xtransforms);
-  final_estimator->param(x, xestimators);
-  final_estimator->F(x, xestimators); // Store f for outcomes()
-  // x.f = -x.loglik;
-
-  optim_result result = std::make_tuple(x.parameters,
-                                        x.transparameters,
-                                        x.f,
-                                        x.iterations,
-                                        x.convergence,
-                                        x.ng, x.rg, x.posterior);
-
-  return result;
-
-}
+// optim_result em(arguments_optim x,
+//                 std::vector<transformations*>& xtransforms,
+//                 std::vector<manifolds*>& xmanifolds,
+//                 std::vector<estimators*>& xestimators) {
+//
+//   product_transform* final_transform;
+//   product_estimator* final_estimator;
+//
+//   final_transform->transform(x, xtransforms);
+//
+//   x.convergence = false;
+//   arma::vec loglik(x.maxit); loglik[0] = x.loglik;
+//   x.iterations = 0L;
+//
+//   do {
+//
+//     ++x.iterations;
+//
+//     final_estimator->param(x, xestimators);
+//     final_estimator->F(x, xestimators); // Store f for outcomes()
+//     final_estimator->E(x, xestimators);
+//     // Rprintf("loglik = %g \n", x.loglik);
+//     loglik[x.iterations] = x.loglik;
+//
+//     double diff = loglik[x.iterations]-loglik[x.iterations-1];
+//     x.ng = sqrt(arma::accu(diff*diff));
+//     if (x.ng < x.eps) {
+//       x.convergence = true;
+//       break;
+//     }
+//
+//     // final_transform->M(x, xtransforms);
+//
+//     // Rf_error("617");
+//
+//   } while(x.iterations < x.maxit);
+//
+//   // Rf_error("652");
+//   // final_transform->transform(x, xtransforms);
+//   final_estimator->param(x, xestimators);
+//   final_estimator->F(x, xestimators); // Store f for outcomes()
+//   // x.f = -x.loglik;
+//
+//   optim_result result = std::make_tuple(x.parameters,
+//                                         x.transparameters,
+//                                         x.f,
+//                                         x.iterations,
+//                                         x.convergence,
+//                                         x.ng, x.rg, x.posterior);
+//
+//   return result;
+//
+// }
 
 // Optimization algorithms:
 
@@ -743,20 +743,20 @@ public:
 
 };
 
-class EM:public optim {
-
-public:
-
-  optim_result optimize(arguments_optim x,
-                        std::vector<transformations*>& xtransforms,
-                        std::vector<manifolds*>& xmanifolds,
-                        std::vector<estimators*>& xestimators) {
-
-    return em(x, xtransforms, xmanifolds, xestimators);
-
-  }
-
-};
+// class EM:public optim {
+//
+// public:
+//
+//   optim_result optimize(arguments_optim x,
+//                         std::vector<transformations*>& xtransforms,
+//                         std::vector<manifolds*>& xmanifolds,
+//                         std::vector<estimators*>& xestimators) {
+//
+//     return em(x, xtransforms, xmanifolds, xestimators);
+//
+//   }
+//
+// };
 
 optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
 
@@ -895,17 +895,17 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
 
     algorithm = new RNTR();
 
-  } else if(x.optimizer == "em") {
-
-    algorithm = new EM();
-
-  } else if(x.optimizer == "em-lbfgs") {
-
-    algorithm = new EM();
+  // } else if(x.optimizer == "em") {
+  //
+  //   algorithm = new EM();
+  //
+  // } else if(x.optimizer == "em-lbfgs") {
+  //
+  //   algorithm = new EM();
 
   } else {
 
-    Rcpp::stop("Available optimization routines: \n grad, lbfgs, newton, em, em-lbfgs");
+    Rcpp::stop("Available optimization routines: \n grad, lbfgs, newton");
 
   }
 

@@ -42,7 +42,7 @@ public:
 
   void dG(arguments_optim& x) {
 
-    dg.set_size(transparameters.n_elem); dg.zeros();
+    // dg.set_size(transparameters.n_elem); dg.zeros();
 
   }
 
@@ -50,16 +50,6 @@ public:
 
     arma::vec d2 = -constant * (1/vars - 3*varshat/(vars % vars));
     x.hess(indices[0], indices[0]) += diagmat(d2);
-
-  }
-
-  void E(arguments_optim& x) { // Update the parameter estimates
-
-    x.loglik = f;
-
-  }
-
-  void M(arguments_optim& x) { // Update the posterior probabilities
 
   }
 
