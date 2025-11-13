@@ -15,7 +15,7 @@ A data frame with 5 different samples (28143 rows) and 100 HEXACO items:
 Generated example
 }
 \usage{
-"hexaco"
+hexaco
 }
 \description{
 A dataset from https://osf.io/72zp3/.

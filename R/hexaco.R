@@ -9,10 +9,6 @@
 #' }
 #' @source Generated example
 #'
-#' @usage
-#'
-#' "hexaco"
-#'
 #' @examples
 #'
 #' \dontrun{
