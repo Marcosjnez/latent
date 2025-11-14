@@ -32,6 +32,9 @@
   Latent Class Analysis.
 - [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
   Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+- [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
+  Maximum likelihood estimation of positive definite polychoric
+  correlation matrices.
 - [`predict()`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   : Predicted values for Latent Class Analysis.
 - [`se_cfa()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md)

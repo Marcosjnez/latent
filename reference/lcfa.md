@@ -45,7 +45,7 @@ std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
 
 - positive:
 
-  Force at least positive-semidefinite solutions. Defaults to FALSE
+  Force a positive-definite solution. Defaults to FALSE.
 
 - penalties:
 
@@ -111,7 +111,7 @@ List with the following objects:
 
 ## Details
 
-`cfast` estimates confirmatory factor models.
+`lcfa` estimates confirmatory factor models.
 
 ## Examples
 
