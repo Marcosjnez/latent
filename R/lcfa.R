@@ -21,7 +21,7 @@
 #' @param group .
 #' @param sample.cov Covariance matrix between the items. Defaults to NULL.
 #' @param nobs Number of observations. Defaults to NULL.
-#' @param positive Force at least positive-semidefinite solutions. Defaults to FALSE
+#' @param positive Force a positive-definite solution. Defaults to FALSE.
 #' @param penalties list of penalty terms for the parameters.
 #' @param missing Method to handle missing data.
 #' @param std.lv Provide the parameters of the standardized model.
@@ -29,7 +29,7 @@
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #' @param ... Additional lavaan arguments. See ?lavaan for more information.
 #'
-#' @details \code{cfast} estimates confirmatory factor models.
+#' @details \code{lcfa} estimates confirmatory factor models.
 #'
 #' @return List with the following objects:
 #' \item{version}{Version number of 'latent' when the model was estimated.}
@@ -210,7 +210,7 @@ lcfa <- function(data, model = NULL, cor = "pearson",
   }
 
   control$cores <- min(control$rstarts, control$cores)
-  # Perform the optimization (fit the model):
+  # Fit the model:
   x <- optimizer(control_manifold = control_manifold,
                  control_transform = control_transform,
                  control_estimator = control_estimator,

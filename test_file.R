@@ -24,7 +24,6 @@ fit@loglik # -2754.643
 fit@penalized_loglik # -2759.507
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
-fit@timing
 
 # Plot model fit info:
 fit

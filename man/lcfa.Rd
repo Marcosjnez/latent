@@ -26,7 +26,7 @@ std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
 
 \item{nobs}{Number of observations. Defaults to NULL.}
 
-\item{positive}{Force at least positive-semidefinite solutions. Defaults to FALSE}
+\item{positive}{Force a positive-definite solution. Defaults to FALSE.}
 
 \item{penalties}{list of penalty terms for the parameters.}
 
@@ -55,7 +55,7 @@ List with the following objects:
 Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
 }
 \details{
-\code{cfast} estimates confirmatory factor models.
+\code{lcfa} estimates confirmatory factor models.
 }
 \examples{
 

@@ -19,7 +19,7 @@ public:
   std::vector<arma::uvec> indices_taus;
   arma::uvec indices_R, lower_diag;
   int p;
-  double loglik = 0.00;
+  double loss = 0.00, loglik = 0.00;
 
   void param(arguments_optim& x) {
 
@@ -60,22 +60,25 @@ public:
   void F(arguments_optim& x) {
 
     int m = 0L;
+    loss = 0.00;
     for(size_t l=0; l < (p-1L); ++l) {
       const size_t s1 = taus[l].size()-1L;
       for(int k=(l+1L); k < p; ++k) {
         const size_t s2 = taus[k].size()-1L;
         for (size_t i = 0; i < s1; ++i) {
           for (size_t j = 0; j < s2; ++j) {
-            x.f -= n[m][i][j] * arma::trunc_log(pbinorm(taus[l](i), taus[k](j),
-                                              taus[l](i+1), taus[k](j+1),
-                                              R(l,k),
-                                              mvphi[l](i), mvphi[k](j),
-                                              mvphi[l](i+1), mvphi[k](j+1)));
+            loss -= n[m][i][j] * arma::trunc_log(pbinorm(taus[l](i), taus[k](j),
+                                                         taus[l](i+1), taus[k](j+1),
+                                                         R(l,k),
+                                                         mvphi[l](i), mvphi[k](j),
+                                                         mvphi[l](i+1), mvphi[k](j+1)));
           }
         }
         ++m;
       }
     }
+
+    x.f += loss;
 
   }
 
@@ -135,8 +138,8 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(2);
-    loglik = -f;
-    doubles[0] = f;
+    loglik = -loss;
+    doubles[0] = loss;
     doubles[1] = loglik;
 
     matrices.resize(1);
