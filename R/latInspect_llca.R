@@ -142,7 +142,13 @@ latInspect.llca <- function(fit,
 
   } else if (what == "table") {
 
-    return(fit@summary_table)
+    temp <- fit@summary_table
+
+    if(!is.null(digits)) {
+      temp <- round(temp, digits = digits)
+    }
+
+    return(temp)
 
   } else if (what == "posterior") {
 

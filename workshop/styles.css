@@ -1,0 +1,7 @@
+.reveal pre code {
+  font-size: 150% !important;
+}
+.reveal .math.display {
+  font-size: 150% !important;
+}
+.reveal h1 { margin-bottom: 0.5em; }

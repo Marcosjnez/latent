@@ -1,0 +1,94 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+  \usepackage{amssymb}
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{tikz,amsmath,siunitx}
+\usetikzlibrary{arrows,decorations,backgrounds,patterns,matrix,shapes,fit,calc,shadows,plotmarks, arrows.meta, bayesnet}
+\usepackage[graphics,tightpage,active]{preview}
+\PreviewEnvironment{tikzpicture}
+\PreviewEnvironment{equation}
+\PreviewEnvironment{equation*}
+\newlength{\imagewidth}
+\newlength{\imagescale}
+\pagestyle{empty}
+\thispagestyle{empty}
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+
+\tikz{ %
+\node[latent, xshift=0cm, yshift=2.7cm, scale = 1, minimum size = 1cm] (F1) {$F_1$} ; %
+\node[latent, xshift=0cm, yshift=-2.7cm, scale = 1, minimum size = 1cm] (F2) {$F_2$} ; %
+
+\node[obs, rectangle, xshift=3cm, yshift= 4.5cm, minimum size=1cm, outer sep=1, scale = 1] (X1) {\fontsize{9}{9}\selectfont X1} ; %
+\node[obs, rectangle, xshift=3cm, yshift= 2.7cm, minimum size=1cm, outer sep=1, scale = 1] (X2) {\fontsize{9}{9}\selectfont X2} ; %
+\node[obs, rectangle, xshift=3cm, yshift=0.9cm, minimum size=1cm, outer sep=1, scale = 1] (X3) {\fontsize{9}{9}\selectfont X3} ; %
+\node[obs, rectangle, xshift=3cm, yshift= -0.9cm, minimum size=1cm, outer sep=1, scale = 1] (X4) {\fontsize{9}{9}\selectfont X4} ; %
+\node[obs, rectangle, xshift=3cm, yshift= -2.7cm, minimum size=1cm, outer sep=1, scale = 1] (X5) {\fontsize{9}{9}\selectfont X5} ; %
+\node[obs, rectangle, xshift=3cm, yshift=-4.5cm, minimum size=1cm, outer sep=1, scale = 1] (X6) {\fontsize{9}{9}\selectfont X6} ; %
+\edge {F1} {X1, X2, X3} ; %
+\edge {F2} {X1, X4, X5, X6} ; %
+\draw[<->] (F1.west) [bend right, shorten >= 0.05cm, shorten <= 0.05cm] to (F2.west);
+}
+
+\end{document}

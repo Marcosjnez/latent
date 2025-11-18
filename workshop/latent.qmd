@@ -125,7 +125,7 @@ knitr::kable(latent_table, "html", caption = NULL) |>
 ```
 
 The names used for latent variable models often come from the traditions of the
-fields where they were first developed. Therfore, as you might have seen already,
+fields where they were first developed. Therefore, as you might have seen already,
 there are several terms related to these types of models. Here we have a short
 list of terms to keep in mind when talking about these models
 
