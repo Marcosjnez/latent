@@ -24,15 +24,21 @@ bibliography: references.bib
 # Table of contents
 
 - [Latent Variable Modeling](#latent-variable-model)
-- [Latent Class Analysis](#latent-class-analysis-lca)
 - [Current software limitations for Latent Variable Modeling](#current-software-limitations-for-latent-variable-modeling)
 - [The latent R package](#the-latent-r-package)
-- [Unified and flexible syntax](#unified-and-flexible-syntax)
-- [First step: Install and load the package](#first-step:-install-and-load-the-package)
-- [Categorical indicator example](#categorical-indicator-example)
+- [Latent Class Analysis](#latent-class-analysis)
+- [Categorical indicators example](#categorical-indicators-example)
 - [Model Fit Indices](#model-fit-indices)
 - [Classification Diagnostics](#classification-diagnostics)
-- [References](#references)
+- [Confidence intervals](#confidence-intervals)
+- [Continuous indicators example](#continuous-indicators-example)
+- [Mixed indicators example](#mixed-indicators-example)
+- [Two-step LCA analysis with covariates](#two-step-lca-analysis-with-covariates)
+- [Factor Analysis](#factor_analysis)
+- [Factor Analysis (multigroup)](#factor-analysis-multigroup)
+- [Positive-definite constraints](#positive-definite-constraints)
+- [Positive-definite latent covariances](#positive-definite-latent-covariances)
+- [Work in progress](#work-in-progress)
 
 # Latent Variable Modeling
 
@@ -194,7 +200,7 @@ $$
 \ell \;=\; \sum_{k=1}^{K} P(\theta_k)\, \prod_{j=1}^J f(y_j\mid \theta_k).
 $$
 
-# Categorical indicator example
+# Categorical indicators example
 
 For this analysis, we will employ the **gss82** example data set included in
 the `latent` package. Sourced from the `poLCA` package, this data comes from
@@ -206,7 +212,7 @@ Inspect the data:
 lapply(gss82, unique)
 ```
 
-# Categorical indicator example
+# Categorical indicators example
 
 For this analysis, we will employ the **gss82** example data set included in
 the `latent` package. Sourced from the `poLCA` package, this data comes from
@@ -225,7 +231,7 @@ fit
 fit
 ```
 
-# Categorical indicator example
+# Categorical indicators example
 
 For this analysis, we will employ the **gss82** example data set included in
 the `latent` package. Sourced from the `poLCA` package, this data comes from
@@ -301,6 +307,9 @@ CI$table
 
 The `poLCA` library uses the Expectation-Maximization algorithm to fit LCA models with polytomous variables.
 
+::: {.columns}
+::: {.column width="60%"}
+
 Fit the model:
 ```{r eval=TRUE, echo=TRUE, collapse=TRUE}
 library(poLCA)
@@ -313,13 +322,21 @@ Time ratio:
 poLCAfit$time[[1]] / fit@timing
 ```
 
+![](figures/surprised2.jpg){width=400px style="vertical-align:middle; margin-right:0.5em;"}
+
+:::
+::: {.column width="40%"}
+![](figures/fast.jpg){width=500px style="vertical-align:middle; margin-right:0.5em;"}
+:::
+:::
+
 # Scalability of `latent`
 
 For a given dataset, the time to convergence is linear in the number of classes.
 
 ![](figures/scalability.jpg){height=400px fig-align="center"}
 
-# Continuous indicator example
+# Continuous indicators example
 
 ::: {.columns}
 ::: {.column width="70%"}
@@ -362,7 +379,7 @@ CI$table
 :::
 :::
 
-# Continuous indicator example
+# Continuous indicators example
 
 ::: {.columns}
 ::: {.column width="70%"}
@@ -434,7 +451,7 @@ CI$table
 :::
 :::
 
-# Speed Comparison with the depmixS4 library
+<!-- # Speed Comparison with the depmixS4 library -->
 
 # Two-step LCA analysis with covariates
 
@@ -442,27 +459,27 @@ CI$table
 ::: {.column width="60%"}
 
 - Step 1, fit the measurement model without the covariates:
-```{r eval=FALSE, echo=TRUE}
+```{r eval=TRUE, echo=TRUE, messages=FALSE}
 # Covariates:
 X <- empathy[, 7:8]
 names(X)
 
 # Measurement model:
-fit0 <- lca(data = data, nclasses = 4L
-            item = rep("gaussian", ncol(data)))
+fit0 <- lca(data = empathy[, 1:6], nclasses = 4L,
+            item = rep("gaussian", ncol(empathy[, 1:6])))
 ```
 
 - Step 2, fit the model with covariates fixing the measurement part:
-```{r eval=FALSE, echo=TRUE}
+```{r eval=TRUE, echo=TRUE, results='hide', messages=FALSE}
 # Structural model:
-fit <- lca(data = data, X = X, model = fit0
-           item = rep("gaussian", ncol(data)),
+fit <- lca(data = empathy[, 1:6], X = X, model = fit0,
+           item = rep("gaussian", ncol(empathy[, 1:6])),
            nclasses = 4L)
-fit@timing
-fit@loglik                # -1798.885
-fit@penalized_loglik      # -1801.996
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@loglik                # -1806.426
+fit@penalized_loglik      # -1809.614
+fit@Optim$opt$iterations  # 38
+fit@Optim$opt$convergence # TRUE
+fit@timing                # 0.1596549
 ```
 
 :::
@@ -471,7 +488,23 @@ fit@Optim$opt$convergence
 :::
 :::
 
-# Class Enumeration
+# Two-step LCA analysis with covariates
+
+::: {.columns}
+::: {.column width="60%"}
+
+Profile output:
+```{r eval=TRUE, echo=TRUE}
+latInspect(fit, what = "coefs", digits = 3)
+```
+
+:::
+::: {.column width="40%"}
+![](figures/diagram_covariates.jpg){height=600px fig-align="center"}
+:::
+:::
+
+<!-- # Class Enumeration -->
 
 # Factor Analysis
 
@@ -505,7 +538,7 @@ $$
 :::
 :::
 
-# Multigroup Analysis
+# Factor Analysis (multigroup)
 
 ::: {.columns}
 ::: {.column width="60%"}
@@ -519,7 +552,6 @@ fit <- lcfa(HolzingerSwineford1939, model = model, group = "school",
             estimator = "ml", std.lv = TRUE)
 fit@loglik 
 fit@penalized_loglik 
-fit@loss 
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
 fit@timing
@@ -549,7 +581,8 @@ Let's force an instance where lavaan fails to converge to a proper solution.
 ::: {.columns}
 ::: {.column width="70%"}
 
-```{r, eval=FALSE, echo=TRUE}
+```{r, eval=TRUE, echo=TRUE}
+library(lavaan)
 model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9
@@ -557,7 +590,6 @@ model <- 'visual  =~ x1 + x2 + x3
           x1 ~~ x4
           x4 ~~ x5
           x4 ~~ x6'
-
 fit2 <- cfa(model, data = HolzingerSwineford1939,
             estimator = "ml", std.lv = TRUE, std.ov = TRUE)
 inspect(fit2, what = "est")$theta      # Error covariances
@@ -606,7 +638,7 @@ $$
 :::
 :::
 
-# Positive-semidefinite latent covariances
+# Positive-definite latent covariances
 
 ::: {.columns}
 ::: {.column width="20%"}
@@ -647,7 +679,7 @@ $$
 \end{bmatrix}
 $$
 
-# Positive-semidefinite latent covariances
+# Positive-definite latent covariances
 
 ::: {.columns}
 ::: {.column width="30%"}
@@ -657,7 +689,7 @@ $$
 :::
 ::: {.column width="70%"}
 
-```{r, eval=FALSE, echo=TRUE}
+```{r, eval=TRUE, echo=TRUE}
 model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9
@@ -665,11 +697,11 @@ model <- 'visual  =~ x1 + x2 + x3
           x1 ~~ x4
           x4 ~~ x5
           x4 ~~ x6'
-
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
-            estimator = "ml", positive = TRUE)
-round(latInspect(fit, what = "theta")[[1]], 3)
-det(latInspect(fit, what = "theta")[[1]])
+            estimator = "ml", std.lv = TRUE, positive = TRUE,
+            control = list(rstarts = 10))
+round(latInspect(fit, what = "est")[[1]]$theta, 3)
+det(latInspect(fit, what = "est")[[1]]$theta)
 ```
 
 :::

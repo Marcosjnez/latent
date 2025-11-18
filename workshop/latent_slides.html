@@ -215,15 +215,21 @@ Marcos Jimenez, Mauricio Garnier-Villarreal, &amp; Vithor Rosa Franco
 <h1>Table of contents</h1>
 <ul>
 <li><a href="#/latent-variable-model">Latent Variable Modeling</a></li>
-<li><a href="#/latent-class-analysis-lca">Latent Class Analysis</a></li>
 <li><a href="#/current-software-limitations-for-latent-variable-modeling">Current software limitations for Latent Variable Modeling</a></li>
 <li><a href="#/the-latent-r-package">The latent R package</a></li>
-<li><a href="#/unified-and-flexible-syntax">Unified and flexible syntax</a></li>
-<li><a href="#/first-step:-install-and-load-the-package">First step: Install and load the package</a></li>
-<li><a href="#/categorical-indicator-example">Categorical indicator example</a></li>
+<li><a href="#/latent-class-analysis">Latent Class Analysis</a></li>
+<li><a href="#/categorical-indicators-example">Categorical indicators example</a></li>
 <li><a href="#/model-fit-indices">Model Fit Indices</a></li>
 <li><a href="#/classification-diagnostics">Classification Diagnostics</a></li>
-<li><a href="#/references">References</a></li>
+<li><a href="#/confidence-intervals">Confidence intervals</a></li>
+<li><a href="#/continuous-indicators-example">Continuous indicators example</a></li>
+<li><a href="#/mixed-indicators-example">Mixed indicators example</a></li>
+<li><a href="#/two-step-lca-analysis-with-covariates">Two-step LCA analysis with covariates</a></li>
+<li><a href="#/factor_analysis">Factor Analysis</a></li>
+<li><a href="#/factor-analysis-multigroup">Factor Analysis (multigroup)</a></li>
+<li><a href="#/positive-definite-constraints">Positive-definite constraints</a></li>
+<li><a href="#/positive-definite-latent-covariances">Positive-definite latent covariances</a></li>
+<li><a href="#/work-in-progress">Work in progress</a></li>
 </ul>
 </section>
 <section id="latent-variable-modeling" class="slide level1">
@@ -381,8 +387,8 @@ Marcos Jimenez, Mauricio Garnier-Villarreal, &amp; Vithor Rosa Franco
 \ell \;=\; \sum_{k=1}^{K} P(\theta_k)\, \prod_{j=1}^J f(y_j\mid \theta_k).
 \]</span></p>
 </section>
-<section id="categorical-indicator-example" class="slide level1">
-<h1>Categorical indicator example</h1>
+<section id="categorical-indicators-example" class="slide level1">
+<h1>Categorical indicators example</h1>
 <p>For this analysis, we will employ the <strong>gss82</strong> example data set included in the <code>latent</code> package. Sourced from the <code>poLCA</code> package, this data comes from 1,202 respondents to the 1982 General Social Survey.</p>
 <p>Inspect the data:</p>
 <div class="cell">
@@ -410,8 +416,8 @@ Levels: Interested Cooperative Impatient</code></pre>
 </div>
 </div>
 </section>
-<section id="categorical-indicator-example-1" class="slide level1">
-<h1>Categorical indicator example</h1>
+<section id="categorical-indicators-example-1" class="slide level1">
+<h1>Categorical indicators example</h1>
 <p>For this analysis, we will employ the <strong>gss82</strong> example data set included in the <code>latent</code> package. Sourced from the <code>poLCA</code> package, this data comes from 1,202 respondents to the 1982 General Social Survey.</p>
 <p>Model fitting:</p>
 <div class="cell">
@@ -445,8 +451,8 @@ Model Test User Model:
 </div>
 </div>
 </section>
-<section id="categorical-indicator-example-2" class="slide level1">
-<h1>Categorical indicator example</h1>
+<section id="categorical-indicators-example-2" class="slide level1">
+<h1>Categorical indicators example</h1>
 <p>For this analysis, we will employ the <strong>gss82</strong> example data set included in the <code>latent</code> package. Sourced from the <code>poLCA</code> package, this data comes from 1,202 respondents to the 1982 General Social Survey.</p>
 <p>Fit information:</p>
 <div class="cell">
@@ -483,7 +489,7 @@ Model Test User Model:
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href=""></a>fit<span class="sc">@</span>timing</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.016421</code></pre>
+<pre><code>[1] 0.0187408</code></pre>
 </div>
 </div>
 </section>
@@ -2056,6 +2062,8 @@ Impatient    0.101  0.000  0.054</code></pre>
 <section id="comparison-with-the-polca-library" class="slide level1">
 <h1>Comparison with the <code>poLCA</code> library</h1>
 <p>The <code>poLCA</code> library uses the Expectation-Maximization algorithm to fit LCA models with polytomous variables.</p>
+<div class="columns">
+<div class="column" style="width:60%;">
 <p>Fit the model:</p>
 <div class="cell">
 <details class="code-fold">
@@ -2118,9 +2126,13 @@ Impatient    0.101  0.000  0.054</code></pre>
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href=""></a>poLCAfit<span class="sc">$</span>time[[<span class="dv">1</span>]] <span class="sc">/</span> fit<span class="sc">@</span>timing</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 20.51569</code></pre>
+<pre><code>[1] 14.21919</code></pre>
 </div>
 </div>
+<p><img data-src="figures/surprised2.jpg" style="vertical-align:middle; margin-right:0.5em;" width="400"></p>
+</div><div class="column" style="width:40%;">
+<p><img data-src="figures/fast.jpg" style="vertical-align:middle; margin-right:0.5em;" width="500"></p>
+</div></div>
 </section>
 <section id="scalability-of-latent" class="slide level1">
 <h1>Scalability of <code>latent</code></h1>
@@ -2131,8 +2143,8 @@ Impatient    0.101  0.000  0.054</code></pre>
 </figure>
 </div>
 </section>
-<section id="continuous-indicator-example" class="slide level1">
-<h1>Continuous indicator example</h1>
+<section id="continuous-indicators-example" class="slide level1">
+<h1>Continuous indicators example</h1>
 <div class="columns">
 <div class="column" style="width:70%;">
 <p>Model fitting:</p>
@@ -2175,8 +2187,8 @@ Impatient    0.101  0.000  0.054</code></pre>
 <p><img data-src="figures/standard.jpg" style="width:300.0%"></p>
 </div></div>
 </section>
-<section id="continuous-indicator-example-1" class="slide level1">
-<h1>Continuous indicator example</h1>
+<section id="continuous-indicators-example-1" class="slide level1">
+<h1>Continuous indicators example</h1>
 <div class="columns">
 <div class="column" style="width:70%;">
 <p>Model fitting:</p>
@@ -2284,9 +2296,7 @@ Sigma  0.323  0.371  0.439  0.386</code></pre>
 </div><div class="column" style="width:40%;">
 <p><img data-src="figures/standard.jpg" style="width:300.0%"></p>
 </div></div>
-</section>
-<section id="speed-comparison-with-the-depmixs4-library" class="slide level1">
-<h1>Speed Comparison with the depmixS4 library</h1>
+<!-- # Speed Comparison with the depmixS4 library -->
 </section>
 <section id="two-step-lca-analysis-with-covariates" class="slide level1">
 <h1>Two-step LCA analysis with covariates</h1>
@@ -2295,33 +2305,41 @@ Sigma  0.323  0.371  0.439  0.386</code></pre>
 <ul>
 <li>Step 1, fit the measurement model without the covariates:</li>
 </ul>
-<div class="cell">
+<div class="cell" data-messages="false">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href=""></a><span class="co"># Covariates:</span></span>
 <span id="cb37-2"><a href=""></a>X <span class="ot">&lt;-</span> empathy[, <span class="dv">7</span><span class="sc">:</span><span class="dv">8</span>]</span>
-<span id="cb37-3"><a href=""></a><span class="fu">names</span>(X)</span>
-<span id="cb37-4"><a href=""></a></span>
-<span id="cb37-5"><a href=""></a><span class="co"># Measurement model:</span></span>
-<span id="cb37-6"><a href=""></a>fit0 <span class="ot">&lt;-</span> <span class="fu">lca</span>(<span class="at">data =</span> data, <span class="at">nclasses =</span> <span class="dv">4</span>L</span>
-<span id="cb37-7"><a href=""></a>            <span class="at">item =</span> <span class="fu">rep</span>(<span class="st">"gaussian"</span>, <span class="fu">ncol</span>(data)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb37-3"><a href=""></a><span class="fu">names</span>(X)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "pt1" "pt2"</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href=""></a><span class="co"># Measurement model:</span></span>
+<span id="cb39-2"><a href=""></a>fit0 <span class="ot">&lt;-</span> <span class="fu">lca</span>(<span class="at">data =</span> empathy[, <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>], <span class="at">nclasses =</span> <span class="dv">4</span>L,</span>
+<span id="cb39-3"><a href=""></a>            <span class="at">item =</span> <span class="fu">rep</span>(<span class="st">"gaussian"</span>, <span class="fu">ncol</span>(empathy[, <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>])))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Model nclasses = 4"</code></pre>
+</div>
 </div>
 <ul>
 <li>Step 2, fit the model with covariates fixing the measurement part:</li>
 </ul>
-<div class="cell">
+<div class="cell" data-messages="false">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href=""></a><span class="co"># Structural model:</span></span>
-<span id="cb38-2"><a href=""></a>fit <span class="ot">&lt;-</span> <span class="fu">lca</span>(<span class="at">data =</span> data, <span class="at">X =</span> X, <span class="at">model =</span> fit0</span>
-<span id="cb38-3"><a href=""></a>           <span class="at">item =</span> <span class="fu">rep</span>(<span class="st">"gaussian"</span>, <span class="fu">ncol</span>(data)),</span>
-<span id="cb38-4"><a href=""></a>           <span class="at">nclasses =</span> <span class="dv">4</span>L)</span>
-<span id="cb38-5"><a href=""></a>fit<span class="sc">@</span>timing</span>
-<span id="cb38-6"><a href=""></a>fit<span class="sc">@</span>loglik                <span class="co"># -1798.885</span></span>
-<span id="cb38-7"><a href=""></a>fit<span class="sc">@</span>penalized_loglik      <span class="co"># -1801.996</span></span>
-<span id="cb38-8"><a href=""></a>fit<span class="sc">@</span>Optim<span class="sc">$</span>opt<span class="sc">$</span>iterations</span>
-<span id="cb38-9"><a href=""></a>fit<span class="sc">@</span>Optim<span class="sc">$</span>opt<span class="sc">$</span>convergence</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href=""></a><span class="co"># Structural model:</span></span>
+<span id="cb41-2"><a href=""></a>fit <span class="ot">&lt;-</span> <span class="fu">lca</span>(<span class="at">data =</span> empathy[, <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>], <span class="at">X =</span> X, <span class="at">model =</span> fit0,</span>
+<span id="cb41-3"><a href=""></a>           <span class="at">item =</span> <span class="fu">rep</span>(<span class="st">"gaussian"</span>, <span class="fu">ncol</span>(empathy[, <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>])),</span>
+<span id="cb41-4"><a href=""></a>           <span class="at">nclasses =</span> <span class="dv">4</span>L)</span>
+<span id="cb41-5"><a href=""></a>fit<span class="sc">@</span>loglik                <span class="co"># -1806.426</span></span>
+<span id="cb41-6"><a href=""></a>fit<span class="sc">@</span>penalized_loglik      <span class="co"># -1809.614</span></span>
+<span id="cb41-7"><a href=""></a>fit<span class="sc">@</span>Optim<span class="sc">$</span>opt<span class="sc">$</span>iterations  <span class="co"># 38</span></span>
+<span id="cb41-8"><a href=""></a>fit<span class="sc">@</span>Optim<span class="sc">$</span>opt<span class="sc">$</span>convergence <span class="co"># TRUE</span></span>
+<span id="cb41-9"><a href=""></a>fit<span class="sc">@</span>timing                <span class="co"># 0.1596549</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </div><div class="column" style="width:40%;">
@@ -2332,8 +2350,31 @@ Sigma  0.323  0.371  0.439  0.386</code></pre>
 </div>
 </div></div>
 </section>
-<section id="class-enumeration" class="slide level1">
-<h1>Class Enumeration</h1>
+<section id="two-step-lca-analysis-with-covariates-1" class="slide level1">
+<h1>Two-step LCA analysis with covariates</h1>
+<div class="columns">
+<div class="column" style="width:60%;">
+<p>Profile output:</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href=""></a><span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"coefs"</span>, <span class="at">digits =</span> <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            Class1 Class2 Class3 Class4
+(Intercept)      0 -0.058  3.246 -5.326
+pt1              0  0.334 -0.598  0.320
+pt2              0 -0.478 -1.155  1.309</code></pre>
+</div>
+</div>
+</div><div class="column" style="width:40%;">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="figures/diagram_covariates.jpg" class="quarto-figure quarto-figure-center" height="600"></p>
+</figure>
+</div>
+</div></div>
+<!-- # Class Enumeration -->
 </section>
 <section id="factor-analysis" class="slide level1">
 <h1>Factor Analysis</h1>
@@ -2360,25 +2401,24 @@ S = \Lambda \Psi \Lambda^\top + \Theta.
 </div>
 </div></div>
 </section>
-<section id="multigroup-analysis" class="slide level1">
-<h1>Multigroup Analysis</h1>
+<section id="factor-analysis-multigroup" class="slide level1">
+<h1>Factor Analysis (multigroup)</h1>
 <div class="columns">
 <div class="column" style="width:60%;">
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href=""></a>model <span class="ot">&lt;-</span> <span class="st">'visual  =~ x1 + x2 + x3</span></span>
-<span id="cb39-2"><a href=""></a><span class="st">          textual =~ x4 + x5 + x6</span></span>
-<span id="cb39-3"><a href=""></a><span class="st">          speed   =~ x7 + x8 + x9'</span></span>
-<span id="cb39-4"><a href=""></a></span>
-<span id="cb39-5"><a href=""></a>fit <span class="ot">&lt;-</span> <span class="fu">lcfa</span>(HolzingerSwineford1939, <span class="at">model =</span> model, <span class="at">group =</span> <span class="st">"school"</span>, </span>
-<span id="cb39-6"><a href=""></a>            <span class="at">estimator =</span> <span class="st">"ml"</span>, <span class="at">std.lv =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb39-7"><a href=""></a>fit<span class="sc">@</span>loglik </span>
-<span id="cb39-8"><a href=""></a>fit<span class="sc">@</span>penalized_loglik </span>
-<span id="cb39-9"><a href=""></a>fit<span class="sc">@</span>loss </span>
-<span id="cb39-10"><a href=""></a>fit<span class="sc">@</span>Optim<span class="sc">$</span>opt<span class="sc">$</span>iterations</span>
-<span id="cb39-11"><a href=""></a>fit<span class="sc">@</span>Optim<span class="sc">$</span>opt<span class="sc">$</span>convergence</span>
-<span id="cb39-12"><a href=""></a>fit<span class="sc">@</span>timing</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href=""></a>model <span class="ot">&lt;-</span> <span class="st">'visual  =~ x1 + x2 + x3</span></span>
+<span id="cb44-2"><a href=""></a><span class="st">          textual =~ x4 + x5 + x6</span></span>
+<span id="cb44-3"><a href=""></a><span class="st">          speed   =~ x7 + x8 + x9'</span></span>
+<span id="cb44-4"><a href=""></a></span>
+<span id="cb44-5"><a href=""></a>fit <span class="ot">&lt;-</span> <span class="fu">lcfa</span>(HolzingerSwineford1939, <span class="at">model =</span> model, <span class="at">group =</span> <span class="st">"school"</span>, </span>
+<span id="cb44-6"><a href=""></a>            <span class="at">estimator =</span> <span class="st">"ml"</span>, <span class="at">std.lv =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb44-7"><a href=""></a>fit<span class="sc">@</span>loglik </span>
+<span id="cb44-8"><a href=""></a>fit<span class="sc">@</span>penalized_loglik </span>
+<span id="cb44-9"><a href=""></a>fit<span class="sc">@</span>Optim<span class="sc">$</span>opt<span class="sc">$</span>iterations</span>
+<span id="cb44-10"><a href=""></a>fit<span class="sc">@</span>Optim<span class="sc">$</span>opt<span class="sc">$</span>convergence</span>
+<span id="cb44-11"><a href=""></a>fit<span class="sc">@</span>timing</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </div><div class="column" style="width:40%;">
@@ -2405,19 +2445,37 @@ S = \Lambda \Psi \Lambda^\top + \Theta.
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href=""></a>model <span class="ot">&lt;-</span> <span class="st">'visual  =~ x1 + x2 + x3</span></span>
-<span id="cb40-2"><a href=""></a><span class="st">          textual =~ x4 + x5 + x6</span></span>
-<span id="cb40-3"><a href=""></a><span class="st">          speed   =~ x7 + x8 + x9</span></span>
-<span id="cb40-4"><a href=""></a><span class="st">          x1 ~~ x5</span></span>
-<span id="cb40-5"><a href=""></a><span class="st">          x1 ~~ x4</span></span>
-<span id="cb40-6"><a href=""></a><span class="st">          x4 ~~ x5</span></span>
-<span id="cb40-7"><a href=""></a><span class="st">          x4 ~~ x6'</span></span>
-<span id="cb40-8"><a href=""></a></span>
-<span id="cb40-9"><a href=""></a>fit2 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, <span class="at">data =</span> HolzingerSwineford1939,</span>
-<span id="cb40-10"><a href=""></a>            <span class="at">estimator =</span> <span class="st">"ml"</span>, <span class="at">std.lv =</span> <span class="cn">TRUE</span>, <span class="at">std.ov =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb40-11"><a href=""></a><span class="fu">inspect</span>(fit2, <span class="at">what =</span> <span class="st">"est"</span>)<span class="sc">$</span>theta      <span class="co"># Error covariances</span></span>
-<span id="cb40-12"><a href=""></a><span class="fu">det</span>(<span class="fu">inspect</span>(fit2, <span class="at">what =</span> <span class="st">"est"</span>)<span class="sc">$</span>theta) <span class="co"># Check the determinant</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href=""></a><span class="fu">library</span>(lavaan)</span>
+<span id="cb45-2"><a href=""></a>model <span class="ot">&lt;-</span> <span class="st">'visual  =~ x1 + x2 + x3</span></span>
+<span id="cb45-3"><a href=""></a><span class="st">          textual =~ x4 + x5 + x6</span></span>
+<span id="cb45-4"><a href=""></a><span class="st">          speed   =~ x7 + x8 + x9</span></span>
+<span id="cb45-5"><a href=""></a><span class="st">          x1 ~~ x5</span></span>
+<span id="cb45-6"><a href=""></a><span class="st">          x1 ~~ x4</span></span>
+<span id="cb45-7"><a href=""></a><span class="st">          x4 ~~ x5</span></span>
+<span id="cb45-8"><a href=""></a><span class="st">          x4 ~~ x6'</span></span>
+<span id="cb45-9"><a href=""></a>fit2 <span class="ot">&lt;-</span> <span class="fu">cfa</span>(model, <span class="at">data =</span> HolzingerSwineford1939,</span>
+<span id="cb45-10"><a href=""></a>            <span class="at">estimator =</span> <span class="st">"ml"</span>, <span class="at">std.lv =</span> <span class="cn">TRUE</span>, <span class="at">std.ov =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb45-11"><a href=""></a><span class="fu">inspect</span>(fit2, <span class="at">what =</span> <span class="st">"est"</span>)<span class="sc">$</span>theta      <span class="co"># Error covariances</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
+<div class="cell-output cell-output-stdout">
+<pre><code>       x1     x2     x3     x4     x5     x6     x7     x8     x9
+x1  0.455                                                        
+x2  0.000  0.805                                                 
+x3  0.000  0.000  0.618                                          
+x4  0.084  0.000  0.000  0.244                                   
+x5  0.060  0.000  0.000  0.132  0.521                            
+x6  0.000  0.000  0.000 -0.202  0.000 -0.087                     
+x7  0.000  0.000  0.000  0.000  0.000  0.000  0.667              
+x8  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.455       
+x9  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.575</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href=""></a><span class="fu">det</span>(<span class="fu">inspect</span>(fit2, <span class="at">what =</span> <span class="st">"est"</span>)<span class="sc">$</span>theta) <span class="co"># Check the determinant</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -0.00118551</code></pre>
+</div>
 </div>
 </div><div class="column" style="width:30%;">
 <div class="quarto-figure quarto-figure-center">
@@ -2459,8 +2517,8 @@ X \in \mathbb{R}^{p\times p}: \text{diag}(X^\top X) = I
 <p><img data-src="figures/magician.jpg" style="width:300.0%"></p>
 </div></div>
 </section>
-<section id="positive-semidefinite-latent-covariances" class="slide level1">
-<h1>Positive-semidefinite latent covariances</h1>
+<section id="positive-definite-latent-covariances" class="slide level1">
+<h1>Positive-definite latent covariances</h1>
 <div class="columns">
 <div class="column" style="width:20%;">
 <p><img data-src="figures/magic_trick.jpg" height="250"></p>
@@ -2494,8 +2552,8 @@ X \in \mathbb{R}^{p\times p}: \text{diag}(X^\top X) = \text{sparse matrix}
 \end{bmatrix}
 \]</span></p>
 </section>
-<section id="positive-semidefinite-latent-covariances-1" class="slide level1">
-<h1>Positive-semidefinite latent covariances</h1>
+<section id="positive-definite-latent-covariances-1" class="slide level1">
+<h1>Positive-definite latent covariances</h1>
 <div class="columns">
 <div class="column" style="width:30%;">
 <p><img data-src="figures/magic_trick.jpg" height="250"></p>
@@ -2503,19 +2561,37 @@ X \in \mathbb{R}^{p\times p}: \text{diag}(X^\top X) = \text{sparse matrix}
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href=""></a>model <span class="ot">&lt;-</span> <span class="st">'visual  =~ x1 + x2 + x3</span></span>
-<span id="cb41-2"><a href=""></a><span class="st">          textual =~ x4 + x5 + x6</span></span>
-<span id="cb41-3"><a href=""></a><span class="st">          speed   =~ x7 + x8 + x9</span></span>
-<span id="cb41-4"><a href=""></a><span class="st">          x1 ~~ x5</span></span>
-<span id="cb41-5"><a href=""></a><span class="st">          x1 ~~ x4</span></span>
-<span id="cb41-6"><a href=""></a><span class="st">          x4 ~~ x5</span></span>
-<span id="cb41-7"><a href=""></a><span class="st">          x4 ~~ x6'</span></span>
-<span id="cb41-8"><a href=""></a></span>
-<span id="cb41-9"><a href=""></a>fit <span class="ot">&lt;-</span> <span class="fu">lcfa</span>(<span class="at">data =</span> HolzingerSwineford1939, <span class="at">model =</span> model,</span>
-<span id="cb41-10"><a href=""></a>            <span class="at">estimator =</span> <span class="st">"ml"</span>, <span class="at">positive =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb41-11"><a href=""></a><span class="fu">round</span>(<span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"theta"</span>)[[<span class="dv">1</span>]], <span class="dv">3</span>)</span>
-<span id="cb41-12"><a href=""></a><span class="fu">det</span>(<span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"theta"</span>)[[<span class="dv">1</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href=""></a>model <span class="ot">&lt;-</span> <span class="st">'visual  =~ x1 + x2 + x3</span></span>
+<span id="cb49-2"><a href=""></a><span class="st">          textual =~ x4 + x5 + x6</span></span>
+<span id="cb49-3"><a href=""></a><span class="st">          speed   =~ x7 + x8 + x9</span></span>
+<span id="cb49-4"><a href=""></a><span class="st">          x1 ~~ x5</span></span>
+<span id="cb49-5"><a href=""></a><span class="st">          x1 ~~ x4</span></span>
+<span id="cb49-6"><a href=""></a><span class="st">          x4 ~~ x5</span></span>
+<span id="cb49-7"><a href=""></a><span class="st">          x4 ~~ x6'</span></span>
+<span id="cb49-8"><a href=""></a>fit <span class="ot">&lt;-</span> <span class="fu">lcfa</span>(<span class="at">data =</span> HolzingerSwineford1939, <span class="at">model =</span> model,</span>
+<span id="cb49-9"><a href=""></a>            <span class="at">estimator =</span> <span class="st">"ml"</span>, <span class="at">std.lv =</span> <span class="cn">TRUE</span>, <span class="at">positive =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb49-10"><a href=""></a>            <span class="at">control =</span> <span class="fu">list</span>(<span class="at">rstarts =</span> <span class="dv">10</span>))</span>
+<span id="cb49-11"><a href=""></a><span class="fu">round</span>(<span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"est"</span>)[[<span class="dv">1</span>]]<span class="sc">$</span>theta, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
+<div class="cell-output cell-output-stdout">
+<pre><code>      x1    x2    x3     x4    x5     x6    x7    x8    x9
+x1 0.453 0.000 0.000  0.083 0.043  0.000 0.000 0.000 0.000
+x2 0.000 0.806 0.000  0.000 0.000  0.000 0.000 0.000 0.000
+x3 0.000 0.000 0.626  0.000 0.000  0.000 0.000 0.000 0.000
+x4 0.083 0.000 0.000  0.330 0.126 -0.090 0.000 0.000 0.000
+x5 0.043 0.000 0.000  0.126 0.449  0.000 0.000 0.000 0.000
+x6 0.000 0.000 0.000 -0.090 0.000  0.062 0.000 0.000 0.000
+x7 0.000 0.000 0.000  0.000 0.000  0.000 0.672 0.000 0.000
+x8 0.000 0.000 0.000  0.000 0.000  0.000 0.000 0.462 0.000
+x9 0.000 0.000 0.000  0.000 0.000  0.000 0.000 0.000 0.571</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href=""></a><span class="fu">det</span>(<span class="fu">latInspect</span>(fit, <span class="at">what =</span> <span class="st">"est"</span>)[[<span class="dv">1</span>]]<span class="sc">$</span>theta)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.000170771</code></pre>
+</div>
 </div>
 </div></div>
 </section>
