@@ -62,12 +62,13 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lcfa</span><span class="op">(</span><span class="va">data</span>, model <span class="op">=</span> <span class="cn">NULL</span>, cor <span class="op">=</span> <span class="st">"pearson"</span>,</span>
-<span>estimator <span class="op">=</span> <span class="st">"ml"</span>, group <span class="op">=</span> <span class="cn">NULL</span>,</span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lcfa</span><span class="op">(</span><span class="va">data</span>, model <span class="op">=</span> <span class="cn">NULL</span>, estimator <span class="op">=</span> <span class="st">"ml"</span>,</span>
+<span>ordered <span class="op">=</span> <span class="cn">FALSE</span>, group <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>sample.cov <span class="op">=</span> <span class="cn">NULL</span>, nobs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>positive <span class="op">=</span> <span class="cn">FALSE</span>, penalties <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>missing <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>,</span>
-<span>std.lv <span class="op">=</span> <span class="cn">FALSE</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span>std.lv <span class="op">=</span> <span class="cn">FALSE</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>, mimic <span class="op">=</span> <span class="st">'latent'</span>,</span>
+<span>control <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -82,16 +83,16 @@
 <dd><p>lavaan's model syntax.</p></dd>
 
 
-<dt id="arg-cor">cor<a class="anchor" aria-label="anchor" href="#arg-cor"></a></dt>
-<dd><p>Correlation types: "pearson" and "poly". Defaults to "pearson".</p></dd>
-
-
 <dt id="arg-estimator">estimator<a class="anchor" aria-label="anchor" href="#arg-estimator"></a></dt>
 <dd><p>Available estimators: "ml", "uls", and "dwls". Defaults to "ml".</p></dd>
 
 
+<dt id="arg-ordered">ordered<a class="anchor" aria-label="anchor" href="#arg-ordered"></a></dt>
+<dd><p>Logical. Defaults to TRUE.</p></dd>
+
+
 <dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
-<dd><p>.</p></dd>
+<dd><p>String. Name of the variable that splits the data in different groups.</p></dd>
 
 
 <dt id="arg-sample-cov">sample.cov<a class="anchor" aria-label="anchor" href="#arg-sample-cov"></a></dt>
@@ -120,6 +121,10 @@
 
 <dt id="arg-do-fit">do.fit<a class="anchor" aria-label="anchor" href="#arg-do-fit"></a></dt>
 <dd><p>TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.</p></dd>
+
+
+<dt id="arg-mimic">mimic<a class="anchor" aria-label="anchor" href="#arg-mimic"></a></dt>
+<dd><p>String. Choose the output you want to obtain. Defaults to 'latent'.</p></dd>
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>

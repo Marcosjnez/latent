@@ -8,7 +8,7 @@ with or without covariates to predict class membership.
 ``` r
 lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     X = NULL, penalties = TRUE, model = NULL,
-    do.fit = TRUE, control = NULL, verbose = TRUE)
+    start = NULL, do.fit = TRUE, control = NULL, verbose = TRUE)
 ```
 
 ## Arguments
@@ -37,6 +37,11 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 - model:
 
   List of parameter labels. See 'details' for more information.
+
+- start:
+
+  List of starting values for the parameters. See 'details' for more
+  information.
 
 - do.fit:
 

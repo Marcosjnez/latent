@@ -5,12 +5,13 @@ Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
 ## Usage
 
 ``` r
-lcfa(data, model = NULL, cor = "pearson",
-estimator = "ml", group = NULL,
+lcfa(data, model = NULL, estimator = "ml",
+ordered = FALSE, group = NULL,
 sample.cov = NULL, nobs = NULL,
 positive = FALSE, penalties = TRUE,
 missing = "pairwise.complete.obs",
-std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
+std.lv = FALSE, do.fit = TRUE, mimic = 'latent',
+control = NULL, ...)
 ```
 
 ## Arguments
@@ -23,17 +24,17 @@ std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
 
   lavaan's model syntax.
 
-- cor:
-
-  Correlation types: "pearson" and "poly". Defaults to "pearson".
-
 - estimator:
 
   Available estimators: "ml", "uls", and "dwls". Defaults to "ml".
 
+- ordered:
+
+  Logical. Defaults to TRUE.
+
 - group:
 
-  .
+  String. Name of the variable that splits the data in different groups.
 
 - sample.cov:
 
@@ -63,6 +64,10 @@ std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
 
   TRUE to fit the model and FALSE to return only the model setup.
   Defaults to TRUE.
+
+- mimic:
+
+  String. Choose the output you want to obtain. Defaults to 'latent'.
 
 - control:
 

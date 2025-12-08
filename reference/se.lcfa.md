@@ -5,7 +5,7 @@ Compute standard errors.
 ## Usage
 
 ``` r
-se_cfa(fit)
+se(fit)
 ```
 
 ## Arguments

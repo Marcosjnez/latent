@@ -37,8 +37,8 @@
   correlation matrices.
 - [`predict()`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   : Predicted values for Latent Class Analysis.
-- [`se_cfa()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md)
-  : Standard Errors
+- [`se()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md) :
+  Standard Errors
 - [`se()`](https://marcosjnez.github.io/latent/reference/se.llca.md) :
   Standard Errors
 - [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
