@@ -180,8 +180,8 @@ robust_se <- function(fit) {
   H <- 0.5*(H + t(H)) # Force symmetry
 
   transparameters_labels <- fit@modelInfo$transparameters_labels
-  lca_trans <- fit@modelInfo$lca_trans
-  full_loglik <- lca_trans$loglik
+  lca_all <- fit@modelInfo$lca_all
+  full_loglik <- lca_all$loglik
   weights <- fit@Optim$data_list$weights
   npatterns <- fit@Optim$data_list$npatterns
   nitems <- fit@Optim$data_list$nitems
@@ -189,16 +189,16 @@ robust_se <- function(fit) {
   nobs <- fit@Optim$data_list$nobs
 
   control_estimator <- control_estimator[-1]
-  nclasses <- ncol(fit@modelInfo$lca_trans$class)
+  nclasses <- ncol(fit@modelInfo$lca_all$class)
   K <- length(control_estimator)
 
   for(s in 1:npatterns) {
 
-    labels <- c(lca_trans$class[s, ], full_loglik[s,,])
+    labels <- c(lca_all$class[s, ], full_loglik[s,,])
     all_indices <- match(labels, transparameters_labels)
-    indices_classes <- match(lca_trans$class[s, ], transparameters_labels)
+    indices_classes <- match(lca_all$class[s, ], transparameters_labels)
     indices_items <- match(full_loglik[s,,], transparameters_labels)
-    indices_theta <- match(lca_trans$theta[s, ], transparameters_labels)
+    indices_theta <- match(lca_all$theta[s, ], transparameters_labels)
     indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
                     indices_theta-1L)
     SJ <- 1L*nitems

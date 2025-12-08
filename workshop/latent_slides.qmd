@@ -339,7 +339,7 @@ For a given dataset, the time to convergence is linear in the number of classes.
 # Continuous indicators example
 
 ::: {.columns}
-::: {.column width="70%"}
+::: {.column width="60%"}
 
 Model fitting:
 ```{r eval=TRUE, echo=TRUE, results='hide'}
@@ -374,7 +374,7 @@ CI$table
 ```
 
 :::
-::: {.column width="30%"}
+::: {.column width="40%"}
 ![](figures/standard.jpg){width=300%}
 :::
 :::
@@ -382,7 +382,7 @@ CI$table
 # Continuous indicators example
 
 ::: {.columns}
-::: {.column width="70%"}
+::: {.column width="60%"}
 
 Model fitting:
 ```{r eval=FALSE, echo=TRUE}
@@ -402,7 +402,7 @@ latInspect(fit, what = "profile", digits = 3)
 ```
 
 :::
-::: {.column width="30%"}
+::: {.column width="40%"}
 ![](figures/standard.jpg){width=300%}
 :::
 :::

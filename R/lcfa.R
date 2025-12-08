@@ -1,24 +1,25 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 31/10/2025
+# Modification date: 26/11/2025
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
 #'
 #' @usage
 #'
-#' lcfa(data, model = NULL, cor = "pearson",
-#' estimator = "ml", group = NULL,
+#' lcfa(data, model = NULL, estimator = "ml",
+#' ordered = FALSE, group = NULL,
 #' sample.cov = NULL, nobs = NULL,
 #' positive = FALSE, penalties = TRUE,
 #' missing = "pairwise.complete.obs",
-#' std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
+#' std.lv = FALSE, do.fit = TRUE, mimic = 'latent',
+#' control = NULL, ...)
 #'
 #' @param data data frame or matrix.
 #' @param model lavaan's model syntax.
-#' @param cor Correlation types: "pearson" and "poly". Defaults to "pearson".
 #' @param estimator Available estimators: "ml", "uls", and "dwls". Defaults to "ml".
-#' @param group .
+#' @param ordered Logical. Defaults to TRUE.
+#' @param group String. Name of the variable that splits the data in different groups.
 #' @param sample.cov Covariance matrix between the items. Defaults to NULL.
 #' @param nobs Number of observations. Defaults to NULL.
 #' @param positive Force a positive-definite solution. Defaults to FALSE.
@@ -26,6 +27,7 @@
 #' @param missing Method to handle missing data.
 #' @param std.lv Provide the parameters of the standardized model.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
+#' @param mimic String. Choose the output you want to obtain. Defaults to 'latent'.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #' @param ... Additional lavaan arguments. See ?lavaan for more information.
 #'
@@ -54,16 +56,24 @@
 #'}
 #'
 #' @export
-lcfa <- function(data, model = NULL, cor = "pearson",
-                 estimator = "ml", group = NULL,
+lcfa <- function(data, model = NULL, estimator = "ml",
+                 ordered = FALSE, group = NULL,
                  sample.cov = NULL, nobs = NULL,
                  positive = FALSE, penalties = TRUE,
                  missing = "pairwise.complete.obs",
-                 std.lv = TRUE, do.fit = TRUE, control = NULL,
+                 std.lv = TRUE, do.fit = TRUE,
+                 mimic = "latent", control = NULL,
                  ...) {
+
+  if(ordered) {
+    cor <- "poly"
+  } else {
+    cor <- "pearson"
+  }
 
   # Check the arguments to control_optimizer and create defaults:
   control$penalties <- penalties
+  control$estimator <- tolower(estimator)
   control <- lcfa_control(control)
 
   # Extract the lavaan model:
@@ -285,49 +295,52 @@ lcfa <- function(data, model = NULL, cor = "pearson",
 
   #### Return ####
 
-  lcfa_list <- new("lcfa",
-                   version            = as.character( packageVersion('latent') ),
-                   call               = mc, # matched call
-                   timing             = elapsed, # timing information
-                   modelInfo          = modelInfo, # modelInfo
-                   Optim              = Optim, # Optim
-                   parameters         = parameters,
-                   transformed_pars   = transformed_pars,
-                   loglik             = loglik, # loglik values
-                   penalized_loglik   = penalized_loglik,
-                   loss               = loss,
-                   penalized_loss     = penalized_loss
-  )
+  if(mimic == "latent") {
 
-  # class(lcfa_list) <- "lcfa.list"
+    result <- new("lcfa",
+                  version            = as.character( packageVersion('latent') ),
+                  call               = mc, # matched call
+                  timing             = elapsed, # timing information
+                  modelInfo          = modelInfo, # modelInfo
+                  Optim              = Optim, # Optim
+                  parameters         = parameters,
+                  transformed_pars   = transformed_pars,
+                  loglik             = loglik, # loglik values
+                  penalized_loglik   = penalized_loglik,
+                  loss               = loss,
+                  penalized_loss     = penalized_loss
+    )
 
-  return(lcfa_list)
+  } else if(mimic == "lavaan") {
 
-  ## for lavaan like object
-  ## need to fill in these objects into the lav dummy objects
-  ## will take me longer to find how to match these slots
-  # lcfa <- new("lcfa",
-  #             version      = as.character( packageVersion('latent') ),
-  #             call         = mc,                  # match.call
-  #             timing       = timing,              # list
-  #             Options      = lavoptions,          # list *
-  #             ParTable     = lavpartable,         # list *
-  #             pta          = LAV@pta,             # list
-  #             Data         = lavdata,             # S4 class
-  #             SampleStats  = lavsamplestats,      # S4 class
-  #             Model        = lavmodel,            # S4 class *
-  #             Cache        = lavcache,            # list
-  #             Fit          = lavfit,              # S4 class *
-  #             boot         = list(),
-  #             optim        = lavoptim,
-  #             implied      = lavimplied,          # list *
-  #             vcov         = lavvcov,                    *
-  #             test         = TEST,                       *
-  #             h1           = h1,
-  #             internal     = internal,
-  #             external     = extslot              # can add extra info from latent
-  # )
+    ## for lavaan like object
+    ## need to fill in these objects into the lav dummy objects
+    ## will take me longer to find how to match these slots
+    result <- new("lcfa",
+                  version      = as.character( packageVersion('latent') ),
+                  call         = mc,                  # match.call
+                  timing       = timing,              # list
+                  Options      = lavoptions,          # list *
+                  ParTable     = lavpartable,         # list *
+                  pta          = LAV@pta,             # list
+                  Data         = lavdata,             # S4 class
+                  SampleStats  = lavsamplestats,      # S4 class
+                  Model        = lavmodel,            # S4 class *
+                  Cache        = lavcache,            # list
+                  Fit          = lavfit,              # S4 class *
+                  boot         = list(),
+                  optim        = lavoptim,
+                  implied      = lavimplied,          # list *
+                  vcov         = lavvcov,             #*
+                  test         = TEST,                #*
+                  h1           = h1,
+                  internal     = internal,
+                  external     = extslot              # can add extra info from latent
+    )
 
+  }
+
+  return(result)
 
 }
 

@@ -6,7 +6,7 @@
 \usage{
 lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     X = NULL, penalties = TRUE, model = NULL,
-    do.fit = TRUE, control = NULL, verbose = TRUE)
+    start = NULL, do.fit = TRUE, control = NULL, verbose = TRUE)
 }
 \arguments{
 \item{data}{data frame or matrix.}
@@ -20,6 +20,8 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 \item{penalties}{Boolean or list of penalty terms for the parameters.}
 
 \item{model}{List of parameter labels. See 'details' for more information.}
+
+\item{start}{List of starting values for the parameters. See 'details' for more information.}
 
 \item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
 

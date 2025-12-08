@@ -4,7 +4,7 @@
 \alias{se.lcfa}
 \title{Standard Errors}
 \usage{
-se_cfa(fit)
+se(fit)
 }
 \arguments{
 \item{fit}{model fitted with lca.}

@@ -68,14 +68,21 @@ public:
     // J_theta = J_theta.rows(lower_theta);
     //
     // // Multiply the jacobians by the duplication matrix:
-    // jacob = 2 * arma::join_cols(J_lambda, J_psi, J_theta) * Dp;
+    // jacob = (2 * arma::join_cols(J_lambda, J_psi, J_theta) * Dp).t();
     //
+    // arma::uvec all_idx =
+    //   arma::join_cols(
+    //     arma::join_cols(lambda_indices, psi_indices),
+    //     theta_indices
+    //   );
+    // x.grad.elem(all_idx) += jacob.t() * x.grad(indices_out[0]);
+
     // J_lambda *= Dp;
     // J_psi *= Dp;
     // J_theta *= Dp;
-    // x.grad.elem(lambda_indices) += J_lambda*x.grad(indices_out[0]);
-    // x.grad.elem(psi_indices) += J_psi*x.grad(indices_out[0]);
-    // x.grad.elem(theta_indices) += J_theta*x.grad(indices_out[0]);
+    // x.grad.elem(lambda_indices) += 2*J_lambda*x.grad(indices_out[0]);
+    // x.grad.elem(psi_indices) += 2*J_psi*x.grad(indices_out[0]);
+    // x.grad.elem(theta_indices) += 2*J_theta*x.grad(indices_out[0]);
 
   }
 
@@ -140,7 +147,7 @@ public:
     J_theta = J_theta.rows(lower_theta);
 
     // Multiply the jacobians by a duplication matrix:
-    jacob = 2 * arma::join_cols(J_lambda, J_psi, J_theta) * Dp;
+    jacob = (2 * arma::join_cols(J_lambda, J_psi, J_theta) * Dp).t();
 
   }
 
@@ -152,9 +159,6 @@ public:
   }
 
   void update_vcov(arguments_optim& x) {
-
-    // arma::mat I(p, p, arma::fill::eye);
-    // jacob = 2*Dp.t() * arma::kron(I, X.t());
 
   }
 
@@ -169,11 +173,12 @@ public:
     vectors.resize(1);
     vectors[0] = theta.diag();
 
-    matrices.resize(4);
-    matrices[0] = lambda;
-    matrices[1] = psi;
-    matrices[2] = theta;
-    matrices[3] = Rhat;
+    matrices.resize(5);
+    matrices[0] = jacob;
+    matrices[1] = lambda;
+    matrices[2] = psi;
+    matrices[3] = theta;
+    matrices[4] = Rhat;
 
   }
 

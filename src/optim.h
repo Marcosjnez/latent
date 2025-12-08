@@ -433,6 +433,7 @@ optim_result lbfgs(arguments_optim x,
     x.dir = -z;
     x.inprod = arma::accu(-x.dir % x.rg);
     // x.inprod = arma::accu(x.dir % x.dir);
+    // x.inprod = arma::accu(x.rg % x.rg);
     x.ng = sqrt(x.inprod);
     if (std::isnan(x.ng)) {
       x.convergence = false;

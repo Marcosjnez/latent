@@ -13,7 +13,7 @@
 #'
 #' lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 #'     X = NULL, penalties = TRUE, model = NULL,
-#'     do.fit = TRUE, control = NULL, verbose = TRUE)
+#'     start = NULL, do.fit = TRUE, control = NULL, verbose = TRUE)
 #'
 #' @param data data frame or matrix.
 #' @param nclasses Number of latent classes.
@@ -21,6 +21,7 @@
 #' @param X Matrix of covariates.
 #' @param penalties Boolean or list of penalty terms for the parameters.
 #' @param model List of parameter labels. See 'details' for more information.
+#' @param start List of starting values for the parameters. See 'details' for more information.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #' @param verbose Print information of model estimation. Defaults to FALSE.
@@ -90,7 +91,7 @@
 #'
 #' @export
 lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-                X = NULL, penalties = TRUE, model = NULL,
+                X = NULL, penalties = TRUE, model = NULL, start = NULL,
                 do.fit = TRUE, control = NULL, verbose = TRUE) {
 
   if(class(model) == "llca") {
@@ -101,7 +102,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Fit the model without covariates:
     fit <- lca(data, nclasses = nclasses, item = item,
                X = X, penalties = penalties, model = model_list,
-               do.fit = do.fit, control = control, verbose = verbose)
+               start = start, do.fit = do.fit, control = control,
+               verbose = verbose)
 
     return(fit)
 
@@ -109,6 +111,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   # Check control parameters:
   control$penalties <- penalties
+  control$start <- start
   control <- lca_control(control)
 
   #### Initial input checks ####
@@ -247,6 +250,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   data_list$weights <- weights
   data_list$full2short <- full2short
   data_list$short2full <- short2full
+  data_list$item_names <- colnames(data)
   data_list$factor_indices <- factor_indices
   data_list$factor_names <- factor_names
   data_list$cov_patterns <- cov_patterns
@@ -293,7 +297,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Get the short model specification (in logarithm and probability scale) with
     # labels for each parameter:
     short_model <- get_short_lca_model(data_list = data_list, nclasses = nclasses,
-                                       item = item, lca_trans = lca_trans,
+                                       item = item, lca_all = lca_all,
                                        model = model)
     list2env(short_model, envir = environment())
 
@@ -324,6 +328,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                       transparameters_labels = transparameters_labels,
                       lca_param = lca_param,
                       lca_trans = lca_trans,
+                      lca_all = lca_all,
                       control_manifold = control_manifold,
                       control_transform = control_transform,
                       control_estimator = control_estimator,
@@ -420,7 +425,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Sum of logarithm likelihoods by response pattern:
     loglik_pattern <- weights * loglik_case
 
-    transformed_pars <- fill_list_with_vector(modelInfo$lca_trans,
+    transformed_pars <- fill_list_with_vector(modelInfo$lca_all,
                                               Optim$opt$transparameters)
     transformed_pars <- allnumeric(transformed_pars)
 

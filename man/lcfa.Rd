@@ -4,23 +4,24 @@
 \alias{lcfa}
 \title{Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.}
 \usage{
-lcfa(data, model = NULL, cor = "pearson",
-estimator = "ml", group = NULL,
+lcfa(data, model = NULL, estimator = "ml",
+ordered = FALSE, group = NULL,
 sample.cov = NULL, nobs = NULL,
 positive = FALSE, penalties = TRUE,
 missing = "pairwise.complete.obs",
-std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
+std.lv = FALSE, do.fit = TRUE, mimic = 'latent',
+control = NULL, ...)
 }
 \arguments{
 \item{data}{data frame or matrix.}
 
 \item{model}{lavaan's model syntax.}
 
-\item{cor}{Correlation types: "pearson" and "poly". Defaults to "pearson".}
-
 \item{estimator}{Available estimators: "ml", "uls", and "dwls". Defaults to "ml".}
 
-\item{group}{.}
+\item{ordered}{Logical. Defaults to TRUE.}
+
+\item{group}{String. Name of the variable that splits the data in different groups.}
 
 \item{sample.cov}{Covariance matrix between the items. Defaults to NULL.}
 
@@ -35,6 +36,8 @@ std.lv = FALSE, do.fit = TRUE, control = NULL, ...)
 \item{std.lv}{Provide the parameters of the standardized model.}
 
 \item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+
+\item{mimic}{String. Choose the output you want to obtain. Defaults to 'latent'.}
 
 \item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
 

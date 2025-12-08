@@ -14,7 +14,7 @@ public:
 
   arma::mat R, Rhat, residuals, dRhat, Rhat_inv, Ri_R_Ri, gRhat;
   arma::uvec lower_diag;
-  double w, logdetR, loglik;
+  double w, logdetR, loglik, plogpi2;
   int p, q, n;
 
   void param(arguments_optim& x) {
@@ -35,7 +35,10 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = w*(arma::log_det_sympd(Rhat) - logdetR + arma::accu(R % Rhat_inv) - p);
+    // f = w*(arma::log_det_sympd(Rhat) - logdetR + arma::accu(R % Rhat_inv) - p);
+    f = w*n*0.5*(plogpi2 +
+      arma::log_det_sympd(Rhat) +
+      arma::accu(R % Rhat_inv));
     x.f += f;
 
   }
@@ -47,7 +50,7 @@ public:
     arma::mat temp = 2*gRhat;
     temp.diag() *= 0.5;
 
-    x.grad.elem(indices[0]) += w*arma::vectorise(temp(lower_diag));
+    x.grad.elem(indices[0]) += w*n*0.5*arma::vectorise(temp(lower_diag));
 
   }
 
@@ -62,7 +65,7 @@ public:
                           Rhat_inv * R * dRhat_inv));
     dgRhat.diag() *= 0.5;
 
-    x.dgrad.elem(indices[0]) += w*arma::vectorise(dgRhat(lower_diag));
+    x.dgrad.elem(indices[0]) += w*n*0.5*arma::vectorise(dgRhat(lower_diag));
 
   }
 
@@ -73,16 +76,16 @@ public:
     hx.rows(lower_diag) *= 2;
     hx = arma::diagmat(arma::vectorise(hx.elem(lower_diag)));
 
-    x.hess(indices[0], indices[0]) += w*hx;
+    x.hess(indices[0], indices[0]) += w*n*0.5*hx;
 
   }
 
   void outcomes(arguments_optim& x) {
 
     doubles.resize(3);
-    loglik = (-0.5*n*p*std::log(2*arma::datum::pi) -
-                 0.5*n*arma::log_det_sympd(Rhat) -
-                 0.5*n*arma::trace(R*Rhat_inv));
+    loglik = w*n*0.5*(-plogpi2 -
+                       arma::log_det_sympd(Rhat) -
+                       arma::accu(R % Rhat_inv));
     doubles[0] = f;
     doubles[1] = loglik;
     doubles[2] = w;
@@ -110,6 +113,7 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   double logdetR = arma::log_det_sympd(R);
   arma::mat Rhat(p, p, arma::fill::zeros);
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(R));
+  double plogpi2 = p*std::log(arma::datum::pi*2);
 
   myestimator->indices = indices;
   myestimator->p = p;
@@ -121,6 +125,7 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   myestimator->Rhat = Rhat;
   myestimator->dRhat = Rhat;
   myestimator->lower_diag = lower_diag;
+  myestimator->plogpi2 = plogpi2;
 
   return myestimator;
 

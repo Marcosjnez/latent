@@ -59,13 +59,14 @@ latInspect.lcfa <- function(fit,
   indices_logdetmat <- which(all_estimators == "logdetmat")
 
   # Initialize the objects to be returned:
-  lambda <- psi <- theta <- uniquenesses <- model <- resids <- W <- w <-
+  jacob <- lambda <- psi <- theta <- uniquenesses <- model <- resids <- W <- w <-
     loss <- penalized_loss <- loglik <- penalized_loglik <- penalty <-
     vector("list", length = ngroups)
-  names(lambda) <- names(psi) <- names(theta) <- names(uniquenesses) <-
+  names(jacob) <- names(lambda) <- names(psi) <- names(theta) <- names(uniquenesses) <-
     names(model) <- names(resids) <- names(W) <- names(w) <- names(loss) <-
     names(penalized_loss) <- names(loglik) <- names(penalized_loglik) <-
     names(penalty) <- group_label
+  # jacob is the jacobian of the model matrix wrt the parameters
 
   x <- fit@Optim$opt
 
@@ -96,11 +97,12 @@ latInspect.lcfa <- function(fit,
     }
 
     # Extract model parameters:
-    lambda[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[1]], p, q)
-    psi[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[2]], q, q)
-    theta[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[3]], p, p)
+    jacob[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[1]], p, q)
+    lambda[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[2]], p, q)
+    psi[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[3]], q, q)
+    theta[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[4]], p, p)
+    model[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[5]], p, p)
     uniquenesses[[i]] <- c(x$outputs$transformations$vectors[[j]][[1]])
-    model[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[4]], p, p)
     resids[[i]] <- matrix(x$outputs$estimators$matrices[[k]][[1]], p, p)
     W[[i]] <- matrix(x$outputs$estimators$matrices[[k]][[2]], p, p)
 
@@ -163,6 +165,13 @@ latInspect.lcfa <- function(fit,
   } else if(what == "weights") {
 
     return(w)
+
+  } else if(what == "jacob" ||
+            what == "jacobs" ||
+            what == "jacobian" ||
+            what == "jacobians") {
+
+    return(jacob)
 
   } else if(what == "loss" ||
             what == "f") {

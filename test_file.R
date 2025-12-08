@@ -1,10 +1,14 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/11/2025
+# Modification date: 08/12/2025
 
 #### Install latent ####
 
 # devtools::install_github("marcosjnez/latent", force = TRUE)
+
+#### Build the package ####
+
+# roxygen2::roxygenise()
 
 #### LCA (multinomial) ####
 
@@ -19,11 +23,11 @@ fit <- lca(data = gss82, nclasses = 3,
            #                 X2 ~ 1 + cluster2),
            item = rep("multinomial", ncol(gss82)),
            penalties = TRUE, control = NULL, do.fit = TRUE)
-fit@timing
 fit@loglik # -2754.643
 fit@penalized_loglik # -2759.507
-fit@Optim$opt$iterations
+fit@Optim$opt$iterations # 67
 fit@Optim$opt$convergence
+fit@timing
 
 # Plot model fit info:
 fit
@@ -59,11 +63,10 @@ fit <- lca(data = empathy[, 1:6], nclasses = 4L,
            item = rep("gaussian", ncol(empathy[, 1:6])),
            penalties = TRUE, control = NULL, do.fit = TRUE)
 
-fit@timing
 fit@loglik # -1841.336
 fit@penalized_loglik # -1844.333
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@Optim$opt$iterations # 52
+fit@Optim$opt$convergence # TRUE
 fit@timing
 
 # Plot model fit info:
@@ -95,9 +98,6 @@ fit <- lca(data = cancer[, 1:6], nclasses = 3L,
            item = c("gaussian", "gaussian",
                     "multinomial", "multinomial",
                     "gaussian", "gaussian"),
-           penalties = list(class = list(alpha = 1), # Regularization for class probabilities
-                            prob  = list(alpha = 1), # Regularization for conditional probabilities
-                            sd    = list(alpha = 1)), # Regularization for standard deviations
            control = NULL, do.fit = TRUE)
 fit@timing
 fit@loglik # -5784.701
@@ -136,24 +136,30 @@ library(latent)
 data <- empathy[, 1:6]
 X <- as.matrix(empathy[, 7:8]) # Covariates
 
-fit0 <- lca(data = data, X = X, model = NULL,
+fit0 <- lca(data = data, X = NULL, model = NULL,
             item = rep("gaussian", ncol(data)),
-            nclasses = 1:4L, penalties = TRUE,
+            nclasses = 4L, penalties = TRUE,
             control = NULL, do.fit = TRUE)
 fit0@timing
 fit0@loglik # -1798.885
 fit0@penalized_loglik # -1801.996
 fit0@Optim$opt$iterations
 
-fit <- lca(data = data, X = X, model = fit0,
+Y <- as.matrix(empathy[, 9:10]) # Covariates
+fit <- lca(data = data, X = cbind(X, Y), model = fit0,
            item = rep("gaussian", ncol(data)),
            nclasses = 4L, penalties = TRUE,
            control = NULL, do.fit = TRUE)
 fit@timing
-fit@loglik # -1798.885
-fit@penalized_loglik # -1801.996
+fit@loglik # -1736.398
+fit@penalized_loglik # -1739.809
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
+
+fit0@parameters
+fit@parameters
+
+round(predict(fit), 3)
 
 t(apply(fit@transformed_pars$beta, 1, FUN = \(x) x -sum(x)/4))
 
@@ -169,8 +175,8 @@ latInspect(fit, what = "classes", digits = 5)
 latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
 
-predict(fit, new = rbind(c(1, 1.571),
-                         c(1, 2)))
+predict(fit, new = rbind(c(2, 2, 2.428571, 2.142857),
+                         c(1, 2, 3, 4)))
 fitted(fit)
 
 # Get standard errors:
@@ -190,19 +196,20 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
-set.seed(2025)
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "ml", do.fit = TRUE,
-            cor = "pearson",
-            # ordered = FALSE,
-            # mimic = "lavaan",
-            control = NULL)
-fit@loss
+            estimator = "uls",
+            ordered = FALSE, std.lv = TRUE,
+            mimic = "latent", do.fit = TRUE)
+fit@loss   # 0.283407
+fit@loglik # -3427.131
+fit@penalized_loglik # -3427.131
+fit@Optim$opt$iterations
+fit@Optim$opt$convergence
 fit@timing
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
-                    estimator = "ml",
+                    estimator = "uls",
                     std.lv = TRUE, std.ov = TRUE,
                     likelihood = "wishart")
 # Same loss value: OK
@@ -214,6 +221,10 @@ fit@loglik
 fit2@loglik$loglik
 fit2@h1$logl$loglik # SATURATED
 
+lavaan::inspect(fit2, what = "se")
+
+SE <- se(fit, digits = 3)
+SE$table_se
 
 control_manifold <- fit@modelInfo$control_manifold
 control_transform <- fit@modelInfo$control_transform
@@ -225,9 +236,8 @@ x <- grad_comp(control_manifold, control_transform,
                control_estimator, control, eps = 1e-04,
                compute = "all")
 x$f
-round(c(x$g) - c(x$numg), 6)
-round(c(x$g) / c(x$numg), 6)
-round(c(x$dg) - c(x$numdg), 6)
+round(c(x$g) - c(x$numg), 5)
+round(c(x$dg) - c(x$numdg), 5)
 
 fit@loss
 fit@loglik # -0.283407
@@ -260,6 +270,7 @@ fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "uls",
 summary(fit2, fit.measures = FALSE)
 fitMeasures(fit2, digits = 5)
 inspect(fit2, what = "se")
+inspect(fit2, what = "est")
 
 SE <- se(fit, digits = 3)
 SE$table_se
@@ -273,31 +284,25 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            group = "school", estimator = "uls", cor = "pearson",
-            std.lv = TRUE, do.fit = TRUE, control = list(opt = "lbfgs"))
-
-fit@timing
-fit@Optim$opt$iterations
-
-latInspect(fit, "weights")
-latInspect(fit, "loglik")
+            group = NULL, estimator = "ml",
+            ordered = FALSE, std.lv = TRUE,
+            mimic = "latent", do.fit = TRUE)
 
 fit@loglik # -3422.946 (ml)
 fit@loss # 0.4055109 (uls) / 0.7677016 (ml)
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
 fit@timing
+latInspect(fit, what = "loglik")
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
-                    group = "school", estimator = "ml",
+                    group = NULL, estimator = "ml",
                     std.lv = TRUE, std.ov = TRUE)
 
-fit2@timing
+fit2@loglik$loglik
 fit2@Fit@fx*2
 fit@loss
-
-fit2@loglik$loglik
 
 # Plot model fit info:
 fit
@@ -316,7 +321,9 @@ latInspect(fit, what = "theta", digits = 3)
 latInspect(fit, what = "model", digits = 3)
 latInspect(fit, what = "residuals", digits = 3)
 
-SE <- se(fit, type = "standard", model = "user", digits = 3)
+SE <- se(fit, type = "lavaan", model = "user", digits = 3)
+SE$table_se
+lavaan::inspect(fit2, what = "se")
 
 library(lavaan)
 fit2 <- cfa(model, data = HolzingerSwineford1939,
@@ -351,10 +358,10 @@ fit2@loglik$loglik
 
 # With latent:
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
-            estimator = "ml", cor = "pearson",
-            positive = TRUE,
+            estimator = "ml", positive = TRUE,
             penalties = list(logdet = list(w = 0.001)),
-            std.lv = TRUE, do.fit = TRUE,
+            ordered = FALSE, std.lv = TRUE,
+            mimic = "latent", do.fit = TRUE,
             control = list(opt = "lbfgs", maxit = 100L,
                            cores = 20L, rstarts = 20L))
 
@@ -418,13 +425,17 @@ fitmeasures(fit2, fit.measures = c("cfi", "tli", "rmsea", "srmr"))
 # With latent:
 fit <- lcfa(data = HolzingerSwineford1939,
             model = model, group = "school",
-            estimator = "ml", cor = "pearson",
+            estimator = "ml",
+            ordered = FALSE, std.lv = TRUE,
+            mimic = "latent",
             positive = TRUE, penalties = TRUE,
-            std.lv = TRUE, control = NULL)
+            do.fit = TRUE,
+            control = list(opt = "lbfgs", maxit = 100L,
+                           cores = 20L, rstarts = 20L))
 
-fit@loglik # -0.1678072 (ML)
-fit@penalized_loglik # -0.1678072 (ML)
-fit@loss # 0.1871894 (ULS) / 0.1678072 (ML)
+fit@loglik # -3415.092 (ML)
+fit@penalized_loglik # -3415.095 (ML)
+fit@loss # 0.1419955 (ULS) / 0.3327037 (ML)
 fit@Optim$opt$iterations
 fit@Optim$opt$convergence
 fit@timing

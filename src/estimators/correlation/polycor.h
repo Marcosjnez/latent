@@ -30,28 +30,6 @@ public:
       mvphi[i] = 0.5 * arma::erfc(-taus[i] * M_SQRT1_2);
     }
 
-    // for (std::size_t i = 0; i < taus.size(); ++i) {
-    //   Rprintf("taus[%d]:", (int) i);
-    //
-    //   const arma::vec& v = taus[i];
-    //   for (arma::uword j = 0; j < v.n_elem; ++j) {
-    //     Rprintf(" %g", v(j));  // or "%.6f" if you want fixed decimals
-    //   }
-    //
-    //   Rprintf("\n");
-    // }
-    //
-    // for (std::size_t i = 0; i < mvphi.size(); ++i) {
-    //   Rprintf("mvphi[%d]:", (int) i);
-    //
-    //   const arma::vec& v = mvphi[i];
-    //   for (arma::uword j = 0; j < v.n_elem; ++j) {
-    //     Rprintf(" %g", v(j));  // or "%.6f" if you want fixed decimals
-    //   }
-    //
-    //   Rprintf("\n");
-    // }
-
     R.elem(lower_diag) = x.transparameters(indices_R);
     R = arma::symmatl(R);
 
@@ -119,15 +97,6 @@ public:
     dfdp *= 2;
     dfdp.diag() *= 0.5;
     x.grad(indices_R) += arma::vectorise(dfdp(lower_diag));
-
-    // arma::vec v1;
-    // for (size_t i = 0; i < p; ++i) {
-    //   v1 = arma::join_vert(v1, dfdtaus[i]);
-    // }
-    // // Then, vectorize the matrix:
-    // arma::vec v2 = arma::vectorise(dfdp);
-    // // Concatenate both:
-    // grad += arma::join_vert(v1, v2);
 
   }
 
