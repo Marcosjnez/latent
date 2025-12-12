@@ -5,8 +5,8 @@
 \title{Latent Class Analysis.}
 \usage{
 lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-    X = NULL, penalties = TRUE, model = NULL,
-    start = NULL, do.fit = TRUE, control = NULL, verbose = TRUE)
+    X = NULL, penalties = TRUE, model = NULL, mimic = "LG",
+    start = NULL, do.fit = TRUE, verbose = TRUE, control = NULL)
 }
 \arguments{
 \item{data}{data frame or matrix.}
@@ -20,6 +20,8 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 \item{penalties}{Boolean or list of penalty terms for the parameters.}
 
 \item{model}{List of parameter labels. See 'details' for more information.}
+
+\item{mimic}{String. Replicate the output of other softwares. Use "LG" to replicate the output of LatentGOLD.}
 
 \item{start}{List of starting values for the parameters. See 'details' for more information.}
 

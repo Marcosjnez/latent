@@ -4,7 +4,7 @@
  * Modification date: 12/11/2025
  */
 
-typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::mat> optim_result;
+typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::vec> optim_result;
 
 // Line-search algorithm satisfying the armijo condition:
 
@@ -63,7 +63,8 @@ void wolfe(arguments_optim& x,
   // x.ss = x.ss*2;
   double f0 = x.f;
   arma::vec parameters = x.parameters;
-  x.inprod = arma::accu(x.dir % x.rg);
+  x.inprod = arma::dot(x.dir, x.rg);
+  // x.inprod = arma::dot(-x.dir, x.rg);
   // x.inprod = arma::accu(x.dir % x.dir);
 
   x.step_iteration = 0L;
@@ -85,7 +86,7 @@ void wolfe(arguments_optim& x,
     final_manifold->param(x, xmanifolds);
     final_manifold->proj(x, xmanifolds);
     x.df = x.f - f0;
-    double inprod = arma::accu(x.dir % x.rg); // Armijo condition
+    double inprod = arma::dot(x.dir, x.rg); // Armijo condition
     if (x.df > x.c1 * x.ss * x.inprod ||
         x.ss < x.step_eps) {
       x.ss *= x.c2;
@@ -286,7 +287,7 @@ optim_result gd(arguments_optim x,
                                         x.f,
                                         x.iterations,
                                         x.convergence,
-                                        x.ng, x.rg, x.posterior);
+                                        x.ng, x.rg, x.dir);
 
   return result;
 
@@ -330,7 +331,7 @@ optim_result lbfgs(arguments_optim x,
   // final_manifold->param(x, xmanifolds);
   final_manifold->proj(x, xmanifolds);
   x.dir = -x.rg;
-  x.inprod = arma::accu(-x.dir % x.rg);
+  x.inprod = arma::dot(-x.dir, x.rg);
   x.ng = sqrt(x.inprod);
   // x.ss = 1;
   int p1 = x.parameters.size();
@@ -405,16 +406,23 @@ optim_result lbfgs(arguments_optim x,
     arma::vec q = arma::vectorise(x.rg);
     s[k] = arma::vectorise(x.parameters - old_parameters);
     y[k] = arma::vectorise(x.rg - old_rg);
-    p[k] = 1/arma::accu(y[k] % s[k]);
+    double dot_ys = arma::dot(y[k], s[k]);
+    p[k] = 1/dot_ys;
+
+    if (!arma::is_finite(p[k])) { // SET AN EPS TO DECLARE CONVERGENCE
+      x.convergence = true;
+      break;
+    }
 
     for(int i=k; i > (k-m-1); --i) {
 
-      alpha[i] = p[i]*arma::accu(s[i] % q);
+      alpha[i] = p[i]*arma::dot(s[i], q);
       q -= alpha[i] * y[i];
 
     }
 
-    double gamma = arma::accu(s[k] % y[k]) / arma::accu(y[k] % y[k]);
+    double dot_yy = arma::dot(y[k], y[k]);
+    double gamma = dot_ys / dot_yy;
     if(gamma < arma::datum::eps) {
       // Rcpp::Rcout << "Continue" << std::endl;
       // x.dir = -x.rg;
@@ -425,13 +433,13 @@ optim_result lbfgs(arguments_optim x,
 
     for(int i=(k-m); i < (k+1); ++i) {
 
-      beta[i] = p[i]*arma::accu(y[i] % z);
+      beta[i] = p[i]*arma::dot(y[i], z);
       z += s[i] * (alpha[i] - beta[i]);
 
     }
 
     x.dir = -z;
-    x.inprod = arma::accu(-x.dir % x.rg);
+    x.inprod = arma::dot(-x.dir, x.rg);
     // x.inprod = arma::accu(x.dir % x.dir);
     // x.inprod = arma::accu(x.rg % x.rg);
     x.ng = sqrt(x.inprod);
@@ -447,14 +455,15 @@ optim_result lbfgs(arguments_optim x,
     //   x.old_inprod = x.inprod;
     // }
 
-    if(x.print) {
-      Rcpp::Rcout << "Iteration = " << x.iterations << std::endl;
-      Rcpp::Rcout << "f = " << x.f << std::endl;
-      Rcpp::Rcout << "step size = " << x.ss << std::endl;
-      Rcpp::Rcout << "step iters = " << x.step_iteration << std::endl;
-      Rcpp::Rcout << "ng = " << x.ng << std::endl;
-      Rcpp::Rcout << "dif = " << std::sqrt(x.df*x.df) << std::endl;
-      Rcpp::Rcout << "" << std::endl;
+    if(x.print & x.rstarts == 1L) {
+
+      if (x.iterations % x.print_interval == 0) {
+        Rprintf("iter = %d  f = %.8f  ng = %.8f\r",
+                x.iterations, x.f, x.ng);
+        R_FlushConsole();
+        R_ProcessEvents();
+      }
+
     }
 
     // if (x.ng < x.eps | std::sqrt(x.df*x.df) < x.df_eps) {
@@ -465,12 +474,21 @@ optim_result lbfgs(arguments_optim x,
 
   } while (x.iterations < x.maxit);
 
+  if(x.print & x.rstarts == 1L) {
+    const char *cflag = x.convergence ? "TRUE" : "FALSE";
+    Rprintf("iter = %d  f = %.8f  ng = %.8f  convergence = %s\r",
+            x.iterations, x.f, x.ng, cflag);
+    R_FlushConsole();
+    R_ProcessEvents();
+    Rprintf("\n");
+  }
+
   optim_result result = std::make_tuple(x.parameters,
                                         x.transparameters,
                                         x.f,
                                         x.iterations,
                                         x.convergence,
-                                        x.ng, x.rg, x.posterior);
+                                        x.ng, x.rg, x.dir);
 
   return result;
 
@@ -618,7 +636,7 @@ optim_result ntr(arguments_optim x,
                                         x.f,
                                         x.iterations,
                                         x.convergence,
-                                        x.ng, x.rg, x.posterior);
+                                        x.ng, x.rg, x.dir);
 
   return result;
 
@@ -674,7 +692,7 @@ optim_result ntr(arguments_optim x,
 //                                         x.f,
 //                                         x.iterations,
 //                                         x.convergence,
-//                                         x.ng, x.rg, x.posterior);
+//                                         x.ng, x.rg, x.dir);
 //
 //   return result;
 //
@@ -852,6 +870,10 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   if(control_optimizer.containsElementNamed("print")) {
     bool print = control_optimizer["print"];
     x.print = print;
+  }
+  if(control_optimizer.containsElementNamed("print_interval")) {
+    int print_interval = control_optimizer["print_interval"];
+    x.print_interval = print_interval;
   }
   if(control_optimizer.containsElementNamed("pick")) {
     int pick = control_optimizer["pick"];

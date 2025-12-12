@@ -23,6 +23,7 @@ struct arguments_optim{
   double old_inprod = arma::datum::inf;
   int step_iteration = 0L;
   bool print = false;
+  int print_interval = 50L;
 
   double ss = 1;
   arma::vec dir = {1};

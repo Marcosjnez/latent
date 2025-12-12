@@ -28,7 +28,7 @@
 #'
 #' @method se lcfa
 #' @export
-se.lcfa <- function(fit, type = "standard", model = "model", digits = 5) {
+se.lcfa <- function(fit, type = "standard", digits = 5) {
 
   # Compute lavaan standard errors:
   if(fit@call$mimic == "lavaan") {
@@ -41,53 +41,12 @@ se.lcfa <- function(fit, type = "standard", model = "model", digits = 5) {
 
   # Select the parameters to display according to model type:
 
-  if(model == "user") {
-
-    model <- fit@modelInfo$cfa_trans
-    est <- fit@transformed_pars
-
-  } else if(model == "model") {
-
-    model <- fit@modelInfo$cfa_param
-    est <- fit@parameters
-
-  } else {
-    stop("Unknown model")
-  }
+  model <- fit@modelInfo$cfa_param
+  est <- fit@parameters
 
   if(type == "standard") {
 
     SE <- standard_se(fit = fit)
-
-    # # Get the asymptotic correlation matrix:
-    # ACOV <- asymptotic_normal(fit@Optim$data_list$correl[[1]]$R)
-    #
-    # # Get the jacobian:
-    # lambda <- fit@transformed_pars[[1]]$lambda
-    # psi <- fit@transformed_pars[[1]]$psi
-    # theta <- fit@transformed_pars[[1]]$theta
-    # select <- match(fit@modelInfo$transparameters_labels,
-    #                 unlist(fit@modelInfo$cfa_param[[1]]))
-    # select <- select[!is.na(select)]
-    # dl_drhat <- dlambda_drhat(lambda, psi)
-    # dp_drhat <- dpsi_drhat(lambda, nrow(psi))
-    # dt_drhat <- dtheta_drhat(nrow(theta))
-    # J <- cbind(dl_drhat, dp_drhat, dt_drhat)
-    # J <- J[, select]
-    #
-    # # Sandwich se estimator:
-    # # lower_ind <- which(lower.tri(theta, diag = TRUE))
-    # # ACOV <- ACOV[lower_ind, ]; ACOV <- ACOV[, lower_ind]
-    # # J <- J[lower_ind, ]
-    # B <- t(J) %*% ACOV %*% J
-    # H_inv <- solve(SE$h)
-    # VAR <- H_inv %*% B %*% H_inv
-    #
-    # mylabels <- fit@modelInfo$parameters_labels
-    # selection <- match(mylabels, fit@modelInfo$transparameters_labels)
-    # SE$se[selection] <- sqrt(diag(VAR))
-
-    SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
 
   } else if(type == "robust") {
 
@@ -103,10 +62,18 @@ se.lcfa <- function(fit, type = "standard", model = "model", digits = 5) {
   # mylabels <- unlist(model)
   mylabels <- fit@modelInfo$parameters_labels
   selection <- match(mylabels, fit@modelInfo$transparameters_labels)
-  VCOV <- SE$vcov[selection, ][, selection]
+
+  estimators <- unlist(lapply(fit@modelInfo$control_estimator,
+                              FUN = \(x) x$estimator))
+  if(all(estimators == "cfa_ml")) {
+    denom <- 1L
+  } else {
+    denom <- N
+  }
+  VCOV <- SE$vcov[selection, ][, selection] / denom
 
   # Standard errors:
-  vector_se <- SE$se[selection]/sqrt(N)
+  vector_se <- SE$se[selection]/sqrt(denom)
   names(vector_se) <- mylabels
 
   # Select the parameter labels for the table:
@@ -114,7 +81,7 @@ se.lcfa <- function(fit, type = "standard", model = "model", digits = 5) {
   selection <- match(mylabels, fit@modelInfo$transparameters_labels)
 
   # Standard errors:
-  se <- SE$se[selection]/sqrt(N)
+  se <- SE$se[selection]/sqrt(denom)
   names(se) <- mylabels
 
   # Tables:
@@ -264,6 +231,46 @@ se_information_lavaan <- function(fit, type = "standard", model = "model",
   result$vcov <- VCOV
 
   return(result)
+
+}
+
+robust_general <- function(fit) {
+
+  SE <- standard_se(fit = fit)
+
+  # Get the asymptotic correlation matrix:
+  ACOV <- asymptotic_normal(fit@Optim$data_list$correl[[1]]$R)
+
+  # Get the jacobian:
+  lambda <- fit@transformed_pars[[1]]$lambda
+  psi <- fit@transformed_pars[[1]]$psi
+  theta <- fit@transformed_pars[[1]]$theta
+  select <- match(fit@modelInfo$transparameters_labels,
+                  unlist(fit@modelInfo$cfa_param[[1]]))
+  select <- select[!is.na(select)]
+  dl_drhat <- dlambda_drhat(lambda, psi)
+  dp_drhat <- dpsi_drhat(lambda, nrow(psi))
+  dt_drhat <- dtheta_drhat(nrow(theta))
+  J <- cbind(dl_drhat, dp_drhat, dt_drhat)
+  J <- J[, select]
+
+  # fit@Optim$opt$outputs$transformations$matrices
+
+  # Sandwich se estimator:
+  # lower_ind <- which(lower.tri(theta, diag = TRUE))
+  # ACOV <- ACOV[lower_ind, ]; ACOV <- ACOV[, lower_ind]
+  # J <- J[lower_ind, ]
+  B <- t(J) %*% ACOV %*% J
+  H_inv <- solve(SE$h)
+  VAR <- H_inv %*% B %*% H_inv
+
+  mylabels <- fit@modelInfo$parameters_labels
+  selection <- match(mylabels, fit@modelInfo$transparameters_labels)
+  SE$se[selection] <- sqrt(diag(VAR))
+
+  # SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
+  SE$B <- B
+
 
 }
 

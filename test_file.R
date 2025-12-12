@@ -14,7 +14,7 @@
 
 library(latent)
 
-fit <- lca(data = gss82, nclasses = 3,
+fit <- lca(data = gss82, nclasses = 1:3,
            # multinomial = c("X1", "X2"),
            # poisson = ,
            # beta = ,
@@ -22,11 +22,14 @@ fit <- lca(data = gss82, nclasses = 3,
            # model = formula(X1 ~ 1 + cluster1,
            #                 X2 ~ 1 + cluster2),
            item = rep("multinomial", ncol(gss82)),
-           penalties = TRUE, control = NULL, do.fit = TRUE)
+           penalties = TRUE,
+           control = list(rstarts = 1, print = TRUE),
+           do.fit = TRUE)
 fit@loglik # -2754.643
 fit@penalized_loglik # -2759.507
 fit@Optim$opt$iterations # 67
 fit@Optim$opt$convergence
+fit@Optim$opt$ng
 fit@timing
 
 # Plot model fit info:
@@ -98,7 +101,8 @@ fit <- lca(data = cancer[, 1:6], nclasses = 3L,
            item = c("gaussian", "gaussian",
                     "multinomial", "multinomial",
                     "gaussian", "gaussian"),
-           control = NULL, do.fit = TRUE)
+           control = NULL,
+           do.fit = TRUE)
 fit@timing
 fit@loglik # -5784.701
 fit@penalized_loglik # -5795.573
@@ -197,7 +201,7 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "uls",
+            estimator = "ml",
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE)
 fit@loss   # 0.283407

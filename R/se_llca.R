@@ -28,7 +28,7 @@
 #'
 #' @method se llca
 #' @export
-se.llca <- function(fit, type = "standard", model = "user", digits = 2) {
+se.llca <- function(fit, type = "standard", model = "user", digits = 3) {
 
   # Select the parameters to display according to model type:
 
@@ -141,13 +141,13 @@ standard_se <- function(fit) {
                      H = H)
 
   # Name the parameters:
+  colnames(H) <- rownames(H) <- fit@modelInfo$parameters_labels
+  result$h <- H
   result$se <- as.vector(result$se)
   names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
     fit@modelInfo$transparameters_labels
 
-  colnames(H) <- rownames(H) <- fit@modelInfo$parameters_labels
-  result$h <- H
-
+  # Return:
   return(result)
 
 }
@@ -178,6 +178,8 @@ robust_se <- function(fit) {
 
   H <- numDeriv::jacobian(func = G, x = fit@Optim$opt$parameters)
   H <- 0.5*(H + t(H)) # Force symmetry
+
+  #### Collect the gradient by response pattern ####
 
   transparameters_labels <- fit@modelInfo$transparameters_labels
   lca_all <- fit@modelInfo$lca_all
@@ -279,7 +281,7 @@ robust_se <- function(fit) {
 }
 
 ci <- function(fit, type = "standard", model = "user",
-               confidence = 0.95, digits = 2) {
+               confidence = 0.95, digits = 3) {
 
   if(type == "standard") {
 
