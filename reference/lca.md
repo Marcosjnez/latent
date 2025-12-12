@@ -7,8 +7,8 @@ with or without covariates to predict class membership.
 
 ``` r
 lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-    X = NULL, penalties = TRUE, model = NULL,
-    start = NULL, do.fit = TRUE, control = NULL, verbose = TRUE)
+    X = NULL, penalties = TRUE, model = NULL, mimic = "LG",
+    start = NULL, do.fit = TRUE, verbose = TRUE, control = NULL)
 ```
 
 ## Arguments
@@ -37,6 +37,11 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 - model:
 
   List of parameter labels. See 'details' for more information.
+
+- mimic:
+
+  String. Replicate the output of other softwares. Use "LG" to replicate
+  the output of LatentGOLD.
 
 - start:
 
