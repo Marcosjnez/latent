@@ -394,6 +394,8 @@ get_cfa_structures <- function(data_list, full_model, control) {
       cfa_estimator <- "cfa_dwls"
     } else if(estimator == "ml") {
       cfa_estimator <- "cfa_ml"
+    } else if(estimator == "ml2") {
+      cfa_estimator <- "cfa_ml2"
     }
 
     control_estimator[[k]] <- list(estimator = cfa_estimator,

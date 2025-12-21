@@ -43,7 +43,7 @@ latInspect.llca <- function(fit,
 
   if (what == "profile") {
 
-    weights <- fit@Optim$data_list$weights
+    weights <- fit@data_list$weights
     classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
     temp <- fit@ClassConditional
 
@@ -75,7 +75,7 @@ latInspect.llca <- function(fit,
              what == "cluster" ||
              what == "clusters") {
 
-    weights <- fit@Optim$data_list$weights
+    weights <- fit@data_list$weights
     temp <- colSums(fit@transformed_pars$class * weights) / sum(weights)
     names(temp) <- paste0("Class", 1:length(temp))
 
@@ -107,7 +107,7 @@ latInspect.llca <- function(fit,
 
     temp <- fit@transformed_pars$beta
     colnames(temp) <- paste0("Class", 1:ncol(temp))
-    rownames(temp) <- colnames(fit@Optim$data_list$cov_patterns)
+    rownames(temp) <- colnames(fit@data_list$cov_patterns)
 
     if(!is.null(digits)) {
       temp <- round(temp, digits = digits)
@@ -135,8 +135,8 @@ latInspect.llca <- function(fit,
 
   } else if (what == "pattern") {
 
-    temp <- cbind(fit@Optim$data_list$patterns,
-                  times = fit@Optim$data_list$weights)
+    temp <- cbind(fit@data_list$patterns,
+                  times = fit@data_list$weights)
 
     return(temp)
 

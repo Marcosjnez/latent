@@ -114,8 +114,8 @@ standard_se <- function(fit) {
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
   control_optimizer <- fit@modelInfo$control
-  control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
-  control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
+  control_optimizer$parameters[[1]] <- fit@Optim$parameters
+  control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 
   # Calculate the Hessian matrix using numerical approximations:
   G <- function(parameters) {
@@ -130,7 +130,7 @@ standard_se <- function(fit) {
 
   }
 
-  H <- numDeriv::jacobian(func = G, x = fit@Optim$opt$parameters)
+  H <- numDeriv::jacobian(func = G, x = fit@Optim$parameters)
   H <- 0.5*(H + t(H)) # Force symmetry
 
   # Get the variance-covariance matrix between the parameters:
@@ -160,8 +160,8 @@ robust_se <- function(fit) {
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
   control_optimizer <- fit@modelInfo$control
-  control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
-  control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
+  control_optimizer$parameters[[1]] <- fit@Optim$parameters
+  control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 
   # Calculate the Hessian matrix using numerical approximations:
   G <- function(parameters) {
@@ -176,7 +176,7 @@ robust_se <- function(fit) {
 
   }
 
-  H <- numDeriv::jacobian(func = G, x = fit@Optim$opt$parameters)
+  H <- numDeriv::jacobian(func = G, x = fit@Optim$parameters)
   H <- 0.5*(H + t(H)) # Force symmetry
 
   #### Collect the gradient by response pattern ####
@@ -184,11 +184,11 @@ robust_se <- function(fit) {
   transparameters_labels <- fit@modelInfo$transparameters_labels
   lca_all <- fit@modelInfo$lca_all
   full_loglik <- lca_all$loglik
-  weights <- fit@Optim$data_list$weights
-  npatterns <- fit@Optim$data_list$npatterns
-  nitems <- fit@Optim$data_list$nitems
+  weights <- fit@data_list$weights
+  npatterns <- fit@data_list$npatterns
+  nitems <- fit@data_list$nitems
   nparam <- fit@modelInfo$nparam
-  nobs <- fit@Optim$data_list$nobs
+  nobs <- fit@data_list$nobs
 
   control_estimator <- control_estimator[-1]
   nclasses <- ncol(fit@modelInfo$lca_all$class)
@@ -240,7 +240,7 @@ robust_se <- function(fit) {
   # sum(f)
   # fit@penalized_loglik
   # colSums(g)
-  # c(fit@Optim$opt$rg)
+  # c(fit@Optim$rg)
   B <- B*nobs/(nobs-1)
   # eigen(B)$values
 
@@ -252,8 +252,8 @@ robust_se <- function(fit) {
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
   control_optimizer <- fit@modelInfo$control
-  control_optimizer$parameters[[1]] <- fit@Optim$opt$parameters
-  control_optimizer$transparameters[[1]] <- fit@Optim$opt$transparameters
+  control_optimizer$parameters[[1]] <- fit@Optim$parameters
+  control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 
   # Get the variance-covariance matrix between the parameters:
   result <- get_vcov(control_manifold = control_manifold,
@@ -301,7 +301,7 @@ ci <- function(fit, type = "standard", model = "user",
   names(se) <- fit@modelInfo$transparameters_labels
 
   # Number of total parameters and transformed parameters:
-  ntrans <- length(fit@Optim$opt$transparameters)
+  ntrans <- length(fit@Optim$transparameters)
   # Initialize a vector of degrees of freedom:
   ps <- rep(1, times = ntrans)
   # slot for extracting the degrees of freedom from the transformations:
@@ -310,11 +310,11 @@ ci <- function(fit, type = "standard", model = "user",
   indices <- unlist(lapply(fit@modelInfo$control_transform,
                            FUN = \(x) x$indices_out[[1]]+1L))
   # Update the degrees of freedom of each transformed parameter:
-  ps[indices] <- unlist(lapply(fit@Optim$opt$outputs$transformations$vectors,
+  ps[indices] <- unlist(lapply(fit@Optim$outputs$transformations$vectors,
                                FUN = \(x) x[[slot]]))
 
   # Compute confidence intervals for each transformed parameter:
-  x <- c(fit@Optim$opt$transparameters)
+  x <- c(fit@Optim$transparameters)
   lower <- x - sqrt(qchisq(confidence, df = ps)) * se
   upper <- x + sqrt(qchisq(confidence, df = ps)) * se
   names(lower) <- names(upper) <- fit@modelInfo$transparameters_labels

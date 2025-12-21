@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/10/2025
+# Modification date: 12/12/2025
 
 # class definitions
 #
@@ -11,8 +11,9 @@ setClass("llca",
            version            = "character", # version
            call               = "call", # matched call
            timing             = "numeric", # timing information
-           modelInfo          = "list", # modelInfo
-           Optim              = "list", # opt
+           data_list          = "list",
+           modelInfo          = "list",
+           Optim              = "list",
            user_model         = "list",
            parameters         = "list",
            transformed_pars   = "list",
@@ -33,8 +34,9 @@ setClass("lcfa",
            version            = "character", # version
            call               = "call", # matched call
            timing             = "numeric", # timing information
-           modelInfo          = "list", # modelInfo
-           Optim              = "list", # opt
+           data_list          = "list",
+           modelInfo          = "list",
+           Optim              = "list",
            parameters         = "list",
            transformed_pars   = "list",
            loglik             = "numeric", # loglik values
@@ -53,8 +55,9 @@ setClass("lpoly",
            version            = "character", # version
            call               = "call", # matched call
            timing             = "numeric", # timing information
-           modelInfo          = "list", # modelInfo
-           Optim              = "list", # opt
+           data_list          = "list",
+           modelInfo          = "list",
+           Optim              = "list",
            dataList           = "list",
            parameters         = "list",
            transformed_pars   = "list",

@@ -1,14 +1,13 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 12/12/2025
+ * Modification date: 20/12/2025
  */
 
-Rcpp::List get_vcov(Rcpp::List control_manifold,
-                    Rcpp::List control_transform,
-                    Rcpp::List control_estimator,
-                    Rcpp::List control_optimizer,
-                    arma::mat H) {
+Rcpp::List get_jacob(Rcpp::List control_manifold,
+                     Rcpp::List control_transform,
+                     Rcpp::List control_estimator,
+                     Rcpp::List control_optimizer) {
 
   Rcpp::List result;
   arguments_optim x;
@@ -50,10 +49,6 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
    * Computations
    */
 
-  x.h = H;
-
-  if(x.h.is_empty()) Rf_error("Please, provide the Hessian matrix");
-
   final_manifold->param(x, xmanifolds);
   final_manifold->retr(x, xmanifolds);
   final_manifold->param(x, xmanifolds);
@@ -67,11 +62,7 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
   final_transform->jacobian(x, xtransforms);
   final_transform->outcomes(x, xtransforms);
 
-  Rcpp::List outputsTrans;
-  outputsTrans["matrices"] = std::get<2>(x.outputs_transform);
-
-  result["vcov"] = x.vcov;
-  result["se"] = x.se;
+  result["matrices"] = std::get<2>(x.outputs_transform);
 
   return result;
 

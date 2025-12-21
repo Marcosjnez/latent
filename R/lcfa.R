@@ -195,18 +195,15 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   #### Fit the model ####
 
-  # Data for the optimization algorithms:
-  Optim <- list(data = data,
-                data_list = data_list)
-
   if(!do.fit) {
 
     lcfa_list <- new("lcfa",
                      version            = as.character( packageVersion('latent') ),
                      call               = mc, # matched call
                      timing             = numeric(), # timing information
-                     modelInfo          = modelInfo, # modelInfo
-                     Optim              = Optim, # Optim
+                     data_list          = data_list,
+                     modelInfo          = modelInfo,
+                     Optim              = list(),
                      parameters         = list(),
                      transformed_pars   = list(),
                      loglik             = numeric(), # loglik values
@@ -228,7 +225,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   # Collect all the information about the optimization:
 
-  Optim$opt <- x
+  Optim <- x
   elapsed <- x$elapsed
 
   #### Estimated model structures ####
@@ -237,7 +234,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   indices_pars <- match(modelInfo$parameters_labels,
                         unlist(modelInfo$cfa_param))
   vv <- rep(0, times = length(unlist(modelInfo$cfa_param)))
-  vv[indices_pars] <- Optim$opt$parameters
+  vv[indices_pars] <- Optim$parameters
   parameters <- fill_list_with_vector(modelInfo$cfa_param, vv)
   parameters <- allnumeric(parameters)
   # FIXED PARAMETERS?
@@ -246,7 +243,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   indices_trans <- match(modelInfo$transparameters_labels,
                          unlist(modelInfo$cfa_trans))
   vv <- rep(0, times = length(unlist(modelInfo$cfa_trans)))
-  vv[indices_trans] <- Optim$opt$transparameters
+  vv[indices_trans] <- Optim$transparameters
   transformed_pars <- fill_list_with_vector(modelInfo$cfa_trans, vv)
   transformed_pars <- allnumeric(transformed_pars)
 
@@ -254,7 +251,9 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   # Get the indices of the estimator structures "cfa_dwls" and "cfa_ml":
   all_estimators <- unlist(lapply(modelInfo$control_estimator, FUN = \(x) x$estimator))
-  indices_cfa <- which(all_estimators == "cfa_dwls" | all_estimators == "cfa_ml")
+  indices_cfa <- which(all_estimators == "cfa_dwls" |
+                         all_estimators == "cfa_ml" |
+                         all_estimators == "cfa_ml2")
 
   # Get the indices of the estimator structures "logdetmat" (penalties):
   indices_logdetmat <- which(all_estimators == "logdetmat")
@@ -301,8 +300,9 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                   version            = as.character( packageVersion('latent') ),
                   call               = mc, # matched call
                   timing             = elapsed, # timing information
-                  modelInfo          = modelInfo, # modelInfo
-                  Optim              = Optim, # Optim
+                  data_list          = data_list,
+                  modelInfo          = modelInfo,
+                  Optim              = Optim,
                   parameters         = parameters,
                   transformed_pars   = transformed_pars,
                   loglik             = loglik, # loglik values

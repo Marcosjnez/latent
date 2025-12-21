@@ -39,12 +39,12 @@ latInspect.lcfa <- function(fit,
   what <- tolower(what)
 
   # Number of groups:
-  ngroups <- fit@Optim$data_list$ngroups
-  nitems <- fit@Optim$data_list$nitems
-  nfactors <- fit@Optim$data_list$nfactors
-  group_label <- fit@Optim$data_list$group_label
-  item_label <- fit@Optim$data_list$item_label
-  factor_label <- fit@Optim$data_list$factor_label
+  ngroups <- fit@data_list$ngroups
+  nitems <- fit@data_list$nitems
+  nfactors <- fit@data_list$nfactors
+  group_label <- fit@data_list$group_label
+  item_label <- fit@data_list$item_label
+  factor_label <- fit@data_list$factor_label
 
   # Get the indices of the transformation structures "factor_cor". These are the
   # structures that contain the model parameters:
@@ -68,7 +68,7 @@ latInspect.lcfa <- function(fit,
     names(penalty) <- group_label
   # jacob is the jacobian of the model matrix wrt the parameters
 
-  x <- fit@Optim$opt
+  x <- fit@Optim
 
   for(i in 1:ngroups) {
 
@@ -77,15 +77,15 @@ latInspect.lcfa <- function(fit,
     j <- indices_factor_cor[i]
     k <- indices_cfa[i]
 
-    loss[[i]] <- c(x$outputs$estimators$doubles[[k]][[1]])
-    loglik[[i]] <- c(x$outputs$estimators$doubles[[k]][[2]])
-    w[[i]] <- c(x$outputs$estimators$doubles[[k]][[3]])
+    loss[[i]] <- c(fit@Optim$outputs$estimators$doubles[[k]][[1]])
+    loglik[[i]] <- c(fit@Optim$outputs$estimators$doubles[[k]][[2]])
+    w[[i]] <- c(fit@Optim$outputs$estimators$doubles[[k]][[3]])
 
     # If there are penalties, add the penalties to the loss or loglik:
     if(length(indices_logdetmat) > 0) {
 
       l <- indices_logdetmat[i]
-      penalty[[i]] <- c(x$outputs$estimators$doubles[[l]][[1]])
+      penalty[[i]] <- c(fit@Optim$outputs$estimators$doubles[[l]][[1]])
       penalized_loss[[i]] <- loss[[i]] + penalty[[i]]
       penalized_loglik[[i]] <- loglik[[i]] + penalty[[i]]
 
@@ -97,14 +97,14 @@ latInspect.lcfa <- function(fit,
     }
 
     # Extract model parameters:
-    jacob[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[1]], p, q)
-    lambda[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[2]], p, q)
-    psi[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[3]], q, q)
-    theta[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[4]], p, p)
-    model[[i]] <- matrix(x$outputs$transformations$matrices[[j]][[5]], p, p)
-    uniquenesses[[i]] <- c(x$outputs$transformations$vectors[[j]][[1]])
-    resids[[i]] <- matrix(x$outputs$estimators$matrices[[k]][[1]], p, p)
-    W[[i]] <- matrix(x$outputs$estimators$matrices[[k]][[2]], p, p)
+    jacob[[i]] <- matrix(fit@Optim$outputs$transformations$matrices[[j]][[1]], p, q)
+    lambda[[i]] <- matrix(fit@Optim$outputs$transformations$matrices[[j]][[2]], p, q)
+    psi[[i]] <- matrix(fit@Optim$outputs$transformations$matrices[[j]][[3]], q, q)
+    theta[[i]] <- matrix(fit@Optim$outputs$transformations$matrices[[j]][[4]], p, p)
+    model[[i]] <- matrix(fit@Optim$outputs$transformations$matrices[[j]][[5]], p, p)
+    uniquenesses[[i]] <- c(fit@Optim$outputs$transformations$vectors[[j]][[1]])
+    resids[[i]] <- matrix(fit@Optim$outputs$estimators$matrices[[k]][[1]], p, p)
+    W[[i]] <- matrix(fit@Optim$outputs$estimators$matrices[[k]][[2]], p, p)
 
     # Name model parameters:
     colnames(lambda[[i]]) <- colnames(psi[[i]]) <- rownames(psi[[i]]) <-

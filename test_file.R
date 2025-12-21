@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 08/12/2025
+# Modification date: 13/12/2025
 
 #### Install latent ####
 
@@ -14,7 +14,7 @@
 
 library(latent)
 
-fit <- lca(data = gss82, nclasses = 1:3,
+fit <- lca(data = gss82, nclasses = 3,
            # multinomial = c("X1", "X2"),
            # poisson = ,
            # beta = ,
@@ -27,9 +27,9 @@ fit <- lca(data = gss82, nclasses = 1:3,
            do.fit = TRUE)
 fit@loglik # -2754.643
 fit@penalized_loglik # -2759.507
-fit@Optim$opt$iterations # 67
-fit@Optim$opt$convergence
-fit@Optim$opt$ng
+fit@Optim$iterations # 67
+fit@Optim$convergence
+fit@Optim$ng
 fit@timing
 
 # Plot model fit info:
@@ -68,8 +68,8 @@ fit <- lca(data = empathy[, 1:6], nclasses = 4L,
 
 fit@loglik # -1841.336
 fit@penalized_loglik # -1844.333
-fit@Optim$opt$iterations # 52
-fit@Optim$opt$convergence # TRUE
+fit@Optim$iterations # 52
+fit@Optim$convergence # TRUE
 fit@timing
 
 # Plot model fit info:
@@ -106,8 +106,8 @@ fit <- lca(data = cancer[, 1:6], nclasses = 3L,
 fit@timing
 fit@loglik # -5784.701
 fit@penalized_loglik # -5795.573
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@Optim$iterations
+fit@Optim$convergence
 fit@timing
 
 # Plot model fit info:
@@ -145,9 +145,9 @@ fit0 <- lca(data = data, X = NULL, model = NULL,
             nclasses = 4L, penalties = TRUE,
             control = NULL, do.fit = TRUE)
 fit0@timing
-fit0@loglik # -1798.885
-fit0@penalized_loglik # -1801.996
-fit0@Optim$opt$iterations
+fit0@loglik # -1841.336
+fit0@penalized_loglik # -1844.333
+fit0@Optim$iterations
 
 Y <- as.matrix(empathy[, 9:10]) # Covariates
 fit <- lca(data = data, X = cbind(X, Y), model = fit0,
@@ -155,17 +155,12 @@ fit <- lca(data = data, X = cbind(X, Y), model = fit0,
            nclasses = 4L, penalties = TRUE,
            control = NULL, do.fit = TRUE)
 fit@timing
-fit@loglik # -1736.398
-fit@penalized_loglik # -1739.809
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@loglik # -1747.135
+fit@penalized_loglik # -1750.566
+fit@Optim$iterations
+fit@Optim$convergence
 
-fit0@parameters
-fit@parameters
-
-round(predict(fit), 3)
-
-t(apply(fit@transformed_pars$beta, 1, FUN = \(x) x -sum(x)/4))
+all.equal(fit0@parameters$items, fit@parameters$items)
 
 # Plot model fit info:
 fit
@@ -201,15 +196,16 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "ml",
+            estimator = "ml2",
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE)
 fit@loss   # 0.283407
 fit@loglik # -3427.131
 fit@penalized_loglik # -3427.131
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@Optim$iterations
+fit@Optim$convergence
 fit@timing
+fit
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
@@ -234,8 +230,8 @@ control_manifold <- fit@modelInfo$control_manifold
 control_transform <- fit@modelInfo$control_transform
 control_estimator <- fit@modelInfo$control_estimator
 control <- fit@modelInfo$control
-control$parameters[[1]] <- fit@Optim$opt$parameters
-control$transparameters[[1]] <- fit@Optim$opt$transparameters
+control$parameters[[1]] <- fit@Optim$parameters
+control$transparameters[[1]] <- fit@Optim$transparameters
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control, eps = 1e-04,
                compute = "all")
@@ -247,8 +243,8 @@ fit@loss
 fit@loglik # -0.283407
 fit@penalized_loglik # -0.283407
 fit@loss # 0.1574787
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@Optim$iterations
+fit@Optim$convergence
 fit@timing
 
 # Plot model fit info:
@@ -288,14 +284,14 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            group = NULL, estimator = "ml",
+            group = "school", estimator = "ml",
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE)
 
 fit@loglik # -3422.946 (ml)
 fit@loss # 0.4055109 (uls) / 0.7677016 (ml)
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@Optim$iterations
+fit@Optim$convergence
 fit@timing
 latInspect(fit, what = "loglik")
 
@@ -372,8 +368,8 @@ fit <- lcfa(data = HolzingerSwineford1939, model = model,
 fit@loglik # -3421.613 (ML)
 fit@penalized_loglik # -0.249485 (ML)
 fit@loss # 0.1419955 (ULS) / 0.2467385 (ML)
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@Optim$iterations
+fit@Optim$convergence
 fit@timing
 
 fit2@Fit@fx*2
@@ -434,14 +430,15 @@ fit <- lcfa(data = HolzingerSwineford1939,
             mimic = "latent",
             positive = TRUE, penalties = TRUE,
             do.fit = TRUE,
-            control = list(opt = "lbfgs", maxit = 100L,
-                           cores = 20L, rstarts = 20L))
+            control = list(opt = "lbfgs", maxit = 284L,
+                           cores = 1L, rstarts = 1L,
+                           print = TRUE, print_interval = 30))
 
 fit@loglik # -3415.092 (ML)
 fit@penalized_loglik # -3415.095 (ML)
 fit@loss # 0.1419955 (ULS) / 0.3327037 (ML)
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@Optim$iterations
+fit@Optim$convergence
 fit@timing
 
 # Plot model fit info:
@@ -485,16 +482,16 @@ mooc <- full[hexaco$sample == samples[2], ]
 dim(mooc)
 
 model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
-             ANX ~= hexemanx128 + hexemanx8 + hexemanx80 + hexemanx176
-             DEP ~= hexemdep62 + hexemdep182 + hexemdep134 + hexemdep158
-             SEN ~= hexemsen44 + hexemsen164 + hexemsen20 + hexemsen68"
+             ANX =~ hexemanx128 + hexemanx8 + hexemanx80 + hexemanx176
+             DEP =~ hexemdep62 + hexemdep182 + hexemdep134 + hexemdep158
+             SEN =~ hexemsen44 + hexemsen164 + hexemsen20 + hexemsen68"
 
 fit <- lcfa(model = model.EM, data = mooc,
             ordered = TRUE, estimator = "ml", do.fit = TRUE,
             control = NULL)
-fit@loglik # -0.283407
-fit@penalized_loglik # -0.283407
-fit@loss # 0.1574787
-fit@Optim$opt$iterations
-fit@Optim$opt$convergence
+fit@loglik # -90154.77
+fit@penalized_loglik # -90154.77
+fit@loss # 90154.77
+fit@Optim$iterations
+fit@Optim$convergence
 fit@timing

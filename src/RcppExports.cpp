@@ -89,6 +89,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// asymptotic_elliptical
+arma::mat asymptotic_elliptical(arma::mat P, double eta);
+RcppExport SEXP _latent_asymptotic_elliptical(SEXP PSEXP, SEXP etaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type P(PSEXP);
+    Rcpp::traits::input_parameter< double >::type eta(etaSEXP);
+    rcpp_result_gen = Rcpp::wrap(asymptotic_elliptical(P, eta));
+    return rcpp_result_gen;
+END_RCPP
+}
 // asymptotic_general
 arma::mat asymptotic_general(arma::mat X);
 RcppExport SEXP _latent_asymptotic_general(SEXP XSEXP) {
@@ -257,6 +269,46 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// get_jacob
+Rcpp::List get_jacob(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
+RcppExport SEXP _latent_get_jacob(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_jacob(control_manifold, control_transform, control_estimator, control_optimizer));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gLPS_uls
+arma::mat gLPS_uls(arma::mat S, arma::mat Lambda, arma::mat Phi);
+RcppExport SEXP _latent_gLPS_uls(SEXP SSEXP, SEXP LambdaSEXP, SEXP PhiSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type S(SSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Lambda(LambdaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Phi(PhiSEXP);
+    rcpp_result_gen = Rcpp::wrap(gLPS_uls(S, Lambda, Phi));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gLPS_ml
+arma::mat gLPS_ml(arma::mat S, arma::mat Lambda, arma::mat Phi);
+RcppExport SEXP _latent_gLPS_ml(SEXP SSEXP, SEXP LambdaSEXP, SEXP PhiSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type S(SSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Lambda(LambdaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Phi(PhiSEXP);
+    rcpp_result_gen = Rcpp::wrap(gLPS_ml(S, Lambda, Phi));
+    return rcpp_result_gen;
+END_RCPP
+}
 // real_sqrtmat
 arma::mat real_sqrtmat(arma::mat R);
 RcppExport SEXP _latent_real_sqrtmat(SEXP RSEXP) {
@@ -393,6 +445,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_optimizer", (DL_FUNC) &_latent_optimizer, 4},
     {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 8},
     {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 1},
+    {"_latent_asymptotic_elliptical", (DL_FUNC) &_latent_asymptotic_elliptical, 2},
     {"_latent_asymptotic_general", (DL_FUNC) &_latent_asymptotic_general, 1},
     {"_latent_DACOV2", (DL_FUNC) &_latent_DACOV2, 5},
     {"_latent_orth", (DL_FUNC) &_latent_orth, 1},
@@ -406,6 +459,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_get_grad", (DL_FUNC) &_latent_get_grad, 4},
     {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 4},
     {"_latent_get_vcov", (DL_FUNC) &_latent_get_vcov, 5},
+    {"_latent_get_jacob", (DL_FUNC) &_latent_get_jacob, 4},
+    {"_latent_gLPS_uls", (DL_FUNC) &_latent_gLPS_uls, 3},
+    {"_latent_gLPS_ml", (DL_FUNC) &_latent_gLPS_ml, 3},
     {"_latent_real_sqrtmat", (DL_FUNC) &_latent_real_sqrtmat, 1},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},
     {"_latent_joint_frequency_table", (DL_FUNC) &_latent_joint_frequency_table, 5},

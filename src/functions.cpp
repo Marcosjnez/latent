@@ -43,6 +43,7 @@
 #include "get_grad.h"
 #include "get_hess.h"
 #include "get_vcov.h"
+#include "get_jacob.h"
 #include <R_ext/Utils.h>
 #include <Rinternals.h>
 #include <R_ext/Print.h>   // For Rprintf()
@@ -62,6 +63,9 @@ Rcpp::List polyfast(arma::mat data, std::string missing = "pairwise.complete.cas
 
 // [[Rcpp::export]]
 arma::mat asymptotic_normal(arma::mat P);
+
+// [[Rcpp::export]]
+arma::mat asymptotic_elliptical(arma::mat P, double eta = 1.00);
 
 // [[Rcpp::export]]
 arma::mat asymptotic_general(arma::mat X);
@@ -119,3 +123,15 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
                     Rcpp::List control_estimator,
                     Rcpp::List control_optimizer,
                     arma::mat H);
+
+// [[Rcpp::export]]
+Rcpp::List get_jacob(Rcpp::List control_manifold,
+                     Rcpp::List control_transform,
+                     Rcpp::List control_estimator,
+                     Rcpp::List control_optimizer);
+
+// [[Rcpp::export]]
+arma::mat gLPS_uls(arma::mat S, arma::mat Lambda, arma::mat Phi);
+
+// [[Rcpp::export]]
+arma::mat gLPS_ml(arma::mat S, arma::mat Lambda, arma::mat Phi);

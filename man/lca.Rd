@@ -87,12 +87,11 @@ latInspect(fit, what = "table", digits = 3)
 latInspect(fit, what = "pattern", digits = 3)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE <- se(fit, type = "standard", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "user",
-        confidence = 0.95, digits = 2)
+CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
 CI$table
 }
 

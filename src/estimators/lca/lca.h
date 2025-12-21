@@ -153,8 +153,9 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(1);
+    doubles.resize(2);
     doubles[0] = f;
+    doubles[1] = -f;
 
     vectors.resize(3);
     vectors[0] = loglik_case;

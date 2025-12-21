@@ -5,16 +5,16 @@
 
 setMethod("show", "llca", function(object) {
 
-  conv <- object@Optim$opt$convergence
+  conv <- object@Optim$convergence
   # Print header with model name and version
   if(conv){
     cat(sprintf("%s %s converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
-                object@Optim$opt$iterations))
+                object@Optim$iterations))
   }else{
     cat(sprintf("%s %s did not converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
-                object@Optim$opt$iterations))
+                object@Optim$iterations))
   }
 
 
@@ -52,16 +52,16 @@ setMethod("show", "llca", function(object) {
 
 setMethod("show", "lcfa", function(object) {
 
-  conv <- object@Optim$opt$convergence
+  conv <- object@Optim$convergence
   # Print header with model name and version
   if(conv) {
     cat(sprintf("%s %s converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
-                object@Optim$opt$iterations))
+                object@Optim$iterations))
   } else {
     cat(sprintf("%s %s did not converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
-                object@Optim$opt$iterations))
+                object@Optim$iterations))
   }
 
 

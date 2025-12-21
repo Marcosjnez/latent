@@ -26,7 +26,7 @@
 #' @export
 fitted.llca <- function(model, digits = NULL) {
 
-  X <- model@Optim$data_list$X
+  X <- model@data_list$X
   P0 <- predict.llca(model = model, new = X[, -1], digits = digits)
 
   return(P0)

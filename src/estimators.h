@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 30/10/2025
+ * Modification date: 21/12/2025
  */
 
 class estimators {
@@ -68,6 +68,7 @@ public:
 
 #include "estimators/cfa/cfa_dwls.h"
 #include "estimators/cfa/cfa_ml.h"
+#include "estimators/cfa/cfa_ml2.h"
 
 #include "estimators/correlation/polycor.h"
 
@@ -79,6 +80,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "dwls_lt",                     choose_dwls_lt                   },
   { "cfa_dwls",                    choose_cfa_dwls                  },
   { "cfa_ml",                      choose_cfa_ml                    },
+  { "cfa_ml2",                     choose_cfa_ml2                   },
   { "cf",                          choose_cf                        },
   { "oblimin",                     choose_oblimin                   },
   { "geomin",                      choose_geomin                    },

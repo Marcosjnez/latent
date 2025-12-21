@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/12/2025
+# Modification date: 12/12/2025
 
 allnumeric <- function(lst) {
 

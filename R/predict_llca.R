@@ -29,7 +29,7 @@ predict.llca <- function(model, new = NULL, digits = NULL) {
 
   if(is.null(new) || ncol(new) == 0) {
 
-    X <- model@Optim$data_list$X
+    X <- model@data_list$X
 
   } else {
 

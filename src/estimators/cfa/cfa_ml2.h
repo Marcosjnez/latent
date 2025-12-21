@@ -1,14 +1,14 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/11/2025
+ * Modification date: 21/12/2025
  */
 
 /*
  * Confirmatory factor analysis (maximum-likelihood)
  */
 
-class cfa_ml: public estimators {
+class cfa_ml2: public estimators {
 
 public:
 
@@ -35,10 +35,7 @@ public:
 
   void F(arguments_optim& x) {
 
-    // f = w*(arma::log_det_sympd(Rhat) - logdetR + arma::accu(R % Rhat_inv) - p);
-    f = w*n*0.5*(plogpi2 +
-      arma::log_det_sympd(Rhat) +
-      arma::accu(R % Rhat_inv));
+    f = w*(arma::log_det_sympd(Rhat) - logdetR + arma::accu(R % Rhat_inv) - p);
     x.f += f;
 
   }
@@ -50,7 +47,7 @@ public:
     arma::mat temp = 2*gRhat;
     temp.diag() *= 0.5;
 
-    x.grad.elem(indices[0]) += w*n*0.5*arma::vectorise(temp(lower_diag));
+    x.grad.elem(indices[0]) += w*arma::vectorise(temp(lower_diag));
 
   }
 
@@ -65,7 +62,7 @@ public:
                           Rhat_inv * R * dRhat_inv));
     dgRhat.diag() *= 0.5;
 
-    x.dgrad.elem(indices[0]) += w*n*0.5*arma::vectorise(dgRhat(lower_diag));
+    x.dgrad.elem(indices[0]) += w*arma::vectorise(dgRhat(lower_diag));
 
   }
 
@@ -76,18 +73,18 @@ public:
     hx.rows(lower_diag) *= 2;
     hx = arma::diagmat(arma::vectorise(hx.elem(lower_diag)));
 
-    x.hess(indices[0], indices[0]) += w*n*0.5*hx;
+    x.hess(indices[0], indices[0]) += w*hx;
 
   }
 
   void outcomes(arguments_optim& x) {
 
     doubles.resize(3);
-    // loglik = w*n*0.5*(-plogpi2 -
-    //                    arma::log_det_sympd(Rhat) -
-    //                    arma::accu(R % Rhat_inv));
+    loglik = w*n*0.5*(-plogpi2 -
+                       arma::log_det_sympd(Rhat) -
+                       arma::accu(R % Rhat_inv));
     doubles[0] = f;
-    doubles[1] = -f;
+    doubles[1] = loglik;
     doubles[2] = w;
 
     matrices.resize(2);
@@ -99,9 +96,9 @@ public:
 
 };
 
-cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
+cfa_ml2* choose_cfa_ml2(const Rcpp::List& estimator_setup) {
 
-  cfa_ml* myestimator = new cfa_ml();
+  cfa_ml2* myestimator = new cfa_ml2();
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat R = estimator_setup["R"];

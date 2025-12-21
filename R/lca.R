@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/10/2025
+# Modification date: 12/12/2025
 #'
 #' @title
 #' Latent Class Analysis.
@@ -77,12 +77,11 @@
 #' latInspect(fit, what = "pattern", digits = 3)
 #'
 #' # Get standard errors:
-#' SE <- se(fit, type = "standard", model = "user", digits = 4)
+#' SE <- se(fit, type = "standard", digits = 4)
 #' SE$table
 #'
 #' # Get confidence intervals:
-#' CI <- ci(fit, type = "standard", model = "user",
-#'         confidence = 0.95, digits = 2)
+#' CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
 #' CI$table
 #' }
 #'
@@ -95,12 +94,14 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                 X = NULL, penalties = TRUE, model = NULL, mimic = "LG",
                 start = NULL, do.fit = TRUE, control = NULL, verbose = TRUE) {
 
+  # Fix the measurement part of the model if a previous llca fit is available:
+  # This is usually done for two-step estimators of covariate coefficients.
   if(class(model) == "llca") {
 
     model_list <- model@transformed_pars
     model_list$beta <- NULL
 
-    # Fit the model without covariates:
+    # Fit the model with covariates fixing the measurement part:
     fit <- lca(data, nclasses = nclasses, item = item,
                X = X, penalties = penalties, model = model_list,
                start = start, do.fit = do.fit, control = control,
@@ -238,7 +239,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   # Put in a list the objects generated form the data:
   data_list <- vector("list")
-  data_list$dt <- data
   data_list$data <- data
   data_list$X <- X
   data_list$item <- item
@@ -335,10 +335,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                       control_estimator = control_estimator,
                       control = control)
 
-    # Data for the optimization algorithms:
-    Optim <- list(data = data,
-                  data_list = data_list)
-
     # Fit the model or just get the model specification:
     if(!do.fit) {
 
@@ -346,8 +342,9 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                              version            = as.character( packageVersion('latent') ),
                              call               = mc, # matched call
                              timing             = numeric(), # timing information
-                             modelInfo          = modelInfo, # modelInfo
-                             Optim              = Optim, # Optim
+                             data_list          = data_list,
+                             modelInfo          = modelInfo,
+                             Optim              = list(),
                              user_model         = list(),
                              parameters         = list(),
                              transformed_pars   = list(),
@@ -414,7 +411,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     # Collect all the information about the optimization:
 
-    Optim$opt <- x
+    Optim <- x
 
     #### Process the outputs ####
 
@@ -426,8 +423,9 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Sum of logarithm likelihoods by response pattern:
     loglik_pattern <- weights * loglik_case
 
+    # Create the transformed parameters:
     transformed_pars <- fill_list_with_vector(modelInfo$lca_all,
-                                              Optim$opt$transparameters)
+                                              Optim$transparameters)
     transformed_pars <- allnumeric(transformed_pars)
 
     ## Summary table with information for each response pattern ##
@@ -517,14 +515,15 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                            version            = as.character( packageVersion('latent') ),
                            call               = mc, # matched call
                            timing             = elapsed, # timing information
-                           modelInfo          = modelInfo, # modelInfo
-                           Optim              = Optim, # Optim
+                           data_list          = data_list,
+                           modelInfo          = modelInfo,
+                           Optim              = Optim,
                            user_model         = user_model,
                            parameters         = raw_model,
                            transformed_pars   = transformed_pars,
                            posterior          = posterior,
                            state              = state,
-                           loglik             = loglik, # loglik values
+                           loglik             = loglik,
                            penalized_loglik   = penalized_loglik,
                            loglik_case        = loglik_case,
                            summary_table      = summary_table,

@@ -25,6 +25,10 @@ asymptotic_normal <- function(P) {
     .Call(`_latent_asymptotic_normal`, P)
 }
 
+asymptotic_elliptical <- function(P, eta = 1.00) {
+    .Call(`_latent_asymptotic_elliptical`, P, eta)
+}
+
 asymptotic_general <- function(X) {
     .Call(`_latent_asymptotic_general`, X)
 }
@@ -75,6 +79,18 @@ get_hess <- function(control_manifold, control_transform, control_estimator, con
 
 get_vcov <- function(control_manifold, control_transform, control_estimator, control_optimizer, H) {
     .Call(`_latent_get_vcov`, control_manifold, control_transform, control_estimator, control_optimizer, H)
+}
+
+get_jacob <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
+    .Call(`_latent_get_jacob`, control_manifold, control_transform, control_estimator, control_optimizer)
+}
+
+gLPS_uls <- function(S, Lambda, Phi) {
+    .Call(`_latent_gLPS_uls`, S, Lambda, Phi)
+}
+
+gLPS_ml <- function(S, Lambda, Phi) {
+    .Call(`_latent_gLPS_ml`, S, Lambda, Phi)
 }
 
 real_sqrtmat <- function(R) {

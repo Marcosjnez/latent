@@ -31,19 +31,19 @@ summary.llca <- function(fit, digits = 3) {
 
   #### Print fit ####
 
-  conv <- fit@Optim$opt$convergence
+  conv <- fit@Optim$convergence
   # Print header with model name and version
   if(conv) {
 
     cat(sprintf("%s %s converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
-                fit@Optim$opt$iterations))
+                fit@Optim$iterations))
 
   } else {
 
     cat(sprintf("%s %s did not converged after %d iterations\n\n",
                 "latent", as.character( packageVersion('latent') ),
-                fit@Optim$opt$iterations))
+                fit@Optim$iterations))
 
   }
 
