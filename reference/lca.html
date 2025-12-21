@@ -210,12 +210,11 @@ with or without covariates to predict class membership.</p>
 <span class="r-in"><span><span class="fu">latInspect</span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"pattern"</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Get standard errors:</span></span></span>
-<span class="r-in"><span><span class="va">SE</span> <span class="op">&lt;-</span> <span class="fu">se</span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"standard"</span>, model <span class="op">=</span> <span class="st">"user"</span>, digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">SE</span> <span class="op">&lt;-</span> <span class="fu">se</span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"standard"</span>, digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">SE</span><span class="op">$</span><span class="va">table</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Get confidence intervals:</span></span></span>
-<span class="r-in"><span><span class="va">CI</span> <span class="op">&lt;-</span> <span class="fu">ci</span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"standard"</span>, model <span class="op">=</span> <span class="st">"user"</span>,</span></span>
-<span class="r-in"><span>        confidence <span class="op">=</span> <span class="fl">0.95</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">CI</span> <span class="op">&lt;-</span> <span class="fu">ci</span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"standard"</span>, confidence <span class="op">=</span> <span class="fl">0.95</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">CI</span><span class="op">$</span><span class="va">table</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
