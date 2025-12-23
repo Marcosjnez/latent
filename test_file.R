@@ -196,7 +196,7 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "ml2",
+            estimator = "ml",
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE)
 fit@loss   # 0.283407

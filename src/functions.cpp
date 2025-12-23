@@ -129,9 +129,3 @@ Rcpp::List get_jacob(Rcpp::List control_manifold,
                      Rcpp::List control_transform,
                      Rcpp::List control_estimator,
                      Rcpp::List control_optimizer);
-
-// [[Rcpp::export]]
-arma::mat gLPS_uls(arma::mat S, arma::mat Lambda, arma::mat Phi);
-
-// [[Rcpp::export]]
-arma::mat gLPS_ml(arma::mat S, arma::mat Lambda, arma::mat Phi);

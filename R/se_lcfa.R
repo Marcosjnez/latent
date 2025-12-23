@@ -48,7 +48,7 @@ se.lcfa <- function(fit, type = "standard", digits = 5) {
 
   estimators <- unlist(lapply(fit@modelInfo$control_estimator,
                               FUN = \(x) x$estimator))
-  if(all(estimators == "cfa_ml")) {
+  if(all(estimators == "cfa_ml" | estimators == "cfa_ml2")) {
     all_ml <- TRUE
   } else {
     all_ml <- FALSE
@@ -64,12 +64,12 @@ se.lcfa <- function(fit, type = "standard", digits = 5) {
 
   } else if(type == "robust") {
 
-    if(all_ml) {
-      # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-      SE <- robust_se(fit = fit)
-    } else {
+    # if(all_ml) {
+    #   # Use H to compute vcov = solve(H) %*% B %*% solve(H):
+    #   SE <- robust_se(fit = fit)
+    # } else {
       SE <- robust_general(fit = fit)
-    }
+    # }
 
   } else {
     stop("Unknown type")
@@ -110,7 +110,7 @@ se.lcfa <- function(fit, type = "standard", digits = 5) {
 
 }
 
-dlambda_drhat <- function(lambda, psi) {
+drhat_dlambda <- function(lambda, psi) {
 
   # derivative of Lambda wrt Rhat
 
@@ -124,7 +124,7 @@ dlambda_drhat <- function(lambda, psi) {
   return(g)
 
 }
-dpsi_drhat <- function(lambda, q) {
+drhat_dpsi <- function(lambda, q) {
 
   gpsi <- lambda %x% lambda
   gpsi <- 2*gpsi
@@ -133,13 +133,115 @@ dpsi_drhat <- function(lambda, q) {
   return(gpsi)
 
 }
-dtheta_drhat <- function(p) {
+drhat_dtheta <- function(p) {
 
   gtheta <- diag(p) %x% diag(p)
   gtheta <- 0.5*gtheta
   diag(gtheta) <- 2*diag(gtheta)
 
   return(gtheta)
+
+}
+df2_dtheta_dwls <- function(lambda, psi, theta, w) {
+
+  q <- nrow(psi)
+  p <- nrow(theta)
+  drhat_dl <- drhat_dlambda(lambda, psi)
+  drhat_dp <- drhat_dpsi(lambda, q)
+  drhat_dt <- drhat_dtheta(p)
+  J <- -w*cbind(drhat_dl, drhat_dp, drhat_dt)
+
+  return(J)
+
+}
+df2_dtheta_ml <- function(lambda, psi, theta, w, n) {
+
+  q <- nrow(psi)
+  p <- nrow(theta)
+  drhat_dl <- drhat_dlambda(lambda, psi)
+  drhat_dp <- drhat_dpsi(lambda, q)
+  drhat_dt <- drhat_dtheta(p)
+  drhat_dtheta <- cbind(drhat_dl, drhat_dp, drhat_dt)
+
+  rhat <- lambda %*% psi %*% t(lambda) + theta
+  rhat_inv <- solve(rhat)
+  df2_drhatdR <- -rhat_inv %x% rhat_inv
+  df2_dthetadR <- 0.5*n*df2_drhatdR %*% drhat_dtheta
+
+  return(df2_dthetadR)
+
+}
+df2_dtheta_ml2 <- function(lambda, psi, theta, w) {
+
+  df2_dlambdadS <- function(lambda, psi, theta) {
+
+    p <- nrow(lambda)
+    q <- ncol(lambda)
+    indexes_p <- c()
+    for(i in 1:p) indexes_p[i] <- (i-1) * p + i
+
+    Rhat <- lambda %*% psi %*% t(lambda) + theta
+    Rhat_inv <- solve(Rhat)
+    LP <- lambda %*% psi
+
+    dRi_res_Ri_dS <- -2*Rhat_inv %x% Rhat_inv
+    dRi_res_Ri_dS <- dRi_res_Ri_dS + dRi_res_Ri_dS %*% dxt(p, p)
+    h <- t(LP) %x% diag(p) %*% dRi_res_Ri_dS
+    h[, indexes_p] <- 0.5*h[, indexes_p]
+    # h <- h[, which(lower.tri(theta, diag = TRUE))]
+
+    return(t(h))
+
+  }
+  gf2_dpsiPdS <- function(lambda, psi, theta) {
+
+    p <- nrow(lambda)
+    q <- ncol(lambda)
+    indexes_p <- c()
+    for(i in 1:p) indexes_p[i] <- (i-1) * p + i
+    indexes_q <- c()
+    for(i in 1:q) indexes_q[i] <- (i-1) * q + i
+
+    Rhat <- lambda %*% psi %*% t(lambda) + theta
+    Rhat_inv <- solve(Rhat)
+
+    dRi_res_Ri_dS <- -2*Rhat_inv %x% Rhat_inv
+    dRi_res_Ri_dS <- dRi_res_Ri_dS + dRi_res_Ri_dS %*% dxt(p, p)
+    gPS <- t(lambda) %x% t(lambda) %*% dRi_res_Ri_dS
+    gPS[indexes_q, ] <- 0.5*gPS[indexes_q, ]
+    gPS[, indexes_p] <- 0.5*gPS[, indexes_p]
+    # gPS <- gPS[which(lower.tri(psi, diag = TRUE)),
+    #            which(lower.tri(theta, diag = TRUE))]
+
+    return(t(gPS))
+
+  }
+  df2_dthetadS <- function(lambda, psi, theta) {
+
+    p <- nrow(lambda)
+    q <- ncol(lambda)
+    Rhat <- lambda %*% psi %*% t(lambda) + theta
+    Rhat_inv <- solve(Rhat)
+
+    dRi_res_Ri_dS <- -2*Rhat_inv %x% Rhat_inv
+    dRi_res_Ri_dS <- dRi_res_Ri_dS + dRi_res_Ri_dS %*% dxt(p, p)
+
+    indexes <- seq(1, p*p, by = p+1)
+    gUS <- dRi_res_Ri_dS
+    gUS[indexes, ] <- 0.5*gUS[indexes, ]
+    gUS[, indexes] <- 0.5*gUS[, indexes]
+    # gUS <- gUS[lower.tri(theta, diag = TRUE),
+    #            lower.tri(theta, diag = TRUE)]
+
+    return(t(gUS))
+
+  }
+
+  J <- 0.5*w*cbind(df2_dlambdadS(lambda, psi, theta),
+               gf2_dpsiPdS(lambda, psi, theta),
+               df2_dthetadS(lambda, psi, theta))
+
+  return(J)
 
 }
 
@@ -245,12 +347,21 @@ se_information_lavaan <- function(fit, type = "standard", model = "model",
 
 robust_general <- function(fit) {
 
+  estimators <- unlist(lapply(fit@modelInfo$control_estimator,
+                              FUN = \(x) x$estimator))
+  if(all(estimators == "cfa_ml" | estimators == "cfa_ml2")) {
+    all_ml <- TRUE
+  } else {
+    all_ml <- FALSE
+  }
+
   SE <- standard_se(fit = fit)
   N <- sum(unlist(fit@data_list$nobs))
+  w <- fit@modelInfo$control_estimator[[1]]$w
 
   # Get the asymptotic correlation matrix:
   ACOV <- asymptotic_normal(fit@data_list$correl[[1]]$R)
-  # ACOV <- asymptotic_general(fit@data_list$correl[[1]]$R)
+  # ACOV <- asymptotic_general(fit@data_list$data[[1]])
 
   # Get the jacobian:
   lambda <- fit@transformed_pars[[1]]$lambda
@@ -259,37 +370,16 @@ robust_general <- function(fit) {
   theta <- fit@transformed_pars[[1]]$theta
   theta[upper.tri(theta)] <- t(theta)[upper.tri(theta)]
 
+  if(all_ml) {
+    J <- df2_dtheta_ml(lambda, psi, theta, w, N)
+  } else {
+    J <- df2_dtheta_dwls(lambda, psi, theta, w)
+  }
+
   select <- match(fit@modelInfo$transparameters_labels,
                   unlist(fit@modelInfo$cfa_param[[1]]))
   select <- select[!is.na(select)]
-  dl_drhat <- dlambda_drhat(lambda, psi)
-  dp_drhat <- dpsi_drhat(lambda, nrow(psi))
-  dt_drhat <- dtheta_drhat(nrow(theta))
-  J <- cbind(dl_drhat, dp_drhat, dt_drhat)
   J <- J[, select]
-
-  # XXX <- gLPS_uls(diag(9), lambda, psi)
-  # dim(XXX)
-
-  # control_manifold <- fit@modelInfo$control_manifold
-  # control_transform <- fit@modelInfo$control_transform
-  # control_estimator <- fit@modelInfo$control_estimator
-  # control_optimizer <- fit@modelInfo$control
-  # control_optimizer$parameters[[1]] <- fit@Optim$parameters
-  # control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
-  # JAC <- get_jacob(control_manifold = control_manifold,
-  #                  control_transform = control_transform,
-  #                  control_estimator = control_estimator,
-  #                  control_optimizer = control_optimizer)
-  # JACOB <- matrix(JAC$matrices[[1]][[1]], nrow = 45, ncol = 78)
-  # mylabels <- fit@modelInfo$parameters_labels
-  # selection <- match(mylabels, fit@modelInfo$transparameters_labels)
-  # JACOB <- JACOB[, selection]
-  # lower_inds <- which(lower.tri(theta, diag = TRUE))
-  # B <- t(JACOB) %*% (ACOV/N)[lower_inds, ][, lower_inds] %*% JACOB
-  # H_inv <- solve(SE$h)
-  # VAR <- H_inv %*% B %*% H_inv
-  # SE$se[selection] <- 2*sqrt(diag(VAR))
 
   # Sandwich se estimator:
   B <- t(J) %*% (ACOV/N) %*% J

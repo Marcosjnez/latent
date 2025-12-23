@@ -237,90 +237,94 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
 
 }
 
-arma::mat gLPS_uls(arma::mat S, arma::mat Lambda, arma::mat Phi) {
-
-  /*
-   * Compute d2f/(dtheta ds)
-   */
-
-  int p = Lambda.n_rows;
-  int q = Lambda.n_cols;
-
-  arma::uvec indexes1 = trimatl_ind(arma::size(Phi), 0);
-  arma::uvec indexes2 = trimatl_ind(arma::size(S), 0);
-
-  arma::mat LambdaPhi = Lambda * Phi;
-  arma::mat I(p, p, arma::fill::eye);
-  arma::mat g1 = -2*arma::kron(LambdaPhi.t(), I);
-  arma::mat g2 = g1 * dxt(p, p);
-  arma::mat g_temp = g1 + g2;
-  arma::mat g = g_temp.cols(indexes2);
-
-  arma::mat d1 = -2*arma::kron(Lambda.t(), Lambda.t());
-  arma::mat d2 = d1 * dxt(p, p);
-  arma::mat d_temp = d1 + d2;
-  arma::mat d = d_temp(indexes1, indexes2);
-  arma::mat gd = arma::join_cols(g, d);
-
-  int k = p*q + q*(q-1)/2;
-
-  /*
-   * fill p rows with zeros
-   */
-
-  gd.insert_rows(k, p);
-
-  return gd;
-
-}
-
-arma::mat gLPS_ml(arma::mat S, arma::mat Lambda, arma::mat Phi) {
-
-  /*
-   * Compute d2f/(dtheta ds)
-   */
-
-  int p = Lambda.n_rows;
-  int q = Lambda.n_cols;
-  int pp = p*p;
-
-  arma::uvec indexes1 = trimatl_ind(arma::size(Phi), -1);
-  arma::uvec indexes2 = trimatl_ind(arma::size(S), -1);
-  arma::uvec indexes3 = arma::linspace<arma::uvec>(0, pp-1, p);
-  arma::mat I1(p, p, arma::fill::eye);
-
-  /*
-   * for Lambda
-   */
-
-  arma::mat LambdaPhi = Lambda * Phi;
-  arma::mat Rhat = LambdaPhi * Lambda.t();
-  Rhat.diag().ones();
-  arma::mat Rhat_inv = arma::inv_sympd(Rhat);
-  arma::mat dRi_res_Ri_dS = -2*arma::kron(Rhat_inv, Rhat_inv);
-  arma::mat dxtS = dxt(p, p);
-  dRi_res_Ri_dS += dRi_res_Ri_dS * dxtS;
-  arma::mat g_temp = arma::kron(LambdaPhi.t(), I1) * dRi_res_Ri_dS;
-  arma::mat g = g_temp.cols(indexes2);
-
-  /*
-   * for Phi
-   */
-
-  arma::mat d1 = arma::kron(Lambda.t(), Lambda.t());
-  arma::mat d_temp = d1 * dRi_res_Ri_dS;
-
-  arma::mat d = d_temp(indexes1, indexes2);
-  arma::mat gd = arma::join_cols(g, d);
-  int k = p*q + q*(q-1)/2;
-
-  /*
-   * for psi
-   */
-
-  arma::mat h = 0.5*dRi_res_Ri_dS(indexes3, indexes2);
-  arma::mat gdh = arma::join_cols(gd, h);
-
-  return gdh;
-
-}
+// arma::mat gLPS_uls(arma::mat S,
+//                    arma::mat Lambda,
+//                    arma::mat Phi) {
+//
+//   /*
+//    * Compute d2f/(dtheta ds)
+//    */
+//
+//   int p = Lambda.n_rows;
+//   int q = Lambda.n_cols;
+//
+//   arma::uvec indexes1 = trimatl_ind(arma::size(Phi), 0);
+//   arma::uvec indexes2 = trimatl_ind(arma::size(S), 0);
+//
+//   arma::mat LambdaPhi = Lambda * Phi;
+//   arma::mat I(p, p, arma::fill::eye);
+//   arma::mat g1 = -2*arma::kron(LambdaPhi.t(), I);
+//   arma::mat g2 = g1 * dxt(p, p);
+//   arma::mat g_temp = g1 + g2;
+//   arma::mat g = g_temp.cols(indexes2);
+//
+//   arma::mat d1 = -2*arma::kron(Lambda.t(), Lambda.t());
+//   arma::mat d2 = d1 * dxt(p, p);
+//   arma::mat d_temp = d1 + d2;
+//   arma::mat d = d_temp(indexes1, indexes2);
+//   arma::mat gd = arma::join_cols(g, d);
+//
+//   int k = p*q + q*(q-1)/2;
+//
+//   /*
+//    * fill p rows with zeros
+//    */
+//
+//   gd.insert_rows(k, p);
+//
+//   return gd;
+//
+// }
+//
+// arma::mat gLPS_ml(arma::mat S,
+//                   arma::mat Lambda,
+//                   arma::mat Phi,
+//                   arma::mat Theta) {
+//
+//   /*
+//    * Compute d2f/(dtheta ds)
+//    */
+//
+//   int p = Lambda.n_rows;
+//   int q = Lambda.n_cols;
+//   int pp = p*p;
+//
+//   arma::uvec indexes1 = trimatl_ind(arma::size(Phi), 0);
+//   arma::uvec indexes2 = trimatl_ind(arma::size(S), 0);
+//   arma::uvec indexes3 = arma::linspace<arma::uvec>(0, pp-1, p);
+//   arma::mat I1(p, p, arma::fill::eye);
+//
+//   /*
+//    * for Lambda
+//    */
+//
+//   arma::mat LambdaPhi = Lambda * Phi;
+//   arma::mat Rhat = LambdaPhi * Lambda.t() + Theta;
+//   arma::mat Rhat_inv = arma::inv_sympd(Rhat);
+//   arma::mat dRi_res_Ri_dS = -2*arma::kron(Rhat_inv, Rhat_inv);
+//   arma::mat dxtS = dxt(p, p);
+//   dRi_res_Ri_dS += dRi_res_Ri_dS * dxtS;
+//   arma::mat g_temp = arma::kron(LambdaPhi.t(), I1) * dRi_res_Ri_dS;
+//   arma::mat g = g_temp.cols(indexes2);
+//
+//   /*
+//    * for Phi
+//    */
+//
+//   arma::mat d1 = arma::kron(Lambda.t(), Lambda.t());
+//   arma::mat d_temp = d1 * dRi_res_Ri_dS;
+//
+//   arma::mat d = d_temp(indexes1, indexes2);
+//   arma::mat gd = arma::join_cols(g, d);
+//   int k = p*q + q*(q-1)/2;
+//
+//   /*
+//    * for psi
+//    */
+//
+//   arma::mat h = 0.5*dRi_res_Ri_dS(indexes3, indexes2);
+//   arma::mat gdh = arma::join_cols(gd, h);
+//
+//   return gdh;
+//
+// }

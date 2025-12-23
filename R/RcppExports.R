@@ -85,14 +85,6 @@ get_jacob <- function(control_manifold, control_transform, control_estimator, co
     .Call(`_latent_get_jacob`, control_manifold, control_transform, control_estimator, control_optimizer)
 }
 
-gLPS_uls <- function(S, Lambda, Phi) {
-    .Call(`_latent_gLPS_uls`, S, Lambda, Phi)
-}
-
-gLPS_ml <- function(S, Lambda, Phi) {
-    .Call(`_latent_gLPS_ml`, S, Lambda, Phi)
-}
-
 real_sqrtmat <- function(R) {
     .Call(`_latent_real_sqrtmat`, R)
 }

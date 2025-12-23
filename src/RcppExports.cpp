@@ -283,32 +283,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// gLPS_uls
-arma::mat gLPS_uls(arma::mat S, arma::mat Lambda, arma::mat Phi);
-RcppExport SEXP _latent_gLPS_uls(SEXP SSEXP, SEXP LambdaSEXP, SEXP PhiSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type S(SSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type Lambda(LambdaSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type Phi(PhiSEXP);
-    rcpp_result_gen = Rcpp::wrap(gLPS_uls(S, Lambda, Phi));
-    return rcpp_result_gen;
-END_RCPP
-}
-// gLPS_ml
-arma::mat gLPS_ml(arma::mat S, arma::mat Lambda, arma::mat Phi);
-RcppExport SEXP _latent_gLPS_ml(SEXP SSEXP, SEXP LambdaSEXP, SEXP PhiSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type S(SSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type Lambda(LambdaSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type Phi(PhiSEXP);
-    rcpp_result_gen = Rcpp::wrap(gLPS_ml(S, Lambda, Phi));
-    return rcpp_result_gen;
-END_RCPP
-}
 // real_sqrtmat
 arma::mat real_sqrtmat(arma::mat R);
 RcppExport SEXP _latent_real_sqrtmat(SEXP RSEXP) {
@@ -460,8 +434,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 4},
     {"_latent_get_vcov", (DL_FUNC) &_latent_get_vcov, 5},
     {"_latent_get_jacob", (DL_FUNC) &_latent_get_jacob, 4},
-    {"_latent_gLPS_uls", (DL_FUNC) &_latent_gLPS_uls, 3},
-    {"_latent_gLPS_ml", (DL_FUNC) &_latent_gLPS_ml, 3},
     {"_latent_real_sqrtmat", (DL_FUNC) &_latent_real_sqrtmat, 1},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},
     {"_latent_joint_frequency_table", (DL_FUNC) &_latent_joint_frequency_table, 5},
