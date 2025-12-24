@@ -30,47 +30,25 @@
 #' @export
 se.lcfa <- function(fit, type = "standard", digits = 5) {
 
-  # Compute lavaan standard errors:
-  if(fit@call$mimic == "lavaan") {
-
-    result <- se_information_lavaan(fit = fit, type = type,
-                                    model = model, digits = digits)
-    return(result)
-
-  }
-
-  # Select the parameters to display according to model type:
-
+  # Select the model parameters:
   model <- fit@modelInfo$cfa_param
   est <- fit@parameters
 
-  # Check if ml or uls are used:
-
+  # Collect all the estimators:
   estimators <- unlist(lapply(fit@modelInfo$control_estimator,
                               FUN = \(x) x$estimator))
-  if(all(estimators == "cfa_ml" | estimators == "cfa_ml2")) {
-    all_ml <- TRUE
-  } else {
-    all_ml <- FALSE
-  }
+  # Check if all estimators are ml:
+  all_ml <- FALSE
+  if(all(estimators == "cfa_ml")) all_ml <- TRUE
 
-  if(type == "standard") {
-
+  if(type == "information") {
     if(all_ml) {
       SE <- standard_se(fit = fit)
     } else {
-      SE <- robust_general(fit = fit)
+      stop("The information method is only available for maximum likelihood")
     }
-
-  } else if(type == "robust") {
-
-    # if(all_ml) {
-    #   # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-    #   SE <- robust_se(fit = fit)
-    # } else {
-      SE <- robust_general(fit = fit)
-    # }
-
+  } else if(type == "standard" || type == "robust") {
+    SE <- general_se(fit = fit, type = type)
   } else {
     stop("Unknown type")
   }
@@ -245,196 +223,169 @@ df2_dtheta_ml2 <- function(lambda, psi, theta, w) {
 
 }
 
-se_information_lavaan <- function(fit, type = "standard", model = "model",
-                                  digits = 3) {
+general_se <- function(fit, type = "standard") {
 
-  ngroups <- fit@Optim$data_list$ngroups
-  se <- VCOV <- table_se <- vector("list", length = ngroups)
-  names(se) <- names(VCOV) <- names(table_se) <-
-    fit@Optim$data_list$group_label
-  fit@Optim$data_list$item_label
-
-  for(i in 1:ngroups) {
-
-    # Compute the model matrix:
-    N <- fit@modelInfo$nobs[[i]]
-    p <- fit@Optim$data_list$nitems[[i]]
-    q <- fit@Optim$data_list$nfactors[[i]]
-    lambda <- fit@transformed_pars[[i]]$lambda
-    psi <- fit@transformed_pars[[i]]$psi
-    theta <- fit@transformed_pars[[i]]$theta
-    rhat <- fit@transformed_pars[[i]]$model
-    rhat_inv <- solve(rhat)
-
-    # Get the jacobian:
-    select <- match(fit@modelInfo$transparameters_labels,
-                    unlist(fit@modelInfo$cfa_param[[i]]))
-    select <- select[!is.na(select)]
-
-    dl_drhat <- dlambda_drhat(lambda, psi)
-    dp_drhat <- dpsi_drhat(lambda, q)
-    dt_drhat <- dtheta_drhat(p)
-    J <- cbind(dl_drhat, dp_drhat, dt_drhat)
-    J <- J[, select]
-    # numDeriv::jacobian()
-
-    # From p.13 of
-    # https://bpspsychub.onlinelibrary.wiley.com/doi/pdf/10.1111/bmsp.70003
-    exp_inf <- 0.5*rhat_inv %x% rhat_inv
-    Iexp <- t(J) %*% exp_inf %*% J
-    VCOV[[i]] <- solve(Iexp)
-    se[[i]] <- sqrt(diag(VCOV[[i]]))
-    se[[i]] <- round(se[[i]], digits = digits)
-
-    # Build the tables:
-    select <- match(unlist(fit@modelInfo$cfa_param[[i]]),
-                    fit@modelInfo$transparameters_labels)
-    select <- select[!is.na(select)]
-    select <- unique(select)
-
-    param_labels <- fit@modelInfo$transparameters_labels[select]
-
-    select_se_lambda <- match(fit@modelInfo$cfa_param[[i]]$lambda,
-                              param_labels)
-    select_se_lambda <- select_se_lambda[!is.na(select_se_lambda)]
-    select_lambda <- match(param_labels,
-                           fit@modelInfo$cfa_param[[i]]$lambda)
-    select_lambda <- select_lambda[!is.na(select_lambda)]
-    lambda_se <- matrix(0, nrow = p, ncol = q)
-    lambda_se[select_lambda] <- se[[i]][select_se_lambda]
-
-    lower_psi <- lower.tri(diag(q), diag = TRUE)
-    select_se_psi <- match(fit@modelInfo$cfa_param[[i]]$psi[lower_psi],
-                           param_labels)
-    select_se_psi <- select_se_psi[!is.na(select_se_psi)]
-    select_psi <- match(param_labels,
-                        fit@modelInfo$cfa_param[[i]]$psi)
-    select_psi <- select_psi[!is.na(select_psi)]
-    select_psi <- unique(select_psi)
-    psi_se <- matrix(0, nrow = q, ncol = q)
-    psi_se[select_psi] <- se[[i]][select_se_psi]
-
-    lower_theta <- lower.tri(diag(p), diag = TRUE)
-    select_se_theta <- match(fit@modelInfo$cfa_param[[i]]$theta[lower_theta],
-                             param_labels)
-    select_se_theta <- select_se_theta[!is.na(select_se_theta)]
-    select_theta <- match(param_labels,
-                          fit@modelInfo$cfa_param[[i]]$theta)
-    select_theta <- select_theta[!is.na(select_theta)]
-    select_theta <- unique(select_theta)
-    theta_se <- matrix(0, nrow = p, ncol = p)
-    theta_se[select_theta] <- se[[i]][select_se_theta]
-
-    table_se[[i]] <- list(lambda = lambda_se,
-                          psi = psi_se,
-                          theta = theta_se)
-
-    # Select the parameter labels for the table:
-    mylabels <- unlist(model)
-    selection <- match(mylabels, fit@modelInfo$transparameters_labels)
-
-  }
-
-  # Return:
-  result <- list()
-  result$table_se <- table_se
-  result$se <- se
-  result$vcov <- VCOV
-
-  return(result)
-
-}
-
-robust_general <- function(fit) {
-
+  # Collect all the estimators:
   estimators <- unlist(lapply(fit@modelInfo$control_estimator,
                               FUN = \(x) x$estimator))
-  if(all(estimators == "cfa_ml" | estimators == "cfa_ml2")) {
-    all_ml <- TRUE
-  } else {
-    all_ml <- FALSE
-  }
+  # Check if all the estimators are ml:
+  all_ml <- all_ml2 <- all_dwls <- FALSE
+  if(all(estimators == "cfa_ml")) all_ml <- TRUE
+  if(all(estimators == "cfa_ml2")) all_ml2 <- TRUE
+  if(all(estimators == "cfa_dwls")) all_dwls <- TRUE
 
+  # Get the hessian matrix:
   SE <- standard_se(fit = fit)
+
+  # Get the sample size and weight scalar:
   N <- sum(unlist(fit@data_list$nobs))
   w <- fit@modelInfo$control_estimator[[1]]$w
 
   # Get the asymptotic correlation matrix:
-  ACOV <- asymptotic_normal(fit@data_list$correl[[1]]$R)
-  # ACOV <- asymptotic_general(fit@data_list$data[[1]])
+  if(type == "standard") {
+    ACOV <- asymptotic_normal(fit@data_list$correl[[1]]$R)
+  } else if(type == "robust") {
+    # CHECK FOR RAW DATA AVAILABILITY
+    ACOV <- asymptotic_general(fit@data_list$data[[1]])
+  } else {
+    stop("Unknown type")
+  }
 
-  # Get the jacobian:
+  # Get the matrix of second-order derivatives between R and the parameters:
   lambda <- fit@transformed_pars[[1]]$lambda
   psi <- fit@transformed_pars[[1]]$psi
   psi[upper.tri(psi)] <- t(psi)[upper.tri(psi)]
   theta <- fit@transformed_pars[[1]]$theta
   theta[upper.tri(theta)] <- t(theta)[upper.tri(theta)]
-
-  if(all_ml) {
-    J <- df2_dtheta_ml(lambda, psi, theta, w, N)
-  } else {
-    J <- df2_dtheta_dwls(lambda, psi, theta, w)
+  if(all_ml) { # SHOULD COMPUTE THIS AUTOMATICALY IN C++
+    df2_dparamdR <- df2_dtheta_ml(lambda, psi, theta, w, N)
+  } else if(all_ml2) {
+    df2_dparamdR <- df2_dtheta_ml2(lambda, psi, theta, w)
+  } else if(all_dwls) {
+    df2_dparamdR <- df2_dtheta_dwls(lambda, psi, theta, w)
   }
 
+  # Select the model parameters from the previous matrix:
   select <- match(fit@modelInfo$transparameters_labels,
                   unlist(fit@modelInfo$cfa_param[[1]]))
   select <- select[!is.na(select)]
-  J <- J[, select]
+  df2_dparamdR <- df2_dparamdR[, select]
 
-  # Sandwich se estimator:
-  B <- t(J) %*% (ACOV/N) %*% J
+  # Sandwich estimator for standard errors:
+  B <- t(df2_dparamdR) %*% (ACOV/N) %*% df2_dparamdR
   H_inv <- solve(SE$h)
   VAR <- H_inv %*% B %*% H_inv
 
+  # Update the standard errors of the model parameters in the SE object:
   mylabels <- fit@modelInfo$parameters_labels
   selection <- match(mylabels, fit@modelInfo$transparameters_labels)
   SE$se[selection] <- sqrt(diag(VAR))
 
-  # SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
+  # Store the ham of the sandwich:
   SE$B <- B
+
+  # UPDATE SE$VCOV
 
   return(SE)
 
 }
 
-# f <- function(x, p, q) {
+# se_information_lavaan <- function(fit, type = "standard", model = "model",
+#                                   digits = 3) {
 #
-#   pq <- p*q
-#   qq <- q*q
-#   x1 <- x[1:pq]
-#   x2 <- x[1:(q*(q+1)/2) + pq]
-#   x3 <- x[1:(p*(p+1)/2) + pq + (q*(q+1)/2)]
-#   lambda <- matrix(x1, p, q)
-#   psi <- matrix(0, q, q)
-#   psi[lower.tri(psi, diag = TRUE)] <- x2
-#   psi[upper.tri(psi)] <- t(psi)[upper.tri(psi)]
-#   theta <- matrix(0, p, p)
-#   theta[lower.tri(theta, diag = TRUE)] <- x3
-#   theta[upper.tri(theta)] <- t(theta)[upper.tri(theta)]
+#   ngroups <- fit@Optim$data_list$ngroups
+#   se <- VCOV <- table_se <- vector("list", length = ngroups)
+#   names(se) <- names(VCOV) <- names(table_se) <-
+#     fit@Optim$data_list$group_label
+#   fit@Optim$data_list$item_label
 #
-#   Rhat <- lambda %*% psi %*% t(lambda) + theta
-#   return(c(Rhat))
+#   for(i in 1:ngroups) {
+#
+#     # Compute the model matrix:
+#     N <- fit@modelInfo$nobs[[i]]
+#     p <- fit@Optim$data_list$nitems[[i]]
+#     q <- fit@Optim$data_list$nfactors[[i]]
+#     lambda <- fit@transformed_pars[[i]]$lambda
+#     psi <- fit@transformed_pars[[i]]$psi
+#     theta <- fit@transformed_pars[[i]]$theta
+#     rhat <- fit@transformed_pars[[i]]$model
+#     rhat_inv <- solve(rhat)
+#
+#     # Get the jacobian:
+#     select <- match(fit@modelInfo$transparameters_labels,
+#                     unlist(fit@modelInfo$cfa_param[[i]]))
+#     select <- select[!is.na(select)]
+#
+#     dl_drhat <- dlambda_drhat(lambda, psi)
+#     dp_drhat <- dpsi_drhat(lambda, q)
+#     dt_drhat <- dtheta_drhat(p)
+#     J <- cbind(dl_drhat, dp_drhat, dt_drhat)
+#     J <- J[, select]
+#     # numDeriv::jacobian()
+#
+#     # From p.13 of
+#     # https://bpspsychub.onlinelibrary.wiley.com/doi/pdf/10.1111/bmsp.70003
+#     exp_inf <- 0.5*rhat_inv %x% rhat_inv
+#     Iexp <- t(J) %*% exp_inf %*% J
+#     VCOV[[i]] <- solve(Iexp)
+#     se[[i]] <- sqrt(diag(VCOV[[i]]))
+#     se[[i]] <- round(se[[i]], digits = digits)
+#
+#     # Build the tables:
+#     select <- match(unlist(fit@modelInfo$cfa_param[[i]]),
+#                     fit@modelInfo$transparameters_labels)
+#     select <- select[!is.na(select)]
+#     select <- unique(select)
+#
+#     param_labels <- fit@modelInfo$transparameters_labels[select]
+#
+#     select_se_lambda <- match(fit@modelInfo$cfa_param[[i]]$lambda,
+#                               param_labels)
+#     select_se_lambda <- select_se_lambda[!is.na(select_se_lambda)]
+#     select_lambda <- match(param_labels,
+#                            fit@modelInfo$cfa_param[[i]]$lambda)
+#     select_lambda <- select_lambda[!is.na(select_lambda)]
+#     lambda_se <- matrix(0, nrow = p, ncol = q)
+#     lambda_se[select_lambda] <- se[[i]][select_se_lambda]
+#
+#     lower_psi <- lower.tri(diag(q), diag = TRUE)
+#     select_se_psi <- match(fit@modelInfo$cfa_param[[i]]$psi[lower_psi],
+#                            param_labels)
+#     select_se_psi <- select_se_psi[!is.na(select_se_psi)]
+#     select_psi <- match(param_labels,
+#                         fit@modelInfo$cfa_param[[i]]$psi)
+#     select_psi <- select_psi[!is.na(select_psi)]
+#     select_psi <- unique(select_psi)
+#     psi_se <- matrix(0, nrow = q, ncol = q)
+#     psi_se[select_psi] <- se[[i]][select_se_psi]
+#
+#     lower_theta <- lower.tri(diag(p), diag = TRUE)
+#     select_se_theta <- match(fit@modelInfo$cfa_param[[i]]$theta[lower_theta],
+#                              param_labels)
+#     select_se_theta <- select_se_theta[!is.na(select_se_theta)]
+#     select_theta <- match(param_labels,
+#                           fit@modelInfo$cfa_param[[i]]$theta)
+#     select_theta <- select_theta[!is.na(select_theta)]
+#     select_theta <- unique(select_theta)
+#     theta_se <- matrix(0, nrow = p, ncol = p)
+#     theta_se[select_theta] <- se[[i]][select_se_theta]
+#
+#     table_se[[i]] <- list(lambda = lambda_se,
+#                           psi = psi_se,
+#                           theta = theta_se)
+#
+#     # Select the parameter labels for the table:
+#     mylabels <- unlist(model)
+#     selection <- match(mylabels, fit@modelInfo$transparameters_labels)
+#
+#   }
+#
+#   # Return:
+#   result <- list()
+#   result$table_se <- table_se
+#   result$se <- se
+#   result$vcov <- VCOV
+#
+#   return(result)
 #
 # }
-#
-# x1 <- 1:pq
-# x2 <- 1:(q*(q+1)/2) + pq
-# x3 <- 1:(p*(p+1)/2) + pq + (q*(q+1)/2)
-# lambda <- latInspect(fit, what = "loadings", digits = 6)[[1]]
-# psi <- latInspect(fit, what = "psi", digits = 6)[[1]]
-# theta <- latInspect(fit, what = "theta", digits = 6)[[1]]
-# p <- nrow(lambda)
-# q <- ncol(lambda)
-# dl_drhat <- dlambda_drhat(lambda, psi)
-# dp_drhat <- dpsi_drhat(lambda, p)
-# dt_drhat <- dtheta_drhat(p)
-#
-# x <- c(lambda,
-#        psi[lower.tri(psi, diag = TRUE)],
-#        theta[lower.tri(theta, diag = TRUE)])
-# f(x, p, q)
-# J2 <- numDeriv::jacobian(func = f, x = x, p = p, q = q)
-# max(abs(J2[, x1] - dl_drhat))
-# max(abs(J2[, x2] - dp_drhat[, lower.tri(psi, diag = TRUE)]))
-# max(abs(J2[, x3] - dt_drhat[, lower.tri(theta, diag = TRUE)]))
-
