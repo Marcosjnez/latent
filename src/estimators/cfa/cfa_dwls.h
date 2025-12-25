@@ -15,7 +15,7 @@ public:
   arma::mat R, Rhat, dRhat, residuals, W, W_residuals;
   arma::uvec lower_diag;
   int p, q;
-  double w, loglik = 0.00;
+  double w;
 
   void param(arguments_optim& x) {
 
@@ -67,10 +67,17 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(3);
-    doubles[0] = f;
-    doubles[1] = loglik;
-    doubles[2] = w;
+    doubles.resize(5);
+    arma::mat residuals_indep = R;
+    residuals_indep.diag().zeros();
+    arma::mat W_residuals_indep = W % residuals_indep;
+    double loss_indep = w*0.5*arma::accu(residuals_indep % W_residuals_indep);
+    double loss_sat = 0.00;
+    doubles[0] =  f;
+    doubles[1] =  0.00;        // loglik actual model
+    doubles[2] =  w;
+    doubles[3] =  loss_indep;  // loglik independence model
+    doubles[4] =  loss_sat;    // loglik saturated model
 
     matrices.resize(2);
     matrices[0] = residuals;

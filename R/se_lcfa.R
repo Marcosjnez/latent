@@ -50,7 +50,7 @@ se.lcfa <- function(fit, type = "standard", digits = 5) {
   } else if(type == "standard" || type == "robust") {
     SE <- general_se(fit = fit, type = type)
   } else {
-    stop("Unknown type")
+    stop("Unknown type of standard error estimation")
   }
 
   # Select the parameter labels for the table:
@@ -88,6 +88,7 @@ se.lcfa <- function(fit, type = "standard", digits = 5) {
 
 }
 
+# Derivatives of model matrix wrt parameters:
 drhat_dlambda <- function(lambda, psi) {
 
   # derivative of Lambda wrt Rhat
@@ -120,6 +121,8 @@ drhat_dtheta <- function(p) {
   return(gtheta)
 
 }
+
+# Second-order derivatives between parameters and model matrix wrt loss:
 df2_dtheta_dwls <- function(lambda, psi, theta, w) {
 
   q <- nrow(psi)
@@ -223,7 +226,11 @@ df2_dtheta_ml2 <- function(lambda, psi, theta, w) {
 
 }
 
+# Sandwhich estimator of standard errors:
 general_se <- function(fit, type = "standard") {
+
+  ngroups <- fit@data_list$ngroups
+  if(ngroups > 1) stop("Standard errors are not available for multigroup models")
 
   # Collect all the estimators:
   estimators <- unlist(lapply(fit@modelInfo$control_estimator,
@@ -238,18 +245,8 @@ general_se <- function(fit, type = "standard") {
   SE <- standard_se(fit = fit)
 
   # Get the sample size and weight scalar:
-  N <- sum(unlist(fit@data_list$nobs))
+  N <- fit@data_list$nobs[[1]]
   w <- fit@modelInfo$control_estimator[[1]]$w
-
-  # Get the asymptotic correlation matrix:
-  if(type == "standard") {
-    ACOV <- asymptotic_normal(fit@data_list$correl[[1]]$R)
-  } else if(type == "robust") {
-    # CHECK FOR RAW DATA AVAILABILITY
-    ACOV <- asymptotic_general(fit@data_list$data[[1]])
-  } else {
-    stop("Unknown type")
-  }
 
   # Get the matrix of second-order derivatives between R and the parameters:
   lambda <- fit@transformed_pars[[1]]$lambda
@@ -263,15 +260,27 @@ general_se <- function(fit, type = "standard") {
     df2_dparamdR <- df2_dtheta_ml2(lambda, psi, theta, w)
   } else if(all_dwls) {
     df2_dparamdR <- df2_dtheta_dwls(lambda, psi, theta, w)
+  } else {
+    stop("All the estimators should be the same")
   }
 
-  # Select the model parameters from the previous matrix:
+  # Select the model parameters from df2_dparamdR:
   select <- match(fit@modelInfo$transparameters_labels,
                   unlist(fit@modelInfo$cfa_param[[1]]))
   select <- select[!is.na(select)]
   df2_dparamdR <- df2_dparamdR[, select]
 
-  # Sandwich estimator for standard errors:
+  # Get the asymptotic correlation matrix:
+  if(type == "standard") {
+    ACOV <- asymptotic_normal(fit@data_list$correl[[1]]$R)
+  } else if(type == "robust") {
+    # CHECK FOR RAW DATA AVAILABILITY
+    ACOV <- asymptotic_general(fit@data_list$data[[1]])
+  } else {
+    stop("Unknown type")
+  }
+
+  # Sandwich estimator of standard errors:
   B <- t(df2_dparamdR) %*% (ACOV/N) %*% df2_dparamdR
   H_inv <- solve(SE$h)
   VAR <- H_inv %*% B %*% H_inv
@@ -284,7 +293,7 @@ general_se <- function(fit, type = "standard") {
   # Store the ham of the sandwich:
   SE$B <- B
 
-  # UPDATE SE$VCOV
+  # UPDATE SE$VCOV AND ALL OTHER ELEMENTS IN SE$se
 
   return(SE)
 

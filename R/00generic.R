@@ -74,7 +74,7 @@ setMethod("show", "lcfa", function(object) {
   nobs <- sum(unlist(object@modelInfo$nobs))
 
   # Print Estimator, Optimization, and Parameters section
-  if(length(object@loglik) == 0) {
+  if(object@loglik == 0) {
 
     loglik <- NA
     X2 <- NA
@@ -85,8 +85,8 @@ setMethod("show", "lcfa", function(object) {
 
   } else {
 
+    # FIX HERE: COMPARE ESTIMATED AND SATURATED MODEL
     loglik <- object@loglik
-    # X2 <- 2*loglik
     X2 <- object@loss*nobs
     pval <- 1-pchisq(X2, df = dof)
     est <- "ML"

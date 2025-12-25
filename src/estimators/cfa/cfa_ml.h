@@ -14,7 +14,7 @@ public:
 
   arma::mat R, Rhat, residuals, dRhat, Rhat_inv, Ri_R_Ri, gRhat;
   arma::uvec lower_diag;
-  double w, logdetR, loglik, plogpi2;
+  double w, logdetR, plogpi2;
   int p, q, n;
 
   void param(arguments_optim& x) {
@@ -82,13 +82,22 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(3);
+    doubles.resize(5);
     // loglik = w*n*0.5*(-plogpi2 -
     //                    arma::log_det_sympd(Rhat) -
     //                    arma::accu(R % Rhat_inv));
-    doubles[0] = f;
-    doubles[1] = -f;
-    doubles[2] = w;
+    arma::mat I(p, p, arma::fill::eye);
+    double loglik_indep = w*n*0.5*(-plogpi2 -
+                                   arma::trace(R));
+    arma::mat Rinv = arma::inv_sympd(R);
+    double loglik_sat = w*n*0.5*(-plogpi2 -
+                                 arma::log_det_sympd(R) -
+                                 arma::accu(R % Rinv));
+    doubles[0] =  f;             // loss   actual model
+    doubles[1] = -f;             // loglik actual model
+    doubles[2] =  w;
+    doubles[3] =  loglik_indep;  // loglik independence model
+    doubles[4] =  loglik_sat;    // loglik saturated model
 
     matrices.resize(2);
     arma::mat W;

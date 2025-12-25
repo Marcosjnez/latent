@@ -190,6 +190,7 @@ CI$table
 #### CFA ####
 
 library(latent)
+library(lavaan)
 
 model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
@@ -206,12 +207,14 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 fit
+SE <- se(fit, type = "standard", digits = 3)
+SE$table_se
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
-                    estimator = "uls",
-                    std.lv = TRUE, std.ov = TRUE,
-                    likelihood = "wishart")
+                    estimator = "ml",
+                    # likelihood = "wishart",
+                    std.lv = TRUE, std.ov = TRUE)
 # Same loss value: OK
 fit2@Fit@fx*2
 fit@loss

@@ -16,7 +16,6 @@ public:
   arma::uvec lower_indices;
   double tr, logdetw;
   int p;
-  double loglik = 0.00;
 
   void param(arguments_optim& x) {
 
@@ -69,10 +68,27 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(3);
+    doubles.resize(5);
     doubles[0] = f;
-    doubles[1] = loglik;
+    doubles[1] = -f; // loglik
     doubles[2] = logdetw;
+    // arma::mat R_indep(p, p, arma::fill::zeros);
+    // R_indep.diag() = R.diag();
+    // double trRindep = arma::trace(R_indep);
+    // double loss_indep = logdetw * (arma::log_det_sympd(R_indep) -
+    //                                p*std::log(trRindep/p));
+    // double trRsat = arma::trace(R);
+    // double loss_sat = logdetw * (arma::log_det_sympd(R) -
+    //                              p*std::log(trRsat/p));
+    // doubles[3] =  loss_indep;  // loglik independence model
+    // doubles[4] =  loss_sat;    // loglik saturated model
+
+    // Rprintf("R dimensions: %u x %u\n", R.n_rows, R.n_cols);
+    // Rprintf("R_indep dimensions: %u x %u\n", R_indep.n_rows, R_indep.n_cols);
+    //
+    // Rprintf("diag lengths -> R: %u, R_indep: %u\n",
+    //         R.diag().n_elem,
+    //         R_indep.diag().n_elem);
 
   };
 
