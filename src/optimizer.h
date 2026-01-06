@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/09/2025
+ * Modification date: 27/12/2025
  */
 
 // By default, this optimizer performs minimization of a loss function
@@ -181,6 +181,8 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   outputsEst["cubes"] = std::get<3>(args[index_minimum].outputs_estimator);
   outputsEst["list_vectors"] = std::get<4>(args[index_minimum].outputs_estimator);
   outputsEst["list_matrices"] = std::get<5>(args[index_minimum].outputs_estimator);
+
+  // STORE THE DIMENSIONS AND LABELS OF ARRAYS TO OUTPUT EVERYTHING AUTOMATICALLY
 
   // Store all the outputs in a list:
   Rcpp::List outputs;

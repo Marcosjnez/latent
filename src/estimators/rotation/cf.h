@@ -103,13 +103,6 @@ public:
 
   }
 
-  void H(arguments_optim& x) {
-
-    // Rcpp::stop("H not available");
-    hess.set_size(parameters.n_elem, parameters.n_elem); hess.zeros();
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     /*

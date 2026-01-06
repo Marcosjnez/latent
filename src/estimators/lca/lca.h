@@ -88,66 +88,13 @@ public:
   void dG(arguments_optim& x) {
 
     arma::mat dclasses = arma::reshape(x.dtransparameters(indices_classes), S, I);
-    arma::vec values = x.dtransparameters(indices_itemloglik);
-    std::memcpy(ditemloglik.memptr(), values.memptr(), sizeof(double) * values.n_elem);
+    arma::vec dvalues = x.dtransparameters(indices_itemloglik);
+    std::memcpy(ditemloglik.memptr(), dvalues.memptr(), sizeof(double) * dvalues.n_elem);
 
     arma::mat dgclasses;
     arma::cube dgitems(S, J, I, arma::fill::zeros);
     x.dgrad.elem(indices_classes) += arma::vectorise(dgclasses);
     x.dgrad.elem(indices_itemloglik) += arma::vectorise(dgitems);
-
-  }
-
-  void H(arguments_optim& x) {
-
-    arma::mat posterior = arma::trunc_exp(logposterior);
-    arma::mat M(J, J, arma::fill::ones);
-
-    arma::mat post1 = posterior / classes;
-    arma::mat post2 = post1; post2.each_col() %= weights;
-
-    // FIX this
-    x.hess(indices_classes, indices_classes) += post1.t() * post2;
-
-    std::vector<arma::uvec> hess_indices2(hess_indices.size());
-    for(int i=0; i < hess_indices.size(); ++i) {
-      hess_indices2[i] = indices[0](hess_indices[i]);
-    }
-
-    int n = indices[0][0];
-    for (int i = 0; i < I; ++i) {
-      for (int k = i; k < I; ++k) {
-
-        if (i == k) {
-
-          arma::vec term = -weights % posterior.col(i) % (1.0 - posterior.col(k));
-
-          arma::vec rep_vec = arma::repmat(term / classes(k), J, 1);
-          x.hess.submat(hess_indices2[i], arma::uvec{ n+k }) += rep_vec;
-          x.hess.submat(arma::uvec{ n+k }, hess_indices2[i]) += rep_vec.t();
-
-          arma::mat block = arma::kron(M, arma::diagmat(term));
-          x.hess.submat(hess_indices2[i], hess_indices2[k]) = block;
-
-        } else {
-
-          arma::vec term = weights % posterior.col(i) % posterior.col(k);
-
-          arma::vec rep_vec = arma::repmat(term / classes(k), J, 1);
-          x.hess.submat(hess_indices2[i], arma::uvec{ n+k }) += rep_vec;
-          x.hess.submat(arma::uvec{ n+k }, hess_indices2[i]) += rep_vec.t();
-
-          arma::vec rep_vec2 = arma::repmat(term / classes(i), J, 1);
-          x.hess.submat(hess_indices2[k], arma::uvec{ n+i }) += rep_vec2;
-          x.hess.submat(arma::uvec{ n+i }, hess_indices2[k]) += rep_vec2.t();
-
-          arma::mat block = arma::kron(M, arma::diagmat(term));
-          x.hess.submat(hess_indices2[i], hess_indices2[k]) += block;
-          x.hess.submat(hess_indices2[k], hess_indices2[i]) += block;
-
-        }
-      }
-    }
 
   }
 

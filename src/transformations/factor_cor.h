@@ -41,7 +41,7 @@ public:
     grad_out.diag() *= 2; // Restore the diagonal
 
     lambda_psi = lambda * psi;
-    glambda = 2*grad_out * lambda_psi;
+    glambda = grad_out * (2*lambda_psi);
 
     gpsi = 2*lambda.t() * grad_out * lambda;
     gpsi.diag() *= 0.5;
@@ -54,21 +54,25 @@ public:
     x.grad.elem(theta_indices) += arma::vectorise(gtheta(lower_theta));
 
     // arma::mat I_p = arma::eye(p, p);
+    // arma::mat comm = dxt(p, q);
     //
-    // arma::mat J_lambda = arma::kron(lambda_psi.t(), I_p);
-    // arma::mat J_psi    = arma::kron(lambda.t(), lambda.t());
+    // arma::mat J_lambda = arma::kron(lambda_psi, I_p) +
+    //   arma::kron(I_p, lambda_psi) * comm;
+    // arma::mat J_psi    = arma::kron(lambda, lambda);
     // arma::mat J_theta  = arma::eye(p*p, p*p);
     //
     // // Halve the diagonal entries:
-    // J_psi.rows(diag_psi) *= 0.5;
-    // J_theta.rows(diag_theta) *= 0.5;
+    // J_psi.cols(diag_psi) *= 0.5;
+    // J_theta.cols(diag_theta) *= 0.5;
     //
     // // Remove duplicated entries for psi and theta:
-    // J_psi = J_psi.rows(lower_psi);
-    // J_theta = J_theta.rows(lower_theta);
+    // J_psi = 2*J_psi.cols(lower_psi);
+    // J_theta = 2*J_theta.cols(lower_theta);
     //
     // // Multiply the jacobians by the duplication matrix:
-    // jacob = (2 * arma::join_cols(J_lambda, J_psi, J_theta) * Dp).t();
+    // jacob = Dp.t() * arma::join_rows(J_lambda, J_psi, J_theta);
+    // // The duplication matrix halves the duplicated elements in the
+    // // transformed parameters´
     //
     // arma::uvec all_idx =
     //   arma::join_cols(
@@ -77,16 +81,9 @@ public:
     //   );
     // x.grad.elem(all_idx) += jacob.t() * x.grad(indices_out[0]);
 
-    // J_lambda *= Dp;
-    // J_psi *= Dp;
-    // J_theta *= Dp;
-    // x.grad.elem(lambda_indices) += 2*J_lambda*x.grad(indices_out[0]);
-    // x.grad.elem(psi_indices) += 2*J_psi*x.grad(indices_out[0]);
-    // x.grad.elem(theta_indices) += 2*J_theta*x.grad(indices_out[0]);
-
   }
 
-  void update_dparam(arguments_optim& x) {
+  void dparam(arguments_optim& x) {
 
     dlambda = arma::reshape(x.dtransparameters(lambda_indices), p, q);
     dpsi.elem(lower_psi) = x.dtransparameters(psi_indices);
@@ -133,28 +130,25 @@ public:
   void jacobian(arguments_optim& x) {
 
     arma::mat I_p = arma::eye(p, p);
+    arma::mat comm = dxt(p, q); // Commutation matrix
 
-    arma::mat J_lambda = arma::kron(lambda_psi.t(), I_p);
-    arma::mat J_psi    = arma::kron(lambda.t(), lambda.t());
+    arma::mat J_lambda = arma::kron(lambda_psi, I_p) +
+      arma::kron(I_p, lambda_psi) * comm;
+    arma::mat J_psi    = arma::kron(lambda, lambda);
     arma::mat J_theta  = arma::eye(p*p, p*p);
 
     // Halve the diagonal entries:
-    J_psi.rows(diag_psi) *= 0.5;
-    J_theta.rows(diag_theta) *= 0.5;
+    J_psi.cols(diag_psi) *= 0.5;
+    J_theta.cols(diag_theta) *= 0.5;
 
     // Remove duplicated entries for psi and theta:
-    J_psi = J_psi.rows(lower_psi);
-    J_theta = J_theta.rows(lower_theta);
+    J_psi = 2*J_psi.cols(lower_psi);
+    J_theta = 2*J_theta.cols(lower_theta);
 
-    // Multiply the jacobians by a duplication matrix:
-    jacob = (2 * arma::join_cols(J_lambda, J_psi, J_theta) * Dp).t();
-
-  }
-
-  void update_hess(arguments_optim& x) {
-
-    Rf_error("sum_djacob not available");
-    // sum_djacob = 2*arma::diagmat(arma::vectorise(grad_out));
+    // Multiply the jacobians by the duplication matrix:
+    jacob = Dp.t() * arma::join_rows(J_lambda, J_psi, J_theta);
+    // The duplication matrix halves the duplicated elements in the
+    // transformed parameters´
 
   }
 
@@ -236,95 +230,3 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
   return mytrans;
 
 }
-
-// arma::mat gLPS_uls(arma::mat S,
-//                    arma::mat Lambda,
-//                    arma::mat Phi) {
-//
-//   /*
-//    * Compute d2f/(dtheta ds)
-//    */
-//
-//   int p = Lambda.n_rows;
-//   int q = Lambda.n_cols;
-//
-//   arma::uvec indexes1 = trimatl_ind(arma::size(Phi), 0);
-//   arma::uvec indexes2 = trimatl_ind(arma::size(S), 0);
-//
-//   arma::mat LambdaPhi = Lambda * Phi;
-//   arma::mat I(p, p, arma::fill::eye);
-//   arma::mat g1 = -2*arma::kron(LambdaPhi.t(), I);
-//   arma::mat g2 = g1 * dxt(p, p);
-//   arma::mat g_temp = g1 + g2;
-//   arma::mat g = g_temp.cols(indexes2);
-//
-//   arma::mat d1 = -2*arma::kron(Lambda.t(), Lambda.t());
-//   arma::mat d2 = d1 * dxt(p, p);
-//   arma::mat d_temp = d1 + d2;
-//   arma::mat d = d_temp(indexes1, indexes2);
-//   arma::mat gd = arma::join_cols(g, d);
-//
-//   int k = p*q + q*(q-1)/2;
-//
-//   /*
-//    * fill p rows with zeros
-//    */
-//
-//   gd.insert_rows(k, p);
-//
-//   return gd;
-//
-// }
-//
-// arma::mat gLPS_ml(arma::mat S,
-//                   arma::mat Lambda,
-//                   arma::mat Phi,
-//                   arma::mat Theta) {
-//
-//   /*
-//    * Compute d2f/(dtheta ds)
-//    */
-//
-//   int p = Lambda.n_rows;
-//   int q = Lambda.n_cols;
-//   int pp = p*p;
-//
-//   arma::uvec indexes1 = trimatl_ind(arma::size(Phi), 0);
-//   arma::uvec indexes2 = trimatl_ind(arma::size(S), 0);
-//   arma::uvec indexes3 = arma::linspace<arma::uvec>(0, pp-1, p);
-//   arma::mat I1(p, p, arma::fill::eye);
-//
-//   /*
-//    * for Lambda
-//    */
-//
-//   arma::mat LambdaPhi = Lambda * Phi;
-//   arma::mat Rhat = LambdaPhi * Lambda.t() + Theta;
-//   arma::mat Rhat_inv = arma::inv_sympd(Rhat);
-//   arma::mat dRi_res_Ri_dS = -2*arma::kron(Rhat_inv, Rhat_inv);
-//   arma::mat dxtS = dxt(p, p);
-//   dRi_res_Ri_dS += dRi_res_Ri_dS * dxtS;
-//   arma::mat g_temp = arma::kron(LambdaPhi.t(), I1) * dRi_res_Ri_dS;
-//   arma::mat g = g_temp.cols(indexes2);
-//
-//   /*
-//    * for Phi
-//    */
-//
-//   arma::mat d1 = arma::kron(Lambda.t(), Lambda.t());
-//   arma::mat d_temp = d1 * dRi_res_Ri_dS;
-//
-//   arma::mat d = d_temp(indexes1, indexes2);
-//   arma::mat gd = arma::join_cols(g, d);
-//   int k = p*q + q*(q-1)/2;
-//
-//   /*
-//    * for psi
-//    */
-//
-//   arma::mat h = 0.5*dRi_res_Ri_dS(indexes3, indexes2);
-//   arma::mat gdh = arma::join_cols(gd, h);
-//
-//   return gdh;
-//
-// }

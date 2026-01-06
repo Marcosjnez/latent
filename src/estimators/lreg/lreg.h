@@ -45,13 +45,6 @@ public:
 
   }
 
-  void H(arguments_optim& x) {
-
-    // Rcpp::stop("H not available");
-    // hess = 2 * predictors.t() * predictors;
-
-  }
-
   void outcomes(arguments_optim& x) {}
 
 };

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/10/2025
+ * Modification date: 27/12/2025
  */
 
 Rcpp::List get_vcov(Rcpp::List control_manifold,
@@ -50,22 +50,14 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
    * Computations
    */
 
-  x.h = H;
-
-  if(x.h.is_empty()) Rf_error("Please, provide the Hessian matrix");
-
-  final_manifold->param(x, xmanifolds);
-  final_manifold->retr(x, xmanifolds);
-  final_manifold->param(x, xmanifolds);
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
-  final_estimator->F(x, xestimators);
   final_estimator->G(x, xestimators);
   final_transform->update_grad(x, xtransforms);
-  final_manifold->proj(x, xmanifolds);
-  // final_estimator->H(x, xestimators);
   final_transform->jacobian(x, xtransforms);
-  // final_transform->update_hess(x, xtransforms);
+
+  x.h = H;
+  if(x.h.is_empty()) Rf_error("Please, provide the Hessian matrix");
   final_transform->update_vcov(x, xtransforms);
 
   result["vcov"] = x.vcov;

@@ -229,19 +229,6 @@ lavaan::inspect(fit2, what = "se")
 SE <- se(fit, digits = 3)
 SE$table_se
 
-control_manifold <- fit@modelInfo$control_manifold
-control_transform <- fit@modelInfo$control_transform
-control_estimator <- fit@modelInfo$control_estimator
-control <- fit@modelInfo$control
-control$parameters[[1]] <- fit@Optim$parameters
-control$transparameters[[1]] <- fit@Optim$transparameters
-x <- grad_comp(control_manifold, control_transform,
-               control_estimator, control, eps = 1e-04,
-               compute = "all")
-x$f
-round(c(x$g) - c(x$numg), 5)
-round(c(x$dg) - c(x$numdg), 5)
-
 fit@loss
 fit@loglik # -0.283407
 fit@penalized_loglik # -0.283407
@@ -277,6 +264,12 @@ inspect(fit2, what = "est")
 
 SE <- se(fit, digits = 3)
 SE$table_se
+
+psi <- latInspect(fit, what = "psi", digits = 3)[[1]]
+psi[lower.tri(psi, diag = TRUE)] %*%
+         t(duplication(3, halflower = FALSE))
+
+duplication(3, halflower = FALSE) %*% psi[lower.tri(psi, diag = TRUE)]
 
 #### Multigroup CFA ####
 
@@ -362,10 +355,10 @@ fit2@loglik$loglik
 # With latent:
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
             estimator = "ml", positive = TRUE,
-            penalties = list(logdet = list(w = 0.001)),
+            penalties = list(logdet = list(w = 0.01)),
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "lbfgs", maxit = 100L,
+            control = list(opt = "lbfgs", maxit = 1000L,
                            cores = 20L, rstarts = 20L))
 
 fit@loglik # -3421.613 (ML)
@@ -498,3 +491,41 @@ fit@loss # 90154.77
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
+
+#### Check derivatives ####
+
+control_manifold <- fit@modelInfo$control_manifold
+control_transform <- fit@modelInfo$control_transform
+control_estimator <- fit@modelInfo$control_estimator
+control_optimizer <- fit@modelInfo$control
+# control_optimizer$parameters[[1]] <- fit@Optim$parameters
+# control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
+x <- grad_comp(control_manifold, control_transform,
+               control_estimator, control_optimizer,
+               compute = "dgrad",
+               eps = 1e-07)
+x$f
+round(c(x$g) - c(x$numg), 5)
+max(abs(c(x$g) - c(x$numg)))
+round(c(x$dg) - c(x$numdg), 5)
+max(abs(c(x$dg) - c(x$numdg)))
+
+# Calculate the Hessian matrix using numerical approximations:
+G <- function(parameters) {
+
+  control_optimizer$parameters[[1]] <- parameters
+  g <- get_grad(control_manifold = control_manifold,
+                control_transform = control_transform,
+                control_estimator = control_estimator,
+                control_optimizer = control_optimizer)$g
+
+  return(g)
+
+}
+
+H <- numDeriv::jacobian(func = G, x = control_optimizer$parameters[[1]])
+H <- 0.5*(H + t(H)) # Force symmetry
+
+x <- get_hess(control_manifold, control_transform,
+              control_estimator, control_optimizer)
+max(abs(H - x$h))

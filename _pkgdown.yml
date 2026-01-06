@@ -23,6 +23,10 @@ navbar:
       - documentation
       - articles
       - tutorials
+      - estimators
+      - transformations
+      - manifolds
+      - optimizers
 
   components:
     articles:
@@ -44,3 +48,39 @@ navbar:
           href: articles/cfa_tutorial.html
         - text: Exploratory Factor Analysis
           href: articles/efa_tutorial.html
+
+    estimators:
+      text: Estimators
+      menu:
+        - text: Likelihoods
+          href: articles/lca_tutorial.html
+        - text: Loss functions
+          href: articles/efa_tutorial.html
+        - text: Regularization/Penalties
+          href: articles/efa_tutorial.html
+
+    transformations:
+      text: Transformations
+      menu:
+        - text: Vectors
+          href: articles/lca_tutorial.html
+        - text: Matrices
+          href: articles/cfa_tutorial.html
+
+    manifolds:
+      text: Manifolds
+      menu:
+        - text: Vectors
+          href: articles/lca_tutorial.html
+        - text: Matrices
+          href: articles/lca_tutorial.html
+
+    optimizers:
+      text: Optimizers
+      menu:
+        - text: First-order
+          href: articles/lca_tutorial.html
+        - text: Second-order
+          href: articles/lca_tutorial.html
+        - text: Step-size selection
+          href: articles/cfa_tutorial.html

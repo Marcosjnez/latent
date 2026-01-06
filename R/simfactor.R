@@ -296,24 +296,24 @@ groot_ml <- function(x, delta, G) {
   return(g)
 
 }
-dxt <- function(p, q) {
-
-  # derivative wrt transpose (just a permutation matrix)
-
-  pq <- p*q
-
-  res <- array(0, dim = c(pq, pq))
-  null <- matrix(0, p, q)
-
-  for(i in 1:pq) {
-    temp <- null
-    temp[i] <- 1
-    res[, i] <- c(t(temp))
-  }
-
-  return(res)
-
-}
+# dxt <- function(p, q) {
+#
+#   # derivative wrt transpose (just a permutation matrix)
+#
+#   pq <- p*q
+#
+#   res <- array(0, dim = c(pq, pq))
+#   null <- matrix(0, p, q)
+#
+#   for(i in 1:pq) {
+#     temp <- null
+#     temp[i] <- 1
+#     res[, i] <- c(t(temp))
+#   }
+#
+#   return(res)
+#
+# }
 gLRhat <- function(lambda, phi) {
 
   # derivative of Lambda wrt Rhat

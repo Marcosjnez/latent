@@ -102,8 +102,6 @@ public:
 
   void dG(arguments_optim& x) {}
 
-  void H(arguments_optim& x) {}
-
   void outcomes(arguments_optim& x) {
 
     doubles.resize(2);

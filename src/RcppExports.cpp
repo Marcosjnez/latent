@@ -11,6 +11,30 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// dxt
+arma::mat dxt(int p, int q);
+RcppExport SEXP _latent_dxt(SEXP pSEXP, SEXP qSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    Rcpp::traits::input_parameter< int >::type q(qSEXP);
+    rcpp_result_gen = Rcpp::wrap(dxt(p, q));
+    return rcpp_result_gen;
+END_RCPP
+}
+// commutation
+arma::mat commutation(const arma::uword m, const arma::uword n);
+RcppExport SEXP _latent_commutation(SEXP mSEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::uword >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const arma::uword >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(commutation(m, n));
+    return rcpp_result_gen;
+END_RCPP
+}
 // soft
 arma::vec soft(arma::vec x, double a);
 RcppExport SEXP _latent_soft(SEXP xSEXP, SEXP aSEXP) {
@@ -413,6 +437,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_latent_dxt", (DL_FUNC) &_latent_dxt, 2},
+    {"_latent_commutation", (DL_FUNC) &_latent_commutation, 2},
     {"_latent_soft", (DL_FUNC) &_latent_soft, 2},
     {"_latent_duplication", (DL_FUNC) &_latent_duplication, 2},
     {"_latent_mytest", (DL_FUNC) &_latent_mytest, 1},

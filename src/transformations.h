@@ -28,13 +28,11 @@ public:
 
   virtual void update_grad(arguments_optim& x) = 0;
 
-  virtual void update_dparam(arguments_optim& x) = 0;
+  virtual void dparam(arguments_optim& x) = 0;
 
   virtual void update_dgrad(arguments_optim& x) = 0;
 
   virtual void jacobian(arguments_optim& x) = 0;
-
-  virtual void update_hess(arguments_optim& x) = 0;
 
   virtual void update_vcov(arguments_optim& x) = 0;
 
@@ -115,14 +113,14 @@ public:
 
   }
 
-  void update_dparam(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+  void dparam(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
     x.dtransparameters.zeros();
     x.dtransparameters(x.transparam2param) = x.dparameters;
 
     for(int i=0; i < x.ntransforms; ++i) {
 
-      xtransformations[i]->update_dparam(x);
+      xtransformations[i]->dparam(x);
 
     }
 
@@ -151,42 +149,6 @@ public:
       xtransformations[i]->jacobian(x);
 
     }
-
-  }
-
-  void update_hess(arguments_optim& x, std::vector<transformations*>& xtransformations) {
-
-    // This assumes that the jacobian is already computed
-    // Faster version of hessian updating:
-    for (int i = x.ntransforms - 1; i >= 0; --i) {
-
-      const arma::uvec& indices_in  = xtransformations[i]->indices_in[0];
-      const arma::uvec& indices_out = xtransformations[i]->indices_out[0];
-
-      // Compute the jacobian and sum_djacob of each transformation:
-      xtransformations[i]->update_hess(x);
-
-      // Update the hessian: H += H U + U^T H + U^T H U + S
-      const arma::mat& J = xtransformations[i]->jacob;
-      const arma::mat& S = xtransformations[i]->sum_djacob;
-
-      // HU = H * U:
-      arma::mat HU = x.hess.cols(indices_out) * J;
-
-      // H += H U + U^T H:
-      x.hess.cols(indices_in) += HU;
-      x.hess.rows(indices_in) += HU.t();
-
-      // H += U^T H U + S:
-      x.hess(indices_in, indices_in) += J.t() * x.hess(indices_out, indices_out) * J;
-      x.hess(indices_in, indices_in) += S;
-
-      x.hess = arma::symmatu(x.hess); // Ensure symmetry
-
-    }
-
-    // Get the hessian:
-    x.h = x.hess(x.transparam2param, x.transparam2param);
 
   }
 
@@ -274,30 +236,3 @@ public:
 
 };
 
-// arma::mat jacob(x.transparameters.n_elem, x.transparameters.n_elem, arma::fill::eye);
-// arma::mat sum_djacob(x.transparameters.n_elem, x.transparameters.n_elem, arma::fill::zeros);
-
-// Update the hessian using the chain rule:
-// for(int i=x.ntransforms-1L; i > -1L ; --i) {
-//
-//   // Indices of input parameters:
-//   arma::uvec indices_in = xtransformations[i]->indices_in[0];
-//
-//   // Indices of output parameters:
-//   arma::uvec indices_out = xtransformations[i]->indices_out[0];
-//
-//   // Compute the jacobian and sum_djacob of each transformation:
-//   xtransformations[i]->update_hess();
-//
-//   // Update the overall jacobian and sum_djacob:
-//   jacob(indices_out, indices_in) += xtransformations[i]->jacob;
-//   sum_djacob(indices_in, indices_in) += xtransformations[i]->sum_djacob;
-//
-//   x.hess = jacob.t() * x.hess * jacob + sum_djacob;
-//
-//   // After modifying the hessian, restore the jacobian and sum_djacob
-//   // of the completed tranformations so they do not affect next computations:
-//   jacob(indices_out, indices_in).zeros();
-//   sum_djacob(indices_in, indices_in).zeros();
-//
-// }

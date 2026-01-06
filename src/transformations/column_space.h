@@ -10,7 +10,7 @@ class column_space:public transformations {
 
 public:
 
-  arma::mat X, coefs, linear_preds;
+  arma::mat X, coefs, dcoefs, linear_preds;
 
   void transform(arguments_optim& x) {
 
@@ -31,11 +31,18 @@ public:
 
   }
 
-  void update_dparam(arguments_optim& x) {
+  void dparam(arguments_optim& x) {
+
+    arma::vec dvalues = x.dtransparameters(indices_in[0]);
+    std::memcpy(dcoefs.memptr(), dvalues.memptr(), sizeof(double) * dvalues.n_elem);
+    arma::mat dlinear_preds = X * dcoefs;
+    x.dtransparameters(indices_out[0]) = arma::vectorise(dlinear_preds);
 
   }
 
   void update_dgrad(arguments_optim& x) {
+
+    x.grad(indices_in[0]) += arma::vectorise(jacob.t() * x.dgrad(indices_out[0]));
 
   }
 
@@ -43,14 +50,6 @@ public:
 
     arma::mat I(coefs.n_cols, coefs.n_cols, arma::fill::eye);
     jacob = arma::kron(I, X);
-
-  }
-
-  void update_hess(arguments_optim& x) {
-
-    sum_djacob = arma::diagvec(X);
-
-    // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
 
   }
 
@@ -99,6 +98,7 @@ column_space* choose_column_space(const Rcpp::List& trans_setup) {
   mytrans->indices_out = indices_out;
   mytrans->X = X;
   mytrans->coefs = coefs;
+  mytrans->dcoefs = coefs;
 
   return mytrans;
 

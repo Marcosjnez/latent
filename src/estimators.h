@@ -39,15 +39,9 @@ public:
 
   virtual void dG(arguments_optim& x) = 0;
 
-  virtual void H(arguments_optim& x) = 0;
-
   virtual void outcomes(arguments_optim& x) = 0;
 
 };
-
-#include "estimators/efa/ml_efa.h"
-#include "estimators/efa/uls_efa.h"
-#include "estimators/efa/dwls_lt.h"
 
 #include "estimators/rotation/cf.h"
 #include "estimators/rotation/oblimin.h"
@@ -69,18 +63,17 @@ public:
 #include "estimators/cfa/cfa_dwls.h"
 #include "estimators/cfa/cfa_ml.h"
 #include "estimators/cfa/cfa_ml2.h"
+#include "estimators/cfa/cfa_ml_R.h"
 
 #include "estimators/correlation/polycor.h"
 
 using EstimatorFactory = std::function<estimators*(const Rcpp::List&)>;
 
 static const std::unordered_map<std::string, EstimatorFactory> estimator_factories = {
-  { "ml_efa",                      choose_ml_efa                    },
-  { "uls_efa",                     choose_uls_efa                   },
-  { "dwls_lt",                     choose_dwls_lt                   },
   { "cfa_dwls",                    choose_cfa_dwls                  },
   { "cfa_ml",                      choose_cfa_ml                    },
   { "cfa_ml2",                     choose_cfa_ml2                   },
+  { "cfa_ml_R",                    choose_cfa_ml_R                  },
   { "cf",                          choose_cf                        },
   { "oblimin",                     choose_oblimin                   },
   { "geomin",                      choose_geomin                    },
@@ -154,20 +147,6 @@ public:
     for(int i=0; i < x.nestimators; ++i) {
 
       xestimators[i]->dG(x);
-
-    }
-
-  }
-
-  void H(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
-    int ntrans = x.transparameters.n_elem;
-    x.hess.set_size(ntrans, ntrans);
-    x.hess.zeros();
-
-    for(int i=0; i < x.nestimators; ++i) {
-
-      xestimators[i]->H(x);
 
     }
 

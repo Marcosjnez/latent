@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>The Latent Class Model</title>
+<title>Factor Model</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -23,17 +23,17 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="lca_article_files/libs/clipboard/clipboard.min.js"></script>
-<script src="lca_article_files/libs/quarto-html/quarto.js" type="module"></script>
-<script src="lca_article_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="lca_article_files/libs/quarto-html/popper.min.js"></script>
-<script src="lca_article_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="lca_article_files/libs/quarto-html/anchor.min.js"></script>
-<link href="lca_article_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="lca_article_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="lca_article_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="lca_article_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="lca_article_files/libs/bootstrap/bootstrap-bb462d781dde1847d9e3ccf7736099dd.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="transformations_factor_model_files/libs/clipboard/clipboard.min.js"></script>
+<script src="transformations_factor_model_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="transformations_factor_model_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="transformations_factor_model_files/libs/quarto-html/popper.min.js"></script>
+<script src="transformations_factor_model_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="transformations_factor_model_files/libs/quarto-html/anchor.min.js"></script>
+<link href="transformations_factor_model_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="transformations_factor_model_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="transformations_factor_model_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="transformations_factor_model_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="transformations_factor_model_files/libs/bootstrap/bootstrap-bb462d781dde1847d9e3ccf7736099dd.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -75,7 +75,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">The Latent Class Model</h1>
+<h1 class="title">Factor Model</h1>
 </div>
 
 
@@ -92,256 +92,67 @@ window.Quarto = {
 </header>
 
 
-<section id="latent-class-analysis" class="level2">
-<h2 class="anchored" data-anchor-id="latent-class-analysis">Latent Class Analysis</h2>
-<p>Latent Class Analysis assumes that people belong to different groups (i.e., classes) that are due to nonobservable characteristics. In a latent class model, we aim to estimate two kinds of probabilities:</p>
-<ol type="1">
-<li>The probability that a person belongs to a particular class.</li>
-<li>The conditional probabilities of item responses if a person belongs to a given class.</li>
-</ol>
-</section>
-<section id="the-likelihood" class="level2">
-<h2 class="anchored" data-anchor-id="the-likelihood">The likelihood</h2>
-<p>Suppose that a sample of people respond to <span class="math inline">\(J\)</span> items and <span class="math inline">\(\mathbf{y}\)</span> is a vector that contains the scores to each item <span class="math inline">\(j\)</span>. Let <span class="math inline">\(K\)</span> denote the number of latent classes and let <span class="math inline">\(x_k\)</span> be class <span class="math inline">\(k\)</span>. Then, the likelihood of the response pattern <span class="math inline">\(\mathbf{y}\)</span>, if it was observed <span class="math inline">\(n\)</span> times in the sample and every person responds independently of each other, can be written as <span class="math display">\[
-\ell \;=\; P(\mathbf{y})^{n}
-\;=\;
-\Bigg(\sum_{k=1}^{K} P(x_k)\, P(\mathbf{y}\mid x_k)\Bigg)^{n}.
-\]</span></p>
-<p>Assuming <strong>local independence</strong> (responses within a person are independent conditional on class), we have <span class="math display">\[
-P(\mathbf{y}\mid x_k) \;=\; \prod_{j=1}^{J} P(y_j \mid x_k),
-\]</span> where <span class="math inline">\(y_j\)</span> denotes the score on item <span class="math inline">\(j\)</span>. Hence, <span class="math display">\[
-\ell \;=\; \Bigg(\sum_{k=1}^{K} P(x_k)\, \prod_{j=1}^{J} P(y_j \mid x_k)\Bigg)^{\!n},
-\]</span> and the log-likelihood becomes <span class="math display">\[
-\ell\ell \;=\; n \log \Bigg(\sum_{k=1}^{K} P(x_k)\, \prod_{j=1}^{J} P(y_j \mid x_k)\Bigg).
-\]</span> The term inside the parenthesis is the probability of a single pattern, <span class="math inline">\(P(\mathbf{y})\)</span>. Assuming independence between people with different response patterns, the log-likelihood of the whole sample is the sum of log-likelihoods of each response pattern.</p>
-<p>To simplify the computation of the logarithm likelihood and related derivatives, let <span class="math inline">\(l_{y_m \mid x_g} = \log P(y_m \mid x_g)\)</span>, so that</p>
+<section id="transformation" class="level2">
+<h2 class="anchored" data-anchor-id="transformation">Transformation</h2>
 <p><span class="math display">\[
-\ell\ell \;=\; n \log \Bigg(\sum_{k=1}^{K} P(x_k)\, \exp\bigg(\sum_{j=1}^{J} l_{y_m \mid x_g}\bigg)\Bigg).
+\hat{S}(\theta) = \Lambda \Psi \Lambda^\top + \Theta
 \]</span></p>
 </section>
-<section id="first-order-derivatives" class="level2">
-<h2 class="anchored" data-anchor-id="first-order-derivatives">First-order derivatives</h2>
-<p>For a fixed pattern <span class="math inline">\(\mathbf{y}\)</span>, define <span class="math display">\[
-\begin{aligned}
-P(\mathbf{y}) \;&amp;=\; \sum_{k=1}^{K} P(x_k)\, \prod_{j=1}^{J} P(y_j \mid x_k) \\
-&amp;=\; \sum_{k=1}^{K} P(x_k)\, \exp\bigg(\sum_{j=1}^{J} l_{y_m \mid x_g}\bigg).
-\end{aligned}
-\]</span> Then <span class="math display">\[
-\frac{\partial \ell\ell}{\partial P(x_g)} \;=\; n \,\frac{1}{P(\mathbf{y})}\, \prod_{j=1}^{J} P(y_j \mid x_g).
-\]</span> For a specific item <span class="math inline">\(m\)</span> and class <span class="math inline">\(g\)</span>, <span class="math display">\[
-\frac{\partial \ell\ell}{\partial l_{y_m \mid x_g}}
-\;=\;
-n \,\frac{1}{P(\mathbf{y})}\,
-P(x_g)\, \prod_{j=1}^{J} P(y_j \mid x_g).
+<section id="update-of-the-gradient" class="level2">
+<h2 class="anchored" data-anchor-id="update-of-the-gradient">Update of the gradient</h2>
+<p><span class="math display">\[
+\Delta_{\Lambda} = 2\Delta_{\hat{S}(\theta)} \Lambda \Psi
 \]</span></p>
-<p>Notice that this last expression is just the posterior, <span class="math inline">\(P(x_g \mid y_m)\)</span>, weighted by <span class="math inline">\(n\)</span>.</p>
-</section>
-<section id="directional-derivatives-of-first-order-derivatives" class="level2">
-<h2 class="anchored" data-anchor-id="directional-derivatives-of-first-order-derivatives">Directional derivatives of first-order derivatives</h2>
 <p><span class="math display">\[
-d \Bigg[ \frac{\partial \ell\ell}{\partial P(x_g)} \Bigg] \;=\; n \,\frac{P(\mathbf{y}) \; d\big[\prod_{j=1}^{J} P(y_j \mid x_g)\big] - d\big[P(\mathbf{y})\big] \; \prod_{j=1}^{J} P(y_j \mid x_g)}{P(\mathbf{y})^2},
-\]</span> where</p>
+\Delta_{\Psi} = \Lambda^\top \Delta_{\hat{S}(\theta)} \Lambda
+\]</span></p>
 <p><span class="math display">\[
-d\big[\prod_{j=1}^{J} P(y_j \mid x_g)\big] = \frac{\prod_{j=1}^{J} P(y_j \mid x_g)}{P(y_j \mid x_g) \, d\big[P(y_j \mid x_g)\big]},
-\]</span> and</p>
-<p><span class="math display">\[
-d\big[P(\mathbf{y})\big] = \sum_{k=1}^{K} d\big[P(x_k)] \, \prod_{j=1}^{J} P(y_j \mid x_k) +
-\sum_{k=1}^{K} P(x_k) \, d\big[\prod_{j=1}^{J} P(y_j \mid x_k)].
+\Delta_{\Theta} = \Delta_{\hat{S}(\theta)}
 \]</span></p>
 </section>
-<section id="second-order-derivatives" class="level2">
-<h2 class="anchored" data-anchor-id="second-order-derivatives">Second-order derivatives</h2>
-<p>For classes <span class="math inline">\(g,h\)</span>, <span class="math display">\[
-\begin{aligned}
-\frac{\partial^2 \ell\ell}{\partial P(x_g)\,\partial P(x_h)} \;&amp;=\; -\,n \,\frac{1}{P(\mathbf{y})^{2}} \,
-\Bigg(\prod_{j=1}^{J} P(y_j \mid x_g)\Bigg)\!
-\Bigg(\prod_{j=1}^{J} P(y_j \mid x_h)\Bigg) \\
-&amp;=\; -n \frac{P(x_g \mid y) P(x_h \mid y)}{P(x_g) P(x_h)}.
-\end{aligned}
-\]</span></p>
-<p>For items <span class="math inline">\(m,n\)</span> and classes <span class="math inline">\(g,h\)</span>, <span class="math display">\[
-\frac{\partial^2 \ell\ell}{\partial l_{y_m \mid x_g}\,\partial l_{y_n \mid x_h}}
-=
-\begin{cases}
-\,n \, P(x_g \mid y) \!\ \big(1-P(x_g \mid y)\big),
-&amp; \text{if } \!\ g=h,\\[1.25em]
--\,n \, P(x_g \mid y) \!\ P(x_h \mid y),
-&amp; \text{otherwise.}
-\end{cases}
-\]</span></p>
-<p>For the mixed second derivative, <span class="math display">\[
-\frac{\partial^2 \ell\ell}{\partial P(x_h)\,\partial l_{y_m \mid x_g}}
-=
-\begin{cases}
-\frac{1}{P(x_g)} \, n \, P(x_g \mid y) \big(1-P(x_g \mid y)\big),
-&amp; \text{if } g=h,\\[1.0em]
--\, \frac{1}{P(x_h)} \, n \, P(x_g \mid y) P(x_h \mid y),
-&amp; \text{otherwise.}
-\end{cases}
-\]</span></p>
-<p>Collecting these terms gives the Hessian in block form: <span class="math display">\[
-\mathrm{Hess}(\ell\ell) \;=\;
-\begin{bmatrix}
-\displaystyle \frac{\partial^2 \ell\ell}{\partial P(x_g)\,\partial P(x_h)} &amp;
-\displaystyle \frac{\partial^2 \ell\ell}{\partial P(x_h)\,\partial l_{y_m \mid x_g}} \\[0.8em]
-\displaystyle \frac{\partial^2 \ell\ell}{\partial l_{y_m \mid x_g}\,\partial P(x_h)} &amp;
-\displaystyle \frac{\partial^2 \ell\ell}{\partial l_{y_m \mid x_g}\,\partial l_{y_m \mid x_g}}
-\end{bmatrix}\!.
+<section id="update-of-the-differential" class="level2">
+<h2 class="anchored" data-anchor-id="update-of-the-differential">Update of the differential</h2>
+<p><span class="math display">\[
+\partial \Delta_{\hat{S}(\theta)} = \partial \Lambda \Psi \Lambda^\top +
+\Lambda \partial \Psi \Lambda^\top +
+\Lambda \Psi \partial \Lambda^\top +
+\partial \Theta
 \]</span></p>
 </section>
-<section id="models-for-the-conditional-likelihoods" class="level2">
-<h2 class="anchored" data-anchor-id="models-for-the-conditional-likelihoods">Models for the conditional likelihoods</h2>
-<p>The conditional probabilities need to be parameterized with a likelihood. We consider a <strong>multinomial</strong> likelihood for categorical items and a <strong>Gaussian</strong> likelihood for continuous items.</p>
-<section id="multinomial" class="level3">
-<h3 class="anchored" data-anchor-id="multinomial">Multinomial</h3>
-<p>For categorical items, let <span class="math inline">\(\pi_{m_k \mid g}\)</span> be the probability of scoring category <span class="math inline">\(k\)</span> on item <span class="math inline">\(m\)</span> if a subject belongs to class <span class="math inline">\(g\)</span>. Then <span class="math display">\[
-P(y_m \mid x_g) \;=\; \pi_{m_k \mid g},
-\]</span> where <span class="math inline">\(k\)</span> is such that <span class="math inline">\(y_m = k\)</span>. With this parameterization, <span class="math display">\[
-\frac{\partial l_{y_m \mid x_g}}{\partial \pi_{n_k \mid h}}
-=
-\begin{cases}
-\frac{1}{\pi_{n_k \mid h}}, &amp; \text{if } y_m = k,\ m=n,\ g=h,\\
-0, &amp; \text{otherwise.}
-\end{cases}
-\]</span> and <span class="math display">\[
-\frac{\partial^2 l_{y_j \mid x_i}}{\partial \pi_{m_k \mid g} \partial \pi_{n_l \mid h}} =
-\begin{cases}
--\frac{1}{\pi_{m_j \mid i}^2}, &amp; \text{if } y_j = k = l,\ y=m=n,\ i=g=h,\\
-0, &amp; \text{otherwise.}
-\end{cases}
-\]</span></p>
-<p>Consequently, the Hessian for each conditional parameter has the following block form: <span class="math display">\[
-\mathrm{Hess}(l_{y_m \mid x_g}) \;=\;
-\mathbf{e} \; \displaystyle \frac{\partial^2 l_{y_j \mid x_i}}{\partial \pi_{m_k \mid g} \partial \pi_{n_l \mid h}} \; \mathbf{e}^\top,
-\]</span> where <span class="math inline">\(\mathbf{e}\)</span> is a vector of zeroes with a 1 in the position corresponding to the parameter <span class="math inline">\(\pi_{y_j \mid i}\)</span>.</p>
-<p>Notice that each conditional parameter <span class="math inline">\(l_{y_m \mid x_g}\)</span> has a Hessian matrix.</p>
-</section>
-<section id="gaussian" class="level3">
-<h3 class="anchored" data-anchor-id="gaussian">Gaussian</h3>
-<p>For continuous items, let <span class="math inline">\(\varphi\)</span> denote the normal density. Let <span class="math inline">\(\mu_{m\mid g}\)</span> and <span class="math inline">\(\sigma_{m\mid g}\)</span> be the mean and standard deviation for item <span class="math inline">\(m\)</span> in class <span class="math inline">\(g\)</span>. Then <span class="math display">\[
-P(y_m \mid x_g) \;=\; \varphi\!\big(y_m;\, \mu_{m\mid g},\, \sigma_{m\mid g}\big).
-\]</span></p>
-<p>First derivatives: <span class="math display">\[
-\frac{\partial l_{y_m \mid x_g}}{\partial \mu_{n\mid h}}
-=
-\begin{cases}
-\dfrac{y_m - \mu_{m\mid g}}{\sigma_{m\mid g}^{2}}, &amp; \text{if } m=n,\ g=h,\\[0.6em]
-0, &amp; \text{otherwise,}
-\end{cases}
+<section id="update-of-the-differential-of-the-gradient" class="level2">
+<h2 class="anchored" data-anchor-id="update-of-the-differential-of-the-gradient">Update of the differential of the gradient</h2>
+<p><span class="math display">\[
+\partial \Delta_{\Lambda} = 2\left( \partial \Delta_{\hat{S}(\theta)} \Lambda \Psi + \Delta_{\hat{S}(\theta)} \big(\partial \Lambda \Psi + \Lambda \partial\Psi \big) \right)
 \]</span></p>
 <p><span class="math display">\[
-\frac{\partial l_{y_m \mid x_g}}{\partial \sigma_{n\mid h}}
-=
-\begin{cases}
-\dfrac{(y_m-\mu_{m\mid g})^{2}-\sigma_{m\mid g}^{2}}{\sigma_{m\mid g}^{3}}, &amp; \text{if } m=n,\ g=h,\\[0.6em]
-0, &amp; \text{otherwise.}
-\end{cases}
-\]</span></p>
-<p>Second-order derivatives: <span class="math display">\[
-\frac{\partial^{2} l_{y_m \mid x_g}}{\partial \mu_{m\mid g}\, \partial \mu_{n\mid h}}
-=
-\begin{cases}
--\dfrac{1}{\sigma_{m\mid g}^{2}}, &amp; \text{if } m=n,\ g=h,\\[0.6em]
-0, &amp; \text{otherwise,}
-\end{cases}
+\partial \Delta_{\Psi} = \partial \Lambda^\top \Delta_{\hat{S}(\theta)} \Lambda +
+\Lambda^\top \partial \Delta_{\hat{S}(\theta)} \Lambda +
+\Lambda^\top \Delta_{\hat{S}(\theta)} \partial \Lambda
 \]</span></p>
 <p><span class="math display">\[
-\frac{\partial^{2} l_{y_m \mid x_g}}{\partial \sigma_{m\mid g}\, \partial \sigma_{n\mid h}}
-=
-\begin{cases}
-\dfrac{1}{\sigma_{m\mid g}^{2}} - \dfrac{3(y_m-\mu_{m\mid g})^{2}}{\sigma_{m\mid g}^{4}}, &amp; \text{if } m=n,\ g=h,\\[1.0em]
-0, &amp; \text{otherwise,}
-\end{cases}
-\]</span></p>
-<p><span class="math display">\[
-\frac{\partial^{2} l_{y_m \mid x_g}}{\partial \mu_{m\mid g}\, \partial \sigma_{n\mid h}}
-=
-\begin{cases}
--\dfrac{2(y_m-\mu_{m\mid g})}{\sigma_{m\mid g}^{3}}, &amp; \text{if } m=n,\ g=h,\\[0.6em]
-0, &amp; \text{otherwise.}
-\end{cases}
-\]</span></p>
-<p>Consequently, the Hessian for each conditional parameter has the following block form: <span class="math display">\[
-\mathrm{Hess}(l_{y_m \mid x_g}) \;=\;
-\begin{bmatrix}
-\displaystyle \frac{\partial^{2} l_{y_m \mid x_g}}{\partial \mu_{m \mid g}\,\partial \mu_{n \mid h}} &amp; \displaystyle \frac{\partial^{2} l_{y_m \mid x_g}}{\partial \mu_{m \mid g}\,\partial \sigma_{n \mid h}} \\[0.6em]
-\displaystyle \frac{\partial^{2} l_{y_m \mid x_g}}{\partial \sigma_{n \mid h}\,\partial \mu_{m \mid g}} &amp; \displaystyle \frac{\partial^{2} l_{y_m \mid x_g}}{\partial \sigma_{m \mid g}\,\partial \sigma_{n \mid h}}
-\end{bmatrix}.
-\]</span></p>
-<p>Notice that each conditional parameter <span class="math inline">\(l_{y_m \mid x_g}\)</span> has a Hessian matrix.</p>
-</section>
-</section>
-<section id="model-for-the-latent-class-probabilities" class="level2">
-<h2 class="anchored" data-anchor-id="model-for-the-latent-class-probabilities">Model for the latent class probabilities</h2>
-<p>Probabilities of class membership are parameterized with the softmax transformation:</p>
-<p><span class="math display">\[
-P(x_g) = \frac{\exp(\theta_g)}{\sum_j \exp(\theta_j)},
-\]</span> where <span class="math inline">\(\theta_g\)</span> is the log-scale parameter associated with class <span class="math inline">\(g\)</span>.</p>
-<p>The jacobian of this transformation is given by</p>
-<p><span class="math display">\[
-J = \mathrm{diag}(P) - PP^\top.
-\]</span> Finally, the Hessian for each probability is</p>
-<p><span class="math display">\[
-\mathrm{Hess}\big(P(x_g)\big) \;=\; P(x_g)\bigg((e_g−P)(e_g−P)^\top−J\bigg),
-\]</span> where <span class="math inline">\(e_g\)</span> is a vector of zeroes with a <span class="math inline">\(1\)</span> in position <span class="math inline">\(g\)</span>.</p>
-</section>
-<section id="model-for-the-conditional-probabilities-of-the-multinomial-model" class="level2">
-<h2 class="anchored" data-anchor-id="model-for-the-conditional-probabilities-of-the-multinomial-model">Model for the conditional probabilities of the multinomial model</h2>
-<p>Probabilities of conditional responses are parameterized with the softmax transformation:</p>
-<p><span class="math display">\[
-\pi_{m_k \mid g} = \frac{\exp(\eta_{m_k \mid g})}{\sum_j \exp(\eta_{m_j \mid g})},
-\]</span> where <span class="math inline">\(\eta_{m_k \mid g}\)</span> is the log-scale parameter associated with response <span class="math inline">\(k\)</span> to item <span class="math inline">\(m\)</span> in class <span class="math inline">\(g\)</span>.</p>
-<p>The jacobian of this transformation is given by</p>
-<p><span class="math display">\[
-J_{m \mid g} = \mathrm{diag}(\pi_{m \mid g}) - \pi_{m \mid g} (\pi_{m \mid g})^\top.
-\]</span> Finally, the Hessian for each probability is</p>
-<p><span class="math display">\[
-\mathrm{Hess}\big( \pi_{m_k \mid g} \big) \;=\; \pi_{m \mid g}\bigg((e_k−\pi_{m \mid g})(e_k−\pi_{m \mid g})^\top−J\bigg),
-\]</span> where <span class="math inline">\(e_k\)</span> is a vector of zeroes with a <span class="math inline">\(1\)</span> in position <span class="math inline">\(k\)</span>.</p>
-</section>
-<section id="constant-priors" class="level2">
-<h2 class="anchored" data-anchor-id="constant-priors">Constant priors</h2>
-<section id="for-latent-class-probabilities" class="level3">
-<h3 class="anchored" data-anchor-id="for-latent-class-probabilities">For latent class probabilities</h3>
-</section>
-<section id="for-conditional-likelihoods" class="level3">
-<h3 class="anchored" data-anchor-id="for-conditional-likelihoods">For conditional likelihoods</h3>
-<section id="multinomial-1" class="level4">
-<h4 class="anchored" data-anchor-id="multinomial-1">Multinomial</h4>
-<p>For the conditional probabilities modeled with a multinomial likelihood, we add the following term to the log-likelihood for each class <span class="math inline">\(g\)</span>:</p>
-<p><span class="math display">\[
-\lambda_2 = \sum_m \sum_k \hat{\pi}_{m_k} \sum_g \frac{\alpha}{K} \log (\pi_{m_k \mid g}),
-\]</span></p>
-<p>Where <span class="math inline">\(\hat{\pi}_{m_k}\)</span> is the proportion of times category <span class="math inline">\(k\)</span> was selected in item <span class="math inline">\(m\)</span>.</p>
-<p>The first-order derivatives are</p>
-<p><span class="math display">\[
-\frac{\partial \lambda_2}{\partial \pi_{m_k \mid g}} = \sum_m \sum_k \hat{\pi}_{m_k} \sum_g \frac{\alpha}{K} \frac{1}{\pi_{m_k \mid g}}.
-\]</span></p>
-<p>The second-order derivatives are</p>
-<p><span class="math display">\[
-\frac{\partial^2 \lambda_2}{\partial \pi_{m_k \mid g} \; \partial \pi_{m_k \mid g}} = -\sum_m \sum_k \hat{\pi}_{m_k} \sum_g \frac{\alpha}{K} \frac{1}{\pi^2_{m_k \mid g}}.
+\partial \Delta_{\Theta} = \partial \Delta_{\hat{S}(\theta)}
 \]</span></p>
 </section>
-<section id="gaussian-1" class="level4">
-<h4 class="anchored" data-anchor-id="gaussian-1">Gaussian</h4>
-<p>For the conditional probabilities modeled with a gaussian likelihood, we add the following term to the log-likelihood for each class <span class="math inline">\(g\)</span>: <span class="math display">\[
-\begin{aligned}
-\lambda_3 &amp;= \sum_g^K \left( -0.5\frac{\alpha}{K} \log\bigg(\prod_j \sigma^2_{j\mid g}\bigg) - 0.5\frac{\alpha}{K} \sum_j \frac{\hat{\sigma}^2_j}{\sigma^2_{j \mid g}} \right) \\
-&amp;= \sum_g^K \left( -\frac{\alpha}{K} \sum_j s_{j\mid g} - 0.5\frac{\alpha}{K} \sum_j \frac{\hat{\sigma}^2_j}{\sigma^2_{j \mid g}} \right),
-\end{aligned}
+<section id="jacobian" class="level2">
+<h2 class="anchored" data-anchor-id="jacobian">Jacobian</h2>
+<p><span class="math display">\[
+J_\Lambda = \big(\Lambda \Psi \big)^\top \otimes I_p
 \]</span></p>
-<p>where <span class="math inline">\(\hat{\sigma}^2_j\)</span> is the variance of item <span class="math inline">\(j\)</span>.</p>
-<p>The first-order derivatives are <span class="math display">\[
-\begin{aligned}
-\frac{\partial \lambda_3}{\partial \sigma_{m \mid g}} \;&amp;=\; \sum_g^K -\frac{\alpha}{K \sigma_{m \mid g}} + \frac{\alpha}{K \sigma^3_{m \mid g}} \hat{\sigma}^2_{m \mid g}\\
-&amp;= \sum_g^K \frac{\alpha}{K} \Bigg(\frac{\hat{\sigma}^2_{m \mid g}}{\sigma^3_{m \mid g}} - \frac{1}{\sigma_{m \mid g}}\Bigg).
-\end{aligned}
+<p><span class="math display">\[
+J_\Psi = \Lambda^\top \otimes \Lambda^\top
 \]</span></p>
-<p>The second-order derivatives are <span class="math display">\[
-\frac{\partial^2 \lambda_3}{\partial \sigma_{m \mid g} \partial \sigma_{m \mid g}} \;=\; \sum_g^K \frac{\alpha}{K} \Bigg(\frac{1}{\sigma_{m \mid g}} - 3\frac{\hat{\sigma}^2_{m \mid g}}{\sigma^4_{m \mid g}}\Bigg).
+<p><span class="math display">\[
+J_\Psi = I_{p^2\times p^2}
 \]</span></p>
 </section>
+<section id="differential-of-the-jacobian-towards-the-gradient" class="level2">
+<h2 class="anchored" data-anchor-id="differential-of-the-jacobian-towards-the-gradient">Differential of the jacobian towards the gradient</h2>
 </section>
+<section id="constraints" class="level2">
+<h2 class="anchored" data-anchor-id="constraints">Constraints</h2>
+</section>
+<section id="constraints-derivatives" class="level2">
+<h2 class="anchored" data-anchor-id="constraints-derivatives">Constraints’ derivatives</h2>
 </section>
 
 </main>

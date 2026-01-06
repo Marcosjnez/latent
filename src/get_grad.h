@@ -16,7 +16,6 @@ Rcpp::List get_grad(Rcpp::List control_manifold,
   x.ntransforms = control_transform.size();
   x.nestimators = control_estimator.size();
 
-  product_manifold* final_manifold;
   product_transform* final_transform;
   product_estimator* final_estimator;
 
@@ -44,18 +43,11 @@ Rcpp::List get_grad(Rcpp::List control_manifold,
 
   Rcpp::List computations;
 
-  final_manifold->param(x, xmanifolds);
-  final_manifold->retr(x, xmanifolds);
-  final_manifold->param(x, xmanifolds);
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
   final_estimator->F(x, xestimators);
   final_estimator->G(x, xestimators);
   final_transform->update_grad(x, xtransforms);
-  final_manifold->proj(x, xmanifolds);
-  // final_estimator->H(x, xestimators);
-  // final_transform->update_hess(x, xtransforms);
-  // final_transform->update_vcov(x, xtransforms);
 
   result["grad"] = x.grad;
   result["g"] = x.g;

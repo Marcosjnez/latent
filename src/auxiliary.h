@@ -14,6 +14,7 @@ double root_quad(double a, double b, double c) {
 
 }
 
+// [[Rcpp::export]]
 arma::mat dxt(int p, int q) {
 
   /*
@@ -33,6 +34,21 @@ arma::mat dxt(int p, int q) {
 
   return res;
 
+}
+
+// [[Rcpp::export]]
+arma::mat commutation(const arma::uword m, const arma::uword n) {
+  arma::mat K(m * n, m * n, arma::fill::zeros);
+
+  for (arma::uword i = 0; i < m; ++i) {
+    for (arma::uword j = 0; j < n; ++j) {
+      arma::uword col = j * m + i;      // column index
+      arma::uword row = j + n * i;      // row index
+      K(row, col) = 1.0;
+    }
+  }
+
+  return K;
 }
 
 arma::mat skew(arma::mat X) {

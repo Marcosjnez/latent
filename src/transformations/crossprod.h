@@ -36,7 +36,7 @@ public:
 
   }
 
-  void update_dparam(arguments_optim& x) {
+  void dparam(arguments_optim& x) {
 
     dX = arma::reshape(x.dtransparameters(indices_in[0]), p, p);
     dXtX = X.t() * dX + dX.t() * X;
@@ -64,40 +64,7 @@ public:
 
   }
 
-  void update_hess(arguments_optim& x) {
-
-    Rf_error("wrong sum_djacob");
-    arma::mat I(p, p, arma::fill::eye);
-    jacob = 2*Dp.t() * arma::kron(I, X.t());
-    int pp = p*p;
-    int q = 0.5*p*(p-1);
-
-    sum_djacob.resize(pp, pp);
-    sum_djacob.zeros();
-    arma::mat dX(p, p, arma::fill::zeros);
-
-    // for(int i=0; i < q; ++i) {
-    //   dX.zeros();
-    //   dX.elem(i) = 1;
-    //   arma::mat djacob = 2*Dp.t() * arma::kron(I, dX.t());
-    //   sum_djacob += djacob.t() * x.grad(indices_out[0]);
-    // }
-
-    sum_djacob = 2*arma::diagmat(arma::vectorise(grad_out));
-
-    // arma::mat DP = duplication(p, false);
-    // sum_djacob = 2*DP.t();
-    // sum_djacob %= arma::diagmat(arma::vectorise(grad_out));
-    // sum_djacob = arma::diagmat(2*arma::vectorise(grad_out));
-    // sum_djacob = 2*arma::kron(I, grad_out);
-    // sum_djacob = arma::diagmat(2*Dp * x.grad(indices_out[0]));
-
-  }
-
   void update_vcov(arguments_optim& x) {
-
-    arma::mat I(p, p, arma::fill::eye);
-    jacob = 2*Dp.t() * arma::kron(I, X.t());
 
   }
 

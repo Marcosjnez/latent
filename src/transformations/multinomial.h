@@ -10,10 +10,10 @@ class multinomial:public transformations {
 
 public:
 
-  arma::vec trans, logtrans;
-  std::vector<arma::mat> peta, eta, dpeta, indices;
+  arma::vec trans, logtrans, df_dloglik;
+  std::vector<arma::mat> peta, eta, df_dpeta, indices;
+  std::vector<arma::mat> dpeta, deta;
   arma::uvec K;
-  arma::vec dloglik;
   arma::mat y;
   int S, J, I;
   int n_in, n_out;
@@ -23,7 +23,6 @@ public:
     trans = x.transparameters(indices_in[0]);
     logtrans = arma::trunc_log(trans);
 
-    arma::cube loglik(S, J, I, arma::fill::zeros);
     int l=0;
     for(int j=0; j < J; ++j) {
       for(int i=0; i < I; ++i) {
@@ -34,6 +33,7 @@ public:
       }
     }
 
+    arma::cube loglik(S, J, I, arma::fill::zeros);
     for(int i=0; i < I; ++i) {
       for(int j=0; j < J; ++j) {
         for(int s=0; s < S; ++s) {
@@ -50,13 +50,10 @@ public:
 
   void update_grad(arguments_optim& x) {
 
-    // jacob.set_size(transparameters.n_elem, parameters.n_elem);
-    // jacob.zeros();
-
-    dloglik = x.grad(indices_out[0]);
+    df_dloglik = x.grad(indices_out[0]);
 
     for(int j=0; j < J; ++j) {
-      dpeta[j].zeros();
+      df_dpeta[j].zeros();
     }
 
     int l=0L;
@@ -65,25 +62,77 @@ public:
         for(int s=0; s < S; ++s, ++l) {
           if (std::isnan(y(s,j))) continue;
           int value = y(s,j);
-          dpeta[j](value,i) += dloglik(l)/peta[j](value,i);
+          df_dpeta[j](value,i) += df_dloglik(l)/peta[j](value,i);
         }
       }
     }
 
     arma::vec v = arma::vec();  // initialize empty vector
     for (int j = 0; j < J; ++j) {
-      v = arma::join_cols(v, arma::vectorise(dpeta[j]));
+      v = arma::join_cols(v, arma::vectorise(df_dpeta[j]));
     }
 
     x.grad(indices_in[0]) += v;
 
   }
 
-  void update_dparam(arguments_optim& x) {
+  void dparam(arguments_optim& x) {
+
+    arma::vec dtrans_in = x.dtransparameters(indices_in[0]);
+
+    int l=0;
+    for(int j=0; j < J; ++j) {
+      for(int i=0; i < I; ++i) {
+        for(int k=0; k < K[j]; ++k, ++l) {
+          dpeta[j](k,i) = dtrans_in(l);
+          deta[j](k,i) = dtrans_in(l)/trans(l);
+        }
+      }
+    }
+
+    arma::cube dloglik(S, J, I, arma::fill::zeros);
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s) {
+          if (std::isnan(y(s,j))) continue;
+          int value = y(s,j);
+          dloglik(s,j,i) = deta[j](value,i);
+        }
+      }
+    }
+
+    x.dtransparameters.elem(indices_out[0]) = arma::vectorise(dloglik);
 
   }
 
   void update_dgrad(arguments_optim& x) {
+
+    arma::vec ddf_dloglik = x.dgrad(indices_out[0]);
+
+    std::vector<arma::mat> dgrad_in = df_dpeta;
+    for(int j=0; j < J; ++j) {
+      dgrad_in[j].zeros();
+    }
+
+    int l=0L;
+    for(int i=0; i < I; ++i) {
+      for(int j=0; j < J; ++j) {
+        for(int s=0; s < S; ++s, ++l) {
+          if (std::isnan(y(s,j))) continue;
+          int value = y(s,j);
+          dgrad_in[j](value,i) += df_dloglik(l)/peta[j](value,i);
+          dgrad_in[j](value,i) += (peta[j](value,i)*ddf_dloglik(l) -
+            df_dloglik(l)*dpeta[j](value,i))/(peta[j](value,i)*peta[j](value,i));
+        }
+      }
+    }
+
+    arma::vec v = arma::vec();  // initialize empty vector
+    for (int j = 0; j < J; ++j) {
+      v = arma::join_cols(v, arma::vectorise(dgrad_in[j]));
+    }
+
+    x.dgrad(indices_in[0]) += v;
 
   }
 
@@ -106,46 +155,7 @@ public:
 
   }
 
-  void update_hess(arguments_optim& x) {
-
-    jacob.set_size(n_out, n_in);
-    jacob.zeros();
-    sum_djacob.set_size(n_in, n_in);
-    sum_djacob.zeros();
-
-    int l = 0L;
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s, ++l) {
-          if (std::isnan(y(s,j))) continue;
-          int value = y(s,j);
-          int index = indices[j](value,i);
-          jacob(l, index) = 1/peta[j](value,i);
-          sum_djacob(index, index) -= dloglik(l)/(peta[j](value,i)*peta[j](value,i));
-        }
-      }
-    }
-
-    // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
-
-  }
-
   void update_vcov(arguments_optim& x) {
-
-    jacob.set_size(n_out, n_in);
-    jacob.zeros();
-
-    int l = 0L;
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s, ++l) {
-          if (std::isnan(y(s,j))) continue;
-          int value = y(s,j);
-          int index = indices[j](value,i);
-          jacob(l, index) = 1/peta[j](value,i);
-        }
-      }
-    }
 
   }
 
@@ -193,8 +203,6 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
     peta[j].resize(K(j), I);
     peta[j].zeros();
   }
-  std::vector<arma::mat> eta = peta;
-  std::vector<arma::mat> dpeta = peta;
   std::vector<arma::mat> indices = peta;
   int l=0;
   for(int j=0; j < J; ++j) {
@@ -217,8 +225,10 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
   mytrans->I = I;
   mytrans->K = K;
   mytrans->peta = peta;
-  mytrans->eta = eta;
-  mytrans->dpeta = dpeta;
+  mytrans->eta = peta;
+  mytrans->dpeta = peta;
+  mytrans->deta = peta;
+  mytrans->df_dpeta = peta;
   mytrans->indices = indices;
 
   return mytrans;

@@ -6,22 +6,11 @@
 
 // Softmax transformation:
 
-arma::mat softmax_chain_second_term(const arma::vec& p,
-                                    const arma::vec& grad_in,
-                                    const arma::mat& J) {
-  arma::vec w = grad_in % p;                                    // elementwise
-  double sumw = arma::accu(w);
-
-  arma::mat A = arma::diagmat(w) - w * p.t() - p * w.t() + sumw * (p * p.t());
-
-  return A - sumw * J;  // equals Σ_i grad_in(i) * H_i
-}
-
 class softmax:public transformations {
 
 public:
 
-  arma::vec theta, probs;
+  arma::vec theta, probs, Jdx;
 
   void transform(arguments_optim& x) {
 
@@ -34,30 +23,29 @@ public:
   void update_grad(arguments_optim& x) {
 
     jacob = arma::diagmat(probs) - probs * probs.t();
-    // Fill the gradient:
     x.grad(indices_in[0]) += arma::vectorise(jacob.t() * x.grad(indices_out[0]));
 
   }
 
-  void update_dparam(arguments_optim& x) {
+  void dparam(arguments_optim& x) {
+
+    arma::vec dtrans = x.dtransparameters(indices_in[0]);
+    jacob = arma::diagmat(probs) - probs * probs.t();
+    Jdx = jacob * dtrans;
+    x.dtransparameters(indices_out[0]) = Jdx;
 
   }
 
   void update_dgrad(arguments_optim& x) {
+
+    x.dgrad.elem(indices_in[0]) += arma::diagmat(probs) -
+      (Jdx * probs.t() + probs * Jdx.t());
 
   }
 
   void jacobian(arguments_optim& x) {
 
     jacob = arma::diagmat(probs) - probs * probs.t();
-
-  }
-
-  void update_hess(arguments_optim& x) {
-
-    sum_djacob = softmax_chain_second_term(probs, x.grad(indices_out[0]), jacob);
-
-    // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
 
   }
 

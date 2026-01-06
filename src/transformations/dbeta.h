@@ -69,7 +69,7 @@ public:
 
   }
 
-  void update_dparam(arguments_optim& x) {
+  void dparam(arguments_optim& x) {
 
   }
 
@@ -81,76 +81,7 @@ public:
 
   }
 
-  void update_hess(arguments_optim& x) {
-
-    // Initialize the jacobian:
-    jacob.set_size(n_out, n_in);
-    jacob.zeros();
-
-    // Initialize sum_djacob:
-    sum_djacob.set_size(n_in, n_in);
-    sum_djacob.zeros();
-
-    arma::mat sigma4 = sigma3 % sigma;
-    arma::vec grad_out = x.grad(indices_out[0]);
-    arma::cube Grad_in(grad_out.memptr(), S, J, I, false);
-
-    int ij_m = 0L;
-    int ij_s = J*I;
-    int k = 0L;
-    for (int i = 0; i < I; ++i) {
-      for (int j = 0; j < J; ++j, ++ij_m, ++ij_s) {
-
-        // Accumulate G0, G1, G2 over s (skip NaNs in y)
-        double G0 = 0.0, G1 = 0.0, G2 = 0.0;
-        for (int s = 0; s < S; ++s, ++k) {
-          if (std::isnan(y(s,j))) continue;
-          const double x  = y(s,j) - mu(j,i);
-          jacob(k, ij_m) = x/sigma2(j,i);
-          jacob(k, ij_s) = (x*x - sigma2(j,i))/sigma3(j,i);
-          G0 += Grad_in(s,j,i);
-          G1 += Grad_in(s,j,i) * x;
-          G2 += Grad_in(s,j,i) * x * x;
-        }
-
-        // Diagonal blocks
-        sum_djacob(ij_m , ij_m) += - G0 / sigma2(j,i);
-        sum_djacob(ij_s, ij_s) +=   G0 / sigma2(j,i) - 3.0 * G2 / sigma4(j,i);
-
-        // Off-diagonal (symmetric) block
-        const double mixed = - 2.0 * G1 / sigma3(j,i);
-        sum_djacob(ij_m, ij_s) += mixed;
-        sum_djacob(ij_s, ij_m) += mixed;
-
-      }
-    }
-
-    // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
-
-  }
-
   void update_vcov(arguments_optim& x) {
-
-    // Initialize the jacobian:
-    jacob.set_size(n_out, n_in);
-    jacob.zeros();
-
-    int ij_m = 0L;
-    int ij_s = J*I;
-    int k = 0L;
-    for (int i = 0; i < I; ++i) {
-      for (int j = 0; j < J; ++j, ++ij_m, ++ij_s) {
-
-        double G0 = 0.0, G1 = 0.0, G2 = 0.0;
-        for (int s = 0; s < S; ++s, ++k) {
-          if (std::isnan(y(s,j))) continue;
-          const double x  = y(s,j) - mu(j,i);
-          jacob(k, ij_m) = x/sigma2(j,i);
-          jacob(k, ij_s) = (x*x - sigma2(j,i))/sigma3(j,i);
-        }
-
-      }
-    }
 
   }
 

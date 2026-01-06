@@ -139,7 +139,7 @@ void tcg(arguments_optim& x,
 
   // final_manifold->param(x, xmanifolds); // Unnecessary
   // final_estimator->param(x, xestimators); // Unnecessary
-  final_transform->update_dparam(x, xtransforms);
+  final_transform->dparam(x, xtransforms);
   final_estimator->dG(x, xestimators);
   final_transform->update_dgrad(x, xtransforms);
   final_manifold->param(x, xmanifolds);
@@ -192,7 +192,7 @@ void tcg(arguments_optim& x,
     x.dparameters = r + beta * x.dparameters;
     iter += 1;
 
-    final_transform->update_dparam(x, xtransforms);
+    final_transform->dparam(x, xtransforms);
     final_estimator->dG(x, xestimators);
     final_transform->update_dgrad(x, xtransforms);
     final_manifold->param(x, xmanifolds);
@@ -219,6 +219,7 @@ optim_result gd(arguments_optim x,
   final_manifold->param(x, xmanifolds);
   final_manifold->retr(x, xmanifolds);
   final_manifold->param(x, xmanifolds);
+  final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
 
   // double ss_fac = 2, ss_min = 0.1;
@@ -231,6 +232,7 @@ optim_result gd(arguments_optim x,
   final_estimator->F(x, xestimators);
   // update gradient
   final_estimator->G(x, xestimators);
+  final_transform->update_grad(x, xtransforms);
   // Riemannian gradient
   // final_manifold->param(x, xmanifolds);
   final_manifold->proj(x, xmanifolds);
@@ -249,6 +251,7 @@ optim_result gd(arguments_optim x,
     // update gradient
     // final_estimator->param(x, xestimators); // param() was called in armijo
     final_estimator->G(x, xestimators);
+    final_transform->update_grad(x, xtransforms);
     // Riemannian gradient
     final_manifold->param(x, xmanifolds);
     final_manifold->proj(x, xmanifolds);
@@ -275,7 +278,7 @@ optim_result gd(arguments_optim x,
       Rcpp::Rcout << "dif = " << std::sqrt(x.df*x.df) << std::endl;
       Rcpp::Rcout << "" << std::endl;
     }
-    if (x.ng < x.eps | std::sqrt(x.df*x.df) < x.df_eps) {
+    if ((x.ng < x.eps) | (std::sqrt(x.df*x.df) < x.df_eps)) {
       x.convergence = true;
       break;
     }
@@ -455,7 +458,7 @@ optim_result lbfgs(arguments_optim x,
     //   x.old_inprod = x.inprod;
     // }
 
-    if(x.print & x.rstarts == 1L) {
+    if((x.print & x.rstarts) == 1L) {
 
       if (x.iterations % x.print_interval == 0) {
         Rprintf("iter = %d  f = %.8f  ng = %.8f\r",
@@ -474,7 +477,7 @@ optim_result lbfgs(arguments_optim x,
 
   } while (x.iterations < x.maxit);
 
-  if(x.print & x.rstarts == 1L) {
+  if((x.print & x.rstarts) == 1L) {
     const char *cflag = x.convergence ? "TRUE" : "FALSE";
     Rprintf("iter = %d  f = %.8f  ng = %.8f  convergence = %s\r",
             x.iterations, x.f, x.ng, cflag);
@@ -556,7 +559,7 @@ optim_result ntr(arguments_optim x,
     // subsolver
     tcg(x, xtransforms, xmanifolds, xestimators, att_bnd, c, rad); // Update x.dparameters, x.dg, and x.dH
 
-    final_transform->update_dparam(x, xtransforms);
+    final_transform->dparam(x, xtransforms);
     final_estimator->dG(x, xestimators);
     final_transform->update_dgrad(x, xtransforms);
     final_manifold->param(x, xmanifolds);

@@ -13,7 +13,7 @@ class cfa_dwls: public estimators {
 public:
 
   arma::mat R, Rhat, dRhat, residuals, W, W_residuals;
-  arma::uvec lower_diag;
+  arma::uvec diag, lower_diag;
   int p, q;
   double w;
 
@@ -55,16 +55,6 @@ public:
 
   }
 
-  void H(arguments_optim& x) {
-
-    arma::mat hx = 2*W;
-    hx.diag() *= 0.5;
-    hx = arma::diagmat(arma::vectorise(hx.elem(lower_diag)));
-
-    x.hess(indices[0], indices[0]) += w*hx;
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     doubles.resize(5);
@@ -99,6 +89,7 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
 
   int p = R.n_rows;
   arma::mat Rhat(p, p, arma::fill::zeros);
+  arma::uvec diag = arma::regspace<arma::uvec>(0, p + 1, p*p - 1);
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(R));
 
   myestimator->indices = indices;
@@ -109,6 +100,7 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
   myestimator->w = w;
   myestimator->Rhat = Rhat;
   myestimator->dRhat = Rhat;
+  myestimator->diag = diag;
   myestimator->lower_diag = lower_diag;
 
   return myestimator;

@@ -10,7 +10,7 @@ class logarithm:public transformations {
 
 public:
 
-  arma::vec trans;
+  arma::vec trans, dtrans;
 
   void transform(arguments_optim& x) {
 
@@ -25,11 +25,17 @@ public:
 
   }
 
-  void update_dparam(arguments_optim& x) {
+  void dparam(arguments_optim& x) {
+
+    dtrans = x.dtransparameters(indices_in[0]) / x.transparameters(indices_in[0]);
+    x.dtransparameters(indices_out[0]) = dtrans;
 
   }
 
   void update_dgrad(arguments_optim& x) {
+
+    x.dgrad.elem(indices_in[0]) += (x.transparameters(indices_in[0]) % x.dgrad.elem(indices_out[0]) -
+      x.grad(indices_out[0]) % dtrans) / (x.transparameters(indices_in[0]) % x.transparameters(indices_in[0]));
 
   }
 
@@ -39,18 +45,7 @@ public:
 
   }
 
-  void update_hess(arguments_optim& x) {
-
-    jacob = arma::diagmat(1/x.transparameters(indices_in[0]));
-    // sum_djacob = arma::diagmat(trans % x.grad(indices_out[0]));
-
-    // hess_in = jacob.t() * hess_out * jacob + sum_djacob;
-
-  }
-
   void update_vcov(arguments_optim& x) {
-
-    jacob = arma::diagmat(1/x.transparameters(indices_in[0]));
 
   }
 

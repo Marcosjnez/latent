@@ -46,7 +46,7 @@ public:
 
   }
 
-  void update_dparam(arguments_optim& x) {
+  void dparam(arguments_optim& x) {
 
   }
 
@@ -55,10 +55,6 @@ public:
   }
 
   void jacobian(arguments_optim& x) {
-
-  }
-
-  void update_hess(arguments_optim& x) {
 
   }
 

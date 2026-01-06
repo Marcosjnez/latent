@@ -60,12 +60,6 @@ public:
 
   }
 
-  void H(arguments_optim& x) {
-
-    Rf_error("H not available");
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     doubles.resize(5);

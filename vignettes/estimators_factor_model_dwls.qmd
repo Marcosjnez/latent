@@ -1,0 +1,34 @@
+---
+title: "Factor Model (Diagonally weighted least-squares)"
+format: html
+---
+
+## Parametrization
+
+$$
+R = S -\hat{S}(\theta)
+$$
+
+## Loss
+
+$$
+loss = 0.5 \, \left \lVert W \odot R \right \rVert^2
+$$
+
+## Gradient
+
+$$
+\Delta_{\hat{S}(\theta)} = -W \odot R
+$$
+
+## Differential of the gradient
+
+$$
+\partial\Delta_{\hat{S}(\theta)} = W \odot \partial \hat{S}(\theta)
+$$
+
+## Hessian
+
+$$
+H_{\hat{S}(\theta)} = \operatorname{diag}(\operatorname{vec}(W))
+$$

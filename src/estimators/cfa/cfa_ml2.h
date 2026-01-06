@@ -66,17 +66,6 @@ public:
 
   }
 
-  void H(arguments_optim& x) {
-
-    arma::mat hx = -(arma::kron(Rhat_inv, Rhat_inv) -
-      (arma::kron(Ri_R_Ri, Rhat_inv) + arma::kron(Rhat_inv, Ri_R_Ri)));
-    hx.rows(lower_diag) *= 2;
-    hx = arma::diagmat(arma::vectorise(hx.elem(lower_diag)));
-
-    x.hess(indices[0], indices[0]) += w*hx;
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     doubles.resize(5);

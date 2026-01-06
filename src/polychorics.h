@@ -383,7 +383,6 @@ double ddbinorm(const double p, const double x, const double y) {
   const double C = 1-p2;
   const double z2 = std::exp(-0.5*z1/C);
   const double dz1 = -2*x*y;
-  const double dp2 = 2*p;
   const double dz2 = -z2 * 0.5*(dz1*C + 2*p*z1)/(C*C);
   const double denom = sqrt(C);
   const double ddenom = 1/(2*denom);

@@ -12,8 +12,8 @@ class cfa_ml: public estimators {
 
 public:
 
-  arma::mat R, Rhat, residuals, dRhat, Rhat_inv, Ri_R_Ri, gRhat;
-  arma::uvec lower_diag;
+  arma::mat R, Rhat, residuals, dRhat, Rhat_inv, R_Ri, Ri_R_Ri, gRhat, I;
+  arma::uvec diag, lower_diag;
   double w, logdetR, plogpi2;
   int p, q, n;
 
@@ -45,8 +45,9 @@ public:
 
   void G(arguments_optim& x) {
 
-    Ri_R_Ri = Rhat_inv * R * Rhat_inv;
-    gRhat = Rhat_inv - Ri_R_Ri;
+    // Ri_R_Ri = Rhat_inv * R * Rhat_inv;
+    arma::mat R_Ri = R * Rhat_inv;
+    gRhat = Rhat_inv * (I - R_Ri);
     arma::mat temp = 2*gRhat;
     temp.diag() *= 0.5;
 
@@ -60,23 +61,11 @@ public:
     dRhat = arma::symmatl(dRhat);
 
     arma::mat dRhat_inv = -Rhat_inv * dRhat * Rhat_inv;
-    arma::mat dgRhat = 2*(dRhat_inv -
-                         (dRhat_inv * R * Rhat_inv +
-                          Rhat_inv * R * dRhat_inv));
+    arma::mat dgRhat = 2*(dRhat_inv * (I - R * Rhat_inv) -
+                          Rhat_inv * R * dRhat_inv);
     dgRhat.diag() *= 0.5;
 
     x.dgrad.elem(indices[0]) += w*n*0.5*arma::vectorise(dgRhat(lower_diag));
-
-  }
-
-  void H(arguments_optim& x) {
-
-    arma::mat hx = -(arma::kron(Rhat_inv, Rhat_inv) -
-      (arma::kron(Ri_R_Ri, Rhat_inv) + arma::kron(Rhat_inv, Ri_R_Ri)));
-    hx.rows(lower_diag) *= 2;
-    hx = arma::diagmat(arma::vectorise(hx.elem(lower_diag)));
-
-    x.hess(indices[0], indices[0]) += w*n*0.5*hx;
 
   }
 
@@ -86,7 +75,6 @@ public:
     // loglik = w*n*0.5*(-plogpi2 -
     //                    arma::log_det_sympd(Rhat) -
     //                    arma::accu(R % Rhat_inv));
-    arma::mat I(p, p, arma::fill::eye);
     double loglik_indep = w*n*0.5*(-plogpi2 -
                                    arma::trace(R));
     arma::mat Rinv = arma::inv_sympd(R);
@@ -121,8 +109,10 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   int p = R.n_rows;
   double logdetR = arma::log_det_sympd(R);
   arma::mat Rhat(p, p, arma::fill::zeros);
+  arma::uvec diag = arma::regspace<arma::uvec>(0, p + 1, p*p - 1);
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(R));
   double plogpi2 = p*std::log(arma::datum::pi*2);
+  arma::mat I(p, p, arma::fill::eye);
 
   myestimator->indices = indices;
   myestimator->p = p;
@@ -133,8 +123,10 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   myestimator->logdetR = logdetR;
   myestimator->Rhat = Rhat;
   myestimator->dRhat = Rhat;
+  myestimator->diag = diag;
   myestimator->lower_diag = lower_diag;
   myestimator->plogpi2 = plogpi2;
+  myestimator->I = I;
 
   return myestimator;
 

@@ -16,7 +16,6 @@ Rcpp::List get_hess(Rcpp::List control_manifold,
   x.ntransforms = control_transform.size();
   x.nestimators = control_estimator.size();
 
-  product_manifold* final_manifold;
   product_transform* final_transform;
   product_estimator* final_estimator;
 
@@ -49,22 +48,27 @@ Rcpp::List get_hess(Rcpp::List control_manifold,
    * Computations
    */
 
-  final_manifold->param(x, xmanifolds);
-  final_manifold->retr(x, xmanifolds);
-  final_manifold->param(x, xmanifolds);
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
-  final_estimator->F(x, xestimators);
   final_estimator->G(x, xestimators);
   final_transform->update_grad(x, xtransforms);
-  final_manifold->proj(x, xmanifolds);
-  final_estimator->H(x, xestimators);
-  final_transform->jacobian(x, xtransforms);
-  final_transform->update_hess(x, xtransforms);
-  // final_transform->update_vcov(x, xtransforms);
 
-  result["hess"] = x.hess;
-  result["h"] = x.h;
+  int npar = x.parameters.n_elem;
+  arma::mat h(npar, npar, arma::fill::zeros);
+
+  for(int i=0; i<npar; ++i) {
+
+    x.dparameters.zeros();
+    x.dparameters(i) = 1.00;
+
+    final_transform->dparam(x, xtransforms);
+    final_estimator->dG(x, xestimators);
+    final_transform->update_dgrad(x, xtransforms);
+    h.col(i) = x.dg;
+
+  }
+
+  result["h"] = h;
 
   return result;
 

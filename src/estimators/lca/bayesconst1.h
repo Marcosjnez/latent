@@ -42,14 +42,8 @@ public:
 
   void dG(arguments_optim& x) {
 
-    // dg.set_size(transparameters.n_elem); dg.zeros();
-
-  }
-
-  void H(arguments_optim& x) {
-
-    arma::vec d2constant_logtrans = constant/(trans % trans);
-    x.hess(indices[0], indices[0]) += diagmat(d2constant_logtrans);
+    arma::vec dtrans = x.dtransparameters(indices[0]);
+    x.dgrad.elem(indices[0]) += constant*dtrans/(trans % trans);
 
   }
 
