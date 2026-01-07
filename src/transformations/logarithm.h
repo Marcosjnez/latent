@@ -25,7 +25,7 @@ public:
 
   }
 
-  void dparam(arguments_optim& x) {
+  void dtransform(arguments_optim& x) {
 
     dtrans = x.dtransparameters(indices_in[0]) / x.transparameters(indices_in[0]);
     x.dtransparameters(indices_out[0]) = dtrans;
@@ -34,8 +34,18 @@ public:
 
   void update_dgrad(arguments_optim& x) {
 
-    x.dgrad.elem(indices_in[0]) += (x.transparameters(indices_in[0]) % x.dgrad.elem(indices_out[0]) -
-      x.grad(indices_out[0]) % dtrans) / (x.transparameters(indices_in[0]) % x.transparameters(indices_in[0]));
+    // x.dgrad.elem(indices_in[0]) += (x.transparameters(indices_in[0]) % x.dgrad.elem(indices_out[0]) -
+    //   x.grad(indices_out[0]) % dtrans) / (x.transparameters(indices_in[0]) % x.transparameters(indices_in[0]));
+
+    arma::vec x_in   = x.transparameters(indices_in[0]);   // x
+    arma::vec g_out  = x.grad(indices_out[0]);             // g_y
+    arma::vec dg_out = x.dgrad(indices_out[0]);            // d g_y
+
+    // dtrans is dy = dx / x, already stored in the object
+    // dg_x = (dg_out - g_out % dtrans) / x_in;
+    arma::vec dg_in_add = (dg_out - g_out % dtrans) / x_in;
+
+    x.dgrad(indices_in[0]) += dg_in_add;
 
   }
 

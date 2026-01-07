@@ -100,7 +100,11 @@ public:
 
   }
 
-  void dG(arguments_optim& x) {}
+  void dG(arguments_optim& x) {
+
+    x.dgrad.elem(indices_R) += x.dtransparameters(indices[0]);
+
+  }
 
   void outcomes(arguments_optim& x) {
 

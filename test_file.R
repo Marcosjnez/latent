@@ -13,7 +13,6 @@
 #### LCA (multinomial) ####
 
 library(latent)
-
 fit <- lca(data = gss82, nclasses = 3,
            # multinomial = c("X1", "X2"),
            # poisson = ,
@@ -23,7 +22,7 @@ fit <- lca(data = gss82, nclasses = 3,
            #                 X2 ~ 1 + cluster2),
            item = rep("multinomial", ncol(gss82)),
            penalties = TRUE,
-           control = list(rstarts = 1, print = TRUE),
+           control = list(opt = "lbfgs"),
            do.fit = TRUE)
 fit@loglik # -2754.643
 fit@penalized_loglik # -2759.507
@@ -61,10 +60,10 @@ CI$table
 #### LCA (gaussian) ####
 
 library(latent)
-
 fit <- lca(data = empathy[, 1:6], nclasses = 4L,
            item = rep("gaussian", ncol(empathy[, 1:6])),
-           penalties = TRUE, control = NULL, do.fit = TRUE)
+           penalties = TRUE, do.fit = TRUE,
+           control = list(opt = "lbfgs"))
 
 fit@loglik # -1841.336
 fit@penalized_loglik # -1844.333
@@ -96,12 +95,11 @@ CI$table
 #### Mixed LCA (multinomial and gaussian) ####
 
 library(latent)
-
 fit <- lca(data = cancer[, 1:6], nclasses = 3L,
            item = c("gaussian", "gaussian",
                     "multinomial", "multinomial",
                     "gaussian", "gaussian"),
-           control = NULL,
+           control = list(opt = "lbfgs"),
            do.fit = TRUE)
 fit@timing
 fit@loglik # -5784.701
@@ -136,7 +134,6 @@ CI$table
 #### LCA with covariates (gaussian) ####
 
 library(latent)
-
 data <- empathy[, 1:6]
 X <- as.matrix(empathy[, 7:8]) # Covariates
 
@@ -199,7 +196,8 @@ model <- 'visual  =~ x1 + x2 + x3
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml",
             ordered = FALSE, std.lv = TRUE,
-            mimic = "latent", do.fit = TRUE)
+            mimic = "latent", do.fit = TRUE,
+            control = list(opt = "lbfgs"))
 fit@loss   # 0.283407
 fit@loglik # -3427.131
 fit@penalized_loglik # -3427.131
@@ -464,6 +462,32 @@ eigen(psi)$values
 sum(eigen(psi)$values)
 # solve(psi)
 
+#### Polychorics ####
+
+samples <- unique(hexaco$sample) # industry mooc fire student dutch
+Ns <- sapply(samples, FUN = function(x) sum(hexaco$sample == x))
+names(Ns) <- samples
+
+# Subset the items pertaining to the HEXACO-100
+selection <- 5:104
+full <- hexaco[, selection]
+
+mooc <- full[hexaco$sample == samples[2], ]
+dim(mooc)
+fit <- lpoly(data = as.matrix(mooc))
+fit@loglik # -75695.53
+fit@penalized_loglik # -75695.53
+fit@Optim$iterations
+fit@Optim$convergence
+fit@timing
+
+fit <- polyfast(as.matrix(mooc))
+R <- fit$correlation
+neg_value <- eigen(R)$values < 0
+
+taus <- fit$thresholds
+n <- fit$contingency_tables
+
 #### CFA polychorics ####
 
 samples <- unique(hexaco$sample) # industry mooc fire student dutch
@@ -502,7 +526,7 @@ control_optimizer <- fit@modelInfo$control
 # control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control_optimizer,
-               compute = "dgrad",
+               compute = "all",
                eps = 1e-07)
 x$f
 round(c(x$g) - c(x$numg), 5)

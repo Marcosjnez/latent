@@ -44,7 +44,7 @@ public:
   void dG(arguments_optim& x) {
 
     arma::vec dtrans = x.dtransparameters(indices[0]);
-    x.dgrad.elem(indices[0]) += constant*dtrans/(trans % trans);
+    x.dgrad.elem(indices[0]) += constant % dtrans/(trans % trans);
 
   }
 

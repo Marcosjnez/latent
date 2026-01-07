@@ -8,7 +8,7 @@ lca_control <- function(control) {
 
   # Control input
 
-  control$opt <- "lbfgs" # FORCE LBFGS
+  # control$opt <- "lbfgs" # FORCE LBFGS
 
   if(isFALSE(control$penalties)) {
 
@@ -101,40 +101,7 @@ lca_control <- function(control) {
   }
 
   if(is.null(control$opt)) {
-    control$opt <- "em-lbfgs"
-  }
-
-  if(control$opt == "em-lbfgs") {
-
-    if(is.null(control$em_rstarts)) {
-      control$em_rstarts <- 50
-    } else if(control$em_rstarts < 0L) {
-      stop("em_rstarts must be a positive integer")
-    }
-
-    if(is.null(control$maxit_em)) {
-      control$maxit_em <- 250L
-    } else if(control$maxit_em < 0L) {
-      stop("maxit_em must be a positive integer")
-    }
-
-    if(is.null(control$em_eps)) {
-      control$em_eps <- 0.01
-    } else if(control$em_eps < 0) {
-      stop("em_eps must be a positive number, preferable close to 0")
-    }
-
-    if(is.null(control$rstarts)) {
-      control$rstarts <- 5L
-    } else if(control$rstarts < 0L) {
-      stop("rstarts must be a positive integer")
-    }
-
-    # Save number of rstarts to store and compute in lbfgs
-    control$pick <- control$rstarts
-    # In "em-lbfgs", use at least as many em_rstarts as rstarts in lbgfs
-    control$rstarts <- max(control$em_rstarts, control$rstarts)
-
+    control$opt <- "lbfgs"
   }
 
   if(is.null(control$rstarts)) {

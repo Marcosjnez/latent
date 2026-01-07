@@ -28,7 +28,7 @@ public:
 
   virtual void update_grad(arguments_optim& x) = 0;
 
-  virtual void dparam(arguments_optim& x) = 0;
+  virtual void dtransform(arguments_optim& x) = 0;
 
   virtual void update_dgrad(arguments_optim& x) = 0;
 
@@ -113,14 +113,14 @@ public:
 
   }
 
-  void dparam(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+  void dtransform(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
     x.dtransparameters.zeros();
     x.dtransparameters(x.transparam2param) = x.dparameters;
 
     for(int i=0; i < x.ntransforms; ++i) {
 
-      xtransformations[i]->dparam(x);
+      xtransformations[i]->dtransform(x);
 
     }
 

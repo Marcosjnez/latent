@@ -61,7 +61,7 @@ Rcpp::List get_hess(Rcpp::List control_manifold,
     x.dparameters.zeros();
     x.dparameters(i) = 1.00;
 
-    final_transform->dparam(x, xtransforms);
+    final_transform->dtransform(x, xtransforms);
     final_estimator->dG(x, xestimators);
     final_transform->update_dgrad(x, xtransforms);
     h.col(i) = x.dg;

@@ -69,7 +69,7 @@ public:
 
   }
 
-  void dparam(arguments_optim& x) {
+  void dtransform(arguments_optim& x) {
 
   }
 

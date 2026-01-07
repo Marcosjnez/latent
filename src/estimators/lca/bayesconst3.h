@@ -43,8 +43,7 @@ public:
   void dG(arguments_optim& x) {
 
     arma::vec dsds = x.dtransparameters(indices[0]);
-    x.dgrad.elem(indices[0]) += constant * (varshat * 3*sds%sds % dsds /
-      (vars % vars % vars) + dsds/vars);
+    x.dgrad.elem(indices[0]) += constant * (3 * varshat % dsds / (vars % vars) - dsds / vars);
 
   }
 

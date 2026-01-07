@@ -76,7 +76,7 @@ public:
 
   }
 
-  void dparam(arguments_optim& x) {
+  void dtransform(arguments_optim& x) {
 
     arma::vec dtrans_in = x.dtransparameters(indices_in[0]);
 
@@ -120,7 +120,7 @@ public:
         for(int s=0; s < S; ++s, ++l) {
           if (std::isnan(y(s,j))) continue;
           int value = y(s,j);
-          dgrad_in[j](value,i) += df_dloglik(l)/peta[j](value,i);
+          // dgrad_in[j](value,i) += df_dloglik(l)/peta[j](value,i);
           dgrad_in[j](value,i) += (peta[j](value,i)*ddf_dloglik(l) -
             df_dloglik(l)*dpeta[j](value,i))/(peta[j](value,i)*peta[j](value,i));
         }

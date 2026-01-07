@@ -15,6 +15,7 @@ public:
   arma::uvec mu_indices;
   arma::uvec sigma_indices;
   arma::mat y, mu, sigma, sigma2, sigma3, sigma4;
+  arma::mat dmu, dsigma;
   int S, J, I;
   int n_out;
   int n_in;
@@ -25,6 +26,7 @@ public:
     mu = arma::reshape(x.transparameters(mu_indices), J, I);
     sigma = arma::reshape(x.transparameters(sigma_indices), J, I);
     sigma2 = sigma % sigma;
+    sigma3 = sigma2 % sigma;
     arma::mat log_sigma = arma::trunc_log(sigma);
 
     for(int i=0; i < I; ++i) {
@@ -43,10 +45,8 @@ public:
 
   void update_grad(arguments_optim& x) {
 
-    sigma3 = sigma2 % sigma;
-
-    arma::mat dmu(J, I, arma::fill::zeros);
-    arma::mat dsigma(J, I, arma::fill::zeros);
+    arma::mat df_dmu(J, I, arma::fill::zeros);
+    arma::mat df_dsigma(J, I, arma::fill::zeros);
 
     arma::vec grad = x.grad(indices_out[0]);
 
@@ -56,26 +56,103 @@ public:
         for(int s=0; s < S; ++s, ++k) {
           if (std::isnan(y(s,j))) continue;
           double x = (y(s,j)-mu(j,i));
-          // arma::uword kk = static_cast<arma::uword>(k);
-          // arma::uword idx = indices_out[0](kk);
-          dmu(j,i) += grad(k) * x/sigma2(j,i);
-          dsigma(j,i) += grad(k) * (x*x - sigma2(j,i))/sigma3(j,i);
+          df_dmu(j,i) += grad(k) * x/sigma2(j,i);
+          df_dsigma(j,i) += grad(k) * (x*x - sigma2(j,i))/sigma3(j,i);
         }
       }
     }
 
-    // Fill the gradient:
-    x.grad(mu_indices) += arma::vectorise(dmu);
-    x.grad(sigma_indices) += arma::vectorise(dsigma);
-    // grad_out = jacob.t() * grad_in;
+    x.grad(mu_indices) += arma::vectorise(df_dmu);
+    x.grad(sigma_indices) += arma::vectorise(df_dsigma);
 
   }
 
-  void dparam(arguments_optim& x) {
+  void dtransform(arguments_optim& x) {
+
+    dmu    = arma::reshape(x.dtransparameters(mu_indices),    J, I);
+    dsigma = arma::reshape(x.dtransparameters(sigma_indices), J, I);
+
+    arma::cube dloglik(S, J, I, arma::fill::zeros);
+    for (int i = 0; i < I; ++i) {
+      for (int j = 0; j < J; ++j) {
+        const double dmu_ji    = dmu(j,i);
+        const double dsigma_ji = dsigma(j,i);
+        for (int s = 0; s < S; ++s) {
+          if (std::isnan(y(s,j))) continue;
+          double x_ = y(s,j) - mu(j,i);
+          dloglik(s,j,i) =
+            (x_ / sigma2(j,i)) * dmu_ji +
+            ((x_*x_ - sigma2(j,i)) / sigma3(j,i)) * dsigma_ji;
+        }
+      }
+    }
+
+    x.dtransparameters.elem(indices_out[0]) = arma::vectorise(dloglik);
 
   }
 
   void update_dgrad(arguments_optim& x) {
+
+    // arma::mat ddf_dmu(J, I, arma::fill::zeros);
+    // arma::mat ddf_dsigma(J, I, arma::fill::zeros);
+    //
+    // arma::vec dgrad_out = x.dgrad(indices_out[0]);
+    //
+    // int k=0L;
+    // for(int i=0; i < I; ++i) {
+    //   for(int j=0; j < J; ++j) {
+    //     for(int s=0; s < S; ++s, ++k) {
+    //       if (std::isnan(y(s,j))) continue;
+    //       // ddf_dmu(j,i) +=
+    //       // ddf_dsigma(j,i) +=
+    //     }
+    //   }
+    // }
+    //
+    // x.dgrad(mu_indices) += arma::vectorise(ddf_dmu);
+    // x.dgrad(sigma_indices) += arma::vectorise(ddf_dsigma);
+
+    sigma4 = sigma2 % sigma2;
+
+    arma::mat ddf_dmu(J, I, arma::fill::zeros);
+    arma::mat ddf_dsigma(J, I, arma::fill::zeros);
+
+    arma::vec grad_out    = x.grad(indices_out[0]);
+    arma::vec dgrad_out   = x.dgrad(indices_out[0]);
+
+    int k = 0L;
+    for (int i = 0; i < I; ++i) {
+      for (int j = 0; j < J; ++j) {
+
+        double dmu_ji    = dmu(j,i);
+        double dsigma_ji = dsigma(j,i);
+
+        for (int s = 0; s < S; ++s, ++k) {
+          if (std::isnan(y(s,j))) continue;
+
+          double x_   = y(s,j) - mu(j,i);
+          double s2   = sigma2(j,i);
+          double s3   = sigma3(j,i);
+          double s4   = sigma4(j,i);
+
+          double f_mu     = x_ / s2;
+          double f_sigma  = (x_*x_ - s2) / s3;
+
+          double df_mu    = -dmu_ji / s2 - (2.0 * x_ / s3) * dsigma_ji;
+          double df_sigma = -(2.0 * x_ / s3) * dmu_ji +
+            ((s2 - 3.0 * x_*x_) / s4) * dsigma_ji;
+
+          double gk   = grad_out(k);
+          double dgk  = dgrad_out(k);
+
+          ddf_dmu(j,i)    += dgk * f_mu    + gk * df_mu;
+          ddf_dsigma(j,i) += dgk * f_sigma + gk * df_sigma;
+        }
+      }
+    }
+
+    x.dgrad(mu_indices)    += arma::vectorise(ddf_dmu);
+    x.dgrad(sigma_indices) += arma::vectorise(ddf_dsigma);
 
   }
 

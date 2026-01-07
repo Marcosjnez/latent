@@ -23,12 +23,11 @@ public:
 
     // jacob = arma::diagmat(trans);
     // g = jacob.t() * grad;
-    // Fill the gradient:
     x.grad(indices_in[0]) += x.grad(indices_out[0]) % trans;
 
   }
 
-  void dparam(arguments_optim& x) {
+  void dtransform(arguments_optim& x) {
 
     dtrans = x.dtransparameters(indices_in[0]) % trans;
     x.dtransparameters(indices_out[0]) = dtrans;

@@ -15,7 +15,7 @@ public:
   void transform(arguments_optim& x) {
 
     arma::vec values = x.transparameters(indices_in[0]);
-    std::memcpy(coefs.memptr(), values.memptr(), sizeof(double) * values.n_elem);
+    std::memcpy(coefs.memptr(), values.memptr(), sizeof(double)*values.n_elem);
     linear_preds = X * coefs;
     x.transparameters.elem(indices_out[0]) = arma::vectorise(linear_preds);
 
@@ -25,16 +25,14 @@ public:
 
     arma::mat I(coefs.n_cols, coefs.n_cols, arma::fill::eye);
     jacob = arma::kron(I, X);
-    // grad_out = jacob.t() * grad_in; grad_out.zeros();
-    // Fill the gradient:
     x.grad(indices_in[0]) += arma::vectorise(jacob.t() * x.grad(indices_out[0]));
 
   }
 
-  void dparam(arguments_optim& x) {
+  void dtransform(arguments_optim& x) {
 
     arma::vec dvalues = x.dtransparameters(indices_in[0]);
-    std::memcpy(dcoefs.memptr(), dvalues.memptr(), sizeof(double) * dvalues.n_elem);
+    std::memcpy(dcoefs.memptr(), dvalues.memptr(), sizeof(double)*dvalues.n_elem);
     arma::mat dlinear_preds = X * dcoefs;
     x.dtransparameters(indices_out[0]) = arma::vectorise(dlinear_preds);
 
@@ -42,7 +40,7 @@ public:
 
   void update_dgrad(arguments_optim& x) {
 
-    x.grad(indices_in[0]) += arma::vectorise(jacob.t() * x.dgrad(indices_out[0]));
+    x.dgrad(indices_in[0]) += arma::vectorise(jacob.t() * x.dgrad(indices_out[0]));
 
   }
 

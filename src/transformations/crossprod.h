@@ -36,7 +36,7 @@ public:
 
   }
 
-  void dparam(arguments_optim& x) {
+  void dtransform(arguments_optim& x) {
 
     dX = arma::reshape(x.dtransparameters(indices_in[0]), p, p);
     dXtX = X.t() * dX + dX.t() * X;

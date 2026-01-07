@@ -83,7 +83,7 @@ public:
 
   }
 
-  void dparam(arguments_optim& x) {
+  void dtransform(arguments_optim& x) {
 
     dlambda = arma::reshape(x.dtransparameters(lambda_indices), p, q);
     dpsi.elem(lower_psi) = x.dtransparameters(psi_indices);
