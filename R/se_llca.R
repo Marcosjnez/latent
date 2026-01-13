@@ -117,21 +117,26 @@ standard_se <- function(fit) {
   control_optimizer$parameters[[1]] <- fit@Optim$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 
-  # Calculate the Hessian matrix using numerical approximations:
-  G <- function(parameters) {
+  # # Calculate the Hessian matrix using numerical approximations:
+  # G <- function(parameters) {
+  #
+  #   control_optimizer$parameters[[1]] <- parameters
+  #   g <- get_grad(control_manifold = control_manifold,
+  #                 control_transform = control_transform,
+  #                 control_estimator = control_estimator,
+  #                 control_optimizer = control_optimizer)$g
+  #
+  #   return(g)
+  #
+  # }
+  #
+  # H <- numDeriv::jacobian(func = G, x = fit@Optim$parameters)
+  # H <- 0.5*(H + t(H)) # Force symmetry
 
-    control_optimizer$parameters[[1]] <- parameters
-    g <- get_grad(control_manifold = control_manifold,
-                  control_transform = control_transform,
-                  control_estimator = control_estimator,
-                  control_optimizer = control_optimizer)$g
-
-    return(g)
-
-  }
-
-  H <- numDeriv::jacobian(func = G, x = fit@Optim$parameters)
-  H <- 0.5*(H + t(H)) # Force symmetry
+  H <- get_hess(control_manifold = control_manifold,
+                control_transform = control_transform,
+                control_estimator = control_estimator,
+                control_optimizer = control_optimizer)$h
 
   # Get the variance-covariance matrix between the parameters:
   result <- get_vcov(control_manifold = control_manifold,
@@ -163,21 +168,26 @@ robust_se <- function(fit) {
   control_optimizer$parameters[[1]] <- fit@Optim$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 
-  # Calculate the Hessian matrix using numerical approximations:
-  G <- function(parameters) {
+  # # Calculate the Hessian matrix using numerical approximations:
+  # G <- function(parameters) {
+  #
+  #   control_optimizer$parameters[[1]] <- parameters
+  #   g <- get_grad(control_manifold = control_manifold,
+  #                 control_transform = control_transform,
+  #                 control_estimator = control_estimator,
+  #                 control_optimizer = control_optimizer)$g
+  #
+  #   return(g)
+  #
+  # }
+  #
+  # H <- numDeriv::jacobian(func = G, x = fit@Optim$parameters)
+  # H <- 0.5*(H + t(H)) # Force symmetry
 
-    control_optimizer$parameters[[1]] <- parameters
-    g <- get_grad(control_manifold = control_manifold,
-                  control_transform = control_transform,
-                  control_estimator = control_estimator,
-                  control_optimizer = control_optimizer)$g
-
-    return(g)
-
-  }
-
-  H <- numDeriv::jacobian(func = G, x = fit@Optim$parameters)
-  H <- 0.5*(H + t(H)) # Force symmetry
+  H <- get_hess(control_manifold = control_manifold,
+                control_transform = control_transform,
+                control_estimator = control_estimator,
+                control_optimizer = control_optimizer)$h
 
   #### Collect the gradient by response pattern ####
 
@@ -226,12 +236,16 @@ robust_se <- function(fit) {
   B <- matrix(0, nrow = nparam, ncol = nparam)
   for(s in 1:nest) {
 
-    computations <- grad_comp(control_manifold = control_manifold,
-                              control_transform = control_transform,
-                              control_estimator = control_estimator[-(1:K)][s],
-                              # control_estimator = control_estimator[s],
-                              control_optimizer = control_optimizer,
-                              compute = "g")
+    # computations <- grad_comp(control_manifold = control_manifold,
+    #                           control_transform = control_transform,
+    #                           control_estimator = control_estimator[-(1:K)][s],
+    #                           # control_estimator = control_estimator[s],
+    #                           control_optimizer = control_optimizer,
+    #                           compute = "g")
+    computations <- get_grad(control_manifold = control_manifold,
+                             control_transform = control_transform,
+                             control_estimator = control_estimator[-(1:K)][s],
+                             control_optimizer = control_optimizer)$g
     f[s] <- computations$f
     g[s, ] <- computations$g
     B <- B + weights[s]*(g[s, ]/weights[s]) %*% t(g[s, ]/weights[s])

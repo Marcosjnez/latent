@@ -31,16 +31,17 @@
 #include <Rcpp/Benchmark/Timer.h>
 #include "structures.h"
 #include "auxiliary.h"
-#include "polychorics.h"
-#include "polyfast.h"
-#include "asymptotic_cov.h"
 #include "manifolds.h"
 #include "transformations.h"
 #include "estimators.h"
+#include "polychorics.h"
+#include "polyfast.h"
+#include "asymptotic_cov.h"
 #include "optim.h"
 #include "optimizer.h"
 #include "grad_comp.h"
 #include "get_grad.h"
+#include "get_dgrad.h"
 #include "get_hess.h"
 #include "get_vcov.h"
 #include "get_jacob.h"
@@ -107,6 +108,12 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
 
 // [[Rcpp::export]]
 Rcpp::List get_grad(Rcpp::List control_manifold,
+                    Rcpp::List control_transform,
+                    Rcpp::List control_estimator,
+                    Rcpp::List control_optimizer);
+
+// [[Rcpp::export]]
+Rcpp::List get_dgrad(Rcpp::List control_manifold,
                     Rcpp::List control_transform,
                     Rcpp::List control_estimator,
                     Rcpp::List control_optimizer);

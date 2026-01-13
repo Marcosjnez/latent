@@ -464,17 +464,19 @@ sum(eigen(psi)$values)
 
 #### Polychorics ####
 
+library(latent)
 samples <- unique(hexaco$sample) # industry mooc fire student dutch
 Ns <- sapply(samples, FUN = function(x) sum(hexaco$sample == x))
 names(Ns) <- samples
 
 # Subset the items pertaining to the HEXACO-100
 selection <- 5:104
+selection <- 5:8
 full <- hexaco[, selection]
 
 mooc <- full[hexaco$sample == samples[2], ]
 dim(mooc)
-fit <- lpoly(data = as.matrix(mooc))
+fit <- lpoly(data = mooc, do.fit = TRUE)
 fit@loglik # -75695.53
 fit@penalized_loglik # -75695.53
 fit@Optim$iterations
@@ -482,6 +484,7 @@ fit@Optim$convergence
 fit@timing
 
 fit <- polyfast(as.matrix(mooc))
+fit$iters
 R <- fit$correlation
 neg_value <- eigen(R)$values < 0
 
@@ -524,6 +527,8 @@ control_estimator <- fit@modelInfo$control_estimator
 control_optimizer <- fit@modelInfo$control
 # control_optimizer$parameters[[1]] <- fit@Optim$parameters
 # control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
+control_optimizer$parameters[[1]] <- fit@modelInfo$control$parameters[[1]] + rnorm(21, 0, 0.001)
+control_optimizer$transparameters[[1]] <- fit@modelInfo$control$transparameters[[1]]
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control_optimizer,
                compute = "all",
@@ -533,6 +538,8 @@ round(c(x$g) - c(x$numg), 5)
 max(abs(c(x$g) - c(x$numg)))
 round(c(x$dg) - c(x$numdg), 5)
 max(abs(c(x$dg) - c(x$numdg)))
+
+# fpoly2
 
 # Calculate the Hessian matrix using numerical approximations:
 G <- function(parameters) {

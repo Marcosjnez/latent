@@ -2,7 +2,7 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 14/11/2025
 
-poly_control <- function(control) {
+lpoly_control <- function(control) {
 
   # Auxiliary function for poly.R
 

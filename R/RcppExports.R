@@ -81,6 +81,10 @@ get_grad <- function(control_manifold, control_transform, control_estimator, con
     .Call(`_latent_get_grad`, control_manifold, control_transform, control_estimator, control_optimizer)
 }
 
+get_dgrad <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
+    .Call(`_latent_get_dgrad`, control_manifold, control_transform, control_estimator, control_optimizer)
+}
+
 get_hess <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
     .Call(`_latent_get_hess`, control_manifold, control_transform, control_estimator, control_optimizer)
 }
@@ -105,27 +109,15 @@ joint_frequency_table <- function(X, n, max_X, Y, max_Y) {
     .Call(`_latent_joint_frequency_table`, X, n, max_X, Y, max_Y)
 }
 
-MVPHI <- function(z) {
-    .Call(`_latent_MVPHI`, z)
+fpoly <- function(p, tau1, tau2, pnorm_tau1, pnorm_tau2, n) {
+    .Call(`_latent_fpoly`, p, tau1, tau2, pnorm_tau1, pnorm_tau2, n)
 }
 
-dbinorm <- function(p, x, y) {
-    .Call(`_latent_dbinorm`, p, x, y)
+fpoly2 <- function(R, tau, pnorm_tau, n) {
+    .Call(`_latent_fpoly2`, R, tau, pnorm_tau, n)
 }
 
-pbinorm <- function(lower0, lower1, upper0, upper1, rho, mvphi0, mvphi1, mvphi2, mvphi3) {
-    .Call(`_latent_pbinorm`, lower0, lower1, upper0, upper1, rho, mvphi0, mvphi1, mvphi2, mvphi3)
-}
-
-fpoly <- function(p, tau1, tau2, mvphi1, mvphi2, n) {
-    .Call(`_latent_fpoly`, p, tau1, tau2, mvphi1, mvphi2, n)
-}
-
-fpoly2 <- function(R, tau, mvphi, n) {
-    .Call(`_latent_fpoly2`, R, tau, mvphi, n)
-}
-
-poly_deriv <- function(rho, tau1, tau2, mvphi1, mvphi2, n) {
-    .Call(`_latent_poly_deriv`, rho, tau1, tau2, mvphi1, mvphi2, n)
+poly_deriv <- function(rho, tau1, tau2, pnorm_tau1, pnorm_tau2, n) {
+    .Call(`_latent_poly_deriv`, rho, tau1, tau2, pnorm_tau1, pnorm_tau2, n)
 }
 

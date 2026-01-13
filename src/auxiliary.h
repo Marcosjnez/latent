@@ -283,6 +283,38 @@ arma::uvec mytest(int p) {
   return diag_ind;
 }
 
+arma::mat pairwise_cor(arma::mat X) {
+
+  const size_t numCols = X.n_cols;
+
+  // Initialize the correlation matrix
+  arma::mat corrMatrix(numCols, numCols, arma::fill::eye);
+
+  // Loop over all pairs of columns
+  for (size_t i = 0; i < (numCols-1); ++i) {
+    for (size_t j = (i+1); j < numCols; ++j) {
+      // Get the columns for the pair (i, j)
+      arma::vec col1 = X.col(i);
+      arma::vec col2 = X.col(j);
+
+      // Find indices where both columns have non-NaN values
+      arma::uvec validIndices = arma::find_finite(col1 % col2);
+
+      // Extract non-NaN values from both columns
+      arma::vec validCol1 = col1(validIndices);
+      arma::vec validCol2 = col2(validIndices);
+
+      // Calculate the correlation between the two columns
+      double correlation = as_scalar(arma::cor(validCol1, validCol2));
+
+      // Assign the correlation value to the correlation matrix
+      corrMatrix(i, j) = corrMatrix(j, i) = correlation;
+    }
+  }
+
+  return corrMatrix;
+}
+
 // arma::mat center_mat(arma::mat X) {
 //   return X.each_row() - arma::mean(X, 0);
 // }

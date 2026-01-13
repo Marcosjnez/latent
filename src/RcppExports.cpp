@@ -264,6 +264,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// get_dgrad
+Rcpp::List get_dgrad(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
+RcppExport SEXP _latent_get_dgrad(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_dgrad(control_manifold, control_transform, control_estimator, control_optimizer));
+    return rcpp_result_gen;
+END_RCPP
+}
 // get_hess
 Rcpp::List get_hess(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
 RcppExport SEXP _latent_get_hess(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
@@ -346,92 +360,49 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// MVPHI
-double MVPHI(double z);
-RcppExport SEXP _latent_MVPHI(SEXP zSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type z(zSEXP);
-    rcpp_result_gen = Rcpp::wrap(MVPHI(z));
-    return rcpp_result_gen;
-END_RCPP
-}
-// dbinorm
-double dbinorm(double p, double x, double y);
-RcppExport SEXP _latent_dbinorm(SEXP pSEXP, SEXP xSEXP, SEXP ySEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type p(pSEXP);
-    Rcpp::traits::input_parameter< double >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(dbinorm(p, x, y));
-    return rcpp_result_gen;
-END_RCPP
-}
-// pbinorm
-double pbinorm(const double lower0, const double lower1, const double upper0, const double upper1, const double rho, const double mvphi0, const double mvphi1, const double mvphi2, const double mvphi3);
-RcppExport SEXP _latent_pbinorm(SEXP lower0SEXP, SEXP lower1SEXP, SEXP upper0SEXP, SEXP upper1SEXP, SEXP rhoSEXP, SEXP mvphi0SEXP, SEXP mvphi1SEXP, SEXP mvphi2SEXP, SEXP mvphi3SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const double >::type lower0(lower0SEXP);
-    Rcpp::traits::input_parameter< const double >::type lower1(lower1SEXP);
-    Rcpp::traits::input_parameter< const double >::type upper0(upper0SEXP);
-    Rcpp::traits::input_parameter< const double >::type upper1(upper1SEXP);
-    Rcpp::traits::input_parameter< const double >::type rho(rhoSEXP);
-    Rcpp::traits::input_parameter< const double >::type mvphi0(mvphi0SEXP);
-    Rcpp::traits::input_parameter< const double >::type mvphi1(mvphi1SEXP);
-    Rcpp::traits::input_parameter< const double >::type mvphi2(mvphi2SEXP);
-    Rcpp::traits::input_parameter< const double >::type mvphi3(mvphi3SEXP);
-    rcpp_result_gen = Rcpp::wrap(pbinorm(lower0, lower1, upper0, upper1, rho, mvphi0, mvphi1, mvphi2, mvphi3));
-    return rcpp_result_gen;
-END_RCPP
-}
 // fpoly
-double fpoly(double p, std::vector<double> tau1, std::vector<double> tau2, std::vector<double> mvphi1, std::vector<double> mvphi2, std::vector<std::vector<int>> n);
-RcppExport SEXP _latent_fpoly(SEXP pSEXP, SEXP tau1SEXP, SEXP tau2SEXP, SEXP mvphi1SEXP, SEXP mvphi2SEXP, SEXP nSEXP) {
+double fpoly(double p, std::vector<double> tau1, std::vector<double> tau2, std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2, std::vector<std::vector<int>> n);
+RcppExport SEXP _latent_fpoly(SEXP pSEXP, SEXP tau1SEXP, SEXP tau2SEXP, SEXP pnorm_tau1SEXP, SEXP pnorm_tau2SEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< double >::type p(pSEXP);
     Rcpp::traits::input_parameter< std::vector<double> >::type tau1(tau1SEXP);
     Rcpp::traits::input_parameter< std::vector<double> >::type tau2(tau2SEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mvphi1(mvphi1SEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mvphi2(mvphi2SEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type pnorm_tau1(pnorm_tau1SEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type pnorm_tau2(pnorm_tau2SEXP);
     Rcpp::traits::input_parameter< std::vector<std::vector<int>> >::type n(nSEXP);
-    rcpp_result_gen = Rcpp::wrap(fpoly(p, tau1, tau2, mvphi1, mvphi2, n));
+    rcpp_result_gen = Rcpp::wrap(fpoly(p, tau1, tau2, pnorm_tau1, pnorm_tau2, n));
     return rcpp_result_gen;
 END_RCPP
 }
 // fpoly2
-double fpoly2(arma::mat R, const std::vector<arma::vec>& tau, const std::vector<arma::vec>& mvphi, const std::vector<std::vector<std::vector<int>>>& n);
-RcppExport SEXP _latent_fpoly2(SEXP RSEXP, SEXP tauSEXP, SEXP mvphiSEXP, SEXP nSEXP) {
+double fpoly2(arma::mat R, const std::vector<arma::vec>& tau, const std::vector<arma::vec>& pnorm_tau, const std::vector<std::vector<std::vector<int>>>& n);
+RcppExport SEXP _latent_fpoly2(SEXP RSEXP, SEXP tauSEXP, SEXP pnorm_tauSEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type R(RSEXP);
     Rcpp::traits::input_parameter< const std::vector<arma::vec>& >::type tau(tauSEXP);
-    Rcpp::traits::input_parameter< const std::vector<arma::vec>& >::type mvphi(mvphiSEXP);
+    Rcpp::traits::input_parameter< const std::vector<arma::vec>& >::type pnorm_tau(pnorm_tauSEXP);
     Rcpp::traits::input_parameter< const std::vector<std::vector<std::vector<int>>>& >::type n(nSEXP);
-    rcpp_result_gen = Rcpp::wrap(fpoly2(R, tau, mvphi, n));
+    rcpp_result_gen = Rcpp::wrap(fpoly2(R, tau, pnorm_tau, n));
     return rcpp_result_gen;
 END_RCPP
 }
 // poly_deriv
-Rcpp::List poly_deriv(double rho, std::vector<double> tau1, std::vector<double> tau2, std::vector<double> mvphi1, std::vector<double> mvphi2, std::vector<std::vector<int>> n);
-RcppExport SEXP _latent_poly_deriv(SEXP rhoSEXP, SEXP tau1SEXP, SEXP tau2SEXP, SEXP mvphi1SEXP, SEXP mvphi2SEXP, SEXP nSEXP) {
+Rcpp::List poly_deriv(double rho, std::vector<double> tau1, std::vector<double> tau2, std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2, std::vector<std::vector<int>> n);
+RcppExport SEXP _latent_poly_deriv(SEXP rhoSEXP, SEXP tau1SEXP, SEXP tau2SEXP, SEXP pnorm_tau1SEXP, SEXP pnorm_tau2SEXP, SEXP nSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
     Rcpp::traits::input_parameter< std::vector<double> >::type tau1(tau1SEXP);
     Rcpp::traits::input_parameter< std::vector<double> >::type tau2(tau2SEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mvphi1(mvphi1SEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mvphi2(mvphi2SEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type pnorm_tau1(pnorm_tau1SEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type pnorm_tau2(pnorm_tau2SEXP);
     Rcpp::traits::input_parameter< std::vector<std::vector<int>> >::type n(nSEXP);
-    rcpp_result_gen = Rcpp::wrap(poly_deriv(rho, tau1, tau2, mvphi1, mvphi2, n));
+    rcpp_result_gen = Rcpp::wrap(poly_deriv(rho, tau1, tau2, pnorm_tau1, pnorm_tau2, n));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -457,15 +428,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_rpoblq", (DL_FUNC) &_latent_rpoblq, 3},
     {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 6},
     {"_latent_get_grad", (DL_FUNC) &_latent_get_grad, 4},
+    {"_latent_get_dgrad", (DL_FUNC) &_latent_get_dgrad, 4},
     {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 4},
     {"_latent_get_vcov", (DL_FUNC) &_latent_get_vcov, 5},
     {"_latent_get_jacob", (DL_FUNC) &_latent_get_jacob, 4},
     {"_latent_real_sqrtmat", (DL_FUNC) &_latent_real_sqrtmat, 1},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},
     {"_latent_joint_frequency_table", (DL_FUNC) &_latent_joint_frequency_table, 5},
-    {"_latent_MVPHI", (DL_FUNC) &_latent_MVPHI, 1},
-    {"_latent_dbinorm", (DL_FUNC) &_latent_dbinorm, 3},
-    {"_latent_pbinorm", (DL_FUNC) &_latent_pbinorm, 9},
     {"_latent_fpoly", (DL_FUNC) &_latent_fpoly, 6},
     {"_latent_fpoly2", (DL_FUNC) &_latent_fpoly2, 4},
     {"_latent_poly_deriv", (DL_FUNC) &_latent_poly_deriv, 6},

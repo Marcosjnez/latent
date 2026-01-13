@@ -4,43 +4,17 @@
  * Modification date: 04/07/2025
  */
 
-arma::mat pairwise_cor(arma::mat X) {
-
-  const size_t numCols = X.n_cols;
-
-  // Initialize the correlation matrix
-  arma::mat corrMatrix(numCols, numCols, arma::fill::eye);
-
-  // Loop over all pairs of columns
-  for (size_t i = 0; i < (numCols-1); ++i) {
-    for (size_t j = (i+1); j < numCols; ++j) {
-      // Get the columns for the pair (i, j)
-      arma::vec col1 = X.col(i);
-      arma::vec col2 = X.col(j);
-
-      // Find indices where both columns have non-NaN values
-      arma::uvec validIndices = arma::find_finite(col1 % col2);
-
-      // Extract non-NaN values from both columns
-      arma::vec validCol1 = col1(validIndices);
-      arma::vec validCol2 = col2(validIndices);
-
-      // Calculate the correlation between the two columns
-      double correlation = as_scalar(arma::cor(validCol1, validCol2));
-
-      // Assign the correlation value to the correlation matrix
-      corrMatrix(i, j) = corrMatrix(j, i) = correlation;
-    }
-  }
-
-  return corrMatrix;
-}
-
 typedef std::tuple<arma::mat,
                    std::vector<std::vector<double>>,
                    std::vector<std::vector<double>>,
                    std::vector<std::vector<std::vector<int>>>,
                    arma::mat> polyfast_object;
+
+std::vector<double> cumsum(const std::vector<int> input) {
+  std::vector<double> output(input.size());
+  std::partial_sum(input.begin(), input.end(), output.begin());
+  return output;
+}
 
 polyfast_object poly(const arma::mat& X, const std::string smooth, double min_eigval,
                      const bool fit, const int cores) {
@@ -65,7 +39,7 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
   std::vector<int> mins(q);
   std::vector<std::vector<double>> taus(q);
   std::vector<size_t> s(q);
-  std::vector<std::vector<double>> mvphi(q);
+  std::vector<std::vector<double>> pnorm_tau(q);
   arma::mat X2 = X;
 
   for(size_t i = 0; i < q; ++i) {
@@ -76,15 +50,15 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
     maxs[i] = *max_element(cols[i].begin(), cols[i].end());
 
     std::vector<int> frequencies = count(cols[i], n, maxs[i]);
-    mvphi[i] = cumsum(frequencies); // Cumulative frequencies
-    taus[i] = mvphi[i];
+    pnorm_tau[i] = cumsum(frequencies); // Cumulative frequencies
+    taus[i] = pnorm_tau[i];
 
     for (size_t j = 0; j < maxs[i]; ++j) {
-      mvphi[i][j] /= n;
-      taus[i][j] = Qnorm(mvphi[i][j]);
+      pnorm_tau[i][j] /= n;
+      taus[i][j] = Qnorm(pnorm_tau[i][j]);
     }
-    mvphi[i].push_back(1.0);
-    mvphi[i].insert(mvphi[i].begin(), 0.0);
+    pnorm_tau[i].push_back(1.0);
+    pnorm_tau[i].insert(pnorm_tau[i].begin(), 0.0);
     taus[i].push_back(pos_inf);
     taus[i].insert(taus[i].begin(), neg_inf);
     s[i] = taus[i].size() - 1L;
@@ -106,13 +80,13 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
     for(size_t j=(i+1L); j < q; ++j) {
       int k = I[i+1] + j;
       tabs[k] = joint_frequency_table(cols[i], n, maxs[i], cols[j], maxs[j]);
-      std::vector<double> rho = optimize(taus[i], taus[j], tabs[k], s[i], s[j], mvphi[i], mvphi[j], n, cor(i, j));
+      std::vector<double> rho = optimize(taus[i], taus[j], tabs[k], s[i], s[j], pnorm_tau[i], pnorm_tau[j], n, cor(i, j));
       polys(i, j) = polys(j, i) = rho[0];
       iters(i, j) = iters(j, i) = rho[1];
     }
   }
 
-  polyfast_object result = std::make_tuple(polys, taus, mvphi, tabs, iters);
+  polyfast_object result = std::make_tuple(polys, taus, pnorm_tau, tabs, iters);
 
   return result;
 
@@ -134,7 +108,7 @@ Rcpp::List polyfast(arma::mat X, std::string missing, std::string acov, const st
 
   arma::mat polys = std::get<0>(x);
   std::vector<std::vector<double>> taus = std::get<1>(x);
-  std::vector<std::vector<double>> mvphis = std::get<2>(x);
+  std::vector<std::vector<double>> pnorm_taus = std::get<2>(x);
   std::vector<std::vector<std::vector<int>>> tabs = std::get<3>(x);
   arma::mat iters = std::get<4>(x);
 
@@ -143,7 +117,7 @@ Rcpp::List polyfast(arma::mat X, std::string missing, std::string acov, const st
   result["correlation"] = polys;
   result["thresholds"] = taus;
   result["contingency_tables"] = tabs;
-  result["cumulative_freqs"] = mvphis;
+  result["cumulative_freqs"] = pnorm_taus;
   result["iters"] = iters;
   result["elapsed"] = timer;
 

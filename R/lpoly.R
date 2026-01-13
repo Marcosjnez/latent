@@ -42,17 +42,18 @@ lpoly <- function(data,
 
   # Check the arguments to control_optimizer and create defaults:
   control$penalties <- penalties
-  control <- poly_control(control)
+  control <- lpoly_control(control)
 
   #### Create the data_list ####
 
   # Estimate the polychoric correlations without positive-definite constraints:
-  polychorics <- polyfast(data)
+  polychorics <- polyfast(as.matrix(data))
   R <- polychorics$correlation # Polychoric correlation matrix
   taus <- polychorics$thresholds # Thresholds
   n <- polychorics$contingency_tables # Contingency tables
   p <- ncol(data) # Number of items
   nobs <- nrow(data)
+  nitems <- ncol(data)
   item_label <- colnames(data)
   npatterns <- length(unlist(n))
 
@@ -74,13 +75,12 @@ lpoly <- function(data,
     poly_param$taus[[i]] <- paste(".tau", i, ".", 1:K[i], sep = "")
   }
   poly_param$X <- matrix(paste(".X", 1:(p*p), sep = ""), nrow = p, ncol = p)
-  # diag(poly_param$R) <- "1"
-  # poly_param$R[upper.tri(poly_param$R)] <- t(poly_param$R)[upper.tri(poly_param$R)]
 
   # Create the model for the transformed parameters:
 
   poly_trans <- poly_param
   poly_trans$R <- matrix(paste("r", 1:(p*p), sep = ""), nrow = p, ncol = p)
+  diag(poly_trans$R) <- "1"
   poly_trans$R[upper.tri(poly_trans$R)] <- t(poly_trans$R)[upper.tri(poly_trans$R)]
 
   #### Arrange labels ####

@@ -166,6 +166,7 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
 
   x.parameters = parameters;
   result["numg"] = numg;
+  if(compute == "numg") return result;
 
   // Check the differential of the gradient:
   x.parameters = parameters + eps*dparameters;
