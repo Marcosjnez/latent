@@ -19,6 +19,7 @@ arma::mat dxt(int p, int q) {
 
   /*
    * derivative of a matrix wrt its transpose
+   * also a commutation matrix
    */
 
   int pq = p*q;

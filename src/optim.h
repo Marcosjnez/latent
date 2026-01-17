@@ -809,6 +809,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   // Initialize objects:
   x.grad.set_size(x.ntransparam);
   x.dgrad.set_size(x.ntransparam);
+  x.g.set_size(x.nparam);
   x.rg.set_size(x.nparam);
   x.dH.set_size(x.nparam);
   // x.hess.set_size(x.ntransparam, x.ntransparam);

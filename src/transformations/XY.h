@@ -1,0 +1,108 @@
+/*
+ * Author: Marcos Jimenez
+ * email: m.j.jimenezhenriquez@vu.nl
+ * Modification date: 27/10/2025
+ */
+
+// X*Y transformation:
+
+class XY: public transformations {
+
+public:
+
+  int p, q;
+  arma::mat X, Y, dX, dY, dXY, grad_out, grad_in_X, grad_in_Y;
+
+  void transform(arguments_optim& x) {
+
+    X = arma::reshape(x.transparameters(indices_in[0]), p, q);
+    Y = arma::reshape(x.transparameters(indices_in[1]), q, q);
+    arma::mat XY = X * Y;
+    x.transparameters(indices_out[0]) = arma::vectorise(XY);
+
+  }
+
+  void update_grad(arguments_optim& x) {
+
+    grad_out = arma::reshape(x.grad(indices_out[0]), p, q);
+
+    grad_in_X = grad_out * Y.t();
+    grad_in_Y = X.t() * grad_out;
+
+    x.grad(indices_in[0]) += arma::vectorise(grad_in_X);
+    x.grad(indices_in[1]) += arma::vectorise(grad_in_Y);
+
+  }
+
+  void dtransform(arguments_optim& x) {
+
+    dX = arma::reshape(x.dtransparameters(indices_in[0]), p, q);
+    dY = arma::reshape(x.dtransparameters(indices_in[1]), q, q);
+    dXY = X * dY + dX * Y;
+
+    x.dtransparameters(indices_out[0]) = arma::vectorise(dXY);
+
+  }
+
+  void update_dgrad(arguments_optim& x) {
+
+    arma::mat dgrad_out = arma::reshape(x.dgrad(indices_out[0]), p, q);
+
+    arma::mat dgrad_in_X = dgrad_out * Y.t() + grad_out * dY.t();
+    arma::mat dgrad_in_Y = dX.t() * grad_out + X.t() * dgrad_out;
+
+    x.dgrad.elem(indices_in[0]) += arma::vectorise(dgrad_in_X);
+    x.dgrad.elem(indices_in[1]) += arma::vectorise(dgrad_in_Y);
+
+  }
+
+  void jacobian(arguments_optim& x) {
+
+    arma::mat I_p = arma::eye(p, p);
+    arma::mat I_q = arma::eye(q, q);
+
+    arma::mat Jx = arma::kron(Y.t(), I_p);
+    arma::mat Jy = arma::kron(I_q, X);
+
+    jacob = arma::join_rows(Jx, Jy);
+
+  }
+
+  void update_vcov(arguments_optim& x) {
+
+  }
+
+  void dconstraints(arguments_optim& x) {
+
+    constraints = false;
+
+  }
+
+  void outcomes(arguments_optim& x) {
+
+    vectors.resize(1);
+
+    matrices.resize(1);
+    matrices[0] = jacob;
+
+  }
+
+};
+
+XY* choose_XY(const Rcpp::List& trans_setup) {
+
+  XY* mytrans = new XY();
+
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  int p = trans_setup["p"];
+  int q = trans_setup["q"];
+
+  mytrans->indices_in = indices_in;
+  mytrans->indices_out = indices_out;
+  mytrans->p = p;
+  mytrans->q = q;
+
+  return mytrans;
+
+}

@@ -1,0 +1,355 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 26/11/2025
+#'
+#' @title
+#' Fit an Exploratory Factor Analysis (EFA) model.
+#'
+#' @usage
+#'
+#' lefa(data, nfactors = 1L, model = NULL, estimator = "ml",
+#' ordered = FALSE, group = NULL,
+#' sample.cov = NULL, nobs = NULL,
+#' positive = FALSE, penalties = TRUE,
+#' missing = "pairwise.complete.obs",
+#' std.lv = FALSE, do.fit = TRUE, mimic = 'latent',
+#' control = NULL, ...)
+#'
+#' @param data data frame or matrix.
+#' @param nfactors integer. Number of latent variables.
+#' @param model lavaan's model syntax.
+#' @param estimator Available estimators: "ml", "uls", and "dwls". Defaults to "ml".
+#' @param ordered Logical. Defaults to TRUE.
+#' @param group String. Name of the variable that splits the data in different groups.
+#' @param sample.cov Covariance matrix between the items. Defaults to NULL.
+#' @param nobs Number of observations. Defaults to NULL.
+#' @param positive Force a positive-definite solution. Defaults to FALSE.
+#' @param penalties list of penalty terms for the parameters.
+#' @param missing Method to handle missing data.
+#' @param std.lv Provide the parameters of the standardized model.
+#' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
+#' @param mimic String. Choose the output you want to obtain. Defaults to 'latent'.
+#' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
+#' @param ... Additional lavaan arguments. See ?lavaan for more information.
+#'
+#' @details \code{lcfa} estimates confirmatory factor models.
+#'
+#' @return List with the following objects:
+#' \item{version}{Version number of 'latent' when the model was estimated.}
+#' \item{call}{Code used to estimate the model.}
+#' \item{ModelInfo}{Model information.}
+#' \item{Optim}{Output of the optimizer.}
+#' \item{parameters}{Structure with all model parameters.}
+#' \item{transparameters}{Structure with all transformed model parameters.}
+#' \item{loglik}{Logarithm likelihood of the model.}
+#' \item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
+#'
+#' @examples
+#'
+#' \dontrun{
+#' # The famous Holzinger and Swineford (1939) example
+#'
+#' fit <- lefa(data = HolzingerSwineford1939, nfactors = 3L)
+#' summary(fit, digits = 3L)
+#'}
+#'
+#' @export
+lefa <- function(data, nfactors = 1L, estimator = "ml",
+                 projection = "oblq", rotation = "oblimin",
+                 model = NULL, ordered = FALSE, group = NULL,
+                 sample.cov = NULL, nobs = NULL,
+                 positive = FALSE, penalties = TRUE,
+                 missing = "pairwise.complete.obs",
+                 std.lv = TRUE, do.fit = TRUE,
+                 mimic = "latent", control = NULL,
+                 ...) {
+
+  if(ordered) {
+    cor <- "poly"
+  } else {
+    cor <- "pearson"
+  }
+
+  # Check the arguments to control_optimizer and create defaults:
+  control$penalties <- penalties
+  control$estimator <- tolower(estimator)
+  control <- lcfa_control(control)
+
+  # Extract the lavaan model:
+  if(projection == "oblq") {
+    orthogonal <- FALSE
+  } else if(projection == "orth") {
+    orthogonal <- TRUE
+  } else {
+    stop("Unknown projection")
+  }
+  # IGNORE CUSTOM MODEL SYNTAX FOR NOW:
+  model_syntax <- make_lowerdiag_lavaan(data = data, nfactors = nfactors)
+  # THIS USES ALL THE COLUMNS IN DATA
+  LAV <- lavaan::cfa(model = model_syntax, data = data,
+                     sample.cov = sample.cov,
+                     sample.nobs = nobs,
+                     std.lv = std.lv,
+                     do.fit = FALSE, group = group,
+                     orthogonal = orthogonal,
+                     ...)
+
+  LAV@Options$positive <- positive
+
+  # extract slots from dummy lavaan object
+  lavpartable    <- LAV@ParTable
+  lavmodel       <- LAV@Model
+  lavdata        <- LAV@Data
+  lavoptions     <- LAV@Options
+  lavsamplestats <- LAV@SampleStats
+  lavcache       <- LAV@Cache
+  timing         <- LAV@timing
+  ngroups        <- LAV@Model@ngroups
+  item_names     <- LAV@Data@ov.names
+  nobs           <- LAV@Data@nobs
+  group_label    <- LAV@Data@group.label
+  item_label     <- LAV@Data@ov.names
+  factor_label   <- replicate(ngroups, list(LAV@Model@dimNames[[1]][[2]]))
+  X              <- LAV@Data@X
+
+  # Rename columns:
+  for(i in 1:ngroups) {
+    colnames(X[[i]]) <- item_names[[i]]
+  }
+
+  # Get the correlation and weight matrices:
+  correl <- vector("list", length = ngroups)
+  names(X) <- names(correl) <- group_label
+
+  # Model for the parameters:
+  model <- getmodel_fromlavaan(LAV)
+  if(ngroups == 1) model <- list(model)
+
+  # Estimate the correlation matrix for each group:
+  for(i in 1:ngroups) {
+
+    if(is.null(sample.cov)) {
+
+      correl[[i]] <- correlation(data = X[[i]],
+                                 item_names = item_names[[i]],
+                                 cor = cor,
+                                 estimator = estimator,
+                                 missing = missing)
+
+    } else {
+
+      correl[[i]]$R <- sample.cov
+      p <- nrow(sample.cov)
+      correl[[i]]$W <- matrix(1, nrow = p, ncol = p)
+
+    }
+
+  }
+
+  # Data and structure information:
+  nitems <- as.list(lavmodel@nvar)
+  npatterns <- lapply(nitems, FUN = \(p) 0.5*p*(p+1))
+  nfactors <- lapply(model, FUN = \(x) ncol(x$lambda))
+
+  data_list <- vector("list")
+  data_list$ngroups <- ngroups
+  data_list$data <- X
+  data_list$nobs <- nobs
+  data_list$nitems <- nitems
+  data_list$npatterns <- npatterns
+  data_list$nfactors <- nfactors
+  data_list$correl <- correl
+  data_list$positive <- positive
+  data_list$estimator <- estimator
+  data_list$group_label <- group_label
+  data_list$item_label <- item_label
+  data_list$factor_label <- factor_label
+  data_list$orthogonal <- orthogonal
+
+  ## store original call
+  mc  <- match.call()
+
+  #### Create the model ####
+
+  # Get the model specification:
+  full_model <- get_full_efa_model(data_list = data_list,
+                                   model = model,
+                                   control = control)
+  list2env(full_model, envir = environment())
+
+  #### Create the structures ####
+
+  # Generate the structures for optimization:
+  structures <- get_efa_structures(data_list = data_list,
+                                   full_model = full_model,
+                                   control = control)
+  list2env(structures, envir = environment())
+
+  #### Collect all the model information ####
+
+  # Model information:
+  modelInfo <- list(nobs = nobs,
+                    nparam = nparam - rest,
+                    npatterns = npatterns,
+                    dof = sum(unlist(npatterns)) - nparam + rest,
+                    ntrans = ntrans,
+                    parameters_labels = parameters_labels,
+                    transparameters_labels = transparameters_labels,
+                    efa_param = cfa_param,
+                    efa_trans = cfa_trans,
+                    control_manifold = control_manifold,
+                    control_transform = control_transform,
+                    control_estimator = control_estimator,
+                    control = control)
+
+  #### Fit the model ####
+
+  if(!do.fit) {
+
+    lcfa_list <- new("lcfa",
+                     version            = as.character( packageVersion('latent') ),
+                     call               = mc, # matched call
+                     timing             = numeric(), # timing information
+                     data_list          = data_list,
+                     modelInfo          = modelInfo,
+                     Optim              = list(),
+                     parameters         = list(),
+                     transformed_pars   = list(),
+                     loglik             = numeric(), # loglik values
+                     penalized_loglik   = numeric(),
+                     loss               = numeric(),
+                     penalized_loss     = numeric()
+    )
+
+    return(lcfa_list)
+
+  }
+
+  control$cores <- min(control$rstarts, control$cores)
+  # Fit the model:
+  x <- optimizer(control_manifold = control_manifold,
+                 control_transform = control_transform,
+                 control_estimator = control_estimator,
+                 control_optimizer = control)
+
+  # Collect all the information about the optimization:
+
+  Optim <- x
+  elapsed <- x$elapsed
+
+  #### Estimated model structures ####
+
+  # Create the structures of untransformed parameters:
+  indices_pars <- match(modelInfo$parameters_labels,
+                        unlist(modelInfo$efa_param))
+  vv <- rep(0, times = length(unlist(modelInfo$efa_param)))
+  vv[indices_pars] <- Optim$parameters
+  parameters <- fill_list_with_vector(modelInfo$efa_param, vv)
+  parameters <- allnumeric(parameters)
+  # FIXED PARAMETERS?
+
+  # Create the structures of transformed parameters:
+  indices_trans <- match(modelInfo$transparameters_labels,
+                         unlist(modelInfo$efa_trans))
+  vv <- rep(0, times = length(unlist(modelInfo$efa_trans)))
+  vv[indices_trans] <- Optim$transparameters
+  transformed_pars <- fill_list_with_vector(modelInfo$efa_trans, vv)
+  transformed_pars <- allnumeric(transformed_pars)
+
+  #### Process the fit information ####
+
+  # Get the indices of the estimator structures "cfa_dwls" and "cfa_ml":
+  all_estimators <- unlist(lapply(modelInfo$control_estimator, FUN = \(x) x$estimator))
+  indices_cfa <- which(all_estimators == "cfa_dwls" |
+                         all_estimators == "cfa_ml" |
+                         all_estimators == "cfa_ml2")
+
+  # Get the indices of the estimator structures "logdetmat" (penalties):
+  indices_logdetmat <- which(all_estimators == "logdetmat")
+
+  # Initialize the objects to be returned:
+  loss <- penalized_loss <- loglik <- penalized_loglik <- penalty <-
+    vector("list", length = ngroups)
+
+  # For each group, extract the loss, penalized loss, loglik and penalized loglik
+  for(i in 1:ngroups) {
+
+    k <- indices_cfa[i]
+
+    loss[[i]] <- c(x$outputs$estimators$doubles[[k]][[1]])
+    loglik[[i]] <- c(x$outputs$estimators$doubles[[k]][[2]])
+
+    # If there are penalties, add the penalties to the loss or loglik:
+    if(length(indices_logdetmat) > 0) {
+
+      l <- indices_logdetmat[i]
+      penalty[[i]] <- c(x$outputs$estimators$doubles[[l]][[1]])
+      penalized_loss[[i]] <- loss[[i]] + penalty[[i]]
+      penalized_loglik[[i]] <- loglik[[i]] + penalty[[i]]
+
+    } else {
+
+      penalized_loss[[i]] <- loss[[i]]
+      penalized_loglik[[i]] <- loglik[[i]]
+
+    }
+
+  }
+
+  loss <- sum(unlist(loss))
+  penalized_loss <- sum(unlist(penalized_loss))
+  loglik <- sum(unlist(loglik))
+  penalized_loglik <- sum(unlist(penalized_loglik))
+
+  #### Return ####
+
+  if(mimic == "latent") {
+
+    result <- new("lcfa",
+                  version            = as.character( packageVersion('latent') ),
+                  call               = mc, # matched call
+                  timing             = elapsed, # timing information
+                  data_list          = data_list,
+                  modelInfo          = modelInfo,
+                  Optim              = Optim,
+                  parameters         = parameters,
+                  transformed_pars   = transformed_pars,
+                  loglik             = loglik, # loglik values
+                  penalized_loglik   = penalized_loglik,
+                  loss               = loss,
+                  penalized_loss     = penalized_loss
+    )
+
+  } else if(mimic == "lavaan") {
+
+    ## for lavaan like object
+    ## need to fill in these objects into the lav dummy objects
+    ## will take me longer to find how to match these slots
+    result <- new("lcfa",
+                  version      = as.character( packageVersion('latent') ),
+                  call         = mc,                  # match.call
+                  timing       = timing,              # list
+                  Options      = lavoptions,          # list *
+                  ParTable     = lavpartable,         # list *
+                  pta          = LAV@pta,             # list
+                  Data         = lavdata,             # S4 class
+                  SampleStats  = lavsamplestats,      # S4 class
+                  Model        = lavmodel,            # S4 class *
+                  Cache        = lavcache,            # list
+                  Fit          = lavfit,              # S4 class *
+                  boot         = list(),
+                  optim        = lavoptim,
+                  implied      = lavimplied,          # list *
+                  vcov         = lavvcov,             #*
+                  test         = TEST,                #*
+                  h1           = h1,
+                  internal     = internal,
+                  external     = extslot              # can add extra info from latent
+    )
+
+  }
+
+  return(result)
+
+}
+

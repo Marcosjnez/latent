@@ -359,8 +359,8 @@ fit <- lcfa(data = HolzingerSwineford1939, model = model,
             control = list(opt = "lbfgs", maxit = 1000L,
                            cores = 20L, rstarts = 20L))
 
-fit@loglik # -3421.613 (ML)
-fit@penalized_loglik # -0.249485 (ML)
+fit@loglik # -3421.497 (ML)
+fit@penalized_loglik # -3421.502 (ML)
 fit@loss # 0.1419955 (ULS) / 0.2467385 (ML)
 fit@Optim$iterations
 fit@Optim$convergence
@@ -527,19 +527,27 @@ control_estimator <- fit@modelInfo$control_estimator
 control_optimizer <- fit@modelInfo$control
 # control_optimizer$parameters[[1]] <- fit@Optim$parameters
 # control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
-control_optimizer$parameters[[1]] <- fit@modelInfo$control$parameters[[1]] + rnorm(21, 0, 0.001)
-control_optimizer$transparameters[[1]] <- fit@modelInfo$control$transparameters[[1]]
+# control_optimizer$parameters[[1]] <- fit@modelInfo$control$parameters[[1]] + rnorm(21, 0, 0.001)
+# control_optimizer$transparameters[[1]] <- fit@modelInfo$control$transparameters[[1]]
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control_optimizer,
                compute = "all",
                eps = 1e-07)
-x$f
-round(c(x$g) - c(x$numg), 5)
-max(abs(c(x$g) - c(x$numg)))
-round(c(x$dg) - c(x$numdg), 5)
-max(abs(c(x$dg) - c(x$numdg)))
+# x$f
+# round(c(x$g) - c(x$numg), 5)
+# max(abs(c(x$g) - c(x$numg)))
+# round(c(x$dg) - c(x$numdg), 5)
+# max(abs(c(x$dg) - c(x$numdg)))
 
-# fpoly2
+x2 <- get_grad(control_manifold, control_transform,
+               control_estimator, control_optimizer)
+round(c(x2$g)-c(x$numg), 3)
+round(c(x2$g)/c(x$numg), 3)
+
+x3 <- get_dgrad(control_manifold, control_transform,
+                control_estimator, control_optimizer)
+round(c(x3$dg)-c(x$numdg), 3)
+round(c(x3$dg)/c(x$numdg), 3)
 
 # Calculate the Hessian matrix using numerical approximations:
 G <- function(parameters) {

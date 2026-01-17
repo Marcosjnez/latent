@@ -16,6 +16,7 @@ Rcpp::List get_dgrad(Rcpp::List control_manifold,
   x.ntransforms = control_transform.size();
   x.nestimators = control_estimator.size();
 
+  product_manifold* final_manifold;
   product_transform* final_transform;
   product_estimator* final_estimator;
 
@@ -42,6 +43,10 @@ Rcpp::List get_dgrad(Rcpp::List control_manifold,
    */
 
   Rcpp::List computations;
+
+  final_manifold->param(x, xmanifolds);
+  final_manifold->retr(x, xmanifolds);
+  final_manifold->param(x, xmanifolds);
 
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);

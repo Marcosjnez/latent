@@ -51,6 +51,9 @@ public:
 #include "transformations/multinomial.h"
 #include "transformations/column_space.h"
 #include "transformations/factor_cor.h"
+#include "transformations/matrix_inverse.h"
+#include "transformations/XY.h"
+#include "transformations/XYt.h"
 
 using TransformFactory =
   std::function< transformations*(const Rcpp::List&) >;
@@ -64,7 +67,10 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "crossprod", choose_crossprod },
   { "multinomial", choose_multinomial },
   { "column_space", choose_column_space },
-  { "factor_cor", choose_factor_cor }
+  { "factor_cor", choose_factor_cor },
+  { "matrix_inverse", choose_matrix_inverse },
+  { "XY", choose_XY },
+  { "XYt", choose_XYt }
 };
 
 transformations* choose_transform(const Rcpp::List& trans_setup) {
@@ -101,6 +107,7 @@ public:
     // x.g = x.jacob.t() * x.grad;
     // This sequence avoids this multiplication to reduce computing cost
 
+    // x.g.zeros();
     // Iterate top-down:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 

@@ -30,6 +30,11 @@ public:
     grad_out.diag() *= 2; // Restore the diagonal
     x.grad(indices_in[0]) += arma::vectorise(2*X * grad_out);
 
+    // arma::vec v = x.grad(indices_in[0]);
+    // for (arma::uword i = 0; i < v.n_elem; ++i) {
+    //   Rprintf("%.6f%s", v(i), (i + 1 < v.n_elem) ? " " : "\n"); // space-separated, then newline
+    // }
+
     // arma::mat I(p, p, arma::fill::eye);
     // jacob = 2*Dp.t() * arma::kron(I, X.t());
     // x.grad(indices_in[0]) += jacob.t() * x.grad(indices_out[0]);

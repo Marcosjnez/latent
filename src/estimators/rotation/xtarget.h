@@ -12,6 +12,7 @@ class xtarget: public estimators {
 
 public:
 
+  arma::uvec lower_phi;
   double w;
   arma::mat lambda, Target, Weight, PhiTarget, PhiWeight,
   Weight2, PhiWeight2; // Fixed: Provide these in choose_estimator
@@ -24,6 +25,8 @@ public:
   void param(arguments_optim& x) {
 
     X = arma::reshape(parameters, q, q);
+    // phi.elem(lower_phi) = x.transparameters(x.indices[1]);
+    // phi = arma::symmatl(phi);
 
     if(orth) {
 
@@ -140,6 +143,8 @@ xtarget* choose_xtarget(const Rcpp::List& estimator_setup) {
   int p = lambda.n_rows;
   int q = lambda.n_cols;
 
+  arma::uvec lower_phi = arma::trimatl_ind(arma::size(PhiTarget));
+
   myestimator->lambda = lambda;
   myestimator->orth = orth;
   myestimator->indices = indices;
@@ -152,6 +157,7 @@ xtarget* choose_xtarget(const Rcpp::List& estimator_setup) {
   myestimator->w = w;
   myestimator->p = p;
   myestimator->q = q;
+  myestimator->lower_phi = lower_phi;
 
   return myestimator;
 

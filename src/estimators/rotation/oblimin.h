@@ -12,31 +12,16 @@ class oblimin: public estimators {
 
 public:
 
-  arma::mat lambda, I_gamma_C, N; // Fixed: Provide these in choose_estimator
-  bool orth; // TRUE: orthogonal; FALSE: oblique and poblique
-  arma::mat dL, dP, gL, dgL, gP, dgP, Inv_X, L, L2, IgCL2N, hL;
-  arma::mat Phi;
-  arma::mat X = arma::mat(q, q);
-  arma::mat dX = arma::mat(q, q);
+  int p, q;
+  arma::mat lambda, I_gamma_C, N;
+  arma::mat dlambda;
+  arma::mat L2, IgCL2N;
 
   void param(arguments_optim& x) {
 
-    X = arma::reshape(parameters, q, q);
+    lambda = arma::reshape(x.transparameters(indices[0]), p, q);
 
-    if(orth) {
-
-      L = lambda*X;
-      Phi = arma::mat(q, q, arma::fill::eye);
-
-    } else {
-
-      Phi = X.t() * X;
-      Inv_X = arma::inv(X);
-      L = lambda * Inv_X.t();
-
-    }
-
-    L2 = L % L;
+    L2 = lambda % lambda;
     IgCL2N = I_gamma_C * L2 * N;
 
   }
@@ -44,67 +29,31 @@ public:
   void F(arguments_optim& x) {
 
     f = arma::accu(L2 % IgCL2N) / 4;
+    x.f += f;
 
   }
 
   void G(arguments_optim& x) {
 
-    gL = L % IgCL2N;
-
-    if(orth) {
-
-      g = lambda.t() * gL;
-
-    } else {
-
-      g = - Inv_X.t() * gL.t() * L;
-
-    }
+    arma::mat df_dlambda = lambda % IgCL2N;
+    x.grad.elem(indices[0]) += arma::vectorise(df_dlambda);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dX = arma::reshape(dparameters, q, q);
-    g = arma::reshape(g, q, q);
+    dlambda = arma::reshape(x.dtransparameters(indices[0]), p, q);
+    arma::mat ddf_dlambda = dlambda % IgCL2N +
+                            lambda % (I_gamma_C * (2*dlambda % lambda) * N);
 
-    if(orth) {
-
-      dL = lambda * dX;
-
-      dgL = dL % IgCL2N + L % (I_gamma_C * (2*dL % L) * N);
-
-      dg = lambda.t() * dgL;
-
-    } else {
-
-      arma::mat Inv_X_dt = Inv_X * dX;
-      dL = - L * Inv_X_dt.t();
-
-      dgL = dL % IgCL2N + L % (I_gamma_C * (2*dL % L) * N);
-
-      dg = - g * Inv_X_dt.t() -
-        (dX * Inv_X).t() * g - (dgL * Inv_X).t() * L;
-
-    }
+    x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dlambda);
 
   }
 
   void outcomes(arguments_optim& x) {
 
-    /*
-     * Compute the modified hessian (modhessian)
-     */
-
-    int nhessian = lambda.n_elem;
-    modhessian.set_size(nhessian, nhessian); modhessian.zeros();
-
-    arma::mat c1 = arma::diagmat(arma::vectorise(IgCL2N));
-    arma::mat diagL = arma::diagmat(arma::vectorise(L));
-    arma::mat diag2L = 2*diagL;
-    arma::mat c2 = diagL * arma::kron(N, I_gamma_C) * diag2L;
-
-    modhessian = c1 + c2;
+    doubles.resize(1);
+    doubles[0] =  f;
 
   }
 
@@ -114,22 +63,20 @@ oblimin* choose_oblimin(const Rcpp::List& estimator_setup) {
 
   oblimin* myestimator = new oblimin();
 
-  arma::mat lambda = estimator_setup["lambda"];
-  bool orth = estimator_setup["orth"];
-  double gamma = estimator_setup["gamma"];
   std::vector<arma::uvec> indices = estimator_setup["indices"];
+  int p = estimator_setup["p"];
+  int q = estimator_setup["q"];
+  double gamma = estimator_setup["gamma"];
 
-  int p = lambda.n_rows;
-  int q = lambda.n_cols;
   arma::mat N(q, q, arma::fill::ones);
   N.diag(0).zeros();
   arma::mat I(p, p, arma::fill::eye), gamma_C(p, p, arma::fill::ones);
   gamma_C *= (gamma/p);
   arma::mat I_gamma_C = (I - gamma_C);
+  // I_gamma_C and N must be symmetric
 
-  myestimator->lambda = lambda;
-  myestimator->orth = orth;
   myestimator->indices = indices;
+  myestimator->p = p;
   myestimator->q = q;
   myestimator->N = N;
   myestimator->I_gamma_C = I_gamma_C;

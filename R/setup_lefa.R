@@ -2,7 +2,7 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 01/11/2025
 
-get_full_cfa_model <- function(data_list, model, control = NULL) {
+get_full_efa_model <- function(data_list, model, control = NULL) {
 
   # Generate the model syntax and initial parameter values
 
@@ -38,19 +38,19 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
     # Transformed parameters:
 
-    # Lambda:
-    lambda_labels <- paste("g", i, ".lambda[", rep(1:nitems[[i]], times = nfactors[[i]]),
+    # Unrotated lambda:
+    ulambda_labels <- paste("g", i, ".ulambda[", rep(1:nitems[[i]], times = nfactors[[i]]),
                            ",", rep(1:nfactors[[i]], each = nitems[[i]]), "]", sep = "")
-    lambda_labels[nonfixed[[i]]$lambda] <- model[[i]]$lambda[nonfixed[[i]]$lambda]
-    cfa_trans[[i]]$lambda <- matrix(lambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
+    ulambda_labels[nonfixed[[i]]$lambda] <- model[[i]]$lambda[nonfixed[[i]]$lambda]
+    cfa_trans[[i]]$ulambda <- matrix(ulambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
+
+    # X:
+    X_labels <- paste("g", i, ".X[", rep(1:nfactors[[i]], times = nfactors[[i]]),
+                      ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
+    cfa_trans[[i]]$X <- matrix(X_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
 
     # Create additional parameters if there are positive-definite constraints:
     if(positive) {
-
-      # Psi:
-      pj_psi_labels <- paste("g", i, ".pj_psi[", rep(1:nfactors[[i]], times = nfactors[[i]]),
-                             ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-      cfa_trans[[i]]$pj_psi <- matrix(pj_psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
 
       # Theta:
       pj_theta_labels <- paste("g", i, ".pj_theta[", rep(1:nitems[[i]], times = nitems[[i]]),
@@ -59,14 +59,6 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
     }
 
-    # Psi:
-    psi_labels <- paste("g", i, ".psi[", rep(1:nfactors[[i]], times = nfactors[[i]]),
-                        ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-    psi_labels[nonfixed[[i]]$psi] <- model[[i]]$psi[nonfixed[[i]]$psi]
-    cfa_trans[[i]]$psi <- matrix(psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
-    # Force symmetry:
-    cfa_trans[[i]]$psi[upper.tri(cfa_trans[[i]]$psi)] <- t(cfa_trans[[i]]$psi)[upper.tri(cfa_trans[[i]]$psi)]
-
     # Theta:
     theta_labels <- paste("g", i, ".theta[", rep(1:nitems[[i]], times = nitems[[i]]),
                           ",", rep(1:nitems[[i]], each = nitems[[i]]), "]", sep = "")
@@ -74,6 +66,26 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
     cfa_trans[[i]]$theta <- matrix(theta_labels, nrow = nitems[[i]], ncol = nitems[[i]])
     # Force symmetry:
     cfa_trans[[i]]$theta[upper.tri(cfa_trans[[i]]$theta)] <- t(cfa_trans[[i]]$theta)[upper.tri(cfa_trans[[i]]$theta)]
+
+    if(!orthogonal) {
+      # Xinv:
+      Xinv_labels <- paste("g", i, ".Xinv[", rep(1:nfactors[[i]], times = nfactors[[i]]),
+                           ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
+      cfa_trans[[i]]$Xinv <- matrix(Xinv_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
+    }
+
+    # Rotated lambda:
+    lambda_labels <- paste("g", i, ".lambda[", rep(1:nitems[[i]], times = nfactors[[i]]),
+                           ",", rep(1:nfactors[[i]], each = nitems[[i]]), "]", sep = "")
+    cfa_trans[[i]]$lambda <- matrix(lambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
+
+    # Psi:
+    psi_labels <- paste("g", i, ".psi[", rep(1:nfactors[[i]], times = nfactors[[i]]),
+                        ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
+    psi_labels[nonfixed[[i]]$psi] <- model[[i]]$psi[nonfixed[[i]]$psi]
+    cfa_trans[[i]]$psi <- matrix(psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
+    # Force symmetry:
+    cfa_trans[[i]]$psi[upper.tri(cfa_trans[[i]]$psi)] <- t(cfa_trans[[i]]$psi)[upper.tri(cfa_trans[[i]]$psi)]
 
     # Model matrix:
     model_labels <- paste("g", i, ".model[", rep(1:nitems[[i]], times = nitems[[i]]),
@@ -84,23 +96,18 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
     # Untransformed parameters:
 
-    cfa_param[[i]]$lambda <- cfa_trans[[i]]$lambda
+    cfa_param[[i]]$ulambda <- cfa_trans[[i]]$ulambda
     # Insert fixed values in the model:
-    cfa_param[[i]]$lambda[fixed[[i]]$lambda] <- model[[i]]$lambda[fixed[[i]]$lambda]
+    cfa_param[[i]]$ulambda[fixed[[i]]$lambda] <- model[[i]]$lambda[fixed[[i]]$lambda]
+
+    cfa_param[[i]]$X <- cfa_trans[[i]]$X
 
     if(positive) {
 
-      # Psi:
-      cfa_param[[i]]$pj_psi <- cfa_trans[[i]]$pj_psi
       # Theta:
       cfa_param[[i]]$pj_theta <- cfa_trans[[i]]$pj_theta
 
     } else {
-
-      # Psi:
-      cfa_param[[i]]$psi <- cfa_trans[[i]]$psi
-      # Insert fixed values in the model:
-      cfa_param[[i]]$psi[fixed[[i]]$psi] <- model[[i]]$psi[fixed[[i]]$psi]
 
       # Theta:
       cfa_param[[i]]$theta <- cfa_trans[[i]]$theta
@@ -112,18 +119,13 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
     # Create the target matrices for positive-definite constraints:
     if(positive) {
 
-      target_psi[[i]] <- matrix(0, nrow = nfactors[[i]], ncol = nfactors[[i]])
-      target_psi[[i]][nonfixed[[i]]$psi] <- 1
       target_theta[[i]] <- matrix(0, nrow = nitems[[i]], ncol = nitems[[i]])
       target_theta[[i]][nonfixed[[i]]$theta] <- 1
 
-      q <- nfactors[[i]]
       p <- nitems[[i]]
-      lower_psi <- lower.tri(diag(q), diag = TRUE)
       lower_theta <- lower.tri(diag(p), diag = TRUE)
-      targets[[i]] <- unlist(c(target_psi[[i]][lower_psi],
-                               target_theta[[i]][lower_theta]))
-      rest <- rest + 0.5*q*(q-1) + 0.5*p*(p-1) + sum(targets[[i]] == 0)
+      targets[[i]] <- unlist(c(target_theta[[i]][lower_theta]))
+      rest <- rest + 0.5*p*(p-1) + sum(targets[[i]] == 0)
 
     }
 
@@ -163,29 +165,36 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
     for(i in 1:ngroups) {
 
-      init_trans[[rs]][[i]]$lambda <- rorth(nitems[[i]], nfactors[[i]])
-      init_trans[[rs]][[i]]$lambda[fixed[[i]]$lambda] <- fixed_values[[i]]$lambda
+      init_trans[[rs]][[i]]$ulambda <- rorth(nitems[[i]], nfactors[[i]])
+      init_trans[[rs]][[i]]$ulambda[fixed[[i]]$ulambda] <- fixed_values[[i]]$ulambda
+
+      # init_trans[[rs]][[i]]$X <- rorth(nfactors[[i]], nfactors[[i]])
+      init_trans[[rs]][[i]]$X <- roblq(nfactors[[i]], nfactors[[i]])
 
       if(positive) {
 
-        init_trans[[rs]][[i]]$pj_psi <- rpoblq(nfactors[[i]], nfactors[[i]], target = target_psi[[i]])
-        init_trans[[rs]][[i]]$pj_theta <- rpoblq(nitems[[i]], nitems[[i]], target = target_theta[[i]])
-
-        init_trans[[rs]][[i]]$psi <- crossprod(init_trans[[rs]][[i]]$pj_psi)
-
+        init_trans[[rs]][[i]]$pj_theta <- rpoblq(nitems[[i]], nitems[[i]],
+                                                 target = target_theta[[i]])
         init_trans[[rs]][[i]]$theta <- crossprod(init_trans[[rs]][[i]]$pj_theta)
 
       } else {
-
-        P <- diag(nfactors[[i]])
-        init_trans[[rs]][[i]]$psi <- P
-        init_trans[[rs]][[i]]$psi[fixed[[i]]$psi] <- fixed_values[[i]]$psi
 
         U <- diag(1/diag(solve(correl[[i]]$R)))
         init_trans[[rs]][[i]]$theta <- U
         init_trans[[rs]][[i]]$theta[fixed[[i]]$theta] <- fixed_values[[i]]$theta
 
       }
+
+      if(orthogonal) {
+        init_trans[[rs]][[i]]$lambda <- init_trans[[rs]][[i]]$ulambda %*%
+                                        init_trans[[rs]][[i]]$X
+      } else {
+        init_trans[[rs]][[i]]$Xinv <- solve(init_trans[[rs]][[i]]$X)
+        init_trans[[rs]][[i]]$lambda <- init_trans[[rs]][[i]]$ulambda %*%
+                                        t(init_trans[[rs]][[i]]$Xinv)
+      }
+
+      init_trans[[rs]][[i]]$psi <- crossprod(init_trans[[rs]][[i]]$X)
 
       Lambda <- init_trans[[rs]][[i]]$lambda
       Phi <- init_trans[[rs]][[i]]$psi
@@ -240,7 +249,7 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
 }
 
-get_cfa_structures <- function(data_list, full_model, control) {
+get_efa_structures <- function(data_list, full_model, control) {
 
   # Generate control_manifold, control_transform, and control_estimator
 
@@ -251,40 +260,43 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   control_manifold <- list()
 
-  if(!positive) {
+  # Euclidean for unrotated lambdas:
+  ulambdas <- unlist(lapply(cfa_param, FUN = \(x) x$ulambda))
+  indices_ulambda <- match(unique(ulambdas), parameters_labels)
+  indices_ulambda <- indices_ulambda[!is.na(indices_ulambda)]
+  labels <- parameters_labels[indices_ulambda]
+  indices <- list(indices_ulambda-1L)
+  control_manifold[[1]] <- list(manifold = "euclidean",
+                                parameters = labels,
+                                indices = indices)
+  k <- 2L
 
-    all <- unique(unlist(cfa_param))
-    indices_all <- match(all, parameters_labels)
-    indices_all <- indices_all[!is.na(indices_all)]
-    labels <- parameters_labels[indices_all]
-    indices <- list(indices_all-1L)
-    control_manifold[[1]] <- list(manifold = "euclidean",
+  for(i in 1:ngroups) {
+
+    if(orthogonal) {
+      manifoldX <- "orth"
+    } else {
+      manifoldX <- "oblq"
+    }
+
+    # Orthogonal/Oblique X in each group:
+    Xs <- c(cfa_param[[i]]$X)
+    indices_Xs <- match(unique(Xs), parameters_labels)
+    indices_Xs <- indices_Xs[!is.na(indices_Xs)]
+    labels <- parameters_labels[indices_Xs]
+    indices <- list(indices_Xs-1L)
+    control_manifold[[k]] <- list(manifold = manifoldX,
                                   parameters = labels,
-                                  indices = indices)
+                                  indices = indices,
+                                  q = nfactors[[i]])
+    k <- k+1L
 
-  } else {
+  }
 
-    lambdas <- unlist(lapply(cfa_param, FUN = \(x) x$lambda))
-    indices_lambda <- match(unique(lambdas), parameters_labels)
-    indices_lambda <- indices_lambda[!is.na(indices_lambda)]
-    labels <- parameters_labels[indices_lambda]
-    indices <- list(indices_lambda-1L)
-    control_manifold[[1]] <- list(manifold = "euclidean",
-                                  parameters = labels,
-                                  indices = indices)
-    k <- 2L
+  # Positive constraints for theta in each group:
+  if(positive) {
 
     for(i in 1:ngroups) {
-
-      indices_pj_psi <- match(unique(c(cfa_param[[i]]$pj_psi)),
-                              parameters_labels)
-      labels <- parameters_labels[indices_pj_psi]
-      indices <- list(indices_pj_psi-1L)
-      control_manifold[[k]] <- list(manifold = "poblq",
-                                    parameters = labels,
-                                    indices = indices,
-                                    target = target_psi[[i]])
-      k <- k+1L
 
       indices_pj_theta <- match(unique(c(cfa_param[[i]]$pj_theta)),
                                 parameters_labels)
@@ -298,6 +310,19 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
     }
 
+  } else {
+
+    # Unconstrained thetas:
+    thetas <- unlist(lapply(cfa_param, FUN = \(x) x$theta))
+    indices_thetas <- match(unique(thetas), parameters_labels)
+    indices_thetas <- indices_thetas[!is.na(indices_thetas)]
+    labels <- parameters_labels[indices_thetas]
+    indices <- list(indices_thetas-1L)
+    control_manifold[[k]] <- list(manifold = "euclidean",
+                                  parameters = labels,
+                                  indices = indices)
+    k <- k+1L
+
   }
 
   #### Transformations ####
@@ -307,27 +332,80 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   for(i in 1:ngroups) {
 
-    if(positive) {
+    if(orthogonal) {
 
-      lower_psi <- lower.tri(cfa_trans[[i]]$psi, diag = TRUE)
-      lower_theta <- lower.tri(cfa_trans[[i]]$theta, diag = TRUE)
-
-      # The result of the "crossprod" transformation is always symmetric,
-      # so we take only the diagonal and lower diagonal elements
-
-      labels_in <- c(cfa_trans[[i]]$pj_psi)
-      labels_out <- c(cfa_trans[[i]]$psi[lower_psi])
-      indices_in <- list(match(labels_in, transparameters_labels)-1L)
+      # Rotated lambda:
+      labels_ulambda <- c(cfa_trans[[i]]$ulambda)
+      labels_X <- c(cfa_trans[[i]]$X)
+      labels_in <- list(labels_ulambda, labels_X)
+      labels_out <- c(cfa_trans[[i]]$lambda)
+      indices_in_ulambda <- match(labels_ulambda, transparameters_labels)-1L
+      indices_in_X <- match(labels_X, transparameters_labels)-1L
+      indices_in <- list(indices_in_ulambda, indices_in_X)
       indices_out <- list(match(labels_out, transparameters_labels)-1L)
-      control_transform[[k]] <- list(transform = "crossprod",
+      control_transform[[k]] <- list(transform = "XY",
                                      labels_in = labels_in,
                                      indices_in = indices_in,
                                      labels_out = labels_out,
                                      indices_out = indices_out,
-                                     p = nrow(cfa_trans[[i]]$psi),
-                                     q = ncol(cfa_trans[[i]]$psi))
+                                     p = nitems[[i]],
+                                     q = nfactors[[i]])
       k <- k+1L
 
+    } else {
+
+      # Inverse of X:
+      labels_in <- c(cfa_trans[[i]]$X)
+      labels_out <- c(cfa_trans[[i]]$Xinv)
+      indices_in <- list(match(labels_in, transparameters_labels)-1L)
+      indices_out <- list(match(labels_out, transparameters_labels)-1L)
+      control_transform[[k]] <- list(transform = "matrix_inverse",
+                                     labels_in = labels_in,
+                                     indices_in = indices_in,
+                                     labels_out = labels_out,
+                                     indices_out = indices_out,
+                                     p = nfactors[[i]])
+      k <- k+1L
+
+      # Rotated lambda:
+      labels_ulambda <- c(cfa_trans[[i]]$ulambda)
+      labels_Xinv <- c(cfa_trans[[i]]$Xinv)
+      labels_in <- list(labels_ulambda, labels_Xinv)
+      labels_out <- c(cfa_trans[[i]]$lambda)
+      indices_in_ulambda <- match(labels_ulambda, transparameters_labels)-1L
+      indices_in_Xinv <- match(labels_Xinv, transparameters_labels)-1L
+      indices_in <- list(indices_in_ulambda, indices_in_Xinv)
+      indices_out <- list(match(labels_out, transparameters_labels)-1L)
+      control_transform[[k]] <- list(transform = "XYt",
+                                     labels_in = labels_in,
+                                     indices_in = indices_in,
+                                     labels_out = labels_out,
+                                     indices_out = indices_out,
+                                     p = nitems[[i]],
+                                     q = nfactors[[i]])
+      k <- k+1L
+
+    }
+
+    # Latent covariances:
+    lower_psi <- lower.tri(cfa_trans[[i]]$psi, diag = TRUE)
+    labels_in <- c(cfa_trans[[i]]$X)
+    indices_in <- list(match(labels_in, transparameters_labels)-1L)
+    labels_out <- c(cfa_trans[[i]]$psi[lower_psi])
+    indices_out <- list(match(labels_out, transparameters_labels)-1L)
+    control_transform[[k]] <- list(transform = "crossprod",
+                                   labels_in = labels_in,
+                                   indices_in = indices_in,
+                                   labels_out = labels_out,
+                                   indices_out = indices_out,
+                                   p = nfactors[[i]],
+                                   q = nfactors[[i]])
+    k <- k+1L
+
+    # Error covariances:
+    if(positive) {
+
+      lower_theta <- lower.tri(cfa_trans[[i]]$theta, diag = TRUE)
       labels_in <- c(cfa_trans[[i]]$pj_theta)
       labels_out <- c(cfa_trans[[i]]$theta[lower_theta])
       indices_in <- list(match(labels_in, transparameters_labels)-1L)
@@ -337,14 +415,13 @@ get_cfa_structures <- function(data_list, full_model, control) {
                                      indices_in = indices_in,
                                      labels_out = labels_out,
                                      indices_out = indices_out,
-                                     p = nrow(cfa_trans[[i]]$theta),
-                                     q = ncol(cfa_trans[[i]]$theta))
+                                     p = nitems[[i]],
+                                     q = nitems[[i]])
       k <- k+1L
 
     }
 
     # Model matrix correlation:
-    lower_psi <- lower.tri(cfa_trans[[i]]$psi, diag = TRUE)
     lower_theta <- lower.tri(cfa_trans[[i]]$theta, diag = TRUE)
     indices_lambda <- match(cfa_trans[[i]]$lambda,
                             transparameters_labels)
@@ -370,8 +447,8 @@ get_cfa_structures <- function(data_list, full_model, control) {
                                    indices_in = indices_in,
                                    labels_out = labels_out,
                                    indices_out = indices_out,
-                                   p = nrow(correl[[i]]$R),
-                                   q = nrow(cfa_trans[[i]]$psi))
+                                   p = nitems[[i]],
+                                   q = nfactors[[i]])
     k <- k+1L
 
   }
@@ -382,6 +459,17 @@ get_cfa_structures <- function(data_list, full_model, control) {
   k <- 1L
 
   for(i in 1:ngroups) {
+
+    # Rotation criteria:
+    labels <- c(cfa_trans[[i]]$lambda)
+    indices <- list(match(labels, transparameters_labels) - 1L)
+    control_estimator[[k]] <- list(estimator = "oblimin",
+                                   labels = labels,
+                                   indices = indices,
+                                   gamma = 0.00,
+                                   p = nitems[[i]],
+                                   q = nfactors[[i]])
+    k <- k+1L
 
     lower_diag <- lower.tri(cfa_trans[[i]]$model, diag = TRUE)
     indices_model <- match(cfa_trans[[i]]$model[lower_diag],
@@ -406,7 +494,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
                                    R = correl[[i]]$R,
                                    W = correl[[i]]$W,
                                    w = nobs[[i]] / sum(unlist(nobs)),
-                                   q = nrow(cfa_trans[[i]]$psi),
+                                   q = nfactors[[i]],
                                    n = nobs[[i]])
     k <- k+1L
 
