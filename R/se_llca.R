@@ -140,7 +140,7 @@ standard_se <- function(fit) {
 
   result$se <- as.vector(result$se)
   names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
-    fit@modelInfo$se_names
+    fit@modelInfo$control$se_names
 
   # Return:
   return(result)
