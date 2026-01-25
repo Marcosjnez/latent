@@ -120,7 +120,7 @@ List with the following objects:
 
 ## Details
 
-`lcfa` estimates confirmatory factor models.
+`lefa` estimates confirmatory factor models.
 
 ## Examples
 

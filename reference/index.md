@@ -37,6 +37,8 @@
 - [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
   Maximum likelihood estimation of positive definite polychoric
   correlation matrices.
+- [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md)
+  : Rotate the lambda matrix of an orthogonal factor model.
 - [`predict()`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   : Predicted values for Latent Class Analysis.
 - [`se()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md) :

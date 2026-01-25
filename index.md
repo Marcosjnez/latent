@@ -44,8 +44,15 @@ devtools::install_github("marcosjnez/latent", force = TRUE)
 
 ## Funding
 
-The package development is supported by the “DYNANSE: Righting the
-Wrongs. A Life Course Dynamics Approach for Non-Standard Employment”
-project, which has received funding from the European Research Council
-(ERC) under the European Union’s Horizon 2020 research and innovation
-programme (grant agreement No 864471).
+The package development is supported by two projects:
+
+- The “DYNANSE: Righting the Wrongs. A Life Course Dynamics Approach for
+  Non-Standard Employment” project, which has received funding from the
+  European Research Council (ERC) under the European Union’s Horizon
+  2020 research and innovation program (grant agreement No 864471).
+  September 2024 – February 2026
+
+- NWO-Open Science NL, Open Science Infrastructure. Garnier-Villarreal,
+  M.(PI) & Jiménez Henríquez, MJ (Grant Agreement No 500.040.2469). Fast
+  estimation of classical and new latent variable models in R. March
+  2026 – February 2028. Budget: €249.873
