@@ -176,13 +176,16 @@ predict(fit, new = rbind(c(2, 2, 2.428571, 2.142857),
 fitted(fit)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE <- se(fit, type = "standard", model = "model", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "user",
+CI <- ci(fit, type = "standard", model = "model",
          confidence = 0.95, digits = 2)
 CI$table
+
+lapply(fit@modelInfo$control_transform[1:10], FUN = \(x) x$indices_out)
+fit@modelInfo$control_transform[[1]]
 
 #### CFA ####
 
@@ -197,7 +200,7 @@ fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml",
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "lbfgs"))
+            control = list(opt = "lbfgs", maxit = 1000))
 fit@loss   # 0.283407
 fit@loglik # -3427.131
 fit@penalized_loglik # -3427.131
@@ -351,19 +354,22 @@ fit2@Fit@fx*2
 fit2@loglik$loglik
 
 # With latent:
+set.seed(2026)
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
             estimator = "ml", positive = TRUE,
             penalties = list(logdet = list(w = 0.01)),
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "lbfgs", maxit = 1000L,
-                           cores = 20L, rstarts = 20L))
+            control = list(opt = "newton", maxit = 1000L,
+                           cores = 20L, rstarts = 20L, eps = 1e-05,
+                           tcg_maxit = 10))
 
 fit@loglik # -3421.497 (ML)
 fit@penalized_loglik # -3421.502 (ML)
 fit@loss # 0.1419955 (ULS) / 0.2467385 (ML)
 fit@Optim$iterations
 fit@Optim$convergence
+fit@Optim$ng
 fit@timing
 
 fit2@Fit@fx*2
@@ -476,7 +482,8 @@ full <- hexaco[, selection]
 
 mooc <- full[hexaco$sample == samples[2], ]
 dim(mooc)
-fit <- lpoly(data = mooc, do.fit = TRUE)
+fit <- lpoly(data = mooc, do.fit = TRUE,
+             control = list(opt = "lbfgs", maxit = 10))
 fit@loglik # -75695.53
 fit@penalized_loglik # -75695.53
 fit@Optim$iterations
@@ -536,18 +543,18 @@ x <- grad_comp(control_manifold, control_transform,
 # x$f
 # round(c(x$g) - c(x$numg), 5)
 # max(abs(c(x$g) - c(x$numg)))
-# round(c(x$dg) - c(x$numdg), 5)
-# max(abs(c(x$dg) - c(x$numdg)))
+round(c(x$dg) - c(x$numdg), 5)
+max(abs(c(x$dg) - c(x$numdg)))
 
 x2 <- get_grad(control_manifold, control_transform,
                control_estimator, control_optimizer)
 round(c(x2$g)-c(x$numg), 3)
 round(c(x2$g)/c(x$numg), 3)
 
-x3 <- get_dgrad(control_manifold, control_transform,
-                control_estimator, control_optimizer)
-round(c(x3$dg)-c(x$numdg), 3)
-round(c(x3$dg)/c(x$numdg), 3)
+# x3 <- get_dgrad(control_manifold, control_transform,
+#                 control_estimator, control_optimizer)
+# round(c(x3$dg)-c(x$numdg), 3)
+# round(c(x3$dg)/c(x$numdg), 3)
 
 # Calculate the Hessian matrix using numerical approximations:
 G <- function(parameters) {

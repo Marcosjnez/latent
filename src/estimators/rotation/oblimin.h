@@ -21,6 +21,11 @@ public:
 
     lambda = arma::reshape(x.transparameters(indices[0]), p, q);
 
+    // arma::vec v = x.transparameters(indices[0]);
+    // for (arma::uword i = 0; i < v.n_elem; ++i) {
+    //   Rprintf("%.6f%s", v(i), (i + 1 < v.n_elem) ? " " : "\n"); // space-separated, then newline
+    // }
+
     L2 = lambda % lambda;
     IgCL2N = I_gamma_C * L2 * N;
 
@@ -30,6 +35,7 @@ public:
 
     f = arma::accu(L2 % IgCL2N) / 4;
     x.f += f;
+    // Rprintf("f = %.6f\n", f);
 
   }
 

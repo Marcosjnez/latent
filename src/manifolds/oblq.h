@@ -31,9 +31,9 @@ public:
 
   void hess(arguments_optim& x) {
 
+    g = arma::reshape(x.g.elem(indices[0]), q, q);
     dg = arma::reshape(x.dg.elem(indices[0]), q, q);
-    dparameters = x.dparameters.elem(indices[0]);
-    dX = arma::reshape(dparameters, q, q);
+    dX = arma::reshape(x.dparameters.elem(indices[0]), q, q);
     x.dH.elem(indices[0]) = arma::vectorise(dg - dX * arma::diagmat(X.t() * g) -
       X * arma::diagmat(X.t() * dg));
     // arma::mat drg = dg - dX * arma::diagmat( X.t() * g) - X * arma::diagmat(dX.t() * g) -

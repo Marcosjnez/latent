@@ -60,7 +60,7 @@ List with the following objects:
 Fit an Exploratory Factor Analysis (EFA) model.
 }
 \details{
-\code{lcfa} estimates confirmatory factor models.
+\code{lefa} estimates confirmatory factor models.
 }
 \examples{
 

@@ -697,6 +697,21 @@ get_lca_structures <- function(data_list, full_model, control) {
 
   }
 
+  # # Count the total number of parameters up to each transformation
+  # # This will be use to initialize the vcov matrix:
+  # ntransforms <- length(control_transform)
+  # vector_nparams <- vector(length = ntransforms)
+  # vector_nparams[i] <- nparam
+  # for(i in 1:ntransforms) {
+  #   # This assumes all indices_out are unique:
+  #   vector_nparams[i+1L] <- vector_nparams[i] +
+  #     length(unlist(control_transform[i]$indices_out))
+  # }
+  # control$vector_nparams <- vector_nparams
+  # # This is the number of parameters used in vcov and se:
+  # # ncov_params <- control$vector_nparams[control$ncov_transform]
+  # # It is computed in the choose_optim function
+
   #### Estimators ####
 
   control_estimator <- list()

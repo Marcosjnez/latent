@@ -10,6 +10,9 @@ struct arguments_optim{
 
   // Manifolds and Estimators:
   int nmanifolds, nestimators, ntransforms;
+  int ncov_transform = 1L, ncov_params;
+  arma::uvec vector_nparams;
+  bool minimal_se = true;
 
   // Estimators stuff:
   std::vector<arma::uvec> indexes, target_indexes;

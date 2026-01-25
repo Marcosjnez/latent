@@ -37,6 +37,10 @@ public:
   void dtransform(arguments_optim& x) {
 
     dX = arma::reshape(x.dtransparameters(indices_in[0]), p, q);
+    // arma::vec v = x.dtransparameters(indices_in[0]);
+    // for (arma::uword i = 0; i < v.n_elem; ++i) {
+    //   Rprintf("%.6f%s", v(i), (i + 1 < v.n_elem) ? " " : "\n"); // space-separated, then newline
+    // }
     dY = arma::reshape(x.dtransparameters(indices_in[1]), q, q);
     dXY = X * dY + dX * Y;
 
@@ -49,6 +53,10 @@ public:
     arma::mat dgrad_out = arma::reshape(x.dgrad(indices_out[0]), p, q);
 
     arma::mat dgrad_in_X = dgrad_out * Y.t() + grad_out * dY.t();
+    // arma::vec v = x.dtransparameters(indices_in[0]);
+    // for (arma::uword i = 0; i < v.n_elem; ++i) {
+    //   Rprintf("%.6f%s", v(i), (i + 1 < v.n_elem) ? " " : "\n"); // space-separated, then newline
+    // }
     arma::mat dgrad_in_Y = dX.t() * grad_out + X.t() * dgrad_out;
 
     x.dgrad.elem(indices_in[0]) += arma::vectorise(dgrad_in_X);

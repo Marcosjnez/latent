@@ -110,6 +110,12 @@ lca_control <- function(control) {
     stop("rstarts must be a positive integer")
   }
 
+  # if(is.null(control$ncov_transform)) {
+  #   control$ncov_transform <- 1L
+  # } else if(control$ncov_transform < 0L) {
+  #   stop("ncov_transform must be a positive integer")
+  # }
+
   return(control)
 
 }

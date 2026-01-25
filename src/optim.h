@@ -399,7 +399,7 @@ optim_result lbfgs(arguments_optim x,
     //   break;
     // }
 
-    // final_estimator->param(x, xestimators); // Necessary¿?
+    final_estimator->param(x, xestimators); // Necessary¿?
     final_estimator->G(x, xestimators);
     final_transform->update_grad(x, xtransforms);
     // After the retraction in armijo you need to param the manifolds:
@@ -563,6 +563,7 @@ optim_result ntr(arguments_optim x,
     final_estimator->dG(x, xestimators);
     final_transform->update_dgrad(x, xtransforms);
     final_manifold->param(x, xmanifolds);
+    final_manifold->proj(x, xmanifolds); // REMOVE
     final_manifold->hess(x, xmanifolds);
 
     preddiff = - arma::accu(x.dparameters % ( x.rg + 0.5 * x.dH) );
@@ -572,6 +573,7 @@ optim_result ntr(arguments_optim x,
     // Projection onto the manifold
     final_manifold->param(new_x, xmanifolds);
     final_manifold->retr(new_x, xmanifolds);
+    final_manifold->param(new_x, xmanifolds);
     // Parameterization
     final_transform->transform(new_x, xtransforms);
     final_estimator->param(new_x, xestimators);
@@ -883,6 +885,27 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
     int pick = control_optimizer["pick"];
     x.pick = pick; // Pick the "pick" number of rstarts with minimum objective
   }
+  if(control_optimizer.containsElementNamed("minimal_se")) {
+    // Compute the vcov of model parameters or full transformed parameters
+    bool minimal_se = control_optimizer["minimal_se"];
+    x.minimal_se = minimal_se;
+  }
+  // if(control_optimizer.containsElementNamed("ncov_transform")) {
+  //   // Compute up to ncov_transform transformation jacobians:
+  //   int ncov_transform = control_optimizer["ncov_transform"];
+  //   x.ncov_transform = ncov_transform;
+  // }
+  // if(control_optimizer.containsElementNamed("vector_nparams")) {
+  //   // Cumulative vector of parameters and transformed parameters for SE
+  //   arma::uvec vector_nparams = control_optimizer["vector_nparams"];
+  //   x.vector_nparams = vector_nparams;
+  //   // Number of parameters and transformed parameters up to the transformation
+  //   // of interest:
+  //   x.ncov_params = vector_nparams(x.ncov_transform);
+  // } else {
+  //   x.vector_nparams = arma::uvec(1, arma::fill::value(x.nparam));
+  //   x.ncov_params = x.nparam;
+  // }
 
   // Select the optimization algorithm and set defaults:
 

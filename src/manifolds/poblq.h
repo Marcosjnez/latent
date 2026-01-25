@@ -61,6 +61,7 @@ public:
 
   void hess(arguments_optim& x) {
 
+    g = arma::reshape(x.g.elem(indices[0]), q, q);
     dg = arma::reshape(x.dg.elem(indices[0]), q, q);
     dX = arma::reshape(x.dparameters.elem(indices[0]), q, q);
     dP = X.t() * dX;

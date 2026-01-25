@@ -151,9 +151,13 @@ public:
 
     x.transparameters(x.transparam2param) = x.parameters;
 
-    for(int i=0; i < x.ntransforms; ++i) {
+    if(!x.minimal_se) {
 
-      xtransformations[i]->jacobian(x);
+      for(int i=0; i < x.ntransforms; ++i) {
+
+        xtransformations[i]->jacobian(x);
+
+      }
 
     }
 
@@ -161,25 +165,34 @@ public:
 
   void update_vcov(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
-    // This assumes that the jacobian is already computed
     // Approximate the inverse if the hessian is not positive-definite:
     x.inv_h = arma::inv_sympd(x.h, arma::inv_opts::allow_approx);
 
-    // Get the variance-covariance matrix of everything:
-    x.vcov.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
-    x.vcov.zeros();
-    x.vcov(x.transparam2param, x.transparam2param) = x.inv_h;
+    if(x.minimal_se) {
 
-    for (int i=0; i < x.ntransforms; ++i) {
+      x.vcov = x.inv_h;
 
-      // Rprintf("%d \n", i);
-      const arma::uvec& indices_in  = xtransformations[i]->indices_in[0];
-      const arma::uvec& indices_out = xtransformations[i]->indices_out[0];
+    } else {
 
-      xtransformations[i]->update_vcov(x);
+      // This assumes that the jacobians are already computed
+      // Get the variance-covariance matrix of everything:
+      x.vcov.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
+      x.vcov.zeros();
+      x.vcov(x.transparam2param, x.transparam2param) = x.inv_h;
 
-      const arma::mat& J = xtransformations[i]->jacob;
-      x.vcov(indices_out, indices_out) = J * x.vcov(indices_in, indices_in) * J.t();
+      for (int i=0; i < x.ntransforms; ++i) {
+        // for (int i=0; i < x.ncov_transform; ++i) {
+
+        // Rprintf("%d \n", i);
+        const arma::uvec& indices_in  = xtransformations[i]->indices_in[0];
+        const arma::uvec& indices_out = xtransformations[i]->indices_out[0];
+
+        xtransformations[i]->update_vcov(x);
+
+        const arma::mat& J = xtransformations[i]->jacob;
+        x.vcov(indices_out, indices_out) = J * x.vcov(indices_in, indices_in) * J.t();
+
+      }
 
     }
 

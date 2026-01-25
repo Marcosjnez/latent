@@ -27,15 +27,10 @@ public:
     grad_out = arma::reshape(x.grad(indices_out[0]), p, q);
 
     grad_in_X = grad_out * Y;
-    grad_in_Y = X.t() * grad_out;
+    grad_in_Y = grad_out.t() * X;
 
     x.grad(indices_in[0]) += arma::vectorise(grad_in_X);
     x.grad(indices_in[1]) += arma::vectorise(grad_in_Y);
-
-    // arma::vec v = x.grad(indices_in[0]);
-    // for (arma::uword i = 0; i < v.n_elem; ++i) {
-    //   Rprintf("%.6f%s", v(i), (i + 1 < v.n_elem) ? " " : "\n"); // space-separated, then newline
-    // }
 
   }
 
@@ -51,8 +46,9 @@ public:
   void update_dgrad(arguments_optim& x) {
 
     arma::mat dgrad_out = arma::reshape(x.dgrad(indices_out[0]), p, q);
+
     arma::mat dgrad_in_X = dgrad_out * Y + grad_out * dY;
-    arma::mat dgrad_in_Y = dX.t() * grad_out + X.t() * dgrad_out;
+    arma::mat dgrad_in_Y = dgrad_out.t() * X + grad_out.t() * dX;
 
     x.dgrad.elem(indices_in[0]) += arma::vectorise(dgrad_in_X);
     x.dgrad.elem(indices_in[1]) += arma::vectorise(dgrad_in_Y);

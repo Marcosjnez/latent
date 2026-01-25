@@ -54,6 +54,7 @@ Rcpp::List get_grad(Rcpp::List control_manifold,
   final_estimator->G(x, xestimators);
   final_transform->update_grad(x, xtransforms);
 
+  result["f"] = x.f;
   result["grad"] = x.grad;
   result["g"] = x.g;
   result["parameters"] = x.parameters;
