@@ -146,18 +146,38 @@ fit0@loglik # -1841.336
 fit0@penalized_loglik # -1844.333
 fit0@Optim$iterations
 
+penalties <- list(
+  beta  = list(alpha = 1),
+  class = list(alpha = 1),
+  prob  = list(alpha = 1),
+  sd    = list(alpha = 1)
+)
 Y <- as.matrix(empathy[, 9:10]) # Covariates
+set.seed(2026)
+# fit <- lca(data = data, X = X, model = NULL,
 fit <- lca(data = data, X = cbind(X, Y), model = fit0,
            item = rep("gaussian", ncol(data)),
-           nclasses = 4L, penalties = TRUE,
+           nclasses = 4L, penalties = penalties,
            control = NULL, do.fit = TRUE)
 fit@timing
 fit@loglik # -1747.135
 fit@penalized_loglik # -1750.566
 fit@Optim$iterations
 fit@Optim$convergence
+fit@transformed_pars$beta
 
 all.equal(fit0@parameters$items, fit@parameters$items)
+
+beta <- fit@parameters$beta
+vcov <- SE$vcov[1:9, 1:9]
+matrix(sqrt(diag(vcov)), 3, 3)
+
+new_se <- effects_coding(beta, vcov)
+new_se$beta_new
+matrix(new_se$se_new, 3, 4)
+new_se <- move_intercept(beta, vcov)
+new_se$beta_new
+matrix(new_se$se_new, 3, 3)
 
 # Plot model fit info:
 fit
@@ -184,8 +204,16 @@ CI <- ci(fit, type = "standard", model = "model",
          confidence = 0.95, digits = 2)
 CI$table
 
-lapply(fit@modelInfo$control_transform[1:10], FUN = \(x) x$indices_out)
-fit@modelInfo$control_transform[[1]]
+plot(fit,
+     type = "standard",
+     what = "OR",
+     effects = "coding",
+     confidence = 0.95,
+     show_est_ci = TRUE,
+     est_ci_header_cex = 0.5,
+     cex_y = 0.5,
+     mfrow = c(2, 2),
+     xlim = c(0, 5))
 
 #### CFA ####
 

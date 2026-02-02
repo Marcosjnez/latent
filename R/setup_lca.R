@@ -725,9 +725,6 @@ get_lca_structures <- function(data_list, full_model, control) {
   indices_theta <- match(lca_all$theta, transparameters_labels)
   indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
                   indices_theta-1L)
-  SJ <- npatterns*nitems
-  hess_indices <- lapply(0:(nclasses - 1), function(i) {
-    nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
 
   control_estimator[[1]] <- list(estimator = "lca",
                                  labels = labels,
@@ -735,8 +732,7 @@ get_lca_structures <- function(data_list, full_model, control) {
                                  S = npatterns,
                                  J = nitems,
                                  I = nclasses,
-                                 weights = weights,
-                                 hess_indices = hess_indices)
+                                 weights = weights)
 
   # Choose whether using Bayes constants:
   if(control$reg) {
@@ -814,6 +810,38 @@ get_lca_structures <- function(data_list, full_model, control) {
       }
 
     }
+
+    # Regularization for coefficients:
+    alpha <- control$penalties$beta$alpha
+    if(alpha != 0) {
+
+      # means <- control$means
+      # sds <- control$sds
+      #
+      # if(is.null(means) || is.null(sds)) {
+      #   stop("Please, provide means and sds for the beta regularization")
+      # }
+
+      p <- nrow(lca_all$beta)-1L
+      q <- ncol(lca_all$beta)
+      means <- matrix(0, nrow = p, ncol = q)
+      sds <- apply(cov_patterns2[, -1], MARGIN = 2, sd, na.rm = TRUE)
+      sds <- matrix(sds, nrow = p, ncol = q) / alpha
+
+      labels <- lca_all$beta[-1, ] # Remove the intercept
+      indices <- match(labels, transparameters_labels)
+      control_estimator[[G]] <- list(estimator = "gaussian_loglik",
+                                     labels = labels,
+                                     indices = list(indices-1L),
+                                     means = means,
+                                     sds = sds,
+                                     alpha = alpha,
+                                     N = data_list$nobs)
+      G <- G+1L
+
+
+    }
+
   }
 
   #### Return ####

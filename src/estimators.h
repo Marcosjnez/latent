@@ -65,6 +65,8 @@ public:
 #include "estimators/cfa/cfa_ml2.h"
 #include "estimators/cfa/cfa_ml_R.h"
 
+#include "estimators/loglik/gaussian_loglik.h"
+
 #include "estimators/correlation/polycor.h"
 
 using EstimatorFactory = std::function<estimators*(const Rcpp::List&)>;
@@ -88,6 +90,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "bayesconst3",                 choose_bayesconst3               },
   { "logdetmat",                   choose_logdetmat                 },
   { "lreg",                        choose_lreg                      },
+  { "gaussian_loglik",             choose_gaussian_loglik           },
   { "polycor",                     choose_polycor                   }
 };
 

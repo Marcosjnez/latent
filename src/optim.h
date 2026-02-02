@@ -414,6 +414,7 @@ optim_result lbfgs(arguments_optim x,
 
     if (!arma::is_finite(p[k])) { // SET AN EPS TO DECLARE CONVERGENCE
       x.convergence = true;
+      // Rprintf("convergence declared because p[k] is not finite");
       break;
     }
 

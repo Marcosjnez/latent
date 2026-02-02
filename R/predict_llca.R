@@ -45,6 +45,8 @@ predict.llca <- function(model, new = NULL, digits = NULL) {
 
     # Create the design matrix:
     X <- model.matrix(~ . + 1, X_df)
+    # Standardize the variables:
+    # X[, -1] <- apply(X[, -1], MARGIN = 2, FUN = \(x) x-mean(x))
 
     # Put an underscore between the variable names and their level names:
     for (v in names(X_df)[sapply(X_df, is.factor)]) {

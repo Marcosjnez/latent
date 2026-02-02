@@ -31,6 +31,7 @@
 #include <Rcpp/Benchmark/Timer.h>
 #include "structures.h"
 #include "auxiliary.h"
+#include "normal_dist_utilities.h"
 #include "manifolds.h"
 #include "transformations.h"
 #include "estimators.h"

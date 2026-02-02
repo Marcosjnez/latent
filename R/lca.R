@@ -158,6 +158,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     # Create the design matrix:
     X <- model.matrix(~ . + 1, X_df)
+    # Center the variables:
+    # X[, -1] <- apply(X[, -1], MARGIN = 2, FUN = \(x) x-mean(x))
 
     # Put an underscore between the variable names and their level names:
     for (v in names(X_df)[sapply(X_df, is.factor)]) {
