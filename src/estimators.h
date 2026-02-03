@@ -66,6 +66,7 @@ public:
 #include "estimators/cfa/cfa_ml_R.h"
 
 #include "estimators/loglik/gaussian_loglik.h"
+#include "estimators/penalties/ridge.h"
 
 #include "estimators/correlation/polycor.h"
 
@@ -91,6 +92,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "logdetmat",                   choose_logdetmat                 },
   { "lreg",                        choose_lreg                      },
   { "gaussian_loglik",             choose_gaussian_loglik           },
+  { "ridge",                       choose_ridge                     },
   { "polycor",                     choose_polycor                   }
 };
 

@@ -145,9 +145,12 @@ fit0@timing
 fit0@loglik # -1841.336
 fit0@penalized_loglik # -1844.333
 fit0@Optim$iterations
+fit0@Optim$ng
+sqrt(sum(fit0@Optim$rg*-fit0@Optim$dir))
+sqrt(sum(fit0@Optim$rg*fit0@Optim$rg))
 
 penalties <- list(
-  beta  = list(alpha = 1),
+  beta  = list(alpha = 0, lambda = 1, power = 1),
   class = list(alpha = 1),
   prob  = list(alpha = 1),
   sd    = list(alpha = 1)
@@ -158,12 +161,16 @@ set.seed(2026)
 fit <- lca(data = data, X = cbind(X, Y), model = fit0,
            item = rep("gaussian", ncol(data)),
            nclasses = 4L, penalties = penalties,
-           control = NULL, do.fit = TRUE)
+           control = NULL,
+           do.fit = TRUE)
 fit@timing
 fit@loglik # -1747.135
-fit@penalized_loglik # -1750.566
+fit@penalized_loglik # -1750.669
 fit@Optim$iterations
 fit@Optim$convergence
+fit@Optim$ng
+sqrt(sum(fit@Optim$rg*-fit@Optim$dir))
+sqrt(sum(fit@Optim$rg*fit@Optim$rg))
 fit@transformed_pars$beta
 
 all.equal(fit0@parameters$items, fit@parameters$items)
@@ -204,7 +211,7 @@ CI <- ci(fit, type = "standard", model = "model",
          confidence = 0.95, digits = 2)
 CI$table
 
-plot(fit,
+x <- plot(fit,
      type = "standard",
      what = "OR",
      effects = "coding",

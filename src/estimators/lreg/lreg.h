@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 31/08/2025
+ * Modification date: 03/02/2026
  */
 
 /*
@@ -12,40 +12,42 @@ class lreg: public estimators {
 
 public:
 
-  arma::vec X;
-  arma::vec dX;
-
-  // Provide these in choose_estimator:
-  arma::vec Y;
-  arma::mat predictors;
-  arma::vec res;
+  arma::mat X, res;
+  arma::vec y, beta;
 
   void param(arguments_optim& x) {
 
-    res = Y - predictors * transparameters;
+    beta = x.transparameters(indices[0]);
+    res = y - X * beta;
 
   }
 
   void F(arguments_optim& x) {
 
     f = arma::accu(res % res);
+    x.f += f;
 
   }
 
   void G(arguments_optim& x) {
 
-    grad = -2 * predictors.t() * res;
+    x.grad.elem(indices[0]) += arma::vectorise(-2 * X.t() * res);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dX = dparameters;
-    dg = 2 * predictors.t() * (predictors * dX);
+    arma::vec dbeta = x.dtransparameters(indices[0]);
+    x.dgrad.elem(indices[0]) += arma::vectorise(2 * X.t() * (X * dbeta));
 
   }
 
-  void outcomes(arguments_optim& x) {}
+  void outcomes(arguments_optim& x) {
+
+    doubles.resize(1);
+    doubles[0] =  f;
+
+  }
 
 };
 
@@ -54,12 +56,12 @@ lreg* choose_lreg(const Rcpp::List& estimator_setup) {
   lreg* myestimator = new lreg();
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
-  arma::mat Y = estimator_setup["Y"];
-  arma::mat predictors = estimator_setup["predictors"];
+  arma::mat y = estimator_setup["y"];
+  arma::mat X = estimator_setup["X"];
 
   myestimator->indices = indices;
-  myestimator->Y = Y;
-  myestimator->predictors = predictors;
+  myestimator->y = y;
+  myestimator->X = X;
 
   return myestimator;
 

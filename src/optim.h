@@ -260,13 +260,6 @@ optim_result gd(arguments_optim x,
     x.inprod = arma::accu(-x.dir % x.rg);
     x.ng = sqrt(x.inprod);
 
-    // if(x.old_inprod < x.inprod) {
-    //   Rcpp::Rcout << "Continue 2" << std::endl;
-    //   continue;
-    // } else {
-    //   x.old_inprod = x.inprod;
-    // }
-
     ++x.iterations;
 
     if(x.print) {
@@ -308,28 +301,19 @@ optim_result lbfgs(arguments_optim x,
   product_estimator* final_estimator;
 
   // Ensure initial parameters are ok:
-  // Rf_error("292");
   final_manifold->param(x, xmanifolds);
   final_manifold->retr(x, xmanifolds);
   final_manifold->param(x, xmanifolds);
-  // Rf_error("296");
   final_transform->transform(x, xtransforms);
-  // Rf_error("298");
-  // Rf_error("299");
   final_estimator->param(x, xestimators);
-  // Rf_error("300");
   x.iterations = 0L;
 
   // Parameterization
   // final_estimator->param(x, xestimators);
   final_estimator->F(x, xestimators);
-  double f0 = x.f;
-  // Rprintf("307= %g \n", x.f);
   // update the gradient
   final_estimator->G(x, xestimators);
-  // Rf_error("307");
   final_transform->update_grad(x, xtransforms);
-  // Rf_error("306");
   // Riemannian gradient
   // final_manifold->param(x, xmanifolds);
   final_manifold->proj(x, xmanifolds);
@@ -362,42 +346,8 @@ optim_result lbfgs(arguments_optim x,
     arma::vec old_parameters = x.parameters;
     arma::vec old_rg = x.rg;
 
-    // for (arma::uword i = 0; i < x.parameters.n_elem; ++i) {
-    //   Rprintf("%g ", x.parameters[i]);
-    // }
-    // Rprintf("\n");
-    //
-    // for (arma::uword i = 0; i < x.g.n_elem; ++i) {
-    //   Rprintf("%g ", x.g[i]);
-    // }
-    // Rprintf("\n");
-    //
-    // for (arma::uword i = 0; i < x.rg.n_elem; ++i) {
-    //   Rprintf("%g ", x.rg[i]);
-    // }
-    // Rprintf("\n");
-
     // armijo(x, final_manifold, final_estimator, xmanifolds, xestimators);
     wolfe(x, xtransforms, xmanifolds, xestimators);
-
-    // Stop early if the optimization diverges:
-    // if (x.f > f0) {
-    //   x.convergence = false;
-    //   break;
-    // }
-    f0 = x.f;
-
-    // Rprintf("363= %g \n", x.f);
-
-    // for (arma::uword i = 0; i < x.parameters.n_elem; ++i) {
-    //   Rprintf("%g ", x.parameters[i]);
-    // }
-    // Rprintf("\n");
-
-    // if(x.ss < arma::datum::eps) {
-    //   x.convergence = false;
-    //   break;
-    // }
 
     final_estimator->param(x, xestimators); // Necessary¿?
     final_estimator->G(x, xestimators);
@@ -406,6 +356,7 @@ optim_result lbfgs(arguments_optim x,
     final_manifold->param(x, xmanifolds);
     final_manifold->proj(x, xmanifolds);
 
+    // Find a new direction:
     arma::vec q = arma::vectorise(x.rg);
     s[k] = arma::vectorise(x.parameters - old_parameters);
     y[k] = arma::vectorise(x.rg - old_rg);
@@ -443,22 +394,14 @@ optim_result lbfgs(arguments_optim x,
     }
 
     x.dir = -z;
+
+    // Check convergence:
     x.inprod = arma::dot(-x.dir, x.rg);
     // x.inprod = arma::accu(x.dir % x.dir);
     // x.inprod = arma::accu(x.rg % x.rg);
-    x.ng = sqrt(x.inprod);
-    if (std::isnan(x.ng)) {
-      x.convergence = false;
-      break;
-    }
-    x.old_inprod = x.inprod;
-    // if(x.old_inprod < x.inprod) {
-    //   // Rcpp::Rcout << "Continue 2" << std::endl;
-    //   continue;
-    // } else {
-    //   x.old_inprod = x.inprod;
-    // }
+    x.ng = std::sqrt(x.inprod);
 
+    // Print info:
     if((x.print & x.rstarts) == 1L) {
 
       if (x.iterations % x.print_interval == 0) {
@@ -470,22 +413,16 @@ optim_result lbfgs(arguments_optim x,
 
     }
 
-    // if (x.ng < x.eps | std::sqrt(x.df*x.df) < x.df_eps) {
+    if (std::isnan(x.ng)) {
+      x.convergence = false;
+      break;
+    }
     if (x.ng < x.eps) {
       x.convergence = true;
       break;
     }
 
   } while (x.iterations < x.maxit);
-
-  if((x.print & x.rstarts) == 1L) {
-    const char *cflag = x.convergence ? "TRUE" : "FALSE";
-    Rprintf("iter = %d  f = %.8f  ng = %.8f  convergence = %s\r",
-            x.iterations, x.f, x.ng, cflag);
-    R_FlushConsole();
-    R_ProcessEvents();
-    Rprintf("\n");
-  }
 
   optim_result result = std::make_tuple(x.parameters,
                                         x.transparameters,
@@ -530,7 +467,7 @@ optim_result ntr(arguments_optim x,
 
   // Rcpp::Rcout << "x.f = " << x.f << std::endl;
 
-  x.ng = sqrt(arma::accu(x.rg % x.rg));
+  x.ng = std::sqrt(arma::accu(x.rg % x.rg));
 
   double max_rad = 10;
 
@@ -613,7 +550,10 @@ optim_result ntr(arguments_optim x,
       // Riemannian gradient
       final_manifold->proj(x, xmanifolds);
 
-      x.ng = sqrt(arma::accu(x.rg % x.rg));
+      // x.inprod = arma::accu(arma::abs(x.dir % x.rg));
+      // x.inprod = arma::accu(x.dir % x.dir);
+      x.inprod = arma::accu(x.rg % x.rg);
+      x.ng = std::sqrt(x.inprod);
 
     }
 
@@ -628,6 +568,18 @@ optim_result ntr(arguments_optim x,
     //   Rcpp::Rcout << "dif = " << std::sqrt(x.df*x.df) << std::endl;
     //   Rcpp::Rcout << "" << std::endl;
     // }
+
+    // Print info:
+    if((x.print & x.rstarts) == 1L) {
+
+      if (x.iterations % x.print_interval == 0) {
+        Rprintf("iter = %d  f = %.8f  ng = %.8f\r",
+                x.iterations, x.f, x.ng);
+        R_FlushConsole();
+        R_ProcessEvents();
+      }
+
+    }
 
     // if (x.ng < x.eps | std::sqrt(x.df*x.df) < x.df_eps) {
     if (x.ng < x.eps) {

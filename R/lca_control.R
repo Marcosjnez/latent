@@ -19,6 +19,7 @@ lca_control <- function(control) {
     control$reg <- TRUE
 
     control$penalties <- list(
+      # beta  = list(alpha = 0, lambda = 0, power = 0),
       beta  = list(alpha = 0),
       class = list(alpha = 1),
       prob  = list(alpha = 1),

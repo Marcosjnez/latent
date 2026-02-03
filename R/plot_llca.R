@@ -33,6 +33,8 @@ plot.llca <- function(fit,
                       what = "OR",
                       effects = "coding",
                       confidence = 0.95,
+                      predictors = NULL,
+                      intercept = TRUE,
                       show_est_ci = TRUE,
                       est_ci_header_cex = 0.5,
                       cex_y = 0.5,
@@ -76,6 +78,7 @@ plot.llca <- function(fit,
 
   # Compute standard errors:
   se <- sqrt(diag(vcov))
+  names(se) <- allnames
 
   # Compute confidence intervals (asumming asymptotic normality):
   lower <- parameters - sqrt(qchisq(confidence, df = 1)) * se
@@ -97,6 +100,7 @@ plot.llca <- function(fit,
 
     # Compute standard errors:
     J <- diag(parameters)
+    rownames(J) <- colnames(J) <- allnames
     vcov <- J %*% vcov %*% t(J)
     se <- sqrt(diag(vcov))
 
@@ -108,20 +112,33 @@ plot.llca <- function(fit,
     stop("Available what: 'log' and 'OR'")
   }
 
-  # Returned list
-  result <- list(se = se,
-                 vcov = vcov,
-                 upper = upper,
-                 lower = lower,
-                 parameters = parameters)
+  if(is.null(predictors)) {
+    predictors <- c(predictors, colnames(fit@data_list$X))
+  }
 
-  par(mfrow = mfrow)
+  if(intercept) {
+    predictors <- c("(Intercept)", predictors)
+  }
+
+  match_any <- function(a, b) {
+    which(Reduce(`|`, lapply(a, function(p) grepl(p, b, fixed = TRUE))))
+  }
+  selection <- match_any(predictors, allnames)
+
+  # Returned list
+  result <- list(se = se[selection],
+                 vcov = vcov[selection, selection],
+                 upper = upper[selection],
+                 lower = lower[selection],
+                 parameters = parameters[selection])
 
   # Plot
-  forestplot(parm = parameters,
-             lower = lower, upper = upper,
-             group = group,
-             labels = coef_names,
+  par(mfrow = mfrow)
+  forestplot(parm = parameters[selection],
+             lower = lower[selection],
+             upper = upper[selection],
+             group = group[selection],
+             labels = coef_names[selection],
              refline = refline,
              show_est_ci = show_est_ci,
              est_ci_header_cex = est_ci_header_cex,

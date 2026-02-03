@@ -811,7 +811,7 @@ get_lca_structures <- function(data_list, full_model, control) {
 
     }
 
-    # Regularization for coefficients:
+    # Gaussian regularization for coefficients:
     alpha <- control$penalties$beta$alpha
     if(alpha != 0) {
 
@@ -837,6 +837,23 @@ get_lca_structures <- function(data_list, full_model, control) {
                                      sds = sds,
                                      alpha = alpha,
                                      N = data_list$nobs)
+      G <- G+1L
+
+
+    }
+
+    # Ridge regularization for coefficients:
+    lambda <- control$penalties$beta$lambda
+    power <- control$penalties$beta$power
+    if(!is.null(lambda) & !is.null(power)) {
+
+      labels <- lca_all$beta[-1, ] # Remove the intercept
+      indices <- match(labels, transparameters_labels)
+      control_estimator[[G]] <- list(estimator = "ridge",
+                                     labels = labels,
+                                     indices = list(indices-1L),
+                                     lambda = lambda,
+                                     power = power)
       G <- G+1L
 
 
