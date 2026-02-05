@@ -5,6 +5,7 @@ author: "Marcos Jimenez, Mauricio Garnier-Villarreal, & Vithor Rosa Franco"
 
 format:
   revealjs:
+    embed-resources: true
     slide-level: 1         # use level 1 headings (#) as individual slides
     number-sections: false
     toc: false
