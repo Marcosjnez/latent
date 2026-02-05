@@ -1,6 +1,6 @@
 ---
 title: "latent: an R library for Latent Variable Modeling"
-date: "2025-02-06"
+date: "2025-02-05"
 author: "Marcos Jimenez, Mauricio Garnier-Villarreal, & Vithor Rosa Franco"
 
 format:
@@ -20,26 +20,6 @@ format:
 fontsize: 18pt
 bibliography: references.bib
 ---
-
-# Table of contents
-
-- [Latent Variable Modeling](#latent-variable-model)
-- [Current software limitations for Latent Variable Modeling](#current-software-limitations-for-latent-variable-modeling)
-- [The latent R package](#the-latent-r-package)
-- [Latent Class Analysis](#latent-class-analysis)
-- [Categorical indicators example](#categorical-indicators-example)
-- [Model Fit Indices](#model-fit-indices)
-- [Classification Diagnostics](#classification-diagnostics)
-- [Confidence intervals](#confidence-intervals)
-- [Continuous indicators example](#continuous-indicators-example)
-- [Mixed indicators example](#mixed-indicators-example)
-- [Two-step LCA analysis with covariates](#two-step-lca-analysis-with-covariates)
-- [Regularization](#regularization)
-- [Factor Analysis](#factor_analysis)
-- [Factor Analysis (multigroup)](#factor-analysis-multigroup)
-- [Positive-definite constraints](#positive-definite-constraints)
-- [Positive-definite latent covariances](#positive-definite-latent-covariances)
-- [Work in progress](#work-in-progress)
 
 # Latent Variable Modeling
 
@@ -68,22 +48,6 @@ knitr::kable(latent_table, "html", caption = NULL) |>
 
 ![](figures/diagram.jpg){height=300px fig-align="center"}
 
-# Current software limitations for Latent Variable Modeling
-
-- Commercial software (e.g., Mplus) is either expensive or not open-source (e.g., LatenGOLD).
-- Free and open-source alternatives (e.g., poLCA, depmixS4, lavaan, mirt) are computationally slow and support a limited range of models.
-
-![](figures/thinking.jpg){width=15% style="vertical-align:middle; margin-right:0.5em;"} So… what are we doing about it?
-
-# Current software limitations for Latent Variable Modeling
-
-- Commercial software (e.g., Mplus) is either expensive or not open-source (e.g., LatenGOLD).
-- Free and open-source alternatives (e.g., poLCA, depmixS4, lavaan, mirt) are computationally slow and support a limited range of models.
-
-![](figures/thinking.jpg){width=15% style="vertical-align:middle; margin-right:0.5em;"} So… what are we doing about it?
-
-We are building a free, open-source, efficient, and flexible software. ![](figures/pirate.jpg){width=15% style="vertical-align:middle; margin-right:0.5em;"}
-
 # The latent R package
 
 ```{r eval=TRUE, echo=FALSE}
@@ -104,38 +68,6 @@ library(latent)
 :::
 ::: {.column width="30%"}
 ![](figures/standard.jpg){width=300%}
-:::
-:::
-
-# Unified and flexible syntax
-
-::: {.columns}
-::: {.column width="70%"}
-
-- Few arguments for an straightforward analysis  
-
-```{r eval=FALSE, echo=TRUE}
-lca(data, nclasses = 1:3)
-```
-
-- `lavaan` syntax for Structural Equation Models
-
-```{r eval=FALSE, echo=TRUE}
-HS.model <- ' visual  =~ x1 + x2 + x3
-              textual =~ x4 + x5 + x6
-              speed   =~ x7 + x8 + x9 '
-fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
-```
-
-- Customizable models
-
-```{r eval=FALSE, echo=TRUE}
-lca(data, nclasses = 1:3, model = NULL)
-```
-
-:::
-::: {.column width="30%"}
-![](figures/fixing.jpg){width=300%}
 :::
 :::
 
@@ -163,26 +95,6 @@ lca(data, nclasses = 1:3, model = NULL)
 :::
 :::
 
-# First step: Install and load the package
-
-While several functions are already implemented in `latent`, there are still
-some necessary improvements before it can be submitted to *CRAN*. Therefore,
-you have to follow the installation instructions from the *GitHub* repository: [https://github.com/Marcosjnez/latent](https://github.com/Marcosjnez/latent). If you are using Linux or Windows, the following code should be enough. If you are using Mac, please refer to the repository on additional details that may be necessary.
-
-``` {r eval=FALSE, echo=TRUE}
-devtools::install_github("marcosjnez/latent", force = TRUE)
-library(latent)
-```
-
-::: {.columns}
-::: {.column width="50%"}
-![](figures/load.jpg){width=200%}
-:::
-::: {.column width="50%"}
-![](figures/mac.jpg){width=200%}
-:::
-:::
-
 # Latent Class Analysis
 
 Latent class analysis (LCA) is an umbrella term that refers to a number
@@ -207,18 +119,6 @@ For this analysis, we will employ the **gss82** example data set included in
 the `latent` package. Sourced from the `poLCA` package, this data comes from
 1,202 respondents to the 1982 General Social Survey.
 
-Inspect the data:
-``` {r eval=TRUE, echo=TRUE}
-# Variables:
-lapply(gss82, unique)
-```
-
-# Categorical indicators example
-
-For this analysis, we will employ the **gss82** example data set included in
-the `latent` package. Sourced from the `poLCA` package, this data comes from
-1,202 respondents to the 1982 General Social Survey.
-
 Model fitting:
 ``` {r eval=TRUE, echo=FALSE}
 set.seed(2025)
@@ -234,17 +134,35 @@ fit
 
 # Categorical indicators example
 
-For this analysis, we will employ the **gss82** example data set included in
-the `latent` package. Sourced from the `poLCA` package, this data comes from
-1,202 respondents to the 1982 General Social Survey.
+Model fitting:
+``` {r eval=TRUE, echo=TRUE, results = 'hide'}
+fit <- lca(data = gss82, nclasses = 3,
+           item = rep("multinomial", ncol(gss82)))
+fit@loglik            # -2754.643
+fit@penalized_loglik  # -2759.507
+fit@Optim$iterations  # 66
+fit@Optim$convergence # TRUE
+fit@timing            # 0.0184812
+```
 
-Fit information:
-``` {r eval=TRUE, echo=TRUE}
-fit@loglik 
-fit@penalized_loglik 
-fit@Optim$iterations
-fit@Optim$convergence 
-fit@timing
+Model information:
+```{r eval=FALSE, echo=TRUE}
+# Plot model fit info:
+fit
+
+# Get fit indices:
+getfit(fit)
+
+# Inspect model objects:
+latInspect(fit, what = "coefs", digits = 3)
+latInspect(fit, what = "classes", digits = 3)
+latInspect(fit, what = "profile", digits = 3)
+latInspect(fit, what = "posterior", digits = 3)
+
+# Get confidence intervals:
+CI <- ci(fit, type = "standard",
+         confidence = 0.95, digits = 2)
+CI$table
 ```
 
 # Model Fit indices
@@ -264,79 +182,6 @@ The profile table contains the model parameter estimates.
 latInspect(fit, what = "profile")
 ```
 
-# Classification Diagnostics
-
-`latent` has a `latInspect` function that allows the user to extract information fro the model. For example, with the argument `what` equal to
-`"state"`, the function will return the predicted class membership of each person.
-
-```{r eval=TRUE, echo=TRUE, collapse=TRUE}
-latInspect(fit, what = "state")
-```
-
-Posterior probabilities:
-```{r eval=TRUE, echo=TRUE, collapse=TRUE}
-latInspect(fit, what = "posterior")
-```
-
-Table with fit information by response pattern:
-```{r eval=TRUE, echo=TRUE, collapse=TRUE}
-round(latInspect(fit, what = "table"), 3)
-```
-
-# Confidence intervals
-
-One can also extract the estimated confidence intervals using
-the dedicated function `ci`. The result returned from the function is the same as 
-the `profile` output from the `latInspect` function, but this time including the confidence limits.
-
-```{r eval=TRUE, echo=TRUE, collapse=TRUE}
-## Get confidence intervals
-CI <- ci(fit, type = "standard", model = "model",
-         confidence = 0.95, digits = 2)
-CI$table
-```
-
-<!-- On the probability scale: -->
-<!-- ```{r eval=TRUE, echo=TRUE, collapse=TRUE} -->
-<!-- ## Get confidence intervals -->
-<!-- CI <- ci(fit, type = "standard", model = "user", -->
-<!--          confidence = 0.95, digits = 2) -->
-<!-- CI$table -->
-<!-- ``` -->
-
-# Comparison with the `poLCA` library
-
-The `poLCA` library uses the Expectation-Maximization algorithm to fit LCA models with polytomous variables.
-
-::: {.columns}
-::: {.column width="60%"}
-
-Fit the model:
-```{r eval=TRUE, echo=TRUE, collapse=TRUE}
-library(poLCA)
-f <- cbind(PURPOSE, ACCURACY, UNDERSTA, COOPERAT)~1
-poLCAfit <- poLCA(f, gss82, nclass=3, maxiter=8000) 
-```
-
-Time ratio:
-```{r eval=TRUE, echo=TRUE}
-poLCAfit$time[[1]] / fit@timing
-```
-
-![](figures/surprised2.jpg){width=400px style="vertical-align:middle; margin-right:0.5em;"}
-
-:::
-::: {.column width="40%"}
-![](figures/fast.jpg){width=500px style="vertical-align:middle; margin-right:0.5em;"}
-:::
-:::
-
-# Scalability of `latent`
-
-For a given dataset, the time to convergence is linear in the number of classes.
-
-![](figures/scalability.jpg){height=400px fig-align="center"}
-
 # Continuous indicators example
 
 ::: {.columns}
@@ -352,26 +197,6 @@ fit@penalized_loglik      # -1844.333
 fit@Optim$iterations      # 49
 fit@Optim$convergence     # TRUE
 fit@timing                # 0.2064401
-```
-
-Model information:
-```{r eval=FALSE, echo=TRUE}
-# Plot model fit info:
-fit
-
-# Get fit indices:
-getfit(fit)
-
-# Inspect model objects:
-latInspect(fit, what = "coefs", digits = 3)
-latInspect(fit, what = "classes", digits = 3)
-latInspect(fit, what = "profile", digits = 3)
-latInspect(fit, what = "posterior", digits = 3)
-
-# Get confidence intervals:
-CI <- ci(fit, type = "standard", 
-         confidence = 0.95, digits = 2)
-CI$table
 ```
 
 :::
@@ -414,29 +239,9 @@ fit@Optim$convergence     # TRUE
 fit@timing                # 0.1927969
 ```
 
-Model information:
-```{r eval=FALSE, echo=TRUE}
-# Plot model fit info:
-fit
-
-# Get fit indices:
-getfit(fit)
-
-# Inspect model objects:
-latInspect(fit, what = "coefs", digits = 3)
-latInspect(fit, what = "classes", digits = 3)
-latInspect(fit, what = "profile", digits = 3)
-latInspect(fit, what = "posterior", digits = 3)
-
-# Get confidence intervals:
-CI <- ci(fit, type = "standard",
-         confidence = 0.95, digits = 2)
-CI$table
-```
-
 :::
 ::: {.column width="40%"}
-![](figures/standard.jpg){width=300%}
+![](figures/fixing.jpg){width=300%}
 :::
 :::
 
@@ -597,31 +402,6 @@ $$
 :::
 :::
 
-# Factor Analysis (multigroup)
-
-::: {.columns}
-::: {.column width="60%"}
-
-```{r, eval=FALSE, echo=TRUE}
-model <- 'visual  =~ x1 + x2 + x3
-          textual =~ x4 + x5 + x6
-          speed   =~ x7 + x8 + x9'
-
-fit <- lcfa(HolzingerSwineford1939, model = model, group = "school", 
-            estimator = "ml", std.lv = TRUE)
-fit@loglik 
-fit@penalized_loglik 
-fit@Optim$iterations
-fit@Optim$convergence
-fit@timing
-```
-
-:::
-::: {.column width="40%"}
-![](figures/diagram_holzinger.jpg){height=600px fig-align="center"}
-:::
-:::
-
 # Positive-definite constraints
 
 In the factor model equation,
@@ -766,14 +546,16 @@ det(latInspect(fit, what = "est")[[1]]$theta)
 :::
 :::
 
-# Work in progress
+# Cooking new stuff
 
 ::: {.columns}
 ::: {.column width="60%"}
 
-- (Exploratory) Structural Equation Modeling
+- Standard errors for 2-step models
 
-- (Multidimensional) Item Response Theory
+- Expectation-Maximization algorithm
+
+- (Exploratory) Structural Equation Modeling
 
 - Hidden Markov Models
 

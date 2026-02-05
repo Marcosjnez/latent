@@ -484,7 +484,7 @@ get_short_lca_model <- function(data_list, nclasses, item,
 
     for(j in gauss) {
       items[[j]] <- matrix(NA, nrow = 2, ncol = nclasses)
-      rownames(items[[j]]) <- c("Means", "Sigma")
+      rownames(items[[j]]) <- c("Means", "Stds")
       colnames(items[[j]]) <- paste("Class", 1:nclasses, sep = "")
     }
     # Fill the gaussian model:
@@ -521,7 +521,7 @@ get_short_lca_model <- function(data_list, nclasses, item,
   if(any(item == "gaussian")) {
 
     for(j in gauss) {
-      rownames(items[[j]]) <- c("Means", "logSigma")
+      rownames(items[[j]]) <- c("Means", "logStds")
     }
 
     # Fill the gaussian model:
@@ -847,16 +847,18 @@ get_lca_structures <- function(data_list, full_model, control) {
     power <- control$penalties$beta$power
     if(!is.null(lambda) & !is.null(power)) {
 
-      labels <- lca_all$beta[-1, ] # Remove the intercept
-      indices <- match(labels, transparameters_labels)
-      control_estimator[[G]] <- list(estimator = "ridge",
-                                     labels = labels,
-                                     indices = list(indices-1L),
-                                     lambda = lambda,
-                                     power = power)
-      G <- G+1L
+      if(lambda != 0 && power != 0) {
 
+        labels <- lca_all$beta[-1, ] # Remove the intercept
+        indices <- match(labels, transparameters_labels)
+        control_estimator[[G]] <- list(estimator = "ridge",
+                                       labels = labels,
+                                       indices = list(indices-1L),
+                                       lambda = lambda,
+                                       power = power)
+        G <- G+1L
 
+      }
     }
 
   }
