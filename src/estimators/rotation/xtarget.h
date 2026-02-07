@@ -5,121 +5,66 @@
  */
 
 /*
- * Extended Target
+ * Extended target
  */
 
 class xtarget: public estimators {
 
 public:
 
-  arma::uvec lower_phi;
+  int p, q;
   double w;
-  arma::mat lambda, Target, Weight, PhiTarget, PhiWeight,
-  Weight2, PhiWeight2; // Fixed: Provide these in choose_estimator
-  bool orth; // TRUE: orthogonal; FALSE: oblique and poblique
-  arma::mat dL, dP, gL, dgL, gP, dgP, Inv_X, L, L2, f1, f2, hL;
-  arma::mat Phi;
-  arma::mat X = arma::mat(q, q);
-  arma::mat dX = arma::mat(q, q);
+  arma::mat lambda, dlambda, target, weight, psi, dpsi, psitarget, psiweight,
+  weight2, psiweight2, f1, f2;
+  arma::uvec lower_psi;
 
   void param(arguments_optim& x) {
 
-    X = arma::reshape(parameters, q, q);
-    // phi.elem(lower_phi) = x.transparameters(x.indices[1]);
-    // phi = arma::symmatl(phi);
+    lambda = arma::reshape(x.transparameters(indices[0]), p, q);
+    psi.elem(lower_psi) = x.transparameters(indices[1]);
+    psi = arma::symmatl(psi);
 
-    if(orth) {
-
-      L = lambda*X;
-      Phi = arma::mat(q, q, arma::fill::eye);
-
-    } else {
-
-      Phi = X.t() * X;
-      Inv_X = arma::inv(X);
-      L = lambda * Inv_X.t();
-
-    }
-
-    f1 = Weight % (L - Target);
-    f2 = PhiWeight % (Phi - PhiTarget);
+    f1 = weight % (lambda - target);
+    f2 = psiweight % (psi - psitarget);
 
   }
 
   void F(arguments_optim& x) {
 
     f = 0.5*arma::accu(f1 % f1) + 0.25*w*arma::accu(f2 % f2);
+    x.f += f;
 
   }
 
   void G(arguments_optim& x) {
 
-    gL = Weight % f1;
+    arma::mat df_dlambda = weight % f1;
+    arma::mat df_dpsi = w * psiweight % f2;
 
-    if(orth) {
-
-      g = lambda.t() * gL;
-
-    } else {
-
-      gP = w * PhiWeight % f2;
-      arma::mat g1 = - Inv_X.t() * gL.t() * L;
-      arma::mat g2 = X * gP;
-      g = g1 + g2;
-
-    }
+    x.grad.elem(indices[0]) += arma::vectorise(df_dlambda);
+    x.grad.elem(indices[1]) += df_dpsi.elem(lower_psi);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dX = arma::reshape(dparameters, q, q);
-    g = arma::reshape(g, q, q);
+    dlambda = arma::reshape(x.dtransparameters(indices[0]), p, q);
+    dpsi.elem(lower_psi) = x.dtransparameters(indices[1]);
+    dpsi = arma::symmatl(dpsi);
 
-    if(orth) {
+    arma::mat ddf_dlambda = weight2 % dlambda;
+    arma::mat ddf_dpsi = w * psiweight2 % dpsi;
 
-      dL = lambda * dX;
-
-      dgL = Weight2 % dL;
-
-      dg = lambda.t() * dgL;
-
-    } else {
-
-      arma::mat Inv_X_dt = Inv_X * dX;
-      dL = - L * Inv_X_dt.t();
-      dP = X.t() * dX; dP += dP.t();
-
-      dgL = Weight2 % dL;
-      dgP = w * PhiWeight2 % dP;
-
-      arma::mat dg1 = - g * Inv_X_dt.t() -
-        (dX * Inv_X).t() * g - (dgL * Inv_X).t() * L;
-      arma::mat dg2 = dX * gP + X * dgP;
-
-      dg = dg1 + dg2;
-
-    }
+    x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dlambda);
+    x.dgrad.elem(indices[1]) += ddf_dpsi.elem(lower_psi);
 
   }
 
   void outcomes(arguments_optim& x) {
 
-    /*
-     * Compute the modified hessian (modhessian)
-     */
-
-    int nhessian = lambda.n_elem;
-    modhessian.set_size(nhessian, nhessian); modhessian.zeros();
-
-    hL = arma::diagmat(arma::vectorise(Weight2));
-
-    arma::mat wPW2 = arma::diagmat(arma::vectorise(w*PhiWeight2));
-    arma::mat hP = wPW2 + wPW2 * dxt(q, q);
-    arma::uvec lower_indices = arma::trimatl_ind(arma::size(Phi), -1);
-    hP = hP;
-
-    modhessian = hL; // FIX to export hP
+    doubles.resize(2);
+    doubles[0] =  f;
+    doubles[0] =  0.00;
 
   }
 
@@ -129,35 +74,33 @@ xtarget* choose_xtarget(const Rcpp::List& estimator_setup) {
 
   xtarget* myestimator = new xtarget();
 
-  arma::mat lambda = estimator_setup["lambda"];
-  bool orth = estimator_setup["orth"];
   std::vector<arma::uvec> indices = estimator_setup["indices"];
-  arma::mat Target = estimator_setup["Target"];
-  arma::mat Weight = estimator_setup["Weight"];
-  arma::mat PhiTarget = estimator_setup["PhiTarget"];
-  arma::mat PhiWeight = estimator_setup["PhiWeight"];
+  arma::mat target = estimator_setup["target"];
+  arma::mat weight = estimator_setup["weight"];
+  arma::mat psitarget = estimator_setup["psitarget"];
+  arma::mat psiweight = estimator_setup["psiweight"];
   double w = estimator_setup["w"];
 
-  arma::mat Weight2 = Weight % Weight;
-  arma::mat PhiWeight2 = PhiWeight % PhiWeight;
-  int p = lambda.n_rows;
-  int q = lambda.n_cols;
+  int p = target.n_rows;
+  int q = target.n_cols;
+  arma::mat weight2 = weight % weight;
+  arma::mat psiweight2 = psiweight % psiweight;
+  arma::mat psi(q, q, arma::fill::zeros);
+  arma::uvec lower_psi = arma::trimatl_ind(arma::size(psitarget));
 
-  arma::uvec lower_phi = arma::trimatl_ind(arma::size(PhiTarget));
-
-  myestimator->lambda = lambda;
-  myestimator->orth = orth;
   myestimator->indices = indices;
-  myestimator->Target = Target;
-  myestimator->Weight = Weight;
-  myestimator->Weight2 = Weight2;
-  myestimator->PhiTarget = PhiTarget;
-  myestimator->PhiWeight = PhiWeight;
-  myestimator->PhiWeight2 = PhiWeight2;
+  myestimator->psi = psi;
+  myestimator->dpsi = psi;
+  myestimator->target = target;
+  myestimator->weight = weight;
+  myestimator->weight2 = weight2;
+  myestimator->psitarget = psitarget;
+  myestimator->psiweight = psiweight;
+  myestimator->psiweight2 = psiweight2;
   myestimator->w = w;
   myestimator->p = p;
   myestimator->q = q;
-  myestimator->lower_phi = lower_phi;
+  myestimator->lower_psi = lower_psi;
 
   return myestimator;
 

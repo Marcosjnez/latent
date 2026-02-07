@@ -12,37 +12,17 @@ class lclf: public estimators {
 
 public:
 
-  double epsilon; // Provide this
-  arma::mat lambda; // Fixed: Provide these in choose_estimator
-  bool orth; // TRUE: orthogonal; FALSE: oblique and poblique
-  arma::mat dL, dP, gL, dgL, gP, dgP, Inv_X, L, L2, hL;
-  arma::mat Phi;
-  arma::mat X = arma::mat(q, q);
-  arma::mat dX = arma::mat(q, q);
+  arma::mat lambda, dlambda, L2, N, Mm, L2N, ML2, hL;
+  int p, q;
+  double k;
   arma::uvec lower, larger;
-  double a, b, f1, f2;
+  double epsilon, a, b, f1, f2;
 
   void param(arguments_optim& x) {
 
-    X = arma::reshape(parameters, q, q);
+    lambda = arma::reshape(x.transparameters(indices[0]), p, q);
 
-    if(orth) {
-
-      L = lambda*X;
-      Phi = arma::mat(q, q, arma::fill::eye);
-
-    } else {
-
-      Phi = X.t() * X;
-      Inv_X = arma::inv(X);
-      L = lambda * Inv_X.t();
-
-    }
-
-    b = 1 / (2*epsilon);
-    a = epsilon - b*epsilon*epsilon;
-
-    arma::mat absL = arma::abs(L);
+    arma::mat absL = arma::abs(lambda);
     lower = arma::find(absL <= epsilon);
     larger = arma::find(absL > epsilon);
     f1 = arma::accu(a + b*absL.elem(lower) % absL.elem(lower));
@@ -53,58 +33,37 @@ public:
   void F(arguments_optim& x) {
 
     f = f1 + f2;
+    x.f += f;
 
   }
 
   void G(arguments_optim& x) {
 
-    gL.set_size(arma::size(L));
-    gL.elem(lower) = 2*b*L.elem(lower);
-    gL.elem(larger) = arma::sign(L.elem(larger));
+    arma::mat df_dlambda(p, q, arma::fill::zeros);
+    df_dlambda.elem(lower) = 2*b*lambda.elem(lower);
+    df_dlambda.elem(larger) = arma::sign(lambda.elem(larger));
 
-    if(orth) {
-
-      g = lambda.t() * gL;
-
-    } else {
-
-      g = - Inv_X.t() * gL.t() * L;
-
-    }
+    x.grad.elem(indices[0]) += arma::vectorise(df_dlambda);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dX = arma::reshape(dparameters, q, q);
-    g = arma::reshape(g, q, q);
+    dlambda = arma::reshape(x.dtransparameters(indices[0]), p, q);
+    arma::mat ddf_dlambda(p, q, arma::fill::zeros);
 
-    dgL.set_size(arma::size(L));
-    dgL.zeros();
-
-    if(orth) {
-
-      dL = lambda * dX;
-
-      dgL.elem(lower) = 2*b*dL.elem(lower);
-
-      dg = lambda.t() * dgL;
-
-    } else {
-
-      arma::mat Inv_X_dt = Inv_X * dX;
-      dL = - L * Inv_X_dt.t();
-
-      dgL.elem(lower) = 2*b*dL.elem(lower);
-
-      dg = - g * Inv_X_dt.t() -
-        (dX * Inv_X).t() * g - (dgL * Inv_X).t() * L;
-
-    }
+    ddf_dlambda.elem(lower) = 2*b*dlambda.elem(lower);
+    x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dlambda);
 
   }
 
-  void outcomes(arguments_optim& x) {}
+  void outcomes(arguments_optim& x) {
+
+    doubles.resize(2);
+    doubles[0] =  f;
+    doubles[0] =  0.00;
+
+  }
 
 };
 
@@ -112,20 +71,20 @@ lclf* choose_lclf(const Rcpp::List& estimator_setup) {
 
   lclf* myestimator = new lclf();
 
-  arma::mat lambda = estimator_setup["lambda"];
-  bool orth = estimator_setup["orth"];
-  double epsilon = estimator_setup["epsilon"];
   std::vector<arma::uvec> indices = estimator_setup["indices"];
+  int p = estimator_setup["p"];
+  int q = estimator_setup["q"];
+  double epsilon = estimator_setup["epsilon"];
 
-  int p = lambda.n_rows;
-  int q = lambda.n_cols;
+  double b = 1 / (2*epsilon);
+  double a = epsilon - b*epsilon*epsilon;
 
-  myestimator->lambda = lambda;
-  myestimator->orth = orth;
   myestimator->indices = indices;
   myestimator->p = p;
   myestimator->q = q;
   myestimator->epsilon = epsilon;
+  myestimator->a = a;
+  myestimator->b = b;
 
   return myestimator;
 

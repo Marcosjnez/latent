@@ -12,103 +12,47 @@ class varimax: public estimators {
 
 public:
 
-  arma::mat lambda, Hh; // Fixed: Provide these in choose_estimator
-  bool orth; // TRUE: orthogonal; FALSE: oblique and poblique
-  arma::mat dL, dP, gL, dgL, gP, dgP, Inv_X, L, L2, HL2, hL;
-  arma::mat Phi;
-  arma::mat X = arma::mat(q, q);
-  arma::mat dX = arma::mat(q, q);
+  arma::mat lambda, dlambda, L2, HL2, Hh, hL;
+  int p, q;
 
   void param(arguments_optim& x) {
 
-    X = arma::reshape(parameters, q, q);
+    lambda = arma::reshape(x.transparameters(indices[0]), p, q);
 
-    if(orth) {
-
-      L = lambda*X;
-      Phi = arma::mat(q, q, arma::fill::eye);
-
-    } else {
-
-      Phi = X.t() * X;
-      Inv_X = arma::inv(X);
-      L = lambda * Inv_X.t();
-
-    }
-
-    L2 = L % L;
+    L2 = lambda % lambda;
     HL2 = Hh * L2;
-
 
   }
 
   void F(arguments_optim& x) {
 
-    // f = -arma::trace(HL2.t() * HL2) / 4;
     f = -arma::accu(HL2 % HL2) / 4;
+    x.f += f;
 
   }
 
   void G(arguments_optim& x) {
 
-    gL = -L % HL2;
-
-    if(orth) {
-
-      g = lambda.t() * gL;
-
-    } else {
-
-      g = - Inv_X.t() * gL.t() * L;
-
-    }
+    arma::mat df_dlambda = -lambda % HL2;
+    x.grad.elem(indices[0]) += arma::vectorise(df_dlambda);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dX = arma::reshape(dparameters, q, q);
-    g = arma::reshape(g, q, q);
+    dlambda = arma::reshape(x.dtransparameters(indices[0]), p, q);
+    arma::mat dL2 = 2 * dlambda % lambda;
 
-    if(orth) {
-
-      dL = lambda * dX;
-
-      arma::mat dL2 = 2 * dL % L;
-      dgL = -dL % HL2 - L % (Hh * dL2);
-
-      dg = lambda.t() * dgL;
-
-    } else {
-
-      arma::mat Inv_X_dt = Inv_X * dX;
-      dL = - L * Inv_X_dt.t();
-
-      arma::mat dL2 = 2 * dL % L;
-      dgL = -dL % HL2 - L % (Hh * dL2);
-
-      dg = - g * Inv_X_dt.t() -
-        (dX * Inv_X).t() * g - (dgL * Inv_X).t() * L;
-
-    }
+    arma::mat ddf_dlambda = -dlambda % HL2 - lambda % (Hh * dL2);
+    x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dlambda);
 
   }
 
   void outcomes(arguments_optim& x) {
 
-    /*
-     * Compute the modified hessian (modhessian)
-     */
-
-    int nhessian = lambda.n_elem;
-    modhessian.set_size(nhessian, nhessian); modhessian.zeros();
-
-    arma::mat Iq(q, q, arma::fill::eye);
-    arma::mat c1 = arma::diagmat(arma::vectorise(HL2));
-    arma::colvec L_vector = arma::vectorise(L);
-    arma::mat c2 = arma::kron(Iq, Hh) * arma::diagmat(2*L_vector);
-    c2.each_col() %= L_vector;
-    modhessian = -(c1 + c2);
+    doubles.resize(2);
+    doubles[0] =  f;
+    doubles[0] =  0.00;
 
   }
 
@@ -118,21 +62,17 @@ varimax* choose_varimax(const Rcpp::List& estimator_setup) {
 
   varimax* myestimator = new varimax();
 
-  arma::mat lambda = estimator_setup["lambda"];
-  bool orth = estimator_setup["orth"];
   std::vector<arma::uvec> indices = estimator_setup["indices"];
-
-  int p = lambda.n_rows;
-  int q = lambda.n_cols;
+  int p = estimator_setup["p"];
+  int q = estimator_setup["q"];
 
   arma::vec v(p, arma::fill::ones);
   arma::mat I(p, p, arma::fill::eye);
-  arma::mat H = I - v * v.t() / (p + 0.0);
+  arma::mat Hh = I - v * v.t() / (p + 0.0);
 
-  myestimator->lambda = lambda;
-  myestimator->orth = orth;
   myestimator->indices = indices;
-  myestimator->Hh = H;
+  myestimator->Hh = Hh;
+  myestimator->p = p;
   myestimator->q = q;
 
   return myestimator;

@@ -58,8 +58,9 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(1);
+    doubles.resize(2);
     doubles[0] =  f;
+    doubles[0] =  0.00;
 
   }
 

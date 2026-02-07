@@ -471,6 +471,16 @@ get_efa_structures <- function(data_list, full_model, control) {
                                    q = nfactors[[i]])
     k <- k+1L
 
+    labels <- c(cfa_trans[[i]]$lambda)
+    indices <- list(match(labels, transparameters_labels) - 1L)
+    control_estimator[[k]] <- list(estimator = "geomin",
+                                   labels = labels,
+                                   indices = indices,
+                                   epsilon = 0.01,
+                                   p = nitems[[i]],
+                                   q = nfactors[[i]])
+    k <- k+1L
+
     lower_diag <- lower.tri(cfa_trans[[i]]$model, diag = TRUE)
     indices_model <- match(cfa_trans[[i]]$model[lower_diag],
                          transparameters_labels)

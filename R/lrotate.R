@@ -139,6 +139,11 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                            ",", rep(1:nfactors[[i]], each = nitems[[i]]), "]", sep = "")
     rot_trans[[i]]$lambda <- matrix(lambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
 
+    # Latent correlations:
+    psi_labels <- paste("g", i, ".psi[", rep(1:nfactors[[i]], times = nfactors[[i]]),
+                           ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
+    rot_trans[[i]]$psi <- matrix(psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
+
     # Untransformed parameters:
 
     rot_param[[i]]$ulambda <- model[[i]]$ulambda
@@ -193,6 +198,8 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
           t(init_trans[[rs]][[i]]$Xinv)
       }
 
+      init_trans[[rs]][[i]]$psi <- crossprod(init_trans[[rs]][[i]]$X)
+
     }
 
   }
@@ -227,7 +234,6 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                      ntrans = ntrans,
                      rot_param = rot_param,
                      rot_trans = rot_trans,
-                     # target_psi = target_psi,
                      fixed = fixed,
                      nonfixed = nonfixed,
                      init_trans = init_trans,
@@ -342,19 +348,19 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     }
 
     # # Latent covariances:
-    # lower_psi <- lower.tri(rot_trans[[i]]$psi, diag = TRUE)
-    # labels_in <- c(rot_trans[[i]]$X)
-    # indices_in <- list(match(labels_in, transparameters_labels)-1L)
-    # labels_out <- c(rot_trans[[i]]$psi[lower_psi])
-    # indices_out <- list(match(labels_out, transparameters_labels)-1L)
-    # control_transform[[k]] <- list(transform = "crossprod",
-    #                                labels_in = labels_in,
-    #                                indices_in = indices_in,
-    #                                labels_out = labels_out,
-    #                                indices_out = indices_out,
-    #                                p = nfactors[[i]],
-    #                                q = nfactors[[i]])
-    # k <- k+1L
+    lower_psi <- lower.tri(rot_trans[[i]]$psi, diag = TRUE)
+    labels_in <- c(rot_trans[[i]]$X)
+    indices_in <- list(match(labels_in, transparameters_labels)-1L)
+    labels_out <- c(rot_trans[[i]]$psi[lower_psi])
+    indices_out <- list(match(labels_out, transparameters_labels)-1L)
+    control_transform[[k]] <- list(transform = "crossprod",
+                                   labels_in = labels_in,
+                                   indices_in = indices_in,
+                                   labels_out = labels_out,
+                                   indices_out = indices_out,
+                                   p = nfactors[[i]],
+                                   q = nfactors[[i]])
+    k <- k+1L
 
   }
 
@@ -366,15 +372,95 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
   for(i in 1:ngroups) {
 
     # Rotation criteria:
-    labels <- c(rot_trans[[i]]$lambda)
-    indices <- list(match(labels, transparameters_labels) - 1L)
-    control_estimator[[k]] <- list(estimator = "oblimin",
-                                   labels = labels,
-                                   indices = indices,
-                                   gamma = 0.00,
-                                   p = nitems[[i]],
-                                   q = nfactors[[i]])
-    k <- k+1L
+    p <- nitems[[i]]
+    q <- nfactors[[i]]
+    lower_psi <- lower.tri(diag(q, q), diag = TRUE)
+
+    # if(is.null(gamma)) {
+    #   gamma <- 0.00
+    # }
+    #
+    # if(is.null(epsilon)) {
+    #   epsilon <- 0.01
+    # }
+
+    # if(rotation == "oblimin") {
+
+      lambda_labels <- c(rot_trans[[i]]$lambda)
+      psi_labels <- rot_trans[[i]]$psi[lower_psi]
+      indices <- list(match(lambda_labels, transparameters_labels) - 1L,
+                      match(psi_labels, transparameters_labels) - 1L)
+      control_estimator[[k]] <- list(estimator = rotation,
+                                     labels = labels,
+                                     indices = indices,
+                                     p = p,
+                                     q = q,
+                                     ...)
+      k <- k+1L
+
+    # } else if(rotation == "geomin") {
+    #
+    #   labels <- c(rot_trans[[i]]$lambda)
+    #   indices <- list(match(labels, transparameters_labels) - 1L)
+    #   control_estimator[[k]] <- list(estimator = "geomin",
+    #                                  labels = labels,
+    #                                  indices = indices,
+    #                                  epsilon = 0.01,
+    #                                  p = nitems[[i]],
+    #                                  q = nfactors[[i]])
+    #   k <- k+1L
+    #
+    # } else if(rotation == "target") {
+    #
+    #   labels <- c(rot_trans[[i]]$lambda)
+    #   indices <- list(match(labels, transparameters_labels) - 1L)
+    #   control_estimator[[k]] <- list(estimator = "target",
+    #                                  labels = labels,
+    #                                  indices = indices,
+    #                                  target = target,
+    #                                  weight = weight)
+    #   k <- k+1L
+    #
+    # } else if(rotation == "xtarget") {
+    #
+    #   labels <- c(rot_trans[[i]]$lambda)
+    #   indices <- list(match(labels, transparameters_labels) - 1L)
+    #   control_estimator[[k]] <- list(estimator = "xtarget",
+    #                                  labels = labels,
+    #                                  indices = indices,
+    #                                  target = target,
+    #                                  weight = weight,
+    #                                  psitarget = psitarget,
+    #                                  psiweight = psiweight,
+    #                                  w = w)
+    #   k <- k+1L
+    #
+    # } else if(rotation == "varimax") {
+    #
+    #   labels <- c(rot_trans[[i]]$lambda)
+    #   indices <- list(match(labels, transparameters_labels) - 1L)
+    #   control_estimator[[k]] <- list(estimator = "varimax",
+    #                                  labels = labels,
+    #                                  indices = indices,
+    #                                  p = p,
+    #                                  q = q)
+    #   k <- k+1L
+    #
+    # } else if(rotation == "varimin") {
+    #
+    #   labels <- c(rot_trans[[i]]$lambda)
+    #   indices <- list(match(labels, transparameters_labels) - 1L)
+    #   control_estimator[[k]] <- list(estimator = "varimin",
+    #                                  labels = labels,
+    #                                  indices = indices,
+    #                                  p = p,
+    #                                  q = q)
+    #   k <- k+1L
+    #
+    # } else {
+    #   stop("Unknown rotation. Available rotations: 'oblimin', 'geomin',
+    #        'target', 'xtarget', 'varimax', 'varimin'")
+    # }
 
   }
 
@@ -395,8 +481,9 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,
-                    efa_param = rot_param,
-                    efa_trans = rot_trans,
+                    rot_param = rot_param,
+                    rot_trans = rot_trans,
+                    rotation = rotation,
                     control_manifold = control_manifold,
                     control_transform = control_transform,
                     control_estimator = control_estimator,
@@ -441,19 +528,20 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   # Create the structures of untransformed parameters:
   indices_pars <- match(modelInfo$parameters_labels,
-                        unlist(modelInfo$cfa_param))
-  vv <- rep(0, times = length(unlist(modelInfo$cfa_param)))
+                        unlist(modelInfo$rot_param)) # FIX THIS
+
+  vv <- rep(0, times = length(unlist(modelInfo$rot_param)))
   vv[indices_pars] <- Optim$parameters
-  parameters <- fill_list_with_vector(modelInfo$cfa_param, vv)
+  parameters <- fill_list_with_vector(modelInfo$rot_param, vv)
   parameters <- allnumeric(parameters)
   # FIXED PARAMETERS?
 
   # Create the structures of transformed parameters:
   indices_trans <- match(modelInfo$transparameters_labels,
-                         unlist(modelInfo$cfa_trans))
-  vv <- rep(0, times = length(unlist(modelInfo$cfa_trans)))
+                         unlist(modelInfo$rot_trans))
+  vv <- rep(0, times = length(unlist(modelInfo$rot_trans)))
   vv[indices_trans] <- Optim$transparameters
-  transformed_pars <- fill_list_with_vector(modelInfo$cfa_trans, vv)
+  transformed_pars <- fill_list_with_vector(modelInfo$rot_trans, vv)
   transformed_pars <- allnumeric(transformed_pars)
 
   #### Process the fit information ####
@@ -494,7 +582,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                 penalized_loss     = penalized_loss
   )
 
-  return(x)
+  return(result)
 
 }
 

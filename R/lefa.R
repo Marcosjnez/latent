@@ -7,7 +7,8 @@
 #'
 #' @usage
 #'
-#' lefa(data, nfactors = 1L, model = NULL, estimator = "ml",
+#' lefa(data, nfactors = 1L, model = NULL,
+#' estimator = "ml", rotation = "oblimin",
 #' ordered = FALSE, group = NULL,
 #' sample.cov = NULL, nobs = NULL,
 #' positive = FALSE, penalties = TRUE,
@@ -19,6 +20,7 @@
 #' @param nfactors integer. Number of latent variables.
 #' @param model lavaan's model syntax.
 #' @param estimator Available estimators: "ml", "uls", and "dwls". Defaults to "ml".
+#' @param rotation Available rotations: "oblimin", "geomin", and "target". Defaults to "oblimin".
 #' @param ordered Logical. Defaults to TRUE.
 #' @param group String. Name of the variable that splits the data in different groups.
 #' @param sample.cov Covariance matrix between the items. Defaults to NULL.
