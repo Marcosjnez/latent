@@ -11,10 +11,7 @@ class oblq:public manifolds {
 public:
 
   std::size_t q;
-  arma::mat X = arma::mat(q, q);
-  arma::mat dX = arma::mat(q, q);
-  arma::vec dir, dparameters;
-  arma::mat g, dg;
+  arma::mat X, dX, g, dg;
 
   void param(arguments_optim& x) {
 

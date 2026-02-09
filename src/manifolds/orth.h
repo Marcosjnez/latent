@@ -10,15 +10,12 @@ class orth:public manifolds {
 
 public:
 
-  arma::mat X = arma::mat(q, q);
-  arma::mat dX = arma::mat(q, q);
-  arma::vec parameters, dir, dparameters;
-  arma::mat g, dg;
+  std::size_t q;
+  arma::mat X, dX, g, dg;
 
   void param(arguments_optim& x) {
 
-    parameters = x.parameters(indices[0]);
-    X = arma::reshape(parameters, q, q);
+    X = arma::reshape(x.parameters, q, q);
 
   }
 
@@ -33,8 +30,7 @@ public:
 
     g = arma::reshape(x.g.elem(indices[0]), q, q);
     dg = arma::reshape(x.dg.elem(indices[0]), q, q);
-    dparameters = x.dparameters.elem(indices[0]);
-    dX = arma::reshape(dparameters, q, q);
+    dX = arma::reshape(x.dparameters.elem(indices[0]), q, q);
     arma::mat drg = dg - dX * symm(X.t() * g);
     x.dH.elem(indices[0]) = arma::vectorise(X * skew(X.t() * drg));
 
@@ -45,8 +41,7 @@ public:
     arma::mat Q, R;
     arma::qr_econ(Q, R, X);
 
-    parameters = arma::vectorise(Q);
-    x.parameters(indices[0]) = parameters;
+    x.parameters(indices[0]) = arma::vectorise(Q);
 
   }
 

@@ -60,6 +60,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
   control$penalties <- penalties
   control$estimator <- tolower(rotation)
   control <- lcfa_control(control)
+  if(control$opt == "lbfgs") control$opt <- "newton"
 
   # Data and structure information:
   ngroups        <- length(lambda)
@@ -376,91 +377,17 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     q <- nfactors[[i]]
     lower_psi <- lower.tri(diag(q, q), diag = TRUE)
 
-    # if(is.null(gamma)) {
-    #   gamma <- 0.00
-    # }
-    #
-    # if(is.null(epsilon)) {
-    #   epsilon <- 0.01
-    # }
-
-    # if(rotation == "oblimin") {
-
-      lambda_labels <- c(rot_trans[[i]]$lambda)
-      psi_labels <- rot_trans[[i]]$psi[lower_psi]
-      indices <- list(match(lambda_labels, transparameters_labels) - 1L,
-                      match(psi_labels, transparameters_labels) - 1L)
-      control_estimator[[k]] <- list(estimator = rotation,
-                                     labels = labels,
-                                     indices = indices,
-                                     p = p,
-                                     q = q,
-                                     ...)
-      k <- k+1L
-
-    # } else if(rotation == "geomin") {
-    #
-    #   labels <- c(rot_trans[[i]]$lambda)
-    #   indices <- list(match(labels, transparameters_labels) - 1L)
-    #   control_estimator[[k]] <- list(estimator = "geomin",
-    #                                  labels = labels,
-    #                                  indices = indices,
-    #                                  epsilon = 0.01,
-    #                                  p = nitems[[i]],
-    #                                  q = nfactors[[i]])
-    #   k <- k+1L
-    #
-    # } else if(rotation == "target") {
-    #
-    #   labels <- c(rot_trans[[i]]$lambda)
-    #   indices <- list(match(labels, transparameters_labels) - 1L)
-    #   control_estimator[[k]] <- list(estimator = "target",
-    #                                  labels = labels,
-    #                                  indices = indices,
-    #                                  target = target,
-    #                                  weight = weight)
-    #   k <- k+1L
-    #
-    # } else if(rotation == "xtarget") {
-    #
-    #   labels <- c(rot_trans[[i]]$lambda)
-    #   indices <- list(match(labels, transparameters_labels) - 1L)
-    #   control_estimator[[k]] <- list(estimator = "xtarget",
-    #                                  labels = labels,
-    #                                  indices = indices,
-    #                                  target = target,
-    #                                  weight = weight,
-    #                                  psitarget = psitarget,
-    #                                  psiweight = psiweight,
-    #                                  w = w)
-    #   k <- k+1L
-    #
-    # } else if(rotation == "varimax") {
-    #
-    #   labels <- c(rot_trans[[i]]$lambda)
-    #   indices <- list(match(labels, transparameters_labels) - 1L)
-    #   control_estimator[[k]] <- list(estimator = "varimax",
-    #                                  labels = labels,
-    #                                  indices = indices,
-    #                                  p = p,
-    #                                  q = q)
-    #   k <- k+1L
-    #
-    # } else if(rotation == "varimin") {
-    #
-    #   labels <- c(rot_trans[[i]]$lambda)
-    #   indices <- list(match(labels, transparameters_labels) - 1L)
-    #   control_estimator[[k]] <- list(estimator = "varimin",
-    #                                  labels = labels,
-    #                                  indices = indices,
-    #                                  p = p,
-    #                                  q = q)
-    #   k <- k+1L
-    #
-    # } else {
-    #   stop("Unknown rotation. Available rotations: 'oblimin', 'geomin',
-    #        'target', 'xtarget', 'varimax', 'varimin'")
-    # }
+    lambda_labels <- c(rot_trans[[i]]$lambda)
+    psi_labels <- rot_trans[[i]]$psi[lower_psi]
+    indices <- list(match(lambda_labels, transparameters_labels) - 1L,
+                    match(psi_labels, transparameters_labels) - 1L)
+    control_estimator[[k]] <- list(estimator = rotation,
+                                   labels = labels,
+                                   indices = indices,
+                                   p = p,
+                                   q = q,
+                                   ...)
+    k <- k+1L
 
   }
 
@@ -495,14 +422,14 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
     lcfa_list <- new("lcfa",
                      version            = as.character( packageVersion('latent') ),
-                     call               = mc, # matched call
-                     timing             = numeric(), # timing information
+                     call               = mc,
+                     timing             = numeric(),
                      data_list          = data_list,
                      modelInfo          = modelInfo,
                      Optim              = list(),
                      parameters         = list(),
                      transformed_pars   = list(),
-                     loglik             = numeric(), # loglik values
+                     loglik             = numeric(),
                      penalized_loglik   = numeric(),
                      loss               = numeric(),
                      penalized_loss     = numeric()
@@ -528,7 +455,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   # Create the structures of untransformed parameters:
   indices_pars <- match(modelInfo$parameters_labels,
-                        unlist(modelInfo$rot_param)) # FIX THIS
+                        unlist(modelInfo$rot_param))
 
   vv <- rep(0, times = length(unlist(modelInfo$rot_param)))
   vv[indices_pars] <- Optim$parameters
@@ -569,14 +496,14 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   result <- new("lcfa",
                 version            = as.character( packageVersion('latent') ),
-                call               = mc, # matched call
-                timing             = elapsed, # timing information
+                call               = mc,
+                timing             = elapsed,
                 data_list          = data_list,
                 modelInfo          = modelInfo,
                 Optim              = Optim,
                 parameters         = parameters,
                 transformed_pars   = transformed_pars,
-                loglik             = loglik, # loglik values
+                loglik             = loglik,
                 penalized_loglik   = penalized_loglik,
                 loss               = loss,
                 penalized_loss     = penalized_loss

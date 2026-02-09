@@ -31,7 +31,7 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = 0.5*arma::accu(f1 % f1) + 0.25*w*arma::accu(f2 % f2);
+    f = 0.5*arma::accu(f1 % f1) + 0.5*w*arma::accu(f2 % f2);
     x.f += f;
 
   }
@@ -39,7 +39,8 @@ public:
   void G(arguments_optim& x) {
 
     arma::mat df_dlambda = weight % f1;
-    arma::mat df_dpsi = w * psiweight % f2;
+    arma::mat df_dpsi = 2*w * psiweight % f2;
+    df_dpsi.diag() *= 0.5;
 
     x.grad.elem(indices[0]) += arma::vectorise(df_dlambda);
     x.grad.elem(indices[1]) += df_dpsi.elem(lower_psi);
@@ -53,7 +54,8 @@ public:
     dpsi = arma::symmatl(dpsi);
 
     arma::mat ddf_dlambda = weight2 % dlambda;
-    arma::mat ddf_dpsi = w * psiweight2 % dpsi;
+    arma::mat ddf_dpsi = 2*w * psiweight2 % dpsi;
+    ddf_dpsi.diag() *= 0.5;
 
     x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dlambda);
     x.dgrad.elem(indices[1]) += ddf_dpsi.elem(lower_psi);
@@ -83,10 +85,10 @@ xtarget* choose_xtarget(const Rcpp::List& estimator_setup) {
 
   int p = target.n_rows;
   int q = target.n_cols;
+  arma::mat psi(q, q, arma::fill::zeros);
+  arma::uvec lower_psi = arma::trimatl_ind(arma::size(psi));
   arma::mat weight2 = weight % weight;
   arma::mat psiweight2 = psiweight % psiweight;
-  arma::mat psi(q, q, arma::fill::zeros);
-  arma::uvec lower_psi = arma::trimatl_ind(arma::size(psitarget));
 
   myestimator->indices = indices;
   myestimator->psi = psi;
