@@ -97,7 +97,7 @@ arma::mat roblq(int p, int q);
 arma::mat lyap_sym(arma::mat Y, arma::mat Q);
 
 // [[Rcpp::export]]
-arma::mat rpoblq(int p, int q, arma::mat target);
+arma::mat rpoblq(int p, int q, arma::mat constraints);
 
 // [[Rcpp::export]]
 Rcpp::List grad_comp(Rcpp::List control_manifold,

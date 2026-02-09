@@ -222,15 +222,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // rpoblq
-arma::mat rpoblq(int p, int q, arma::mat target);
-RcppExport SEXP _latent_rpoblq(SEXP pSEXP, SEXP qSEXP, SEXP targetSEXP) {
+arma::mat rpoblq(int p, int q, arma::mat constraints);
+RcppExport SEXP _latent_rpoblq(SEXP pSEXP, SEXP qSEXP, SEXP constraintsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type p(pSEXP);
     Rcpp::traits::input_parameter< int >::type q(qSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type target(targetSEXP);
-    rcpp_result_gen = Rcpp::wrap(rpoblq(p, q, target));
+    Rcpp::traits::input_parameter< arma::mat >::type constraints(constraintsSEXP);
+    rcpp_result_gen = Rcpp::wrap(rpoblq(p, q, constraints));
     return rcpp_result_gen;
 END_RCPP
 }

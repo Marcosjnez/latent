@@ -47,7 +47,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                     do.fit = TRUE, control = NULL, ...) {
 
   # Check orthogonality
-  if(projection == "oblq") {
+  if(projection == "oblq" || projection == "poblq") {
     orthogonal <- FALSE
   } else if(projection == "orth") {
     orthogonal <- TRUE
@@ -251,26 +251,9 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   control_manifold <- list()
 
-  # # Euclidean for unrotated lambdas:
-  # ulambdas <- unlist(lapply(rot_param, FUN = \(x) x$ulambda))
-  # indices_ulambda <- match(unique(ulambdas), parameters_labels)
-  # indices_ulambda <- indices_ulambda[!is.na(indices_ulambda)]
-  # labels <- parameters_labels[indices_ulambda]
-  # indices <- list(indices_ulambda-1L)
-  # control_manifold[[1]] <- list(manifold = "euclidean",
-  #                               parameters = labels,
-  #                               indices = indices)
-  # k <- 2L
-
   k <- 1L
 
   for(i in 1:ngroups) {
-
-    if(orthogonal) {
-      manifoldX <- "orth"
-    } else {
-      manifoldX <- "oblq"
-    }
 
     # Orthogonal/Oblique X in each group:
     Xs <- c(rot_param[[i]]$X)
@@ -278,10 +261,11 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     indices_Xs <- indices_Xs[!is.na(indices_Xs)]
     labels <- parameters_labels[indices_Xs]
     indices <- list(indices_Xs-1L)
-    control_manifold[[k]] <- list(manifold = manifoldX,
+    control_manifold[[k]] <- list(manifold = projection,
                                   parameters = labels,
                                   indices = indices,
-                                  q = nfactors[[i]])
+                                  q = nfactors[[i]],
+                                  ...)
     k <- k+1L
 
   }

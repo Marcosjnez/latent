@@ -69,8 +69,8 @@ lyap_sym <- function(Y, Q) {
     .Call(`_latent_lyap_sym`, Y, Q)
 }
 
-rpoblq <- function(p, q, target) {
-    .Call(`_latent_rpoblq`, p, q, target)
+rpoblq <- function(p, q, constraints) {
+    .Call(`_latent_rpoblq`, p, q, constraints)
 }
 
 grad_comp <- function(control_manifold, control_transform, control_estimator, control_optimizer, compute = "all", eps = 1e-04) {
