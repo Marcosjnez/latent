@@ -757,7 +757,8 @@ get_lca_structures <- function(data_list, full_model, control) {
                                        indices = list(indices-1L),
                                        K = nclasses,
                                        alpha = alpha,
-                                       U = U)
+                                       U = U,
+                                       N = data_list$nobs)
         G <- G+1L
 
       }
@@ -781,7 +782,8 @@ get_lca_structures <- function(data_list, full_model, control) {
                                        indices = list(indices-1L),
                                        K = nclasses,
                                        varshat = varshat,
-                                       alpha = alpha)
+                                       alpha = alpha,
+                                       N = data_list$nobs)
         G <- G+1L
 
       }
@@ -803,7 +805,8 @@ get_lca_structures <- function(data_list, full_model, control) {
                                          indices = list(indices-1L),
                                          K = nclasses,
                                          pihat = pihat,
-                                         alpha = control$penalties$prob$alpha)
+                                         alpha = control$penalties$prob$alpha,
+                                         N = data_list$nobs)
           G <- G+1L
 
         }
@@ -855,7 +858,8 @@ get_lca_structures <- function(data_list, full_model, control) {
                                        labels = labels,
                                        indices = list(indices-1L),
                                        lambda = lambda,
-                                       power = power)
+                                       power = power,
+                                       N = data_list$nobs)
         G <- G+1L
 
       }

@@ -14,7 +14,7 @@ class bayesconst3: public estimators {
 public:
 
   int K;
-  double alpha, constant, prod_vars;
+  double alpha, constant, prod_vars, N;
   arma::vec vars, varshat, sds, logvars;
 
   void param(arguments_optim& x) {
@@ -30,20 +30,20 @@ public:
   void F(arguments_optim& x) {
 
     f = -0.5*constant * (arma::accu(logvars) + arma::accu(varshat/vars));
-    x.f -= f;
+    x.f -= f/N;
 
   }
 
   void G(arguments_optim& x) {
 
-    x.grad.elem(indices[0]) -= constant * (varshat/(vars % sds) - 1/sds);
+    x.grad.elem(indices[0]) -= constant * (varshat/(vars % sds) - 1/sds)/N;
 
   }
 
   void dG(arguments_optim& x) {
 
     arma::vec dsds = x.dtransparameters(indices[0]);
-    x.dgrad.elem(indices[0]) += constant * (3 * varshat % dsds / (vars % vars) - dsds / vars);
+    x.dgrad.elem(indices[0]) += constant * (3 * varshat % dsds / (vars % vars) - dsds / vars)/N;
 
   }
 
@@ -67,15 +67,17 @@ bayesconst3* choose_bayesconst3(const Rcpp::List& estimator_setup) {
 
   bayesconst3* myestimator = new bayesconst3();
 
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   double alpha = estimator_setup["alpha"];
   int K = estimator_setup["K"];
   arma::vec varshat = estimator_setup["varshat"];
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  double N = estimator_setup["N"];
 
+  myestimator->indices = indices;
   myestimator->alpha = alpha;
   myestimator->K = K;
   myestimator->varshat = varshat;
-  myestimator->indices = indices;
+  myestimator->N = N;
 
   return myestimator;
 

@@ -27,6 +27,7 @@ public:
   arma::vec loglik_case; // loglik of each response pattern
   arma::vec logliks; // accumulated loglik contribution of each response pattern
   arma::mat posterior, logposterior;
+  double N;
 
   void param(arguments_optim& x) {
 
@@ -57,7 +58,7 @@ public:
   void F(arguments_optim& x) {
 
     f = arma::accu(logliks);
-    x.f -= f;
+    x.f -= f/N;
 
   }
 
@@ -80,8 +81,8 @@ public:
       df_dcubeloglik.slice(k).each_col() = df_dclassloglik.col(k);
     }
 
-    x.grad.elem(indices_classes) += arma::vectorise(df_dclasses);
-    x.grad.elem(indices_cubeloglik) += arma::vectorise(df_dcubeloglik);
+    x.grad.elem(indices_classes) += arma::vectorise(df_dclasses)/N;
+    x.grad.elem(indices_cubeloglik) += arma::vectorise(df_dcubeloglik)/N;
 
   }
 
@@ -158,8 +159,8 @@ public:
       ddf_dcubeloglik.slice(k).each_col() = ddf_dclassloglik.col(k);
     }
 
-    x.dgrad.elem(indices_classes)     += arma::vectorise(ddf_dclasses);
-    x.dgrad.elem(indices_cubeloglik)  += arma::vectorise(ddf_dcubeloglik);
+    x.dgrad.elem(indices_classes)     += arma::vectorise(ddf_dclasses)/N;
+    x.dgrad.elem(indices_cubeloglik)  += arma::vectorise(ddf_dcubeloglik)/N;
 
   }
 
@@ -198,6 +199,8 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::vec weights = estimator_setup["weights"];
 
+  double N = arma::accu(weights);
+
   arma::mat classes(S, I);
   arma::vec logliks(S, arma::fill::zeros);
   arma::vec loglik_case(S, arma::fill::zeros);
@@ -227,6 +230,7 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
   myestimator->joint_classloglik = joint_classloglik;
   myestimator->posterior = posterior;
   myestimator->logposterior = logposterior;
+  myestimator->N = N;
 
   return myestimator;
 

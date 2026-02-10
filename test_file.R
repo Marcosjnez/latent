@@ -13,6 +13,7 @@
 #### LCA (multinomial) ####
 
 library(latent)
+set.seed(2026)
 fit <- lca(data = gss82, nclasses = 3,
            # multinomial = c("X1", "X2"),
            # poisson = ,
@@ -22,13 +23,16 @@ fit <- lca(data = gss82, nclasses = 3,
            #                 X2 ~ 1 + cluster2),
            item = rep("multinomial", ncol(gss82)),
            penalties = TRUE,
-           control = list(opt = "lbfgs"),
+           control = list(opt = "newton",
+                          step_maxit = 100,
+                          tcg_maxit = 100),
            do.fit = TRUE)
 fit@loglik # -2754.643
 fit@penalized_loglik # -2759.507
 fit@Optim$iterations # 67
-fit@Optim$convergence
 fit@Optim$ng
+max(fit@Optim$rg)
+fit@Optim$convergence
 fit@timing
 
 # Plot model fit info:
@@ -60,14 +64,19 @@ CI$table
 #### LCA (gaussian) ####
 
 library(latent)
+set.seed(2026)
 fit <- lca(data = empathy[, 1:6], nclasses = 4L,
            item = rep("gaussian", ncol(empathy[, 1:6])),
            penalties = TRUE, do.fit = TRUE,
-           control = list(opt = "lbfgs"))
+           control = list(opt = "lbfgs",
+                          step_maxit = 100,
+                          tcg_maxit = 100))
 
 fit@loglik # -1841.336
 fit@penalized_loglik # -1844.333
 fit@Optim$iterations # 52
+fit@Optim$ng
+max(fit@Optim$rg)
 fit@Optim$convergence # TRUE
 fit@timing
 
@@ -95,16 +104,21 @@ CI$table
 #### Mixed LCA (multinomial and gaussian) ####
 
 library(latent)
+set.seed(2026)
 fit <- lca(data = cancer[, 1:6], nclasses = 3L,
            item = c("gaussian", "gaussian",
                     "multinomial", "multinomial",
                     "gaussian", "gaussian"),
-           control = list(opt = "lbfgs"),
+           control = list(opt = "newton",
+                          eps = 1e-06,
+                          step_maxit = 100,
+                          tcg_maxit = 100),
            do.fit = TRUE)
-fit@timing
 fit@loglik # -5784.701
 fit@penalized_loglik # -5795.573
 fit@Optim$iterations
+fit@Optim$ng
+max(fit@Optim$rg)
 fit@Optim$convergence
 fit@timing
 
@@ -137,15 +151,20 @@ library(latent)
 data <- empathy[, 1:6]
 X <- as.matrix(empathy[, 7:8]) # Covariates
 
+set.seed(2026)
 fit0 <- lca(data = data, X = NULL, model = NULL,
             item = rep("gaussian", ncol(data)),
             nclasses = 4L, penalties = TRUE,
-            control = NULL, do.fit = TRUE)
+            control = list(opt = "newton",
+                           step_maxit = 100,
+                           tcg_maxit = 100),
+            do.fit = TRUE)
 fit0@timing
 fit0@loglik # -1841.336
 fit0@penalized_loglik # -1844.333
 fit0@Optim$iterations
 fit0@Optim$ng
+max(fit0@Optim$rg)
 sqrt(sum(fit0@Optim$rg*-fit0@Optim$dir))
 sqrt(sum(fit0@Optim$rg*fit0@Optim$rg))
 
@@ -157,11 +176,12 @@ penalties <- list(
 )
 Y <- as.matrix(empathy[, 9:10]) # Covariates
 set.seed(2026)
-# fit <- lca(data = data, X = X, model = NULL,
 fit <- lca(data = data, X = cbind(X, Y), model = fit0,
            item = rep("gaussian", ncol(data)),
-           nclasses = 4L, penalties = penalties,
-           control = NULL,
+           nclasses = 4L, penalties = F,
+           control = list(opt = "newton",
+                          step_maxit = 100,
+                          tcg_maxit = 100),
            do.fit = TRUE)
 fit@timing
 fit@loglik # -1747.135
@@ -169,6 +189,7 @@ fit@penalized_loglik # -1750.669
 fit@Optim$iterations
 fit@Optim$convergence
 fit@Optim$ng
+max(fit@Optim$rg)
 sqrt(sum(fit@Optim$rg*-fit@Optim$dir))
 sqrt(sum(fit@Optim$rg*fit@Optim$rg))
 fit@transformed_pars$beta
@@ -231,11 +252,14 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
+set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml",
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "lbfgs", maxit = 1000))
+            control = list(opt = "newton",
+                           step_maxit = 100,
+                           tcg_maxit = 100))
 fit@loss   # 0.283407
 fit@loglik # -3427.131
 fit@penalized_loglik # -3427.131
@@ -512,18 +536,39 @@ names(Ns) <- samples
 
 # Subset the items pertaining to the HEXACO-100
 selection <- 5:104
-selection <- 5:8
+selection <- 5:60
 full <- hexaco[, selection]
 
 mooc <- full[hexaco$sample == samples[2], ]
 dim(mooc)
-fit <- lpoly(data = mooc, do.fit = TRUE,
-             control = list(opt = "lbfgs", maxit = 10))
+set.seed(2026)
+fit <- lpoly(data = mooc, do.fit = TRUE, penalties = TRUE,
+             control = list(opt = "lbfgs",
+                            maxit = 500,
+                            step_maxit = 50,
+                            tcg_maxit = 30,
+                            ss = 0.001,
+                            eps = 1e-06,
+                            print = TRUE,
+                            print_interval = 10))
 fit@loglik # -75695.53
 fit@penalized_loglik # -75695.53
 fit@Optim$iterations
+fit@Optim$ng
 fit@Optim$convergence
+fit@Optim$f
+max(fit@Optim$rg)
+max(fit@Optim$g)
 fit@timing
+
+x <- Turbofuns:::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)
+x$ACM
+H[13:21, 13:21]
+
+fit@modelInfo$poly_trans
+fit@modelInfo$control_manifold
+fit@modelInfo$control_estimator
+fit@modelInfo$control$parameters
 
 fit <- polyfast(as.matrix(mooc))
 fit$iters
@@ -569,7 +614,8 @@ control_estimator <- fit@modelInfo$control_estimator
 control_optimizer <- fit@modelInfo$control
 # control_optimizer$parameters[[1]] <- fit@Optim$parameters
 # control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
-# control_optimizer$parameters[[1]] <- fit@modelInfo$control$parameters[[1]] + rnorm(21, 0, 0.001)
+# control_optimizer$parameters[[1]] <- fit@modelInfo$control$parameters[[1]] +
+#                                   rnorm(length(fit@modelInfo$control$parameters[[1]]), 0, 0.001)
 # control_optimizer$transparameters[[1]] <- fit@modelInfo$control$transparameters[[1]]
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control_optimizer,
@@ -584,7 +630,7 @@ max(abs(c(x$dg) - c(x$numdg)))
 x2 <- get_grad(control_manifold, control_transform,
                control_estimator, control_optimizer)
 round(c(x2$g)-c(x$numg), 3)
-round(c(x2$g)/c(x$numg), 3)
+max(abs(c(x$g) - c(x$numg)))
 
 # x3 <- get_dgrad(control_manifold, control_transform,
 #                 control_estimator, control_optimizer)

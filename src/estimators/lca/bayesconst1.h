@@ -14,7 +14,7 @@ public:
 
   int K;
   int U;
-  double alpha, constant;
+  double alpha, constant, N;
   arma::vec trans, logtrans;
   arma::vec constant_logtrans;
 
@@ -30,20 +30,20 @@ public:
   void F(arguments_optim& x) {
 
     f = arma::accu(constant_logtrans);
-    x.f -= f;
+    x.f -= f/N;
 
   }
 
   void G(arguments_optim& x) {
 
-    x.grad.elem(indices[0]) -= constant/trans;
+    x.grad.elem(indices[0]) -= constant/trans/N;
 
   }
 
   void dG(arguments_optim& x) {
 
     arma::vec dtrans = x.dtransparameters(indices[0]);
-    x.dgrad.elem(indices[0]) += constant*dtrans/(trans % trans);
+    x.dgrad.elem(indices[0]) += constant*dtrans/(trans % trans)/N;
 
   }
 
@@ -67,15 +67,17 @@ bayesconst1* choose_bayesconst1(const Rcpp::List& estimator_setup) {
 
   bayesconst1* myestimator = new bayesconst1();
 
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   int K = estimator_setup["K"];
   int U = estimator_setup["U"];
   double alpha = estimator_setup["alpha"];
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  double N = estimator_setup["N"];
 
+  myestimator->indices = indices;
   myestimator->K = K;
   myestimator->U = U;
   myestimator->alpha = alpha;
-  myestimator->indices = indices;
+  myestimator->N = N;
 
   return myestimator;
 

@@ -80,7 +80,7 @@ lpoly <- function(data,
 
   poly_trans <- poly_param
   poly_trans$R <- matrix(paste("r", 1:(p*p), sep = ""), nrow = p, ncol = p)
-  diag(poly_trans$R) <- "1"
+  # diag(poly_trans$R) <- "1"
   poly_trans$R[upper.tri(poly_trans$R)] <- t(poly_trans$R)[upper.tri(poly_trans$R)]
 
   #### Arrange labels ####
@@ -177,8 +177,7 @@ lpoly <- function(data,
   indices_R <- match(poly_trans$R[lower_indices], transparameters_labels)-1L
 
   labels <- c(unlist(poly_trans$taus), poly_trans$R[lower_indices])
-  indices <- list()
-  indices[[1]] <- match(labels, transparameters_labels)-1L
+  indices <- list(match(labels, transparameters_labels)-1L)
   control_estimator <- list()
   control_estimator[[1]] <- list(estimator = "polycor",
                                  labels = labels,
@@ -186,7 +185,8 @@ lpoly <- function(data,
                                  indices_taus = indices_taus,
                                  indices_R = indices_R,
                                  n = n,
-                                 p = p)
+                                 p = p,
+                                 N = data_list$nobs)
 
   if(control$reg) {
 
@@ -214,6 +214,8 @@ lpoly <- function(data,
                     transparameters_labels = transparameters_labels,
                     poly_param = poly_param,
                     poly_trans = poly_trans,
+                    init_param = init_param,
+                    init_trans = init_trans,
                     control_manifold = control_manifold,
                     control_transform = control_transform,
                     control_estimator = control_estimator,
@@ -223,14 +225,14 @@ lpoly <- function(data,
 
     result <- new("lpoly",
                   version            = as.character( packageVersion('latent') ),
-                  call               = mc, # matched call
-                  timing             = numeric(), # timing information
-                  modelInfo          = modelInfo, # modelInfo
-                  Optim              = list(), # Optim
-                  dataList           = data_list, # All data information
+                  call               = mc,
+                  timing             = numeric(),
+                  modelInfo          = modelInfo,
+                  Optim              = list(),
+                  dataList           = data_list,
                   parameters         = list(),
                   transformed_pars   = list(),
-                  loglik             = numeric(), # loglik values
+                  loglik             = numeric(),
                   penalized_loglik   = numeric(),
                   loss               = numeric(),
                   penalized_loss     = numeric()

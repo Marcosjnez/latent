@@ -8,7 +8,6 @@
  * Polychoric correlations (estimating the thresholds and correlations)
  */
 
-
 void poly_derivs(double& df_dp, arma::vec& df_dtau1, arma::vec& df_dtau2,
                  double rho, arma::vec tau1, arma::vec tau2,
                  arma::vec pnorm_tau1, arma::vec pnorm_tau2,
@@ -29,13 +28,13 @@ void poly_derivs(double& df_dp, arma::vec& df_dtau1, arma::vec& df_dtau2,
 
   int s = tau1.size()-1L;
   int r = tau2.size()-1L;
-  arma::mat pbi(s, r);
+  arma::mat pbi(s, r); pbi.fill(1e-16);
   arma::mat dpbi_dp(s, r);
   double denominator = std::sqrt(1-rho*rho);
   for (size_t i = 0; i < s; ++i) { // Loop over the thresholds of first variable
     for (size_t j = 0; j < r; ++j) { // Loop over the thresholds of second variable
-      int nij = n[i][j];
-      if (nij == 0) continue;
+      double nij = n[i][j];
+      if (nij < 1e-16) continue;
       // CDF of the bivariate normal:
       pbi(i, j) = pbinorm(rho, tau1[i], tau2[j], tau1[i+1], tau2[j+1],
           pnorm_tau1[i], pnorm_tau2[j], pnorm_tau1[i+1], pnorm_tau2[j+1]);
@@ -46,35 +45,37 @@ void poly_derivs(double& df_dp, arma::vec& df_dtau1, arma::vec& df_dtau2,
         dbinorm(rho, tau1[i+1], tau2[j]) +
         dbinorm(rho, tau1[i], tau2[j]);
       // Derivative of the latent correlation:
-      df_dp -= n[i][j] * dpbi_dp(i,j) / pbi(i,j);
+      df_dp -= nij * dpbi_dp(i,j) / pbi(i,j);
     }
   }
 
   // Loop over the thresholds of first variable:
   for(int k=0; k < (s-1); ++k) {
     for(int j=0; j < r; ++j) {
-      int nkj = n[k][j];
-      if (nkj == 0) continue;
+      double nkj = n[k][j];
+      double nk1j = n[k+1][j];
+      if (nkj < 1e-16 && nk1j < 1e-16) continue;
       double numerator1 = tau2[j+1]-rho*tau1[k+1];
       double numerator2 = tau2[j]-rho*tau1[k+1];
       double dpbi_dtau1 = Dnorm(tau1[k+1])*(Pnorm(numerator1/denominator) -
                                Pnorm(numerator2/denominator));
       // Derivatives of thresholds for the first variable:
-      df_dtau1(k) -= dpbi_dtau1 * (n[k][j]/pbi(k,j)-n[k+1][j]/pbi(k+1,j));
+      df_dtau1(k) -= dpbi_dtau1 * (nkj/pbi(k,j)-nk1j/pbi(k+1,j));
     }
   }
 
   // Loop over the thresholds of second variable
   for(int m=0; m < (r-1); ++m) {
     for(int i=0; i < s; ++i) {
-      int nmi = n[m][i];
-      if (nmi == 0) continue;
+      double nim = n[i][m];
+      double nim1 = n[i][m+1];
+      if (nim < 1e-16 && nim1 < 1e-16) continue;
       double numerator1 = tau1[i+1]-rho*tau2[m+1];
       double numerator2 = tau1[i]-rho*tau2[m+1];
       double dpbi_dtau2 = Dnorm(tau2[m+1])*(Pnorm(numerator1/denominator) -
                                Pnorm(numerator2/denominator));
       // Derivatives of thresholds for the second variable:
-      df_dtau2(m) -= dpbi_dtau2 * (n[i][m]/pbi(i,m)-n[i][m+1]/pbi(i,m+1));
+      df_dtau2(m) -= dpbi_dtau2 * (nim/pbi(i,m)-nim1/pbi(i,m+1));
     }
   }
 
@@ -367,7 +368,7 @@ public:
   std::vector<arma::uvec> indices_taus;
   arma::uvec indices_R, lower_diag;
   int p;
-  double loss;
+  double loss, N;
 
   void param(arguments_optim& x) {
 
@@ -380,7 +381,7 @@ public:
 
     R.elem(lower_diag) = x.transparameters(indices_R);
     R = arma::symmatl(R);
-    R.diag().ones(); // Ensure ones in the diagonal of the correlation matrix
+    // R.diag().ones(); // Ensure ones in the diagonal of the correlation matrix
 
   }
 
@@ -396,7 +397,7 @@ public:
         for (size_t i = 0; i < s1; ++i) { // Loop across first variable thresholds
           for (size_t j = 0; j < s2; ++j) { // Loop across second variable thresholds
             int nmij = n[m][i][j];
-            if (nmij == 0) continue;
+            if (nmij < 1e-16) continue;
             loss -= n[m][i][j] * arma::trunc_log(pbinorm(R(l,k),
                                                          taus[l](i), taus[k](j),
                                                          taus[l](i+1), taus[k](j+1),
@@ -407,7 +408,7 @@ public:
       }
     }
 
-    x.f += loss;
+    x.f += loss/N; // loglik divided by N
 
   }
 
@@ -436,15 +437,17 @@ public:
         dfdp(k,l) = dfdp(l,k);
         dfdtaus[l] += dtau1;
         dfdtaus[k] += dtau2;
+        // Rprintf("dfdtaus[l] = %.10f\n", dtau1);
+        // Rprintf("dfdtaus[k] = %.10f\n", dtau2);
 
       }
     }
 
     for(int i=0; i < p; ++i) {
-      x.grad(indices_taus[i]) += dfdtaus[i];
+      x.grad(indices_taus[i]) += dfdtaus[i]/N;
     }
 
-    x.grad(indices_R) += arma::vectorise(dfdp(lower_diag));
+    x.grad(indices_R) += arma::vectorise(dfdp(lower_diag))/N;
 
   }
 
@@ -491,9 +494,9 @@ public:
 
     // store the differentials in the x.dgrad object:
     for(int i=0; i < p; ++i) {
-      x.dgrad(indices_taus[i]) += ddfdtaus[i];
+      x.dgrad(indices_taus[i]) += ddfdtaus[i]/N;
     }
-    x.dgrad(indices_R) += arma::vectorise(ddfdp(lower_diag));
+    x.dgrad(indices_R) += arma::vectorise(ddfdp(lower_diag))/N;
 
   }
 
@@ -524,6 +527,7 @@ polycor* choose_polycor(const Rcpp::List& estimator_setup) {
   arma::uvec indices_R = estimator_setup["indices_R"];
   std::vector<std::vector<std::vector<int>>> n = estimator_setup["n"];
   int p = estimator_setup["p"];
+  double N = estimator_setup["N"];
 
   std::vector<arma::vec> taus(p);
   std::vector<arma::vec> pnorm_tau(p);
@@ -539,6 +543,7 @@ polycor* choose_polycor(const Rcpp::List& estimator_setup) {
   myestimator->pnorm_tau = pnorm_tau;
   myestimator->R = R;
   myestimator->lower_diag = lower_diag;
+  myestimator->N = N;
 
   return myestimator;
 

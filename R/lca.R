@@ -418,8 +418,9 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #### Process the outputs ####
 
     # Logarithm likelihood:
-    loglik <- x$outputs$estimators$doubles[[1]]
-    penalized_loglik <- -x$f
+    loglik <- x$outputs$estimators$doubles[[1]][1]
+    penalized_loglik <- sum(unlist(lapply(x$outputs$estimators$doubles,
+                                          FUN = \(x) x[[1]])))
     # Logarithm likelihood of each response pattern:
     loglik_case <- x$outputs$estimators$vectors[[1]][[1]]
     # Sum of logarithm likelihoods by response pattern:

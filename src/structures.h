@@ -20,7 +20,7 @@ struct arguments_optim{
 
   // Optim stuff:
   double c1 = 10e-04, c2 = 0.5, eps = 1e-05, ss_fac = 2, ss_min = 0.1,
-    ng = 1, inprod = 1, step_eps = 1e-09, df = 1000, df_eps = 1e-09;
+    ng = 1, max_rg = 1, inprod = 1, step_eps = 1e-09, df = 1000, df_eps = 1e-09;
   int M = 15L, step_maxit = 30L, iterations = 0L, maxit = 10000L, tcg_maxit = 5,
     rstarts = 1L, cores = 1L;
   double old_inprod = arma::datum::inf;

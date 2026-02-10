@@ -48,8 +48,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = arma::accu(log_dnorms)/N;
-    x.f += -f;
+    f = arma::accu(log_dnorms);
+    x.f += -f/N;
 
   }
 

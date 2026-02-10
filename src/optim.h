@@ -4,7 +4,7 @@
  * Modification date: 12/11/2025
  */
 
-typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::vec> optim_result;
+typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat, arma::vec, arma::vec> optim_result;
 
 // Line-search algorithm satisfying the armijo condition:
 
@@ -283,7 +283,7 @@ optim_result gd(arguments_optim x,
                                         x.f,
                                         x.iterations,
                                         x.convergence,
-                                        x.ng, x.rg, x.dir);
+                                        x.ng, x.rg, x.g, x.dir);
 
   return result;
 
@@ -396,10 +396,11 @@ optim_result lbfgs(arguments_optim x,
     x.dir = -z;
 
     // Check convergence:
-    x.inprod = arma::dot(-x.dir, x.rg);
     // x.inprod = arma::accu(x.dir % x.dir);
     // x.inprod = arma::accu(x.rg % x.rg);
+    x.inprod = arma::dot(-x.dir, x.rg);
     x.ng = std::sqrt(x.inprod);
+    x.max_rg = arma::abs(x.rg).max();
 
     // Print info:
     if((x.print & x.rstarts) == 1L) {
@@ -417,7 +418,8 @@ optim_result lbfgs(arguments_optim x,
       x.convergence = false;
       break;
     }
-    if (x.ng < x.eps) {
+    // if ((x.ng/std::sqrt(x.rg.n_elem)) < x.eps && x.max_rg < x.eps) {
+    if ((x.ng/std::sqrt(x.rg.n_elem)) < x.eps) {
       x.convergence = true;
       break;
     }
@@ -429,7 +431,7 @@ optim_result lbfgs(arguments_optim x,
                                         x.f,
                                         x.iterations,
                                         x.convergence,
-                                        x.ng, x.rg, x.dir);
+                                        x.ng, x.rg, x.g, x.dir);
 
   return result;
 
@@ -467,7 +469,8 @@ optim_result ntr(arguments_optim x,
 
   // Rcpp::Rcout << "x.f = " << x.f << std::endl;
 
-  x.ng = std::sqrt(arma::accu(x.rg % x.rg));
+  x.inprod = arma::accu(x.rg % x.rg);
+  x.ng = std::sqrt(x.inprod);
 
   double max_rad = 10;
 
@@ -553,21 +556,13 @@ optim_result ntr(arguments_optim x,
       // x.inprod = arma::accu(arma::abs(x.dir % x.rg));
       // x.inprod = arma::accu(x.dir % x.dir);
       x.inprod = arma::accu(x.rg % x.rg);
+      x.max_rg = arma::abs(x.rg).max();
+
       x.ng = std::sqrt(x.inprod);
 
     }
 
     ++x.iterations;
-
-    // if(x.print) {
-    //   Rcpp::Rcout << "Iteration = " << x.iterations << std::endl;
-    //   Rcpp::Rcout << "f = " << x.f << std::endl;
-    //   Rcpp::Rcout << "step size = " << x.ss << std::endl;
-    //   Rcpp::Rcout << "step iters = " << x.step_iteration << std::endl;
-    //   Rcpp::Rcout << "ng = " << x.ng << std::endl;
-    //   Rcpp::Rcout << "dif = " << std::sqrt(x.df*x.df) << std::endl;
-    //   Rcpp::Rcout << "" << std::endl;
-    // }
 
     // Print info:
     if((x.print & x.rstarts) == 1L) {
@@ -581,8 +576,8 @@ optim_result ntr(arguments_optim x,
 
     }
 
-    // if (x.ng < x.eps | std::sqrt(x.df*x.df) < x.df_eps) {
-    if (x.ng < x.eps) {
+    // if ((x.ng/std::sqrt(x.rg.n_elem)) < x.eps && x.max_rg < x.eps) {
+    if ((x.ng/std::sqrt(x.rg.n_elem)) < x.eps) {
       x.convergence = true;
       break;
     }
@@ -594,7 +589,7 @@ optim_result ntr(arguments_optim x,
                                         x.f,
                                         x.iterations,
                                         x.convergence,
-                                        x.ng, x.rg, x.dir);
+                                        x.ng, x.rg, x.g, x.dir);
 
   return result;
 
@@ -650,7 +645,7 @@ optim_result ntr(arguments_optim x,
 //                                         x.f,
 //                                         x.iterations,
 //                                         x.convergence,
-//                                         x.ng, x.rg, x.dir);
+//                                         x.ng, x.rg, x.g, x.dir);
 //
 //   return result;
 //
