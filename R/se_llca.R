@@ -126,6 +126,9 @@ standard_se <- function(fit) {
                 control_transform = control_transform,
                 control_estimator = control_estimator,
                 control_optimizer = control_optimizer)$h
+  # For numerical stability in optimization, the loglik is divided by N
+  # So multiply the Hessian by N:
+  H <- H*fit@data_list$nobs[[1]]
 
   # Get the variance-covariance matrix between the parameters:
   result <- get_vcov(control_manifold = control_manifold,
@@ -162,6 +165,9 @@ robust_se <- function(fit) {
                 control_transform = control_transform,
                 control_estimator = control_estimator,
                 control_optimizer = control_optimizer)$h
+  # For numerical stability in optimization, the loglik is divided by N
+  # So multiply the Hessian by N:
+  H <- H*fit@data_list$nobs
 
   #### Collect the gradient by response pattern ####
 
@@ -187,9 +193,6 @@ robust_se <- function(fit) {
     indices_theta <- match(lca_all$theta[s, ], transparameters_labels)
     indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
                     indices_theta-1L)
-    SJ <- 1L*nitems
-    hess_indices <- lapply(0:(nclasses - 1), function(i) {
-      nclasses + seq(1 + i * SJ, (i + 1) * SJ)-1L })
 
     control_estimator[[K+s]] <- list(estimator = "lca",
                                      labels = labels,
@@ -197,8 +200,7 @@ robust_se <- function(fit) {
                                      S = 1L,
                                      J = nitems,
                                      I = nclasses,
-                                     weights = weights[s],
-                                     hess_indices = hess_indices)
+                                     weights = weights[s])
 
   }
 
@@ -219,14 +221,9 @@ robust_se <- function(fit) {
     B <- B + weights[s]*(g[s, ]/weights[s]) %*% t(g[s, ]/weights[s])
 
   }
-  # sum(f)
-  # fit@penalized_loglik
-  # colSums(g)
-  # c(fit@Optim$rg)
-  B <- B*nobs/(nobs-1)
-  # eigen(B)$values
 
   # Update the hessian:
+  B <- B*nobs/(nobs-1)
   newH <- H %*% solve(B) %*% H
 
   # Recompute the variance-covariance matrix with this new hessian:

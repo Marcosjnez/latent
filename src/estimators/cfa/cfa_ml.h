@@ -39,7 +39,7 @@ public:
     f = w*n*0.5*(plogpi2 +
       arma::log_det_sympd(Shat) +
       arma::accu(S % Shat_inv));
-    x.f += f;
+    x.f += f/n;
 
   }
 
@@ -51,7 +51,7 @@ public:
     arma::mat temp = 2*gShat;
     temp.diag() *= 0.5;
 
-    x.grad.elem(indices[0]) += w*n*0.5*arma::vectorise(temp(lower_diag));
+    x.grad.elem(indices[0]) += w*n*0.5*arma::vectorise(temp(lower_diag))/n;
 
   }
 
@@ -65,7 +65,7 @@ public:
                           Shat_inv * S * dShat_inv);
     dgShat.diag() *= 0.5;
 
-    x.dgrad.elem(indices[0]) += w*n*0.5*arma::vectorise(dgShat(lower_diag));
+    x.dgrad.elem(indices[0]) += w*n*0.5*arma::vectorise(dgShat(lower_diag))/n;
 
   }
 

@@ -53,7 +53,7 @@ latInspect(fit, what = "posterior", digits = 3)
 latInspect(fit, what = "table", digits = 3)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "model", digits = 4)
+SE <- se(fit, type = "robust", model = "model", digits = 4)
 SE$table
 
 # Get confidence intervals:
@@ -71,6 +71,7 @@ fit <- lca(data = empathy[, 1:6], nclasses = 4L,
            control = list(opt = "lbfgs",
                           step_maxit = 100,
                           tcg_maxit = 100))
+latInspect(fit, what = "classes", digits = 3)
 
 fit@loglik # -1841.336
 fit@penalized_loglik # -1844.333
@@ -93,11 +94,11 @@ latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE <- se(fit, type = "robust", model = "model", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "user",
+CI <- ci(fit, type = "standard", model = "model",
          confidence = 0.95, digits = 2)
 CI$table
 
@@ -135,11 +136,11 @@ latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "user", digits = 4)
+SE <- se(fit, type = "standard", model = "model", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "user",
+CI <- ci(fit, type = "standard", model = "model",
          confidence = 0.95, digits = 2)
 CI$table
 
@@ -543,7 +544,7 @@ mooc <- full[hexaco$sample == samples[2], ]
 dim(mooc)
 set.seed(2026)
 fit <- lpoly(data = mooc, do.fit = TRUE, penalties = TRUE,
-             control = list(opt = "lbfgs",
+             control = list(opt = "newton",
                             maxit = 500,
                             step_maxit = 50,
                             tcg_maxit = 30,
