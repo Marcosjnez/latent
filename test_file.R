@@ -94,7 +94,7 @@ latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
 
 # Get standard errors:
-SE <- se(fit, type = "robust", model = "model", digits = 4)
+SE <- se(fit, type = "standard", model = "model", digits = 4)
 SE$table
 
 # Get confidence intervals:

@@ -168,8 +168,8 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
       if(positive) {
 
-        init_trans[[rs]][[i]]$pj_psi <- rpoblq(nfactors[[i]], nfactors[[i]], target = target_psi[[i]])
-        init_trans[[rs]][[i]]$pj_theta <- rpoblq(nitems[[i]], nitems[[i]], target = target_theta[[i]])
+        init_trans[[rs]][[i]]$pj_psi <- rpoblq(nfactors[[i]], nfactors[[i]], constraints = target_psi[[i]])
+        init_trans[[rs]][[i]]$pj_theta <- rpoblq(nitems[[i]], nitems[[i]], constraints = target_theta[[i]])
 
         init_trans[[rs]][[i]]$psi <- crossprod(init_trans[[rs]][[i]]$pj_psi)
 
@@ -250,31 +250,21 @@ get_cfa_structures <- function(data_list, full_model, control) {
   #### Manifolds ####
 
   control_manifold <- list()
+  k <- 1L
 
-  if(!positive) {
+  for(i in 1:ngroups) {
 
-    all <- unique(unlist(cfa_param))
-    indices_all <- match(all, parameters_labels)
-    indices_all <- indices_all[!is.na(indices_all)]
-    labels <- parameters_labels[indices_all]
-    indices <- list(indices_all-1L)
-    control_manifold[[1]] <- list(manifold = "euclidean",
-                                  parameters = labels,
-                                  indices = indices)
-
-  } else {
-
-    lambdas <- unlist(lapply(cfa_param, FUN = \(x) x$lambda))
+    lambdas <- unlist(cfa_param[[i]]$lambda)
     indices_lambda <- match(unique(lambdas), parameters_labels)
     indices_lambda <- indices_lambda[!is.na(indices_lambda)]
     labels <- parameters_labels[indices_lambda]
     indices <- list(indices_lambda-1L)
-    control_manifold[[1]] <- list(manifold = "euclidean",
+    control_manifold[[k]] <- list(manifold = "euclidean",
                                   parameters = labels,
                                   indices = indices)
-    k <- 2L
+    k <- k+1L
 
-    for(i in 1:ngroups) {
+    if(positive) {
 
       indices_pj_psi <- match(unique(c(cfa_param[[i]]$pj_psi)),
                               parameters_labels)
@@ -283,7 +273,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
       control_manifold[[k]] <- list(manifold = "poblq",
                                     parameters = labels,
                                     indices = indices,
-                                    target = target_psi[[i]])
+                                    constraints = target_psi[[i]])
       k <- k+1L
 
       indices_pj_theta <- match(unique(c(cfa_param[[i]]$pj_theta)),
@@ -293,7 +283,29 @@ get_cfa_structures <- function(data_list, full_model, control) {
       control_manifold[[k]] <- list(manifold = "poblq",
                                     parameters = labels,
                                     indices = indices,
-                                    target = target_theta[[i]])
+                                    constraints = target_theta[[i]])
+      k <- k+1L
+
+    } else {
+
+      indices_psi <- match(unique(c(cfa_param[[i]]$psi)),
+                           parameters_labels)
+      indices_psi <- indices_psi[!is.na(indices_psi)]
+      labels <- parameters_labels[indices_psi]
+      indices <- list(indices_psi-1L)
+      control_manifold[[k]] <- list(manifold = "euclidean",
+                                    parameters = labels,
+                                    indices = indices)
+      k <- k+1L
+
+      indices_theta <- match(unique(c(cfa_param[[i]]$theta)),
+                             parameters_labels)
+      indices_theta <- indices_theta[!is.na(indices_theta)]
+      labels <- parameters_labels[indices_theta]
+      indices <- list(indices_theta-1L)
+      control_manifold[[k]] <- list(manifold = "euclidean",
+                                    parameters = labels,
+                                    indices = indices)
       k <- k+1L
 
     }

@@ -22,7 +22,6 @@ public:
     sds = x.transparameters(indices[0]);
     vars = sds % sds;
     logvars = arma::trunc_log(vars);
-    // prod_vars = arma::prod(vars);
     constant = alpha/(K + 0.00);
 
   }
