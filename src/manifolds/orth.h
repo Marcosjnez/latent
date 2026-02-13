@@ -10,6 +10,7 @@ class orth:public manifolds {
 
 public:
 
+  arma::uvec indices;
   std::size_t q;
   arma::mat X, dX, g, dg;
 
@@ -21,18 +22,18 @@ public:
 
   void proj(arguments_optim& x) {
 
-    g = arma::reshape(x.g.elem(indices[0]), q, q);
-    x.rg.elem(indices[0]) = arma::vectorise(X * skew(X.t() * g));
+    g = arma::reshape(x.g.elem(indices), q, q);
+    x.rg.elem(indices) = arma::vectorise(X * skew(X.t() * g));
 
   }
 
   void hess(arguments_optim& x) {
 
-    g = arma::reshape(x.g.elem(indices[0]), q, q);
-    dg = arma::reshape(x.dg.elem(indices[0]), q, q);
-    dX = arma::reshape(x.dparameters.elem(indices[0]), q, q);
+    g = arma::reshape(x.g.elem(indices), q, q);
+    dg = arma::reshape(x.dg.elem(indices), q, q);
+    dX = arma::reshape(x.dparameters.elem(indices), q, q);
     arma::mat drg = dg - dX * symm(X.t() * g);
-    x.dH.elem(indices[0]) = arma::vectorise(X * skew(X.t() * drg));
+    x.dH.elem(indices) = arma::vectorise(X * skew(X.t() * drg));
 
   }
 
@@ -41,7 +42,7 @@ public:
     arma::mat Q, R;
     arma::qr_econ(Q, R, X);
 
-    x.parameters(indices[0]) = arma::vectorise(Q);
+    x.parameters(indices) = arma::vectorise(Q);
 
   }
 
@@ -59,8 +60,7 @@ orth* choose_orth(Rcpp::List manifold_setup) {
 
   orth* mymanifold = new orth();
 
-  // Provide these:
-  std::vector<arma::uvec> indices = manifold_setup["indices"];
+  arma::uvec indices = manifold_setup["indices"];
   std::size_t q = manifold_setup["q"];
 
   mymanifold->indices = indices;

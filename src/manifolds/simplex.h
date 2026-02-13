@@ -10,31 +10,30 @@ class simplex:public manifolds {
 
 public:
 
-  arma::vec X;
-  arma::vec dX;
-  arma::vec parameters, dir, g, dg;
+  arma::uvec indices;
+  arma::vec X, dX, dir, g, dg;
 
   void param(arguments_optim& x) {
 
-    parameters = x.parameters(indices[0]);
-    X = parameters;
-    dir = x.dir(indices[0]);
+    X = x.parameters(indices);
+    dir = x.dir(indices);
 
   }
 
   void proj(arguments_optim& x) {
 
-    g = x.g.elem(indices[0]);
+    g = x.g.elem(indices);
     arma::vec xegrad = X % g;
     double v = arma::accu(xegrad);
-    x.rg.elem(indices[0]) = xegrad - X * v;
+    x.rg.elem(indices) = xegrad - X * v;
 
   }
 
   void hess(arguments_optim& x) {
 
-    dg = x.dg.elem(indices[0]);
-    x.dH.elem(indices[0]) = x.dg.elem(indices[0]);
+    g = x.g.elem(indices);
+    dg = x.dg.elem(indices);
+    x.dH.elem(indices) = x.dg.elem(indices);
     // dX = dparameters;
     // arma::mat drg = -dX * X.t() * g - X * dX.t() * g;
     // // dH = drg - X * X.t() * drg;
@@ -72,8 +71,7 @@ public:
     double eps = arma::datum::eps;
     // Rf_error("OK 61");
     Y.elem(arma::find(Y < eps)).fill(eps);
-    parameters = Y;
-    x.parameters(indices[0]) = parameters;
+    x.parameters(indices) = Y;
 
   }
 
@@ -91,8 +89,7 @@ simplex* choose_simplex(const Rcpp::List& manifold_setup) {
 
   simplex* mymanifold = new simplex();
 
-  // Provide these:
-  std::vector<arma::uvec> indices = manifold_setup["indices"];
+  arma::uvec indices = manifold_setup["indices"];
 
   mymanifold->indices = indices;
 

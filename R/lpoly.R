@@ -35,7 +35,8 @@
 lpoly <- function(data,
                   penalties = TRUE,
                   do.fit = TRUE,
-                  control = NULL) {
+                  control = NULL,
+                  ...) {
 
   ## store original call
   mc  <- match.call()
@@ -140,19 +141,20 @@ lpoly <- function(data,
   #### Structures ####
 
   # Manifolds:
-  control_manifold <- list()
-  indices <- match(unlist(poly_param$taus), parameters_labels)
-  labels <- parameters_labels[indices]
-  control_manifold[[1]] <- list(manifold = "euclidean",
-                                parameters = labels,
-                                indices = list(indices-1L))
 
-  indices <- match(c(poly_param$X), parameters_labels)
-  labels <- parameters_labels[indices]
-  control_manifold[[2]] <- list(manifold = "oblq",
-                                parameters = labels,
-                                indices = list(indices-1L),
-                                q = p)
+  mani_and_labs <- list()
+
+  mani_and_labs[[1]] <- list("euclidean",
+                             poly_param$taus,
+                             ...)
+
+  mani_and_labs[[2]] <- list("oblq",
+                             poly_param$X,
+                             q = p,
+                             ...)
+
+  control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
+                                       param_structures = poly_param)
 
   # Transformations:
   control_transform <- list()

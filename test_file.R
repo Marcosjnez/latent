@@ -256,7 +256,7 @@ model <- 'visual  =~ x1 + x2 + x3
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml",
-            ordered = FALSE, std.lv = TRUE,
+            ordered = FALSE, std.lv = TRUE, positive = TRUE,
             mimic = "latent", do.fit = TRUE,
             control = list(opt = "newton",
                            step_maxit = 100,
@@ -537,7 +537,7 @@ names(Ns) <- samples
 
 # Subset the items pertaining to the HEXACO-100
 selection <- 5:104
-selection <- 5:60
+selection <- 5:30
 full <- hexaco[, selection]
 
 mooc <- full[hexaco$sample == samples[2], ]

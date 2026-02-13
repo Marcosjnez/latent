@@ -10,42 +10,39 @@ class unit:public manifolds {
 
 public:
 
-  arma::vec X;
-  arma::vec dX;
-  arma::vec parameters, dir, g, dg, dparameters;
+  arma::uvec indices;
+  arma::vec X, dX, g, dg;
 
   void param(arguments_optim& x) {
 
-    parameters = x.parameters(indices[0]);
-    X = parameters;
+    X = x.parameters(indices);
 
   }
 
   void proj(arguments_optim& x) {
 
-    g = x.g.elem(indices[0]);
+    g = x.g.elem(indices);
     double v = arma::accu(X % g);
-    x.rg.elem(indices[0]) = g - X * v;
+    x.rg.elem(indices) = g - X * v;
 
   }
 
   void hess(arguments_optim& x) {
 
-    dg = x.dg.elem(indices[0]);
-    dparameters = x.dparameters.elem(indices[0]);
-    dX = dparameters;
+    g = x.g.elem(indices);
+    dg = x.dg.elem(indices);
+    dX = x.dparameters.elem(indices);
     arma::mat drg = -dX * X.t() * g - X * dX.t() * g;
     // dH = drg - X * X.t() * drg;
     double v2 = arma::accu(X % g);
     arma::vec term = drg - v2 * dX;
-    x.dH.elem(indices[0]) = term - X * v2;
+    x.dH.elem(indices) = term - X * v2;
 
   }
 
   void retr(arguments_optim& x) {
 
-    parameters = X / sqrt(arma::accu(X % X));
-    x.parameters(indices[0]) = parameters;
+    x.parameters(indices) = X / sqrt(arma::accu(X % X));
 
   }
 
@@ -63,8 +60,7 @@ unit* choose_unit(Rcpp::List manifold_setup) {
 
   unit* mymanifold = new unit();
 
-  // Provide these:
-  std::vector<arma::uvec> indices = manifold_setup["indices"];
+  arma::uvec indices = manifold_setup["indices"];
 
   mymanifold->indices = indices;
 

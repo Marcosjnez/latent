@@ -41,21 +41,15 @@ public:
     arma::vec g_out  = x.grad(indices_out[0]);
     arma::vec dg_out = x.dgrad(indices_out[0]);
 
-    // dp = d p = J * dθ (stored in Jdx by dtransform)
-    arma::vec dp = Jdx;   // same length as probs/theta
+    arma::vec dp = Jdx;
 
-    // Scalars: g^T p and g^T dp
     double gp  = arma::dot(g_out, probs);
     double gdp = arma::dot(g_out, dp);
 
-    // (dJ) g = g ⊙ dp - (g^T p) dp - (g^T dp) p
     arma::vec dJg = g_out % dp - gp * dp - gdp * probs;
 
-    // Full directional derivative of gradient wrt theta:
-    // dg_theta = (dJ)^T g_out + J^T dg_out = dJg + jacob * dg_out
     arma::vec dg_theta = dJg + jacob * dg_out;
 
-    // Accumulate into input differential gradient
     x.dgrad(indices_in[0]) += dg_theta;
 
   }

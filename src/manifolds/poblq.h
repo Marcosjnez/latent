@@ -31,34 +31,34 @@ class poblq:public manifolds {
 
 public:
 
+  arma::uvec indices, oblq_indices;
   std::size_t q;
   arma::mat X, dX, A, psi, dpsi, constraints, g, dg;
-  arma::uvec oblq_indices;
 
   void param(arguments_optim& x) {
 
-    X = arma::reshape(x.parameters(indices[0]), q, q);
+    X = arma::reshape(x.parameters(indices), q, q);
     psi = X.t() * X;
 
   }
 
   void proj(arguments_optim& x) {
 
-    g = arma::reshape(x.g.elem(indices[0]), q, q);
+    g = arma::reshape(x.g.elem(indices), q, q);
     arma::mat c1 = X.t() * g;
     arma::mat X0 = c1 + c1.t();
     A = lyap_sym(psi, X0);
     A(oblq_indices).zeros();
     arma::mat N = X * A;
-    x.rg.elem(indices[0]) = arma::vectorise(g - N);
+    x.rg.elem(indices) = arma::vectorise(g - N);
 
   }
 
   void hess(arguments_optim& x) {
 
-    g = arma::reshape(x.g.elem(indices[0]), q, q);
-    dg = arma::reshape(x.dg.elem(indices[0]), q, q);
-    dX = arma::reshape(x.dparameters.elem(indices[0]), q, q);
+    g = arma::reshape(x.g.elem(indices), q, q);
+    dg = arma::reshape(x.dg.elem(indices), q, q);
+    dX = arma::reshape(x.dparameters.elem(indices), q, q);
     dpsi = X.t() * dX;
     dpsi += dX.t();
 
@@ -78,7 +78,7 @@ public:
     arma::mat A = lyap_sym(psi, X0);
     A(oblq_indices).zeros();
     arma::mat N = X * A;
-    x.dH.elem(indices[0]) = arma::vectorise(drg - N);
+    x.dH.elem(indices) = arma::vectorise(drg - N);
 
   }
 
@@ -108,7 +108,7 @@ public:
     arma::uvec ones = arma::find(indicator == 0);
     X.cols(ones) = Xstd.cols(ones);
     // parameters = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::diagvec(X.t() * X))));
-    x.parameters(indices[0]) = arma::vectorise(X);
+    x.parameters(indices) = arma::vectorise(X);
 
   }
 
@@ -126,8 +126,7 @@ poblq* choose_poblq(Rcpp::List manifold_setup) {
 
   poblq* mymanifold = new poblq();
 
-  // Provide these:
-  std::vector<arma::uvec> indices = manifold_setup["indices"];
+  arma::uvec indices = manifold_setup["indices"];
   arma::mat constraints = manifold_setup["constraints"];
 
   // constraints.diag() += 10;

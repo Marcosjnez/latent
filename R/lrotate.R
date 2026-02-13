@@ -46,6 +46,11 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                     group = NULL, positive = FALSE, penalties = TRUE,
                     do.fit = TRUE, control = NULL, ...) {
 
+  # Capture everything in ... as a named list
+  dots <- list(...)
+
+  #### Arrange the data ####
+
   # Check orthogonality
   if(projection == "oblq" || projection == "poblq") {
     orthogonal <- FALSE
@@ -240,35 +245,27 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                      init_trans = init_trans,
                      control = control)
 
-  # # Generate control_manifold, control_transform, and control_estimator
-  #
-  # list2env(data_list, envir = environment())
-  # list2env(full_model, envir = environment())
-
   #### Create the structures ####
 
   #### Manifolds ####
 
-  control_manifold <- list()
-
+  mani_and_labs <- list()
   k <- 1L
 
   for(i in 1:ngroups) {
 
-    # Orthogonal/Oblique X in each group:
-    Xs <- c(rot_param[[i]]$X)
-    indices_Xs <- match(unique(Xs), parameters_labels)
-    indices_Xs <- indices_Xs[!is.na(indices_Xs)]
-    labels <- parameters_labels[indices_Xs]
-    indices <- list(indices_Xs-1L)
-    control_manifold[[k]] <- list(manifold = projection,
-                                  parameters = labels,
-                                  indices = indices,
-                                  q = nfactors[[i]],
-                                  ...)
+    dots$q <- nfactors[[i]]
+    # Get the extra objects required for the manifold:
+    mani_and_labs[[k]] <- extra_manifolds(projection,
+                                          rot_param[[i]]$X,
+                                          dots)
+
     k <- k+1L
 
   }
+
+  control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
+                                       param_structures = rot_param)
 
   #### Transformations ####
 

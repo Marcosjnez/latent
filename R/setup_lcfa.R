@@ -249,68 +249,43 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   #### Manifolds ####
 
-  control_manifold <- list()
+  # control_manifold <- list()
+  mani_and_labs <- list()
   k <- 1L
 
   for(i in 1:ngroups) {
 
-    lambdas <- unlist(cfa_param[[i]]$lambda)
-    indices_lambda <- match(unique(lambdas), parameters_labels)
-    indices_lambda <- indices_lambda[!is.na(indices_lambda)]
-    labels <- parameters_labels[indices_lambda]
-    indices <- list(indices_lambda-1L)
-    control_manifold[[k]] <- list(manifold = "euclidean",
-                                  parameters = labels,
-                                  indices = indices)
+    mani_and_labs[[k]] <- list("euclidean", cfa_param[[i]]$lambda)
     k <- k+1L
 
     if(positive) {
 
-      indices_pj_psi <- match(unique(c(cfa_param[[i]]$pj_psi)),
-                              parameters_labels)
-      labels <- parameters_labels[indices_pj_psi]
-      indices <- list(indices_pj_psi-1L)
-      control_manifold[[k]] <- list(manifold = "poblq",
-                                    parameters = labels,
-                                    indices = indices,
-                                    constraints = target_psi[[i]])
+      mani_and_labs[[k]] <- list("poblq",
+                                 cfa_param[[i]]$pj_psi,
+                                 constraints = target_psi[[i]])
       k <- k+1L
 
-      indices_pj_theta <- match(unique(c(cfa_param[[i]]$pj_theta)),
-                                parameters_labels)
-      labels <- parameters_labels[indices_pj_theta]
-      indices <- list(indices_pj_theta-1L)
-      control_manifold[[k]] <- list(manifold = "poblq",
-                                    parameters = labels,
-                                    indices = indices,
-                                    constraints = target_theta[[i]])
+      mani_and_labs[[k]] <- list("poblq",
+                                 cfa_param[[i]]$pj_theta,
+                                 constraints = target_theta[[i]])
       k <- k+1L
 
     } else {
 
-      indices_psi <- match(unique(c(cfa_param[[i]]$psi)),
-                           parameters_labels)
-      indices_psi <- indices_psi[!is.na(indices_psi)]
-      labels <- parameters_labels[indices_psi]
-      indices <- list(indices_psi-1L)
-      control_manifold[[k]] <- list(manifold = "euclidean",
-                                    parameters = labels,
-                                    indices = indices)
+      mani_and_labs[[k]] <- list("euclidean",
+                                 cfa_param[[i]]$psi)
       k <- k+1L
 
-      indices_theta <- match(unique(c(cfa_param[[i]]$theta)),
-                             parameters_labels)
-      indices_theta <- indices_theta[!is.na(indices_theta)]
-      labels <- parameters_labels[indices_theta]
-      indices <- list(indices_theta-1L)
-      control_manifold[[k]] <- list(manifold = "euclidean",
-                                    parameters = labels,
-                                    indices = indices)
+      mani_and_labs[[k]] <- list("euclidean",
+                                 cfa_param[[i]]$theta)
       k <- k+1L
 
     }
 
   }
+
+  control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
+                                       param_structures = cfa_param)
 
   #### Transformations ####
 

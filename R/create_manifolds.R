@@ -1,3 +1,42 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 14/02/2026
+
+extra_manifolds <- function(manifold, labels, dots) {
+
+  # Choose which extra objects from 'dots' should be kept for this manifold:
+  mani_objects <- switch(manifold,
+                         euclidean = character(0),
+                         unit      = character(0),
+                         simplex   = character(0),
+                         orth      = c("q"),
+                         oblq      = c("q"),
+                         poblq     = c("constraints"),
+                         stop("Unknown manifold: ", manifold)
+  )
+
+  # Pick only those objects from 'dots':
+  extra <- dots[mani_objects]
+
+  # Ensure the required extras are present and named:
+  if (length(mani_objects) > 0L) {
+    missing <- setdiff(mani_objects, names(dots))
+    if (length(missing) > 0L) {
+      stop("Missing required object(s) for manifold '", manifold, "': ",
+           paste(missing, collapse = ", "))
+    }
+  }
+
+  # Define the manifold:
+  result <- c(
+    list(manifold, labels),
+    extra
+  )
+
+  return(result)
+
+}
+
 create_manifolds <- function(manifolds_and_labels, param_structures) {
 
   if(!is.list(manifolds_and_labels)) {
@@ -33,9 +72,9 @@ create_manifolds <- function(manifolds_and_labels, param_structures) {
            paste(labels_vector[is.na(m)], collapse = ", "))
     }
 
-    indices <- list(m - 1L) # C++ indexing starts at 0
+    indices <- m - 1L # C++ indexing starts at 0
 
-    # Additional arguments for the specific manifolds:
+    # Additional objects for the specific manifolds:
     extra <- manifolds_and_labels[[i]]
     if (length(extra) > 2L) {
       extra <- extra[3:length(extra)]
@@ -43,9 +82,11 @@ create_manifolds <- function(manifolds_and_labels, param_structures) {
       extra <- list()
     }
 
-    result[[i]] <- list(manifold = manifold,
-                        indices = indices,
-                        extra = extra)
+    result[[i]] <- c(
+      list(manifold = manifold,
+           indices  = indices),
+      extra
+    )
 
   }
 

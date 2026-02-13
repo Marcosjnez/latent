@@ -10,28 +10,29 @@ class oblq:public manifolds {
 
 public:
 
+  arma::uvec indices;
   std::size_t q;
   arma::mat X, dX, g, dg;
 
   void param(arguments_optim& x) {
 
-    X = arma::reshape(x.parameters(indices[0]), q, q);
+    X = arma::reshape(x.parameters(indices), q, q);
 
   }
 
   void proj(arguments_optim& x) {
 
-    g = arma::reshape(x.g.elem(indices[0]), q, q);
-    x.rg.elem(indices[0]) = arma::vectorise(g - X * arma::diagmat(X.t() * g));
+    g = arma::reshape(x.g.elem(indices), q, q);
+    x.rg.elem(indices) = arma::vectorise(g - X * arma::diagmat(X.t() * g));
 
   }
 
   void hess(arguments_optim& x) {
 
-    g = arma::reshape(x.g.elem(indices[0]), q, q);
-    dg = arma::reshape(x.dg.elem(indices[0]), q, q);
-    dX = arma::reshape(x.dparameters.elem(indices[0]), q, q);
-    x.dH.elem(indices[0]) = arma::vectorise(dg - dX * arma::diagmat(X.t() * g) -
+    g = arma::reshape(x.g.elem(indices), q, q);
+    dg = arma::reshape(x.dg.elem(indices), q, q);
+    dX = arma::reshape(x.dparameters.elem(indices), q, q);
+    x.dH.elem(indices) = arma::vectorise(dg - dX * arma::diagmat(X.t() * g) -
       X * arma::diagmat(X.t() * dg));
     // arma::mat drg = dg - dX * arma::diagmat( X.t() * g) - X * arma::diagmat(dX.t() * g) -
     // X * arma::diagmat(X.t() * dg);
@@ -41,7 +42,7 @@ public:
 
   void retr(arguments_optim& x) {
 
-    x.parameters(indices[0]) = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::sum(X % X, 0))));
+    x.parameters(indices) = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::sum(X % X, 0))));
 
   }
 
@@ -59,8 +60,7 @@ oblq* choose_oblq(Rcpp::List manifold_setup) {
 
   oblq* mymanifold = new oblq();
 
-  // Provide these:
-  std::vector<arma::uvec> indices = manifold_setup["indices"];
+  arma::uvec indices = manifold_setup["indices"];
   std::size_t q = manifold_setup["q"];
 
   mymanifold->indices = indices;
