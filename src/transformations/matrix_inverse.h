@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 07/10/2025
+ * Modification date: 14/02/2026
  */
 
 // Matrix inverse transformation:
@@ -10,41 +10,37 @@ class matrix_inverse:public transformations {
 
 public:
 
+  arma::uvec indices_in, indices_out;
   int p;
-  arma::mat X, Xinv, dX, dXinv, grad_out, grad_in;
+  arma::mat X, Xinv, dX, dXinv, grad_out, grad_in, jacob;
 
   void transform(arguments_optim& x) {
 
-    X = arma::reshape(x.transparameters(indices_in[0]), p, p);
+    X = arma::reshape(x.transparameters(indices_in), p, p);
     Xinv = arma::inv(X);
-    x.transparameters(indices_out[0]) = arma::vectorise(Xinv);
+    x.transparameters(indices_out) = arma::vectorise(Xinv);
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    grad_out = arma::reshape(x.grad(indices_out[0]), p, p);
+    grad_out = arma::reshape(x.grad(indices_out), p, p);
     grad_in = -Xinv.t() * grad_out * Xinv.t();
-    x.grad(indices_in[0]) += arma::vectorise(grad_in);
-
-    // arma::vec v = x.grad(indices_in[0]);
-    // for (arma::uword i = 0; i < v.n_elem; ++i) {
-    //   Rprintf("%.6f%s", v(i), (i + 1 < v.n_elem) ? " " : "\n"); // space-separated, then newline
-    // }
+    x.grad(indices_in) += arma::vectorise(grad_in);
 
   }
 
   void dtransform(arguments_optim& x) {
 
-    dX = arma::reshape(x.dtransparameters(indices_in[0]), p, p);
+    dX = arma::reshape(x.dtransparameters(indices_in), p, p);
     dXinv = -Xinv * dX * Xinv;
-    x.dtransparameters(indices_out[0]) = arma::vectorise(dXinv);
+    x.dtransparameters(indices_out) = arma::vectorise(dXinv);
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::mat dgrad_out = arma::reshape(x.dgrad(indices_out[0]), p, p);
+    arma::mat dgrad_out = arma::reshape(x.dgrad(indices_out), p, p);
 
     arma::mat A  = Xinv.t();
     arma::mat dA = dXinv.t();
@@ -52,7 +48,7 @@ public:
                            A  * dgrad_out * A +
                            A  * grad_out * dA);
 
-    x.dgrad(indices_in[0]) += arma::vectorise(dgrad_in);
+    x.dgrad(indices_in) += arma::vectorise(dgrad_in);
 
   }
 
@@ -63,6 +59,8 @@ public:
   }
 
   void update_vcov(arguments_optim& x) {
+
+    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
 
   }
 
@@ -87,8 +85,8 @@ matrix_inverse* choose_matrix_inverse(const Rcpp::List& trans_setup) {
 
   matrix_inverse* mytrans = new matrix_inverse();
 
-  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
-  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  arma::uvec indices_in = trans_setup["indices_in"];
+  arma::uvec indices_out = trans_setup["indices_out"];
   int p = trans_setup["p"];
 
   mytrans->indices_in = indices_in;

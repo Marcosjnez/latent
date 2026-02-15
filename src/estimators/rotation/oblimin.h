@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -13,18 +13,12 @@ class oblimin: public estimators {
 public:
 
   int p, q;
-  arma::mat lambda, I_gamma_C, N;
-  arma::mat dlambda;
-  arma::mat L2, IgCL2N;
+  arma::uvec indices_lambda;
+  arma::mat lambda, I_gamma_C, N, dlambda, L2, IgCL2N;
 
   void param(arguments_optim& x) {
 
-    lambda = arma::reshape(x.transparameters(indices[0]), p, q);
-
-    // arma::vec v = x.transparameters(indices[0]);
-    // for (arma::uword i = 0; i < v.n_elem; ++i) {
-    //   Rprintf("%.6f%s", v(i), (i + 1 < v.n_elem) ? " " : "\n"); // space-separated, then newline
-    // }
+    lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
 
     L2 = lambda % lambda;
     IgCL2N = I_gamma_C * L2 * N;
@@ -42,17 +36,17 @@ public:
   void G(arguments_optim& x) {
 
     arma::mat df_dlambda = lambda % IgCL2N;
-    x.grad.elem(indices[0]) += arma::vectorise(df_dlambda);
+    x.grad.elem(indices_lambda) += arma::vectorise(df_dlambda);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dlambda = arma::reshape(x.dtransparameters(indices[0]), p, q);
+    dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
     arma::mat ddf_dlambda = dlambda % IgCL2N +
                             lambda % (I_gamma_C * (2*dlambda % lambda) * N);
 
-    x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dlambda);
+    x.dgrad.elem(indices_lambda) += arma::vectorise(ddf_dlambda);
 
   }
 
@@ -70,7 +64,7 @@ oblimin* choose_oblimin(const Rcpp::List& estimator_setup) {
 
   oblimin* myestimator = new oblimin();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
   double gamma = estimator_setup["gamma"];
@@ -82,7 +76,7 @@ oblimin* choose_oblimin(const Rcpp::List& estimator_setup) {
   arma::mat I_gamma_C = (I - gamma_C);
   // I_gamma_C and N must be symmetric
 
-  myestimator->indices = indices;
+  myestimator->indices_lambda = indices_lambda;
   myestimator->p = p;
   myestimator->q = q;
   myestimator->N = N;

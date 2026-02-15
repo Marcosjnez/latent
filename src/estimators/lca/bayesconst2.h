@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -12,15 +12,16 @@ class bayesconst2: public estimators {
 
 public:
 
-  double alpha, N;
   int K;
+  double alpha, N;
+  arma::uvec indices;
   arma::vec constant, pihat;
   arma::vec trans, logtrans;
   arma::vec constant_logtrans;
 
   void param(arguments_optim& x) {
 
-    trans = x.transparameters(indices[0]);
+    trans = x.transparameters(indices);
     logtrans = arma::trunc_log(trans);
     // double K = logtrans.n_elem + 0.00;
     constant = pihat * (alpha/(K + 0.00));
@@ -37,14 +38,14 @@ public:
 
   void G(arguments_optim& x) {
 
-    x.grad.elem(indices[0]) -= constant/trans/N;
+    x.grad.elem(indices) -= constant/trans/N;
 
   }
 
   void dG(arguments_optim& x) {
 
-    arma::vec dtrans = x.dtransparameters(indices[0]);
-    x.dgrad.elem(indices[0]) += constant % dtrans/(trans % trans)/N;
+    arma::vec dtrans = x.dtransparameters(indices);
+    x.dgrad.elem(indices) += constant % dtrans/(trans % trans)/N;
 
   }
 
@@ -68,11 +69,11 @@ bayesconst2* choose_bayesconst2(const Rcpp::List& estimator_setup) {
 
   bayesconst2* myestimator = new bayesconst2();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
-  double alpha = estimator_setup["alpha"];
+  arma::uvec indices = estimator_setup["indices"];
   int K = estimator_setup["K"];
-  arma::vec pihat = estimator_setup["pihat"];
+  double alpha = estimator_setup["alpha"];
   double N = estimator_setup["N"];
+  arma::vec pihat = estimator_setup["pihat"];
 
   myestimator->indices = indices;
   myestimator->K = K;

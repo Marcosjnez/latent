@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/10/2025
+ * Modification date: 14/02/2026
  */
 
 // Crossproduct transformation:
@@ -11,24 +11,24 @@ class crossprod:public transformations {
 public:
 
   int p;
-  arma::mat X, grad_out, dX, dXtX, Dp;
-  arma::uvec lower_diag;
+  arma::uvec indices_in, indices_out, lower_diag;
+  arma::mat X, grad_out, dX, dXtX, Dp, jacob;
 
   void transform(arguments_optim& x) {
 
-    X = arma::reshape(x.transparameters(indices_in[0]), p, p);
+    X = arma::reshape(x.transparameters(indices_in), p, p);
     arma::mat XtX = X.t() * X;
-    x.transparameters(indices_out[0]) = arma::vectorise(XtX.elem(lower_diag));
+    x.transparameters(indices_out) = arma::vectorise(XtX.elem(lower_diag));
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    grad_out.elem(lower_diag) = x.grad(indices_out[0]);
+    grad_out.elem(lower_diag) = x.grad(indices_out);
     grad_out = arma::symmatl(grad_out);
     grad_out *= 0.50; // Do not double-count the symmetric part
     grad_out.diag() *= 2; // Restore the diagonal
-    x.grad(indices_in[0]) += arma::vectorise(2*X * grad_out);
+    x.grad(indices_in) += arma::vectorise(2*X * grad_out);
 
     // arma::vec v = x.grad(indices_in[0]);
     // for (arma::uword i = 0; i < v.n_elem; ++i) {
@@ -43,21 +43,21 @@ public:
 
   void dtransform(arguments_optim& x) {
 
-    dX = arma::reshape(x.dtransparameters(indices_in[0]), p, p);
+    dX = arma::reshape(x.dtransparameters(indices_in), p, p);
     dXtX = X.t() * dX + dX.t() * X;
-    x.dtransparameters(indices_out[0]) = arma::vectorise(dXtX.elem(lower_diag));
+    x.dtransparameters(indices_out) = arma::vectorise(dXtX.elem(lower_diag));
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
     arma::mat dgrad_out(p, p, arma::fill::zeros);
-    dgrad_out.elem(lower_diag) = x.dgrad.elem(indices_out[0]);
+    dgrad_out.elem(lower_diag) = x.dgrad.elem(indices_out);
     dgrad_out = arma::symmatl(dgrad_out);
     dgrad_out *= 0.50; // Do not double-count the symmetric part
     dgrad_out.diag() *= 2; // Restore the diagonal
 
-    x.dgrad.elem(indices_in[0]) += arma::vectorise(2*dX * grad_out +
+    x.dgrad.elem(indices_in) += arma::vectorise(2*dX * grad_out +
                                                    2*X * dgrad_out);
 
   }
@@ -70,6 +70,8 @@ public:
   }
 
   void update_vcov(arguments_optim& x) {
+
+    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
 
   }
 
@@ -99,8 +101,8 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
 
   crossprod* mytrans = new crossprod();
 
-  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
-  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  arma::uvec indices_in = trans_setup["indices_in"];
+  arma::uvec indices_out = trans_setup["indices_out"];
   int p = trans_setup["p"];
 
   arma::mat X(p, p);

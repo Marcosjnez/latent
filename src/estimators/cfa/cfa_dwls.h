@@ -1,25 +1,25 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/11/2025
+ * Modification date: 15/02/2026
  */
 
 /*
- * Confirmatory factor analysis (least-squares, weigthed and unweighted)
+ * Confirmatory factor analysis ([weighted] least-squares)
  */
 
 class cfa_dwls: public estimators {
 
 public:
 
-  arma::mat S, Shat, dShat, residuals, W, W_residuals;
-  arma::uvec diag, lower_diag;
   int p, q;
   double w;
+  arma::uvec indices, diag, lower_diag;
+  arma::mat S, Shat, dShat, residuals, W, W_residuals;
 
   void param(arguments_optim& x) {
 
-    Shat.elem(lower_diag) = x.transparameters(indices[0]);
+    Shat.elem(lower_diag) = x.transparameters(indices);
     Shat = arma::symmatl(Shat);
 
     residuals = S - Shat;
@@ -39,19 +39,19 @@ public:
     arma::mat temp = -2*W_residuals;
     temp.diag() *= 0.5;
 
-    x.grad.elem(indices[0]) += w*arma::vectorise(temp(lower_diag));
+    x.grad.elem(indices) += w*arma::vectorise(temp(lower_diag));
 
   }
 
   void dG(arguments_optim& x) {
 
-    dShat.elem(lower_diag) = x.dtransparameters(indices[0]);
+    dShat.elem(lower_diag) = x.dtransparameters(indices);
     dShat = arma::symmatl(dShat);
 
     arma::mat dgShat = 2*W % dShat;
     dgShat.diag() *= 0.5;
 
-    x.dgrad.elem(indices[0]) += w*arma::vectorise(dgShat(lower_diag));
+    x.dgrad.elem(indices) += w*arma::vectorise(dgShat(lower_diag));
 
   }
 
@@ -81,11 +81,11 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
 
   cfa_dwls* myestimator = new cfa_dwls();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices = estimator_setup["indices"];
+  int q = estimator_setup["q"];
+  double w = estimator_setup["w"];
   arma::mat S = estimator_setup["R"];
   arma::mat W = estimator_setup["W"];
-  double w = estimator_setup["w"];
-  int q = estimator_setup["q"];
 
   int p = S.n_rows;
   arma::mat Shat(p, p, arma::fill::zeros);

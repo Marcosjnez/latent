@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -13,13 +13,14 @@ class geomin: public estimators {
 public:
 
   int p, q;
-  arma::mat lambda, dlambda, L2, LoL2;
   double q2, epsilon;
+  arma::uvec indices_lambda;
   arma::vec term;
+  arma::mat lambda, dlambda, L2, LoL2;
 
   void param(arguments_optim& x) {
 
-    lambda = arma::reshape(x.transparameters(indices[0]), p, q);
+    lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
 
     L2 = lambda % lambda;
     L2 += epsilon;
@@ -40,13 +41,13 @@ public:
     arma::mat df_dlambda = LoL2 * q2;
     df_dlambda.each_col() %= term;
 
-    x.grad.elem(indices[0]) += arma::vectorise(df_dlambda);
+    x.grad.elem(indices_lambda) += arma::vectorise(df_dlambda);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dlambda = arma::reshape(x.dtransparameters(indices[0]), p, q);
+    dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
 
     arma::mat c1 = (epsilon - lambda % lambda) / (L2 % L2) % dlambda;
     c1.each_col() %= term;
@@ -56,7 +57,7 @@ public:
 
     arma::mat ddf_dlambda = q2 * (c1 + c2);
 
-    x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dlambda);
+    x.dgrad.elem(indices_lambda) += arma::vectorise(ddf_dlambda);
 
   }
 
@@ -74,14 +75,14 @@ geomin* choose_geomin(const Rcpp::List& estimator_setup) {
 
   geomin* myestimator = new geomin();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
   double epsilon = estimator_setup["epsilon"];
 
   double q2 = 2/(q + 0.0);
 
-  myestimator->indices = indices;
+  myestimator->indices_lambda = indices_lambda;
   myestimator->p = p;
   myestimator->q = q;
   myestimator->q2 = q2;

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/12/2025
+# Modification date: 15/02/2026
 
 #### Install latent ####
 
@@ -53,7 +53,7 @@ latInspect(fit, what = "posterior", digits = 3)
 latInspect(fit, what = "table", digits = 3)
 
 # Get standard errors:
-SE <- se(fit, type = "robust", model = "model", digits = 4)
+SE <- se(fit, type = "standard", model = "model", digits = 4)
 SE$table
 
 # Get confidence intervals:
@@ -156,7 +156,7 @@ set.seed(2026)
 fit0 <- lca(data = data, X = NULL, model = NULL,
             item = rep("gaussian", ncol(data)),
             nclasses = 4L, penalties = TRUE,
-            control = list(opt = "newton",
+            control = list(opt = "lbfgs",
                            step_maxit = 100,
                            tcg_maxit = 100),
             do.fit = TRUE)
@@ -165,10 +165,8 @@ fit0@loglik # -1841.336
 fit0@penalized_loglik # -1844.333
 fit0@Optim$iterations
 fit0@Optim$ng
-max(fit0@Optim$rg)
-sqrt(sum(fit0@Optim$rg*-fit0@Optim$dir))
-sqrt(sum(fit0@Optim$rg*fit0@Optim$rg))
 
+set.seed(2026)
 penalties <- list(
   beta  = list(alpha = 0, lambda = 1, power = 1),
   class = list(alpha = 1),
@@ -176,11 +174,10 @@ penalties <- list(
   sd    = list(alpha = 1)
 )
 Y <- as.matrix(empathy[, 9:10]) # Covariates
-set.seed(2026)
 fit <- lca(data = data, X = cbind(X, Y), model = fit0,
            item = rep("gaussian", ncol(data)),
-           nclasses = 4L, penalties = F,
-           control = list(opt = "newton",
+           nclasses = 4L, penalties = penalties,
+           control = list(opt = "lbfgs",
                           step_maxit = 100,
                           tcg_maxit = 100),
            do.fit = TRUE)
@@ -190,10 +187,6 @@ fit@penalized_loglik # -1750.669
 fit@Optim$iterations
 fit@Optim$convergence
 fit@Optim$ng
-max(fit@Optim$rg)
-sqrt(sum(fit@Optim$rg*-fit@Optim$dir))
-sqrt(sum(fit@Optim$rg*fit@Optim$rg))
-fit@transformed_pars$beta
 
 all.equal(fit0@parameters$items, fit@parameters$items)
 
@@ -255,8 +248,8 @@ model <- 'visual  =~ x1 + x2 + x3
 
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "ml",
-            ordered = FALSE, std.lv = TRUE, positive = TRUE,
+            estimator = "ml", positive = FALSE,
+            ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
             control = list(opt = "newton",
                            step_maxit = 100,
@@ -416,16 +409,16 @@ fit2@loglik$loglik
 # With latent:
 set.seed(2026)
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
-            estimator = "ml", positive = TRUE,
+            estimator = "uls", positive = TRUE,
             penalties = list(logdet = list(w = 0.01)),
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "newton", maxit = 1000L,
+            control = list(opt = "grad", maxit = 1000L,
                            cores = 20L, rstarts = 20L, eps = 1e-05,
                            tcg_maxit = 10))
 
-fit@loglik # -3421.497 (ML)
-fit@penalized_loglik # -3421.502 (ML)
+fit@loglik # -3422.761 (ML)
+fit@penalized_loglik # -3422.766 (ML)
 fit@loss # 0.1419955 (ULS) / 0.2467385 (ML)
 fit@Optim$iterations
 fit@Optim$convergence

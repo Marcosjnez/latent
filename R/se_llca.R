@@ -186,17 +186,13 @@ robust_se <- function(fit) {
 
   for(s in 1:npatterns) {
 
-    labels <- c(lca_all$class[s, ], full_loglik[s,,])
-    all_indices <- match(labels, transparameters_labels)
-    indices_classes <- match(lca_all$class[s, ], transparameters_labels)
-    indices_items <- match(full_loglik[s,,], transparameters_labels)
-    indices_theta <- match(lca_all$theta[s, ], transparameters_labels)
-    indices <- list(all_indices-1L, indices_classes-1L, indices_items-1L,
-                    indices_theta-1L)
+    indices_classes <- match(lca_all$class[s, ], transparameters_labels)-1L
+    indices_cubeloglik <- match(full_loglik[s,,], transparameters_labels)-1L
 
     control_estimator[[K+s]] <- list(estimator = "lca",
-                                     labels = labels,
-                                     indices = indices,
+                                     # labels = labels,
+                                     indices_classes = indices_classes,
+                                     indices_cubeloglik = indices_cubeloglik,
                                      S = 1L,
                                      J = nitems,
                                      I = nclasses,

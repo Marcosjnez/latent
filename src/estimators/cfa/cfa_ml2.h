@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 21/12/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -12,14 +12,14 @@ class cfa_ml2: public estimators {
 
 public:
 
-  arma::mat R, Rhat, residuals, dRhat, Rhat_inv, Ri_R_Ri, gRhat;
-  arma::uvec lower_diag;
-  double w, logdetR, plogpi2;
   int p, q, n;
+  double w, logdetR, plogpi2;
+  arma::uvec indices, lower_diag;
+  arma::mat R, Rhat, residuals, dRhat, Rhat_inv, Ri_R_Ri, gRhat;
 
   void param(arguments_optim& x) {
 
-    Rhat.elem(lower_diag) = x.transparameters(indices[0]);
+    Rhat.elem(lower_diag) = x.transparameters(indices);
     Rhat = arma::symmatl(Rhat);
 
     if(!Rhat.is_sympd()) {
@@ -47,13 +47,13 @@ public:
     arma::mat temp = 2*gRhat;
     temp.diag() *= 0.5;
 
-    x.grad.elem(indices[0]) += w*arma::vectorise(temp(lower_diag));
+    x.grad.elem(indices) += w*arma::vectorise(temp(lower_diag));
 
   }
 
   void dG(arguments_optim& x) {
 
-    dRhat.elem(lower_diag) = x.dtransparameters(indices[0]);
+    dRhat.elem(lower_diag) = x.dtransparameters(indices);
     dRhat = arma::symmatl(dRhat);
 
     arma::mat dRhat_inv = -Rhat_inv * dRhat * Rhat_inv;
@@ -62,7 +62,7 @@ public:
                           Rhat_inv * R * dRhat_inv));
     dgRhat.diag() *= 0.5;
 
-    x.dgrad.elem(indices[0]) += w*arma::vectorise(dgRhat(lower_diag));
+    x.dgrad.elem(indices) += w*arma::vectorise(dgRhat(lower_diag));
 
   }
 
@@ -98,7 +98,7 @@ cfa_ml2* choose_cfa_ml2(const Rcpp::List& estimator_setup) {
 
   cfa_ml2* myestimator = new cfa_ml2();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices = estimator_setup["indices"];
   arma::mat R = estimator_setup["R"];
   double w = estimator_setup["w"];
   int q = estimator_setup["q"];

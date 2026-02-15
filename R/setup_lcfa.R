@@ -304,28 +304,26 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
       labels_in <- c(cfa_trans[[i]]$pj_psi)
       labels_out <- c(cfa_trans[[i]]$psi[lower_psi])
-      indices_in <- list(match(labels_in, transparameters_labels)-1L)
-      indices_out <- list(match(labels_out, transparameters_labels)-1L)
+      indices_in <- match(labels_in, transparameters_labels)-1L
+      indices_out <- match(labels_out, transparameters_labels)-1L
       control_transform[[k]] <- list(transform = "crossprod",
-                                     labels_in = labels_in,
+                                     # labels_in = labels_in,
+                                     # labels_out = labels_out,
                                      indices_in = indices_in,
-                                     labels_out = labels_out,
                                      indices_out = indices_out,
-                                     p = nrow(cfa_trans[[i]]$psi),
-                                     q = ncol(cfa_trans[[i]]$psi))
+                                     p = nrow(cfa_trans[[i]]$psi))
       k <- k+1L
 
       labels_in <- c(cfa_trans[[i]]$pj_theta)
       labels_out <- c(cfa_trans[[i]]$theta[lower_theta])
-      indices_in <- list(match(labels_in, transparameters_labels)-1L)
-      indices_out <- list(match(labels_out, transparameters_labels)-1L)
+      indices_in <- match(labels_in, transparameters_labels)-1L
+      indices_out <- match(labels_out, transparameters_labels)-1L
       control_transform[[k]] <- list(transform = "crossprod",
-                                     labels_in = labels_in,
+                                     # labels_in = labels_in,
+                                     # labels_out = labels_out,
                                      indices_in = indices_in,
-                                     labels_out = labels_out,
                                      indices_out = indices_out,
-                                     p = nrow(cfa_trans[[i]]$theta),
-                                     q = ncol(cfa_trans[[i]]$theta))
+                                     p = nrow(cfa_trans[[i]]$theta))
       k <- k+1L
 
     }
@@ -350,12 +348,15 @@ get_cfa_structures <- function(data_list, full_model, control) {
     indices_model <- match(cfa_trans[[i]]$model[lower_diag],
                            transparameters_labels)
     labels_out <- transparameters_labels[indices_model]
-    indices_out <- list(indices = indices_model-1L)
+    indices_out <- indices_model-1L
 
     control_transform[[k]] <- list(transform = "factor_cor",
-                                   labels_in = labels_in,
-                                   indices_in = indices_in,
-                                   labels_out = labels_out,
+                                   indices_lambda = indices_lambda-1L,
+                                   indices_psi = indices_psi-1L,
+                                   indices_theta = indices_theta-1L,
+                                   # labels_in = labels_in,
+                                   # indices_in = indices_in,
+                                   # labels_out = labels_out,
                                    indices_out = indices_out,
                                    p = nrow(correl[[i]]$R),
                                    q = nrow(cfa_trans[[i]]$psi))
@@ -371,10 +372,8 @@ get_cfa_structures <- function(data_list, full_model, control) {
   for(i in 1:ngroups) {
 
     lower_diag <- lower.tri(cfa_trans[[i]]$model, diag = TRUE)
-    indices_model <- match(cfa_trans[[i]]$model[lower_diag],
-                         transparameters_labels)
-    labels <- transparameters_labels[indices_model]
-    indices <- list(indices = indices_model-1L)
+    indices <- match(cfa_trans[[i]]$model[lower_diag],
+                     transparameters_labels)-1L
 
     estimator <- tolower(estimator)
     if(estimator == "uls" || estimator == "dwls") {
@@ -388,7 +387,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
     }
 
     control_estimator[[k]] <- list(estimator = cfa_estimator,
-                                   labels = labels,
+                                   # labels = labels,
                                    indices = indices,
                                    R = correl[[i]]$R,
                                    W = correl[[i]]$W,
@@ -407,10 +406,10 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
       lower_indices <- which(lower.tri(cfa_trans[[i]]$psi, diag = TRUE))
       labels <- cfa_trans[[i]]$psi[lower_indices]
-      indices <- match(labels, transparameters_labels)
+      indices <- match(labels, transparameters_labels)-1L
       control_estimator[[k]] <- list(estimator = "logdetmat",
-                                     labels = labels,
-                                     indices = list(indices-1L),
+                                     # labels = labels,
+                                     indices = indices,
                                      lower_indices = lower_indices-1L,
                                      p = nrow(cfa_trans[[i]]$psi),
                                      logdetw = control$penalties$logdet$w)
@@ -420,10 +419,10 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
       lower_indices <- which(lower.tri(cfa_trans[[i]]$theta, diag = TRUE))
       labels <- cfa_trans[[i]]$theta[lower_indices]
-      indices <- match(labels, transparameters_labels)
+      indices <- match(labels, transparameters_labels)-1L
       control_estimator[[k]] <- list(estimator = "logdetmat",
-                                     labels = labels,
-                                     indices = list(indices-1L),
+                                     # labels = labels,
+                                     indices = indices,
                                      lower_indices = lower_indices-1L,
                                      p = nrow(cfa_trans[[i]]$theta),
                                      logdetw = control$penalties$logdet$w)

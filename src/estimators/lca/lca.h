@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/10/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -17,8 +17,7 @@ public:
   int I; // Number of latent classes
   arma::vec weights; // Number of repetitions of each response pattern
   arma::vec logweights;
-  arma::uvec indices_classes;
-  arma::uvec indices_cubeloglik;
+  arma::uvec indices_classes, indices_cubeloglik;
   arma::cube cubeloglik; // items loglik conditional on classes
   arma::mat classes;     // probabilities of classes
   arma::mat logclasses;
@@ -193,10 +192,11 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
 
   lca* myestimator = new lca();
 
+  arma::uvec indices_classes = estimator_setup["indices_classes"];
+  arma::uvec indices_cubeloglik = estimator_setup["indices_cubeloglik"];
   int S = estimator_setup["S"];
   int J = estimator_setup["J"];
   int I = estimator_setup["I"];
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::vec weights = estimator_setup["weights"];
 
   double N = arma::accu(weights);
@@ -210,15 +210,12 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
   arma::mat posterior(S, I, arma::fill::zeros);
   arma::mat logposterior(S, I, arma::fill::zeros);
   arma::vec logweights = arma::trunc_log(weights);
-  arma::uvec indices_classes = indices[1];
-  arma::uvec indices_cubeloglik = indices[2];
 
   myestimator->S = S;
   myestimator->J = J;
   myestimator->I = I;
   myestimator->weights = weights;
   myestimator->logweights = logweights;
-  myestimator->indices = indices;
   myestimator->indices_classes = indices_classes;
   myestimator->indices_cubeloglik = indices_cubeloglik;
 

@@ -170,7 +170,7 @@ public:
 
     if(x.minimal_se) {
 
-      x.vcov = x.inv_h;
+    x.vcov = x.inv_h;
 
     } else {
 
@@ -183,14 +183,14 @@ public:
       for (int i=0; i < x.ntransforms; ++i) {
         // for (int i=0; i < x.ncov_transform; ++i) {
 
-        // Rprintf("%d \n", i);
-        const arma::uvec& indices_in  = xtransformations[i]->indices_in[0];
-        const arma::uvec& indices_out = xtransformations[i]->indices_out[0];
-
+        // // Rprintf("%d \n", i);
+        // const arma::uvec& indices_in  = xtransformations[i]->indices_in[0];
+        // const arma::uvec& indices_out = xtransformations[i]->indices_out[0];
+        xtransformations[i]->jacobian(x);
         xtransformations[i]->update_vcov(x);
 
-        const arma::mat& J = xtransformations[i]->jacob;
-        x.vcov(indices_out, indices_out) = J * x.vcov(indices_in, indices_in) * J.t();
+        // const arma::mat& J = xtransformations[i]->jacob;
+        // x.vcov(indices_out, indices_out) = J * x.vcov(indices_in, indices_in) * J.t();
 
       }
 

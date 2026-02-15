@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/11/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -12,14 +12,14 @@ class cfa_ml: public estimators {
 
 public:
 
-  arma::mat S, Shat, residuals, dShat, Shat_inv, R_Ri, Ri_R_Ri, gShat, I;
-  arma::uvec diag, lower_diag;
-  double w, logdetS, plogpi2;
   int p, q, n;
+  double w, logdetS, plogpi2;
+  arma::uvec indices, diag, lower_diag;
+  arma::mat S, Shat, residuals, dShat, Shat_inv, R_Ri, Ri_R_Ri, gShat, I;
 
   void param(arguments_optim& x) {
 
-    Shat.elem(lower_diag) = x.transparameters(indices[0]);
+    Shat.elem(lower_diag) = x.transparameters(indices);
     Shat = arma::symmatl(Shat);
 
     if(!Shat.is_sympd()) {
@@ -51,13 +51,13 @@ public:
     arma::mat temp = 2*gShat;
     temp.diag() *= 0.5;
 
-    x.grad.elem(indices[0]) += w*n*0.5*arma::vectorise(temp(lower_diag))/n;
+    x.grad.elem(indices) += w*n*0.5*arma::vectorise(temp(lower_diag))/n;
 
   }
 
   void dG(arguments_optim& x) {
 
-    dShat.elem(lower_diag) = x.dtransparameters(indices[0]);
+    dShat.elem(lower_diag) = x.dtransparameters(indices);
     dShat = arma::symmatl(dShat);
 
     arma::mat dShat_inv = -Shat_inv * dShat * Shat_inv;
@@ -65,7 +65,7 @@ public:
                           Shat_inv * S * dShat_inv);
     dgShat.diag() *= 0.5;
 
-    x.dgrad.elem(indices[0]) += w*n*0.5*arma::vectorise(dgShat(lower_diag))/n;
+    x.dgrad.elem(indices) += w*n*0.5*arma::vectorise(dgShat(lower_diag))/n;
 
   }
 
@@ -100,7 +100,7 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
 
   cfa_ml* myestimator = new cfa_ml();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices = estimator_setup["indices"];
   arma::mat S = estimator_setup["R"];
   double w = estimator_setup["w"];
   int q = estimator_setup["q"];

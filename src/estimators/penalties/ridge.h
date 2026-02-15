@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 03/02/2026
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -13,18 +13,19 @@ class ridge: public estimators {
 public:
 
   double lambda, power, N;
+  arma::uvec indices;
   arma::vec beta;
 
   void param(arguments_optim& x) {
 
-    beta = x.transparameters.elem(indices[0]);
+    beta = x.transparameters.elem(indices);
 
   }
 
   void F(arguments_optim& x) {
 
     arma::vec beta_power = arma::pow(arma::abs(beta), power);
-    f = (lambda / power) * arma::accu(beta_power);
+    f = -(lambda / power) * arma::accu(beta_power);
     x.f += f/N;
 
   }
@@ -32,17 +33,17 @@ public:
   void G(arguments_optim& x) {
 
     arma::vec grad = lambda * (arma::sign(beta) % arma::pow(arma::abs(beta), power - 1.0));
-    x.grad.elem(indices[0]) += grad/N;
+    x.grad.elem(indices) += -grad/N;
 
   }
 
   void dG(arguments_optim& x) {
-    arma::vec dbeta = x.dtransparameters.elem(indices[0]);
+    arma::vec dbeta = x.dtransparameters.elem(indices);
 
     arma::vec dgrad = lambda * (power - 1.0) *
       (arma::pow(arma::abs(beta), power - 2.0) % dbeta);
 
-    x.dgrad.elem(indices[0]) += dgrad/N;
+    x.dgrad.elem(indices) += -dgrad/N;
 
   }
 
@@ -59,7 +60,7 @@ ridge* choose_ridge(const Rcpp::List& estimator_setup) {
 
   ridge* myestimator = new ridge();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices = estimator_setup["indices"];
   double lambda = estimator_setup["lambda"];
   double power = estimator_setup["power"];
   double N = estimator_setup["N"];

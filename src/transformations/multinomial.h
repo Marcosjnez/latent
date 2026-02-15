@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 06/10/2025
+ * Modification date: 14/02/2026
  */
 
 // Logarithm multinomial probability transformation:
@@ -10,17 +10,16 @@ class multinomial:public transformations {
 
 public:
 
+  arma::uvec indices_in, indices_out, K;
   arma::vec trans, logtrans, df_dloglik;
   std::vector<arma::mat> peta, eta, df_dpeta, indices;
   std::vector<arma::mat> dpeta, deta;
-  arma::uvec K;
-  arma::mat y;
-  int S, J, I;
-  int n_in, n_out;
+  arma::mat y, jacob;
+  int S, J, I, n_in, n_out;
 
   void transform(arguments_optim& x) {
 
-    trans = x.transparameters(indices_in[0]);
+    trans = x.transparameters(indices_in);
     logtrans = arma::trunc_log(trans);
 
     int l=0;
@@ -44,13 +43,13 @@ public:
       }
     }
 
-    x.transparameters.elem(indices_out[0]) = arma::vectorise(loglik);
+    x.transparameters.elem(indices_out) = arma::vectorise(loglik);
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    df_dloglik = x.grad(indices_out[0]);
+    df_dloglik = x.grad(indices_out);
 
     for(int j=0; j < J; ++j) {
       df_dpeta[j].zeros();
@@ -72,13 +71,13 @@ public:
       v = arma::join_cols(v, arma::vectorise(df_dpeta[j]));
     }
 
-    x.grad(indices_in[0]) += v;
+    x.grad(indices_in) += v;
 
   }
 
   void dtransform(arguments_optim& x) {
 
-    arma::vec dtrans_in = x.dtransparameters(indices_in[0]);
+    arma::vec dtrans_in = x.dtransparameters(indices_in);
 
     int l=0;
     for(int j=0; j < J; ++j) {
@@ -101,13 +100,13 @@ public:
       }
     }
 
-    x.dtransparameters.elem(indices_out[0]) = arma::vectorise(dloglik);
+    x.dtransparameters.elem(indices_out) = arma::vectorise(dloglik);
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::vec ddf_dloglik = x.dgrad(indices_out[0]);
+    arma::vec ddf_dloglik = x.dgrad(indices_out);
 
     std::vector<arma::mat> dgrad_in = df_dpeta;
     for(int j=0; j < J; ++j) {
@@ -132,7 +131,7 @@ public:
       v = arma::join_cols(v, arma::vectorise(dgrad_in[j]));
     }
 
-    x.dgrad(indices_in[0]) += v;
+    x.dgrad(indices_in) += v;
 
   }
 
@@ -157,6 +156,8 @@ public:
 
   void update_vcov(arguments_optim& x) {
 
+    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
+
   }
 
   void dconstraints(arguments_optim& x) {
@@ -167,7 +168,7 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    int p = indices_out[0].n_elem;
+    int p = indices_out.n_elem;
     arma::vec chisq_p(p, arma::fill::value(1.00));
 
     vectors.resize(2);
@@ -186,18 +187,16 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
 
   multinomial* mytrans = new multinomial();
 
-  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
-  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  arma::uvec indices_in = trans_setup["indices_in"];
+  arma::uvec indices_out = trans_setup["indices_out"];
   arma::mat y = trans_setup["y"];
   arma::uvec K = trans_setup["K"];
   int S = trans_setup["S"];
   int J = trans_setup["J"];
   int I = trans_setup["I"];
 
-  int n_in  = indices_in[0].n_elem;
-  int n_out = indices_out[0].n_elem;
-  // arma::uvec peta_indices = indices_in[1]; // SxJxIxK indices
-  // arma::uvec removeNAs = indices_in[2];
+  int n_in  = indices_in.n_elem;
+  int n_out = indices_out.n_elem;
   std::vector<arma::mat> peta(J);
   for(int j=0; j < J; ++j) {
     peta[j].resize(K(j), I);
@@ -217,8 +216,6 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
   mytrans->indices_out = indices_out;
   mytrans->n_in = n_in;
   mytrans->n_out = n_out;
-  // mytrans->peta_indices = peta_indices;
-  // mytrans->removeNAs = removeNAs;
   mytrans->y = y;
   mytrans->S = S;
   mytrans->J = J;

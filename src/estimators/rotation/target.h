@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -13,12 +13,13 @@ class target: public estimators {
 public:
 
   int p, q;
+  arma::uvec indices_lambda;
   arma::mat lambda, dlambda, target, weight, f1, weight2;
 
   void param(arguments_optim& x) {
 
     // Parameterization
-    lambda = arma::reshape(x.transparameters(indices[0]), p, q);
+    lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
     f1 = weight % (lambda - target);
 
   }
@@ -36,16 +37,16 @@ public:
     // Compute gradient
     arma::mat df_dlambda = weight % f1;
 
-    x.grad(indices[0]) += arma::vectorise(df_dlambda);
+    x.grad(indices_lambda) += arma::vectorise(df_dlambda);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dlambda = arma::reshape(x.dtransparameters(indices[0]), p, q);
+    dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
     arma::mat ddf_dlambda = weight2 % dlambda;
 
-    x.dgrad(indices[0]) += arma::vectorise(ddf_dlambda);
+    x.dgrad(indices_lambda) += arma::vectorise(ddf_dlambda);
 
   }
 
@@ -63,7 +64,7 @@ target* choose_target(const Rcpp::List& estimator_setup) {
 
   target* myestimator = new target();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
   arma::mat target = estimator_setup["target"];
   arma::mat weight = estimator_setup["weight"];
 
@@ -71,7 +72,7 @@ target* choose_target(const Rcpp::List& estimator_setup) {
   int p = target.n_rows;
   int q = target.n_cols;
 
-  myestimator->indices = indices;
+  myestimator->indices_lambda = indices_lambda;
   myestimator->target = target;
   myestimator->weight = weight;
   myestimator->weight2 = weight2;

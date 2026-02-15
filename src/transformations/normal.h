@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 06/10/2025
+ * Modification date: 14/02/2026
  */
 
 const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);
@@ -12,19 +12,15 @@ class normal:public transformations {
 
 public:
 
-  arma::uvec mu_indices;
-  arma::uvec sigma_indices;
-  arma::mat y, mu, sigma, sigma2, sigma3, sigma4;
-  arma::mat dmu, dsigma;
-  int S, J, I;
-  int n_out;
-  int n_in;
+  arma::uvec indices_mu, indices_sigma, indices_in, indices_out;
+  arma::mat y, mu, sigma, sigma2, sigma3, sigma4, dmu, dsigma, jacob;
+  int S, J, I, n_in, n_out;
 
   void transform(arguments_optim& x) {
 
     arma::cube loglik(S, J, I, arma::fill::zeros);
-    mu = arma::reshape(x.transparameters(mu_indices), J, I);
-    sigma = arma::reshape(x.transparameters(sigma_indices), J, I);
+    mu = arma::reshape(x.transparameters(indices_mu), J, I);
+    sigma = arma::reshape(x.transparameters(indices_sigma), J, I);
     sigma2 = sigma % sigma;
     sigma3 = sigma2 % sigma;
     arma::mat log_sigma = arma::trunc_log(sigma);
@@ -39,7 +35,7 @@ public:
       }
     }
 
-    x.transparameters.elem(indices_out[0]) = arma::vectorise(loglik);
+    x.transparameters.elem(indices_out) = arma::vectorise(loglik);
 
   }
 
@@ -48,7 +44,7 @@ public:
     arma::mat df_dmu(J, I, arma::fill::zeros);
     arma::mat df_dsigma(J, I, arma::fill::zeros);
 
-    arma::vec grad = x.grad(indices_out[0]);
+    arma::vec grad = x.grad(indices_out);
 
     int k=0L;
     for(int i=0; i < I; ++i) {
@@ -62,15 +58,15 @@ public:
       }
     }
 
-    x.grad(mu_indices) += arma::vectorise(df_dmu);
-    x.grad(sigma_indices) += arma::vectorise(df_dsigma);
+    x.grad(indices_mu) += arma::vectorise(df_dmu);
+    x.grad(indices_sigma) += arma::vectorise(df_dsigma);
 
   }
 
   void dtransform(arguments_optim& x) {
 
-    dmu    = arma::reshape(x.dtransparameters(mu_indices),    J, I);
-    dsigma = arma::reshape(x.dtransparameters(sigma_indices), J, I);
+    dmu    = arma::reshape(x.dtransparameters(indices_mu),    J, I);
+    dsigma = arma::reshape(x.dtransparameters(indices_sigma), J, I);
 
     arma::cube dloglik(S, J, I, arma::fill::zeros);
     for (int i = 0; i < I; ++i) {
@@ -87,38 +83,19 @@ public:
       }
     }
 
-    x.dtransparameters.elem(indices_out[0]) = arma::vectorise(dloglik);
+    x.dtransparameters.elem(indices_out) = arma::vectorise(dloglik);
 
   }
 
   void update_dgrad(arguments_optim& x) {
-
-    // arma::mat ddf_dmu(J, I, arma::fill::zeros);
-    // arma::mat ddf_dsigma(J, I, arma::fill::zeros);
-    //
-    // arma::vec dgrad_out = x.dgrad(indices_out[0]);
-    //
-    // int k=0L;
-    // for(int i=0; i < I; ++i) {
-    //   for(int j=0; j < J; ++j) {
-    //     for(int s=0; s < S; ++s, ++k) {
-    //       if (std::isnan(y(s,j))) continue;
-    //       // ddf_dmu(j,i) +=
-    //       // ddf_dsigma(j,i) +=
-    //     }
-    //   }
-    // }
-    //
-    // x.dgrad(mu_indices) += arma::vectorise(ddf_dmu);
-    // x.dgrad(sigma_indices) += arma::vectorise(ddf_dsigma);
 
     sigma4 = sigma2 % sigma2;
 
     arma::mat ddf_dmu(J, I, arma::fill::zeros);
     arma::mat ddf_dsigma(J, I, arma::fill::zeros);
 
-    arma::vec grad_out    = x.grad(indices_out[0]);
-    arma::vec dgrad_out   = x.dgrad(indices_out[0]);
+    arma::vec grad_out    = x.grad(indices_out);
+    arma::vec dgrad_out   = x.dgrad(indices_out);
 
     int k = 0L;
     for (int i = 0; i < I; ++i) {
@@ -151,8 +128,8 @@ public:
       }
     }
 
-    x.dgrad(mu_indices)    += arma::vectorise(ddf_dmu);
-    x.dgrad(sigma_indices) += arma::vectorise(ddf_dsigma);
+    x.dgrad(indices_mu)    += arma::vectorise(ddf_dmu);
+    x.dgrad(indices_sigma) += arma::vectorise(ddf_dsigma);
 
   }
 
@@ -182,6 +159,9 @@ public:
 
   void update_vcov(arguments_optim& x) {
 
+    indices_in = arma::join_cols(indices_mu, indices_sigma);
+    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
+
   }
 
   void dconstraints(arguments_optim& x) {
@@ -192,7 +172,7 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    int p = indices_out[0].n_elem;
+    int p = indices_out.n_elem;
     arma::vec chisq_p(p, arma::fill::value(2.00));
 
     vectors.resize(2);
@@ -211,27 +191,22 @@ normal* choose_normal(const Rcpp::List& trans_setup) {
 
   normal* mytrans = new normal();
 
-  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
-  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  arma::uvec indices_mu = trans_setup["indices_mu"];
+  arma::uvec indices_sigma = trans_setup["indices_sigma"];
+  arma::uvec indices_out = trans_setup["indices_out"];
   arma::mat y = trans_setup["y"];
   int S = trans_setup["S"];
   int J = trans_setup["J"];
   int I = trans_setup["I"];
 
-  arma::uvec mu_indices = indices_in[1];
-  arma::uvec sigma_indices = indices_in[2];
-  // arma::uvec item_indices = indices_in[3];
-  int n_in  = indices_in[0].n_elem;
-  int n_out = indices_out[0].n_elem;
+  int n_in  = indices_mu.n_elem + indices_sigma.n_elem;
+  int n_out = indices_out.n_elem;
 
-  mytrans->indices_in = indices_in;
+  mytrans->indices_mu = indices_mu;
+  mytrans->indices_sigma = indices_sigma;
   mytrans->indices_out = indices_out;
   mytrans->n_in = n_in;
   mytrans->n_out = n_out;
-
-  mytrans->mu_indices = mu_indices;
-  mytrans->sigma_indices = sigma_indices;
-  // mytrans->item_indices = item_indices;
   mytrans->y = y;
   mytrans->S = S;
   mytrans->J = J;

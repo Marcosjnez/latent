@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/11/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -361,14 +361,14 @@ class polycor: public estimators {
 
 public:
 
-  arma::mat R;
+  int p;
+  double loss, N;
+  arma::uvec indices_R, lower_diag;
+  std::vector<arma::uvec> indices_taus;
   std::vector<arma::vec> taus;
   std::vector<arma::vec> pnorm_tau;
   std::vector<std::vector<std::vector<int>>> n;
-  std::vector<arma::uvec> indices_taus;
-  arma::uvec indices_R, lower_diag;
-  int p;
-  double loss, N;
+  arma::mat R;
 
   void param(arguments_optim& x) {
 
@@ -522,9 +522,8 @@ polycor* choose_polycor(const Rcpp::List& estimator_setup) {
 
   polycor* myestimator = new polycor();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
-  std::vector<arma::uvec> indices_taus = estimator_setup["indices_taus"];
   arma::uvec indices_R = estimator_setup["indices_R"];
+  std::vector<arma::uvec> indices_taus = estimator_setup["indices_taus"];
   std::vector<std::vector<std::vector<int>>> n = estimator_setup["n"];
   int p = estimator_setup["p"];
   double N = estimator_setup["N"];
@@ -534,7 +533,6 @@ polycor* choose_polycor(const Rcpp::List& estimator_setup) {
   arma::mat R(p, p, arma::fill::zeros);
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(R));
 
-  myestimator->indices = indices;
   myestimator->indices_taus = indices_taus;
   myestimator->indices_R = indices_R;
   myestimator->n = n;

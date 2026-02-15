@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 07/10/2025
+ * Modification date: 14/02/2026
  */
 
 // Logarithmic transformation:
@@ -10,47 +10,51 @@ class logarithm:public transformations {
 
 public:
 
+  arma::uvec indices_in, indices_out;
   arma::vec trans, dtrans;
+  arma::mat jacob;
 
   void transform(arguments_optim& x) {
 
-    trans = arma::trunc_log(x.transparameters(indices_in[0]));
-    x.transparameters.elem(indices_out[0]) = trans;
+    trans = arma::trunc_log(x.transparameters(indices_in));
+    x.transparameters.elem(indices_out) = trans;
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    x.grad(indices_in[0]) += x.grad(indices_out[0]) / x.transparameters(indices_in[0]);
+    x.grad(indices_in) += x.grad(indices_out) / x.transparameters(indices_in);
 
   }
 
   void dtransform(arguments_optim& x) {
 
-    dtrans = x.dtransparameters(indices_in[0]) / x.transparameters(indices_in[0]);
-    x.dtransparameters(indices_out[0]) = dtrans;
+    dtrans = x.dtransparameters(indices_in) / x.transparameters(indices_in);
+    x.dtransparameters(indices_out) = dtrans;
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::vec x_in   = x.transparameters(indices_in[0]);
-    arma::vec g_out  = x.grad(indices_out[0]);
-    arma::vec dg_out = x.dgrad(indices_out[0]);
+    arma::vec x_in   = x.transparameters(indices_in);
+    arma::vec g_out  = x.grad(indices_out);
+    arma::vec dg_out = x.dgrad(indices_out);
 
     arma::vec dg_in_add = (dg_out - g_out % dtrans) / x_in;
 
-    x.dgrad(indices_in[0]) += dg_in_add;
+    x.dgrad(indices_in) += dg_in_add;
 
   }
 
   void jacobian(arguments_optim& x) {
 
-    jacob = arma::diagmat(1/x.transparameters(indices_in[0]));
+    jacob = arma::diagmat(1/x.transparameters(indices_in));
 
   }
 
   void update_vcov(arguments_optim& x) {
+
+    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
 
   }
 
@@ -62,7 +66,7 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    int p = indices_out[0].n_elem;
+    int p = indices_out.n_elem;
     arma::vec chisq_p(p, arma::fill::value(1.00));
 
     vectors.resize(2);
@@ -81,8 +85,8 @@ logarithm* choose_logarithm(const Rcpp::List& trans_setup) {
 
   logarithm* mytrans = new logarithm();
 
-  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
-  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  arma::uvec indices_in = trans_setup["indices_in"];
+  arma::uvec indices_out = trans_setup["indices_out"];
 
   mytrans->indices_in = indices_in;
   mytrans->indices_out = indices_out;

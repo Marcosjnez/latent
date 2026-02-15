@@ -270,9 +270,13 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
   #### Transformations ####
 
   control_transform <- list()
+  # trans_and_labs <- list()
   k <- 1L
 
   for(i in 1:ngroups) {
+
+    dots$p <- nitems[[i]]
+    dots$q <- nfactors[[i]]
 
     if(orthogonal) {
 
@@ -284,14 +288,22 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
       indices_in_ulambda <- match(labels_ulambda, transparameters_labels)-1L
       indices_in_X <- match(labels_X, transparameters_labels)-1L
       indices_in <- list(indices_in_ulambda, indices_in_X)
-      indices_out <- list(match(labels_out, transparameters_labels)-1L)
+      indices_out <- match(labels_out, transparameters_labels)-1L
       control_transform[[k]] <- list(transform = "XY",
                                      labels_in = labels_in,
-                                     indices_in = indices_in,
+                                     indices_X = indices_in_ulambda,
+                                     indices_Y = indices_in_X,
                                      labels_out = labels_out,
                                      indices_out = indices_out,
                                      p = nitems[[i]],
                                      q = nfactors[[i]])
+
+      # # Get the extra objects required for the transformation:
+      # trans_and_labs[[k]] <- extra_transforms("XY",
+      #                                         labels_in = list(X = rot_param[[i]]$ulambda,
+      #                                                          Y = rot_param[[i]]$X),
+      #                                         labels_out = list(rot_param[[i]]$lambda),
+      #                                         dots)
       k <- k+1L
 
     } else {
@@ -299,14 +311,20 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
       # Inverse of X:
       labels_in <- c(rot_trans[[i]]$X)
       labels_out <- c(rot_trans[[i]]$Xinv)
-      indices_in <- list(match(labels_in, transparameters_labels)-1L)
-      indices_out <- list(match(labels_out, transparameters_labels)-1L)
+      indices_in <- match(labels_in, transparameters_labels)-1L
+      indices_out <- match(labels_out, transparameters_labels)-1L
       control_transform[[k]] <- list(transform = "matrix_inverse",
                                      labels_in = labels_in,
                                      indices_in = indices_in,
                                      labels_out = labels_out,
                                      indices_out = indices_out,
                                      p = nfactors[[i]])
+
+      # # Get the extra objects required for the transformation:
+      # trans_and_labs[[k]] <- extra_transforms("matrix_inverse",
+      #                                         labels_in = list(rot_param[[i]]$X),
+      #                                         labels_out = list(rot_param[[i]]$Xinv),
+      #                                         dots)
       k <- k+1L
 
       # Rotated lambda:
@@ -317,14 +335,22 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
       indices_in_ulambda <- match(labels_ulambda, transparameters_labels)-1L
       indices_in_Xinv <- match(labels_Xinv, transparameters_labels)-1L
       indices_in <- list(indices_in_ulambda, indices_in_Xinv)
-      indices_out <- list(match(labels_out, transparameters_labels)-1L)
+      indices_out <- match(labels_out, transparameters_labels)-1L
       control_transform[[k]] <- list(transform = "XYt",
                                      labels_in = labels_in,
-                                     indices_in = indices_in,
+                                     indices_X = indices_in_ulambda,
+                                     indices_Y = indices_in_Xinv,
                                      labels_out = labels_out,
                                      indices_out = indices_out,
                                      p = nitems[[i]],
                                      q = nfactors[[i]])
+
+      # # Get the extra objects required for the transformation:
+      # trans_and_labs[[k]] <- extra_transforms("XYt",
+      #                                         labels_in = list(X = rot_param[[i]]$ulambda,
+      #                                                          Y = rot_param[[i]]$Xinv),
+      #                                         labels_out = list(rot_param[[i]]$lambda),
+      #                                         dots)
       k <- k+1L
 
     }
@@ -332,16 +358,21 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     # # Latent covariances:
     lower_psi <- lower.tri(rot_trans[[i]]$psi, diag = TRUE)
     labels_in <- c(rot_trans[[i]]$X)
-    indices_in <- list(match(labels_in, transparameters_labels)-1L)
+    indices_in <- match(labels_in, transparameters_labels)-1L
     labels_out <- c(rot_trans[[i]]$psi[lower_psi])
-    indices_out <- list(match(labels_out, transparameters_labels)-1L)
+    indices_out <- match(labels_out, transparameters_labels)-1L
     control_transform[[k]] <- list(transform = "crossprod",
                                    labels_in = labels_in,
                                    indices_in = indices_in,
                                    labels_out = labels_out,
                                    indices_out = indices_out,
-                                   p = nfactors[[i]],
-                                   q = nfactors[[i]])
+                                   p = nfactors[[i]])
+
+    # # Get the extra objects required for the transformation:
+    # trans_and_labs[[k]] <- extra_transforms("crossprod",
+    #                                         labels_in = list(rot_param[[i]]$X),
+    #                                         labels_out = list(rot_trans[[i]]$psi), # LOWER DIAG
+    #                                         dots)
     k <- k+1L
 
   }
@@ -360,11 +391,11 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
     lambda_labels <- c(rot_trans[[i]]$lambda)
     psi_labels <- rot_trans[[i]]$psi[lower_psi]
-    indices <- list(match(lambda_labels, transparameters_labels) - 1L,
-                    match(psi_labels, transparameters_labels) - 1L)
+    indices_lambda <- match(lambda_labels, transparameters_labels) - 1L
+    indices_psi <- match(psi_labels, transparameters_labels) - 1L
     control_estimator[[k]] <- list(estimator = rotation,
-                                   labels = labels,
-                                   indices = indices,
+                                   indices_lambda = indices_lambda,
+                                   indices_psi = indices_psi,
                                    p = p,
                                    q = q,
                                    ...)

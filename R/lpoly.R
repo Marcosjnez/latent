@@ -138,9 +138,7 @@ lpoly <- function(data,
   control$param2transparam <- param2trans-1L
   control$transparam2param <- trans2param-1L
 
-  #### Structures ####
-
-  # Manifolds:
+  #### Manifolds ####
 
   mani_and_labs <- list()
 
@@ -156,34 +154,32 @@ lpoly <- function(data,
   control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
                                        param_structures = poly_param)
 
-  # Transformations:
+  #### Transformations ####
+
   control_transform <- list()
   lower_indices <- which(lower.tri(poly_trans$R, diag = TRUE))
 
   labels_in <- c(poly_trans$X)
   labels_out <- poly_trans$R[lower_indices]
-  indices_in <- match(labels_in, transparameters_labels)
-  indices_out <- match(labels_out, transparameters_labels)
+  indices_in <- match(labels_in, transparameters_labels)-1L
+  indices_out <- match(labels_out, transparameters_labels)-1L
   control_transform[[1]] <- list(transform = "crossprod",
                                  labels_in = labels_in,
-                                 indices_in = list(indices_in-1L),
+                                 indices_in = indices_in,
                                  labels_out = labels_out,
-                                 indices_out = list(indices_out-1L),
+                                 indices_out = indices_out,
                                  p = p)
 
-  # Estimators:
+  #### Estimators ####
+
   indices_taus <- vector("list", length = p)
   for(i in 1:p) {
     indices_taus[[i]] <- match(poly_trans$taus[[i]], transparameters_labels)-1L
   }
   indices_R <- match(poly_trans$R[lower_indices], transparameters_labels)-1L
 
-  labels <- c(unlist(poly_trans$taus), poly_trans$R[lower_indices])
-  indices <- list(match(labels, transparameters_labels)-1L)
   control_estimator <- list()
   control_estimator[[1]] <- list(estimator = "polycor",
-                                 labels = labels,
-                                 indices = indices,
                                  indices_taus = indices_taus,
                                  indices_R = indices_R,
                                  n = n,
@@ -193,10 +189,10 @@ lpoly <- function(data,
   if(control$reg) {
 
     labels <- poly_trans$R[lower_indices]
-    indices <- match(labels, transparameters_labels)
+    indices <- match(labels, transparameters_labels)-1L
     control_estimator[[2]] <- list(estimator = "logdetmat",
                                    labels = labels,
-                                   indices = list(indices-1L),
+                                   indices = indices,
                                    lower_indices = lower_indices-1L,
                                    p = p,
                                    logdetw = control$penalties$logdet$w)

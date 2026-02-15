@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -12,15 +12,14 @@ class lclf: public estimators {
 
 public:
 
-  arma::mat lambda, dlambda, L2, N, Mm, L2N, ML2, hL;
   int p, q;
-  double k;
-  arma::uvec lower, larger;
-  double epsilon, a, b, f1, f2;
+  double k, epsilon, a, b, f1, f2;
+  arma::uvec indices_lambda, lower, larger;
+  arma::mat lambda, dlambda, L2, N, Mm, L2N, ML2, hL;
 
   void param(arguments_optim& x) {
 
-    lambda = arma::reshape(x.transparameters(indices[0]), p, q);
+    lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
 
     arma::mat absL = arma::abs(lambda);
     lower = arma::find(absL <= epsilon);
@@ -43,17 +42,17 @@ public:
     df_dlambda.elem(lower) = 2*b*lambda.elem(lower);
     df_dlambda.elem(larger) = arma::sign(lambda.elem(larger));
 
-    x.grad.elem(indices[0]) += arma::vectorise(df_dlambda);
+    x.grad.elem(indices_lambda) += arma::vectorise(df_dlambda);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dlambda = arma::reshape(x.dtransparameters(indices[0]), p, q);
+    dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
     arma::mat ddf_dlambda(p, q, arma::fill::zeros);
 
     ddf_dlambda.elem(lower) = 2*b*dlambda.elem(lower);
-    x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dlambda);
+    x.dgrad.elem(indices_lambda) += arma::vectorise(ddf_dlambda);
 
   }
 
@@ -71,7 +70,7 @@ lclf* choose_lclf(const Rcpp::List& estimator_setup) {
 
   lclf* myestimator = new lclf();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
   double epsilon = estimator_setup["epsilon"];
@@ -79,7 +78,7 @@ lclf* choose_lclf(const Rcpp::List& estimator_setup) {
   double b = 1 / (2*epsilon);
   double a = epsilon - b*epsilon*epsilon;
 
-  myestimator->indices = indices;
+  myestimator->indices_lambda = indices_lambda;
   myestimator->p = p;
   myestimator->q = q;
   myestimator->epsilon = epsilon;

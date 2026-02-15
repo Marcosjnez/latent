@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -14,14 +14,14 @@ public:
 
   int p, q;
   double w;
+  arma::uvec indices_lambda, indices_psi, lower_psi;
   arma::mat lambda, dlambda, target, weight, psi, dpsi, psitarget, psiweight,
   weight2, psiweight2, f1, f2;
-  arma::uvec lower_psi;
 
   void param(arguments_optim& x) {
 
-    lambda = arma::reshape(x.transparameters(indices[0]), p, q);
-    psi.elem(lower_psi) = x.transparameters(indices[1]);
+    lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
+    psi.elem(lower_psi) = x.transparameters(indices_psi);
     psi = arma::symmatl(psi);
 
     f1 = weight % (lambda - target);
@@ -42,23 +42,23 @@ public:
     arma::mat df_dpsi = 2*w * psiweight % f2;
     df_dpsi.diag() *= 0.5;
 
-    x.grad.elem(indices[0]) += arma::vectorise(df_dlambda);
-    x.grad.elem(indices[1]) += df_dpsi.elem(lower_psi);
+    x.grad.elem(indices_lambda) += arma::vectorise(df_dlambda);
+    x.grad.elem(indices_psi) += df_dpsi.elem(lower_psi);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dlambda = arma::reshape(x.dtransparameters(indices[0]), p, q);
-    dpsi.elem(lower_psi) = x.dtransparameters(indices[1]);
+    dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
+    dpsi.elem(lower_psi) = x.dtransparameters(indices_psi);
     dpsi = arma::symmatl(dpsi);
 
     arma::mat ddf_dlambda = weight2 % dlambda;
     arma::mat ddf_dpsi = 2*w * psiweight2 % dpsi;
     ddf_dpsi.diag() *= 0.5;
 
-    x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dlambda);
-    x.dgrad.elem(indices[1]) += ddf_dpsi.elem(lower_psi);
+    x.dgrad.elem(indices_lambda) += arma::vectorise(ddf_dlambda);
+    x.dgrad.elem(indices_psi) += ddf_dpsi.elem(lower_psi);
 
   }
 
@@ -76,7 +76,8 @@ xtarget* choose_xtarget(const Rcpp::List& estimator_setup) {
 
   xtarget* myestimator = new xtarget();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
+  arma::uvec indices_psi = estimator_setup["indices_psi"];
   arma::mat target = estimator_setup["target"];
   arma::mat weight = estimator_setup["weight"];
   arma::mat psitarget = estimator_setup["psitarget"];
@@ -90,7 +91,8 @@ xtarget* choose_xtarget(const Rcpp::List& estimator_setup) {
   arma::mat weight2 = weight % weight;
   arma::mat psiweight2 = psiweight % psiweight;
 
-  myestimator->indices = indices;
+  myestimator->indices_lambda = indices_lambda;
+  myestimator->indices_psi = indices_psi;
   myestimator->psi = psi;
   myestimator->dpsi = psi;
   myestimator->target = target;

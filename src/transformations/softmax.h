@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 14/02/2026
  */
 
 // Softmax transformation:
@@ -10,36 +10,38 @@ class softmax:public transformations {
 
 public:
 
+  arma::uvec indices_in, indices_out;
+  arma::mat jacob;
   arma::vec theta, probs, Jdx;
 
   void transform(arguments_optim& x) {
 
-    theta = x.transparameters(indices_in[0]);
+    theta = x.transparameters(indices_in);
     probs = soft(theta, 1.00);
-    x.transparameters.elem(indices_out[0]) = probs;
+    x.transparameters.elem(indices_out) = probs;
 
   }
 
   void update_grad(arguments_optim& x) {
 
     jacob = arma::diagmat(probs) - probs * probs.t();
-    x.grad(indices_in[0]) += arma::vectorise(jacob.t() * x.grad(indices_out[0]));
+    x.grad(indices_in) += arma::vectorise(jacob.t() * x.grad(indices_out));
 
   }
 
   void dtransform(arguments_optim& x) {
 
-    arma::vec dtrans = x.dtransparameters(indices_in[0]);
+    arma::vec dtrans = x.dtransparameters(indices_in);
     jacob = arma::diagmat(probs) - probs * probs.t();
     Jdx = jacob * dtrans;
-    x.dtransparameters(indices_out[0]) = Jdx;
+    x.dtransparameters(indices_out) = Jdx;
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::vec g_out  = x.grad(indices_out[0]);
-    arma::vec dg_out = x.dgrad(indices_out[0]);
+    arma::vec g_out  = x.grad(indices_out);
+    arma::vec dg_out = x.dgrad(indices_out);
 
     arma::vec dp = Jdx;
 
@@ -50,7 +52,7 @@ public:
 
     arma::vec dg_theta = dJg + jacob * dg_out;
 
-    x.dgrad(indices_in[0]) += dg_theta;
+    x.dgrad(indices_in) += dg_theta;
 
   }
 
@@ -62,12 +64,14 @@ public:
 
   void update_vcov(arguments_optim& x) {
 
+    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
+
   }
 
   void dconstraints(arguments_optim& x) {
 
     constraints = true;
-    dconstr.set_size(indices_out[0].n_elem);
+    dconstr.set_size(indices_out.n_elem);
     dconstr.ones();
 
   }
@@ -75,7 +79,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     dconstraints(x);
-    int p = indices_out[0].n_elem;
+    int p = indices_out.n_elem;
     arma::vec chisq_p(p, arma::fill::value(p));
 
     vectors.resize(2);
@@ -94,8 +98,8 @@ softmax* choose_softmax(const Rcpp::List& trans_setup) {
 
   softmax* mytrans = new softmax();
 
-  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
-  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  arma::uvec indices_in = trans_setup["indices_in"];
+  arma::uvec indices_out = trans_setup["indices_out"];
 
   mytrans->indices_in = indices_in;
   mytrans->indices_out = indices_out;

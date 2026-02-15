@@ -70,19 +70,23 @@ create_transforms <- function(transforms_and_labels, param_structures) {
 
     #### labels_in ####
 
-    # Collect the unique labels_in that are not fixed values:
-    labels_in_unique <- unname(unique(unlist(labels_in[[i]])))
-    nonfixed_labels_in <- which(is.na(suppressWarnings(as.numeric(labels_in_unique))))
-    labels_in_vector <- labels_in_unique[nonfixed_labels_in]
+    for(j in seq_len(labels_in)) {
 
-    # Get the indices of the param_structures_vector that are in the labels_in_vector:
-    m_in <- match(labels_in_vector, param_structures_vector)
-    if (anyNA(m_in)) { # Check for wrong parameter labels_in
-      stop("Some labels_in were not found in param_structures_vector: ",
-           paste(labels_in_vector[is.na(m_in)], collapse = ", "))
+      # Collect the unique labels_in that are not fixed values:
+      labels_in_unique <- unname(unique(unlist(labels_in[[i]])))
+      nonfixed_labels_in <- which(is.na(suppressWarnings(as.numeric(labels_in_unique))))
+      labels_in_vector <- labels_in_unique[nonfixed_labels_in]
+
+      # Get the indices of the param_structures_vector that are in the labels_in_vector:
+      m_in <- match(labels_in_vector, param_structures_vector)
+      if (anyNA(m_in)) { # Check for wrong parameter labels_in
+        stop("Some labels_in were not found in param_structures_vector: ",
+             paste(labels_in_vector[is.na(m_in)], collapse = ", "))
+      }
+
+      indices_in <- list(m_in - 1L) # C++ indexing starts at 0
+
     }
-
-    indices_in <- list(m_in - 1L) # C++ indexing starts at 0
 
     #### labels_out ####
 

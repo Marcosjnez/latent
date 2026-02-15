@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 08/09/2025
+ * Modification date: 14/02/2026
  */
 
 // Column space transformation:
@@ -10,14 +10,15 @@ class column_space:public transformations {
 
 public:
 
-  arma::mat X, coefs, dcoefs, linear_preds;
+  arma::uvec indices_in, indices_out;
+  arma::mat X, coefs, dcoefs, linear_preds, jacob;
 
   void transform(arguments_optim& x) {
 
-    arma::vec values = x.transparameters(indices_in[0]);
+    arma::vec values = x.transparameters(indices_in);
     std::memcpy(coefs.memptr(), values.memptr(), sizeof(double)*values.n_elem);
     linear_preds = X * coefs;
-    x.transparameters.elem(indices_out[0]) = arma::vectorise(linear_preds);
+    x.transparameters.elem(indices_out) = arma::vectorise(linear_preds);
 
   }
 
@@ -25,22 +26,22 @@ public:
 
     arma::mat I(coefs.n_cols, coefs.n_cols, arma::fill::eye);
     jacob = arma::kron(I, X);
-    x.grad(indices_in[0]) += arma::vectorise(jacob.t() * x.grad(indices_out[0]));
+    x.grad(indices_in) += arma::vectorise(jacob.t() * x.grad(indices_out));
 
   }
 
   void dtransform(arguments_optim& x) {
 
-    arma::vec dvalues = x.dtransparameters(indices_in[0]);
+    arma::vec dvalues = x.dtransparameters(indices_in);
     std::memcpy(dcoefs.memptr(), dvalues.memptr(), sizeof(double)*dvalues.n_elem);
     arma::mat dlinear_preds = X * dcoefs;
-    x.dtransparameters(indices_out[0]) = arma::vectorise(dlinear_preds);
+    x.dtransparameters(indices_out) = arma::vectorise(dlinear_preds);
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
-    x.dgrad(indices_in[0]) += arma::vectorise(jacob.t() * x.dgrad(indices_out[0]));
+    x.dgrad(indices_in) += arma::vectorise(jacob.t() * x.dgrad(indices_out));
 
   }
 
@@ -53,12 +54,14 @@ public:
 
   void update_vcov(arguments_optim& x) {
 
+    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
+
   }
 
   void dconstraints(arguments_optim& x) {
 
     constraints = true;
-    dconstr.set_size(indices_out[0].n_elem);
+    dconstr.set_size(indices_out.n_elem);
     dconstr.ones();
 
   }
@@ -66,7 +69,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     dconstraints(x);
-    int p = indices_out[0].n_elem;
+    int p = indices_out.n_elem;
     arma::vec chisq_p(p, arma::fill::value(p));
 
     vectors.resize(2);
@@ -85,11 +88,11 @@ column_space* choose_column_space(const Rcpp::List& trans_setup) {
 
   column_space* mytrans = new column_space();
 
-  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
-  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  arma::uvec indices_in = trans_setup["indices_in"];
+  arma::uvec indices_out = trans_setup["indices_out"];
   arma::mat X = trans_setup["X"];
 
-  int q = indices_in[0].n_elem / X.n_cols;
+  int q = indices_in.n_elem / X.n_cols;
   arma::mat coefs(X.n_cols, q);
 
   mytrans->indices_in = indices_in;

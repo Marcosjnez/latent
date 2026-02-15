@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 02/02/2026
+ * Modification date: 15/02/2026
  */
 
 /*
@@ -29,13 +29,14 @@ class gaussian_loglik: public estimators {
 
 public:
 
-  arma::mat X, means, sds, Z, log_dnorms, df_DZ;
-  double alpha, N;
   int p, q;
+  double alpha, N;
+  arma::uvec indices;
+  arma::mat X, means, sds, Z, log_dnorms, df_DZ;
 
   void param(arguments_optim& x) {
 
-    X = arma::reshape(x.transparameters(indices[0]), p, q);
+    X = arma::reshape(x.transparameters(indices), p, q);
 
     for(int i=0; i < p; ++i) {
       for(int j=0; j < q; ++j) {
@@ -62,13 +63,13 @@ public:
       }
     }
 
-    x.grad.elem(indices[0]) += arma::vectorise(df_dZ)/N;
+    x.grad.elem(indices) += arma::vectorise(df_dZ)/N;
 
   }
 
   void dG(arguments_optim& x) {
 
-    arma::mat dZ = reshape(x.dtransparameters(indices[0]), p, q);
+    arma::mat dZ = reshape(x.dtransparameters(indices), p, q);
 
     arma::mat ddf_dZ(p, q);
     for(int i=0; i < p; ++i) {
@@ -77,7 +78,7 @@ public:
       }
     }
 
-    x.dgrad.elem(indices[0]) += arma::vectorise(ddf_dZ)/N;
+    x.dgrad.elem(indices) += arma::vectorise(ddf_dZ)/N;
 
   }
 
@@ -94,7 +95,7 @@ gaussian_loglik* choose_gaussian_loglik(const Rcpp::List& estimator_setup) {
 
   gaussian_loglik* myestimator = new gaussian_loglik();
 
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::uvec indices = estimator_setup["indices"];
   double alpha = estimator_setup["alpha"];
   double N = estimator_setup["N"];
   arma::mat means = estimator_setup["means"];
