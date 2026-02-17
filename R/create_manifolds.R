@@ -9,9 +9,9 @@ extra_manifolds <- function(manifold, labels, dots) {
                          euclidean = character(0),
                          unit      = character(0),
                          simplex   = character(0),
-                         orth      = c("q"),
-                         oblq      = c("q"),
-                         poblq     = c("constraints"),
+                         orth      = c("p", "q"),
+                         oblq      = c("p", "q"),
+                         poblq     = c("p", "q", "constraints"),
                          stop("Unknown manifold: ", manifold)
   )
 

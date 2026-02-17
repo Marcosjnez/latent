@@ -32,7 +32,7 @@ class poblq:public manifolds {
 public:
 
   arma::uvec indices, oblq_indices;
-  std::size_t q;
+  std::size_t p, q;
   arma::mat X, dX, A, psi, dpsi, constraints, g, dg;
 
   void param(arguments_optim& x) {
@@ -128,13 +128,16 @@ poblq* choose_poblq(Rcpp::List manifold_setup) {
 
   arma::uvec indices = manifold_setup["indices"];
   arma::mat constraints = manifold_setup["constraints"];
+  std::size_t p = manifold_setup["p"];
+  std::size_t q = manifold_setup["q"];
 
   // constraints.diag() += 10;
   arma::uvec oblq_indices = arma::find(constraints == 1);
 
   mymanifold->indices = indices;
   mymanifold->constraints = constraints;
-  mymanifold->q = constraints.n_cols;
+  mymanifold->p = p;
+  mymanifold->q = q;
   mymanifold->oblq_indices = oblq_indices;
 
   return mymanifold;

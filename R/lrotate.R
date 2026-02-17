@@ -254,6 +254,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   for(i in 1:ngroups) {
 
+    dots$p <- nfactors[[i]]
     dots$q <- nfactors[[i]]
     # Get the extra objects required for the manifold:
     mani_and_labs[[k]] <- extra_manifolds(projection,

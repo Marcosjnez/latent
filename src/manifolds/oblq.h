@@ -11,7 +11,7 @@ class oblq:public manifolds {
 public:
 
   arma::uvec indices;
-  std::size_t q;
+  std::size_t p, q;
   arma::mat X, dX, g, dg;
 
   void param(arguments_optim& x) {
@@ -61,9 +61,11 @@ oblq* choose_oblq(Rcpp::List manifold_setup) {
   oblq* mymanifold = new oblq();
 
   arma::uvec indices = manifold_setup["indices"];
+  std::size_t p = manifold_setup["p"];
   std::size_t q = manifold_setup["q"];
 
   mymanifold->indices = indices;
+  mymanifold->p = p;
   mymanifold->q = q;
 
   return mymanifold;
