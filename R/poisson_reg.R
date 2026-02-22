@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 03/09/2025
+# Modification date: 22/02/2026
 
 pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NULL) {
 
@@ -273,10 +273,10 @@ pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NU
 
   #### Process the fit information ####
 
-  loss <- Optim$outputs$estimators$doubles[[1]][[1]]
-  penalized_loss <- Optim$outputs$estimators$doubles[[1]][[1]]
-  loglik <- -Optim$outputs$estimators$doubles[[1]][[1]]
-  penalized_loglik <- -Optim$outputs$estimators$doubles[[1]][[1]]
+  loss <- -Optim$outputs$estimators$doubles[[1]][[1]]
+  penalized_loss <- -Optim$outputs$estimators$doubles[[1]][[1]]
+  loglik <- Optim$outputs$estimators$doubles[[1]][[1]]
+  penalized_loglik <- Optim$outputs$estimators$doubles[[1]][[1]]
 
   #### Result ####
 

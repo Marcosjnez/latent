@@ -1,0 +1,347 @@
+---
+title: "Reliable estimation of Latent Variable Models"
+date: "2026-02-22"
+author: "Marcos Jimenez, Mauricio Garnier-Villarreal, & Vithor Rosa Franco"
+
+format:
+  revealjs:
+    embed-resources: true
+    slide-level: 1         # use level 1 headings (#) as individual slides
+    number-sections: false
+    toc: false
+    theme: simple          # change if you prefer another revealjs theme
+    code-fold: false        # folds code blocks (click to expand)
+    code-overflow: scroll
+    output: true
+    slide-number: true    # show slide numbers
+    css: styles.css
+    width: 1400      # wider slides
+    height: 800      # 16:9 aspect
+    margin: 0.02     # less empty border around the slide
+fontsize: 18pt
+bibliography: references.bib
+---
+
+# Latent Variable Modeling
+
+A latent variable model is a way of connecting things we can measure directly
+(called observed or manifest variables) to hidden qualities we cannot measure
+directly (called latent variables). These models are used in many areas like
+biology, computer science, and social sciences. Latent variable models can 
+involve either categorical or continuous observed and hidden variables, as below:
+
+``` {r table01, echo=FALSE}
+library(knitr)
+library(kableExtra)
+
+latent_table <- data.frame(
+  "Latent variables" = c("Continuous", "Categorical"),
+  "Continuous (Manifest)" = c("Factor Analysis", "Latent Profile Analysis"),
+  "Categorical (Manifest)" = c("Item Response Theory", "Latent Class Analysis"),
+  check.names = FALSE
+)
+
+knitr::kable(latent_table, "html", caption = NULL) |>
+  kableExtra::kable_styling(full_width = FALSE, position = "center")
+```
+
+<br>
+
+![](figures/diagram.jpg){height=300px fig-align="center"}
+
+# The latent R package
+
+```{r eval=TRUE, echo=FALSE}
+library(latent)
+```
+
+::: {.columns}
+::: {.column width="60%"}
+
+- lavaan syntax for Structural Equation Models
+- Core functions written in C++ with the armadillo library
+- Parallelization of multiple random starts to address local maxima  
+- Customizable models
+
+![](figures/load.jpg){width=300%}
+
+:::
+::: {.column width="40%"}
+![](figures/standard.jpg){width=300%}
+:::
+:::
+
+# Latent Class Analysis Example
+
+::: {.columns}
+::: {.column width="60%"}
+
+Model fitting:
+```{r eval=FALSE, echo=TRUE}
+fit <- lca(data = cancer[, 1:6], nclasses = 3L,
+           item = c("gaussian", "gaussian",
+                    "multinomial", "multinomial",
+                    "gaussian", "gaussian"))
+fit@loglik                # -5784.701
+fit@penalized_loglik      # -5795.573
+fit@timing                # 0.1927969
+```
+
+Extract model information:
+```{r eval=FALSE, echo=TRUE}
+# Get fit indices:
+getfit(fit)
+
+# Inspect model objects:
+latInspect(fit, what = "coefs", digits = 3)
+latInspect(fit, what = "classes", digits = 3)
+latInspect(fit, what = "profile", digits = 3)
+latInspect(fit, what = "posterior", digits = 3)
+
+# Get confidence intervals:
+CI <- ci(fit, type = "standard",
+         confidence = 0.95, digits = 2)
+```
+
+:::
+::: {.column width="40%"}
+![](figures/fixing.jpg){width=300%}
+:::
+:::
+
+<!-- # Speed Comparison with the depmixS4 library -->
+
+# Two-step LCA analysis with covariates
+
+::: {.columns}
+::: {.column width="60%"}
+
+- Step 1, fit the measurement model without the covariates:
+```{r eval=TRUE, echo=TRUE, results='hide', messages=FALSE}
+# Measurement model:
+fit0 <- lca(data = empathy[, 1:6], nclasses = 4L,
+            item = rep("gaussian", ncol(empathy[, 1:6])))
+```
+
+- Step 2, fit the model with covariates fixing the measurement part:
+```{r eval=TRUE, echo=TRUE, results='hide', messages=FALSE}
+fit <- lca(data = empathy[, 1:6],
+           X = empathy[, 7:8],
+           model = fit0,
+           item = rep("gaussian", ncol(empathy[, 1:6])),
+           nclasses = 4L)
+fit@loglik                # -1806.426
+fit@penalized_loglik      # -1809.614
+fit@Optim$iterations      # 38
+fit@Optim$convergence     # TRUE
+fit@timing                # 0.1596549
+```
+
+:::
+::: {.column width="40%"}
+![](figures/diagram_covariates.jpg){height=600px fig-align="center"}
+:::
+:::
+
+# Factor Analysis
+
+::: {.columns}
+::: {.column width="60%"}
+
+Factor Analysis (FA) is a method that estimates the influence of $K$ continuous
+latent variables on a set of $J$ items.
+
+The score in item $j$ is a weighted sum of the $K$ latent factors:
+$$
+X_j = \sum_{k=1}^K \lambda_{jk}F_k + \epsilon_j.
+$$
+
+Under some assumptions, the $J$ regressions can be encoded in a model for the 
+covariance matrix of the items:
+
+$$
+S = \Lambda \Psi \Lambda^\top + \Theta.
+$$
+
+- $\Lambda$ is a $J \times K$ matrix containing the regression coefficients.
+
+- $\Psi$ is the correlation matrix between the $K$ latent factors.
+
+- $\Theta$ is the error covariance matrix.
+
+:::
+::: {.column width="40%"}
+![](figures/diagram_factor.jpg){height=600px fig-align="center"}
+:::
+:::
+
+# Positive-definite constraints
+
+In the factor model equation,
+$$
+\Lambda \color{red}{\Psi} \Lambda^\top + \color{red}{\Theta},
+$$
+
+Latent correlations$\color{red}{\Psi}$ and covariances $\color{red}{\Theta}$ should be at least positive-semidefinite but…
+
+![](figures/nonpositive.jpg){width=600px}
+
+# Positive-definite constraints (`lavaan` fails)
+
+Let's force an instance where lavaan fails to converge to a proper solution.
+
+::: {.columns}
+::: {.column width="70%"}
+
+```{r, eval=TRUE, echo=TRUE}
+library(lavaan)
+model <- 'visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9
+          x1 ~~ x5
+          x1 ~~ x4
+          x4 ~~ x5
+          x4 ~~ x6'
+fit2 <- cfa(model, data = HolzingerSwineford1939,
+            estimator = "ml", std.lv = TRUE, std.ov = TRUE)
+inspect(fit2, what = "est")$theta      # Error covariances
+det(inspect(fit2, what = "est")$theta) # Check the determinant
+```
+
+:::
+::: {.column width="30%"}
+![](figures/diagram_holzinger_errors.jpg){height=600px fig-align="center"}
+:::
+:::
+
+# Positive-definite constraints (`latent` converges)
+
+::: {.columns}
+::: {.column width="30%"}
+
+![](figures/magic_trick.jpg){height=250px}
+
+:::
+::: {.column width="70%"}
+
+```{r, eval=TRUE, echo=TRUE}
+model <- 'visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9
+          x1 ~~ x5
+          x1 ~~ x4
+          x4 ~~ x5
+          x4 ~~ x6'
+fit <- lcfa(data = HolzingerSwineford1939, model = model,
+            estimator = "ml", std.lv = TRUE, positive = TRUE,
+            control = list(rstarts = 10))
+round(latInspect(fit, what = "est")[[1]]$theta, 3)
+det(latInspect(fit, what = "est")[[1]]$theta)
+```
+
+:::
+:::
+
+# Positive-definite latent covariances
+
+::: {.columns}
+::: {.column width="20%"}
+
+![](figures/magic_trick.jpg){height=250px}
+
+:::
+::: {.column width="80%"}
+
+- Parameterize latent covariances as crossproducts:
+
+$$
+\Psi = Y^\top Y \\
+\Theta = U^\top U
+$$
+
+- Constraint **Y** and **U** to be **orthoblique**:
+$$
+X \in \mathbb{R}^{p\times p}: \text{diag}(X^\top X) = \text{sparse matrix}
+$$
+
+:::
+:::
+
+$$
+\begin{bmatrix}
+\color{red}{0.08} & \color{blue}{1.76} & \color{green}{0.04} \\
+\color{red}{-1.95} & \color{blue}{-0.12} & \color{green}{-0.69} \\
+\color{red}{-0.67} & \color{blue}{-0.08} & \color{green}{2.02}
+\end{bmatrix}^\top \begin{bmatrix}
+\color{red}{0.08} & \color{blue}{1.76} & \color{green}{0.04} \\
+\color{red}{-1.95} & \color{blue}{-0.12} & \color{green}{-0.69} \\
+\color{red}{-0.67} & \color{blue}{-0.08} & \color{green}{2.02}
+\end{bmatrix} = \begin{bmatrix}
+4.24 & 0.42 & 0.00 \\
+0.42 & 3.11 & 0.00 \\
+0.00 & 0.00 & 4.56
+\end{bmatrix}
+$$
+
+# Positive-definite polychoric correlations
+
+::: {.columns}
+::: {.column width="60%"}
+
+- Parameterize the polychoric correlation matrix as a crossproduct:
+$$
+\Sigma = X^\top X
+$$
+- Constraint **X** to be **oblique**:
+$$
+X \in \mathbb{R}^{p\times p}: \text{diag}(X^\top X) = I
+$$
+
+$$
+\begin{bmatrix}
+\color{red}{0.04}   & \color{blue}{1.00}  & \color{green}{-0.40} \\
+\color{red}{-0.95}  & \color{blue}{-0.07} & \color{green}{-0.40} \\
+\color{red}{-0.32}  & \color{blue}{-0.04} & \color{green}{0.83}
+\end{bmatrix}^\top 
+\begin{bmatrix}
+\color{red}{0.04}   & \color{blue}{1.00}  & \color{green}{-0.40} \\
+\color{red}{-0.95}  & \color{blue}{-0.07} & \color{green}{-0.40} \\
+\color{red}{-0.32}  & \color{blue}{-0.04} & \color{green}{0.83}
+\end{bmatrix} = \begin{bmatrix}
+1.00 & 0.11 & 0.10 \\
+0.11 & 1.00 & -0.41 \\
+0.10 & -0.41 & 1.00
+\end{bmatrix}
+$$
+:::
+::: {.column width="30%"}
+![](figures/magician.jpg){width=300%}
+:::
+:::
+
+# Cooking new stuff
+
+::: {.columns}
+::: {.column width="60%"}
+
+- (Exploratory) Structural Equation Modeling
+
+- Hidden Markov Models
+
+- (Multidimensional) Item Response Theory
+
+Release date? Soon
+
+Download the **beta version** at https://github.com/Marcosjnez/latent
+
+**Contact:** m.j.jimenezhenriquez@vu.nl
+
+![](figures/qr_repository.jpg){width=300px style="vertical-align:middle; margin-right:0.5em;"}
+
+:::
+::: {.column width="40%"}
+
+![](figures/chef.jpg){width=1000px style="vertical-align:middle; margin-right:0.5em;"}
+
+:::
+:::
