@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 21/12/2025
+ * Modification date: 20/02/2026
  */
 
 class estimators {
@@ -66,6 +66,7 @@ public:
 #include "estimators/cfa/cfa_ml_R.h"
 
 #include "estimators/loglik/gaussian_loglik.h"
+#include "estimators/loglik/poisson_loglik.h"
 #include "estimators/penalties/ridge.h"
 
 #include "estimators/correlation/polycor.h"
@@ -92,6 +93,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "logdetmat",                   choose_logdetmat                 },
   { "lreg",                        choose_lreg                      },
   { "gaussian_loglik",             choose_gaussian_loglik           },
+  { "poisson_loglik",              choose_poisson_loglik            },
   { "ridge",                       choose_ridge                     },
   { "polycor",                     choose_polycor                   }
 };

@@ -126,9 +126,9 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   result["dH"] = x.dH;
   if(compute == "dH") return result;
 
-  final_transform->dconstraints(x, xtransforms);
-  result["dconstr"] = x.mat_dconstraints;
-  if(compute == "dconstr") return result;
+  // final_transform->dconstraints(x, xtransforms);
+  // result["dconstr"] = x.mat_dconstraints;
+  // if(compute == "dconstr") return result;
 
   final_estimator->outcomes(x, xestimators);
   result["doubles"] = std::get<0>(x.outputs_estimator);
