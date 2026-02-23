@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 27/10/2025
+# Modification date: 23/02/2026
 
 lcfa_control <- function(control) {
 
@@ -9,7 +9,14 @@ lcfa_control <- function(control) {
   # Control input
 
   if(is.null(control$opt)) {
-    control$opt <- "lbfgs"
+    if(control$positive) {
+      control$opt <- "grad"
+      if(is.null(control$rstarts)) {
+        control$rstarts <- 10L
+      }
+    } else {
+      control$opt <- "lbfgs"
+    }
   }
 
   if(isFALSE(control$penalties)) {
