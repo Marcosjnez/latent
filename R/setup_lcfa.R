@@ -262,11 +262,15 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
       mani_and_labs[[k]] <- list("poblq",
                                  cfa_param[[i]]$pj_psi,
+                                 p = nfactors[[i]],
+                                 q = nfactors[[i]],
                                  constraints = target_psi[[i]])
       k <- k+1L
 
       mani_and_labs[[k]] <- list("poblq",
                                  cfa_param[[i]]$pj_theta,
+                                 p = nitems[[i]],
+                                 q = nitems[[i]],
                                  constraints = target_theta[[i]])
       k <- k+1L
 

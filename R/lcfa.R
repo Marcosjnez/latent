@@ -72,6 +72,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   }
 
   # Check the arguments to control_optimizer and create defaults:
+  control$positive <- positive
   control$penalties <- penalties
   control$estimator <- tolower(estimator)
   control <- lcfa_control(control)

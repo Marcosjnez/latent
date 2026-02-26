@@ -26,7 +26,6 @@ class poisson_loglik: public estimators {
 public:
 
   int p, q;
-  double N;
   arma::uvec indices;
   arma::mat X, lambdas, log_dpois;
 

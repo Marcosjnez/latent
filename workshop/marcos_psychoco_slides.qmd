@@ -1,6 +1,6 @@
 ---
 title: "latent: an R library for Latent Variable Modeling"
-date: "2025-02-05"
+date: "2026-02-05"
 author: "Marcos Jimenez, Mauricio Garnier-Villarreal, & Vithor Rosa Franco"
 
 format:
@@ -497,7 +497,7 @@ $$
 
 - Constraint **Y** and **U** to be **orthoblique**:
 $$
-X \in \mathbb{R}^{p\times p}: \text{diag}(X^\top X) = \text{sparse matrix}
+X \in \mathbb{R}^{p\times p}: X^\top X = \text{sparse matrix}
 $$
 
 :::

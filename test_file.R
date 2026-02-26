@@ -251,7 +251,7 @@ fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml", positive = FALSE,
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "newton",
+            control = list(opt = "grad",
                            step_maxit = 100,
                            tcg_maxit = 100))
 fit@loss   # 0.283407
