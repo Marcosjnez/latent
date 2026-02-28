@@ -71,7 +71,7 @@ or increase (if setting pure items).
 Loading magnitudes may range between 0.3-0.5 ("low"), 0.4-0.6 ("medium") and 0.5-0.7 ("high"). Custom ranges can be supplied as vectors (i.e., c(0.2, 0.5))
 }
 \examples{
-\dontshow{if (requireNamespace("MASS", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("MASS", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 # Simulate data:
 sim <- simfactor(nfactors = 3, nitems = 4, correlations = 0.40,
                  crossloadings = 0.30)

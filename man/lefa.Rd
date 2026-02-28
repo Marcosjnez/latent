@@ -4,7 +4,8 @@
 \alias{lefa}
 \title{Fit an Exploratory Factor Analysis (EFA) model.}
 \usage{
-lefa(data, nfactors = 1L, model = NULL, estimator = "ml",
+lefa(data, nfactors = 1L, model = NULL,
+estimator = "ml", rotation = "oblimin",
 ordered = FALSE, group = NULL,
 sample.cov = NULL, nobs = NULL,
 positive = FALSE, penalties = TRUE,
@@ -18,6 +19,8 @@ control = NULL, ...)
 \item{nfactors}{integer. Number of latent variables.}
 
 \item{estimator}{Available estimators: "ml", "uls", and "dwls". Defaults to "ml".}
+
+\item{rotation}{Available rotations: "oblimin", "geomin", and "target". Defaults to "oblimin".}
 
 \item{model}{lavaan's model syntax.}
 
