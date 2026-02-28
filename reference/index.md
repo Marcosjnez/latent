@@ -6,9 +6,6 @@
   : Example dataset: HolzingerSwineford1939
 - [`cancer`](https://marcosjnez.github.io/latent/reference/cancer.md) :
   Example dataset: cancer
-- [`lcfa()`](https://marcosjnez.github.io/latent/reference/cfast.md) :
-  Wrapper to the lcfa function to fit a Confirmatory Factor Analysis
-  (CFA) model with lavaan syntax.
 - [`empathy`](https://marcosjnez.github.io/latent/reference/empathy.md)
   : Example dataset: empathy
 - [`fitted()`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
@@ -28,10 +25,14 @@
 - [`latent-package`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   : An R package for Latent Variable Modeling
+- [`lbvr()`](https://marcosjnez.github.io/latent/reference/lbvr.md) :
+  Local Bivariate Residuals for Latent Class Analysis
 - [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md) :
   Latent Class Analysis.
 - [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
   Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+- [`lclass_diag()`](https://marcosjnez.github.io/latent/reference/lclass_diag.md)
+  : Classification Diagnostics for Latent Class Analysis
 - [`lefa()`](https://marcosjnez.github.io/latent/reference/lefa.md) :
   Fit an Exploratory Factor Analysis (EFA) model.
 - [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
@@ -43,6 +44,10 @@
   : Plot regression coefficients
 - [`predict()`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   : Predicted values for Latent Class Analysis.
+- [`print(`*`<lbvr>`*`)`](https://marcosjnez.github.io/latent/reference/print.lbvr.md)
+  : Print method for lbvr objects
+- [`print(`*`<lclassd>`*`)`](https://marcosjnez.github.io/latent/reference/print.lclassd.md)
+  : Print Method for Latent Class Diagnostics
 - [`se()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md) :
   Standard Errors
 - [`se()`](https://marcosjnez.github.io/latent/reference/se.llca.md) :

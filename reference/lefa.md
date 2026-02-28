@@ -5,7 +5,8 @@ Fit an Exploratory Factor Analysis (EFA) model.
 ## Usage
 
 ``` r
-lefa(data, nfactors = 1L, model = NULL, estimator = "ml",
+lefa(data, nfactors = 1L, model = NULL,
+estimator = "ml", rotation = "oblimin",
 ordered = FALSE, group = NULL,
 sample.cov = NULL, nobs = NULL,
 positive = FALSE, penalties = TRUE,
@@ -27,6 +28,11 @@ control = NULL, ...)
 - estimator:
 
   Available estimators: "ml", "uls", and "dwls". Defaults to "ml".
+
+- rotation:
+
+  Available rotations: "oblimin", "geomin", and "target". Defaults to
+  "oblimin".
 
 - model:
 
