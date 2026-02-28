@@ -63,7 +63,7 @@ varimin* choose_varimin(const Rcpp::List& estimator_setup) {
 
   varimin* myestimator = new varimin();
 
-  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
 
@@ -71,7 +71,7 @@ varimin* choose_varimin(const Rcpp::List& estimator_setup) {
   arma::mat I(p, p, arma::fill::eye);
   arma::mat Hh = I - v * v.t() / (p + 0.0);
 
-  myestimator->indices_lambda = indices_lambda;
+  myestimator->indices_lambda = indices[0];
   myestimator->Hh = Hh;
   myestimator->p = p;
   myestimator->q = q;

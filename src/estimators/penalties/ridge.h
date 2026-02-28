@@ -60,12 +60,12 @@ ridge* choose_ridge(const Rcpp::List& estimator_setup) {
 
   ridge* myestimator = new ridge();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   double lambda = estimator_setup["lambda"];
   double power = estimator_setup["power"];
   double N = estimator_setup["N"];
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->lambda = lambda;
   myestimator->power = power;
   myestimator->N = N;

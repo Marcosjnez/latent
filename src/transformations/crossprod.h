@@ -101,8 +101,10 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
 
   crossprod* mytrans = new crossprod();
 
-  arma::uvec indices_in = trans_setup["indices_in"];
-  arma::uvec indices_out = trans_setup["indices_out"];
+  // arma::uvec indices_in = trans_setup["indices_in"];
+  // arma::uvec indices_out = trans_setup["indices_out"];
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   int p = trans_setup["p"];
 
   arma::mat X(p, p);
@@ -110,8 +112,8 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(grad_out));
   arma::mat Dp = duplication(p);
 
-  mytrans->indices_in = indices_in;
-  mytrans->indices_out = indices_out;
+  mytrans->indices_in = indices_in[0];
+  mytrans->indices_out = indices_out[0];
   mytrans->p = p;
   mytrans->X = X;
   mytrans->grad_out = grad_out;

@@ -522,19 +522,21 @@ polycor* choose_polycor(const Rcpp::List& estimator_setup) {
 
   polycor* myestimator = new polycor();
 
-  arma::uvec indices_R = estimator_setup["indices_R"];
-  std::vector<arma::uvec> indices_taus = estimator_setup["indices_taus"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   std::vector<std::vector<std::vector<int>>> n = estimator_setup["n"];
   int p = estimator_setup["p"];
   double N = estimator_setup["N"];
+
+  std::vector<arma::uvec> indices_taus(p);
+  for(int i=0; i < p; ++i) indices_taus[i] = indices[i+1L];
 
   std::vector<arma::vec> taus(p);
   std::vector<arma::vec> pnorm_tau(p);
   arma::mat R(p, p, arma::fill::zeros);
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(R));
 
+  myestimator->indices_R = indices[0];
   myestimator->indices_taus = indices_taus;
-  myestimator->indices_R = indices_R;
   myestimator->n = n;
   myestimator->p = p;
   myestimator->taus = taus;

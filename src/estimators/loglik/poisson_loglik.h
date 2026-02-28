@@ -75,7 +75,7 @@ poisson_loglik* choose_poisson_loglik(const Rcpp::List& estimator_setup) {
 
   poisson_loglik* myestimator = new poisson_loglik();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat X = estimator_setup["X"];
 
   int p = X.n_rows;
@@ -84,7 +84,7 @@ poisson_loglik* choose_poisson_loglik(const Rcpp::List& estimator_setup) {
   arma::mat log_dpois(p, q);
   arma::mat lambdas(p, q);
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->X = X;
   myestimator->p = p;
   myestimator->q = q;

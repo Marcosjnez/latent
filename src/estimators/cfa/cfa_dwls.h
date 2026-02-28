@@ -81,7 +81,7 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
 
   cfa_dwls* myestimator = new cfa_dwls();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   int q = estimator_setup["q"];
   double w = estimator_setup["w"];
   arma::mat S = estimator_setup["R"];
@@ -92,7 +92,7 @@ cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
   arma::uvec diag = arma::regspace<arma::uvec>(0, p + 1, p*p - 1);
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(S));
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->p = p;
   myestimator->q = q;
   myestimator->S = S;

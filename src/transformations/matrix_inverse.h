@@ -85,12 +85,14 @@ matrix_inverse* choose_matrix_inverse(const Rcpp::List& trans_setup) {
 
   matrix_inverse* mytrans = new matrix_inverse();
 
-  arma::uvec indices_in = trans_setup["indices_in"];
-  arma::uvec indices_out = trans_setup["indices_out"];
+  // arma::uvec indices_in = trans_setup["indices_in"];
+  // arma::uvec indices_out = trans_setup["indices_out"];
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   int p = trans_setup["p"];
 
-  mytrans->indices_in = indices_in;
-  mytrans->indices_out = indices_out;
+  mytrans->indices_in = indices_in[0];
+  mytrans->indices_out = indices_out[0];
   mytrans->p = p;
 
   return mytrans;

@@ -56,11 +56,11 @@ lreg* choose_lreg(const Rcpp::List& estimator_setup) {
 
   lreg* myestimator = new lreg();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat y = estimator_setup["y"];
   arma::mat X = estimator_setup["X"];
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->y = y;
   myestimator->X = X;
 

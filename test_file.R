@@ -110,7 +110,7 @@ fit <- lca(data = cancer[, 1:6], nclasses = 3L,
            item = c("gaussian", "gaussian",
                     "multinomial", "multinomial",
                     "gaussian", "gaussian"),
-           control = list(opt = "newton",
+           control = list(opt = "lbfgs",
                           eps = 1e-06,
                           step_maxit = 100,
                           tcg_maxit = 100),
@@ -176,7 +176,7 @@ penalties <- list(
 Y <- as.matrix(empathy[, 9:10]) # Covariates
 fit <- lca(data = data, X = cbind(X, Y), model = fit0,
            item = rep("gaussian", ncol(data)),
-           nclasses = 4L, penalties = penalties,
+           nclasses = 4L, penalties = TRUE,
            control = list(opt = "lbfgs",
                           step_maxit = 100,
                           tcg_maxit = 100),
@@ -409,7 +409,7 @@ fit2@loglik$loglik
 # With latent:
 set.seed(2026)
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
-            estimator = "uls", positive = TRUE,
+            estimator = "ml", positive = TRUE,
             penalties = list(logdet = list(w = 0.01)),
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,

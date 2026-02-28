@@ -270,113 +270,65 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   #### Transformations ####
 
-  control_transform <- list()
-  # trans_and_labs <- list()
+  trans_and_labs <- list()
   k <- 1L
 
   for(i in 1:ngroups) {
 
-    dots$p <- nitems[[i]]
-    dots$q <- nfactors[[i]]
-
     if(orthogonal) {
 
       # Rotated lambda:
-      labels_ulambda <- c(rot_trans[[i]]$ulambda)
-      labels_X <- c(rot_trans[[i]]$X)
-      labels_in <- list(labels_ulambda, labels_X)
-      labels_out <- c(rot_trans[[i]]$lambda)
-      indices_in_ulambda <- match(labels_ulambda, transparameters_labels)-1L
-      indices_in_X <- match(labels_X, transparameters_labels)-1L
-      indices_in <- list(indices_in_ulambda, indices_in_X)
-      indices_out <- match(labels_out, transparameters_labels)-1L
-      control_transform[[k]] <- list(transform = "XY",
-                                     labels_in = labels_in,
-                                     indices_X = indices_in_ulambda,
-                                     indices_Y = indices_in_X,
-                                     labels_out = labels_out,
-                                     indices_out = indices_out,
-                                     p = nitems[[i]],
-                                     q = nfactors[[i]])
 
-      # # Get the extra objects required for the transformation:
-      # trans_and_labs[[k]] <- extra_transforms("XY",
-      #                                         labels_in = list(X = rot_param[[i]]$ulambda,
-      #                                                          Y = rot_param[[i]]$X),
-      #                                         labels_out = list(rot_param[[i]]$lambda),
-      #                                         dots)
+      # Get the extra objects required for the transformation:
+      dots$p <- nitems[[i]]
+      dots$q <- nfactors[[i]]
+      trans_and_labs[[k]] <- extra_transforms(transform = "XY",
+                                              labels_in = list(rot_trans[[i]]$ulambda,
+                                                               rot_trans[[i]]$X),
+                                              labels_out = list(rot_trans[[i]]$lambda),
+                                              dots)
       k <- k+1L
 
     } else {
 
       # Inverse of X:
-      labels_in <- c(rot_trans[[i]]$X)
-      labels_out <- c(rot_trans[[i]]$Xinv)
-      indices_in <- match(labels_in, transparameters_labels)-1L
-      indices_out <- match(labels_out, transparameters_labels)-1L
-      control_transform[[k]] <- list(transform = "matrix_inverse",
-                                     labels_in = labels_in,
-                                     indices_in = indices_in,
-                                     labels_out = labels_out,
-                                     indices_out = indices_out,
-                                     p = nfactors[[i]])
 
-      # # Get the extra objects required for the transformation:
-      # trans_and_labs[[k]] <- extra_transforms("matrix_inverse",
-      #                                         labels_in = list(rot_param[[i]]$X),
-      #                                         labels_out = list(rot_param[[i]]$Xinv),
-      #                                         dots)
+      # Get the extra objects required for the transformation:
+      dots$p <- nfactors[[i]]
+      trans_and_labs[[k]] <- extra_transforms(transform = "matrix_inverse",
+                                              labels_in = list(rot_trans[[i]]$X),
+                                              labels_out = list(rot_trans[[i]]$Xinv),
+                                              dots)
       k <- k+1L
 
       # Rotated lambda:
-      labels_ulambda <- c(rot_trans[[i]]$ulambda)
-      labels_Xinv <- c(rot_trans[[i]]$Xinv)
-      labels_in <- list(labels_ulambda, labels_Xinv)
-      labels_out <- c(rot_trans[[i]]$lambda)
-      indices_in_ulambda <- match(labels_ulambda, transparameters_labels)-1L
-      indices_in_Xinv <- match(labels_Xinv, transparameters_labels)-1L
-      indices_in <- list(indices_in_ulambda, indices_in_Xinv)
-      indices_out <- match(labels_out, transparameters_labels)-1L
-      control_transform[[k]] <- list(transform = "XYt",
-                                     labels_in = labels_in,
-                                     indices_X = indices_in_ulambda,
-                                     indices_Y = indices_in_Xinv,
-                                     labels_out = labels_out,
-                                     indices_out = indices_out,
-                                     p = nitems[[i]],
-                                     q = nfactors[[i]])
 
-      # # Get the extra objects required for the transformation:
-      # trans_and_labs[[k]] <- extra_transforms("XYt",
-      #                                         labels_in = list(X = rot_param[[i]]$ulambda,
-      #                                                          Y = rot_param[[i]]$Xinv),
-      #                                         labels_out = list(rot_param[[i]]$lambda),
-      #                                         dots)
+      # Get the extra objects required for the transformation:
+      dots$p <- nitems[[i]]
+      dots$q <- nfactors[[i]]
+      trans_and_labs[[k]] <- extra_transforms("XYt",
+                                              labels_in = list(rot_trans[[i]]$ulambda,
+                                                               rot_trans[[i]]$Xinv),
+                                              labels_out = list(rot_trans[[i]]$lambda),
+                                              dots)
       k <- k+1L
 
     }
 
-    # # Latent covariances:
-    lower_psi <- lower.tri(rot_trans[[i]]$psi, diag = TRUE)
-    labels_in <- c(rot_trans[[i]]$X)
-    indices_in <- match(labels_in, transparameters_labels)-1L
-    labels_out <- c(rot_trans[[i]]$psi[lower_psi])
-    indices_out <- match(labels_out, transparameters_labels)-1L
-    control_transform[[k]] <- list(transform = "crossprod",
-                                   labels_in = labels_in,
-                                   indices_in = indices_in,
-                                   labels_out = labels_out,
-                                   indices_out = indices_out,
-                                   p = nfactors[[i]])
+    # Latent covariances:
 
-    # # Get the extra objects required for the transformation:
-    # trans_and_labs[[k]] <- extra_transforms("crossprod",
-    #                                         labels_in = list(rot_param[[i]]$X),
-    #                                         labels_out = list(rot_trans[[i]]$psi), # LOWER DIAG
-    #                                         dots)
+    # Get the extra objects required for the transformation:
+    dots$p <- nfactors[[i]]
+    trans_and_labs[[k]] <- extra_transforms("crossprod",
+                                            labels_in = list(rot_trans[[i]]$X),
+                                            labels_out = list(rot_trans[[i]]$psi[lower.tri(rot_trans[[i]]$psi, diag = TRUE)]), # LOWER DIAG
+                                            dots)
     k <- k+1L
 
   }
+
+  control_transform <- create_transforms(transforms_and_labels = trans_and_labs,
+                                         param_structures = rot_trans)
 
   #### Estimators ####
 
@@ -392,11 +344,10 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
     lambda_labels <- c(rot_trans[[i]]$lambda)
     psi_labels <- rot_trans[[i]]$psi[lower_psi]
-    indices_lambda <- match(lambda_labels, transparameters_labels) - 1L
-    indices_psi <- match(psi_labels, transparameters_labels) - 1L
+    indices <- list(match(lambda_labels, transparameters_labels)-1L,
+                    match(psi_labels, transparameters_labels)-1L)
     control_estimator[[k]] <- list(estimator = rotation,
-                                   indices_lambda = indices_lambda,
-                                   indices_psi = indices_psi,
+                                   indices = indices,
                                    p = p,
                                    q = q,
                                    ...)

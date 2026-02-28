@@ -10,7 +10,7 @@ class XYt:public transformations {
 
 public:
 
-  arma::uvec indices_X, indices_Y, indices_in, indices_out;
+  arma::uvec indices_X, indices_Y, indices_XYt, indices_in, indices_out;
   int p, q;
   arma::mat X, Y, dX, dY, dXYt, grad_out, grad_in_X, grad_in_Y, jacob;
 
@@ -19,13 +19,13 @@ public:
     X = arma::reshape(x.transparameters(indices_X), p, q);
     Y = arma::reshape(x.transparameters(indices_Y), q, q);
     arma::mat XYt = X * Y.t();
-    x.transparameters(indices_out) = arma::vectorise(XYt);
+    x.transparameters(indices_XYt) = arma::vectorise(XYt);
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    grad_out = arma::reshape(x.grad(indices_out), p, q);
+    grad_out = arma::reshape(x.grad(indices_XYt), p, q);
 
     grad_in_X = grad_out * Y;
     grad_in_Y = grad_out.t() * X;
@@ -40,13 +40,13 @@ public:
     dX = arma::reshape(x.dtransparameters(indices_X), p, q);
     dY = arma::reshape(x.dtransparameters(indices_Y), q, q);
     dXYt = X * dY.t() + dX * Y.t();
-    x.dtransparameters(indices_out) = arma::vectorise(dXYt);
+    x.dtransparameters(indices_XYt) = arma::vectorise(dXYt);
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::mat dgrad_out = arma::reshape(x.dgrad(indices_out), p, q);
+    arma::mat dgrad_out = arma::reshape(x.dgrad(indices_XYt), p, q);
 
     arma::mat dgrad_in_X = dgrad_out * Y + grad_out * dY;
     arma::mat dgrad_in_Y = dgrad_out.t() * X + grad_out.t() * dX;
@@ -73,6 +73,7 @@ public:
   void update_vcov(arguments_optim& x) {
 
     indices_in = arma::join_cols(indices_X, indices_Y);
+    indices_out = indices_XYt;
     x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
 
   }
@@ -98,15 +99,18 @@ XYt* choose_XYt(const Rcpp::List& trans_setup) {
 
   XYt* mytrans = new XYt();
 
-  arma::uvec indices_X = trans_setup["indices_X"];
-  arma::uvec indices_Y = trans_setup["indices_Y"];
-  arma::uvec indices_out = trans_setup["indices_out"];
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   int p = trans_setup["p"];
   int q = trans_setup["q"];
 
+  arma::uvec indices_X = indices_in[0];
+  arma::uvec indices_Y = indices_in[1];
+  arma::uvec indices_XYt = indices_out[0];
+
   mytrans->indices_X = indices_X;
   mytrans->indices_Y = indices_Y;
-  mytrans->indices_out = indices_out;
+  mytrans->indices_XYt = indices_XYt;
   mytrans->p = p;
   mytrans->q = q;
 

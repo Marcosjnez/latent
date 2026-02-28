@@ -98,11 +98,11 @@ softmax* choose_softmax(const Rcpp::List& trans_setup) {
 
   softmax* mytrans = new softmax();
 
-  arma::uvec indices_in = trans_setup["indices_in"];
-  arma::uvec indices_out = trans_setup["indices_out"];
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
 
-  mytrans->indices_in = indices_in;
-  mytrans->indices_out = indices_out;
+  mytrans->indices_in = indices_in[0];
+  mytrans->indices_out = indices_out[0];
 
   return mytrans;
 

@@ -73,7 +73,7 @@ cf* choose_cf(const Rcpp::List& estimator_setup) {
 
  cf* myestimator = new cf();
 
-  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   double k = estimator_setup["k"];
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
@@ -83,7 +83,7 @@ cf* choose_cf(const Rcpp::List& estimator_setup) {
   arma::mat N(q, q, arma::fill::ones);
   N.diag(0).zeros();
 
-  myestimator->indices_lambda = indices_lambda;
+  myestimator->indices_lambda = indices[0];
   myestimator->p = p;
   myestimator->q = q;
   myestimator->Mm = M;

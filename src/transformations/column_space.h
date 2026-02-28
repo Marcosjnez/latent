@@ -88,15 +88,17 @@ column_space* choose_column_space(const Rcpp::List& trans_setup) {
 
   column_space* mytrans = new column_space();
 
-  arma::uvec indices_in = trans_setup["indices_in"];
-  arma::uvec indices_out = trans_setup["indices_out"];
+  // arma::uvec indices_in = trans_setup["indices_in"];
+  // arma::uvec indices_out = trans_setup["indices_out"];
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   arma::mat X = trans_setup["X"];
 
-  int q = indices_in.n_elem / X.n_cols;
+  int q = indices_in[0].n_elem / X.n_cols;
   arma::mat coefs(X.n_cols, q);
 
-  mytrans->indices_in = indices_in;
-  mytrans->indices_out = indices_out;
+  mytrans->indices_in = indices_in[0];
+  mytrans->indices_out = indices_out[0];
   mytrans->X = X;
   mytrans->coefs = coefs;
   mytrans->dcoefs = coefs;

@@ -100,7 +100,7 @@ public:
 t3_loglik* choose_t3_loglik(const Rcpp::List& estimator_setup) {
   t3_loglik* myestimator = new t3_loglik();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat X = estimator_setup["X"];
 
   int p = X.n_rows;
@@ -112,7 +112,7 @@ t3_loglik* choose_t3_loglik(const Rcpp::List& estimator_setup) {
   arma::mat nu(p, q);
   arma::mat log_dt(p, q);
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->X = X;
   myestimator->p = p;
   myestimator->q = q;

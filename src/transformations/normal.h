@@ -191,20 +191,24 @@ normal* choose_normal(const Rcpp::List& trans_setup) {
 
   normal* mytrans = new normal();
 
-  arma::uvec indices_mu = trans_setup["indices_mu"];
-  arma::uvec indices_sigma = trans_setup["indices_sigma"];
-  arma::uvec indices_out = trans_setup["indices_out"];
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  // arma::uvec indices_mu = trans_setup["indices_mu"];
+  // arma::uvec indices_sigma = trans_setup["indices_sigma"];
+  // arma::uvec indices_out = trans_setup["indices_out"];
   arma::mat y = trans_setup["y"];
   int S = trans_setup["S"];
   int J = trans_setup["J"];
   int I = trans_setup["I"];
 
+  arma::uvec indices_mu = indices_in[0];
+  arma::uvec indices_sigma = indices_in[1];
   int n_in  = indices_mu.n_elem + indices_sigma.n_elem;
-  int n_out = indices_out.n_elem;
+  int n_out = indices_out[0].n_elem;
 
   mytrans->indices_mu = indices_mu;
   mytrans->indices_sigma = indices_sigma;
-  mytrans->indices_out = indices_out;
+  mytrans->indices_out = indices_out[0];
   mytrans->n_in = n_in;
   mytrans->n_out = n_out;
   mytrans->y = y;

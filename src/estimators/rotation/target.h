@@ -64,7 +64,7 @@ target* choose_target(const Rcpp::List& estimator_setup) {
 
   target* myestimator = new target();
 
-  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat target = estimator_setup["target"];
   arma::mat weight = estimator_setup["weight"];
 
@@ -72,7 +72,7 @@ target* choose_target(const Rcpp::List& estimator_setup) {
   int p = target.n_rows;
   int q = target.n_cols;
 
-  myestimator->indices_lambda = indices_lambda;
+  myestimator->indices_lambda = indices[0];
   myestimator->target = target;
   myestimator->weight = weight;
   myestimator->weight2 = weight2;

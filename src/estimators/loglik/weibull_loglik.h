@@ -89,7 +89,7 @@ public:
 weibull_loglik* choose_weibull_loglik(const Rcpp::List& estimator_setup) {
   weibull_loglik* myestimator = new weibull_loglik();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat X = estimator_setup["X"];
 
   int p = X.n_rows;
@@ -99,7 +99,7 @@ weibull_loglik* choose_weibull_loglik(const Rcpp::List& estimator_setup) {
   arma::mat lambda(p, q);
   arma::mat log_dw(p, q);
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->X = X;
   myestimator->p = p;
   myestimator->q = q;

@@ -72,7 +72,7 @@ public:
 binomial_loglik* choose_binomial_loglik(const Rcpp::List& estimator_setup) {
   binomial_loglik* myestimator = new binomial_loglik();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat X = estimator_setup["X"];
   arma::mat Ntrials = estimator_setup["Ntrials"];
 
@@ -83,7 +83,7 @@ binomial_loglik* choose_binomial_loglik(const Rcpp::List& estimator_setup) {
   arma::mat prob(p_dim, q_dim);
   arma::mat log_db(p_dim, q_dim);
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->X = X;
   myestimator->Ntrials = Ntrials;
   myestimator->p_dim = p_dim;

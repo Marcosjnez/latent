@@ -187,16 +187,18 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
 
   multinomial* mytrans = new multinomial();
 
-  arma::uvec indices_in = trans_setup["indices_in"];
-  arma::uvec indices_out = trans_setup["indices_out"];
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
+  // arma::uvec indices_in = trans_setup["indices_in"];
+  // arma::uvec indices_out = trans_setup["indices_out"];
   arma::mat y = trans_setup["y"];
   arma::uvec K = trans_setup["K"];
   int S = trans_setup["S"];
   int J = trans_setup["J"];
   int I = trans_setup["I"];
 
-  int n_in  = indices_in.n_elem;
-  int n_out = indices_out.n_elem;
+  int n_in  = indices_in[0].n_elem;
+  int n_out = indices_out[0].n_elem;
   std::vector<arma::mat> peta(J);
   for(int j=0; j < J; ++j) {
     peta[j].resize(K(j), I);
@@ -212,8 +214,8 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
     }
   }
 
-  mytrans->indices_in = indices_in;
-  mytrans->indices_out = indices_out;
+  mytrans->indices_in = indices_in[0];
+  mytrans->indices_out = indices_out[0];
   mytrans->n_in = n_in;
   mytrans->n_out = n_out;
   mytrans->y = y;

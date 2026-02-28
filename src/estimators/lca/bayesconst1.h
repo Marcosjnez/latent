@@ -68,13 +68,13 @@ bayesconst1* choose_bayesconst1(const Rcpp::List& estimator_setup) {
 
   bayesconst1* myestimator = new bayesconst1();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   int K = estimator_setup["K"];
   int U = estimator_setup["U"];
   double alpha = estimator_setup["alpha"];
   double N = estimator_setup["N"];
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->K = K;
   myestimator->U = U;
   myestimator->alpha = alpha;

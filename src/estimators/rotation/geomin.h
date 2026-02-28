@@ -75,14 +75,14 @@ geomin* choose_geomin(const Rcpp::List& estimator_setup) {
 
   geomin* myestimator = new geomin();
 
-  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
   double epsilon = estimator_setup["epsilon"];
 
   double q2 = 2/(q + 0.0);
 
-  myestimator->indices_lambda = indices_lambda;
+  myestimator->indices_lambda = indices[0];
   myestimator->p = p;
   myestimator->q = q;
   myestimator->q2 = q2;

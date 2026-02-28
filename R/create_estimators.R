@@ -2,10 +2,10 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 14/02/2026
 
-extra_transforms <- function(transform, labels_in, labels_out, dots = NULL) {
+extra_estimators <- function(transform, labels_in, labels_out, dots = NULL) {
 
   # Choose which extra objects from 'dots' should be kept for this transform:
-  transform_objects <- switch(transform,
+  estimators_objects <- switch(transform,
                               XYt = c("p", "q"),
                               XY      = c("p", "q"),
                               softmax   = character(0),
@@ -43,7 +43,7 @@ extra_transforms <- function(transform, labels_in, labels_out, dots = NULL) {
 
 }
 
-create_transforms <- function(transforms_and_labels, param_structures) {
+create_estimators <- function(transforms_and_labels, param_structures) {
 
   if(!is.list(transforms_and_labels)) {
     stop("transforms_and_labels should be a list")
@@ -85,30 +85,25 @@ create_transforms <- function(transforms_and_labels, param_structures) {
              paste(labels_in_vector[is.na(m_in)], collapse = ", "))
       }
 
-      indices_in[[j]] <- m_in-1L # C++ indexing starts at 0
+      indices_in[[j]] <- m_in - 1L # C++ indexing starts at 0
 
     }
 
     #### labels_out ####
 
-    indices_out <- vector("list", length = length(labels_out[[i]]))
-    for(j in 1:length(labels_out[[i]])) {
+    # Collect the unique labels_out that are not fixed values:
+    labels_out_unique <- unname(unique(unlist(labels_out[[i]])))
+    nonfixed_labels_out <- which(is.na(suppressWarnings(as.numeric(labels_out_unique))))
+    labels_out_vector <- labels_out_unique[nonfixed_labels_out]
 
-      # Collect the unique labels_out that are not fixed values:
-      labels_out_unique <- unname(unique(unlist(labels_out[[i]][[j]])))
-      nonfixed_labels_out <- which(is.na(suppressWarnings(as.numeric(labels_out_unique))))
-      labels_out_vector <- labels_out_unique[nonfixed_labels_out]
-
-      # Get the indices of the param_structures_vector that are in the labels_out_vector:
-      m_out <- match(labels_out_vector, param_structures_vector)
-      if (anyNA(m_out)) { # Check for wrong parameter labels_out
-        stop("Some labels_out were not found in param_structures_vector: ",
-             paste(labels_out_vector[is.na(m_out)], collapse = ", "))
-      }
-
-      indices_out[[j]] <- m_out-1L # C++ indexing starts at 0
-
+    # Get the indices of the param_structures_vector that are in the labels_out_vector:
+    m_out <- match(labels_out_vector, param_structures_vector)
+    if (anyNA(m_out)) { # Check for wrong parameter labels_out
+      stop("Some labels_out were not found in param_structures_vector: ",
+           paste(labels_out_vector[is.na(m_out)], collapse = ", "))
     }
+
+    indices_out <- list(m_out - 1L) # C++ indexing starts at 0
 
     #### Extra arguments ####
 

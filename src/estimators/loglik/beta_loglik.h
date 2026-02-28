@@ -13,7 +13,7 @@ double log_beta_mean(double x, double mu, double phi) {
   double beta  = (1.0 - mu) * phi;
 
   return std::lgamma(phi) - std::lgamma(alpha) - std::lgamma(beta) +
-         (alpha - 1.0) * std::log(x) + (beta - 1.0) * std::log(1.0 - x);
+    (alpha - 1.0) * std::log(x) + (beta - 1.0) * std::log(1.0 - x);
 }
 
 double dlog_beta_mu(double x, double mu, double phi) {
@@ -28,8 +28,8 @@ double dlog_beta_phi(double x, double mu, double phi) {
   double beta  = (1.0 - mu) * phi;
 
   return R::digamma(phi) - mu * R::digamma(alpha) -
-        (1.0 - mu) * R::digamma(beta) + mu * std::log(x) +
-        (1.0 - mu) * std::log(1.0 - x);
+    (1.0 - mu) * R::digamma(beta) + mu * std::log(x) +
+    (1.0 - mu) * std::log(1.0 - x);
 }
 
 class beta_loglik: public estimators {
@@ -91,26 +91,26 @@ public:
 };
 
 beta_mean_loglik* choose_beta_mean_loglik(const Rcpp::List& estimator_setup) {
-    beta_mean_loglik* myestimator = new beta_mean_loglik();
+  beta_mean_loglik* myestimator = new beta_mean_loglik();
 
-    arma::uvec indices = estimator_setup["indices"];
-    arma::mat X = estimator_setup["X"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::mat X = estimator_setup["X"];
 
-    int p_dim = X.n_rows;
-    int q_dim = X.n_cols;
+  int p_dim = X.n_rows;
+  int q_dim = X.n_cols;
 
-    arma::mat mu(p_dim, q_dim);
-    arma::mat phi(p_dim, q_dim);
-    arma::mat log_db(p_dim, q_dim);
+  arma::mat mu(p_dim, q_dim);
+  arma::mat phi(p_dim, q_dim);
+  arma::mat log_db(p_dim, q_dim);
 
-    myestimator->indices = indices;
-    myestimator->X = X;
-    myestimator->p_dim = p_dim;
-    myestimator->q_dim = q_dim;
+  myestimator->indices = indices[0];
+  myestimator->X = X;
+  myestimator->p_dim = p_dim;
+  myestimator->q_dim = q_dim;
 
-    myestimator->mu = mu;
-    myestimator->phi = phi;
-    myestimator->log_db = log_db;
+  myestimator->mu = mu;
+  myestimator->phi = phi;
+  myestimator->log_db = log_db;
 
-    return myestimator;
+  return myestimator;
 }

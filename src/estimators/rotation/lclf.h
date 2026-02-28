@@ -70,7 +70,7 @@ lclf* choose_lclf(const Rcpp::List& estimator_setup) {
 
   lclf* myestimator = new lclf();
 
-  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
   double epsilon = estimator_setup["epsilon"];
@@ -78,7 +78,7 @@ lclf* choose_lclf(const Rcpp::List& estimator_setup) {
   double b = 1 / (2*epsilon);
   double a = epsilon - b*epsilon*epsilon;
 
-  myestimator->indices_lambda = indices_lambda;
+  myestimator->indices_lambda = indices[0];
   myestimator->p = p;
   myestimator->q = q;
   myestimator->epsilon = epsilon;

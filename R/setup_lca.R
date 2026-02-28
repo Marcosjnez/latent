@@ -483,34 +483,25 @@ get_lca_structures <- function(data_list, full_model, control) {
 
   #### Transformations ####
 
-  control_transform <- list()
+  trans_and_labs <- list()
+  dots <- list()
   k <- 1L
 
   # betas to thetas:
-  labels_in <- lca_all$beta # px1
-  labels_out <- lca_all$theta # X*beta = Sxp by px1
-  indices_in <- match(labels_in, transparameters_labels)-1L
-  indices_out <- match(labels_out, transparameters_labels)-1L
-  control_transform[[k]] <- list(transform = "column_space",
-                                 # labels_in = labels_in,
-                                 # labels_out = labels_out,
-                                 indices_in = indices_in,
-                                 indices_out = indices_out,
-                                 X = cov_patterns2)
+  dots$X <- cov_patterns2
+  trans_and_labs[[k]] <- extra_transforms(transform = "column_space",
+                                          labels_in = list(lca_all$beta),
+                                          labels_out = list(lca_all$theta),
+                                          dots)
   k <- k+1L
 
   # thetas to classes:
   for(s in 1:npatterns) {
 
-    labels_in <- lca_all$theta[s, ]
-    labels_out <- lca_all$class[s, ]
-    indices_in <- match(labels_in, transparameters_labels)-1L
-    indices_out <- match(labels_out, transparameters_labels)-1L
-    control_transform[[k]] <- list(transform = "softmax",
-                                   # labels_in = labels_in,
-                                   # labels_out = labels_out,
-                                   indices_in = indices_in,
-                                   indices_out = indices_out)
+    trans_and_labs[[k]] <- extra_transforms(transform = "softmax",
+                                            labels_in = list(lca_all$theta[s, ]),
+                                            labels_out = list(lca_all$class[s, ]),
+                                            dots)
     k <- k + 1L
 
   }
@@ -520,34 +511,24 @@ get_lca_structures <- function(data_list, full_model, control) {
 
     gauss <- which(item == "gaussian")
     Jgauss <- length(gauss) # Number of gaussian items
-    labels_in <- lca_all$s
-    labels_out <- lca_all$sigma
-    indices_in <- match(labels_in, transparameters_labels)-1L
-    indices_out <- match(labels_out, transparameters_labels)-1L
-    control_transform[[k]] <- list(transform = "exponential",
-                                   # labels_in = labels_in,
-                                   # labels_out = labels_out,
-                                   indices_in = indices_in,
-                                   indices_out = indices_out)
-    k <- k+1L
 
-    labels_in <- c(lca_all$mu, lca_all$sigma)
-    indices_in_mu <- match(lca_all$mu, transparameters_labels)-1L
-    indices_in_sigma <- match(lca_all$sigma, transparameters_labels)-1L
-    labels_out <- lca_all$loglik[, gauss, ]
-    indices_out <- match(labels_out, transparameters_labels)-1L
+    trans_and_labs[[k]] <- extra_transforms(transform = "exponential",
+                                            labels_in = list(lca_all$s),
+                                            labels_out = list(lca_all$sigma),
+                                            dots)
+    k <- k+1L
 
     y <- as.matrix(patterns[, gauss])
 
-    control_transform[[k]] <- list(transform = "normal",
-                                   # labels_out = labels_out,
-                                   indices_mu = indices_in_mu,
-                                   indices_sigma = indices_in_sigma,
-                                   indices_out = indices_out,
-                                   y = y,
-                                   S = npatterns,
-                                   J = Jgauss,
-                                   I = nclasses)
+    dots$y <- y
+    dots$S <- npatterns
+    dots$J <- Jgauss
+    dots$I <- nclasses
+    trans_and_labs[[k]] <- extra_transforms(transform = "normal",
+                                            labels_in = list(lca_all$mu,
+                                                             lca_all$sigma),
+                                            labels_out = list(lca_all$loglik[, gauss, ]),
+                                            dots)
     k <- k+1L
 
   }
@@ -563,41 +544,33 @@ get_lca_structures <- function(data_list, full_model, control) {
     for(j in 1:Jmulti) {
       for(i in 1:nclasses) {
 
-        labels_in <- lca_all$eta[[j]][, i]
-        labels_out <- lca_all$peta[[j]][, i]
-        indices_in <- match(labels_in, transparameters_labels)-1L
-        indices_out <- match(labels_out, transparameters_labels)-1L
-        control_transform[[k]] <- list(transform = "softmax",
-                                       # labels_in = labels_in,
-                                       # labels_out = labels_out,
-                                       indices_in = indices_in,
-                                       indices_out = indices_out)
+        trans_and_labs[[k]] <- extra_transforms(transform = "softmax",
+                                                labels_in = list(lca_all$eta[[j]][, i]),
+                                                labels_out = list(lca_all$peta[[j]][, i]),
+                                                dots)
         k <- k+1L
 
       }
     }
 
     # Multinomial transformation:
-    labels_in <- unname(unlist(lca_all$peta))
-    labels_out <- c(lca_all$loglik[, multinom, ])
-    indices_in <- match(labels_in, transparameters_labels)-1L
-    indices_out <- match(labels_out, transparameters_labels)-1L
-
     y <- as.matrix(patterns[, multinom])
     K <- unlist(lapply(data_list$factor_names, FUN = length))
 
-    control_transform[[k]] <- list(transform = "multinomial",
-                                   # labels_out = labels_out,
-                                   # labels_in = labels_in,
-                                   indices_in = indices_in,
-                                   indices_out = indices_out,
-                                   y = y,
-                                   S = npatterns,
-                                   J = Jmulti,
-                                   I = nclasses,
-                                   K = K)
+    dots$y <- y
+    dots$S <- npatterns
+    dots$J <- Jmulti
+    dots$I <- nclasses
+    dots$K <- K
+    trans_and_labs[[k]] <- extra_transforms(transform = "multinomial",
+                                            labels_in = list(lca_all$peta),
+                                            labels_out = list(lca_all$loglik[, multinom, ]),
+                                            dots)
 
   }
+
+  control_transform <- create_transforms(transforms_and_labels = trans_and_labs,
+                                         param_structures = lca_all)
 
   #### Estimators ####
 
@@ -605,13 +578,12 @@ get_lca_structures <- function(data_list, full_model, control) {
   k <- 0L
 
   item_loglik <- lca_all$loglik
-  indices_classes <- match(lca_all$class, transparameters_labels)-1L
-  indices_cubeloglik <- match(item_loglik, transparameters_labels)-1L
+  indices <- list(match(lca_all$class, transparameters_labels)-1L,
+                  match(item_loglik, transparameters_labels)-1L)
 
   control_estimator[[1]] <- list(estimator = "lca",
                                  # labels = labels,
-                                 indices_classes = indices_classes,
-                                 indices_cubeloglik = indices_cubeloglik,
+                                 indices = indices,
                                  S = npatterns,
                                  J = nitems,
                                  I = nclasses,
@@ -634,7 +606,7 @@ get_lca_structures <- function(data_list, full_model, control) {
       for(i in uniques) {
 
         labels <- lca_all$class[i, ]
-        indices <- match(labels, transparameters_labels)-1L
+        indices <- list(match(labels, transparameters_labels)-1L)
         control_estimator[[G]] <- list(estimator = "bayesconst1",
                                        # labels = labels,
                                        indices = indices,
@@ -659,7 +631,7 @@ get_lca_structures <- function(data_list, full_model, control) {
       for(i in 1:nclasses) {
 
         labels <- sigma_class[[i]]
-        indices <- match(labels, transparameters_labels)-1L
+        indices <- list(match(labels, transparameters_labels)-1L)
         control_estimator[[G]] <- list(estimator = "bayesconst3",
                                        # labels = labels,
                                        indices = indices,
@@ -682,7 +654,7 @@ get_lca_structures <- function(data_list, full_model, control) {
 
           pihat <- pi_hat_list[[j]][, i]
           labels <- lca_all$peta[[j]][, i]
-          indices <- match(labels, transparameters_labels)-1L
+          indices <- list(match(labels, transparameters_labels)-1L)
           control_estimator[[G]] <- list(estimator = "bayesconst2",
                                          # labels = labels,
                                          indices = indices,
@@ -715,7 +687,7 @@ get_lca_structures <- function(data_list, full_model, control) {
       sds <- matrix(sds, nrow = p, ncol = q) / alpha
 
       labels <- lca_all$beta[-1, ] # Remove the intercept
-      indices <- match(labels, transparameters_labels)-1L
+      indices <- list(match(labels, transparameters_labels)-1L)
       control_estimator[[G]] <- list(estimator = "gaussian_loglik",
                                      # labels = labels,
                                      indices = indices,
@@ -736,7 +708,7 @@ get_lca_structures <- function(data_list, full_model, control) {
       if(lambda != 0 && power != 0) {
 
         labels <- lca_all$beta[-1, ] # Remove the intercept
-        indices <- match(labels, transparameters_labels)-1L
+        indices <- list(match(labels, transparameters_labels)-1L)
         control_estimator[[G]] <- list(estimator = "ridge",
                                        # labels = labels,
                                        indices = indices,

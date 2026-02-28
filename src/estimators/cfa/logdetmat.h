@@ -92,14 +92,14 @@ logdetmat* choose_logdetmat(const Rcpp::List& estimator_setup) {
 
   logdetmat* myestimator = new logdetmat();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::uvec lower_indices = estimator_setup["lower_indices"];
   double logdetw = estimator_setup["logdetw"];
   int p = estimator_setup["p"];
 
   arma::mat X(p, p, arma::fill::zeros);
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->lower_indices = lower_indices;
   myestimator->X = X;
   myestimator->dX = X;

@@ -82,7 +82,7 @@ laplace_loglik* choose_laplace_loglik(const Rcpp::List& estimator_setup) {
 
   laplace_loglik* myestimator = new laplace_loglik();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat X = estimator_setup["X"];
 
   int p = X.n_rows;
@@ -92,7 +92,7 @@ laplace_loglik* choose_laplace_loglik(const Rcpp::List& estimator_setup) {
   arma::mat sigma(p, q);
   arma::mat log_dl(p, q);
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->X = X;
   myestimator->p = p;
   myestimator->q = q;

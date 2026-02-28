@@ -64,7 +64,7 @@ oblimin* choose_oblimin(const Rcpp::List& estimator_setup) {
 
   oblimin* myestimator = new oblimin();
 
-  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
   double gamma = estimator_setup["gamma"];
@@ -76,7 +76,7 @@ oblimin* choose_oblimin(const Rcpp::List& estimator_setup) {
   arma::mat I_gamma_C = (I - gamma_C);
   // I_gamma_C and N must be symmetric
 
-  myestimator->indices_lambda = indices_lambda;
+  myestimator->indices_lambda = indices[0];
   myestimator->p = p;
   myestimator->q = q;
   myestimator->N = N;

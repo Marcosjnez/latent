@@ -98,7 +98,7 @@ cfa_ml2* choose_cfa_ml2(const Rcpp::List& estimator_setup) {
 
   cfa_ml2* myestimator = new cfa_ml2();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat R = estimator_setup["R"];
   double w = estimator_setup["w"];
   int q = estimator_setup["q"];
@@ -110,7 +110,7 @@ cfa_ml2* choose_cfa_ml2(const Rcpp::List& estimator_setup) {
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(R));
   double plogpi2 = p*std::log(arma::datum::pi*2);
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->p = p;
   myestimator->q = q;
   myestimator->n = n;

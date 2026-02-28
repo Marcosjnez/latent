@@ -85,7 +85,7 @@ public:
 gamma_loglik* choose_gamma_loglik(const Rcpp::List& estimator_setup) {
   gamma_loglik* myestimator = new gamma_loglik();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat X = estimator_setup["X"];
 
   int p_dim = X.n_rows;
@@ -95,7 +95,7 @@ gamma_loglik* choose_gamma_loglik(const Rcpp::List& estimator_setup) {
   arma::mat beta(p_dim, q_dim);
   arma::mat log_dg(p_dim, q_dim);
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->X = X;
   myestimator->p_dim = p_dim;
   myestimator->q_dim = q_dim;

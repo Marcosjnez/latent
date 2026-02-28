@@ -181,13 +181,18 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
 
   factor_cor* mytrans = new factor_cor();
 
-  arma::uvec indices_lambda = trans_setup["indices_lambda"];
-  arma::uvec indices_psi = trans_setup["indices_psi"];
-  arma::uvec indices_theta = trans_setup["indices_theta"];
-  arma::uvec indices_out = trans_setup["indices_out"];
+  // arma::uvec indices_lambda = trans_setup["indices_lambda"];
+  // arma::uvec indices_psi = trans_setup["indices_psi"];
+  // arma::uvec indices_theta = trans_setup["indices_theta"];
+  // arma::uvec indices_out = trans_setup["indices_out"];
+  std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   int p = trans_setup["p"];
   int q = trans_setup["q"];
 
+  arma::uvec indices_lambda = indices_in[0];
+  arma::uvec indices_psi = indices_in[1];
+  arma::uvec indices_theta = indices_in[2];
   arma::mat grad_out(p, p, arma::fill::zeros);
 
   arma::mat lambda(p, q, arma::fill::zeros);
@@ -207,7 +212,7 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
   mytrans->indices_lambda = indices_lambda;
   mytrans->indices_psi = indices_psi;
   mytrans->indices_theta = indices_theta;
-  mytrans->indices_out = indices_out;
+  mytrans->indices_out = indices_out[0];
   mytrans->p = p;
   mytrans->q = q;
   mytrans->grad_out = grad_out;

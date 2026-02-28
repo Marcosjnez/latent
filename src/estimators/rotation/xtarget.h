@@ -76,8 +76,7 @@ xtarget* choose_xtarget(const Rcpp::List& estimator_setup) {
 
   xtarget* myestimator = new xtarget();
 
-  arma::uvec indices_lambda = estimator_setup["indices_lambda"];
-  arma::uvec indices_psi = estimator_setup["indices_psi"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat target = estimator_setup["target"];
   arma::mat weight = estimator_setup["weight"];
   arma::mat psitarget = estimator_setup["psitarget"];
@@ -91,8 +90,8 @@ xtarget* choose_xtarget(const Rcpp::List& estimator_setup) {
   arma::mat weight2 = weight % weight;
   arma::mat psiweight2 = psiweight % psiweight;
 
-  myestimator->indices_lambda = indices_lambda;
-  myestimator->indices_psi = indices_psi;
+  myestimator->indices_lambda = indices[0];
+  myestimator->indices_psi = indices[1];
   myestimator->psi = psi;
   myestimator->dpsi = psi;
   myestimator->target = target;

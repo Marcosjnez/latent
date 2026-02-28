@@ -192,8 +192,7 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
 
   lca* myestimator = new lca();
 
-  arma::uvec indices_classes = estimator_setup["indices_classes"];
-  arma::uvec indices_cubeloglik = estimator_setup["indices_cubeloglik"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   int S = estimator_setup["S"];
   int J = estimator_setup["J"];
   int I = estimator_setup["I"];
@@ -216,8 +215,8 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
   myestimator->I = I;
   myestimator->weights = weights;
   myestimator->logweights = logweights;
-  myestimator->indices_classes = indices_classes;
-  myestimator->indices_cubeloglik = indices_cubeloglik;
+  myestimator->indices_classes = indices[0];
+  myestimator->indices_cubeloglik = indices[1];
 
   myestimator->classes = classes;
   myestimator->logliks = logliks;

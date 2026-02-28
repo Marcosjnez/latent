@@ -10,33 +10,35 @@ class identity:public transformations {
 
 public:
 
+  arma::uvec indices_in, indices_out;
+
   void transform(arguments_optim& x) {
 
-    x.transparameters(indices_out[0]) = arma::vectorise(x.transparameters(indices_in[0]));
+    x.transparameters(indices_out) = arma::vectorise(x.transparameters(indices_in));
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    x.grad(indices_in[0]) += arma::vectorise(x.grad(indices_out[0]));
+    x.grad(indices_in) += arma::vectorise(x.grad(indices_out));
 
   }
 
   void dtransform(arguments_optim& x) {
 
-    x.dtransparameters(indices_out[0]) = arma::vectorise(x.dtransparameters(indices_in[0]));
+    x.dtransparameters(indices_out) = arma::vectorise(x.dtransparameters(indices_in));
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
-    x.dgrad.elem(indices_in[0]) += arma::vectorise(x.dgrad(indices_out[0]));
+    x.dgrad.elem(indices_in) += arma::vectorise(x.dgrad(indices_out));
 
   }
 
   void jacobian(arguments_optim& x) {
 
-    arma::uvec v = indices_in[0];
+    arma::uvec v = indices_in;
     int p = v.n_elem;
     arma::mat I(p, p, arma::fill::eye);
     jacob = I;
@@ -65,11 +67,13 @@ identity* choose_identity(const Rcpp::List& trans_setup) {
 
   identity* mytrans = new identity();
 
+  // std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
+  // std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
 
-  mytrans->indices_in = indices_in;
-  mytrans->indices_out = indices_out;
+  mytrans->indices_in = indices_in[0];
+  mytrans->indices_out = indices_out[0];
 
   return mytrans;
 

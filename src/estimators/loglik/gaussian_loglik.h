@@ -95,7 +95,7 @@ gaussian_loglik* choose_gaussian_loglik(const Rcpp::List& estimator_setup) {
 
   gaussian_loglik* myestimator = new gaussian_loglik();
 
-  arma::uvec indices = estimator_setup["indices"];
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
   double alpha = estimator_setup["alpha"];
   double N = estimator_setup["N"];
   arma::mat means = estimator_setup["means"];
@@ -106,7 +106,7 @@ gaussian_loglik* choose_gaussian_loglik(const Rcpp::List& estimator_setup) {
   arma::mat log_dnorms(p, q);
   arma::mat Z(p, q);
 
-  myestimator->indices = indices;
+  myestimator->indices = indices[0];
   myestimator->alpha = alpha;
   myestimator->N = N;
   myestimator->means = means;

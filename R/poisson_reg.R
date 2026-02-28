@@ -193,32 +193,30 @@ pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NU
 
   #### Transformations ####
 
-  control_transform <- list()
+  trans_and_labs <- list()
+  dots <- list()
 
   # betas to linpreds:
-  labels_in <- trans$beta
-  labels_out <- trans$linpred
-  indices_in <- match(labels_in, transparameters_labels)-1L
-  indices_out <- match(labels_out, transparameters_labels)-1L
-  control_transform[[1]] <- list(transform = "column_space",
-                                 indices_in = indices_in,
-                                 indices_out = indices_out,
-                                 X = X)
+  dots$X <- X
+  trans_and_labs[[1]] <- extra_transforms(transform = "column_space",
+                                          labels_in = list(trans$beta),
+                                          labels_out = list(trans$linpred),
+                                          dots)
 
   # linpred to lambdas:
-  labels_in <- trans$linpred
-  labels_out <- trans$lambda
-  indices_in <- match(labels_in, transparameters_labels)-1L
-  indices_out <- match(labels_out, transparameters_labels)-1L
-  control_transform[[2]] <- list(transform = "exponential",
-                                 indices_in = indices_in,
-                                 indices_out = indices_out)
+  trans_and_labs[[2]] <- extra_transforms(transform = "exponential",
+                                          labels_in = list(trans$linpred),
+                                          labels_out = list(trans$lambda),
+                                          dots)
+
+  control_transform <- create_transforms(transforms_and_labels = trans_and_labs,
+                                         param_structures = trans)
 
   #### Estimators ####
 
   control_estimator <- list()
 
-  indices <- match(trans$lambda, transparameters_labels)-1L
+  indices <- list(match(trans$lambda, transparameters_labels)-1L)
   control_estimator[[1]] <- list(estimator = "poisson_loglik",
                                  indices = indices,
                                  X = Y)
