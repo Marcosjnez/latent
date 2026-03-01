@@ -416,6 +416,9 @@ fit <- lcfa(data = HolzingerSwineford1939, model = model,
             control = list(opt = "grad", maxit = 1000L,
                            cores = 20L, rstarts = 20L, eps = 1e-05,
                            tcg_maxit = 10))
+fit@modelInfo$control_manifold
+fit@modelInfo$control_transform
+fit@modelInfo$control_estimator
 
 fit@loglik # -3422.761 (ML)
 fit@penalized_loglik # -3422.766 (ML)

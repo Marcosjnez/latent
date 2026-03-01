@@ -94,8 +94,7 @@ create_manifolds <- function(manifolds_and_labels, param_structures) {
 
 }
 
-get_manifold <- function(manifolds,
-                         structures) {
+get_manifold <- function(manifolds, structures) {
 
   # Collect the unique parameter labels that are not fixed values:
   unique_str <- unname(unique(unlist(structures)))

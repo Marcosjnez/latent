@@ -97,29 +97,37 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
   # list2env(data_list, envir = environment())
 
   # Initialize the objects to store the initial parameters:
-  rot_param <- rot_trans <- model <- vector("list", length = ngroups)
-  fixed <- fixed_values <- nonfixed <- vector("list", length = ngroups)
+  rot_param <- rot_trans <- model <- vector("list")
+  fixed <- fixed_values <- nonfixed <- vector("list")
+  ulambda_group <- paste("ulambda.group", 1:ngroups, sep = "")
+  X_group <- paste("X.group", 1:ngroups, sep = "")
+  Xinv_group <- paste("Xinv.group", 1:ngroups, sep = "")
+  lambda_group <- paste("lambda.group", 1:ngroups, sep = "")
+  psi_group <- paste("psi.group", 1:ngroups, sep = "")
 
   for(i in 1:ngroups) {
 
-    model[[i]]$ulambda <- lambda[[i]]
+    model[[ulambda_group[i]]] <- lambda[[i]]
     X_labels <- paste("g", i, ".X[", rep(1:nfactors[[i]], times = nfactors[[i]]),
                       ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-    model[[i]]$X <- matrix(X_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
+
+    model[[X_group[i]]] <- matrix(X_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
 
     # Transformed parameters:
 
     # Get the positions of parameters and fixed values:
 
-    nonfixed[[i]] <- lapply(model[[i]], FUN = \(x) {
+    group_i <- c(ulambda_group[i], X_group[i])
+
+    nonfixed[group_i] <- lapply(model[group_i], FUN = \(x) {
       which(is.na(suppressWarnings(as.numeric(x))))
     })
 
-    fixed[[i]] <- lapply(model[[i]], FUN = \(x) {
+    fixed[group_i] <- lapply(model[group_i], FUN = \(x) {
       which(!is.na(suppressWarnings(as.numeric(x))))
     })
 
-    fixed_values[[i]] <- lapply(model[[i]], FUN = \(x) {
+    fixed_values[group_i] <- lapply(model[group_i], FUN = \(x) {
       numerals <- suppressWarnings(as.numeric(x))
       inds <- which(!is.na(numerals))
       return(numerals[inds])
@@ -128,32 +136,32 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     # Unrotated lambda:
     ulambda_labels <- paste("g", i, ".ulambda[", rep(1:nitems[[i]], times = nfactors[[i]]),
                             ",", rep(1:nfactors[[i]], each = nitems[[i]]), "]", sep = "")
-    rot_trans[[i]]$ulambda <- matrix(ulambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
+    rot_trans[[ulambda_group[i]]] <- matrix(ulambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
 
     # X:
-    rot_trans[[i]]$X <- model[[i]]$X
+    rot_trans[[X_group[i]]] <- model[[X_group[i]]]
 
     if(!orthogonal) {
       # Xinv:
       Xinv_labels <- paste("g", i, ".Xinv[", rep(1:nfactors[[i]], times = nfactors[[i]]),
                            ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-      rot_trans[[i]]$Xinv <- matrix(Xinv_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
+      rot_trans[[Xinv_group[i]]] <- matrix(Xinv_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
     }
 
     # Rotated lambda:
     lambda_labels <- paste("g", i, ".lambda[", rep(1:nitems[[i]], times = nfactors[[i]]),
                            ",", rep(1:nfactors[[i]], each = nitems[[i]]), "]", sep = "")
-    rot_trans[[i]]$lambda <- matrix(lambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
+    rot_trans[[lambda_group[i]]] <- matrix(lambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
 
     # Latent correlations:
     psi_labels <- paste("g", i, ".psi[", rep(1:nfactors[[i]], times = nfactors[[i]]),
                            ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-    rot_trans[[i]]$psi <- matrix(psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
+    rot_trans[[psi_group[i]]] <- matrix(psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
 
     # Untransformed parameters:
 
-    rot_param[[i]]$ulambda <- model[[i]]$ulambda
-    rot_param[[i]]$X <- rot_trans[[i]]$X
+    rot_param[[ulambda_group[i]]] <- model[[ulambda_group[i]]]
+    rot_param[[X_group[i]]] <- rot_trans[[X_group[i]]]
 
   }
 
@@ -187,24 +195,24 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   for(rs in 1:control$rstarts) {
 
-    init_trans[[rs]] <- vector("list", length = ngroups)
+    init_trans[[rs]] <- vector("list")
 
     for(i in 1:ngroups) {
 
-      init_trans[[rs]][[i]]$ulambda <- lambda[[i]]
-      init_trans[[rs]][[i]]$X <- rorth(nfactors[[i]], nfactors[[i]])
-      # init_trans[[rs]][[i]]$X <- roblq(nfactors[[i]], nfactors[[i]])
+      init_trans[[rs]][[ulambda_group[i]]] <- lambda[[i]]
+      init_trans[[rs]][[X_group[i]]] <- rorth(nfactors[[i]], nfactors[[i]])
+      # init_trans[[rs]][[X_group[i]]] <- roblq(nfactors[[i]], nfactors[[i]])
 
       if(orthogonal) {
-        init_trans[[rs]][[i]]$lambda <- lambda[[i]] %*%
-          init_trans[[rs]][[i]]$X
+        init_trans[[rs]][[lambda_group[i]]] <- lambda[[i]] %*%
+          init_trans[[rs]][[X_group[i]]]
       } else {
-        init_trans[[rs]][[i]]$Xinv <- solve(init_trans[[rs]][[i]]$X)
-        init_trans[[rs]][[i]]$lambda <- lambda[[i]] %*%
-          t(init_trans[[rs]][[i]]$Xinv)
+        init_trans[[rs]][[Xinv_group[i]]] <- solve(init_trans[[rs]][[X_group[i]]])
+        init_trans[[rs]][[lambda_group[i]]] <- lambda[[i]] %*%
+          t(init_trans[[rs]][[Xinv_group[i]]])
       }
 
-      init_trans[[rs]][[i]]$psi <- crossprod(init_trans[[rs]][[i]]$X)
+      init_trans[[rs]][[psi_group[i]]] <- crossprod(init_trans[[rs]][[X_group[i]]])
 
     }
 
@@ -250,6 +258,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
   #### Manifolds ####
 
   mani_and_labs <- list()
+  manifolds <- list()
   k <- 1L
 
   for(i in 1:ngroups) {
@@ -257,16 +266,21 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     dots$p <- nfactors[[i]]
     dots$q <- nfactors[[i]]
     # Get the extra objects required for the manifold:
-    mani_and_labs[[k]] <- extra_manifolds(projection,
-                                          rot_param[[i]]$X,
-                                          dots)
+    # mani_and_labs[[k]] <- extra_manifolds(projection,
+    #                                       rot_param[[X_group[i]]],
+    #                                       dots)
+
+    manifolds[[k]] <- list(manifold = projection, parameters = X_group[i],
+                           extra = dots)
 
     k <- k+1L
 
   }
 
-  control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
-                                       param_structures = rot_param)
+  # control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
+  #                                      param_structures = rot_param)
+  control_manifold <- get_manifold(manifolds = manifolds,
+                                   structures = rot_param)
 
   #### Transformations ####
 
@@ -283,9 +297,9 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
       dots$p <- nitems[[i]]
       dots$q <- nfactors[[i]]
       trans_and_labs[[k]] <- extra_transforms(transform = "XY",
-                                              labels_in = list(rot_trans[[i]]$ulambda,
-                                                               rot_trans[[i]]$X),
-                                              labels_out = list(rot_trans[[i]]$lambda),
+                                              labels_in = list(rot_trans[[ulambda_group[i]]],
+                                                               rot_trans[[X_group[i]]]),
+                                              labels_out = list(rot_trans[[lambda_group[i]]]),
                                               dots)
       k <- k+1L
 
@@ -296,8 +310,8 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
       # Get the extra objects required for the transformation:
       dots$p <- nfactors[[i]]
       trans_and_labs[[k]] <- extra_transforms(transform = "matrix_inverse",
-                                              labels_in = list(rot_trans[[i]]$X),
-                                              labels_out = list(rot_trans[[i]]$Xinv),
+                                              labels_in = list(rot_trans[[X_group[i]]]),
+                                              labels_out = list(rot_trans[[Xinv_group[i]]]),
                                               dots)
       k <- k+1L
 
@@ -307,9 +321,9 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
       dots$p <- nitems[[i]]
       dots$q <- nfactors[[i]]
       trans_and_labs[[k]] <- extra_transforms("XYt",
-                                              labels_in = list(rot_trans[[i]]$ulambda,
-                                                               rot_trans[[i]]$Xinv),
-                                              labels_out = list(rot_trans[[i]]$lambda),
+                                              labels_in = list(rot_trans[[ulambda_group[i]]],
+                                                               rot_trans[[Xinv_group[i]]]),
+                                              labels_out = list(rot_trans[[lambda_group[i]]]),
                                               dots)
       k <- k+1L
 
@@ -319,9 +333,10 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
     # Get the extra objects required for the transformation:
     dots$p <- nfactors[[i]]
+    lower_psi <- lower.tri(diag(nfactors[[i]], nfactors[[i]]), diag = TRUE)
     trans_and_labs[[k]] <- extra_transforms("crossprod",
-                                            labels_in = list(rot_trans[[i]]$X),
-                                            labels_out = list(rot_trans[[i]]$psi[lower.tri(rot_trans[[i]]$psi, diag = TRUE)]), # LOWER DIAG
+                                            labels_in = list(rot_trans[[X_group[i]]]),
+                                            labels_out = list(rot_trans[[psi_group[i]]][lower_psi]), # LOWER DIAG
                                             dots)
     k <- k+1L
 
@@ -342,8 +357,8 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     q <- nfactors[[i]]
     lower_psi <- lower.tri(diag(q, q), diag = TRUE)
 
-    lambda_labels <- c(rot_trans[[i]]$lambda)
-    psi_labels <- rot_trans[[i]]$psi[lower_psi]
+    lambda_labels <- c(rot_trans[[lambda_group[i]]])
+    psi_labels <- rot_trans[[psi_group[i]]][lower_psi]
     indices <- list(match(lambda_labels, transparameters_labels)-1L,
                     match(psi_labels, transparameters_labels)-1L)
     control_estimator[[k]] <- list(estimator = rotation,
