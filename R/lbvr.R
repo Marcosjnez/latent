@@ -276,6 +276,7 @@ lbvr <- function(model, digits = 4){
 #' @param x An object of class \code{"lbvr"}.
 #' @param ... Additional arguments passed to \code{print.data.frame}.
 #'
+#' @method print lbvr
 #' @export
 print.lbvr <- function(x, ...) {
 

@@ -158,6 +158,7 @@ lclass_diag <- function(x, digits = 4,
 #' @param x An object of class \code{"lclassd"} returned by \code{lclass_diag()}.
 #' @param ... Additional arguments passed to \code{print.default} or \code{print.data.frame}.
 #'
+#' @method print lclassd
 #' @export
 print.lclassd <- function(x, ...) {
   cat("\n——— Latent Class Classification Diagnostics ———\n")
