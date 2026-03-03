@@ -157,6 +157,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     psi_labels <- paste("g", i, ".psi[", rep(1:nfactors[[i]], times = nfactors[[i]]),
                            ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
     rot_trans[[psi_group[i]]] <- matrix(psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
+    rot_trans[[psi_group[i]]][upper.tri(rot_trans[[psi_group[i]]], diag = FALSE)] <- t(rot_trans[[psi_group[i]]])[upper.tri(rot_trans[[psi_group[i]]], diag = FALSE)]
 
     # Untransformed parameters:
 
@@ -178,6 +179,8 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
   # Arrange transparameter labels:
   vector_trans <- unname(unlist(rot_trans))
   transparameters_labels <- unique(vector_trans)
+  nonfixed_trans <- which(is.na(suppressWarnings(as.numeric(transparameters_labels))))
+  transparameters_labels <- transparameters_labels[nonfixed_trans]
   ntrans <- length(transparameters_labels)
 
   #### Relate the transformed parameters to the parameters ####
@@ -257,34 +260,24 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   #### Manifolds ####
 
-  mani_and_labs <- list()
   manifolds <- list()
-  k <- 1L
-
   for(i in 1:ngroups) {
 
     dots$p <- nfactors[[i]]
     dots$q <- nfactors[[i]]
-    # Get the extra objects required for the manifold:
-    # mani_and_labs[[k]] <- extra_manifolds(projection,
-    #                                       rot_param[[X_group[i]]],
-    #                                       dots)
 
-    manifolds[[k]] <- list(manifold = projection, parameters = X_group[i],
+    manifolds[[i]] <- list(manifold = projection, parameters = X_group[i],
                            extra = dots)
-
-    k <- k+1L
 
   }
 
-  # control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
-  #                                      param_structures = rot_param)
   control_manifold <- get_manifold(manifolds = manifolds,
                                    structures = rot_param)
 
   #### Transformations ####
 
   trans_and_labs <- list()
+  # transforms <- list()
   k <- 1L
 
   for(i in 1:ngroups) {
@@ -301,6 +294,11 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                                                                rot_trans[[X_group[i]]]),
                                               labels_out = list(rot_trans[[lambda_group[i]]]),
                                               dots)
+      # transforms[[k]] <- list(transform = "XY",
+      #                         parameters_in = c(ulambda_group[i],
+      #                                           X_group[i]),
+      #                         parameters_out = lambda_group[i],
+      #                         extra = dots)
       k <- k+1L
 
     } else {
@@ -336,14 +334,19 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     lower_psi <- lower.tri(diag(nfactors[[i]], nfactors[[i]]), diag = TRUE)
     trans_and_labs[[k]] <- extra_transforms("crossprod",
                                             labels_in = list(rot_trans[[X_group[i]]]),
-                                            labels_out = list(rot_trans[[psi_group[i]]][lower_psi]), # LOWER DIAG
+                                            labels_out = list(rot_trans[[psi_group[i]]]), # LOWER DIAG
                                             dots)
+    # transforms[[k]] <- list(transform = "crossprod",
+    #                         parameters_in = X_group[i],
+    #                         parameters_out = psi_group[i],
+    #                         extra = dots)
     k <- k+1L
 
   }
 
   control_transform <- create_transforms(transforms_and_labels = trans_and_labs,
                                          param_structures = rot_trans)
+  # control_transform <- get_transforms(transforms = transforms, structures = rot_trans)
 
   #### Estimators ####
 
@@ -358,7 +361,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     lower_psi <- lower.tri(diag(q, q), diag = TRUE)
 
     lambda_labels <- c(rot_trans[[lambda_group[i]]])
-    psi_labels <- rot_trans[[psi_group[i]]][lower_psi]
+    psi_labels <- rot_trans[[psi_group[i]]]
     indices <- list(match(lambda_labels, transparameters_labels)-1L,
                     match(psi_labels, transparameters_labels)-1L)
     control_estimator[[k]] <- list(estimator = rotation,

@@ -19,8 +19,7 @@ public:
 
   void param(arguments_optim& x) {
 
-    X.elem(lower_indices) = x.transparameters(indices);
-    X = arma::symmatl(X);
+    X = arma::reshape(x.transparameters(indices), p, p);
     tr = arma::trace(X);
 
   }
@@ -35,28 +34,26 @@ public:
   void G(arguments_optim& x) {
 
     Xinv = arma::inv_sympd(X, arma::inv_opts::allow_approx);
-    arma::mat Xinv2 = 2*Xinv;
-    Xinv2.diag() *= 0.5;
+    // arma::mat Xinv2 = 2*Xinv;
+    // Xinv2.diag() *= 0.5;
     arma::mat Xtr(p, p, arma::fill::eye);
     Xtr.diag() *= p/tr;
-    x.grad.elem(indices) -= logdetw * (Xinv2.elem(lower_indices) -
-      Xtr.elem(lower_indices));
+    x.grad.elem(indices) -= logdetw * (Xinv - Xtr);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dX.elem(lower_indices) = x.dtransparameters(indices);
-    dX = arma::symmatl(dX);
+    dX = arma::reshape(x.dtransparameters(indices), p, p);
 
     double dtr = arma::trace(dX);
     arma::mat dXinv = -Xinv * dX * Xinv;
     arma::mat dXtr(p, p, arma::fill::eye);
     dXtr.diag() *= -p/(tr*tr)*dtr;
-    dXinv *= 2;
-    dXinv.diag() *= 0.5;
+    // dXinv *= 2;
+    // dXinv.diag() *= 0.5;
     arma::mat term = dXinv - dXtr;
-    x.dgrad.elem(indices) -= logdetw * (term.elem(lower_indices));
+    x.dgrad.elem(indices) -= logdetw * term;
 
   }
 

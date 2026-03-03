@@ -229,57 +229,67 @@ general_se <- function(fit, type = "standard") {
   # Get the hessian matrix:
   SE <- standard_se(fit = fit)
 
-  # Get the sample size and weight scalar:
-  N <- fit@data_list$nobs[[1]]
-  w <- fit@modelInfo$control_estimator[[1]]$w
-
   # Get the matrix of second-order derivatives between R and the parameters:
-  lambda <- fit@transformed_pars[[1]]$lambda
-  psi <- fit@transformed_pars[[1]]$psi
-  psi[upper.tri(psi)] <- t(psi)[upper.tri(psi)]
-  theta <- fit@transformed_pars[[1]]$theta
-  theta[upper.tri(theta)] <- t(theta)[upper.tri(theta)]
-  if(all_ml) { # SHOULD COMPUTE THIS AUTOMATICALY IN C++
-    df2_dparamdR <- df2_dtheta_ml(lambda, psi, theta, w, N)
-  } else if(all_ml2) {
-    df2_dparamdR <- df2_dtheta_ml2(lambda, psi, theta, w)
-  } else if(all_dwls) {
-    df2_dparamdR <- df2_dtheta_dwls(lambda, psi, theta, w)
-  } else {
-    stop("All the estimators should be the same")
+  lambda_group <- paste("lambda.group", 1:ngroups, sep = "")
+  psi_group <- paste("psi.group", 1:ngroups, sep = "")
+  theta_group <- paste("theta.group", 1:ngroups, sep = "")
+
+  VAR <- vector("list", length = ngroups)
+  for(i in 1:ngroups) {
+
+    # Get the sample size and weight scalar:
+    N <- fit@data_list$nobs[[i]]
+    w <- fit@modelInfo$control_estimator[[i]]$w
+
+    lambda <- fit@transformed_pars[[lambda_group[i]]]
+    psi <- fit@transformed_pars[[psi_group[i]]]
+    psi[upper.tri(psi)] <- t(psi)[upper.tri(psi)]
+    theta <- fit@transformed_pars[[theta_group[i]]]
+    theta[upper.tri(theta)] <- t(theta)[upper.tri(theta)]
+
+    if(all_ml) { # SHOULD COMPUTE THIS AUTOMATICALY IN C++
+      df2_dparamdR <- df2_dtheta_ml(lambda, psi, theta, w, N)
+    } else if(all_ml2) {
+      df2_dparamdR <- df2_dtheta_ml2(lambda, psi, theta, w)
+    } else if(all_dwls) {
+      df2_dparamdR <- df2_dtheta_dwls(lambda, psi, theta, w)
+    } else {
+      stop("All the estimators should be the same")
+    }
+
+    # Select the model parameters from df2_dparamdR:
+    group <- c(lambda_group[i], psi_group[i], theta_group[i])
+    select <- match(fit@modelInfo$parameters_labels,
+                    unlist(fit@modelInfo$cfa_param[group]))
+    select <- select[!is.na(select)]
+    df2_dparamdR <- df2_dparamdR[, select]
+
+    # Get the asymptotic correlation matrix:
+    if(type == "standard") {
+      ACOV <- asymptotic_normal(fit@data_list$correl[[i]]$R)
+    } else if(type == "robust") {
+      # CHECK FOR RAW DATA AVAILABILITY
+      ACOV <- asymptotic_general(fit@data_list$data[[i]])
+    } else {
+      stop("Unknown type")
+    }
+
+    # Sandwich estimator of standard errors:
+    B <- t(df2_dparamdR) %*% (ACOV/N) %*% df2_dparamdR
+    H_inv <- solve(SE$H)
+    selection <- which(unlist(fit@modelInfo$cfa_param[group])[select] %in%
+                         fit@modelInfo$parameters_labels)
+    SE$vcov[selection, selection] <- H_inv %*% B %*% H_inv
+
+    # # Store the ham of the sandwich:
+    # rownames(B) <- colnames(B) <- mylabels
+    # SE$B <- B
+
   }
-
-  # Select the model parameters from df2_dparamdR:
-  select <- match(fit@modelInfo$transparameters_labels,
-                  unlist(fit@modelInfo$cfa_param[[1]]))
-  select <- select[!is.na(select)]
-  df2_dparamdR <- df2_dparamdR[, select]
-
-  # Get the asymptotic correlation matrix:
-  if(type == "standard") {
-    ACOV <- asymptotic_normal(fit@data_list$correl[[1]]$R)
-  } else if(type == "robust") {
-    # CHECK FOR RAW DATA AVAILABILITY
-    ACOV <- asymptotic_general(fit@data_list$data[[1]])
-  } else {
-    stop("Unknown type")
-  }
-
-  # Sandwich estimator of standard errors:
-  B <- t(df2_dparamdR) %*% (ACOV/N) %*% df2_dparamdR
-  H_inv <- solve(SE$H)
-  VAR <- H_inv %*% B %*% H_inv
 
   # Update the standard errors of the model parameters in the SE object:
-  mylabels <- fit@modelInfo$parameters_labels
-  selection <- match(mylabels, fit@modelInfo$transparameters_labels)
-  SE$se[selection] <- sqrt(diag(VAR))
-  SE$se <- SE$se[selection]
-  names(SE$se) <- mylabels
-
-  # Store the ham of the sandwich:
-  rownames(B) <- colnames(B) <- mylabels
-  SE$B <- B
+  SE$se <- sqrt(diag(SE$vcov))
+  names(SE$se) <- fit@modelInfo$parameters_labels
 
   # UPDATE SE$VCOV AND ALL OTHER ELEMENTS IN SE$se
 

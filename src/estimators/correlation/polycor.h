@@ -379,8 +379,8 @@ public:
       pnorm_tau[i] = 0.5 * arma::erfc(-taus[i] * M_SQRT1_2);
     }
 
-    R.elem(lower_diag) = x.transparameters(indices_R);
-    R = arma::symmatl(R);
+    R = arma::reshape(x.transparameters(indices_R), p, p);
+    // R = arma::symmatl(R);
     // R.diag().ones(); // Ensure ones in the diagonal of the correlation matrix
 
   }
@@ -447,7 +447,7 @@ public:
       x.grad(indices_taus[i]) += dfdtaus[i]/N;
     }
 
-    x.grad(indices_R) += arma::vectorise(dfdp(lower_diag))/N;
+    x.grad(indices_R) += 0.5*arma::vectorise(dfdp)/N; // 0.5*¿?
 
   }
 
@@ -459,9 +459,8 @@ public:
       dtaus[i] = x.dtransparameters(indices_taus[i]);
     }
 
-    arma::mat dR(p, p, arma::fill::zeros);
-    dR.elem(lower_diag) = x.dtransparameters(indices_R);
-    dR = arma::symmatl(dR);
+    arma::mat dR = arma::reshape(x.dtransparameters(indices_R), p, p);
+    // dR = arma::symmatl(dR);
 
     // compute the differentials:
     std::vector<arma::vec> ddfdtaus(p);
@@ -496,7 +495,7 @@ public:
     for(int i=0; i < p; ++i) {
       x.dgrad(indices_taus[i]) += ddfdtaus[i]/N;
     }
-    x.dgrad(indices_R) += arma::vectorise(ddfdp(lower_diag))/N;
+    x.dgrad(indices_R) += 0.5*arma::vectorise(ddfdp)/N;
 
   }
 

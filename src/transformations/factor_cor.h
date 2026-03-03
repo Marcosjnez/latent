@@ -19,35 +19,30 @@ public:
   void transform(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
-    psi.elem(lower_psi) = x.transparameters(indices_psi);
-    theta.elem(lower_theta) = x.transparameters(indices_theta);
-    psi = arma::symmatl(psi);
-    theta = arma::symmatl(theta);
+    psi = arma::reshape(x.transparameters(indices_psi), q, q);
+    theta = arma::reshape(x.transparameters(indices_theta), p, p);
 
     Rhat = lambda * psi * lambda.t() + theta;
-    x.transparameters(indices_out) = arma::vectorise(Rhat.elem(lower_diag));
+    x.transparameters(indices_out) = arma::vectorise(Rhat);
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    grad_out.elem(lower_diag) = x.grad(indices_out);
-    grad_out = arma::symmatl(grad_out);
+    grad_out = arma::reshape(x.grad(indices_out), p, p);
     grad_out *= 0.50; // Do not double-count the symmetric part
     grad_out.diag() *= 2; // Restore the diagonal
 
     lambda_psi = lambda * psi;
-    glambda = grad_out * (2*lambda_psi);
+    glambda = 2*grad_out * lambda_psi;
 
-    gpsi = 2*lambda.t() * grad_out * lambda;
-    gpsi.diag() *= 0.5;
+    gpsi = lambda.t() * grad_out * lambda;
 
-    gtheta = 2*grad_out;
-    gtheta.diag() *= 0.5;
+    gtheta = grad_out;
 
     x.grad.elem(indices_lambda) += arma::vectorise(glambda);
-    x.grad.elem(indices_psi) += arma::vectorise(gpsi(lower_psi));
-    x.grad.elem(indices_theta) += arma::vectorise(gtheta(lower_theta));
+    x.grad.elem(indices_psi) += arma::vectorise(gpsi);
+    x.grad.elem(indices_theta) += arma::vectorise(gtheta);
 
     // arma::mat I_p = arma::eye(p, p);
     // arma::mat comm = dxt(p, q);
@@ -82,44 +77,38 @@ public:
   void dtransform(arguments_optim& x) {
 
     dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
-    dpsi.elem(lower_psi) = x.dtransparameters(indices_psi);
-    dtheta.elem(lower_theta) = x.dtransparameters(indices_theta);
-    dpsi = arma::symmatl(dpsi);
-    dtheta = arma::symmatl(dtheta);
+    dpsi = arma::reshape(x.dtransparameters(indices_psi), q, q);
+    dtheta = arma::reshape(x.dtransparameters(indices_theta), p, p);
 
     dRhat = dlambda * psi * lambda.t() +
             lambda * psi * dlambda.t() +
             lambda * dpsi * lambda.t() +
             dtheta;
 
-    x.dtransparameters(indices_out) = arma::vectorise(dRhat.elem(lower_diag));
+    x.dtransparameters(indices_out) = arma::vectorise(dRhat);
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::mat dgrad_out(p, p, arma::fill::zeros);
-    dgrad_out.elem(lower_diag) = x.dgrad.elem(indices_out);
-    dgrad_out = arma::symmatl(dgrad_out);
+    arma::mat dgrad_out = arma::reshape(x.dgrad.elem(indices_out), p, p);
     dgrad_out *= 0.50; // Do not double-count the symmetric part
     dgrad_out.diag() *= 2; // Restore the diagonal
 
     arma::mat dB = dlambda * psi + lambda * dpsi;
-    dglambda = 2.0*(dgrad_out * lambda_psi + grad_out * dB);
+    dglambda = 2*(dgrad_out * lambda_psi + grad_out * dB);
 
     // dgpsi:
-    dgpsi = 2.0*(dlambda.t() * grad_out * lambda +
-                 lambda.t() * dgrad_out * lambda +
-                 lambda.t() * grad_out * dlambda);
-    dgpsi.diag() *= 0.5;
+    dgpsi = dlambda.t() * grad_out * lambda +
+      lambda.t() * dgrad_out * lambda +
+      lambda.t() * grad_out * dlambda;
 
     // dgtheta:
-    dgtheta = 2*dgrad_out;
-    dgtheta.diag() *= 0.5;
+    dgtheta = dgrad_out;
 
     x.dgrad.elem(indices_lambda) += arma::vectorise(dglambda);
-    x.dgrad.elem(indices_psi) += arma::vectorise(dgpsi(lower_psi));
-    x.dgrad.elem(indices_theta) += arma::vectorise(dgtheta(lower_theta));
+    x.dgrad.elem(indices_psi) += arma::vectorise(dgpsi);
+    x.dgrad.elem(indices_theta) += arma::vectorise(dgtheta);
 
   }
 

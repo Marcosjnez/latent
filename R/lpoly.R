@@ -85,6 +85,7 @@ lpoly <- function(data,
   poly_trans$R <- matrix(paste("r", 1:(p*p), sep = ""), nrow = p, ncol = p)
   # diag(poly_trans$R) <- "1"
   poly_trans$R[upper.tri(poly_trans$R)] <- t(poly_trans$R)[upper.tri(poly_trans$R)]
+  # poly_trans$R[upper.tri(poly_trans$R, diag = FALSE)] <- "0"
 
   #### Arrange labels ####
 
@@ -113,7 +114,7 @@ lpoly <- function(data,
   parameters <- transparameters <- vector("list", length = control$rstarts)
   # Indices of the unique transparameters in init_trans:
   trans_inds <- match(transparameters_labels, vector_trans)
-  init_inds <- match(parameters_labels, vector_trans)
+  init_inds <- match(parameters_labels, transparameters_labels)
 
   #### Create the initial values for the parameters ####
 
@@ -142,20 +143,14 @@ lpoly <- function(data,
 
   #### Manifolds ####
 
-  mani_and_labs <- list()
+  manifolds <- list(
+    list(manifold = "euclidean", parameters = "taus"),
+    list(manifold = "oblq", parameters = "X",
+         extra = list(p = p, q = p))
+  )
 
-  mani_and_labs[[1]] <- list("euclidean",
-                             poly_param$taus,
-                             ...)
-
-  mani_and_labs[[2]] <- list("oblq",
-                             poly_param$X,
-                             q = p,
-                             p = p,
-                             ...)
-
-  control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
-                                       param_structures = poly_param)
+  control_manifold <- get_manifold(manifolds = manifolds,
+                                   structures = poly_param)
 
   #### Transformations ####
 
@@ -165,7 +160,7 @@ lpoly <- function(data,
   dots$p <- p
   trans_and_labs[[1]] <- extra_transforms(transform = "crossprod",
                                           labels_in = list(poly_trans$X),
-                                          labels_out = list(poly_trans$R[lower_indices]),
+                                          labels_out = list(poly_trans$R),
                                           dots)
 
   control_transform <- create_transforms(transforms_and_labels = trans_and_labs,
@@ -174,7 +169,7 @@ lpoly <- function(data,
   #### Estimators ####
 
   indices <- vector("list", length = p+1L)
-  indices[[1]] <- match(poly_trans$R[lower_indices], transparameters_labels)-1L
+  indices[[1]] <- match(poly_trans$R, transparameters_labels)-1L
   for(i in 1:p) {
     indices[[i+1L]] <- match(poly_trans$taus[[i]], transparameters_labels)-1L
   }
@@ -188,7 +183,7 @@ lpoly <- function(data,
 
   if(control$reg) {
 
-    labels <- poly_trans$R[lower_indices]
+    labels <- poly_trans$R
     indices <- list(match(labels, transparameters_labels)-1L)
     control_estimator[[2]] <- list(estimator = "logdetmat",
                                    labels = labels,

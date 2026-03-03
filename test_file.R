@@ -248,10 +248,10 @@ model <- 'visual  =~ x1 + x2 + x3
 
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "ml", positive = FALSE,
+            estimator = "uls", positive = FALSE,
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "grad",
+            control = list(opt = "newton",
                            step_maxit = 100,
                            tcg_maxit = 100))
 fit@loss   # 0.283407
@@ -262,11 +262,12 @@ fit@Optim$convergence
 fit@timing
 fit
 SE <- se(fit, type = "standard", digits = 3)
+SE$se
 SE$table_se
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
-                    estimator = "ml",
+                    estimator = "uls",
                     # likelihood = "wishart",
                     std.lv = TRUE, std.ov = TRUE)
 # Same loss value: OK
@@ -409,16 +410,13 @@ fit2@loglik$loglik
 # With latent:
 set.seed(2026)
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
-            estimator = "ml", positive = TRUE,
+            estimator = "dwls", positive = TRUE,
             penalties = list(logdet = list(w = 0.01)),
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
             control = list(opt = "grad", maxit = 1000L,
                            cores = 20L, rstarts = 20L, eps = 1e-05,
                            tcg_maxit = 10))
-fit@modelInfo$control_manifold
-fit@modelInfo$control_transform
-fit@modelInfo$control_estimator
 
 fit@loglik # -3422.761 (ML)
 fit@penalized_loglik # -3422.766 (ML)
@@ -533,7 +531,7 @@ names(Ns) <- samples
 
 # Subset the items pertaining to the HEXACO-100
 selection <- 5:104
-selection <- 5:30
+selection <- 5:10
 full <- hexaco[, selection]
 
 mooc <- full[hexaco$sample == samples[2], ]
@@ -548,8 +546,8 @@ fit <- lpoly(data = mooc, do.fit = TRUE, penalties = TRUE,
                             eps = 1e-06,
                             print = TRUE,
                             print_interval = 10))
-fit@loglik # -75695.53
-fit@penalized_loglik # -75695.53
+fit@loglik # -176520.8
+fit@penalized_loglik # -176520.8
 fit@Optim$iterations
 fit@Optim$ng
 fit@Optim$convergence
@@ -562,10 +560,13 @@ x <- Turbofuns:::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)
 x$ACM
 H[13:21, 13:21]
 
+fit@modelInfo$transparameters_labels
 fit@modelInfo$poly_trans
 fit@modelInfo$control_manifold
+fit@modelInfo$control_transform
 fit@modelInfo$control_estimator
-fit@modelInfo$control$parameters
+fit@modelInfo$control$transparameters[[1]]
+fit@modelInfo$control$param2transparam
 
 fit <- polyfast(as.matrix(mooc))
 fit$iters
@@ -619,8 +620,8 @@ x <- grad_comp(control_manifold, control_transform,
                compute = "all",
                eps = 1e-07)
 # x$f
-# round(c(x$g) - c(x$numg), 5)
-# max(abs(c(x$g) - c(x$numg)))
+round(c(x$g) - c(x$numg), 5)
+max(abs(c(x$g) - c(x$numg)))
 round(c(x$dg) - c(x$numdg), 5)
 max(abs(c(x$dg) - c(x$numdg)))
 

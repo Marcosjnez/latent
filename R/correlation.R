@@ -45,7 +45,7 @@ correlation <- function(data, item_names = colnames(data),
         asymp <- asymptotic_general(X)
         W <- matrix(diag(asymp), nrow = q, ncol = q)
         W <- 1 / W
-        # diag(W) <- 0
+        diag(W) <- 1
         result$W <- W
       }
 

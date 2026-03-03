@@ -265,47 +265,50 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   #### Manifolds ####
 
-  # control_manifold <- list()
-  mani_and_labs <- list()
+  manifolds <- list()
   k <- 1L
 
   for(i in 1:ngroups) {
 
-    mani_and_labs[[k]] <- list("euclidean", cfa_param[[lambda_group[i]]])
+    manifolds[[k]] <- list(manifold = "euclidean",
+                           parameters = lambda_group[i])
     k <- k+1L
 
     if(positive) {
 
-      mani_and_labs[[k]] <- list("poblq",
-                                 cfa_param[[pj_psi_group[i]]],
-                                 p = nfactors[[i]],
-                                 q = nfactors[[i]],
-                                 constraints = target_psi[[i]])
+      manifolds[[k]] <- list(manifold = "poblq",
+                             parameters = pj_psi_group[i],
+                             extra = list(
+                               p = nfactors[[i]],
+                               q = nfactors[[i]],
+                               constraints = target_psi[[i]]))
       k <- k+1L
 
-      mani_and_labs[[k]] <- list("poblq",
-                                 cfa_param[[pj_theta_group[i]]],
-                                 p = nitems[[i]],
-                                 q = nitems[[i]],
-                                 constraints = target_theta[[i]])
+      manifolds[[k]] <- list(manifold = "poblq",
+                             parameters = pj_theta_group[i],
+                             extra = list(
+                               p = nitems[[i]],
+                               q = nitems[[i]],
+                               constraints = target_theta[[i]]))
       k <- k+1L
 
     } else {
 
-      mani_and_labs[[k]] <- list("euclidean",
-                                 cfa_param[[psi_group[i]]])
+      manifolds[[k]] <- list(manifold = "euclidean",
+                             parameters = psi_group[i])
       k <- k+1L
 
-      mani_and_labs[[k]] <- list("euclidean",
-                                 cfa_param[[theta_group[i]]])
+      manifolds[[k]] <- list(manifold = "euclidean",
+                             parameters = theta_group[i])
       k <- k+1L
 
     }
 
   }
 
-  control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
-                                       param_structures = cfa_param)
+  control_manifold <- get_manifold(manifolds = manifolds,
+                                   structures = cfa_param)
+
 
   #### Transformations ####
 
@@ -323,14 +326,14 @@ get_cfa_structures <- function(data_list, full_model, control) {
       dots$p <- nrow(cfa_trans[[psi_group[i]]])
       trans_and_labs[[k]] <- extra_transforms(transform = "crossprod",
                                               labels_in = list(cfa_trans[[pj_psi_group[i]]]),
-                                              labels_out = list(cfa_trans[[psi_group[i]]][lower_psi]),
+                                              labels_out = list(cfa_trans[[psi_group[i]]]),
                                               dots)
       k <- k+1L
 
       dots$p <- nrow(cfa_trans[[theta_group[i]]])
       trans_and_labs[[k]] <- extra_transforms(transform = "crossprod",
                                               labels_in = list(cfa_trans[[pj_theta_group[i]]]),
-                                              labels_out = list(cfa_trans[[theta_group[i]]][lower_theta]),
+                                              labels_out = list(cfa_trans[[theta_group[i]]]),
                                               dots)
       k <- k+1L
 
@@ -345,9 +348,9 @@ get_cfa_structures <- function(data_list, full_model, control) {
     dots$q <- nrow(cfa_trans[[psi_group[i]]])
     trans_and_labs[[k]] <- extra_transforms(transform = "factor_cor",
                                             labels_in = list(cfa_trans[[lambda_group[i]]],
-                                                             cfa_trans[[psi_group[i]]][lower_psi],
-                                                             cfa_trans[[theta_group[i]]][lower_theta]),
-                                            labels_out = list(cfa_trans[[model_group[i]]][lower_diag]),
+                                                             cfa_trans[[psi_group[i]]],
+                                                             cfa_trans[[theta_group[i]]]),
+                                            labels_out = list(cfa_trans[[model_group[i]]]),
                                             dots)
     k <- k+1L
 
@@ -364,7 +367,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
   for(i in 1:ngroups) {
 
     lower_diag <- lower.tri(cfa_trans[[model_group[i]]], diag = TRUE)
-    indices <- list(match(cfa_trans[[model_group[i]]][lower_diag],
+    indices <- list(match(cfa_trans[[model_group[i]]],
                      transparameters_labels)-1L)
 
     estimator <- tolower(estimator)
@@ -397,7 +400,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
       # For the psi matrix:
 
       lower_indices <- which(lower.tri(cfa_trans[[psi_group[i]]], diag = TRUE))
-      labels <- cfa_trans[[psi_group[i]]][lower_indices]
+      labels <- cfa_trans[[psi_group[i]]]
       indices <- list(match(labels, transparameters_labels)-1L)
       control_estimator[[k]] <- list(estimator = "logdetmat",
                                      # labels = labels,
@@ -410,7 +413,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
       # For the theta matrix:
 
       lower_indices <- which(lower.tri(cfa_trans[[theta_group[i]]], diag = TRUE))
-      labels <- cfa_trans[[theta_group[i]]][lower_indices]
+      labels <- cfa_trans[[theta_group[i]]]
       indices <- list(match(labels, transparameters_labels)-1L)
       control_estimator[[k]] <- list(estimator = "logdetmat",
                                      # labels = labels,

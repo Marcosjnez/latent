@@ -11,23 +11,23 @@ class crossprod:public transformations {
 public:
 
   int p;
-  arma::uvec indices_in, indices_out, lower_diag;
+  arma::uvec indices_in, indices_out, unique_indices_out, lower_diag;
   arma::mat X, grad_out, dX, dXtX, Dp, jacob;
 
   void transform(arguments_optim& x) {
 
     X = arma::reshape(x.transparameters(indices_in), p, p);
     arma::mat XtX = X.t() * X;
-    x.transparameters(indices_out) = arma::vectorise(XtX.elem(lower_diag));
+    x.transparameters(indices_out) = arma::vectorise(XtX);
 
   }
 
   void update_grad(arguments_optim& x) {
 
-    grad_out.elem(lower_diag) = x.grad(indices_out);
-    grad_out = arma::symmatl(grad_out);
+    grad_out = arma::reshape(x.grad(indices_out), p, p);
     grad_out *= 0.50; // Do not double-count the symmetric part
     grad_out.diag() *= 2; // Restore the diagonal
+
     x.grad(indices_in) += arma::vectorise(2*X * grad_out);
 
     // arma::vec v = x.grad(indices_in[0]);
@@ -45,15 +45,13 @@ public:
 
     dX = arma::reshape(x.dtransparameters(indices_in), p, p);
     dXtX = X.t() * dX + dX.t() * X;
-    x.dtransparameters(indices_out) = arma::vectorise(dXtX.elem(lower_diag));
+    x.dtransparameters(indices_out) = arma::vectorise(dXtX);
 
   }
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::mat dgrad_out(p, p, arma::fill::zeros);
-    dgrad_out.elem(lower_diag) = x.dgrad.elem(indices_out);
-    dgrad_out = arma::symmatl(dgrad_out);
+    arma::mat dgrad_out = arma::reshape(x.dgrad.elem(indices_out), p, p);
     dgrad_out *= 0.50; // Do not double-count the symmetric part
     dgrad_out.diag() *= 2; // Restore the diagonal
 
@@ -110,6 +108,7 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
   arma::mat X(p, p);
   arma::mat grad_out(p, p, arma::fill::zeros);
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(grad_out));
+  arma::uvec unique_indices_out = arma::unique(indices_out[0]);
   arma::mat Dp = duplication(p);
 
   mytrans->indices_in = indices_in[0];
@@ -117,6 +116,7 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
   mytrans->p = p;
   mytrans->X = X;
   mytrans->grad_out = grad_out;
+  mytrans->unique_indices_out = unique_indices_out;
   mytrans->lower_diag = lower_diag;
   mytrans->Dp = Dp;
 

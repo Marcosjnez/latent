@@ -219,15 +219,16 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   control$cores <- min(control$rstarts, control$cores)
   # Fit the model:
-  x <- optimizer(control_manifold = control_manifold,
-                 control_transform = control_transform,
-                 control_estimator = control_estimator,
-                 control_optimizer = control)
+  Optim <- optimizer(control_manifold = control_manifold,
+                     control_transform = control_transform,
+                     control_estimator = control_estimator,
+                     control_optimizer = control)
+  names(Optim$parameters) <- modelInfo$parameters_labels
+  names(Optim$transparameters) <- modelInfo$transparameters_labels
 
   # Collect all the information about the optimization:
 
-  Optim <- x
-  elapsed <- x$elapsed
+  elapsed <- Optim$elapsed
 
   #### Estimated model structures ####
 
@@ -268,14 +269,14 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
     k <- indices_cfa[i]
 
-    loss[[i]] <- c(x$outputs$estimators$doubles[[k]][[1]])
-    loglik[[i]] <- c(x$outputs$estimators$doubles[[k]][[2]])
+    loss[[i]] <- c(Optim$outputs$estimators$doubles[[k]][[1]])
+    loglik[[i]] <- c(Optim$outputs$estimators$doubles[[k]][[2]])
 
     # If there are penalties, add the penalties to the loss or loglik:
     if(length(indices_logdetmat) > 0) {
 
       l <- indices_logdetmat[i]
-      penalty[[i]] <- c(x$outputs$estimators$doubles[[l]][[1]])
+      penalty[[i]] <- c(Optim$outputs$estimators$doubles[[l]][[1]])
       penalized_loss[[i]] <- loss[[i]] + penalty[[i]]
       penalized_loglik[[i]] <- loglik[[i]] + penalty[[i]]
 
@@ -293,26 +294,31 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   loglik <- sum(unlist(loglik))
   penalized_loglik <- sum(unlist(penalized_loglik))
 
+  #### latent object ####
+
+  result <- new("lcfa",
+                version            = as.character( packageVersion('latent') ),
+                call               = mc, # matched call
+                timing             = elapsed, # timing information
+                data_list          = data_list,
+                modelInfo          = modelInfo,
+                Optim              = Optim,
+                parameters         = parameters,
+                transformed_pars   = transformed_pars,
+                loglik             = loglik, # loglik values
+                penalized_loglik   = penalized_loglik,
+                loss               = loss,
+                penalized_loss     = penalized_loss
+  )
+
+  # Standard errors:
+  SE <- se(result, type = "standard", digits = 9)
+  result@Optim$se <- SE$se
+  result@Optim$vcov <- SE$vcov
+
   #### Return ####
 
-  if(mimic == "latent") {
-
-    result <- new("lcfa",
-                  version            = as.character( packageVersion('latent') ),
-                  call               = mc, # matched call
-                  timing             = elapsed, # timing information
-                  data_list          = data_list,
-                  modelInfo          = modelInfo,
-                  Optim              = Optim,
-                  parameters         = parameters,
-                  transformed_pars   = transformed_pars,
-                  loglik             = loglik, # loglik values
-                  penalized_loglik   = penalized_loglik,
-                  loss               = loss,
-                  penalized_loss     = penalized_loss
-    )
-
-  } else if(mimic == "lavaan") {
+  if(mimic == "lavaan") {
 
     ## for lavaan like object
     ## need to fill in these objects into the lav dummy objects

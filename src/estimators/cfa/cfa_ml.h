@@ -19,8 +19,7 @@ public:
 
   void param(arguments_optim& x) {
 
-    Shat.elem(lower_diag) = x.transparameters(indices);
-    Shat = arma::symmatl(Shat);
+    Shat = arma::reshape(x.transparameters(indices), p, p);
 
     if(!Shat.is_sympd()) {
       arma::vec eigval;
@@ -39,33 +38,28 @@ public:
     f = w*n*0.5*(plogpi2 +
       arma::log_det_sympd(Shat) +
       arma::accu(S % Shat_inv));
-    x.f += f/n;
+    x.f += f;
 
   }
 
   void G(arguments_optim& x) {
 
-    // Ri_R_Ri = Shat_inv * S * Shat_inv;
     arma::mat R_Ri = S * Shat_inv;
     gShat = Shat_inv * (I - R_Ri);
-    arma::mat temp = 2*gShat;
-    temp.diag() *= 0.5;
 
-    x.grad.elem(indices) += w*n*0.5*arma::vectorise(temp(lower_diag))/n;
+    x.grad.elem(indices) += w*n*0.5*arma::vectorise(gShat);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dShat.elem(lower_diag) = x.dtransparameters(indices);
-    dShat = arma::symmatl(dShat);
+    dShat = arma::reshape(x.dtransparameters(indices), p, p);
 
     arma::mat dShat_inv = -Shat_inv * dShat * Shat_inv;
-    arma::mat dgShat = 2*(dShat_inv * (I - S * Shat_inv) -
-                          Shat_inv * S * dShat_inv);
-    dgShat.diag() *= 0.5;
+    arma::mat dgShat = dShat_inv * (I - S * Shat_inv) -
+                          Shat_inv * S * dShat_inv;
 
-    x.dgrad.elem(indices) += w*n*0.5*arma::vectorise(dgShat(lower_diag))/n;
+    x.dgrad.elem(indices) += w*n*0.5*arma::vectorise(dgShat);
 
   }
 

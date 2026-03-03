@@ -5,7 +5,7 @@
  */
 
 /*
- * Confirmatory factor analysis ([weighted] least-squares)
+ * Confirmatory factor analysis (weighted least-squares)
  */
 
 class cfa_dwls: public estimators {
@@ -19,8 +19,7 @@ public:
 
   void param(arguments_optim& x) {
 
-    Shat.elem(lower_diag) = x.transparameters(indices);
-    Shat = arma::symmatl(Shat);
+    Shat = arma::reshape(x.transparameters(indices), p, p);
 
     residuals = S - Shat;
     W_residuals = W % residuals;
@@ -36,22 +35,19 @@ public:
 
   void G(arguments_optim& x) {
 
-    arma::mat temp = -2*W_residuals;
-    temp.diag() *= 0.5;
+    arma::mat temp = -W_residuals;
 
-    x.grad.elem(indices) += w*arma::vectorise(temp(lower_diag));
+    x.grad.elem(indices) += w*arma::vectorise(temp);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dShat.elem(lower_diag) = x.dtransparameters(indices);
-    dShat = arma::symmatl(dShat);
+    dShat = arma::reshape(x.dtransparameters(indices), p, p);
 
-    arma::mat dgShat = 2*W % dShat;
-    dgShat.diag() *= 0.5;
+    arma::mat dgShat = W % dShat;
 
-    x.dgrad.elem(indices) += w*arma::vectorise(dgShat(lower_diag));
+    x.dgrad.elem(indices) += w*arma::vectorise(dgShat);
 
   }
 

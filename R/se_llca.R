@@ -126,9 +126,9 @@ standard_se <- function(fit) {
                 control_transform = control_transform,
                 control_estimator = control_estimator,
                 control_optimizer = control_optimizer)$h
-  # For numerical stability in optimization, the loglik is divided by N
-  # So multiply the Hessian by N:
-  H <- H*fit@data_list$nobs[[1]]
+  # # For numerical stability in optimization, the loglik is divided by N
+  # # So multiply the Hessian by N:
+  # H <- H*sum(unlist(fit@data_list$nobs))
 
   # Get the variance-covariance matrix between the parameters:
   result <- get_vcov(control_manifold = control_manifold,
@@ -143,7 +143,7 @@ standard_se <- function(fit) {
 
   result$se <- as.vector(result$se)
   names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
-    fit@modelInfo$control$se_names
+    fit@modelInfo$parameters_labels
 
   # Return:
   return(result)

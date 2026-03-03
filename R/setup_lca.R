@@ -323,6 +323,8 @@ get_full_lca_model <- function(data_list, nclasses, item,
 
   # Arrange transparameter labels:
   transparameters_labels <- unname(unlist(lca_all))
+  # nonfixed_trans <- which(is.na(suppressWarnings(as.numeric(transparameters_labels))))
+  # transparameters_labels <- transparameters_labels[nonfixed_trans]
   ntrans <- length(transparameters_labels)
 
   # Indices of fixed parameters:
@@ -475,11 +477,12 @@ get_lca_structures <- function(data_list, full_model, control) {
 
   #### Manifolds ####
 
-  mani_and_labs <- list(
-    list("euclidean", lca_param)
+  manifolds <- list(
+    list(manifold = "euclidean", parameters = names(lca_param))
     )
-  control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
-                                       param_structures = lca_param)
+
+  control_manifold <- get_manifold(manifolds = manifolds,
+                                   structures = lca_param)
 
   #### Transformations ####
 

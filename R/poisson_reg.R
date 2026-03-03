@@ -185,11 +185,11 @@ pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NU
 
   #### Manifolds ####
 
-  mani_and_labs <- list(
-    list("euclidean", param)
+  manifolds <- list(
+    list(manifold = "euclidean", parameters = names(param))
   )
-  control_manifold <- create_manifolds(manifolds_and_labels = mani_and_labs,
-                                       param_structures = param)
+  control_manifold <- get_manifold(manifolds = manifolds,
+                                   structures = param)
 
   #### Transformations ####
 
