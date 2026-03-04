@@ -215,16 +215,12 @@ df2_dtheta_ml2 <- function(lambda, psi, theta, w) {
 general_se <- function(fit, type = "standard") {
 
   ngroups <- fit@data_list$ngroups
-  if(ngroups > 1) stop("Standard errors are not available for multigroup models")
+  # if(ngroups > 1) stop("Standard errors are not available for multigroup models")
 
   # Collect all the estimators:
   estimators <- unlist(lapply(fit@modelInfo$control_estimator,
                               FUN = \(x) x$estimator))
-  # Check if all the estimators are ml:
-  all_ml <- all_ml2 <- all_dwls <- FALSE
-  if(all(estimators == "cfa_ml")) all_ml <- TRUE
-  if(all(estimators == "cfa_ml2")) all_ml2 <- TRUE
-  if(all(estimators == "cfa_dwls")) all_dwls <- TRUE
+  estimators <- estimators[estimators == "cfa_dwls" | estimators == "cfa_ml"]
 
   # Get the hessian matrix:
   SE <- standard_se(fit = fit)
@@ -247,11 +243,11 @@ general_se <- function(fit, type = "standard") {
     theta <- fit@transformed_pars[[theta_group[i]]]
     theta[upper.tri(theta)] <- t(theta)[upper.tri(theta)]
 
-    if(all_ml) { # SHOULD COMPUTE THIS AUTOMATICALY IN C++
+    if(estimators[i] == "cfa_ml") { # SHOULD COMPUTE THIS AUTOMATICALY IN C++
       df2_dparamdR <- df2_dtheta_ml(lambda, psi, theta, w, N)
-    } else if(all_ml2) {
+    } else if(estimators[i] == "cfa_ml2") {
       df2_dparamdR <- df2_dtheta_ml2(lambda, psi, theta, w)
-    } else if(all_dwls) {
+    } else if(estimators[i] == "cfa_dwls") {
       df2_dparamdR <- df2_dtheta_dwls(lambda, psi, theta, w)
     } else {
       stop("All the estimators should be the same")
@@ -276,9 +272,9 @@ general_se <- function(fit, type = "standard") {
 
     # Sandwich estimator of standard errors:
     B <- t(df2_dparamdR) %*% (ACOV/N) %*% df2_dparamdR
-    H_inv <- solve(SE$H)
     selection <- which(unlist(fit@modelInfo$cfa_param[group])[select] %in%
                          fit@modelInfo$parameters_labels)
+    H_inv <- solve(SE$H)[selection, selection]
     SE$vcov[selection, selection] <- H_inv %*% B %*% H_inv
 
     # # Store the ham of the sandwich:

@@ -32,20 +32,20 @@ public:
   void F(arguments_optim& x) {
 
     f = arma::accu(constant_logtrans);
-    x.f -= f/N;
+    x.f -= f;
 
   }
 
   void G(arguments_optim& x) {
 
-    x.grad.elem(indices) -= constant/trans/N;
+    x.grad.elem(indices) -= constant/trans;
 
   }
 
   void dG(arguments_optim& x) {
 
     arma::vec dtrans = x.dtransparameters(indices);
-    x.dgrad.elem(indices) += constant % dtrans/(trans % trans)/N;
+    x.dgrad.elem(indices) += constant % dtrans/(trans % trans);
 
   }
 

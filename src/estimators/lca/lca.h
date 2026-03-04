@@ -57,7 +57,7 @@ public:
   void F(arguments_optim& x) {
 
     f = arma::accu(logliks);
-    x.f -= f/N;
+    x.f -= f;
 
   }
 
@@ -80,8 +80,8 @@ public:
       df_dcubeloglik.slice(k).each_col() = df_dclassloglik.col(k);
     }
 
-    x.grad.elem(indices_classes) += arma::vectorise(df_dclasses)/N;
-    x.grad.elem(indices_cubeloglik) += arma::vectorise(df_dcubeloglik)/N;
+    x.grad.elem(indices_classes) += arma::vectorise(df_dclasses);
+    x.grad.elem(indices_cubeloglik) += arma::vectorise(df_dcubeloglik);
 
   }
 
@@ -158,8 +158,8 @@ public:
       ddf_dcubeloglik.slice(k).each_col() = ddf_dclassloglik.col(k);
     }
 
-    x.dgrad.elem(indices_classes)     += arma::vectorise(ddf_dclasses)/N;
-    x.dgrad.elem(indices_cubeloglik)  += arma::vectorise(ddf_dcubeloglik)/N;
+    x.dgrad.elem(indices_classes)     += arma::vectorise(ddf_dclasses);
+    x.dgrad.elem(indices_cubeloglik)  += arma::vectorise(ddf_dcubeloglik);
 
   }
 

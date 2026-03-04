@@ -248,7 +248,7 @@ model <- 'visual  =~ x1 + x2 + x3
 
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "uls", positive = FALSE,
+            estimator = "ml", positive = FALSE,
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
             control = list(opt = "newton",
@@ -261,6 +261,7 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 fit
+fit@Optim$se
 SE <- se(fit, type = "standard", digits = 3)
 SE$se
 SE$table_se
@@ -348,12 +349,15 @@ latInspect(fit, what = "loglik")
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
-                    group = NULL, estimator = "ml",
+                    group = "school", estimator = "ml",
                     std.lv = TRUE, std.ov = TRUE)
+
+pe <- lavaan::parameterEstimates(fit2)
+pe$se
+fit@Optim$se
 
 fit2@loglik$loglik
 fit2@Fit@fx*2
-fit@loss
 
 # Plot model fit info:
 fit

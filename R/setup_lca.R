@@ -486,25 +486,22 @@ get_lca_structures <- function(data_list, full_model, control) {
 
   #### Transformations ####
 
-  trans_and_labs <- list()
-  dots <- list()
+  transforms <- list()
   k <- 1L
 
   # betas to thetas:
-  dots$X <- cov_patterns2
-  trans_and_labs[[k]] <- extra_transforms(transform = "column_space",
-                                          labels_in = list(lca_all$beta),
-                                          labels_out = list(lca_all$theta),
-                                          dots)
+  transforms[[k]] <- list(transform = "column_space",
+                          parameters_in = "beta",
+                          parameters_out = "theta",
+                          extra = list(X = cov_patterns2))
   k <- k+1L
 
   # thetas to classes:
   for(s in 1:npatterns) {
 
-    trans_and_labs[[k]] <- extra_transforms(transform = "softmax",
-                                            labels_in = list(lca_all$theta[s, ]),
-                                            labels_out = list(lca_all$class[s, ]),
-                                            dots)
+    transforms[[k]] <- list(transform = "softmax",
+                            parameters_in = list(lca_all$theta[s, ]),
+                            parameters_out = list(lca_all$class[s, ]))
     k <- k + 1L
 
   }
@@ -515,23 +512,17 @@ get_lca_structures <- function(data_list, full_model, control) {
     gauss <- which(item == "gaussian")
     Jgauss <- length(gauss) # Number of gaussian items
 
-    trans_and_labs[[k]] <- extra_transforms(transform = "exponential",
-                                            labels_in = list(lca_all$s),
-                                            labels_out = list(lca_all$sigma),
-                                            dots)
+    transforms[[k]] <- list(transform = "exponential",
+                            parameters_in = "s",
+                            parameters_out = "sigma")
     k <- k+1L
 
     y <- as.matrix(patterns[, gauss])
-
-    dots$y <- y
-    dots$S <- npatterns
-    dots$J <- Jgauss
-    dots$I <- nclasses
-    trans_and_labs[[k]] <- extra_transforms(transform = "normal",
-                                            labels_in = list(lca_all$mu,
-                                                             lca_all$sigma),
-                                            labels_out = list(lca_all$loglik[, gauss, ]),
-                                            dots)
+    transforms[[k]] <- list(transform = "normal",
+                            parameters_in = c("mu", "sigma"),
+                            parameters_out = list(lca_all$loglik[, gauss, ]),
+                            extra = list(y = y, S = npatterns, J = Jgauss,
+                                         I = nclasses))
     k <- k+1L
 
   }
@@ -544,36 +535,32 @@ get_lca_structures <- function(data_list, full_model, control) {
     Jmulti <- length(multinom) # Number of multinomial items
 
     # Softmax transformations:
+
     for(j in 1:Jmulti) {
       for(i in 1:nclasses) {
 
-        trans_and_labs[[k]] <- extra_transforms(transform = "softmax",
-                                                labels_in = list(lca_all$eta[[j]][, i]),
-                                                labels_out = list(lca_all$peta[[j]][, i]),
-                                                dots)
+        transforms[[k]] <- list(transform = "softmax",
+                                parameters_in = list(lca_all$eta[[j]][, i]),
+                                parameters_out = list(lca_all$peta[[j]][, i]))
         k <- k+1L
 
       }
     }
 
     # Multinomial transformation:
+
     y <- as.matrix(patterns[, multinom])
     K <- unlist(lapply(data_list$factor_names, FUN = length))
-
-    dots$y <- y
-    dots$S <- npatterns
-    dots$J <- Jmulti
-    dots$I <- nclasses
-    dots$K <- K
-    trans_and_labs[[k]] <- extra_transforms(transform = "multinomial",
-                                            labels_in = list(lca_all$peta),
-                                            labels_out = list(lca_all$loglik[, multinom, ]),
-                                            dots)
+    transforms[[k]] <- list(transform = "multinomial",
+                            parameters_in = "peta",
+                            parameters_out = list(lca_all$loglik[, multinom, ]),
+                            extra = list(y = y, S = npatterns, J = Jmulti,
+                                         I = nclasses, K = K))
 
   }
 
-  control_transform <- create_transforms(transforms_and_labels = trans_and_labs,
-                                         param_structures = lca_all)
+  control_transform <- get_transforms(transforms = transforms,
+                                      structures = lca_all)
 
   #### Estimators ####
 

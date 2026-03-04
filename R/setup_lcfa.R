@@ -312,7 +312,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   #### Transformations ####
 
-  trans_and_labs <- list()
+  transforms <- list()
   dots <- list()
   k <- 1L
 
@@ -324,17 +324,17 @@ get_cfa_structures <- function(data_list, full_model, control) {
       lower_theta <- lower.tri(cfa_trans[[theta_group[i]]], diag = TRUE)
 
       dots$p <- nrow(cfa_trans[[psi_group[i]]])
-      trans_and_labs[[k]] <- extra_transforms(transform = "crossprod",
-                                              labels_in = list(cfa_trans[[pj_psi_group[i]]]),
-                                              labels_out = list(cfa_trans[[psi_group[i]]]),
-                                              dots)
+      transforms[[k]] <- list(transform = "crossprod",
+                             parameters_in = pj_psi_group[i],
+                             parameters_out = psi_group[i],
+                             extra = dots)
       k <- k+1L
 
       dots$p <- nrow(cfa_trans[[theta_group[i]]])
-      trans_and_labs[[k]] <- extra_transforms(transform = "crossprod",
-                                              labels_in = list(cfa_trans[[pj_theta_group[i]]]),
-                                              labels_out = list(cfa_trans[[theta_group[i]]]),
-                                              dots)
+      transforms[[k]] <- list(transform = "crossprod",
+                              parameters_in = pj_theta_group[i],
+                              parameters_out = theta_group[i],
+                              extra = dots)
       k <- k+1L
 
     }
@@ -346,18 +346,18 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
     dots$p <- nrow(correl[[i]]$R)
     dots$q <- nrow(cfa_trans[[psi_group[i]]])
-    trans_and_labs[[k]] <- extra_transforms(transform = "factor_cor",
-                                            labels_in = list(cfa_trans[[lambda_group[i]]],
-                                                             cfa_trans[[psi_group[i]]],
-                                                             cfa_trans[[theta_group[i]]]),
-                                            labels_out = list(cfa_trans[[model_group[i]]]),
-                                            dots)
+    transforms[[k]] <- list(transform = "factor_cor",
+                            parameters_in = c(lambda_group[i],
+                                              psi_group[i],
+                                              theta_group[i]),
+                            parameters_out = model_group[i],
+                            extra = dots)
     k <- k+1L
 
   }
 
-  control_transform <- create_transforms(transforms_and_labels = trans_and_labs,
-                                         param_structures = cfa_trans)
+  control_transform <- get_transforms(transforms = transforms,
+                                      structures = cfa_trans)
 
   #### Estimators ####
 

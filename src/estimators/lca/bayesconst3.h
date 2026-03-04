@@ -30,20 +30,20 @@ public:
   void F(arguments_optim& x) {
 
     f = -0.5*constant * (arma::accu(logvars) + arma::accu(varshat/vars));
-    x.f -= f/N;
+    x.f -= f;
 
   }
 
   void G(arguments_optim& x) {
 
-    x.grad.elem(indices) -= constant * (varshat/(vars % sds) - 1/sds)/N;
+    x.grad.elem(indices) -= constant * (varshat/(vars % sds) - 1/sds);
 
   }
 
   void dG(arguments_optim& x) {
 
     arma::vec dsds = x.dtransparameters(indices);
-    x.dgrad.elem(indices) += constant * (3 * varshat % dsds / (vars % vars) - dsds / vars)/N;
+    x.dgrad.elem(indices) += constant * (3 * varshat % dsds / (vars % vars) - dsds / vars);
 
   }
 

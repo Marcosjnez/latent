@@ -193,24 +193,21 @@ pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NU
 
   #### Transformations ####
 
-  trans_and_labs <- list()
-  dots <- list()
+  transforms <- list()
 
-  # betas to linpreds:
-  dots$X <- X
-  trans_and_labs[[1]] <- extra_transforms(transform = "column_space",
-                                          labels_in = list(trans$beta),
-                                          labels_out = list(trans$linpred),
-                                          dots)
+  dots <- list(X = X)
 
-  # linpred to lambdas:
-  trans_and_labs[[2]] <- extra_transforms(transform = "exponential",
-                                          labels_in = list(trans$linpred),
-                                          labels_out = list(trans$lambda),
-                                          dots)
+  transforms <- list(
+    list(transform = "column_space",
+         parameters_in = "beta",
+         parameters_out = "linpred",
+         extra = dots),
+    list(transform = "exponential",
+         parameters_in = "linpred",
+         parameters_out = "lambda"))
 
-  control_transform <- create_transforms(transforms_and_labels = trans_and_labs,
-                                         param_structures = trans)
+  control_transform <- get_transforms(transforms = transforms,
+                                      structures = trans)
 
   #### Estimators ####
 

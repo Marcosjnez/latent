@@ -47,7 +47,7 @@ get_manifold <- function(manifolds, structures) {
 
     # Ensure the required extras are present and named:
     if (length(mani_objects) > 0L) {
-      missing <- setdiff(mani_objects, names(dots[[i]]))
+      missing <- setdiff(mani_objects, names(extra))
       if (length(missing) > 0L) {
         stop("Missing required object(s) for manifold '", manifold, "': ",
              paste(missing, collapse = ", "))
@@ -55,11 +55,14 @@ get_manifold <- function(manifolds, structures) {
     }
 
     ninputs <- length(inputs[[i]]) # Number of manifolds
-
     for(j in 1:ninputs) {
 
       # Collect the unique subset of parameter labels that are not fixed values:
-      labels_unique <- unname(unique(unlist(structures[inputs[[i]][j]])))
+      if(is.list(inputs[[i]][j])) {
+        labels_unique <- unname(unique(c(unlist(inputs[[i]][[j]]))))
+      } else {
+        labels_unique <- unname(unique(c(unlist(structures[inputs[[i]][[j]]]))))
+      }
       nonfixed_labels <- which(is.na(suppressWarnings(as.numeric(labels_unique))))
       labels_vector <- labels_unique[nonfixed_labels]
 

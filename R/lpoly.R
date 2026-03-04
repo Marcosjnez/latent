@@ -154,17 +154,20 @@ lpoly <- function(data,
 
   #### Transformations ####
 
-  trans_and_labs <- list()
+  transform <- list()
 
   lower_indices <- which(lower.tri(poly_trans$R, diag = TRUE))
   dots$p <- p
-  trans_and_labs[[1]] <- extra_transforms(transform = "crossprod",
-                                          labels_in = list(poly_trans$X),
-                                          labels_out = list(poly_trans$R),
-                                          dots)
 
-  control_transform <- create_transforms(transforms_and_labels = trans_and_labs,
-                                         param_structures = poly_trans)
+  transforms <- list(
+    list(transform = "crossprod",
+         parameters_in = "X",
+         parameters_out = "R",
+         extra = dots)
+  )
+
+  control_transform <- get_transforms(transforms = transforms,
+                                      structures = poly_trans)
 
   #### Estimators ####
 
