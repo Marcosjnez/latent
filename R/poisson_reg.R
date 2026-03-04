@@ -211,12 +211,13 @@ pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NU
 
   #### Estimators ####
 
-  control_estimator <- list()
-
-  indices <- list(match(trans$lambda, transparameters_labels)-1L)
-  control_estimator[[1]] <- list(estimator = "poisson_loglik",
-                                 indices = indices,
-                                 X = Y)
+  estimators <- list(
+    list(estimator = "poisson_loglik",
+         parameters = "lambda",
+         extra = list(X = Y))
+  )
+  control_estimator <- get_estimators(estimators = estimators,
+                                      structures = trans)
 
   #### Collect all the model information ####
 

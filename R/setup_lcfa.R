@@ -361,14 +361,10 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   #### Estimators ####
 
-  control_estimator <- list()
+  estimators <- list()
   k <- 1L
 
   for(i in 1:ngroups) {
-
-    lower_diag <- lower.tri(cfa_trans[[model_group[i]]], diag = TRUE)
-    indices <- list(match(cfa_trans[[model_group[i]]],
-                     transparameters_labels)-1L)
 
     estimator <- tolower(estimator)
     if(estimator == "uls" || estimator == "dwls") {
@@ -381,14 +377,14 @@ get_cfa_structures <- function(data_list, full_model, control) {
       cfa_estimator <- "cfa_ml_R"
     }
 
-    control_estimator[[k]] <- list(estimator = cfa_estimator,
-                                   # labels = labels,
-                                   indices = indices,
-                                   R = correl[[i]]$R,
-                                   W = correl[[i]]$W,
-                                   w = nobs[[i]] / sum(unlist(nobs)),
-                                   q = nrow(cfa_trans[[psi_group[i]]]),
-                                   n = nobs[[i]])
+    lower_diag <- lower.tri(cfa_trans[[model_group[i]]], diag = TRUE)
+    estimators[[k]] <- list(estimator = cfa_estimator,
+                            parameters = model_group[i],
+                            extra = list(R = correl[[i]]$R,
+                                         W = correl[[i]]$W,
+                                         w = nobs[[i]] / sum(unlist(nobs)),
+                                         q = nrow(cfa_trans[[psi_group[i]]]),
+                                         n = nobs[[i]]))
     k <- k+1L
 
   }
@@ -400,32 +396,29 @@ get_cfa_structures <- function(data_list, full_model, control) {
       # For the psi matrix:
 
       lower_indices <- which(lower.tri(cfa_trans[[psi_group[i]]], diag = TRUE))
-      labels <- cfa_trans[[psi_group[i]]]
-      indices <- list(match(labels, transparameters_labels)-1L)
-      control_estimator[[k]] <- list(estimator = "logdetmat",
-                                     # labels = labels,
-                                     indices = indices,
-                                     lower_indices = lower_indices-1L,
-                                     p = nrow(cfa_trans[[psi_group[i]]]),
-                                     logdetw = control$penalties$logdet$w)
+      estimators[[k]] <- list(estimator = "logdetmat",
+                              parameters = psi_group[i],
+                              extra = list(lower_indices = lower_indices-1L,
+                                           p = nrow(cfa_trans[[psi_group[i]]]),
+                                           logdetw = control$penalties$logdet$w))
       k <- k+1L
 
       # For the theta matrix:
 
       lower_indices <- which(lower.tri(cfa_trans[[theta_group[i]]], diag = TRUE))
-      labels <- cfa_trans[[theta_group[i]]]
-      indices <- list(match(labels, transparameters_labels)-1L)
-      control_estimator[[k]] <- list(estimator = "logdetmat",
-                                     # labels = labels,
-                                     indices = indices,
-                                     lower_indices = lower_indices-1L,
-                                     p = nrow(cfa_trans[[theta_group[i]]]),
-                                     logdetw = control$penalties$logdet$w)
+      estimators[[k]] <- list(estimator = "logdetmat",
+                              parameters = theta_group[i],
+                              extra = list(lower_indices = lower_indices-1L,
+                                           p = nrow(cfa_trans[[theta_group[i]]]),
+                                           logdetw = control$penalties$logdet$w))
       k <- k+1L
 
     }
 
   }
+
+  control_estimator <- get_estimators(estimators = estimators,
+                                      structures = cfa_trans)
 
   #### Return ####
 

@@ -364,28 +364,36 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   #### Estimators ####
 
-  control_estimator <- list()
+  # control_estimator <- list()
+  estimators <- list()
+  dots <- list(...)
   k <- 1L
 
   for(i in 1:ngroups) {
 
     # Rotation criteria:
-    p <- nitems[[i]]
-    q <- nfactors[[i]]
-    lower_psi <- lower.tri(diag(q, q), diag = TRUE)
+    dots$p <- nitems[[i]]
+    dots$q <- nfactors[[i]]
 
-    lambda_labels <- c(rot_trans[[lambda_group[i]]])
-    psi_labels <- rot_trans[[psi_group[i]]]
-    indices <- list(match(lambda_labels, transparameters_labels)-1L,
-                    match(psi_labels, transparameters_labels)-1L)
-    control_estimator[[k]] <- list(estimator = rotation,
-                                   indices = indices,
-                                   p = p,
-                                   q = q,
-                                   ...)
+    # lower_psi <- lower.tri(diag(q, q), diag = TRUE)
+    # lambda_labels <- c(rot_trans[[lambda_group[i]]])
+    # psi_labels <- rot_trans[[psi_group[i]]]
+    # indices <- list(match(lambda_labels, transparameters_labels)-1L,
+    #                 match(psi_labels, transparameters_labels)-1L)
+    # control_estimator[[k]] <- list(estimator = rotation,
+    #                                indices = indices,
+    #                                p = p,
+    #                                q = q,
+    #                                ...)
+    estimators[[i]] <- list(estimator = rotation,
+                            parameters = c(lambda_group[i], psi_group[i]),
+                            extra = dots)
     k <- k+1L
 
   }
+
+  control_estimator <- get_estimators(estimators = estimators,
+                                      structures = rot_trans)
 
   #### Structures ####
 

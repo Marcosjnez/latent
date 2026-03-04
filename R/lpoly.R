@@ -171,31 +171,27 @@ lpoly <- function(data,
 
   #### Estimators ####
 
-  indices <- vector("list", length = p+1L)
-  indices[[1]] <- match(poly_trans$R, transparameters_labels)-1L
-  for(i in 1:p) {
-    indices[[i+1L]] <- match(poly_trans$taus[[i]], transparameters_labels)-1L
-  }
+  estimators <- list()
 
-  control_estimator <- list()
-  control_estimator[[1]] <- list(estimator = "polycor",
-                                 indices = indices,
-                                 n = n,
-                                 p = p,
-                                 N = data_list$nobs)
+  estimators[[1]] <- list(estimator = "polycor",
+                          parameters = c(list(poly_trans$R),
+                                         poly_trans$taus),
+                          extra = list(n = n,
+                                       p = p,
+                                       N = data_list$nobs))
 
   if(control$reg) {
 
-    labels <- poly_trans$R
-    indices <- list(match(labels, transparameters_labels)-1L)
-    control_estimator[[2]] <- list(estimator = "logdetmat",
-                                   labels = labels,
-                                   indices = indices,
-                                   lower_indices = lower_indices-1L,
-                                   p = p,
-                                   logdetw = control$penalties$logdet$w)
+    estimators[[2]] <- list(estimator = "logdetmat",
+                            parameters = "R",
+                            extra = list(lower_indices = lower_indices-1L,
+                                         p = p,
+                                         logdetw = control$penalties$logdet$w))
 
   }
+
+  control_estimator <- get_estimators(estimators = estimators,
+                                      structures = poly_trans)
 
   #### Collect all the model information ####
 

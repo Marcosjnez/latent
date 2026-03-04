@@ -1,124 +1,104 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/02/2026
+# Modification date: 04/03/2026
 
-extra_estimators <- function(transform, labels_in, labels_out, dots = NULL) {
-
-  # Choose which extra objects from 'dots' should be kept for this transform:
-  estimators_objects <- switch(transform,
-                              XYt = c("p", "q"),
-                              XY      = c("p", "q"),
-                              softmax   = character(0),
-                              normal      = c("y", "S", "J", "I"),
-                              multinomial = c("y", "K", "S", "J", "I"),
-                              matrix_inverse = c("p"),
-                              logarithm   = character(0),
-                              identity   = character(0),
-                              factor_cor   = c("p", "q"),
-                              exponential   = character(0),
-                              crossprod   = c("p"),
-                              column_space   = c("X"),
-                              stop("Unknown transform: ", transform)
-  )
-
-  # Pick only those objects from 'dots':
-  extra <- dots[transform_objects]
-
-  # Ensure the required extras are present and named:
-  if (length(transform_objects) > 0L) {
-    missing <- setdiff(transform_objects, names(dots))
-    if (length(missing) > 0L) {
-      stop("Missing required object(s) for transform '", transform, "': ",
-           paste(missing, collapse = ", "))
-    }
-  }
-
-  # Define the manifold:
-  result <- c(
-    list(transform, labels_in, labels_out),
-    extra
-  )
-
-  return(result)
-
-}
-
-create_estimators <- function(transforms_and_labels, param_structures) {
-
-  if(!is.list(transforms_and_labels)) {
-    stop("transforms_and_labels should be a list")
-  }
-  ntransforms <- length(transforms_and_labels) # Number of transforms
-  # Pick the transforms:
-  transforms <- lapply(transforms_and_labels, FUN = \(x) x[[1]])
-  # Pick the in parameter labels going to each transform:
-  labels_in <- lapply(transforms_and_labels, FUN = \(x) x[[2]])
-  # Pick the out parameter labels going to each transform:
-  labels_out <- lapply(transforms_and_labels, FUN = \(x) x[[3]])
+get_estimators <- function(estimators, structures) {
 
   # Collect the unique parameter labels that are not fixed values:
-  param_structures_unique <- unname(unique(unlist(param_structures)))
-  nonfixed_param_structures <- which(is.na(suppressWarnings(as.numeric(param_structures_unique))))
-  param_structures_vector <- param_structures_unique[nonfixed_param_structures]
+  vector_structures <- unname(unique(c(unlist(structures))))
 
-  # loop for each transform:
-  result <- vector("list", length = ntransforms)
-  for(i in seq_len(ntransforms)) {
+  # Handle the estimators:
+  estimators_and_labels <- estimators
 
-    # Pick the transform label:
-    transform <- transforms[[i]]
+  # Check that a list was provided:
+  if(!is.list(estimators_and_labels)) {
+    stop("estimators should be a list")
+  }
+  nestimators <- length(estimators_and_labels) # Number of estimators
+  # Pick the estimators:
+  estimators <- lapply(estimators_and_labels, FUN = \(x) x$estimator)
+  # Pick the parameter labels going to each estimator:
+  inputs <- lapply(estimators_and_labels, FUN = \(x) x$parameters)
+  # Pick the extra objects going to each estimator:
+  dots <- lapply(estimators_and_labels, FUN = \(x) x$extra)
 
-    #### labels_in ####
+  # For each estimator:
+  result <- vector("list", length = nestimators)
+  k <- 1L
+  for(i in 1:nestimators) {
 
-    indices_in <- vector("list", length = length(labels_in[[i]]))
-    for(j in 1:length(labels_in[[i]])) {
+    estimator <- estimators[[i]]
 
-      # Collect the unique labels_in that are not fixed values:
-      labels_in_unique <- unname(unique(unlist(labels_in[[i]][[j]])))
-      nonfixed_labels_in <- which(is.na(suppressWarnings(as.numeric(labels_in_unique))))
-      labels_in_vector <- labels_in_unique[nonfixed_labels_in]
+    # Choose which extra objects from 'dots' should be kept for this estimator:
+    est_objects <- switch(estimator,
+                          beta_loglik        = c("X"),
+                          binomial_loglik    = c("X", "Ntrials"),
+                          exponential_loglik = c("X"),
+                          gamma_loglik       = c("X"),
+                          gaussian_loglik    = c("alpha", "means", "N", "sds"),
+                          laplace_loglik     = c("X"),
+                          poisson_loglik     = c("X"),
+                          t_loglik           = c("X"),
+                          weibull_loglik     = c("X"),
+                          cf                 = c("p", "q", "k"),
+                          geomin             = c("p", "q", "epsilon"),
+                          lclf               = c("p", "q", "epsilon"),
+                          oblimin            = c("p", "q", "gamma"),
+                          target             = c("target", "weight"),
+                          varimax            = c("p", "q"),
+                          varimin            = c("p", "q"),
+                          xtarget            = c("target", "weight",
+                                                 "psitarget", "psiweight"),
+                          ridge              = c("lambda", "power", "N"),
+                          lreg               = c("y", "X"),
+                          polycor            = c("p", "n", "N"),
+                          lca                = c("S", "J", "I", "weights"),
+                          bayesconst1        = c("K", "alpha", "N", "U"),
+                          bayesconst2        = c("K", "alpha", "N", "pihat"),
+                          bayesconst3        = c("K", "alpha", "N", "varshat"),
+                          logdetmat          = c("lower_indices", "logdetw", "p"),
+                          cfa_ml             = c("R", "w", "q", "n"),
+                          cfa_dwls           = c("q", "w", "R", "W"),
+                          stop("Unknown estimator: ", estimator)
+    )
 
-      # Get the indices of the param_structures_vector that are in the labels_in_vector:
-      m_in <- match(labels_in_vector, param_structures_vector)
-      if (anyNA(m_in)) { # Check for wrong parameter labels_in
-        stop("Some labels_in were not found in param_structures_vector: ",
-             paste(labels_in_vector[is.na(m_in)], collapse = ", "))
+    # Pick only those objects from 'dots':
+    extra <- dots[[i]][est_objects]
+
+    # Ensure the required extras are present and named:
+    if (length(est_objects) > 0L) {
+      missing <- setdiff(est_objects, names(extra))
+      if (length(missing) > 0L) {
+        stop("Missing required object(s) for estimator '", estimator, "': ",
+             paste(missing, collapse = ", "))
+      }
+    }
+
+    ninputs <- length(inputs[[i]]) # Number of estimators
+    indices <- vector("list", length = ninputs)
+    for(j in 1:ninputs) {
+
+      # Collect the unique subset of parameter labels that are not fixed values:
+      if(is.list(inputs[[i]][j])) {
+        labels_vector <- unname(c(unlist(inputs[[i]][[j]])))
+      } else {
+        labels_vector <- unname(c(unlist(structures[inputs[[i]][[j]]])))
       }
 
-      indices_in[[j]] <- m_in - 1L # C++ indexing starts at 0
+      # Get the indices of the vector_structures that are in the labels_vector:
+      m <- match(labels_vector, vector_structures)
+      if (anyNA(m)) { # Check for wrong parameter labels
+        stop("Some parameters were not found in structures: ",
+             paste(labels_vector[is.na(m)], collapse = ", "))
+      }
 
-    }
+      indices[[j]] <- m-1L # C++ indexing starts at 0
 
-    #### labels_out ####
-
-    # Collect the unique labels_out that are not fixed values:
-    labels_out_unique <- unname(unique(unlist(labels_out[[i]])))
-    nonfixed_labels_out <- which(is.na(suppressWarnings(as.numeric(labels_out_unique))))
-    labels_out_vector <- labels_out_unique[nonfixed_labels_out]
-
-    # Get the indices of the param_structures_vector that are in the labels_out_vector:
-    m_out <- match(labels_out_vector, param_structures_vector)
-    if (anyNA(m_out)) { # Check for wrong parameter labels_out
-      stop("Some labels_out were not found in param_structures_vector: ",
-           paste(labels_out_vector[is.na(m_out)], collapse = ", "))
-    }
-
-    indices_out <- list(m_out - 1L) # C++ indexing starts at 0
-
-    #### Extra arguments ####
-
-    # Additional arguments for the specific transforms:
-    extra <- transforms_and_labels[[i]]
-    if (length(extra) > 3L) {
-      extra <- extra[4:length(extra)]
-    } else {
-      extra <- list()
     }
 
     result[[i]] <- c(
-      list(transform = transform,
-           indices_in  = indices_in,
-           indices_out = indices_out),
+      list(estimator = estimator,
+           indices  = indices),
       extra
     )
 
