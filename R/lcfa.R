@@ -294,6 +294,9 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   loglik <- sum(unlist(loglik))
   penalized_loglik <- sum(unlist(penalized_loglik))
 
+
+
+
   #### latent object ####
 
   result <- new("lcfa",
@@ -313,8 +316,9 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   # Standard errors:
   SE <- se(result, type = "standard", digits = 9)
-  result@Optim$se <- SE$se
-  result@Optim$vcov <- SE$vcov
+  Optim$se <- SE$se
+  Optim$vcov <- SE$vcov
+  result@Optim <- Optim
 
   #### Return ####
 
@@ -323,31 +327,200 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     ## for lavaan like object
     ## need to fill in these objects into the lav dummy objects
     ## will take me longer to find how to match these slots
-    result <- new("lcfa",
+
+
+    ###
+    ### cecks for latent things that cannot be mimimc == lavaan
+    ###
+
+    ## optiosn
+    lavoptions$se <- "standard" ## se type argument?
+    lavoptions$test <- "standard" ## test type argument?
+    lavoptions$do.fit <- do.fit
+
+    ## parameters
+    parsdf <- data.frame(plabel = names(Optim$parameters),
+                         est = Optim$parameters)
+
+    sedf <- data.frame(plabel = names(Optim$se),
+                       se = Optim$se)
+
+    parsdf <- merge(parsdf, sedf)
+    #parsdf
+
+    ## partable
+    lavpartable$est <- NULL
+    lavpartable <- merge(lavpartable, parsdf, all =T)
+    lavpartable$est <- ifelse(lavpartable$free == 0,
+                              lavpartable$start,
+                              lavpartable$est)
+    lavpartable$se <- ifelse(lavpartable$free == 0, 0,
+                             lavpartable$se)
+    lavpartable <- lavpartable[order(lavpartable$id),]
+    lavpartable <- as.list(lavpartable)
+    #lp
+
+    ## pta
+    pta <- LAV@pta
+    pta$names <- names(lavpartable)
+
+    ## lavmodel
+    ## only for 1 group for now
+    ## how to adjust multiple group labels?
+    psi <- transformed_pars$psi.group1
+    psi[upper.tri(psi)]<-t(psi)[upper.tri(psi)]
+
+    lavmodel@GLIST$lambda <- transformed_pars$lambda.group1
+    lavmodel@GLIST$psi <- psi
+    lavmodel@GLIST$theta <- transformed_pars$theta.group1
+
+    ## implied
+    implied <- lav_model_implied(lavmodel)
+
+
+    ## lavvcov
+    ### order vcov from 1  up .. in names
+    lavvcov <- LAV@vcov
+    lavvcov$se <- lavoptions$se
+    lavvcov$vcov <- Optim$vcov
+
+    ## test
+    chi2 <- -2*(loglik - Optim$outputs$estimators$doubles[[1]][5])
+    df <- modelInfo$dof
+    pv <- 1 - pchisq(chi2, df)
+
+    TEST <- list(standard =
+                   list(test = lavoptions$test,
+                        stat = chi2,
+                        stat.group = chi2,
+                        df = df,
+                        refdistr = "chisq",
+                        pvalue = pv))
+    ## I am copying here as text, we will need to retrieve this information
+    attributes(TEST) <- list(names = lavoptions$test,
+                             info = list(ngroups = ngroups,
+                                         group.label = group_label,
+                                         information = c("expected", "expected"),
+                                         h1.information = c("structured", "structured"),
+                                         observed.information = c("hessian", "hessian") ))
+
+    ### FIT
+    lavfit <- lat_model_fit(lavpartable = lavpartable,
+                            lavmodel = lavmodel,
+                            x = lavpartable$est[lavpartable$free != 0],
+                            VCOV = Optim$vcov,
+                            TEST = TEST,
+                            loss = c(loss = loss, loglik = loglik),
+                            Optim = Optim,
+                            modelInfo = modelInfo)
+
+    ##
+    ## lavoptim
+    optnames <- c('x','npar','iterations','converged','fx','fx.group','logl.group',
+                  'logl','control')
+    lavoptim <- lapply(optnames, function(x) slot(lavfit, x))
+    names(lavoptim) <- optnames
+
+    ## h1
+    h1 <- list(implied = implied,
+               logl = list(loglik = loglik,
+                           loglik.group = loglik))
+
+    ## add baseline
+
+    ####
+    ####
+    result <- new("lavaan",
                   version      = as.character( packageVersion('latent') ),
                   call         = mc,                  # match.call
                   timing       = timing,              # list
                   Options      = lavoptions,          # list *
                   ParTable     = lavpartable,         # list *
-                  pta          = LAV@pta,             # list
+                  pta          = pta,             # list
                   Data         = lavdata,             # S4 class
                   SampleStats  = lavsamplestats,      # S4 class
                   Model        = lavmodel,            # S4 class *
                   Cache        = lavcache,            # list
-                  Fit          = lavfit,              # S4 class *
+                  Fit          = lavfit,              # S4 class * blav_model_fit
                   boot         = list(),
                   optim        = lavoptim,
-                  implied      = lavimplied,          # list *
+                  implied      = implied,          # list *
                   vcov         = lavvcov,             #*
-                  test         = TEST,                #*
+                  test         = TEST,                #* blav_model_test
                   h1           = h1,
-                  internal     = internal,
-                  external     = extslot              # can add extra info from latent
+                  baseline     = list(),
+                  internal     = list(),
+                  external     = list()              # can add extra info from latent
     )
 
   }
 
   return(result)
 
+}
+
+
+### helper function for lavaan like objects
+### edited from blavaan internal functions
+
+lat_model_fit <- function (lavpartable = NULL,
+                           lavmodel = NULL,
+                           x = NULL,
+                           VCOV = NULL,
+                           TEST = NULL,
+                           loss = NULL,
+                           Optim = NULL,
+                           modelInfo = NULL){
+  stopifnot(is.list(lavpartable), inherits(lavmodel, c("Model",
+                                                       "lavModel")))
+
+  iterations <- Optim$iterations
+  converged <- Optim$convergence
+  fx <- loss["loss"]
+  fx.group <- loss["loss"]
+  logl.group <- loss["loglik"]
+  logl <- loss["loglik"]
+  control <- modelInfo$control
+  attributes(fx) <- NULL
+  x.copy <- x
+  attributes(x.copy) <- NULL
+  est <- lavpartable$est
+  se <- lavpartable$se
+
+  if (is.null(TEST)) {
+    test <- list()
+  }
+  else {
+    test <- TEST
+  }
+  implied <- lav_model_implied(lavmodel)
+
+  if (lavmodel@conditional.x) {
+    names(implied) <- c("cov", "mean", "slopes", "th", "group.w")
+  }
+  if (!is.null(attr(x, "partrace"))) {
+    PARTRACE <- attr(x, "partrace")
+  }
+  else {
+    PARTRACE <- matrix(0, 0L, 0L)
+  }
+  new("Fit",
+      npar = as.integer(max(lavpartable$free)),
+      x = x.copy,
+      partrace = PARTRACE,
+      start = lavpartable$start,
+      est = est,
+      se = se,
+      fx = fx,
+      fx.group = fx.group,
+      logl = logl,
+      logl.group = logl.group,
+      iterations = as.integer(iterations),
+      converged = converged,
+      control = control,
+      Sigma.hat = implied$cov,
+      Mu.hat = implied$mean,
+      TH = implied$th,
+      test = test)
 }
 
