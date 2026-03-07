@@ -250,7 +250,7 @@ double logDnorm(double x, double mu, double s2) {
 }
 
 // [[Rcpp::export]]
-arma::mat duplication(int p, bool halflower = true) {
+arma::mat duplication(int p, bool halflower = true, bool halfmatrix = true) {
 
   // Duplication matrix
 
@@ -274,7 +274,11 @@ arma::mat duplication(int p, bool halflower = true) {
 
   }
 
-  return res.cols(lower_indices);
+  if(halfmatrix) {
+    return res.cols(lower_indices);
+  } else {
+    return res;
+  }
 
 }
 

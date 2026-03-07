@@ -41,6 +41,10 @@ lcfa_control <- function(control) {
 
   }
 
+  if(is.null(control$free_S)) {
+    control$free_S <- FALSE
+  }
+
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L
   }

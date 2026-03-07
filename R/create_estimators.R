@@ -47,7 +47,7 @@ get_estimators <- function(estimators, structures) {
                           target             = c("target", "weight"),
                           varimax            = c("p", "q"),
                           varimin            = c("p", "q"),
-                          xtarget            = c("target", "weight",
+                          xtarget            = c("target", "weight", "w",
                                                  "psitarget", "psiweight"),
                           ridge              = c("lambda", "power", "N"),
                           lreg               = c("y", "X"),
@@ -58,7 +58,9 @@ get_estimators <- function(estimators, structures) {
                           bayesconst3        = c("K", "alpha", "N", "varshat"),
                           logdetmat          = c("lower_indices", "logdetw", "p"),
                           cfa_ml             = c("R", "w", "q", "n"),
+                          cfa_ml_R           = c("w", "p", "n"),
                           cfa_dwls           = c("q", "w", "R", "W"),
+                          cfa_dwls_R         = c("w", "p", "W"),
                           stop("Unknown estimator: ", estimator)
     )
 

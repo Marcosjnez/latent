@@ -21,8 +21,7 @@ public:
   void param(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
-    psi.elem(lower_psi) = x.transparameters(indices_psi);
-    psi = arma::symmatl(psi);
+    psi = arma::reshape(x.transparameters(indices_psi), q, q);
 
     f1 = weight % (lambda - target);
     f2 = psiweight % (psi - psitarget);
@@ -39,26 +38,23 @@ public:
   void G(arguments_optim& x) {
 
     arma::mat df_dlambda = weight % f1;
-    arma::mat df_dpsi = 2*w * psiweight % f2;
-    df_dpsi.diag() *= 0.5;
+    arma::mat df_dpsi = w * psiweight % f2;
 
     x.grad.elem(indices_lambda) += arma::vectorise(df_dlambda);
-    x.grad.elem(indices_psi) += df_dpsi.elem(lower_psi);
+    x.grad.elem(indices_psi) += df_dpsi;
 
   }
 
   void dG(arguments_optim& x) {
 
     dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
-    dpsi.elem(lower_psi) = x.dtransparameters(indices_psi);
-    dpsi = arma::symmatl(dpsi);
+    dpsi = arma::reshape(x.dtransparameters(indices_psi), q, q);
 
     arma::mat ddf_dlambda = weight2 % dlambda;
-    arma::mat ddf_dpsi = 2*w * psiweight2 % dpsi;
-    ddf_dpsi.diag() *= 0.5;
+    arma::mat ddf_dpsi = w * psiweight2 % dpsi;
 
     x.dgrad.elem(indices_lambda) += arma::vectorise(ddf_dlambda);
-    x.dgrad.elem(indices_psi) += ddf_dpsi.elem(lower_psi);
+    x.dgrad.elem(indices_psi) += ddf_dpsi;
 
   }
 

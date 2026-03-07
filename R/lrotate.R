@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 31/01/2026
+# Modification date: 07/03/2026
 #'
 #' @title
 #' Rotate the lambda matrix of an orthogonal factor model.
@@ -8,8 +8,8 @@
 #' @usage
 #'
 #' lrotate(lambda, projection = "oblq", rotation = "oblimin",
-#'  group = NULL, positive = FALSE, penalties = TRUE,
-#'  do.fit = TRUE, control = NULL, ...)
+#' group = NULL, positive = FALSE, penalties = TRUE,
+#' do.fit = TRUE, control = NULL, ...)
 #'
 #' @param lambda List, loading matrices for each group.
 #' @param projection String. Can be "orth", "oblq", or "poblq".
@@ -281,8 +281,6 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                      init_trans = init_trans,
                      control = control)
 
-  #### Create the structures ####
-
   #### Manifolds ####
 
   manifolds <- list()
@@ -364,7 +362,6 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   #### Estimators ####
 
-  # control_estimator <- list()
   estimators <- list()
   dots <- list(...)
   k <- 1L
@@ -375,16 +372,6 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     dots$p <- nitems[[i]]
     dots$q <- nfactors[[i]]
 
-    # lower_psi <- lower.tri(diag(q, q), diag = TRUE)
-    # lambda_labels <- c(rot_trans[[lambda_group[i]]])
-    # psi_labels <- rot_trans[[psi_group[i]]]
-    # indices <- list(match(lambda_labels, transparameters_labels)-1L,
-    #                 match(psi_labels, transparameters_labels)-1L)
-    # control_estimator[[k]] <- list(estimator = rotation,
-    #                                indices = indices,
-    #                                p = p,
-    #                                q = q,
-    #                                ...)
     estimators[[i]] <- list(estimator = rotation,
                             parameters = c(lambda_group[i], psi_group[i]),
                             extra = dots)

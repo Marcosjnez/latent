@@ -48,14 +48,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // duplication
-arma::mat duplication(int p, bool halflower);
-RcppExport SEXP _latent_duplication(SEXP pSEXP, SEXP halflowerSEXP) {
+arma::mat duplication(int p, bool halflower, bool halfmatrix);
+RcppExport SEXP _latent_duplication(SEXP pSEXP, SEXP halflowerSEXP, SEXP halfmatrixSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type p(pSEXP);
     Rcpp::traits::input_parameter< bool >::type halflower(halflowerSEXP);
-    rcpp_result_gen = Rcpp::wrap(duplication(p, halflower));
+    Rcpp::traits::input_parameter< bool >::type halfmatrix(halfmatrixSEXP);
+    rcpp_result_gen = Rcpp::wrap(duplication(p, halflower, halfmatrix));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -411,7 +412,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_dxt", (DL_FUNC) &_latent_dxt, 2},
     {"_latent_commutation", (DL_FUNC) &_latent_commutation, 2},
     {"_latent_soft", (DL_FUNC) &_latent_soft, 2},
-    {"_latent_duplication", (DL_FUNC) &_latent_duplication, 2},
+    {"_latent_duplication", (DL_FUNC) &_latent_duplication, 3},
     {"_latent_mytest", (DL_FUNC) &_latent_mytest, 1},
     {"_latent_optimizer", (DL_FUNC) &_latent_optimizer, 4},
     {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 8},

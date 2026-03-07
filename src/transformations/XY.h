@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/02/2026
+ * Modification date: 05/03/2026
  */
 
 // X*Y transformation:
@@ -38,10 +38,6 @@ public:
   void dtransform(arguments_optim& x) {
 
     dX = arma::reshape(x.dtransparameters(indices_X), p, q);
-    // arma::vec v = x.dtransparameters(indices_in[0]);
-    // for (arma::uword i = 0; i < v.n_elem; ++i) {
-    //   Rprintf("%.6f%s", v(i), (i + 1 < v.n_elem) ? " " : "\n"); // space-separated, then newline
-    // }
     dY = arma::reshape(x.dtransparameters(indices_Y), q, q);
     dXY = X * dY + dX * Y;
 
@@ -104,9 +100,6 @@ XY* choose_XY(const Rcpp::List& trans_setup) {
 
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
-  // arma::uvec indices_X = trans_setup["indices_X"];
-  // arma::uvec indices_Y = trans_setup["indices_Y"];
-  // arma::uvec indices_out = trans_setup["indices_out"];
   int p = trans_setup["p"];
   int q = trans_setup["q"];
 

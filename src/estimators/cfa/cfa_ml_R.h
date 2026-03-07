@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 15/02/2026
+ * Modification date: 05/03/2026
  */
 
 /*
@@ -12,73 +12,56 @@ class cfa_ml_R: public estimators {
 
 public:
 
-  int p, q, n;
-  double w, logdetR, plogpi2;
-  arma::uvec indices_R, indices_Rhat, lower_diag;
-  arma::mat R, Rhat, residuals, dR, dRhat, Rhat_inv, Ri_R_Ri, gRhat;
+  int p, n;
+  double w, logdetS, plogpi2;
+  arma::uvec indices_S, indices_Shat, diag, lower_diag;
+  arma::mat S, Shat, residuals, dS, dShat, Shat_inv, gShat, I;
 
   void param(arguments_optim& x) {
 
-    R.elem(lower_diag) = x.transparameters(indices_R);
-    R = arma::symmatl(R);
-    Rhat.elem(lower_diag) = x.transparameters(indices_Rhat);
-    Rhat = arma::symmatl(Rhat);
+    S = arma::reshape(x.transparameters(indices_S), p, p);
+    Shat = arma::reshape(x.transparameters(indices_Shat), p, p);
 
-    if(!Rhat.is_sympd()) {
+    if(!Shat.is_sympd()) {
       arma::vec eigval;
       arma::mat eigvec;
-      eig_sym(eigval, eigvec, Rhat);
+      eig_sym(eigval, eigvec, Shat);
       arma::vec d = arma::clamp(eigval, 0.1, eigval.max());
-      Rhat = eigvec * arma::diagmat(d) * eigvec.t();
+      Shat = eigvec * arma::diagmat(d) * eigvec.t();
     }
-    Rhat_inv = arma::inv_sympd(Rhat);
-    // logdetR = arma::log_det_sympd(R);
+    Shat_inv = arma::inv_sympd(Shat);
 
   }
 
   void F(arguments_optim& x) {
 
-    // f = w*(arma::log_det_sympd(Rhat) - logdetR + arma::accu(R % Rhat_inv) - p);
     f = w*n*0.5*(plogpi2 +
-      arma::log_det_sympd(Rhat) +
-      arma::accu(R % Rhat_inv));
+      arma::log_det_sympd(Shat) +
+      arma::accu(S % Shat_inv));
     x.f += f;
 
   }
 
   void G(arguments_optim& x) {
 
-    Ri_R_Ri = Rhat_inv * R * Rhat_inv;
-    gRhat = Rhat_inv - Ri_R_Ri;
-    arma::mat temp = 2*gRhat;
-    temp.diag() *= 0.5;
+    gShat = Shat_inv * (I - S * Shat_inv);
 
-    x.grad.elem(indices_R) += w*n*0.5*arma::vectorise(Rhat_inv(lower_diag));
-    x.grad.elem(indices_Rhat) += w*n*0.5*arma::vectorise(temp(lower_diag));
+    x.grad.elem(indices_S) += w*n*0.5*arma::vectorise(Shat_inv);
+    x.grad.elem(indices_Shat) += w*n*0.5*arma::vectorise(gShat);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dR.elem(lower_diag) = x.dtransparameters(indices_R);
-    dR = arma::symmatl(dR);
-    dRhat.elem(lower_diag) = x.dtransparameters(indices_Rhat);
-    dRhat = arma::symmatl(dRhat);
+    dS = arma::reshape(x.dtransparameters(indices_S), p, p);
+    dShat = arma::reshape(x.dtransparameters(indices_Shat), p, p);
 
-    arma::mat dRhat_inv = -Rhat_inv * dRhat * Rhat_inv;
-    arma::mat dgRhat = 2*(dRhat_inv -
-                         (dRhat_inv * R * Rhat_inv +
-                          Rhat_inv * R * dRhat_inv +
-                          Rhat_inv * dR * Rhat_inv));
-    dgRhat.diag() *= 0.5;
+    arma::mat dShat_inv = -Shat_inv * dShat * Shat_inv;
+    arma::mat dgShat = dShat_inv * (I - S * Shat_inv) - Shat_inv * S * dShat_inv -
+      Shat_inv * dS * Shat_inv;
 
-    arma::mat dgR = 2*(dRhat_inv * R * Rhat_inv +
-                       Rhat_inv * dR * Rhat_inv +
-                       Rhat_inv * R * dRhat_inv);
-    dgR.diag() *= 0.5;
-
-    x.dgrad.elem(indices_R) += w*n*0.5*arma::vectorise(dgR(lower_diag));
-    x.dgrad.elem(indices_Rhat) += w*n*0.5*arma::vectorise(dgRhat(lower_diag));
+    x.dgrad.elem(indices_S) += w*n*0.5*arma::vectorise(dShat_inv);
+    x.dgrad.elem(indices_Shat) += w*n*0.5*arma::vectorise(dgShat);
 
   }
 
@@ -86,15 +69,14 @@ public:
 
     doubles.resize(5);
     // loglik = w*n*0.5*(-plogpi2 -
-    //                    arma::log_det_sympd(Rhat) -
-    //                    arma::accu(R % Rhat_inv));
-    arma::mat I(p, p, arma::fill::eye);
+    //                    arma::log_det_sympd(Shat) -
+    //                    arma::accu(S % Shat_inv));
     double loglik_indep = w*n*0.5*(-plogpi2 -
-                                   arma::trace(R));
-    arma::mat Rinv = arma::inv_sympd(R);
+                                   arma::trace(S));
+    arma::mat Rinv = arma::inv_sympd(S);
     double loglik_sat = w*n*0.5*(-plogpi2 -
-                                 arma::log_det_sympd(R) -
-                                 arma::accu(R % Rinv));
+                                 arma::log_det_sympd(S) -
+                                 arma::accu(S % Rinv));
     doubles[0] =  f;             // loss   actual model
     doubles[1] = -f;             // loglik actual model
     doubles[2] =  w;
@@ -103,7 +85,7 @@ public:
 
     matrices.resize(2);
     arma::mat W;
-    matrices[0] = R - Rhat;
+    matrices[0] = S - Shat;
     matrices[1] = W;
 
   };
@@ -115,27 +97,27 @@ cfa_ml_R* choose_cfa_ml_R(const Rcpp::List& estimator_setup) {
   cfa_ml_R* myestimator = new cfa_ml_R();
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
-  int p = estimator_setup["p"];
-  int q = estimator_setup["q"];
-  int n = estimator_setup["n"];
   double w = estimator_setup["w"];
+  int p = estimator_setup["p"];
+  int n = estimator_setup["n"];
 
-  arma::mat R(p, p, arma::fill::zeros);
-  arma::uvec lower_diag = arma::trimatl_ind(arma::size(R));
+  arma::mat Shat(p, p, arma::fill::zeros);
+  arma::uvec diag = arma::regspace<arma::uvec>(0, p + 1, p*p - 1);
+  arma::uvec lower_diag = arma::trimatl_ind(arma::size(Shat));
   double plogpi2 = p*std::log(arma::datum::pi*2);
+  arma::mat I(p, p, arma::fill::eye);
 
-  myestimator->indices_R = indices[0];
-  myestimator->indices_Rhat = indices[1];
+  myestimator->indices_Shat = indices[0];
+  myestimator->indices_S = indices[1];
   myestimator->p = p;
-  myestimator->q = q;
   myestimator->n = n;
   myestimator->w = w;
-  myestimator->R = R;
-  myestimator->dR = R;
-  myestimator->Rhat = R;
-  myestimator->dRhat = R;
+  myestimator->Shat = Shat;
+  myestimator->dShat = Shat;
+  myestimator->diag = diag;
   myestimator->lower_diag = lower_diag;
   myestimator->plogpi2 = plogpi2;
+  myestimator->I = I;
 
   return myestimator;
 

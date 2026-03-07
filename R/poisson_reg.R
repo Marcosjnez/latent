@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/02/2026
+# Modification date: 05/03/2026
 
 pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NULL) {
 

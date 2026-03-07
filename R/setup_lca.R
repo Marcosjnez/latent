@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/12/2025
+# Modification date: 05/03/2026
 
 get_full_lca_model <- function(data_list, nclasses, item,
                                model = NULL, control = NULL) {
@@ -564,20 +564,8 @@ get_lca_structures <- function(data_list, full_model, control) {
 
   #### Estimators ####
 
-  # control_estimator <- list()
   estimators <- list()
 
-  # item_loglik <- lca_all$loglik
-  # indices <- list(match(lca_all$class, transparameters_labels)-1L,
-  #                 match(item_loglik, transparameters_labels)-1L)
-
-  # control_estimator[[1]] <- list(estimator = "lca",
-  #                                # labels = labels,
-  #                                indices = indices,
-  #                                S = npatterns,
-  #                                J = nitems,
-  #                                I = nclasses,
-  #                                weights = weights)
   estimators[[1]] <- list(estimator = "lca",
                           parameters = c("class", "loglik"),
                           extra = list(S = npatterns,
@@ -601,15 +589,6 @@ get_lca_structures <- function(data_list, full_model, control) {
 
       for(i in uniques) {
 
-        # labels <- lca_all$class[i, ]
-        # indices <- list(match(labels, transparameters_labels)-1L)
-        # control_estimator[[G]] <- list(estimator = "bayesconst1",
-        #                                # labels = labels,
-        #                                indices = indices,
-        #                                K = nclasses,
-        #                                alpha = alpha,
-        #                                U = U,
-        #                                N = data_list$nobs)
         estimators[[G]] <- list(estimator = "bayesconst1",
                                 parameters = list(lca_all$class[i, ]),
                                 extra = list(K = nclasses,
@@ -632,15 +611,6 @@ get_lca_structures <- function(data_list, full_model, control) {
       varshat <- apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs
       for(i in 1:nclasses) {
 
-        # labels <- sigma_class[[i]]
-        # indices <- list(match(labels, transparameters_labels)-1L)
-        # control_estimator[[G]] <- list(estimator = "bayesconst3",
-        #                                # labels = labels,
-        #                                indices = indices,
-        #                                K = nclasses,
-        #                                varshat = varshat,
-        #                                alpha = alpha,
-        #                                N = data_list$nobs)
         estimators[[G]] <- list(estimator = "bayesconst3",
                                 parameters = list(sigma_class[[i]]),
                                 extra = list(K = nclasses,
@@ -661,15 +631,6 @@ get_lca_structures <- function(data_list, full_model, control) {
         for(i in 1:nclasses) {
 
           pihat <- pi_hat_list[[j]][, i]
-          # labels <- lca_all$peta[[j]][, i]
-          # indices <- list(match(labels, transparameters_labels)-1L)
-          # control_estimator[[G]] <- list(estimator = "bayesconst2",
-          #                                # labels = labels,
-          #                                indices = indices,
-          #                                K = nclasses,
-          #                                pihat = pihat,
-          #                                alpha = control$penalties$prob$alpha,
-          #                                N = data_list$nobs)
           estimators[[G]] <- list(estimator = "bayesconst2",
                                   parameters = list(lca_all$peta[[j]][, i]),
                                   extra = list(K = nclasses,
@@ -700,15 +661,6 @@ get_lca_structures <- function(data_list, full_model, control) {
       sds <- apply(cov_patterns2[, -1], MARGIN = 2, sd, na.rm = TRUE)
       sds <- matrix(sds, nrow = p, ncol = q) / alpha
 
-      # labels <- lca_all$beta[-1, ] # Remove the intercept
-      # indices <- list(match(labels, transparameters_labels)-1L)
-      # control_estimator[[G]] <- list(estimator = "gaussian_loglik",
-      #                                # labels = labels,
-      #                                indices = indices,
-      #                                means = means,
-      #                                sds = sds,
-      #                                alpha = alpha,
-      #                                N = data_list$nobs)
       estimators[[G]] <- list(estimator = "gaussian_loglik",
                               parameters = list(lca_all$beta[-1, ]),
                               extra = list(means = means,
@@ -727,14 +679,6 @@ get_lca_structures <- function(data_list, full_model, control) {
 
       if(lambda != 0 && power != 0) {
 
-        # labels <- lca_all$beta[-1, ] # Remove the intercept
-        # indices <- list(match(labels, transparameters_labels)-1L)
-        # control_estimator[[G]] <- list(estimator = "ridge",
-        #                                # labels = labels,
-        #                                indices = indices,
-        #                                lambda = lambda,
-        #                                power = power,
-        #                                N = data_list$nobs)
         estimators[[G]] <- list(estimator = "ridge",
                                 parameters = list(lca_all$beta[-1, ]),
                                 extra = list(lambda = lambda,

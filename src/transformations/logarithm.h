@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/02/2026
+ * Modification date: 05/03/2026
  */
 
 // Logarithmic transformation:
@@ -85,8 +85,6 @@ logarithm* choose_logarithm(const Rcpp::List& trans_setup) {
 
   logarithm* mytrans = new logarithm();
 
-  // arma::uvec indices_in = trans_setup["indices_in"];
-  // arma::uvec indices_out = trans_setup["indices_out"];
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
 

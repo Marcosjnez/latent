@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/02/2026
+ * Modification date: 05/03/2026
  */
 
 // Logarithm multinomial probability transformation:
@@ -189,8 +189,6 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
 
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
-  // arma::uvec indices_in = trans_setup["indices_in"];
-  // arma::uvec indices_out = trans_setup["indices_out"];
   arma::mat y = trans_setup["y"];
   arma::uvec K = trans_setup["K"];
   int S = trans_setup["S"];

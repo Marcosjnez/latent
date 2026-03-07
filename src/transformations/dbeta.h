@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/10/2025
+ * Modification date: 05/03/2026
  */
 
 // Logarithm beta density transformation:
@@ -121,7 +121,6 @@ beta* choose_beta(const Rcpp::List& trans_setup) {
 
   arma::uvec mu_indices = indices_in[1];
   arma::uvec sigma_indices = indices_in[2];
-  // arma::uvec item_indices = indices_in[3];
   int n_in  = indices_in[0].n_elem;
   int n_out = indices_out[0].n_elem;
 
@@ -132,7 +131,6 @@ beta* choose_beta(const Rcpp::List& trans_setup) {
 
   mytrans->mu_indices = mu_indices;
   mytrans->sigma_indices = sigma_indices;
-  // mytrans->item_indices = item_indices;
   mytrans->y = y;
   mytrans->S = S;
   mytrans->J = J;

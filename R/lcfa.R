@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/11/2025
+# Modification date: 07/03/2026
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
@@ -12,7 +12,8 @@
 #' sample.cov = NULL, nobs = NULL,
 #' positive = FALSE, penalties = TRUE,
 #' missing = "pairwise.complete.obs",
-#' std.lv = FALSE, do.fit = TRUE, mimic = 'latent',
+#' std.lv = FALSE, do.fit = TRUE,
+#' message = TRUE, mimic = 'latent',
 #' control = NULL, ...)
 #'
 #' @param data data frame or matrix.
@@ -27,6 +28,7 @@
 #' @param missing Method to handle missing data.
 #' @param std.lv Provide the parameters of the standardized model.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
+#' @param message Logical. Defaults to TRUE.
 #' @param mimic String. Choose the output you want to obtain. Defaults to 'latent'.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #' @param ... Additional lavaan arguments. See ?lavaan for more information.
@@ -62,7 +64,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                  positive = FALSE, penalties = TRUE,
                  missing = "pairwise.complete.obs",
                  std.lv = TRUE, do.fit = TRUE,
-                 mimic = "latent", control = NULL,
+                 message = TRUE, mimic = "latent",
+                 control = NULL,
                  ...) {
 
   if(ordered) {
@@ -139,6 +142,10 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   }
 
+  ## store original call
+  mc  <- match.call()
+  args <- as.list(match.call(expand.dots = TRUE))[-1]
+
   # Data and structure information:
   nitems <- as.list(lavmodel@nvar)
   npatterns <- lapply(nitems, FUN = \(p) 0.5*p*(p+1))
@@ -146,7 +153,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   data_list <- vector("list")
   data_list$ngroups <- ngroups
-  data_list$data <- X
+  data_list$data <- data
+  data_list$data_per_group <- X
   data_list$nobs <- nobs
   data_list$nitems <- nitems
   data_list$npatterns <- npatterns
@@ -157,9 +165,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   data_list$group_label <- group_label
   data_list$item_label <- item_label
   data_list$factor_label <- factor_label
-
-  ## store original call
-  mc  <- match.call()
+  data_list$args <- args
 
   #### Create the model ####
 
@@ -187,8 +193,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,
-                    cfa_param = cfa_param,
-                    cfa_trans = cfa_trans,
+                    param = param,
+                    trans = trans,
                     control_manifold = control_manifold,
                     control_transform = control_transform,
                     control_estimator = control_estimator,
@@ -217,6 +223,14 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   }
 
+  if(message) {
+    msg <- "Fitting the model"
+    w <- nchar(msg) + 4
+    cat("\n", "+", strrep("-", w), "+\n",
+        "|  ", msg, "  |\n",
+        "+", strrep("-", w), "+\n\n", sep = "")
+  }
+
   control$cores <- min(control$rstarts, control$cores)
   # Fit the model:
   Optim <- optimizer(control_manifold = control_manifold,
@@ -232,22 +246,15 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   #### Estimated model structures ####
 
-  # Create the structures of untransformed parameters:
-  indices_pars <- match(modelInfo$parameters_labels,
-                        unlist(modelInfo$cfa_param))
-  vv <- rep(0, times = length(unlist(modelInfo$cfa_param)))
-  vv[indices_pars] <- Optim$parameters
-  parameters <- fill_list_with_vector(modelInfo$cfa_param, vv)
-  parameters <- allnumeric(parameters)
-  # FIXED PARAMETERS?
-
   # Create the structures of transformed parameters:
-  indices_trans <- match(modelInfo$transparameters_labels,
-                         unlist(modelInfo$cfa_trans))
-  vv <- rep(0, times = length(unlist(modelInfo$cfa_trans)))
-  vv[indices_trans] <- Optim$transparameters
-  transformed_pars <- fill_list_with_vector(modelInfo$cfa_trans, vv)
+  indices_trans <- match(unlist(modelInfo$trans),
+                         modelInfo$transparameters_labels)
+  values <- Optim$transparameters[indices_trans]
+  transformed_pars <- fill_list_with_vector(modelInfo$trans, values)
   transformed_pars <- allnumeric(transformed_pars)
+
+  # Create the structures of untransformed parameters:
+  parameters <- transformed_pars[names(modelInfo$param)]
 
   #### Process the fit information ####
 
@@ -294,9 +301,6 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   loglik <- sum(unlist(loglik))
   penalized_loglik <- sum(unlist(penalized_loglik))
 
-
-
-
   #### latent object ####
 
   result <- new("lcfa",
@@ -314,10 +318,17 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                 penalized_loss     = penalized_loss
   )
 
+  if(message) {
+    msg <- "Computing standard errors"
+    w <- nchar(msg) + 4
+    cat("\n", "+", strrep("-", w), "+\n",
+        "|  ", msg, "  |\n",
+        "+", strrep("-", w), "+\n\n", sep = "")
+  }
+
   # Standard errors:
-  SE <- se(result, type = "standard", digits = 9)
-  Optim$se <- SE$se
-  Optim$vcov <- SE$vcov
+  Optim$SE <- se(result, type = "standard", digits = 9)
+
   result@Optim <- Optim
 
   #### Return ####
@@ -342,8 +353,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     parsdf <- data.frame(plabel = names(Optim$parameters),
                          est = Optim$parameters)
 
-    sedf <- data.frame(plabel = names(Optim$se),
-                       se = Optim$se)
+    sedf <- data.frame(plabel = modelInfo$parameters_labels,
+                       se = Optim$SE$se)
 
     parsdf <- merge(parsdf, sedf)
     #parsdf
@@ -382,7 +393,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     ### order vcov from 1  up .. in names
     lavvcov <- LAV@vcov
     lavvcov$se <- lavoptions$se
-    lavvcov$vcov <- Optim$vcov
+    lavvcov$vcov <- Optim$SE$vcov
 
     ## test
     chi2 <- -2*(loglik - Optim$outputs$estimators$doubles[[1]][5])
@@ -408,7 +419,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     lavfit <- lat_model_fit(lavpartable = lavpartable,
                             lavmodel = lavmodel,
                             x = lavpartable$est[lavpartable$free != 0],
-                            VCOV = Optim$vcov,
+                            VCOV = Optim$SE$vcov,
                             TEST = TEST,
                             loss = c(loss = loss, loglik = loglik),
                             Optim = Optim,

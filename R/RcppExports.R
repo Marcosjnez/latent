@@ -13,8 +13,8 @@ soft <- function(x, a) {
     .Call(`_latent_soft`, x, a)
 }
 
-duplication <- function(p, halflower = TRUE) {
-    .Call(`_latent_duplication`, p, halflower)
+duplication <- function(p, halflower = TRUE, halfmatrix = TRUE) {
+    .Call(`_latent_duplication`, p, halflower, halfmatrix)
 }
 
 mytest <- function(p) {

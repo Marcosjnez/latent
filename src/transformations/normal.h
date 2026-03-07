@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/02/2026
+ * Modification date: 05/03/2026
  */
 
 const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);
@@ -193,9 +193,6 @@ normal* choose_normal(const Rcpp::List& trans_setup) {
 
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
-  // arma::uvec indices_mu = trans_setup["indices_mu"];
-  // arma::uvec indices_sigma = trans_setup["indices_sigma"];
-  // arma::uvec indices_out = trans_setup["indices_out"];
   arma::mat y = trans_setup["y"];
   int S = trans_setup["S"];
   int J = trans_setup["J"];

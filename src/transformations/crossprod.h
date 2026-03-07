@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/02/2026
+ * Modification date: 05/03/2026
  */
 
 // Crossproduct transformation:
@@ -12,7 +12,7 @@ public:
 
   int p;
   arma::uvec indices_in, indices_out, unique_indices_out, lower_diag;
-  arma::mat X, grad_out, dX, dXtX, Dp, jacob;
+  arma::mat X, grad_out, dX, dXtX, jacob;
 
   void transform(arguments_optim& x) {
 
@@ -30,14 +30,10 @@ public:
 
     x.grad(indices_in) += arma::vectorise(2*X * grad_out);
 
-    // arma::vec v = x.grad(indices_in[0]);
-    // for (arma::uword i = 0; i < v.n_elem; ++i) {
-    //   Rprintf("%.6f%s", v(i), (i + 1 < v.n_elem) ? " " : "\n"); // space-separated, then newline
-    // }
-
     // arma::mat I(p, p, arma::fill::eye);
+    // arma::mat Dp = duplication(p, true, false);
     // jacob = 2*Dp.t() * arma::kron(I, X.t());
-    // x.grad(indices_in[0]) += jacob.t() * x.grad(indices_out[0]);
+    // x.grad(indices_in) += jacob.t() * x.grad(indices_out);
 
   }
 
@@ -63,13 +59,16 @@ public:
   void jacobian(arguments_optim& x) {
 
     arma::mat I(p, p, arma::fill::eye);
+    // arma::mat Dp = duplication(p, true, true); // If lower diagonal entries only
+    arma::mat Dp = duplication(p, true, false);
     jacob = 2*Dp.t() * arma::kron(I, X.t());
 
   }
 
   void update_vcov(arguments_optim& x) {
 
-    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
+    x.vcov(indices_out, indices_out).zeros();
+    x.vcov(indices_out, indices_out) += jacob * x.vcov(indices_in, indices_in) * jacob.t();
 
   }
 
@@ -99,8 +98,6 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
 
   crossprod* mytrans = new crossprod();
 
-  // arma::uvec indices_in = trans_setup["indices_in"];
-  // arma::uvec indices_out = trans_setup["indices_out"];
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   int p = trans_setup["p"];
@@ -109,7 +106,6 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
   arma::mat grad_out(p, p, arma::fill::zeros);
   arma::uvec lower_diag = arma::trimatl_ind(arma::size(grad_out));
   arma::uvec unique_indices_out = arma::unique(indices_out[0]);
-  arma::mat Dp = duplication(p);
 
   mytrans->indices_in = indices_in[0];
   mytrans->indices_out = indices_out[0];
@@ -118,7 +114,6 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
   mytrans->grad_out = grad_out;
   mytrans->unique_indices_out = unique_indices_out;
   mytrans->lower_diag = lower_diag;
-  mytrans->Dp = Dp;
 
   return mytrans;
 

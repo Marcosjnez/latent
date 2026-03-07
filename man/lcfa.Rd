@@ -9,7 +9,8 @@ ordered = FALSE, group = NULL,
 sample.cov = NULL, nobs = NULL,
 positive = FALSE, penalties = TRUE,
 missing = "pairwise.complete.obs",
-std.lv = FALSE, do.fit = TRUE, mimic = 'latent',
+std.lv = FALSE, do.fit = TRUE,
+message = TRUE, mimic = 'latent',
 control = NULL, ...)
 }
 \arguments{
@@ -36,6 +37,8 @@ control = NULL, ...)
 \item{std.lv}{Provide the parameters of the standardized model.}
 
 \item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+
+\item{message}{Logical. Defaults to TRUE.}
 
 \item{mimic}{String. Choose the output you want to obtain. Defaults to 'latent'.}
 

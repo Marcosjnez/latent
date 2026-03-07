@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/02/2026
+# Modification date: 07/03/2026
 
 #### Install latent ####
 
@@ -248,10 +248,10 @@ model <- 'visual  =~ x1 + x2 + x3
 
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "ml", positive = FALSE,
+            estimator = "dwls", positive = FALSE,
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "grad",
+            control = list(opt = "newton",
                            step_maxit = 100,
                            tcg_maxit = 100))
 fit@loss   # 0.283407
@@ -260,15 +260,32 @@ fit@penalized_loglik # -3427.131
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
-fit
-fit@Optim$se
-SE <- se(fit, type = "standard", digits = 3)
-SE$se
-SE$table_se
+fit@Optim$SE$se
+
+fit2 <- lcfa(HolzingerSwineford1939, model = model,
+            estimator = "dwlsr", positive = FALSE,
+            ordered = FALSE, std.lv = TRUE,
+            mimic = "latent", do.fit = FALSE,
+            control = list(opt = "grad",
+                           free_S = TRUE,
+                           step_maxit = 100,
+                           tcg_maxit = 100))
+
+control_manifold <- fit2@modelInfo$control_manifold
+control_transform <- fit2@modelInfo$control_transform
+control_estimator <- fit2@modelInfo$control_estimator
+control_optimizer <- fit2@modelInfo$control
+parameters <- fit@Optim$transparameters[fit2@modelInfo$parameters_labels]
+transparameters <- fit@Optim$transparameters[fit2@modelInfo$transparameters_labels]
+control_optimizer$parameters[[1]] <- parameters
+control_optimizer$transparameters[[1]] <- transparameters
+
+x <- get_hess(control_manifold, control_transform,
+              control_estimator, control_optimizer)
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
-                    estimator = "uls",
+                    estimator = "ml",
                     # likelihood = "wishart",
                     std.lv = TRUE, std.ov = TRUE)
 # Same loss value: OK
@@ -340,21 +357,22 @@ fit <- lcfa(HolzingerSwineford1939, model = model,
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE)
 
-fit@loglik # -3422.946 (ml)
-fit@loss # 0.4055109 (uls) / 0.7677016 (ml)
+fit@loss   # 1714.647
+fit@loglik # -1714.647
+fit@penalized_loglik # -1714.647
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
-latInspect(fit, what = "loglik")
+fit@Optim$SE$se
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
                     group = "school", estimator = "ml",
                     std.lv = TRUE, std.ov = TRUE)
 
-pe <- lavaan::parameterEstimates(fit2)
-pe$se
 fit@Optim$se
+se(fit)$se
+fit2@Fit@se
 
 fit2@loglik$loglik
 fit2@Fit@fx*2
@@ -658,3 +676,8 @@ H <- 0.5*(H + t(H)) # Force symmetry
 x <- get_hess(control_manifold, control_transform,
               control_estimator, control_optimizer)
 max(abs(H - x$h))
+
+VCOV <- get_vcov(control_manifold, control_transform, control_estimator,
+                 control_optimizer, x$h)
+VCOV$vcov
+diag(VCOV$vcov)

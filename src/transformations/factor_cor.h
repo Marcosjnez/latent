@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/02/2026
+ * Modification date: 05/03/2026
  */
 
 // factor_cor transformation:
@@ -14,7 +14,7 @@ public:
   indices_out, diag_psi, diag_theta, lower_psi, lower_theta, lower_diag;
   int p, q;
   arma::mat R, Rhat, lambda, psi, theta, lambda_psi, glambda, gpsi, gtheta,
-  dlambda, dglambda, dpsi, dRhat, dgpsi, dtheta, dgtheta, grad_out, Dp, jacob;
+  dlambda, dglambda, dpsi, dRhat, dgpsi, dtheta, dgtheta, grad_out, jacob;
 
   void transform(arguments_optim& x) {
 
@@ -35,9 +35,7 @@ public:
 
     lambda_psi = lambda * psi;
     glambda = 2*grad_out * lambda_psi;
-
     gpsi = lambda.t() * grad_out * lambda;
-
     gtheta = grad_out;
 
     x.grad.elem(indices_lambda) += arma::vectorise(glambda);
@@ -52,25 +50,15 @@ public:
     // arma::mat J_psi    = arma::kron(lambda, lambda);
     // arma::mat J_theta  = arma::eye(p*p, p*p);
     //
-    // // Halve the diagonal entries:
-    // J_psi.cols(diag_psi) *= 0.5;
-    // J_theta.cols(diag_theta) *= 0.5;
-    //
-    // // Remove duplicated entries for psi and theta:
-    // J_psi = 2*J_psi.cols(lower_psi);
-    // J_theta = 2*J_theta.cols(lower_theta);
-    //
-    // // Multiply the jacobians by the duplication matrix:
+    // arma::mat Dp = duplication(p, true, false);
     // jacob = Dp.t() * arma::join_rows(J_lambda, J_psi, J_theta);
-    // // The duplication matrix halves the duplicated elements in the
-    // // transformed parameters´
     //
     // arma::uvec all_idx =
     //   arma::join_cols(
     //     arma::join_cols(indices_lambda, indices_psi),
     //     indices_theta
     //   );
-    // x.grad.elem(all_idx) += jacob.t() * x.grad(indices_out[0]);
+    // x.grad.elem(all_idx) += jacob.t() * x.grad(indices_out);
 
   }
 
@@ -122,25 +110,16 @@ public:
     arma::mat J_psi    = arma::kron(lambda, lambda);
     arma::mat J_theta  = arma::eye(p*p, p*p);
 
-    // Halve the diagonal entries:
-    J_psi.cols(diag_psi) *= 0.5;
-    J_theta.cols(diag_theta) *= 0.5;
-
-    // Remove duplicated entries for psi and theta:
-    J_psi = 2*J_psi.cols(lower_psi);
-    J_theta = 2*J_theta.cols(lower_theta);
-
-    // Multiply the jacobians by the duplication matrix:
+    arma::mat Dp = duplication(p, true, false);
     jacob = Dp.t() * arma::join_rows(J_lambda, J_psi, J_theta);
-    // The duplication matrix halves the duplicated elements in the
-    // transformed parameters´
 
   }
 
   void update_vcov(arguments_optim& x) {
 
     indices_in = arma::join_cols(indices_lambda, indices_psi, indices_theta);
-    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
+    x.vcov(indices_out, indices_out).zeros();
+    x.vcov(indices_out, indices_out) += jacob * x.vcov(indices_in, indices_in) * jacob.t();
 
   }
 
@@ -170,10 +149,6 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
 
   factor_cor* mytrans = new factor_cor();
 
-  // arma::uvec indices_lambda = trans_setup["indices_lambda"];
-  // arma::uvec indices_psi = trans_setup["indices_psi"];
-  // arma::uvec indices_theta = trans_setup["indices_theta"];
-  // arma::uvec indices_out = trans_setup["indices_out"];
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   int p = trans_setup["p"];
@@ -187,7 +162,6 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
   arma::mat lambda(p, q, arma::fill::zeros);
   arma::mat psi(q, q, arma::fill::zeros);
   arma::mat theta(p, p, arma::fill::zeros);
-  arma::mat Dp = duplication(p, true);
 
   arma::uvec lower_psi = arma::trimatl_ind(arma::size(psi));
   arma::uvec lower_theta = arma::trimatl_ind(arma::size(theta));
@@ -208,7 +182,6 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
   mytrans->lambda = lambda;
   mytrans->psi = psi;
   mytrans->theta = theta;
-  mytrans->Dp = Dp;
   mytrans->dpsi = psi;
   mytrans->dtheta = theta;
   mytrans->lower_psi = lower_psi;

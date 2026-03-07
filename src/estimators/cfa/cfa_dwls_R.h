@@ -1,25 +1,26 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 15/02/2026
+ * Modification date: 06/03/2026
  */
 
 /*
  * Confirmatory factor analysis (weighted least-squares)
  */
 
-class cfa_dwls: public estimators {
+class cfa_dwls_R: public estimators {
 
 public:
 
   int p;
   double w;
-  arma::uvec indices, diag, lower_diag;
-  arma::mat S, Shat, dShat, residuals, W, W_residuals;
+  arma::uvec indices_S, indices_Shat, diag, lower_diag;
+  arma::mat S, Shat, dShat, dS, residuals, W, W_residuals;
 
   void param(arguments_optim& x) {
 
-    Shat = arma::reshape(x.transparameters(indices), p, p);
+    S = arma::reshape(x.transparameters(indices_S), p, p);
+    Shat = arma::reshape(x.transparameters(indices_Shat), p, p);
 
     residuals = S - Shat;
     W_residuals = W % residuals;
@@ -35,15 +36,18 @@ public:
 
   void G(arguments_optim& x) {
 
-    x.grad.elem(indices) += w*arma::vectorise(-W_residuals);
+    x.grad.elem(indices_S) += w*arma::vectorise(W_residuals);
+    x.grad.elem(indices_Shat) += w*arma::vectorise(-W_residuals);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dShat = arma::reshape(x.dtransparameters(indices), p, p);
+    dS = arma::reshape(x.dtransparameters(indices_S), p, p);
+    dShat = arma::reshape(x.dtransparameters(indices_Shat), p, p);
 
-    x.dgrad.elem(indices) += w*arma::vectorise(W % dShat);
+    x.dgrad.elem(indices_S) += w*arma::vectorise(W % dS - W % dShat);
+    x.dgrad.elem(indices_Shat) += w*arma::vectorise(W % dShat - W % dS);
 
   }
 
@@ -69,23 +73,22 @@ public:
 
 };
 
-cfa_dwls* choose_cfa_dwls(const Rcpp::List& estimator_setup) {
+cfa_dwls_R* choose_cfa_dwls_R(const Rcpp::List& estimator_setup) {
 
-  cfa_dwls* myestimator = new cfa_dwls();
+  cfa_dwls_R* myestimator = new cfa_dwls_R();
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
+  int p = estimator_setup["p"];
   double w = estimator_setup["w"];
-  arma::mat S = estimator_setup["R"];
   arma::mat W = estimator_setup["W"];
 
-  int p = S.n_rows;
   arma::mat Shat(p, p, arma::fill::zeros);
   arma::uvec diag = arma::regspace<arma::uvec>(0, p + 1, p*p - 1);
-  arma::uvec lower_diag = arma::trimatl_ind(arma::size(S));
+  arma::uvec lower_diag = arma::trimatl_ind(arma::size(Shat));
 
-  myestimator->indices = indices[0];
+  myestimator->indices_Shat = indices[0];
+  myestimator->indices_S = indices[1];
   myestimator->p = p;
-  myestimator->S = S;
   myestimator->W = W;
   myestimator->w = w;
   myestimator->Shat = Shat;

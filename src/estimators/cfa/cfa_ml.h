@@ -12,7 +12,7 @@ class cfa_ml: public estimators {
 
 public:
 
-  int p, q, n;
+  int p, n;
   double w, logdetS, plogpi2;
   arma::uvec indices, diag, lower_diag;
   arma::mat S, Shat, residuals, dShat, Shat_inv, R_Ri, Ri_R_Ri, gShat, I;
@@ -34,7 +34,6 @@ public:
 
   void F(arguments_optim& x) {
 
-    // f = w*(arma::log_det_sympd(Shat) - logdetR + arma::accu(S % Shat_inv) - p);
     f = w*n*0.5*(plogpi2 +
       arma::log_det_sympd(Shat) +
       arma::accu(S % Shat_inv));
@@ -97,7 +96,6 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   arma::mat S = estimator_setup["R"];
   double w = estimator_setup["w"];
-  int q = estimator_setup["q"];
   int n = estimator_setup["n"];
 
   int p = S.n_rows;
@@ -110,7 +108,6 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
 
   myestimator->indices = indices[0];
   myestimator->p = p;
-  myestimator->q = q;
   myestimator->n = n;
   myestimator->S = S;
   myestimator->w = w;

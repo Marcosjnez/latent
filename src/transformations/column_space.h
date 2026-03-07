@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/02/2026
+ * Modification date: 05/03/2026
  */
 
 // Column space transformation:
@@ -88,8 +88,6 @@ column_space* choose_column_space(const Rcpp::List& trans_setup) {
 
   column_space* mytrans = new column_space();
 
-  // arma::uvec indices_in = trans_setup["indices_in"];
-  // arma::uvec indices_out = trans_setup["indices_out"];
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   arma::mat X = trans_setup["X"];

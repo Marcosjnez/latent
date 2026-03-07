@@ -5,8 +5,8 @@
 \title{Rotate the lambda matrix of an orthogonal factor model.}
 \usage{
 lrotate(lambda, projection = "oblq", rotation = "oblimin",
- group = NULL, positive = FALSE, penalties = TRUE,
- do.fit = TRUE, control = NULL, ...)
+group = NULL, positive = FALSE, penalties = TRUE,
+do.fit = TRUE, control = NULL, ...)
 }
 \arguments{
 \item{lambda}{List, loading matrices for each group.}

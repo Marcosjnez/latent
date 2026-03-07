@@ -56,7 +56,7 @@ Rcpp::List get_hess(Rcpp::List control_manifold,
   int npar = x.parameters.n_elem;
   arma::mat h(npar, npar, arma::fill::zeros);
 
-  for(int i=0; i<npar; ++i) {
+  for(int i=0; i < npar; ++i) {
 
     x.dparameters.zeros();
     x.dparameters(i) = 1.00;

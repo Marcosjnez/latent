@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 01/09/2025
+ * Modification date: 05/03/2026
  */
 
 // Identity (no transformation):
@@ -67,8 +67,6 @@ identity* choose_identity(const Rcpp::List& trans_setup) {
 
   identity* mytrans = new identity();
 
-  // std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
-  // std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
 

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/11/2025
+# Modification date: 07/03/2026
 #'
 #' @title
 #' Standard Errors
@@ -31,7 +31,7 @@
 se.lcfa <- function(fit, type = "standard", digits = 5) {
 
   # Select the model parameters:
-  model <- fit@modelInfo$cfa_param
+  model <- fit@modelInfo$param
   est <- fit@parameters
 
   # Collect all the estimators:
@@ -67,227 +67,106 @@ se.lcfa <- function(fit, type = "standard", digits = 5) {
   result$table_se <- table_se
   result$se <- c(SE$se)
   result$vcov <- SE$vcov
+  result$H <- SE$H
   result$B <- SE$B
 
   return(result)
 
 }
 
-# Derivatives of model matrix wrt parameters:
-drhat_dlambda <- function(lambda, psi) {
-
-  # derivative of Lambda wrt Rhat
-
-  p <- nrow(lambda)
-  q <- ncol(lambda)
-  g1 <- (lambda %*% psi) %x% diag(p)
-  g21 <- diag(p) %x% (lambda %*% psi)
-  g2 <- g21 %*% dxt(p, q)
-  g <- g1 + g2
-
-  return(g)
-
-}
-drhat_dpsi <- function(lambda, q) {
-
-  gpsi <- lambda %x% lambda
-  gpsi <- 2*gpsi
-  diag(gpsi) <- 2*diag(gpsi)
-
-  return(gpsi)
-
-}
-drhat_dtheta <- function(p) {
-
-  gtheta <- diag(p) %x% diag(p)
-  gtheta <- 0.5*gtheta
-  diag(gtheta) <- 2*diag(gtheta)
-
-  return(gtheta)
-
-}
-
-# Second-order derivatives between parameters and model matrix wrt loss:
-df2_dtheta_dwls <- function(lambda, psi, theta, w) {
-
-  q <- nrow(psi)
-  p <- nrow(theta)
-  drhat_dl <- drhat_dlambda(lambda, psi)
-  drhat_dp <- drhat_dpsi(lambda, q)
-  drhat_dt <- drhat_dtheta(p)
-  J <- -w*cbind(drhat_dl, drhat_dp, drhat_dt)
-
-  return(J)
-
-}
-df2_dtheta_ml <- function(lambda, psi, theta, w, n) {
-
-  q <- nrow(psi)
-  p <- nrow(theta)
-  drhat_dl <- drhat_dlambda(lambda, psi)
-  drhat_dp <- drhat_dpsi(lambda, q)
-  drhat_dt <- drhat_dtheta(p)
-  drhat_dtheta <- cbind(drhat_dl, drhat_dp, drhat_dt)
-
-  rhat <- lambda %*% psi %*% t(lambda) + theta
-  rhat_inv <- solve(rhat)
-  df2_drhatdR <- -rhat_inv %x% rhat_inv
-  df2_dthetadR <- 0.5*n*df2_drhatdR %*% drhat_dtheta
-
-  return(df2_dthetadR)
-
-}
-df2_dtheta_ml2 <- function(lambda, psi, theta, w) {
-
-  df2_dlambdadS <- function(lambda, psi, theta) {
-
-    p <- nrow(lambda)
-    q <- ncol(lambda)
-    indexes_p <- c()
-    for(i in 1:p) indexes_p[i] <- (i-1) * p + i
-
-    Rhat <- lambda %*% psi %*% t(lambda) + theta
-    Rhat_inv <- solve(Rhat)
-    LP <- lambda %*% psi
-
-    dRi_res_Ri_dS <- -2*Rhat_inv %x% Rhat_inv
-    dRi_res_Ri_dS <- dRi_res_Ri_dS + dRi_res_Ri_dS %*% dxt(p, p)
-    h <- t(LP) %x% diag(p) %*% dRi_res_Ri_dS
-    h[, indexes_p] <- 0.5*h[, indexes_p]
-    # h <- h[, which(lower.tri(theta, diag = TRUE))]
-
-    return(t(h))
-
-  }
-  gf2_dpsiPdS <- function(lambda, psi, theta) {
-
-    p <- nrow(lambda)
-    q <- ncol(lambda)
-    indexes_p <- c()
-    for(i in 1:p) indexes_p[i] <- (i-1) * p + i
-    indexes_q <- c()
-    for(i in 1:q) indexes_q[i] <- (i-1) * q + i
-
-    Rhat <- lambda %*% psi %*% t(lambda) + theta
-    Rhat_inv <- solve(Rhat)
-
-    dRi_res_Ri_dS <- -2*Rhat_inv %x% Rhat_inv
-    dRi_res_Ri_dS <- dRi_res_Ri_dS + dRi_res_Ri_dS %*% dxt(p, p)
-    gPS <- t(lambda) %x% t(lambda) %*% dRi_res_Ri_dS
-    gPS[indexes_q, ] <- 0.5*gPS[indexes_q, ]
-    gPS[, indexes_p] <- 0.5*gPS[, indexes_p]
-    # gPS <- gPS[which(lower.tri(psi, diag = TRUE)),
-    #            which(lower.tri(theta, diag = TRUE))]
-
-    return(t(gPS))
-
-  }
-  df2_dthetadS <- function(lambda, psi, theta) {
-
-    p <- nrow(lambda)
-    q <- ncol(lambda)
-    Rhat <- lambda %*% psi %*% t(lambda) + theta
-    Rhat_inv <- solve(Rhat)
-
-    dRi_res_Ri_dS <- -2*Rhat_inv %x% Rhat_inv
-    dRi_res_Ri_dS <- dRi_res_Ri_dS + dRi_res_Ri_dS %*% dxt(p, p)
-
-    indexes <- seq(1, p*p, by = p+1)
-    gUS <- dRi_res_Ri_dS
-    gUS[indexes, ] <- 0.5*gUS[indexes, ]
-    gUS[, indexes] <- 0.5*gUS[, indexes]
-    # gUS <- gUS[lower.tri(theta, diag = TRUE),
-    #            lower.tri(theta, diag = TRUE)]
-
-    return(t(gUS))
-
+block_diag <- function(mats) {
+  if (!is.list(mats) || length(mats) == 0L) {
+    stop("`mats` must be a non-empty list of square matrices.")
   }
 
-  J <- 0.5*w*cbind(df2_dlambdadS(lambda, psi, theta),
-               gf2_dpsiPdS(lambda, psi, theta),
-               df2_dthetadS(lambda, psi, theta))
+  dims <- vapply(mats, function(M) {
+    if (!is.matrix(M)) stop("All elements of `mats` must be matrices.")
+    nr <- nrow(M); nc <- ncol(M)
+    if (nr != nc) stop("All matrices must be square.")
+    nr
+  }, integer(1))
 
-  return(J)
+  n_tot <- sum(dims)
+  out <- matrix(0, n_tot, n_tot)
 
+  idx <- 0L
+  for (k in seq_along(mats)) {
+    d <- dims[k]
+    r <- (idx + 1L):(idx + d)
+    out[r, r] <- mats[[k]]
+    idx <- idx + d
+  }
+
+  out
 }
 
 # Sandwhich estimator of standard errors:
 general_se <- function(fit, type = "standard") {
 
   ngroups <- fit@data_list$ngroups
-  # if(ngroups > 1) stop("Standard errors are not available for multigroup models")
-
-  # Collect all the estimators:
-  estimators <- unlist(lapply(fit@modelInfo$control_estimator,
-                              FUN = \(x) x$estimator))
-  estimators <- estimators[estimators == "cfa_dwls" | estimators == "cfa_ml"]
 
   # Get the hessian matrix:
   SE <- standard_se(fit = fit)
 
   # Get the matrix of second-order derivatives between R and the parameters:
-  lambda_group <- paste("lambda.group", 1:ngroups, sep = "")
-  psi_group <- paste("psi.group", 1:ngroups, sep = "")
-  theta_group <- paste("theta.group", 1:ngroups, sep = "")
-
   VAR <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
 
-    # Get the sample size and weight scalar:
-    N <- fit@data_list$nobs[[i]]
-    w <- fit@modelInfo$control_estimator[[i]]$w
-
-    lambda <- fit@transformed_pars[[lambda_group[i]]]
-    psi <- fit@transformed_pars[[psi_group[i]]]
-    psi[upper.tri(psi)] <- t(psi)[upper.tri(psi)]
-    theta <- fit@transformed_pars[[theta_group[i]]]
-    theta[upper.tri(theta)] <- t(theta)[upper.tri(theta)]
-
-    if(estimators[i] == "cfa_ml") { # SHOULD COMPUTE THIS AUTOMATICALY IN C++
-      df2_dparamdR <- df2_dtheta_ml(lambda, psi, theta, w, N)
-    } else if(estimators[i] == "cfa_ml2") {
-      df2_dparamdR <- df2_dtheta_ml2(lambda, psi, theta, w)
-    } else if(estimators[i] == "cfa_dwls") {
-      df2_dparamdR <- df2_dtheta_dwls(lambda, psi, theta, w)
-    } else {
-      stop("All the estimators should be the same")
-    }
-
-    # Select the model parameters from df2_dparamdR:
-    group <- c(lambda_group[i], psi_group[i], theta_group[i])
-    select <- match(fit@modelInfo$parameters_labels,
-                    unlist(fit@modelInfo$cfa_param[group]))
-    select <- select[!is.na(select)]
-    df2_dparamdR <- df2_dparamdR[, select]
-
     # Get the asymptotic correlation matrix:
     if(type == "standard") {
-      ACOV <- asymptotic_normal(fit@data_list$correl[[i]]$R)
+      ACOVi <- asymptotic_normal(fit@data_list$correl[[i]]$R)/fit@data_list$nobs[[i]]
     } else if(type == "robust") {
       # CHECK FOR RAW DATA AVAILABILITY
-      ACOV <- asymptotic_general(fit@data_list$data[[i]])
+      ACOVi <- asymptotic_general(fit@data_list$X[[i]])/fit@data_list$nobs[[i]]
     } else {
       stop("Unknown type")
     }
 
-    # Sandwich estimator of standard errors:
-    B <- t(df2_dparamdR) %*% (ACOV/N) %*% df2_dparamdR
-    selection <- which(unlist(fit@modelInfo$cfa_param[group])[select] %in%
-                         fit@modelInfo$parameters_labels)
-    H_inv <- solve(SE$H)[selection, selection]
-    SE$vcov[selection, selection] <- H_inv %*% B %*% H_inv
-
-    # # Store the ham of the sandwich:
-    # rownames(B) <- colnames(B) <- mylabels
-    # SE$B <- B
+    lower_diag <- lower.tri(fit@data_list$correl[[i]]$R, diag = TRUE)
+    VAR[[i]] <- ACOVi[lower_diag, lower_diag]
 
   }
+
+  ACOV <- block_diag(VAR)
+
+  args <- fit@data_list$args
+  args$control <- fit@modelInfo$control
+  args$control$free_S <- TRUE
+  args$do.fit <- FALSE
+  args$estimator <- paste(args$estimator, "r", sep = "")
+  fit2 <- do.call(lcfa, args)
+
+  parameters <- fit@Optim$transparameters[fit2@modelInfo$parameters_labels]
+  transparameters <- fit@Optim$transparameters[fit2@modelInfo$transparameters_labels]
+
+  control_manifold <- fit2@modelInfo$control_manifold
+  control_transform <- fit2@modelInfo$control_transform
+  control_estimator <- fit2@modelInfo$control_estimator
+  control_optimizer <- fit2@modelInfo$control
+  control_optimizer$parameters[[1]] <- parameters
+  control_optimizer$transparameters[[1]] <- transparameters
+  x <- get_hess(control_manifold, control_transform,
+                control_estimator, control_optimizer)
+  colnames(x$h) <- rownames(x$h) <- fit2@modelInfo$parameters_labels
+
+  model_pars <- fit2@modelInfo$parameters_labels %in% fit@modelInfo$parameters_labels
+  nuisance_pars <- !model_pars
+  df2_dparamdR <- x$h[nuisance_pars, model_pars]
+  # Sandwich estimator of standard errors:
+  B <- t(df2_dparamdR) %*% ACOV %*% df2_dparamdR
+  H_inv <- solve(SE$H)
+  SE$vcov <- H_inv %*% B %*% H_inv
 
   # Update the standard errors of the model parameters in the SE object:
   SE$se <- sqrt(diag(SE$vcov))
   names(SE$se) <- fit@modelInfo$parameters_labels
 
-  # UPDATE SE$VCOV AND ALL OTHER ELEMENTS IN SE$se
+  # Create the tables of parameters with standard errors:
+  indices <- match(unlist(fit@modelInfo$param),
+                   fit@modelInfo$parameters_labels)
+  values <- SE$se[indices]
+  SE$table_se <- fill_list_with_vector(fit@modelInfo$param, values)
+  SE$table_se <- allnumeric(SE$table_se)
 
   return(SE)
 
