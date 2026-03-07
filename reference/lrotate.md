@@ -6,8 +6,8 @@ Rotate the lambda matrix of an orthogonal factor model.
 
 ``` r
 lrotate(lambda, projection = "oblq", rotation = "oblimin",
- group = NULL, positive = FALSE, penalties = TRUE,
- do.fit = TRUE, control = NULL, ...)
+group = NULL, positive = FALSE, penalties = TRUE,
+do.fit = TRUE, control = NULL, ...)
 ```
 
 ## Arguments
