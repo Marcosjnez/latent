@@ -275,51 +275,7 @@ fit2@loglik$loglik
 fit2@h1$logl$loglik # SATURATED
 
 lavaan::inspect(fit2, what = "se")
-
-SE <- se(fit, digits = 3)
-SE$table_se
-
-fit@loss
-fit@loglik # -0.283407
-fit@penalized_loglik # -0.283407
-fit@loss # 0.1574787
-fit@Optim$iterations
-fit@Optim$convergence
-fit@timing
-
-# Plot model fit info:
-fit
-
-# Get fit indices:
-getfit(fit)
-
-# Get a summary:
-summary(fit)
-
-# Inspect model objects:
-latInspect(fit, what = "loadings", digits = 3)
-latInspect(fit, what = "psi", digits = 3)
-latInspect(fit, what = "theta", digits = 3)
-latInspect(fit, what = "model", digits = 3)
-latInspect(fit, what = "residuals", digits = 3)
-latInspect(fit, what = "W", digits = 3)
-
-library(lavaan)
-fit2 <- cfa(model, data = HolzingerSwineford1939, estimator = "uls",
-            std.lv = TRUE, std.ov = TRUE)
-summary(fit2, fit.measures = FALSE)
-fitMeasures(fit2, digits = 5)
-inspect(fit2, what = "se")
-inspect(fit2, what = "est")
-
-SE <- se(fit, digits = 3)
-SE$table_se
-
-psi <- latInspect(fit, what = "psi", digits = 3)[[1]]
-psi[lower.tri(psi, diag = TRUE)] %*%
-         t(duplication(3, halflower = FALSE))
-
-duplication(3, halflower = FALSE) %*% psi[lower.tri(psi, diag = TRUE)]
+fit@Optim$SE$table_se
 
 #### Multigroup CFA ####
 

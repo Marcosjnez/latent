@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/03/2026
+# Modification date: 09/03/2026
 #'
 #' @title
 #' Standard Errors
@@ -37,33 +37,19 @@ se.lcfa <- function(fit, type = "standard", digits = 5) {
   # Collect all the estimators:
   estimators <- unlist(lapply(fit@modelInfo$control_estimator,
                               FUN = \(x) x$estimator))
-  # Check if all estimators are ml:
-  all_ml <- FALSE
-  if(all(estimators == "cfa_ml")) all_ml <- TRUE
 
-  if(type == "information") {
-    if(all_ml) {
-      SE <- standard_se(fit = fit)
-    } else {
-      stop("The information method is only available for maximum likelihood")
-    }
-  } else if(type == "standard" || type == "robust") {
-    SE <- general_se(fit = fit, type = type)
-  } else {
-    stop("Unknown type of standard error estimation")
-  }
+  SE <- general_se(fit = fit, type = type)
 
-  # Standard errors:
-  names(SE$se) <- fit@modelInfo$parameters_labels
-
-  # Tables:
-  table_se <- fill_list_with_vector(model, round(SE$se, digits = digits))
+  # Create the tables of parameters with standard errors:
+  indices <- match(unlist(fit@modelInfo$param),
+                   fit@modelInfo$parameters_labels)
+  values <- SE$se[indices]
+  values[is.na(values)] <- 0
+  table_se <- fill_list_with_vector(fit@modelInfo$param, values)
   table_se <- allnumeric(table_se)
-  # table <- combine_est_se(est, table_se, digits = digits)
 
   # Return:
   result <- list()
-  # result$table <- table
   result$table_se <- table_se
   result$se <- c(SE$se)
   result$vcov <- SE$vcov
@@ -160,13 +146,6 @@ general_se <- function(fit, type = "standard") {
   # Update the standard errors of the model parameters in the SE object:
   SE$se <- sqrt(diag(SE$vcov))
   names(SE$se) <- fit@modelInfo$parameters_labels
-
-  # Create the tables of parameters with standard errors:
-  indices <- match(unlist(fit@modelInfo$param),
-                   fit@modelInfo$parameters_labels)
-  values <- SE$se[indices]
-  SE$table_se <- fill_list_with_vector(fit@modelInfo$param, values)
-  SE$table_se <- allnumeric(SE$table_se)
 
   return(SE)
 
