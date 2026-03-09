@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 29/01/2026
+# Modification date: 09/03/2026
 
 effects_coding <- function(coeffs, vcov) {
 
@@ -25,11 +25,14 @@ effects_coding <- function(coeffs, vcov) {
   vcov_new <- J %*% vcov %*% t(J)
   se_new <- sqrt(diag(vcov_new))
 
+  # Tables:
+  table_se <- fill_list_with_vector(coeffs, se_new)
+
   # Return:
-  result <- list(se = se, vcov = vcov,
-                 beta_new = beta_new,
-                 se_new = se_new,
-                 vcov_new = vcov_new)
+  result <- list(beta = beta_new,
+                 se = se_new,
+                 vcov = vcov_new,
+                 table_se = table_se)
 
   return(result)
 

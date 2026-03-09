@@ -252,18 +252,26 @@ ci <- function(fit, type = "standard", model = "model",
     stop("Unknown model")
   }
 
-  if(type == "standard") {
+  if(class(fit@modelInfo$original_model) == "llca") {
 
-    SE <- standard_se(fit = fit)
-    SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
-
-  } else if(type == "robust") {
-
-    # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-    SE <- robust_se(fit = fit)
+    SE <- se_twostep(fit2 = fit, type = type)
 
   } else {
-    stop("Unknown type")
+
+    if(type == "standard") {
+
+      SE <- standard_se(fit = fit)
+      SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
+
+    } else if(type == "robust") {
+
+      # Use H to compute vcov = solve(H) %*% B %*% solve(H):
+      SE <- robust_se(fit = fit)
+
+    } else {
+      stop("Unknown type")
+    }
+
   }
 
   # Select the parameter labels for the table:
@@ -303,6 +311,7 @@ ci <- function(fit, type = "standard", model = "model",
   result$se <- c(SE$se)
   result$vcov <- SE$vcov
   result$B <- SE$B
+  result$H <- SE$H
 
   return(result)
 

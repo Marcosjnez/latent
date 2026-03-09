@@ -52,8 +52,8 @@ plot.llca <- function(fit,
 
     EF <- effects_coding(fit@transformed_pars$beta,
                          SE$vcov[select_betas, select_betas])
-    betas <- EF$beta_new
-    vcov <- EF$vcov_new
+    betas <- EF$beta
+    vcov <- EF$vcov
     colnames(betas) <- colnames(fit@transformed_pars$beta)
 
   } else if (effects == "dummy") {

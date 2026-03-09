@@ -188,10 +188,18 @@ fit2@Optim$iterations
 fit2@Optim$convergence
 fit2@Optim$ng
 
+# check that the measurement model was fixed:
+all.equal(fit1@parameters$items, fit2@parameters$items)
+
+# Standard errors:
 SE <- se(fit2, type = "standard", model = "model", digits = 4)
 SE$se
 
-all.equal(fit1@parameters$items, fit2@parameters$items)
+# Effects-coding parameterization:
+new_se <- effects_coding(fit2@parameters$beta, SE$vcov)
+new_se$beta
+new_se$table_se
+new_se$se
 
 # Plot model fit2 info:
 fit2
@@ -209,33 +217,22 @@ predict(fit2, new = rbind(c(2, 2, 2.428571, 2.142857),
                          c(1, 2, 3, 4)))
 fitted(fit2)
 
-# Get standard errors:
-SE <- se(fit2, type = "standard", model = "model", digits = 4)
-SE$table
-
 # Get confidence intervals:
 CI <- ci(fit2, type = "standard", model = "model",
          confidence = 0.95, digits = 2)
 CI$table
 
-x <- plot(fit2,
-     type = "standard",
-     what = "OR",
-     effects = "coding",
-     confidence = 0.95,
-     show_est_ci = TRUE,
-     est_ci_header_cex = 0.5,
-     cex_y = 0.5,
-     mfrow = c(2, 2),
-     xlim = c(0, 5))
+x <- plot.llca(fit2,
+          type = "standard",
+          what = "OR",
+          effects = "coding",
+          confidence = 0.95,
+          show_est_ci = TRUE,
+          est_ci_header_cex = 0.5,
+          cex_y = 0.5,
+          mfrow = c(2, 2),
+          xlim = c(0, 5))
 
-# beta <- fit2@parameters$beta
-# vcov <- SE$vcov[1:9, 1:9]
-# matrix(sqrt(diag(vcov)), 3, 3)
-#
-# new_se <- effects_coding(beta, vcov)
-# new_se$beta_new
-# matrix(new_se$se_new, 3, 4)
 # new_se <- move_intercept(beta, vcov)
 # new_se$beta_new
 # matrix(new_se$se_new, 3, 3)
