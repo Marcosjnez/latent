@@ -153,18 +153,18 @@ data <- empathy[, 1:6]
 X <- as.matrix(empathy[, 7:8]) # Covariates
 
 set.seed(2026)
-fit0 <- lca(data = data, X = NULL, model = NULL,
+fit1 <- lca(data = data, X = NULL, model = NULL,
             item = rep("gaussian", ncol(data)),
             nclasses = 4L, penalties = TRUE,
             control = list(opt = "lbfgs",
                            step_maxit = 100,
                            tcg_maxit = 100),
             do.fit = TRUE)
-fit0@timing
-fit0@loglik # -1841.336
-fit0@penalized_loglik # -1844.333
-fit0@Optim$iterations
-fit0@Optim$ng
+fit1@loglik # -1841.336
+fit1@penalized_loglik # -1844.333
+fit1@Optim$iterations
+fit1@Optim$ng
+fit1@timing
 
 set.seed(2026)
 penalties <- list(
@@ -174,59 +174,51 @@ penalties <- list(
   sd    = list(alpha = 1)
 )
 Y <- as.matrix(empathy[, 9:10]) # Covariates
-fit <- lca(data = data, X = cbind(X, Y), model = fit0,
+fit2 <- lca(data = data, X = cbind(X, Y), model = fit1,
            item = rep("gaussian", ncol(data)),
            nclasses = 4L, penalties = TRUE,
+           do.fit = TRUE,
            control = list(opt = "lbfgs",
                           step_maxit = 100,
-                          tcg_maxit = 100),
-           do.fit = TRUE)
-fit@timing
-fit@loglik # -1747.135
-fit@penalized_loglik # -1750.669
-fit@Optim$iterations
-fit@Optim$convergence
-fit@Optim$ng
+                          tcg_maxit = 100))
+fit2@timing
+fit2@loglik # -1747.135
+fit2@penalized_loglik # -1750.566
+fit2@Optim$iterations
+fit2@Optim$convergence
+fit2@Optim$ng
 
-all.equal(fit0@parameters$items, fit@parameters$items)
+SE <- se(fit2, type = "standard", model = "model", digits = 4)
+SE$se
 
-beta <- fit@parameters$beta
-vcov <- SE$vcov[1:9, 1:9]
-matrix(sqrt(diag(vcov)), 3, 3)
+all.equal(fit1@parameters$items, fit2@parameters$items)
 
-new_se <- effects_coding(beta, vcov)
-new_se$beta_new
-matrix(new_se$se_new, 3, 4)
-new_se <- move_intercept(beta, vcov)
-new_se$beta_new
-matrix(new_se$se_new, 3, 3)
+# Plot model fit2 info:
+fit2
 
-# Plot model fit info:
-fit
-
-# Get fit indices:
-getfit(fit)
+# Get fit2 indices:
+getfit2(fit2)
 
 # Inspect model objects:
-latInspect(fit, what = "coefs", digits = 5)
-latInspect(fit, what = "classes", digits = 5)
-latInspect(fit, what = "profile", digits = 3)
-latInspect(fit, what = "posterior", digits = 3)
+latInspect(fit2, what = "coefs", digits = 5)
+latInspect(fit2, what = "classes", digits = 5)
+latInspect(fit2, what = "profile", digits = 3)
+latInspect(fit2, what = "posterior", digits = 3)
 
-predict(fit, new = rbind(c(2, 2, 2.428571, 2.142857),
+predict(fit2, new = rbind(c(2, 2, 2.428571, 2.142857),
                          c(1, 2, 3, 4)))
-fitted(fit)
+fitted(fit2)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "model", digits = 4)
+SE <- se(fit2, type = "standard", model = "model", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "model",
+CI <- ci(fit2, type = "standard", model = "model",
          confidence = 0.95, digits = 2)
 CI$table
 
-x <- plot(fit,
+x <- plot(fit2,
      type = "standard",
      what = "OR",
      effects = "coding",
@@ -236,6 +228,17 @@ x <- plot(fit,
      cex_y = 0.5,
      mfrow = c(2, 2),
      xlim = c(0, 5))
+
+# beta <- fit2@parameters$beta
+# vcov <- SE$vcov[1:9, 1:9]
+# matrix(sqrt(diag(vcov)), 3, 3)
+#
+# new_se <- effects_coding(beta, vcov)
+# new_se$beta_new
+# matrix(new_se$se_new, 3, 4)
+# new_se <- move_intercept(beta, vcov)
+# new_se$beta_new
+# matrix(new_se$se_new, 3, 3)
 
 #### CFA ####
 
@@ -248,12 +251,10 @@ model <- 'visual  =~ x1 + x2 + x3
 
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "dwls", positive = FALSE,
+            estimator = "fml", positive = FALSE,
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "newton",
-                           step_maxit = 100,
-                           tcg_maxit = 100))
+            control = NULL)
 fit@loss   # 0.283407
 fit@loglik # -3427.131
 fit@penalized_loglik # -3427.131
@@ -261,27 +262,6 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 fit@Optim$SE$se
-
-fit2 <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "dwlsr", positive = FALSE,
-            ordered = FALSE, std.lv = TRUE,
-            mimic = "latent", do.fit = FALSE,
-            control = list(opt = "grad",
-                           free_S = TRUE,
-                           step_maxit = 100,
-                           tcg_maxit = 100))
-
-control_manifold <- fit2@modelInfo$control_manifold
-control_transform <- fit2@modelInfo$control_transform
-control_estimator <- fit2@modelInfo$control_estimator
-control_optimizer <- fit2@modelInfo$control
-parameters <- fit@Optim$transparameters[fit2@modelInfo$parameters_labels]
-transparameters <- fit@Optim$transparameters[fit2@modelInfo$transparameters_labels]
-control_optimizer$parameters[[1]] <- parameters
-control_optimizer$transparameters[[1]] <- transparameters
-
-x <- get_hess(control_manifold, control_transform,
-              control_estimator, control_optimizer)
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
@@ -369,44 +349,9 @@ fit@Optim$SE$se
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
                     group = "school", estimator = "ml",
                     std.lv = TRUE, std.ov = TRUE)
-
-fit@Optim$se
-se(fit)$se
-fit2@Fit@se
-
 fit2@loglik$loglik
 fit2@Fit@fx*2
-
-# Plot model fit info:
-fit
-
-# Get fit indices:
-getfit(fit)
-
-# Get a summary:
-summary(fit)
-
-# Inspect model objects:
-latInspect(fit, what = "loadings", digits = 3)
-latInspect(fit, what = "psi", digits = 3)
-latInspect(fit, what = "uniquenesses", digits = 3)
-latInspect(fit, what = "theta", digits = 3)
-latInspect(fit, what = "model", digits = 3)
-latInspect(fit, what = "residuals", digits = 3)
-
-SE <- se(fit, type = "lavaan", model = "user", digits = 3)
-SE$table_se
-lavaan::inspect(fit2, what = "se")
-
-library(lavaan)
-fit2 <- cfa(model, data = HolzingerSwineford1939,
-            estimator = "ml", group = "school",
-            std.lv = TRUE, std.ov = TRUE)
-fit2
-summary(fit2, fit.measures = FALSE)
-fitMeasures(fit2)
-inspect(fit2, what = "est")
-inspect(fit2, what = "std")
+fit@loss
 
 #### CFA (nonpositive definite) ####
 
@@ -427,7 +372,6 @@ fit2 <- cfa(model, data = HolzingerSwineford1939,
 inspect(fit2, what = "est") # NEGATIVE VARIANCE
 det(inspect(fit2, what = "est")$theta)
 fit2@Fit@fx*2
-fit2@loglik$loglik
 
 # With latent:
 set.seed(2026)
@@ -436,9 +380,7 @@ fit <- lcfa(data = HolzingerSwineford1939, model = model,
             penalties = list(logdet = list(w = 0.01)),
             ordered = FALSE, std.lv = TRUE,
             mimic = "latent", do.fit = TRUE,
-            control = list(opt = "grad", maxit = 1000L,
-                           cores = 20L, rstarts = 20L, eps = 1e-05,
-                           tcg_maxit = 10))
+            control = NULL)
 
 fit@loglik # -3422.761 (ML)
 fit@penalized_loglik # -3422.766 (ML)
@@ -447,35 +389,7 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@Optim$ng
 fit@timing
-
-fit2@Fit@fx*2
-fit@loss
-
-# Plot model fit info:
-fit
-
-# Get fit indices:
-getfit(fit)
-
-# Inspect model objects:
-latInspect(fit, what = "loadings", digits = 3)
-latInspect(fit, what = "psi", digits = 3)
-latInspect(fit, what = "uniquenesses", digits = 3)
-det(latInspect(fit, what = "theta", digits = 3)[[1]])
-round(latInspect(fit, what = "theta", digits = 3)[[1]], 3)
-latInspect(fit, what = "model", digits = 3)
-
-theta <- latInspect(fit, what = "theta", digits = 3)[[1]]
-det(theta)
-eigen(theta)$values
-sum(eigen(theta)$values)
-# solve(theta)
-
-psi <- latInspect(fit, what = "psi", digits = 3)[[1]]
-det(psi)
-eigen(psi)$values
-sum(eigen(psi)$values)
-# solve(psi)
+fit@Optim$SE$se
 
 #### Multigroup CFA (nonpositive definite) ####
 
@@ -501,14 +415,10 @@ fitmeasures(fit2, fit.measures = c("cfi", "tli", "rmsea", "srmr"))
 # With latent:
 fit <- lcfa(data = HolzingerSwineford1939,
             model = model, group = "school",
-            estimator = "ml",
-            ordered = FALSE, std.lv = TRUE,
-            mimic = "latent",
+            estimator = "ml", ordered = FALSE,
+            std.lv = TRUE, mimic = "latent",
             positive = TRUE, penalties = TRUE,
-            do.fit = TRUE,
-            control = list(opt = "lbfgs", maxit = 284L,
-                           cores = 1L, rstarts = 1L,
-                           print = TRUE, print_interval = 30))
+            do.fit = TRUE, control = NULL)
 
 fit@loglik # -3415.092 (ML)
 fit@penalized_loglik # -3415.095 (ML)
@@ -516,33 +426,6 @@ fit@loss # 0.1419955 (ULS) / 0.3327037 (ML)
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
-
-# Plot model fit info:
-fit
-
-# Get fit indices:
-getfit(fit)
-
-# Inspect model objects:
-latInspect(fit, what = "loadings", digits = 3)
-latInspect(fit, what = "psi", digits = 3)
-latInspect(fit, what = "uniquenesses", digits = 3)
-latInspect(fit, what = "model", digits = 3)
-
-ps <- fit@transformed_pars[[2]]$pj_psi
-crossprod(ps)
-
-theta <- latInspect(fit, what = "theta", digits = 3)[[1]]
-det(theta)
-eigen(theta)$values
-sum(eigen(theta)$values)
-# solve(theta)
-
-psi <- latInspect(fit, what = "psi", digits = 3)[[1]]
-det(psi)
-eigen(psi)$values
-sum(eigen(psi)$values)
-# solve(psi)
 
 #### Polychorics ####
 
@@ -581,22 +464,6 @@ fit@timing
 x <- Turbofuns:::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)
 x$ACM
 H[13:21, 13:21]
-
-fit@modelInfo$transparameters_labels
-fit@modelInfo$poly_trans
-fit@modelInfo$control_manifold
-fit@modelInfo$control_transform
-fit@modelInfo$control_estimator
-fit@modelInfo$control$transparameters[[1]]
-fit@modelInfo$control$param2transparam
-
-fit <- polyfast(as.matrix(mooc))
-fit$iters
-R <- fit$correlation
-neg_value <- eigen(R)$values < 0
-
-taus <- fit$thresholds
-n <- fit$contingency_tables
 
 #### CFA polychorics ####
 
@@ -681,3 +548,7 @@ VCOV <- get_vcov(control_manifold, control_transform, control_estimator,
                  control_optimizer, x$h)
 VCOV$vcov
 diag(VCOV$vcov)
+
+x <- get_jacob(control_manifold, control_transform,
+          control_estimator, control_optimizer)
+x

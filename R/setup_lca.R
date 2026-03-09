@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/03/2026
+# Modification date: 09/03/2026
 
 get_full_lca_model <- function(data_list, nclasses, item,
                                model = NULL, control = NULL) {
@@ -47,7 +47,7 @@ get_full_lca_model <- function(data_list, nclasses, item,
     repitems <- rep(gauss, times = nclasses)
     repclasses <- rep(1:nclasses, each = Jgauss)
     mu <- paste("mu[", repitems, "|", repclasses, "]", sep = "")
-    s <- paste("s[", repitems, "|", repclasses, "]", sep = "")
+    s <- paste("log_sigma[", repitems, "|", repclasses, "]", sep = "")
     lca_param$mu <- matrix(mu, nrow = Jgauss, ncol = nclasses)
     lca_param$s <- matrix(s, nrow = Jgauss, ncol = nclasses)
     colnames(lca_param$mu) <- colnames(lca_param$s) <-
@@ -692,7 +692,7 @@ get_lca_structures <- function(data_list, full_model, control) {
   }
 
   control_estimator <- get_estimators(estimators = estimators,
-                                      structures = lca_trans)
+                                      structures = lca_all)
 
   #### Return ####
 

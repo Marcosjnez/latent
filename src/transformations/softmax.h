@@ -10,9 +10,10 @@ class softmax:public transformations {
 
 public:
 
+  bool constraints;
   arma::uvec indices_in, indices_out;
-  arma::mat jacob;
   arma::vec theta, probs, Jdx;
+  arma::mat jacob;
 
   void transform(arguments_optim& x) {
 
@@ -71,24 +72,19 @@ public:
   void dconstraints(arguments_optim& x) {
 
     constraints = true;
-    dconstr.set_size(indices_out.n_elem);
-    dconstr.ones();
 
   }
 
   void outcomes(arguments_optim& x) {
 
-    dconstraints(x);
-    int p = indices_out.n_elem;
-    arma::vec chisq_p(p, arma::fill::value(p));
+    arma::vec dconst(indices_out.n_elem);
+    dconst.ones();
 
-    vectors.resize(2);
-    vectors[0] = dconstr;
-    vectors[1] = chisq_p;
+    vectors.resize(1);
+    vectors[0] = dconst;
 
-    matrices.resize(2);
+    matrices.resize(1);
     matrices[0] = jacob;
-    matrices[1] = sum_djacob;
 
   }
 

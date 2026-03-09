@@ -10,8 +10,8 @@ class matrix_inverse:public transformations {
 
 public:
 
-  arma::uvec indices_in, indices_out;
   int p;
+  arma::uvec indices_in, indices_out;
   arma::mat X, Xinv, dX, dXinv, grad_out, grad_in, jacob;
 
   void transform(arguments_optim& x) {

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/12/2025
+# Modification date: 09/03/2026
 #'
 #' @title
 #' Latent Class Analysis.
@@ -94,20 +94,19 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                 X = NULL, penalties = TRUE, model = NULL, mimic = "LG",
                 start = NULL, do.fit = TRUE, control = NULL, verbose = TRUE) {
 
+  ## store original call
+  mc  <- match.call()
+  args <- as.list(match.call(expand.dots = TRUE))[-1]
+
+  original_model <- model
+  original_X <- X
+
   # Fix the measurement part of the model if a previous llca fit is available:
   # This is usually done for two-step estimators of covariate coefficients.
   if(class(model) == "llca") {
 
-    model_list <- model@transformed_pars
-    model_list$beta <- NULL
-
-    # Fit the model with covariates fixing the measurement part:
-    fit <- lca(data, nclasses = nclasses, item = item,
-               X = X, penalties = penalties, model = model_list,
-               start = start, do.fit = do.fit, control = control,
-               verbose = verbose)
-
-    return(fit)
+    model <- model@transformed_pars
+    model$beta <- NULL
 
   }
 
@@ -260,6 +259,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   data_list$ncov_patterns <- ncov_patterns
   data_list$cov_full2short <- cov_full2short
   data_list$cov_short2full <- cov_short2full
+  data_list$original_X <- original_X
+  data_list$args <- args
 
   #### Initialize objects to store all the models ####
 
@@ -285,9 +286,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     if(nclasses < 1L) {
       stop("nclasses must be a positive integer")
     }
-
-    ## store original call
-    mc  <- match.call()
 
     #### Create the model ####
 
@@ -325,6 +323,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                       nparam = nparam,
                       dof = npossible_patterns - nparam,
                       ntrans = ntrans,
+                      original_model = original_model,
                       model = log_model,
                       prob_model = prob_model,
                       parameters_labels = parameters_labels,
@@ -365,64 +364,26 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     }
 
-    if(control$opt == "em-lbfgs") {
-
-      # Run first EM and then LBFGS:
-
-      # Backup for LBFGS:
-      maxit_lbfgs <- control$maxit
-      eps_lbfgs <- control$eps
-
-      # Setup for EM:
-      control$opt <- "em"
-      control$maxit <- control$maxit_em
-      control$eps <- control$em_eps
-      control$cores <- min(control$rstarts, control$cores)
-
-      # Perform EM:
-      xEM <- optimizer(control_manifold = control_manifold,
-                       control_transform = control_transform,
-                       control_estimator = control_estimator,
-                       control_optimizer = control)
-
-      # Reset everything for LBFGS:
-      # Put as many rstarts in LBFGS as number of selected iterations in EM:
-      rstarts_lbfgs <- control$pick
-      control$rstarts <- rstarts_lbfgs
-      control$pick <- 0L # Set to 0L to get a full output next time
-      control$opt <- "lbfgs"
-      control$maxit <- maxit_lbfgs # Reset number of iteration for LBFGS
-      control$eps <- eps_lbfgs # Reset tolerance value for LBFGS
-
-      # Update the initial parameters values for LBFGS:
-      control$parameters <- control$transparameters <-
-        vector("list", length = rstarts_lbfgs)
-      for(i in 1:rstarts_lbfgs) {
-        control$parameters[[i]] <- xEM[[i]]$parameters
-        control$transparameters[[i]] <- xEM[[i]]$transparameters
-      }
-
-    }
-
     control$cores <- min(control$rstarts, control$cores)
     # Perform the optimization (fit the model):
-    x <- optimizer(control_manifold = control_manifold,
+    Optim <- optimizer(control_manifold = control_manifold,
                    control_transform = control_transform,
                    control_estimator = control_estimator,
                    control_optimizer = control)
 
     # Collect all the information about the optimization:
 
-    Optim <- x
+    names(Optim$parameters) <- modelInfo$parameters_labels
+    names(Optim$transparameters) <- modelInfo$transparameters_labels
 
     #### Process the outputs ####
 
     # Logarithm likelihood:
-    loglik <- x$outputs$estimators$doubles[[1]][1]
-    penalized_loglik <- sum(unlist(lapply(x$outputs$estimators$doubles,
+    loglik <- Optim$outputs$estimators$doubles[[1]][1]
+    penalized_loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
                                           FUN = \(x) x[[1]])))
     # Logarithm likelihood of each response pattern:
-    loglik_case <- x$outputs$estimators$vectors[[1]][[1]]
+    loglik_case <- Optim$outputs$estimators$vectors[[1]][[1]]
     # Sum of logarithm likelihoods by response pattern:
     loglik_pattern <- weights * loglik_case
 
@@ -435,7 +396,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Estimated "counts" for each response pattern:
     estimated <- exp(loglik_case) * nobs
     # Posterior:
-    posterior <- exp(matrix(x$outputs$estimators$matrices[[1]][[2]],
+    posterior <- exp(matrix(Optim$outputs$estimators$matrices[[1]][[2]],
                             nrow = npatterns, ncol = nclasses))
     colnames(posterior) <- paste("P(", "Class", 1:nclasses, "|Y)", sep = "")
     # Posterior classification:
@@ -460,12 +421,12 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     # Create the parameter table:
     selection <- match(unlist(prob_model), transparameters_labels)
-    out <- x$transparameters[selection]
+    out <- Optim$transparameters[selection]
     user_model <- fill_list_with_vector(prob_model, out)
     user_model <- allnumeric(user_model)
 
     selection <- match(unlist(log_model), transparameters_labels)
-    out <- x$transparameters[selection]
+    out <- Optim$transparameters[selection]
     raw_model <- fill_list_with_vector(log_model, out)
     raw_model <- allnumeric(raw_model)
 
@@ -508,11 +469,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     rownames(posterior) <- names(state) <-
       names(loglik_case) <- rownames(data)
 
-    if(control$opt == "em-lbfgs") {
-      elapsed <- xEM$elapsed + x$elapsed
-    } else {
-      elapsed <- x$elapsed
-    }
+    elapsed <- Optim$elapsed
 
     llca_list[[NK]] <- new("llca",
                            version            = as.character( packageVersion('latent') ),

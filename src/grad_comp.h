@@ -187,9 +187,6 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
 
   result["numdg"] = numdg;
 
-  // final_estimator->E(x, xestimators);
-  // final_estimator->M(x, xestimators);
-
   return result;
 
 }

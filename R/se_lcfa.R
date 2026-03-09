@@ -100,13 +100,9 @@ block_diag <- function(mats) {
   out
 }
 
-# Sandwhich estimator of standard errors:
 general_se <- function(fit, type = "standard") {
 
   ngroups <- fit@data_list$ngroups
-
-  # Get the hessian matrix:
-  SE <- standard_se(fit = fit)
 
   # Get the matrix of second-order derivatives between R and the parameters:
   VAR <- vector("list", length = ngroups)
@@ -152,8 +148,12 @@ general_se <- function(fit, type = "standard") {
   model_pars <- fit2@modelInfo$parameters_labels %in% fit@modelInfo$parameters_labels
   nuisance_pars <- !model_pars
   df2_dparamdR <- x$h[nuisance_pars, model_pars]
-  # Sandwich estimator of standard errors:
+
+  # Ham of sandwich estimator:
   B <- t(df2_dparamdR) %*% ACOV %*% df2_dparamdR
+
+  # Get the hessian matrix of second-step model:
+  SE <- standard_se(fit = fit)
   H_inv <- solve(SE$H)
   SE$vcov <- H_inv %*% B %*% H_inv
 

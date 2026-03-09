@@ -11,6 +11,7 @@ class identity:public transformations {
 public:
 
   arma::uvec indices_in, indices_out;
+  arma::mat jacob;
 
   void transform(arguments_optim& x) {
 
@@ -58,6 +59,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     matrices.resize(1);
+    matrices[0] = jacob;
 
   }
 

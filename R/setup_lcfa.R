@@ -392,17 +392,17 @@ get_cfa_structures <- function(data_list, full_model, control) {
   for(i in 1:ngroups) {
 
     estimator <- tolower(estimator)
-    if(estimator == "uls" || estimator == "dwls") {
-      cfa_estimator <- "cfa_dwls"
-    } else if(estimator == "ml") {
-      cfa_estimator <- "cfa_ml"
-    } else if(estimator == "ml2") {
-      cfa_estimator <- "cfa_ml2"
-    } else if(estimator == "mlr") {
-      cfa_estimator <- "cfa_ml_R"
-    } else if(estimator == "ulsr" || estimator == "dwlsr") {
-      cfa_estimator <- "cfa_dwls_R"
-    }
+    cfa_estimator <- switch(estimator,
+                            uls = "cfa_dwls",
+                            dwls  = "cfa_dwls",
+                            ulsr = "cfa_dwls_error",
+                            dwlsr  = "cfa_dwls_error",
+                            ml = "cfa_fml",
+                            fml  = "cfa_fml",
+                            mlr = "cfa_fml_error",
+                            fmlr  = "cfa_fml_error",
+                            stop("Unknown estimator: ", estimator)
+    )
 
     lower_diag <- lower.tri(trans[[model_group[i]]], diag = TRUE)
     estimators[[k]] <- list(estimator = cfa_estimator,

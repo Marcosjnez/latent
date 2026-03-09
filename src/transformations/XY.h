@@ -10,8 +10,8 @@ class XY: public transformations {
 
 public:
 
-  arma::uvec indices_X, indices_Y, indices_XY, indices_in, indices_out;
   int p, q;
+  arma::uvec indices_X, indices_Y, indices_XY, indices_in, indices_out;
   arma::mat X, Y, dX, dY, dXY, grad_out, grad_in_X, grad_in_Y, jacob;
 
   void transform(arguments_optim& x) {

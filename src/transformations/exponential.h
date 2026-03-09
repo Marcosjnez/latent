@@ -70,9 +70,8 @@ public:
     vectors[0] = dconstr;
     vectors[1] = chisq_p;
 
-    matrices.resize(2);
+    matrices.resize(1);
     matrices[0] = jacob;
-    matrices[1] = sum_djacob;
 
   }
 

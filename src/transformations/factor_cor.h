@@ -10,9 +10,10 @@ class factor_cor:public transformations {
 
 public:
 
+  bool constraints;
+  int p, q;
   arma::uvec indices_lambda, indices_psi, indices_theta, indices_in,
   indices_out, diag_psi, diag_theta, lower_psi, lower_theta, lower_diag;
-  int p, q;
   arma::mat R, Rhat, lambda, psi, theta, lambda_psi, glambda, gpsi, gtheta,
   dlambda, dglambda, dpsi, dRhat, dgpsi, dtheta, dgtheta, grad_out, jacob;
 
@@ -134,12 +135,8 @@ public:
     vectors.resize(1);
     vectors[0] = theta.diag();
 
-    matrices.resize(5);
+    matrices.resize(1);
     matrices[0] = jacob;
-    matrices[1] = lambda;
-    matrices[2] = psi;
-    matrices[3] = theta;
-    matrices[4] = Rhat;
 
   }
 

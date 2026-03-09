@@ -1,25 +1,29 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 15/02/2026
+ * Modification date: 07/03/2026
  */
 
 /*
  * Confirmatory factor analysis (maximum-likelihood)
  */
 
-class cfa_ml: public estimators {
+class cfa_fml_error: public estimators {
 
 public:
 
   int p, n;
-  double w, logdetS, plogpi2;
-  arma::uvec indices, diag, lower_diag;
-  arma::mat S, Shat, residuals, dShat, Shat_inv, gShat, I;
+  double w, logdetS, logdetShat, plogpi2;
+  arma::uvec indices_S, indices_Shat, lower_diag;
+  arma::mat S, Shat, residuals, dShat, dS, Shat_inv, S_inv, gShat, gS, I;
 
   void param(arguments_optim& x) {
 
-    Shat = arma::reshape(x.transparameters(indices), p, p);
+    S = arma::reshape(x.transparameters(indices_S), p, p);
+    Shat = arma::reshape(x.transparameters(indices_Shat), p, p);
+
+    logdetS = arma::log_det_sympd(S);
+    logdetShat = arma::log_det_sympd(Shat);
 
     if(!Shat.is_sympd()) {
       arma::vec eigval;
@@ -34,35 +38,43 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = w*n*0.5*(plogpi2 +
-      arma::log_det_sympd(Shat) +
-      arma::accu(S % Shat_inv));
+    f = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p);
     x.f += f;
 
   }
 
   void G(arguments_optim& x) {
 
+    S_inv = arma::inv_sympd(S);
+    gS = Shat_inv - S_inv;
     gShat = Shat_inv * (I - S * Shat_inv);
 
-    x.grad.elem(indices) += w*n*0.5*arma::vectorise(gShat);
+    x.grad.elem(indices_S) += w*arma::vectorise(gS);
+    x.grad.elem(indices_Shat) += w*arma::vectorise(gShat);
 
   }
 
   void dG(arguments_optim& x) {
 
-    dShat = arma::reshape(x.dtransparameters(indices), p, p);
+    dS = arma::reshape(x.dtransparameters(indices_S), p, p);
+    dShat = arma::reshape(x.dtransparameters(indices_Shat), p, p);
 
+    arma::mat dS_inv = -S_inv * dS * S_inv;
     arma::mat dShat_inv = -Shat_inv * dShat * Shat_inv;
     arma::mat dgShat = dShat_inv * (I - S * Shat_inv) - Shat_inv * S * dShat_inv;
 
-    x.dgrad.elem(indices) += w*n*0.5*arma::vectorise(dgShat);
+    x.dgrad.elem(indices_S) += w*arma::vectorise(dShat_inv - dS_inv);
+    x.dgrad.elem(indices_Shat) += w*arma::vectorise(dgShat);
 
   }
 
   void outcomes(arguments_optim& x) {
 
     doubles.resize(5);
+    double loglik = w*n*0.5*(-plogpi2 -
+                       arma::log_det_sympd(Shat) -
+                       arma::accu(S % Shat_inv));
+    arma::mat I(p, p, arma::fill::eye);
     double loglik_indep = w*n*0.5*(-plogpi2 -
                                    arma::trace(S));
     arma::mat Sinv = arma::inv_sympd(S);
@@ -70,7 +82,7 @@ public:
                                  arma::log_det_sympd(S) -
                                  arma::accu(S % Sinv));
     doubles[0] =  f;             // loss   actual model
-    doubles[1] = -f;             // loglik actual model
+    doubles[1] =  loglik;        // loglik actual model
     doubles[2] =  w;             // weight scalar
     doubles[3] =  loglik_indep;  // loglik independence model
     doubles[4] =  loglik_sat;    // loglik saturated model
@@ -84,32 +96,27 @@ public:
 
 };
 
-cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
+cfa_fml_error* choose_cfa_fml_error(const Rcpp::List& estimator_setup) {
 
-  cfa_ml* myestimator = new cfa_ml();
+  cfa_fml_error* myestimator = new cfa_fml_error();
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
-  arma::mat S = estimator_setup["R"];
   double w = estimator_setup["w"];
   int n = estimator_setup["n"];
+  int p = estimator_setup["p"];
 
-  int p = S.n_rows;
-  double logdetS = arma::log_det_sympd(S);
   arma::mat Shat(p, p, arma::fill::zeros);
-  arma::uvec diag = arma::regspace<arma::uvec>(0, p + 1, p*p - 1);
-  arma::uvec lower_diag = arma::trimatl_ind(arma::size(S));
+  arma::uvec lower_diag = arma::trimatl_ind(arma::size(Shat));
   double plogpi2 = p*std::log(arma::datum::pi*2);
   arma::mat I(p, p, arma::fill::eye);
 
-  myestimator->indices = indices[0];
+  myestimator->indices_Shat = indices[0];
+  myestimator->indices_S = indices[1];
   myestimator->p = p;
   myestimator->n = n;
-  myestimator->S = S;
   myestimator->w = w;
-  myestimator->logdetS = logdetS;
   myestimator->Shat = Shat;
   myestimator->dShat = Shat;
-  myestimator->diag = diag;
   myestimator->lower_diag = lower_diag;
   myestimator->plogpi2 = plogpi2;
   myestimator->I = I;

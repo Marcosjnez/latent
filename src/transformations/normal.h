@@ -12,9 +12,9 @@ class normal:public transformations {
 
 public:
 
+  int S, J, I, n_in, n_out;
   arma::uvec indices_mu, indices_sigma, indices_in, indices_out;
   arma::mat y, mu, sigma, sigma2, sigma3, sigma4, dmu, dsigma, jacob;
-  int S, J, I, n_in, n_out;
 
   void transform(arguments_optim& x) {
 
@@ -179,9 +179,8 @@ public:
     vectors[0] = dconstr;
     vectors[1] = chisq_p;
 
-    matrices.resize(2);
+    matrices.resize(1);
     matrices[0] = jacob;
-    matrices[1] = sum_djacob;
 
   }
 

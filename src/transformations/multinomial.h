@@ -10,12 +10,12 @@ class multinomial:public transformations {
 
 public:
 
+  int S, J, I, n_in, n_out;
   arma::uvec indices_in, indices_out, K;
   arma::vec trans, logtrans, df_dloglik;
   std::vector<arma::mat> peta, eta, df_dpeta, indices;
   std::vector<arma::mat> dpeta, deta;
   arma::mat y, jacob;
-  int S, J, I, n_in, n_out;
 
   void transform(arguments_optim& x) {
 
@@ -175,9 +175,8 @@ public:
     vectors[0] = dconstr;
     vectors[1] = chisq_p;
 
-    matrices.resize(2);
+    matrices.resize(1);
     matrices[0] = jacob;
-    matrices[1] = sum_djacob;
 
   }
 

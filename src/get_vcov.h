@@ -53,11 +53,29 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
   final_estimator->G(x, xestimators);
-  final_transform->update_grad(x, xtransforms);
-  final_transform->jacobian(x, xtransforms);
+  // final_transform->update_grad(x, xtransforms);
+  // final_transform->jacobian(x, xtransforms);
 
   x.h = H;
-  if(x.h.is_empty()) Rf_error("Please, provide the Hessian matrix");
+  if(x.h.is_empty()) {
+
+    int npar = x.parameters.n_elem;
+    x.h.set_size(npar, npar);
+
+    for(int i=0; i < npar; ++i) {
+
+      x.dparameters.zeros();
+      x.dparameters(i) = 1.00;
+
+      final_transform->dtransform(x, xtransforms);
+      final_estimator->dG(x, xestimators);
+      final_transform->update_dgrad(x, xtransforms);
+      x.h.col(i) = x.dg;
+
+    }
+
+  }
+
   final_transform->update_vcov(x, xtransforms);
 
   result["vcov"] = x.vcov;

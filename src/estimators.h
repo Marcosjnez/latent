@@ -62,9 +62,10 @@ public:
 
 #include "estimators/cfa/cfa_dwls.h"
 #include "estimators/cfa/cfa_ml.h"
-#include "estimators/cfa/cfa_ml2.h"
-#include "estimators/cfa/cfa_ml_R.h"
-#include "estimators/cfa/cfa_dwls_R.h"
+#include "estimators/cfa/cfa_fml.h"
+#include "estimators/cfa/cfa_dwls_error.h"
+#include "estimators/cfa/cfa_ml_error.h"
+#include "estimators/cfa/cfa_fml_error.h"
 
 #include "estimators/loglik/gaussian_loglik.h"
 #include "estimators/loglik/poisson_loglik.h"
@@ -76,10 +77,11 @@ using EstimatorFactory = std::function<estimators*(const Rcpp::List&)>;
 
 static const std::unordered_map<std::string, EstimatorFactory> estimator_factories = {
   { "cfa_dwls",                    choose_cfa_dwls                  },
-  { "cfa_dwls_R",                  choose_cfa_dwls_R                },
+  { "cfa_dwls_error",              choose_cfa_dwls_error            },
   { "cfa_ml",                      choose_cfa_ml                    },
-  { "cfa_ml2",                     choose_cfa_ml2                   },
-  { "cfa_ml_R",                    choose_cfa_ml_R                  },
+  { "cfa_fml",                     choose_cfa_fml                   },
+  { "cfa_fml_error",               choose_cfa_fml_error             },
+  { "cfa_ml_error",                choose_cfa_ml_error              },
   { "cf",                          choose_cf                        },
   { "oblimin",                     choose_oblimin                   },
   { "geomin",                      choose_geomin                    },

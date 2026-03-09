@@ -57,10 +57,12 @@ get_estimators <- function(estimators, structures) {
                           bayesconst2        = c("K", "alpha", "N", "pihat"),
                           bayesconst3        = c("K", "alpha", "N", "varshat"),
                           logdetmat          = c("lower_indices", "logdetw", "p"),
-                          cfa_ml             = c("R", "w", "q", "n"),
-                          cfa_ml_R           = c("w", "p", "n"),
                           cfa_dwls           = c("q", "w", "R", "W"),
-                          cfa_dwls_R         = c("w", "p", "W"),
+                          cfa_ml             = c("R", "w", "n"),
+                          cfa_fml            = c("R", "w", "n"),
+                          cfa_dwls_error     = c("w", "p", "W"),
+                          cfa_fml_error      = c("w", "p", "n"),
+                          cfa_ml_error       = c("w", "p", "n"),
                           stop("Unknown estimator: ", estimator)
     )
 

@@ -9,7 +9,6 @@ Rcpp::List get_jacob(Rcpp::List control_manifold,
                      Rcpp::List control_estimator,
                      Rcpp::List control_optimizer) {
 
-  Rcpp::List result;
   arguments_optim x;
 
   x.nmanifolds = control_manifold.size();
@@ -56,7 +55,12 @@ Rcpp::List get_jacob(Rcpp::List control_manifold,
   final_transform->jacobian(x, xtransforms);
   final_transform->outcomes(x, xtransforms);
 
-  result["matrices"] = std::get<2>(x.outputs_transform);
+  Rcpp::List result(x.ntransforms);
+  for (int i = 0; i < x.ntransforms; ++i) {
+    // xtransforms[i]->outcomes(x);
+    arma::mat jacob = std::get<2>(x.outputs_transform)[i][0];
+    result[i] = jacob;
+  }
 
   return result;
 

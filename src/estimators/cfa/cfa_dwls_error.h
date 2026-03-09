@@ -8,7 +8,7 @@
  * Confirmatory factor analysis (weighted least-squares)
  */
 
-class cfa_dwls_R: public estimators {
+class cfa_dwls_error: public estimators {
 
 public:
 
@@ -73,9 +73,9 @@ public:
 
 };
 
-cfa_dwls_R* choose_cfa_dwls_R(const Rcpp::List& estimator_setup) {
+cfa_dwls_error* choose_cfa_dwls_error(const Rcpp::List& estimator_setup) {
 
-  cfa_dwls_R* myestimator = new cfa_dwls_R();
+  cfa_dwls_error* myestimator = new cfa_dwls_error();
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   int p = estimator_setup["p"];

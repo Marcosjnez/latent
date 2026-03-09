@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/10/2025
+# Modification date: 09/03/2026
 #'
 #' @title
 #' Standard Errors
@@ -43,6 +43,7 @@ se.llca <- function(fit, type = "standard", model = "model", digits = 3) {
 
     model <- fit@modelInfo$model
     est <- fit@parameters
+    # model <- fit@modelInfo$lca_param
     fit@modelInfo$control$minimal_se <- TRUE
     fit@modelInfo$control$se_names <- fit@modelInfo$parameters_labels
 
@@ -50,18 +51,26 @@ se.llca <- function(fit, type = "standard", model = "model", digits = 3) {
     stop("Unknown model")
   }
 
-  if(type == "standard") {
+  if(class(fit@modelInfo$original_model) == "llca") {
 
-    SE <- standard_se(fit = fit)
-    SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
-
-  } else if(type == "robust") {
-
-    # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-    SE <- robust_se(fit = fit)
+    SE <- se_twostep(fit2 = fit, type = type)
 
   } else {
-    stop("Unknown type")
+
+    if(type == "standard") {
+
+      SE <- standard_se(fit = fit)
+      SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
+
+    } else if(type == "robust") {
+
+      # Use H to compute vcov = solve(H) %*% B %*% solve(H):
+      SE <- robust_se(fit = fit)
+
+    } else {
+      stop("Unknown type")
+    }
+
   }
 
   # Select the parameter labels for the table:
@@ -74,7 +83,8 @@ se.llca <- function(fit, type = "standard", model = "model", digits = 3) {
   # Tables:
   table_se <- fill_list_with_vector(model, se)
   table_se <- allnumeric(table_se)
-  table <- combine_est_se(est, table_se, digits = digits)
+  table <- combine_est_se(est, table_se,
+                          digits = digits)
 
   # Return:
   result <- list()
@@ -84,7 +94,7 @@ se.llca <- function(fit, type = "standard", model = "model", digits = 3) {
   result$vcov <- SE$vcov
   result$B <- SE$B
   result$H <- SE$H
-  result$HBinvH <- SE$HBinvH
+  result$newH <- SE$newH
 
   return(result)
 
@@ -126,9 +136,6 @@ robust_se <- function(fit) {
                 control_transform = control_transform,
                 control_estimator = control_estimator,
                 control_optimizer = control_optimizer)$h
-  # For numerical stability in optimization, the loglik is divided by N
-  # So multiply the Hessian by N:
-  # H <- H*fit@data_list$nobs
 
   #### Collect the gradient by response pattern ####
 
@@ -160,8 +167,6 @@ robust_se <- function(fit) {
 
   }
 
-  # nest <- K + npatterns
-  # weights <- c(rep(1, times = K), weights)
   nest <- npatterns
   f <- vector(length = nest)
   g <- matrix(NA, nrow = nest, ncol = nparam)
@@ -202,7 +207,7 @@ robust_se <- function(fit) {
     fit@modelInfo$parameters_labels
 
   result$H <- H
-  result$HBinvH <- newH
+  result$newH <- newH
 
   return(result)
 

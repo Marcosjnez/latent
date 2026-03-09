@@ -151,7 +151,7 @@ public:
 
     x.transparameters(x.transparam2param) = x.parameters;
 
-    if(!x.minimal_se) {
+    // if(!x.minimal_se) {
 
       for(int i=0; i < x.ntransforms; ++i) {
 
@@ -159,7 +159,7 @@ public:
 
       }
 
-    }
+    // }
 
   }
 

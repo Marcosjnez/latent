@@ -262,7 +262,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   all_estimators <- unlist(lapply(modelInfo$control_estimator, FUN = \(x) x$estimator))
   indices_cfa <- which(all_estimators == "cfa_dwls" |
                          all_estimators == "cfa_ml" |
-                         all_estimators == "cfa_ml2")
+                         all_estimators == "cfa_fml")
 
   # Get the indices of the estimator structures "logdetmat" (penalties):
   indices_logdetmat <- which(all_estimators == "logdetmat")
