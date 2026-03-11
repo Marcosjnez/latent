@@ -141,6 +141,10 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
       param[[S_group[i]]] <- correl[[i]]$R
     }
 
+    if(!control$free_S_diag) {
+      diag(param[[S_group[i]]]) <- "1"
+    }
+
     # Create the target matrices for positive-definite constraints:
     if(positive) {
 

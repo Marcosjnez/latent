@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/03/2026
+# Modification date: 11/03/2026
 
 #### Install latent ####
 
@@ -248,8 +248,9 @@ model <- 'visual  =~ x1 + x2 + x3
 
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "fml", positive = FALSE,
+            estimator = "dwls", positive = FALSE,
             ordered = FALSE, std.lv = TRUE,
+            acov = "robust",
             mimic = "latent", do.fit = TRUE,
             control = NULL)
 fit@loss   # 0.283407
@@ -268,6 +269,13 @@ fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
 # Same loss value: OK
 fit2@Fit@fx*2
 fit@loss
+
+W <- lavInspect(fit2, "se")
+W2 <- matrix(0, 9, 9)
+W2[lower.tri(W2, diag = TRUE)] <- diag(W)
+W2 <- (W2+t(W2))/2
+round(W2, 2)
+round(fit@data_list$correl[[1]]$W, 2)
 
 fit@loglik
 # WHAT'S THE DIFFERENCE?
@@ -389,13 +397,17 @@ names(Ns) <- samples
 
 # Subset the items pertaining to the HEXACO-100
 selection <- 5:104
-selection <- 5:10
+selection <- 5:7
 full <- hexaco[, selection]
 
 mooc <- full[hexaco$sample == samples[2], ]
 dim(mooc)
 set.seed(2026)
+# POLY <- polyfast(as.matrix(mooc))
+# taus <- lapply(POLY$thresholds, FUN = \(x) x[-c(1, length(x))])
 fit <- lpoly(data = mooc, do.fit = TRUE, penalties = TRUE,
+             # model = list(taus = taus),
+             method = "crossprodn",
              control = list(opt = "newton",
                             maxit = 500,
                             step_maxit = 50,
@@ -420,6 +432,9 @@ H[13:21, 13:21]
 
 #### CFA polychorics ####
 
+library(latent)
+library(lavaan)
+
 samples <- unique(hexaco$sample) # industry mooc fire student dutch
 Ns <- sapply(samples, FUN = function(x) sum(hexaco$sample == x))
 names(Ns) <- samples
@@ -437,14 +452,83 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
              SEN =~ hexemsen44 + hexemsen164 + hexemsen20 + hexemsen68"
 
 fit <- lcfa(model = model.EM, data = mooc,
-            ordered = TRUE, estimator = "ml", do.fit = TRUE,
-            control = NULL)
+            ordered = TRUE, estimator = "dwls",
+            do.fit = TRUE, control = NULL)
 fit@loglik # -90154.77
 fit@penalized_loglik # -90154.77
 fit@loss # 90154.77
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
+fit@Optim$SE$se
+
+# With lavaan:
+fit2 <- lavaan::cfa(model = model.EM, data = mooc,
+                    ordered = TRUE,
+                    estimator = "dwls",
+                    # likelihood = "wishart",
+                    std.lv = TRUE, std.ov = TRUE)
+# Same loss value: OK
+fit2@Fit@fx*2
+fit@loss
+
+lavaan::inspect(fit2, what = "se")$lambda
+fit@Optim$SE$table_se$lambda.group1
+diag(lavaan::inspect(fit2, what = "se")$theta)
+diag(fit@Optim$SE$table_se$theta.group1)
+lavaan::inspect(fit2, what = "se")$psi
+fit@Optim$SE$table_se$psi.group1
+
+W <- lavInspect(fit2, "wls.v")
+W2 <- matrix(0, 16, 16)
+W2[lower.tri(W2, diag = TRUE)] <- diag(W)
+W2 <- (W2+t(W2))/2
+round(W2, 2)
+round(fit@data_list$correl[[1]]$W, 2)
+
+#### CFA (FIML) ####
+
+library(latent)
+library(lavaan)
+
+model <- 'visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9'
+
+data_missing <- HolzingerSwineford1939
+data_missing[1:5, "x1"] <- NA
+
+set.seed(2026)
+fit <- lcfa(data_missing, model = model,
+            estimator = "fml", positive = FALSE,
+            ordered = FALSE, std.lv = TRUE,
+            mimic = "latent", do.fit = TRUE,
+            control = NULL)
+fit@loss   # 0.283407
+fit@loglik # -3427.131
+fit@penalized_loglik # -3427.131
+fit@Optim$iterations
+fit@Optim$convergence
+fit@timing
+fit@Optim$SE$se
+
+# With lavaan:
+fit2 <- lavaan::cfa(model, data = data_missing,
+                    estimator = "ml",
+                    missing = "FIML",
+                    # likelihood = "wishart",
+                    std.lv = TRUE, std.ov = TRUE)
+# Same loss value: OK
+fit2@Fit@fx*2
+fit@loss
+
+fit@loglik
+# WHAT'S THE DIFFERENCE?
+fit2@loglik$loglik
+fit2@h1$logl$loglik # SATURATED
+
+lavaan::inspect(fit2, what = "se")
+fit@Optim$SE$table_se
 
 #### Check derivatives ####
 

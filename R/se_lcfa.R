@@ -95,17 +95,8 @@ general_se <- function(fit, type = "standard") {
   for(i in 1:ngroups) {
 
     # Get the asymptotic correlation matrix:
-    if(type == "standard") {
-      ACOVi <- asymptotic_normal(fit@data_list$correl[[i]]$R)/fit@data_list$nobs[[i]]
-    } else if(type == "robust") {
-      # CHECK FOR RAW DATA AVAILABILITY
-      ACOVi <- asymptotic_general(fit@data_list$X[[i]])/fit@data_list$nobs[[i]]
-    } else {
-      stop("Unknown type")
-    }
-
-    lower_diag <- lower.tri(fit@data_list$correl[[i]]$R, diag = TRUE)
-    VAR[[i]] <- ACOVi[lower_diag, lower_diag]
+    ACOVi <- fit@data_list$correl[[i]]$ACOV/fit@data_list$nobs[[i]]
+    VAR[[i]] <- ACOVi
 
   }
 
@@ -114,6 +105,11 @@ general_se <- function(fit, type = "standard") {
   args <- fit@data_list$args
   args$control <- fit@modelInfo$control
   args$control$free_S <- TRUE
+  cor <- fit@data_list$cor
+  args$control$free_S_diag <- FALSE
+  # if(cor == "poly" || cor == "polys" ||
+  #    cor == "polychoric" || cor == "polychorics") {
+  # }
   args$do.fit <- FALSE
   args$estimator <- paste(args$estimator, "r", sep = "")
   fit2 <- do.call(lcfa, args)

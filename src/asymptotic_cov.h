@@ -116,7 +116,9 @@ arma::mat asymptotic_general(arma::mat X) {
 
   arma::mat asymptotic = Gamma - A*B.t() - B*A.t() + A*G*A.t();
 
-  return asymptotic;
+  arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), -1);
+
+  return asymptotic(lower_indices, lower_indices);
 
 }
 
@@ -144,7 +146,9 @@ arma::mat asymptotic_normal(arma::mat P) {
 
   arma::mat asymptotic = Gamma - A*B.t() - B*A.t() + A*G*A.t();
 
-  return asymptotic;
+  arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), -1);
+
+  return asymptotic(lower_indices, lower_indices);
 
 }
 

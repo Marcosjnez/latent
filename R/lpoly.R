@@ -33,6 +33,8 @@
 #'
 #' @export
 lpoly <- function(data,
+                  model = NULL,
+                  method = "crossprod",
                   penalties = TRUE,
                   do.fit = TRUE,
                   control = NULL,
@@ -77,15 +79,26 @@ lpoly <- function(data,
     K[i] <- length(taus[[i]])-2L
     poly_param$taus[[i]] <- paste(".tau", i, ".", 1:K[i], sep = "")
   }
-  poly_param$X <- matrix(paste(".X", 1:(p*p), sep = ""), nrow = p, ncol = p)
+
+  if(method == "crossprod") {
+    poly_param$X <- matrix(paste(".X", 1:(p*p), sep = ""), nrow = p, ncol = p)
+  } else {
+    poly_param$R <- matrix(paste("r", 1:(p*p), sep = ""), nrow = p, ncol = p)
+    diag(poly_param$R) <- "1"
+    poly_param$R[upper.tri(poly_param$R)] <- t(poly_param$R)[upper.tri(poly_param$R)]
+  }
 
   # Create the model for the transformed parameters:
 
   poly_trans <- poly_param
   poly_trans$R <- matrix(paste("r", 1:(p*p), sep = ""), nrow = p, ncol = p)
-  # diag(poly_trans$R) <- "1"
   poly_trans$R[upper.tri(poly_trans$R)] <- t(poly_trans$R)[upper.tri(poly_trans$R)]
-  # poly_trans$R[upper.tri(poly_trans$R, diag = FALSE)] <- "0"
+
+  #### Fix parameters ####
+
+  if(!is.null(model$taus)) {
+    poly_param$taus <- model$taus
+  }
 
   #### Arrange labels ####
 
@@ -109,24 +122,29 @@ lpoly <- function(data,
   # Relate the parameters to the transformed parameters:
   trans2param <- match(parameters_labels, transparameters_labels)
 
-  #### Create the vectors of parameters and transformed parameters ####
-
-  parameters <- transparameters <- vector("list", length = control$rstarts)
-  # Indices of the unique transparameters in init_trans:
-  trans_inds <- match(transparameters_labels, vector_trans)
-  init_inds <- match(parameters_labels, transparameters_labels)
-
   #### Create the initial values for the parameters ####
 
   # Thresholds without the infite values:
   threslds <- lapply(taus, FUN = \(x) x[!is.infinite(x)])
   init_param <- list()
   init_param$taus <- threslds # Initial values for the thresholds
-  # Initial values for the square root of correlations:
-  init_param$X <- real_sqrtmat(R)
-  init_trans <- init_param
-  # Initial values for the polychoric correlations:
-  init_trans$R <- crossprod(init_trans$X)
+  if(method == "crossprod") {
+    # Initial values for the square root of correlations:
+    init_param$X <- real_sqrtmat(R)
+    init_trans <- init_param
+    # Initial values for the polychoric correlations:
+    init_trans$R <- crossprod(init_trans$X)
+  } else {
+    init_param$R <- R
+    init_trans <- init_param
+  }
+
+  #### Create the vectors of parameters and transformed parameters ####
+
+  parameters <- transparameters <- vector("list", length = control$rstarts)
+  # Indices of the unique transparameters in init_trans:
+  trans_inds <- match(transparameters_labels, vector_trans)
+  init_inds <- match(parameters_labels, vector_trans)
 
   transparameters <- unlist(init_trans)[trans_inds]
   names(transparameters) <- transparameters_labels
@@ -143,11 +161,23 @@ lpoly <- function(data,
 
   #### Manifolds ####
 
-  manifolds <- list(
-    list(manifold = "euclidean", parameters = "taus"),
-    list(manifold = "oblq", parameters = "X",
-         extra = list(p = p, q = p))
-  )
+  if(method == "crossprod") {
+
+    manifolds <- list(
+      list(manifold = "euclidean", parameters = "taus"),
+      list(manifold = "oblq", parameters = "X",
+           extra = list(p = p, q = p))
+    )
+
+  } else {
+
+    manifolds <- list(
+      list(manifold = "euclidean", parameters = "taus"),
+      list(manifold = "euclidean", parameters = "R",
+           extra = list(p = p, q = p))
+    )
+
+  }
 
   control_manifold <- get_manifold(manifolds = manifolds,
                                    structures = poly_param)
@@ -159,12 +189,20 @@ lpoly <- function(data,
   lower_indices <- which(lower.tri(poly_trans$R, diag = TRUE))
   dots$p <- p
 
-  transforms <- list(
-    list(transform = "crossprod",
-         parameters_in = "X",
-         parameters_out = "R",
-         extra = dots)
-  )
+  if(method == "crossprod") {
+
+    transforms <- list(
+      list(transform = "crossprod",
+           parameters_in = "X",
+           parameters_out = "R",
+           extra = dots)
+    )
+
+  } else {
+
+    transforms <- list()
+
+  }
 
   control_transform <- get_transforms(transforms = transforms,
                                       structures = poly_trans)

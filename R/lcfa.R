@@ -13,7 +13,7 @@
 #' positive = FALSE, penalties = TRUE,
 #' missing = "pairwise.complete.obs",
 #' std.lv = FALSE, do.fit = TRUE,
-#' message = TRUE, mimic = 'latent',
+#' message = FALSE, mimic = 'latent',
 #' control = NULL, ...)
 #'
 #' @param data data frame or matrix.
@@ -27,8 +27,9 @@
 #' @param penalties list of penalty terms for the parameters.
 #' @param missing Method to handle missing data.
 #' @param std.lv Provide the parameters of the standardized model.
+#' @param acov String. "standard" or "robust". Default is "standard".
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
-#' @param message Logical. Defaults to TRUE.
+#' @param message Logical. Defaults to FALSE.
 #' @param mimic String. Choose the output you want to obtain. Defaults to 'latent'.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #' @param ... Additional lavaan arguments. See ?lavaan for more information.
@@ -63,9 +64,9 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                  sample.cov = NULL, nobs = NULL,
                  positive = FALSE, penalties = TRUE,
                  missing = "pairwise.complete.obs",
-                 std.lv = TRUE, do.fit = TRUE,
-                 message = TRUE, mimic = "latent",
-                 control = NULL,
+                 std.lv = TRUE, acov = "standard",
+                 do.fit = TRUE, message = FALSE,
+                 mimic = "latent", control = NULL,
                  ...) {
 
   if(ordered) {
@@ -130,6 +131,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                                  item_names = item_names[[i]],
                                  cor = cor,
                                  estimator = estimator,
+                                 acov = acov,
+                                 nobs = nobs,
                                  missing = missing)
 
     } else {
@@ -162,6 +165,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   data_list$correl <- correl
   data_list$positive <- positive
   data_list$estimator <- estimator
+  data_list$cor <- cor
   data_list$group_label <- group_label
   data_list$item_label <- item_label
   data_list$factor_label <- factor_label
