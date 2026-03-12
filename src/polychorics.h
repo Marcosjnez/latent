@@ -195,13 +195,15 @@ std::vector<double> optimize2(const std::vector<double>& tau1, const std::vector
   double asin_p = std::asin(cor);
   double p = cor; // Parameters to be estimated
   double cos_asin_p = std::cos(asin_p);
+  double g;       // Gradient
+  double h;       // Approximated Hessian (asymptotic formula)
   double iteration = 1;
 
   // Start the iterative algorithm
   for(int i=0; i < 20L; ++i) {
     // double f = 0.0;  // Objective value (no needed)
-    double g = 0.0;     // Gradient
-    double h = 0.0; // Approximated Hessian (asymptotic formula)
+    g = 0.0;     // Gradient
+    h = 0.0;     // Approximated Hessian (asymptotic formula)
 
     for (size_t i = 0; i < s1; ++i) {
       for (size_t j = 0; j < s2; ++j) {
@@ -234,7 +236,7 @@ std::vector<double> optimize2(const std::vector<double>& tau1, const std::vector
     cos_asin_p = std::cos(asin_p);
   }
 
-  return {p, iteration};
+  return {p, iteration, g, h};
 
 }
 
@@ -253,13 +255,15 @@ std::vector<double> optimize(const std::vector<double>& tau1, const std::vector<
   // cor = Initial value for the correlation
 
   double p = cor; // Parameters to be estimated
+  double g;       // Gradient
+  double score;   // Approximated Hessian (asymptotic formula)
   double iteration = 1;
 
   // Start the iterative algorithm
   for(int i=0; i < 20L; ++i) {
     // double f = 0.0;  // Objective value (no needed)
-    double g = 0.0;     // Gradient
-    double score = 0.0; // Approximated Hessian (asymptotic formula)
+    g = 0.0;     // Gradient
+    score = 0.0; // Approximated Hessian (asymptotic formula)
 
     for (size_t i = 0; i < s1; ++i) {
       for (size_t j = 0; j < s2; ++j) {
@@ -288,7 +292,7 @@ std::vector<double> optimize(const std::vector<double>& tau1, const std::vector<
     ++ iteration;
   }
 
-  return {p, iteration};
+  return {p, iteration, g, score};
 
 }
 

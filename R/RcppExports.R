@@ -25,8 +25,8 @@ optimizer <- function(control_manifold, control_transform, control_estimator, co
     .Call(`_latent_optimizer`, control_manifold, control_transform, control_estimator, control_optimizer)
 }
 
-polyfast <- function(data, missing = "pairwise.complete.cases", acov = "none", smooth = "none", min_eigval = 0.001, nboot = 1000L, fit = FALSE, cores = 1L) {
-    .Call(`_latent_polyfast`, data, missing, acov, smooth, min_eigval, nboot, fit, cores)
+polyfast <- function(data, missing = "pairwise.complete.cases", smooth = "none", min_eigval = 0.001, nboot = 1000L, fit = FALSE, cores = 1L) {
+    .Call(`_latent_polyfast`, data, missing, smooth, min_eigval, nboot, fit, cores)
 }
 
 asymptotic_normal <- function(P) {

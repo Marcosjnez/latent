@@ -126,6 +126,9 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
       param[[theta_group[i]]] <- trans[[theta_group[i]]]
       # Insert fixed values in the model:
       param[[theta_group[i]]][fixed[[theta_group[i]]]] <- model[[i]]$theta[fixed[[theta_group[i]]]]
+      if(control$deltaparam) {
+        diag(param[[theta_group[i]]]) <- "1"
+      }
 
       # Psi:
       param[[psi_group[i]]] <- trans[[psi_group[i]]]
@@ -363,6 +366,19 @@ get_cfa_structures <- function(data_list, full_model, control) {
       transforms[[k]] <- list(transform = "crossprod",
                               parameters_in = pj_theta_group[i],
                               parameters_out = theta_group[i],
+                              extra = dots)
+      k <- k+1L
+
+    }
+
+    if(control$deltaparam) {
+
+      dots$p <- nrow(trans[[theta_group[i]]])
+      dots$q <- nrow(trans[[psi_group[i]]])
+      transforms[[k]] <- list(transform = "deltaparam",
+                              parameters_in = c(lambda_group[i],
+                                                psi_group[i]),
+                              parameters_out = list(diag(trans[[theta_group[i]]])),
                               extra = dots)
       k <- k+1L
 

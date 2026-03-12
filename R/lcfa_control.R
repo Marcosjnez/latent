@@ -49,6 +49,10 @@ lcfa_control <- function(control) {
     control$free_S_diag <- TRUE
   }
 
+  if(is.null(control$deltaparam)) {
+    control$deltaparam <- FALSE
+  }
+
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L
   }

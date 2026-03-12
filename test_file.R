@@ -403,10 +403,10 @@ full <- hexaco[, selection]
 mooc <- full[hexaco$sample == samples[2], ]
 dim(mooc)
 set.seed(2026)
-# POLY <- polyfast(as.matrix(mooc))
-# taus <- lapply(POLY$thresholds, FUN = \(x) x[-c(1, length(x))])
-fit <- lpoly(data = mooc, do.fit = TRUE, penalties = TRUE,
-             # model = list(taus = taus),
+POLY <- polyfast(as.matrix(mooc))
+taus <- lapply(POLY$thresholds, FUN = \(x) x[-c(1, length(x))])
+fit <- lpoly(data = mooc, do.fit = TRUE, penalties = FALSE,
+             model = list(taus = taus),
              method = "crossprodn",
              control = list(opt = "newton",
                             maxit = 500,
@@ -426,9 +426,54 @@ max(fit@Optim$rg)
 max(fit@Optim$g)
 fit@timing
 
-x <- Turbofuns:::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)
-x$ACM
-H[13:21, 13:21]
+Tur <- Turbofuns:::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)
+
+# If all columns in mooc are ordinal items:
+library(lavaan)
+
+## 1) Make all variables ordered factors
+mooc[] <- lapply(mooc, function(x) {
+  if (is.ordered(x)) x else ordered(x)
+})
+
+## 2) Fit the unrestricted ordinal model
+##    Use output = "fit" to get a fitted lavaan object
+fit_un <- lavCor(
+  mooc,
+  ordered = names(mooc),
+  se      = "standard",
+  output  = "fit"
+)
+
+## 3) Extract the raw asymptotic covariance matrix of the sample statistics
+##    (lavTech avoids the dimnames/labelling issue)
+Gamma <- lavTech(fit_un, "gamma")[[1]]
+
+## 4) Count thresholds:
+##    for each ordinal variable, #thresholds = #categories - 1
+n_th <- sum(vapply(mooc, function(x) nlevels(x) - 1L, integer(1)))
+
+## 5) Number of variables and number of polychoric correlations
+p <- ncol(mooc)
+n_rho <- p * (p - 1L) / 2L
+
+## 6) Keep only the block corresponding to the polychoric correlations
+##    (thresholds come first, then the polychoric correlations)
+idx_rho <- seq.int(from = n_th + 1L, length.out = n_rho)
+Gamma_rho <- Gamma[idx_rho, idx_rho, drop = FALSE]
+
+## 7) Convert from N * ACM to ACM if needed
+##    (Gamma is scaled by sample size in lavaan's WLS machinery)
+N <- nrow(mooc)
+ACM_rho <- Gamma_rho / N
+
+lav <- diag(round(Gamma_rho, 4))
+Turbo <- diag(round(Tur$ACM, 4))
+lat1 <- diag(round(solve(diag(c(POLY$hess))), 4))
+lat2 <- diag(round(solve(x$h), 4))
+pairs(cbind(lav, Turbo, lat1, lat2))
+
+## 8) Optional: assign readable names matching the lower triangle of the correlation matrix
 
 #### CFA polychorics ####
 
@@ -445,6 +490,7 @@ full <- hexaco[, selection]
 
 mooc <- full[hexaco$sample == samples[2], ]
 dim(mooc)
+mooc$school <- rep(c("s1", "s2"), times = c(2000, 2286))
 
 model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
              ANX =~ hexemanx128 + hexemanx8 + hexemanx80 + hexemanx176
@@ -453,6 +499,7 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
 
 fit <- lcfa(model = model.EM, data = mooc,
             ordered = TRUE, estimator = "dwls",
+            group = "school",
             do.fit = TRUE, control = NULL)
 fit@loglik # -90154.77
 fit@penalized_loglik # -90154.77
@@ -461,23 +508,25 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 fit@Optim$SE$se
+fit@parameters
 
 # With lavaan:
 fit2 <- lavaan::cfa(model = model.EM, data = mooc,
                     ordered = TRUE,
                     estimator = "dwls",
                     # likelihood = "wishart",
-                    std.lv = TRUE, std.ov = TRUE)
+                    std.lv = TRUE, std.ov = TRUE,
+                    parameterization = "theta")
 # Same loss value: OK
 fit2@Fit@fx*2
 fit@loss
 
 lavaan::inspect(fit2, what = "se")$lambda
-fit@Optim$SE$table_se$lambda.group1
+round(fit@Optim$SE$table_se$lambda.group1, 3)
 diag(lavaan::inspect(fit2, what = "se")$theta)
-diag(fit@Optim$SE$table_se$theta.group1)
+round(diag(fit@Optim$SE$table_se$theta.group1), 3)
 lavaan::inspect(fit2, what = "se")$psi
-fit@Optim$SE$table_se$psi.group1
+round(fit@Optim$SE$table_se$psi.group1, 3)
 
 W <- lavInspect(fit2, "wls.v")
 W2 <- matrix(0, 16, 16)

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/03/2026
+# Modification date: 12/03/2026
 
 get_transforms <- function(transforms, structures) {
 
@@ -46,6 +46,7 @@ get_transforms <- function(transforms, structures) {
                                 exponential   = character(0),
                                 crossprod   = c("p"),
                                 column_space   = c("X"),
+                                deltaparam   = c("p", "q"),
                                 stop("Unknown transform: ", transform)
     )
 

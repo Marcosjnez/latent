@@ -71,6 +71,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   if(ordered) {
     cor <- "poly"
+    control$deltaparam <- TRUE
   } else {
     cor <- "pearson"
   }
@@ -81,13 +82,65 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   control$estimator <- tolower(estimator)
   control <- lcfa_control(control)
 
+  # stop("ahh")
+  if(is.null(group)) {
+    ngroups <- 1L
+  } else {
+    group_label <- unique(data[[group]])
+    ngroups <- length(group_label)
+  }
+
+  item_names <- extract_item_names(model, ngroups = ngroups)
+
+  # Estimate the correlation matrix for each group::
+  X <- correl <- nobs <- vector("list", length = ngroups)
+  if(ngroups > 1) {
+    names(X) <- names(correl) <- group_label
+  }
+
+  for(i in 1:ngroups) {
+
+    if(ngroups > 1) {
+      X[[i]] <- data[data[[group]] == group_label[i], item_names[[i]]]
+    } else {
+      X[[i]] <- data[, item_names[[i]]]
+    }
+    nobs[[i]] <- nrow(X[[i]])
+
+    if(is.null(sample.cov)) {
+
+      correl[[i]] <- correlation(data = X[[i]],
+                                 item_names = item_names[[i]],
+                                 cor = cor,
+                                 estimator = estimator,
+                                 acov = acov,
+                                 nobs = nobs[[i]],
+                                 missing = missing)
+
+    } else {
+
+      correl[[i]]$R <- sample.cov
+      p <- nrow(sample.cov)
+      # ACOV?
+      correl[[i]]$W <- matrix(1, nrow = p, ncol = p)
+
+    }
+
+  }
+
   # Extract the lavaan model:
   model_syntax <- model
-  LAV <- lavaan::cfa(model = model_syntax, data = data,
+  # stop("ahhh")
+  LAV <- lavaan::cfa(model = model_syntax,
+                     data = data,
                      sample.cov = sample.cov,
                      sample.nobs = nobs,
+                     group = group,
+                     # estimator = estimator,
+                     # ordered = ordered,
+                     # parameterization = "theta",
                      std.lv = std.lv,
-                     do.fit = FALSE, group = group,
+                     do.fit = FALSE,
                      ...)
 
   LAV@Options$positive <- positive
@@ -113,37 +166,10 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     colnames(X[[i]]) <- item_names[[i]]
   }
 
-  # Get the correlation and weight matrices:
-  correl <- vector("list", length = ngroups)
-  names(X) <- names(correl) <- group_label
-
   # Model for the parameters:
   model <- getmodel_fromlavaan(LAV)
 
   if(ngroups == 1) model <- list(model)
-
-  # Estimate the correlation matrix for each group:
-  for(i in 1:ngroups) {
-
-    if(is.null(sample.cov)) {
-
-      correl[[i]] <- correlation(data = X[[i]],
-                                 item_names = item_names[[i]],
-                                 cor = cor,
-                                 estimator = estimator,
-                                 acov = acov,
-                                 nobs = nobs,
-                                 missing = missing)
-
-    } else {
-
-      correl[[i]]$R <- sample.cov
-      p <- nrow(sample.cov)
-      correl[[i]]$W <- matrix(1, nrow = p, ncol = p)
-
-    }
-
-  }
 
   ## store original call
   mc  <- match.call()

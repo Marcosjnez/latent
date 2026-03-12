@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 27/10/2025
+ * Modification date: 12/03/2026
  */
 
 // #define ARMA_NO_DEBUG
@@ -58,7 +58,6 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
 
 // [[Rcpp::export]]
 Rcpp::List polyfast(arma::mat data, std::string missing = "pairwise.complete.cases",
-                    const std::string acov = "none",
                     const std::string smooth = "none", double min_eigval = 0.001,
                     const int nboot = 1000L, const bool fit = false,
                     const int cores = 1L);

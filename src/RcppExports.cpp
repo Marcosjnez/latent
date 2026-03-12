@@ -86,20 +86,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // polyfast
-Rcpp::List polyfast(arma::mat data, std::string missing, const std::string acov, const std::string smooth, double min_eigval, const int nboot, const bool fit, const int cores);
-RcppExport SEXP _latent_polyfast(SEXP dataSEXP, SEXP missingSEXP, SEXP acovSEXP, SEXP smoothSEXP, SEXP min_eigvalSEXP, SEXP nbootSEXP, SEXP fitSEXP, SEXP coresSEXP) {
+Rcpp::List polyfast(arma::mat data, std::string missing, const std::string smooth, double min_eigval, const int nboot, const bool fit, const int cores);
+RcppExport SEXP _latent_polyfast(SEXP dataSEXP, SEXP missingSEXP, SEXP smoothSEXP, SEXP min_eigvalSEXP, SEXP nbootSEXP, SEXP fitSEXP, SEXP coresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type data(dataSEXP);
     Rcpp::traits::input_parameter< std::string >::type missing(missingSEXP);
-    Rcpp::traits::input_parameter< const std::string >::type acov(acovSEXP);
     Rcpp::traits::input_parameter< const std::string >::type smooth(smoothSEXP);
     Rcpp::traits::input_parameter< double >::type min_eigval(min_eigvalSEXP);
     Rcpp::traits::input_parameter< const int >::type nboot(nbootSEXP);
     Rcpp::traits::input_parameter< const bool >::type fit(fitSEXP);
     Rcpp::traits::input_parameter< const int >::type cores(coresSEXP);
-    rcpp_result_gen = Rcpp::wrap(polyfast(data, missing, acov, smooth, min_eigval, nboot, fit, cores));
+    rcpp_result_gen = Rcpp::wrap(polyfast(data, missing, smooth, min_eigval, nboot, fit, cores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -415,7 +414,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_duplication", (DL_FUNC) &_latent_duplication, 3},
     {"_latent_mytest", (DL_FUNC) &_latent_mytest, 1},
     {"_latent_optimizer", (DL_FUNC) &_latent_optimizer, 4},
-    {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 8},
+    {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 7},
     {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 1},
     {"_latent_asymptotic_elliptical", (DL_FUNC) &_latent_asymptotic_elliptical, 2},
     {"_latent_asymptotic_general", (DL_FUNC) &_latent_asymptotic_general, 1},

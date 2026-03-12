@@ -61,7 +61,8 @@ correlation <- function(data, item_names = colnames(data),
     result$cumprop <- polychorics$cumulative_freqs
     result$contingency_tables <- polychorics$contingency_tables
 
-    result$ACOV <- asymptotic_poly(X, taus = result$thresholds)
+    result$ACOV <- diag(1/c(polychorics$hess))#*nrow(X)
+    # result$ACOV <- asymptotic_poly(X, taus = result$thresholds)
     # result$ACOV <- diag(c(DACOV2(p, result$R,
     #                              polychorics$contingency_tables,
     #                              polychorics$thresholds,

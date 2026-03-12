@@ -8,7 +8,9 @@ typedef std::tuple<arma::mat,
                    std::vector<std::vector<double>>,
                    std::vector<std::vector<double>>,
                    std::vector<std::vector<std::vector<int>>>,
-                   arma::mat> polyfast_object;
+                   arma::mat,
+                   arma::vec,
+                   arma::vec> polyfast_object;
 
 std::vector<double> cumsum(const std::vector<int> input) {
   std::vector<double> output(input.size());
@@ -68,6 +70,8 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
   arma::mat iters(q, q, arma::fill::zeros);
 
   int d = 0.5*q*(q-1);
+  arma::vec grad(d);
+  arma::vec hess(d);
   std::vector<std::vector<std::vector<int>>> tabs(d);
   arma::vec seq = arma::linspace(0, q-1, q);
   arma::vec I = arma::cumsum(q - seq) - 2*q;
@@ -80,19 +84,23 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
     for(size_t j=(i+1L); j < q; ++j) {
       int k = I[i+1] + j;
       tabs[k] = joint_frequency_table(cols[i], n, maxs[i], cols[j], maxs[j]);
-      std::vector<double> rho = optimize(taus[i], taus[j], tabs[k], s[i], s[j], pnorm_tau[i], pnorm_tau[j], n, cor(i, j));
+      std::vector<double> rho = optimize(taus[i], taus[j], tabs[k], s[i], s[j],
+                                         pnorm_tau[i], pnorm_tau[j], n, cor(i, j));
       polys(i, j) = polys(j, i) = rho[0];
       iters(i, j) = iters(j, i) = rho[1];
+      grad(k) = rho[2];
+      hess(k) = rho[3];
     }
   }
 
-  polyfast_object result = std::make_tuple(polys, taus, pnorm_tau, tabs, iters);
+  polyfast_object result = std::make_tuple(polys, taus, pnorm_tau, tabs, iters,
+                                           grad, hess);
 
   return result;
 
 }
 
-Rcpp::List polyfast(arma::mat X, std::string missing, std::string acov, const std::string smooth,
+Rcpp::List polyfast(arma::mat X, std::string missing, const std::string smooth,
                     double min_eigval, const int nboot, const bool fit, const int cores) {
 
   /*
@@ -111,6 +119,8 @@ Rcpp::List polyfast(arma::mat X, std::string missing, std::string acov, const st
   std::vector<std::vector<double>> pnorm_taus = std::get<2>(x);
   std::vector<std::vector<std::vector<int>>> tabs = std::get<3>(x);
   arma::mat iters = std::get<4>(x);
+  arma::vec grad = std::get<5>(x);
+  arma::vec hess = std::get<6>(x);
 
   Rcpp::List result;
   result["type"] = "polychorics";
@@ -119,6 +129,8 @@ Rcpp::List polyfast(arma::mat X, std::string missing, std::string acov, const st
   result["contingency_tables"] = tabs;
   result["cumulative_freqs"] = pnorm_taus;
   result["iters"] = iters;
+  result["grad"] = grad;
+  result["hess"] = hess;
   result["elapsed"] = timer;
 
   return result;

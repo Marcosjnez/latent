@@ -54,6 +54,7 @@ public:
 #include "transformations/matrix_inverse.h"
 #include "transformations/XY.h"
 #include "transformations/XYt.h"
+#include "transformations/deltaparam.h"
 
 using TransformFactory =
   std::function< transformations*(const Rcpp::List&) >;
@@ -70,7 +71,8 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "factor_cor", choose_factor_cor },
   { "matrix_inverse", choose_matrix_inverse },
   { "XY", choose_XY },
-  { "XYt", choose_XYt }
+  { "XYt", choose_XYt },
+  { "deltaparam", choose_deltaparam }
 };
 
 transformations* choose_transform(const Rcpp::List& trans_setup) {
