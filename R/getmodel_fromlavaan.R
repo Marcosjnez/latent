@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/09/2025
+# Modification date: 19/03/2026
 
 getmodel_fromlavaan <- function(obj) {
 
@@ -10,7 +10,8 @@ getmodel_fromlavaan <- function(obj) {
   par_mat <- lavaan::lavMatrixRepresentation(lavaan::partable(obj),
                                              representation = "LISREL")
   # mat_names <- subset(unique(par_mat$mat), unique(par_mat$mat) != "")
-  mat_names <- c("lambda", "psi", "theta")
+  #mat_names <- c("lambda", "psi", "theta")
+  mat_names <- names(tech)
 
   matrices <- vector("list", length = ng)
 
