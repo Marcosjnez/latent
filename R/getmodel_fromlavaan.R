@@ -11,7 +11,7 @@ getmodel_fromlavaan <- function(obj) {
                                              representation = "LISREL")
   # mat_names <- subset(unique(par_mat$mat), unique(par_mat$mat) != "")
   #mat_names <- c("lambda", "psi", "theta")
-  mat_names <- names(tech)
+  mat_names <- unique(names(tech))
 
   matrices <- vector("list", length = ng)
 
