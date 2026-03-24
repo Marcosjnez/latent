@@ -1,8 +1,8 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 02/03/2026
+# Modification date: 20/03/2026
 
-get_manifold <- function(manifolds, structures) {
+create_manifolds <- function(manifolds, structures) {
 
   # Collect the unique parameter labels that are not fixed values:
   unique_str <- unname(unique(unlist(structures)))

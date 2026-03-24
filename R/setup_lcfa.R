@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/03/2026
+# Modification date: 16/03/2026
 
 get_full_cfa_model <- function(data_list, model, control = NULL) {
 
@@ -18,14 +18,89 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
   target_psi <- target_theta <- targets <- vector("list", length = ngroups)
   rest <- 0L
 
-  S_group <- paste("S.group", 1:ngroups, sep = "")
-  lambda_group <- paste("lambda.group", 1:ngroups, sep = "")
-  psi_group <- paste("psi.group", 1:ngroups, sep = "")
-  theta_group <- paste("theta.group", 1:ngroups, sep = "")
-  pj_psi_group <- paste("pj_psi.group", 1:ngroups, sep = "")
-  pj_theta_group <- paste("pj_theta.group", 1:ngroups, sep = "")
-  model_group <- paste("model.group", 1:ngroups, sep = "")
+  S_group <- paste("S.g", 1:ngroups, sep = "")
+  lambda_group <- paste("lambda.g", 1:ngroups, sep = "")
+  psi_group <- paste("psi.g", 1:ngroups, sep = "")
+  theta_group <- paste("theta.g", 1:ngroups, sep = "")
+  xpsi_group <- paste("xpsi.g", 1:ngroups, sep = "")
+  xtheta_group <- paste("xtheta.g", 1:ngroups, sep = "")
+  model_group <- paste("model.g", 1:ngroups, sep = "")
 
+  # Transformed parameters:
+  list_struct <- vector("list")
+  k <- 1L
+  for(i in 1:ngroups) {
+
+    # Lambda:
+    list_struct[[k]] <- list(name = lambda_group[i],
+                             type = "matrix",
+                             dim = c(nitems[[i]], nfactors[[i]]),
+                             rownames = item_label[[i]],
+                             colnames = factor_label[[i]])
+    k <- k+1L
+
+    # Create additional parameters if there are positive-definite constraints:
+    if(positive) {
+
+      # Theta:
+      list_struct[[k]] <- list(name = xtheta_group[i],
+                               type = "matrix",
+                               dim = c(nitems[[i]], nitems[[i]]),
+                               rownames = item_label[[i]],
+                               colnames = item_label[[i]])
+      k <- k+1L
+
+      # Psi:
+      list_struct[[k]] <- list(name = xpsi_group[i],
+                               type = "matrix",
+                               dim = c(nfactors[[i]], nfactors[[i]]),
+                               rownames = factor_label[[i]],
+                               colnames = factor_label[[i]])
+      k <- k+1L
+
+    }
+
+    # Theta:
+    list_struct[[k]] <- list(name = theta_group[i],
+                             type = "matrix",
+                             dim = c(nitems[[i]], nitems[[i]]),
+                             rownames = item_label[[i]],
+                             colnames = item_label[[i]],
+                             symmetric = TRUE)
+    k <- k+1L
+
+    # Psi:
+    list_struct[[k]] <- list(name = psi_group[i],
+                             type = "matrix",
+                             dim = c(nfactors[[i]], nfactors[[i]]),
+                             rownames = factor_label[[i]],
+                             colnames = factor_label[[i]],
+                             symmetric = TRUE)
+    k <- k+1L
+
+    # Model matrix:
+    list_struct[[k]] <- list(name = model_group[i],
+                             type = "matrix",
+                             dim = c(nitems[[i]], nitems[[i]]),
+                             rownames = item_label[[i]],
+                             colnames = item_label[[i]],
+                             symmetric = TRUE)
+    k <- k+1L
+
+    # S:
+    list_struct[[k]] <- list(name = S_group[i],
+                             type = "matrix",
+                             dim = c(nitems[[i]], nitems[[i]]),
+                             rownames = item_label[[i]],
+                             colnames = item_label[[i]],
+                             symmetric = TRUE)
+    k <- k+1L
+
+  }
+
+  trans <- create_parameters(list_struct)
+
+  # Replace latent labels by lavaan labels:
   for(i in 1:ngroups) {
 
     # Get the positions of parameters and fixed values:
@@ -46,68 +121,15 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
       return(numerals[inds])
     })
 
-    # Transformed parameters:
+    trans[[lambda_group[i]]][nonfixed[[lambda_group[i]]]] <- model[[i]]$lambda[nonfixed[[lambda_group[i]]]]
+    trans[[theta_group[i]]][nonfixed[[theta_group[i]]]] <- model[[i]]$theta[nonfixed[[theta_group[i]]]]
+    trans[[psi_group[i]]][nonfixed[[psi_group[i]]]] <- model[[i]]$psi[nonfixed[[psi_group[i]]]]
 
-    # Lambda:
-    lambda_labels <- paste("g", i, ".lambda[", rep(1:nitems[[i]], times = nfactors[[i]]),
-                           ",", rep(1:nfactors[[i]], each = nitems[[i]]), "]", sep = "")
-    lambda_labels[nonfixed[[lambda_group[i]]]] <- model[[i]]$lambda[nonfixed[[lambda_group[i]]]]
-    trans[[lambda_group[i]]] <- matrix(lambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
-    rownames(trans[[lambda_group[i]]]) <- item_label[[i]]
-    colnames(trans[[lambda_group[i]]]) <- factor_label[[i]]
+  }
 
-    # Create additional parameters if there are positive-definite constraints:
-    if(positive) {
+  # Untransformed parameters:
 
-      # Theta:
-      pj_theta_labels <- paste("g", i, ".pj_theta[", rep(1:nitems[[i]], times = nitems[[i]]),
-                               ",", rep(1:nitems[[i]], each = nitems[[i]]), "]", sep = "")
-      trans[[pj_theta_group[i]]] <- matrix(pj_theta_labels, nrow = nitems[[i]], ncol = nitems[[i]])
-      rownames(trans[[pj_theta_group[i]]]) <- colnames(trans[[pj_theta_group[i]]]) <- item_label[[i]]
-
-      # Psi:
-      pj_psi_labels <- paste("g", i, ".pj_psi[", rep(1:nfactors[[i]], times = nfactors[[i]]),
-                             ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-      trans[[pj_psi_group[i]]] <- matrix(pj_psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
-      rownames(trans[[pj_psi_group[i]]]) <- colnames(trans[[pj_psi_group[i]]]) <- factor_label[[i]]
-
-    }
-
-    # Theta:
-    theta_labels <- paste("g", i, ".theta[", rep(1:nitems[[i]], times = nitems[[i]]),
-                          ",", rep(1:nitems[[i]], each = nitems[[i]]), "]", sep = "")
-    theta_labels[nonfixed[[theta_group[i]]]] <- model[[i]]$theta[nonfixed[[theta_group[i]]]]
-    trans[[theta_group[i]]] <- matrix(theta_labels, nrow = nitems[[i]], ncol = nitems[[i]])
-    # Force symmetry:
-    trans[[theta_group[i]]][upper.tri(trans[[theta_group[i]]])] <- t(trans[[theta_group[i]]])[upper.tri(trans[[theta_group[i]]])]
-    rownames(trans[[theta_group[i]]]) <- colnames(trans[[theta_group[i]]]) <- item_label[[i]]
-
-    # Psi:
-    psi_labels <- paste("g", i, ".psi[", rep(1:nfactors[[i]], times = nfactors[[i]]),
-                        ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-    psi_labels[nonfixed[[psi_group[i]]]] <- model[[i]]$psi[nonfixed[[psi_group[i]]]]
-    trans[[psi_group[i]]] <- matrix(psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
-    # Force symmetry:
-    trans[[psi_group[i]]][upper.tri(trans[[psi_group[i]]])] <- t(trans[[psi_group[i]]])[upper.tri(trans[[psi_group[i]]])]
-    rownames(trans[[psi_group[i]]]) <- colnames(trans[[psi_group[i]]]) <- factor_label[[i]]
-
-    # Model matrix:
-    model_labels <- paste("g", i, ".model[", rep(1:nitems[[i]], times = nitems[[i]]),
-                          ",", rep(1:nitems[[i]], each = nitems[[i]]), "]", sep = "")
-    trans[[model_group[i]]] <- matrix(model_labels, nrow = nitems[[i]], ncol = nitems[[i]])
-    # Force symmetry:
-    trans[[model_group[i]]][upper.tri(trans[[model_group[i]]])] <- t(trans[[model_group[i]]])[upper.tri(trans[[model_group[i]]])]
-    rownames(trans[[model_group[i]]]) <- colnames(trans[[model_group[i]]]) <- item_label[[i]]
-
-    # S:
-    S_labels <- paste("g", i, ".S[", rep(1:nitems[[i]], times = nitems[[i]]),
-                      ",", rep(1:nitems[[i]], each = nitems[[i]]), "]", sep = "")
-    trans[[S_group[i]]] <- matrix(S_labels, nrow = nitems[[i]], ncol = nitems[[i]])
-    # Force symmetry:
-    trans[[S_group[i]]][upper.tri(trans[[S_group[i]]])] <- t(trans[[S_group[i]]])[upper.tri(trans[[S_group[i]]])]
-    rownames(trans[[S_group[i]]]) <- colnames(trans[[S_group[i]]]) <- item_label[[i]]
-
-    # Untransformed parameters:
+  for(i in 1:ngroups) {
 
     param[[lambda_group[i]]] <- trans[[lambda_group[i]]]
     # Insert fixed values in the model:
@@ -116,9 +138,9 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
     if(positive) {
 
       # Theta:
-      param[[pj_theta_group[i]]] <- trans[[pj_theta_group[i]]]
+      param[[xtheta_group[i]]] <- trans[[xtheta_group[i]]]
       # Psi:
-      param[[pj_psi_group[i]]] <- trans[[pj_psi_group[i]]]
+      param[[xpsi_group[i]]] <- trans[[xpsi_group[i]]]
 
     } else {
 
@@ -166,7 +188,6 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
       rest <- rest + 0.5*q*(q-1) + 0.5*p*(p-1) + sum(targets[[i]] == 0)
 
     }
-
   }
 
   #### Arrange labels ####
@@ -208,11 +229,11 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
       if(positive) {
 
-        init_trans[[rs]][[pj_theta_group[i]]] <- rpoblq(nitems[[i]], nitems[[i]], constraints = target_theta[[i]])
-        init_trans[[rs]][[pj_psi_group[i]]] <- rpoblq(nfactors[[i]], nfactors[[i]], constraints = target_psi[[i]])
+        init_trans[[rs]][[xtheta_group[i]]] <- rpoblq(nitems[[i]], nitems[[i]], constraints = target_theta[[i]])
+        init_trans[[rs]][[xpsi_group[i]]] <- rpoblq(nfactors[[i]], nfactors[[i]], constraints = target_psi[[i]])
 
-        init_trans[[rs]][[theta_group[i]]] <- crossprod(init_trans[[rs]][[pj_theta_group[i]]])
-        init_trans[[rs]][[psi_group[i]]] <- crossprod(init_trans[[rs]][[pj_psi_group[i]]])
+        init_trans[[rs]][[theta_group[i]]] <- crossprod(init_trans[[rs]][[xtheta_group[i]]])
+        init_trans[[rs]][[psi_group[i]]] <- crossprod(init_trans[[rs]][[xpsi_group[i]]])
 
       } else {
 
@@ -287,13 +308,13 @@ get_cfa_structures <- function(data_list, full_model, control) {
   list2env(data_list, envir = environment())
   list2env(full_model, envir = environment())
 
-  S_group <- paste("S.group", 1:ngroups, sep = "")
-  lambda_group <- paste("lambda.group", 1:ngroups, sep = "")
-  psi_group <- paste("psi.group", 1:ngroups, sep = "")
-  theta_group <- paste("theta.group", 1:ngroups, sep = "")
-  pj_psi_group <- paste("pj_psi.group", 1:ngroups, sep = "")
-  pj_theta_group <- paste("pj_theta.group", 1:ngroups, sep = "")
-  model_group <- paste("model.group", 1:ngroups, sep = "")
+  S_group <- paste("S.g", 1:ngroups, sep = "")
+  lambda_group <- paste("lambda.g", 1:ngroups, sep = "")
+  psi_group <- paste("psi.g", 1:ngroups, sep = "")
+  theta_group <- paste("theta.g", 1:ngroups, sep = "")
+  xpsi_group <- paste("xpsi.g", 1:ngroups, sep = "")
+  xtheta_group <- paste("xtheta.g", 1:ngroups, sep = "")
+  model_group <- paste("model.g", 1:ngroups, sep = "")
 
   #### Manifolds ####
 
@@ -310,7 +331,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
     if(positive) {
 
       manifolds[[k]] <- list(manifold = "poblq",
-                             parameters = pj_psi_group[i],
+                             parameters = xpsi_group[i],
                              extra = list(
                                p = nfactors[[i]],
                                q = nfactors[[i]],
@@ -318,7 +339,7 @@ get_cfa_structures <- function(data_list, full_model, control) {
       k <- k+1L
 
       manifolds[[k]] <- list(manifold = "poblq",
-                             parameters = pj_theta_group[i],
+                             parameters = xtheta_group[i],
                              extra = list(
                                p = nitems[[i]],
                                q = nitems[[i]],
@@ -339,8 +360,8 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   }
 
-  control_manifold <- get_manifold(manifolds = manifolds,
-                                   structures = param)
+  control_manifold <- create_manifolds(manifolds = manifolds,
+                                       structures = param)
 
   #### Transformations ####
 
@@ -357,14 +378,14 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
       dots$p <- nrow(trans[[psi_group[i]]])
       transforms[[k]] <- list(transform = "crossprod",
-                             parameters_in = pj_psi_group[i],
+                             parameters_in = xpsi_group[i],
                              parameters_out = psi_group[i],
                              extra = dots)
       k <- k+1L
 
       dots$p <- nrow(trans[[theta_group[i]]])
       transforms[[k]] <- list(transform = "crossprod",
-                              parameters_in = pj_theta_group[i],
+                              parameters_in = xtheta_group[i],
                               parameters_out = theta_group[i],
                               extra = dots)
       k <- k+1L

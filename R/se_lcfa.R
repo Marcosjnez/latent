@@ -112,7 +112,7 @@ general_se <- function(fit, type = "standard") {
   # }
   args$do.fit <- FALSE
   args$estimator <- paste(args$estimator, "r", sep = "")
-  fit2 <- do.call(lcfa, args)
+  fit2 <- do.call(lcfa, args) # AVOID RECOMPUTING CORRELATIONS HERE
 
   parameters <- fit@Optim$transparameters[fit2@modelInfo$parameters_labels]
   transparameters <- fit@Optim$transparameters[fit2@modelInfo$transparameters_labels]

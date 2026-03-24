@@ -188,8 +188,8 @@ pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NU
   manifolds <- list(
     list(manifold = "euclidean", parameters = names(param))
   )
-  control_manifold <- get_manifold(manifolds = manifolds,
-                                   structures = param)
+  control_manifold <- create_manifolds(manifolds = manifolds,
+                                       structures = param)
 
   #### Transformations ####
 

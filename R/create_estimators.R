@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/03/2026
+# Modification date: 20/03/2026
 
 get_estimators <- function(estimators, structures) {
 
@@ -79,7 +79,7 @@ get_estimators <- function(estimators, structures) {
     }
 
     ninputs <- length(inputs[[i]]) # Number of estimators
-    indices <- vector("list", length = ninputs)
+    indices <- labels <- vector("list", length = ninputs)
     for(j in 1:ninputs) {
 
       # Collect the unique subset of parameter labels that are not fixed values:
@@ -97,12 +97,14 @@ get_estimators <- function(estimators, structures) {
       }
 
       indices[[j]] <- m-1L # C++ indexing starts at 0
+      labels[[j]] <- labels_vector
 
     }
 
     result[[i]] <- c(
       list(estimator = estimator,
-           indices  = indices),
+           indices  = indices,
+           labels = labels),
       extra
     )
 

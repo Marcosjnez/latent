@@ -35,15 +35,12 @@ se.llca <- function(fit, type = "standard", model = "model", digits = 3) {
   if(model == "user") {
 
     model <- fit@modelInfo$prob_model
-    est <- fit@user_model
     fit@modelInfo$control$minimal_se <- FALSE
     fit@modelInfo$control$se_names <- fit@modelInfo$transparameters_labels
 
   } else if(model == "model") {
 
     model <- fit@modelInfo$model
-    est <- fit@parameters
-    # model <- fit@modelInfo$lca_param
     fit@modelInfo$control$minimal_se <- TRUE
     fit@modelInfo$control$se_names <- fit@modelInfo$parameters_labels
 
@@ -81,10 +78,9 @@ se.llca <- function(fit, type = "standard", model = "model", digits = 3) {
   names(se) <- mylabels
 
   # Tables:
-  table_se <- fill_list_with_vector(model, se)
-  table_se <- allnumeric(table_se)
-  table <- combine_est_se(est, table_se,
-                          digits = digits)
+  est <- fill_in(model, fit@Optim$transparameters, miss = 0)
+  table_se <- fill_in(model, se, miss = NA)
+  table <- combine_est_se(est, table_se, digits = digits)
 
   # Return:
   result <- list()
@@ -221,7 +217,7 @@ ci <- function(fit, type = "standard", model = "model",
   if(model == "user") {
 
     model <- fit@modelInfo$prob_model
-    est <- fit@user_model
+    # est <- fit@user_model
     fit@modelInfo$control$minimal_se <- FALSE
     fit@modelInfo$control$se_names <- fit@modelInfo$transparameters_labels
 
@@ -242,7 +238,7 @@ ci <- function(fit, type = "standard", model = "model",
   } else if(model == "model") {
 
     model <- fit@modelInfo$model
-    est <- fit@parameters
+    # est <- fit@parameters
     fit@modelInfo$control$minimal_se <- TRUE
     fit@modelInfo$control$se_names <- fit@modelInfo$parameters_labels
     x <- c(fit@Optim$parameters)
@@ -293,11 +289,13 @@ ci <- function(fit, type = "standard", model = "model",
 
   # Get confidence limits for the user model or raw model parameters:
 
+  est <- fill_in(model, fit@Optim$transparameters, miss = NA)
+
   # Tables:
-  lower_ci <- fill_list_with_vector(model, lower)
-  lower_ci <- allnumeric(lower_ci)
-  upper_ci <- fill_list_with_vector(model, upper)
-  upper_ci <- allnumeric(upper_ci)
+  lower_ci <- fill_in(model, lower)
+  # lower_ci <- allnumeric(lower_ci)
+  upper_ci <- fill_in(model, upper)
+  # upper_ci <- allnumeric(upper_ci)
 
   table <- combine_est_ci(lower_ci, est, upper_ci, digits = digits)
 

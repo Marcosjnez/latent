@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/09/2025
+# Modification date: 16/03/2026
 
 asymptotic_poly <- function(X, taus) {
 
@@ -26,7 +26,8 @@ asymptotic_poly <- function(X, taus) {
 correlation <- function(data, item_names = colnames(data),
                         cor = "pearson", estimator = "ml",
                         acov = "standard", nobs = NULL,
-                        missing = "pairwise.complete.obs") {
+                        missing = "pairwise.complete.obs",
+                        likelihood = NULL) {
 
   result <- list()
 
@@ -37,16 +38,24 @@ correlation <- function(data, item_names = colnames(data),
   p <- nrow(X) # Number of rows
   q <- ncol(X) # Number of columns
 
+  if(is.null(likelihood)) {
+    if(estimator == "ml") {
+      likelihood <- "normal"
+    } else {
+      likelihood <- "wishart"
+    }
+  }
+
   #### Compute the covariance and asymptotic covariance matrix ####
 
   if(p < q) {
 
-    stop("Please provide either a full-rank matrix of scores of a covariance matrix")
+    stop("Please provide either a full-rank matrix of scores or a covariance matrix")
 
   } else if(p == q) {
 
     if(is.null(nobs)) {
-      stop("A covariance matrix was provided but nobs is missing")
+      stop("A covariance matrix was provided but nobs is missing. Standard errors and some statistics will not be computed")
     }
 
     result$R <- X
@@ -58,18 +67,16 @@ correlation <- function(data, item_names = colnames(data),
     polychorics <- polyfast(X)
     result$R <- polychorics$correlation
     result$thresholds <- polychorics$thresholds
+    result$thresholds <- lapply(result$thresholds, FUN = \(x) x[-c(1, length(x))])
     result$cumprop <- polychorics$cumulative_freqs
     result$contingency_tables <- polychorics$contingency_tables
 
-    result$ACOV <- diag(1/c(polychorics$hess))#*nrow(X)
-    # result$ACOV <- asymptotic_poly(X, taus = result$thresholds)
-    # result$ACOV <- diag(c(DACOV2(p, result$R,
-    #                              polychorics$contingency_tables,
-    #                              polychorics$thresholds,
-    #                              polychorics$cumulative_freqs)))
+    result$ACOV <- diag(1/c(polychorics$hess))
+    # result$ACOV <- asymptotic_poly(X, taus = thresholds)
 
   } else if(cor == "pearson") {
 
+    if(is.null(nobs)) nobs <- p
     result$R <- stats::cor(X, use = missing)
 
     if(acov == "standard") {
@@ -82,6 +89,13 @@ correlation <- function(data, item_names = colnames(data),
 
     } else {
       stop("Unknown acov argument")
+    }
+
+    if(likelihood == "normal") {
+
+      result$R <- result$R*(nobs-1L)/nobs # SQRT??
+      result$ACOV <- result$ACOV*(nobs-1L)/nobs
+
     }
 
   } else {
@@ -108,7 +122,7 @@ correlation <- function(data, item_names = colnames(data),
 
   } else {
 
-    stop("Unknown esitmator")
+    stop("Unknown estimator")
 
   }
 

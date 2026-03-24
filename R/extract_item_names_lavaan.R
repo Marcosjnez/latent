@@ -1,4 +1,8 @@
-extract_item_names <- function(x, ngroups = NULL) {
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 13/03/2026
+
+extract_item_names_lavaan <- function(x, ngroups = NULL) {
   # x can be:
   # - a lavaan model syntax string
   # - a fitted lavaan object

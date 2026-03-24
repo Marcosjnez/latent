@@ -105,7 +105,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   # This is usually done for two-step estimators of covariate coefficients.
   if(class(model) == "llca") {
 
-    model <- model@transformed_pars
+    model <- model@parameters
     model$beta <- NULL
 
   }
@@ -299,7 +299,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # labels for each parameter:
     short_model <- get_short_lca_model(data_list = data_list, nclasses = nclasses,
                                        item = item, lca_all = lca_all,
-                                       model = model)
+                                       lca_param = lca_param, model = model)
     list2env(short_model, envir = environment())
 
     #### Create the structures ####
@@ -380,17 +380,20 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     # Logarithm likelihood:
     loglik <- Optim$outputs$estimators$doubles[[1]][1]
-    penalized_loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-                                          FUN = \(x) x[[1]])))
+    penalized_loglik <- Optim$f
+    # penalized_loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
+    #                                       FUN = \(x) x[[1]])))
+
+    # Create the transformed parameters:
+    transformed_pars <- fill_in(modelInfo$lca_all,
+                                Optim$transparameters)
+
+    parameters <- transformed_pars[names(modelInfo$lca_param)]
+
     # Logarithm likelihood of each response pattern:
     loglik_case <- Optim$outputs$estimators$vectors[[1]][[1]]
     # Sum of logarithm likelihoods by response pattern:
     loglik_pattern <- weights * loglik_case
-
-    # Create the transformed parameters:
-    transformed_pars <- fill_list_with_vector(modelInfo$lca_all,
-                                              Optim$transparameters)
-    transformed_pars <- allnumeric(transformed_pars)
 
     ## Summary table with information for each response pattern ##
     # Estimated "counts" for each response pattern:
@@ -422,22 +425,21 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # Create the parameter table:
     selection <- match(unlist(prob_model), transparameters_labels)
     out <- Optim$transparameters[selection]
-    user_model <- fill_list_with_vector(prob_model, out)
-    user_model <- allnumeric(user_model)
+    user_model <- fill_in(prob_model, out)
 
-    selection <- match(unlist(log_model), transparameters_labels)
-    out <- Optim$transparameters[selection]
-    raw_model <- fill_list_with_vector(log_model, out)
-    raw_model <- allnumeric(raw_model)
+    # selection <- match(unlist(log_model), transparameters_labels)
+    # out <- Optim$transparameters[selection]
+    # raw_model <- fill_list_with_vector(log_model, out)
+    # raw_model <- allnumeric(raw_model)
 
-    ClassConditional <- user_model$items
+    ClassConditional <- user_model[-1]
     RespConditional <- probCat <- list() # Only for full multinomial models
 
     # Additional outputs for full multinomial models:
     if(all(item == "multinomial")) {
 
       classes <- colMeans(transformed_pars$class)
-      conditionals <- user_model$items
+      conditionals <- ClassConditional
 
       probCat <- lapply(conditionals, FUN = \(mat) {
         # Calculate P(y|X)*P(X), the joint probability:
@@ -479,7 +481,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                            modelInfo          = modelInfo,
                            Optim              = Optim,
                            user_model         = user_model,
-                           parameters         = raw_model,
+                           parameters         = parameters,
                            transformed_pars   = transformed_pars,
                            posterior          = posterior,
                            state              = state,

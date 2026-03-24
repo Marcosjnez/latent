@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/03/2026
+# Modification date: 15/03/2026
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
@@ -30,6 +30,8 @@
 #' @param acov String. "standard" or "robust". Default is "standard".
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
 #' @param message Logical. Defaults to FALSE.
+#' @param se Logical. Compute standard errors. Defaults to TRUE.
+#' @param likelihood String. Use N (normal) or N-1 (wishart) in the denominator. Defaults to "normal" for ML and "wishart" otherwise.
 #' @param mimic String. Choose the output you want to obtain. Defaults to 'latent'.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #' @param ... Additional lavaan arguments. See ?lavaan for more information.
@@ -66,6 +68,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                  missing = "pairwise.complete.obs",
                  std.lv = TRUE, acov = "standard",
                  do.fit = TRUE, message = FALSE,
+                 likelihood = NULL, se = TRUE,
                  mimic = "latent", control = NULL,
                  ...) {
 
@@ -82,7 +85,6 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   control$estimator <- tolower(estimator)
   control <- lcfa_control(control)
 
-  # stop("ahh")
   if(is.null(group)) {
     ngroups <- 1L
   } else {
@@ -90,24 +92,47 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     ngroups <- length(group_label)
   }
 
-  item_names <- extract_item_names(model, ngroups = ngroups)
+  item_names <- extract_item_names_lavaan(model, ngroups = ngroups)
 
-  # Estimate the correlation matrix for each group::
+  # Estimate the correlation matrix for each group:
   X <- correl <- nobs <- vector("list", length = ngroups)
   if(ngroups > 1) {
     names(X) <- names(correl) <- group_label
+    NACOV <- WLS.V <- thresholds <- vector("list", length = ngroups)
+  } else {
+    NACOV <- WLS.V <- thresholds <- NULL
   }
 
-  for(i in 1:ngroups) {
+  if(!is.null(sample.cov)) {
 
-    if(ngroups > 1) {
-      X[[i]] <- data[data[[group]] == group_label[i], item_names[[i]]]
-    } else {
-      X[[i]] <- data[, item_names[[i]]]
+    for(i in 1:ngroups) {
+
+      if(ngroups > 1) {
+        X[[i]] <- data[data[[group]] == group_label[i], item_names[[i]]]
+      } else {
+        X[[i]] <- data[, item_names[[i]]]
+      }
+      nobs[[i]] <- nrow(X[[i]])
+
+      rownames(sample.cov[[i]]) <- colnames(sample.cov[[i]]) <- item_names[[i]]
+      correl[[i]]$R <- sample.cov[[i]]
+      p <- nrow(sample.cov[[i]])
+      # ACOV?
+      correl[[i]]$W <- matrix(1, nrow = p, ncol = p)
+
     }
-    nobs[[i]] <- nrow(X[[i]])
 
-    if(is.null(sample.cov)) {
+  } else {
+
+    sample.cov <- vector("list", length = ngroups)
+    for(i in 1:ngroups) {
+
+      if(ngroups > 1) {
+        X[[i]] <- data[data[[group]] == group_label[i], item_names[[i]]]
+      } else {
+        X[[i]] <- data[, item_names[[i]]]
+      }
+      nobs[[i]] <- nrow(X[[i]])
 
       correl[[i]] <- correlation(data = X[[i]],
                                  item_names = item_names[[i]],
@@ -115,14 +140,15 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                                  estimator = estimator,
                                  acov = acov,
                                  nobs = nobs[[i]],
-                                 missing = missing)
-
-    } else {
-
-      correl[[i]]$R <- sample.cov
-      p <- nrow(sample.cov)
-      # ACOV?
-      correl[[i]]$W <- matrix(1, nrow = p, ncol = p)
+                                 missing = missing,
+                                 likelihood = likelihood)
+      sample.cov[[i]] <- correl[[i]]$R
+      rownames(sample.cov[[i]]) <- colnames(sample.cov[[i]]) <- item_names[[i]]
+      NACOV[[i]] <- correl[[i]]$ACOV
+      if(!is.null(correl[[i]]$thresholds)) {
+        thresholds[[i]] <- correl[[i]]$thresholds
+      }
+      WLS.V[[i]] <- diag(c(correl[[i]]$W))
 
     }
 
@@ -130,17 +156,20 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   # Extract the lavaan model:
   model_syntax <- model
-  # stop("ahhh")
   LAV <- lavaan::cfa(model = model_syntax,
-                     data = data,
+                     # data = data,
                      sample.cov = sample.cov,
                      sample.nobs = nobs,
                      group = group,
+                     NACOV = NACOV,
+                     WLS.V = WLS.V,
+                     ordered = ordered,
+                     # sample.th = thresholds, # NOT WORKING
                      # estimator = estimator,
-                     # ordered = ordered,
                      # parameterization = "theta",
                      std.lv = std.lv,
                      do.fit = FALSE,
+                     warn = FALSE, # REMOVE THIS FOR DEBUGGING
                      ...)
 
   LAV@Options$positive <- positive
@@ -159,12 +188,6 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   group_label    <- LAV@Data@group.label
   item_label     <- LAV@Data@ov.names
   factor_label   <- replicate(ngroups, list(LAV@Model@dimNames[[1]][[2]]))
-  X              <- LAV@Data@X
-
-  # Rename columns:
-  for(i in 1:ngroups) {
-    colnames(X[[i]]) <- item_names[[i]]
-  }
 
   # Model for the parameters:
   model <- getmodel_fromlavaan(LAV)
@@ -225,6 +248,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                     transparameters_labels = transparameters_labels,
                     param = param,
                     trans = trans,
+                    lavaan_model = model,
                     control_manifold = control_manifold,
                     control_transform = control_transform,
                     control_estimator = control_estimator,
@@ -357,7 +381,9 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   }
 
   # Standard errors:
-  Optim$SE <- se(result, type = "standard", digits = 9)
+  if(se != "none" || isFALSE(se)) {
+    Optim$SE <- se(result, type = "standard", digits = 9)
+  }
 
   result@Optim <- Optim
 

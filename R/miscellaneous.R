@@ -88,3 +88,51 @@ insert_object <- function(X, Y) {
 
   X
 }
+
+fill_in <- function(lst, values, miss = NA) {
+  if (!is.atomic(values) || is.null(names(values)) ||
+      anyNA(names(values)) || any(names(values) == "")) {
+    stop("`values` must be a named atomic vector.")
+  }
+
+  fill_leaf <- function(x) {
+    if (!is.character(x)) {
+      stop("All terminal objects in `lst` must be character.")
+    }
+
+    x_vec <- as.vector(x)
+    idx   <- match(x_vec, names(values))
+
+    # initialize output with the same atomic type as `values`
+    out <- values[rep(NA_integer_, length(x_vec))]
+    out[] <- miss
+
+    hit <- !is.na(idx)
+    out[hit] <- unname(values[idx[hit]])
+
+    # restore original structure
+    if (!is.null(dim(x))) {
+      dim(out) <- dim(x)
+      dimnames(out) <- dimnames(x)
+    } else {
+      names(out) <- names(x)
+    }
+
+    out
+  }
+
+  recurse <- function(x) {
+    if (is.list(x) && !is.data.frame(x)) {
+      x[] <- lapply(x, recurse)
+      return(x)
+    }
+
+    if (is.atomic(x)) {
+      return(fill_leaf(x))
+    }
+
+    stop("Unsupported type found in `lst`.")
+  }
+
+  recurse(lst)
+}

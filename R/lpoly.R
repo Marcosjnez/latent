@@ -179,7 +179,7 @@ lpoly <- function(data,
 
   }
 
-  control_manifold <- get_manifold(manifolds = manifolds,
+  control_manifold <- create_manifolds(manifolds = manifolds,
                                    structures = poly_param)
 
   #### Transformations ####

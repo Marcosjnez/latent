@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/10/2025
+# Modification date: 24/03/2026
 
 combine_est_se <- function(est, se, digits = 2) {
 
@@ -64,11 +64,9 @@ combine_est_se <- function(est, se, digits = 2) {
 
   }
 
-  classes <- combine_item_est_se(est[1], se[1])
+  result <- combine_item_est_se(est, se)
 
-  items <- combine_item_est_se(est$items, se$items)
-
-  return(list(classes = classes, items = items))
+  return(result)
 
 }
 
@@ -84,13 +82,9 @@ combine_est_ci <- function(lower, est, upper, digits = 2) {
     dimnames = dimnames(E))
   }
 
-  # Combine class-level estimates
-  classes <- LEU(est[[1]], lower[[1]], upper[[1]])
-
   # Combine item-level estimates
-  items <- mapply(LEU, est$items, lower$items, upper$items,
-                  SIMPLIFY = FALSE)
+  result <- mapply(LEU, est, lower, upper, SIMPLIFY = FALSE)
 
-  list(classes = classes, items = items)
+  return(result)
 
 }

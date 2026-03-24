@@ -294,8 +294,8 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   }
 
-  control_manifold <- get_manifold(manifolds = manifolds,
-                                   structures = rot_param)
+  control_manifold <- create_manifoldsfold(manifolds = manifolds,
+                                           structures = rot_param)
 
   #### Transformations ####
 

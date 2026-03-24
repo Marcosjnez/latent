@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 03/09/2025
+# Modification date: 20/03/2026
 
 lca_control <- function(control) {
 
@@ -33,16 +33,6 @@ lca_control <- function(control) {
     stop("penalties should be TRUE, FALSE, or a list")
 
   }
-
-  # if(is.null(control$center)) {
-  #
-  #   control$center <- FALSE # Do not center the design matrix
-  #
-  # } else {
-  #
-  #   control$center <- TRUE # Center the design matrix
-  #
-  # }
 
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L
@@ -119,12 +109,6 @@ lca_control <- function(control) {
   } else if(control$rstarts < 0L) {
     stop("rstarts must be a positive integer")
   }
-
-  # if(is.null(control$ncov_transform)) {
-  #   control$ncov_transform <- 1L
-  # } else if(control$ncov_transform < 0L) {
-  #   stop("ncov_transform must be a positive integer")
-  # }
 
   return(control)
 
