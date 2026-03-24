@@ -22,56 +22,56 @@ $n$ times in the sample, can be written as
 
 $$\begin{aligned}
 l & {= P(\mathbf{y})^{n}} \\
- & {= (\sum\limits_{k = 1}^{K}P\left( x_{k} \right)P\left( \mathbf{y}|x_{k} \right))^{n},}
+ & {= \left( \sum\limits_{k = 1}^{K}P(x_{k})P(\mathbf{y}|x_{k}) \right)^{n},}
 \end{aligned}$$
 
 Assuming local independence, we can rewrite the conditional
 probabilities as
 
-$$P\left( \mathbf{y}|x_{k} \right) = \prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right),$$
+$$P(\mathbf{y}|x_{k}) = \prod\limits_{j = 1}^{J}P(y_{j}|x_{k}),$$
 
 where $y_{j}$ denotes the score in item $j$.
 
 With this assumption, the likelihood can be rewritten as
-$$l = (\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right))^{n},$$
+$$l = \left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{n},$$
 
 and the logarithm likelihood becomes
-$$ll = n\log(\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right)).$$
+$$ll = n{\log}\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right).$$
 
 ### First-order derivatives
 
 The partial derivative of $ll$ with respect to the probability of
 belonging to the class $k$ is
-$$\frac{\partial ll}{\partial P\left( x_{g} \right)} = \frac{n}{\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right)}\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{g} \right).$$
+$$\frac{\partial ll}{\partial P(x_{g})} = \frac{n}{\sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k})}\prod\limits_{j = 1}^{J}P(y_{j}|x_{g}).$$
 
 On the other hand, the partial derivative of $ll$ with respect to the
 probability of scoring a particular $y_{j}$ while belonging to the class
 $k$ is
-$$\frac{\partial ll}{\partial P\left( y_{m}|x_{g} \right)} = \frac{n}{\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right)}P\left( x_{g} \right)\prod\limits_{j \neq m}P\left( y_{j}|x_{g} \right).$$
+$$\frac{\partial ll}{\partial P(y_{m}|x_{g})} = \frac{n}{\sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k})}P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g}).$$
 
 ### Second-order derivatives
 
 The second partial derivative of $ll$ with respect to the probability of
 belonging to the class $k$ is
 
-$$\frac{\partial^{2}ll}{\partial P\left( x_{g} \right)\partial P\left( x_{h} \right)} = -\frac{n\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{h} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{g} \right)}{(\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right))^{2}}$$
+$$\frac{\partial^{2}ll}{\partial P(x_{g})\partial P(x_{h})} = -\frac{n\prod\limits_{j = 1}^{J}P(y_{j}|x_{h})\prod\limits_{j = 1}^{J}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}$$
 
-$$\frac{\partial ll}{\partial P\left( y_{m}|x_{g} \right)P\left( y_{m}|x_{g} \right)} = -\frac{nP\left( x_{g} \right)\prod\limits_{j \neq m}P\left( y_{j}|x_{g} \right)P\left( x_{g} \right)\prod\limits_{j \neq m}P\left( y_{j}|x_{g} \right)}{(\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right))^{2}}.$$
+$$\frac{\partial ll}{\partial P(y_{m}|x_{g})P(y_{m}|x_{g})} = -\frac{nP(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
 
-$$\frac{\partial ll}{\partial P\left( y_{m}|x_{g} \right)P\left( y_{n}|x_{g} \right)} = \frac{n\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right)P\left( x_{g} \right)\prod\limits_{j \neq m,n}P\left( y_{j}|x_{g} \right) - nP\left( x_{g} \right)\prod\limits_{j \neq n}P\left( y_{j}|x_{g} \right)P\left( x_{g} \right)\prod\limits_{j \neq m}P\left( y_{j}|x_{g} \right)}{(\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right))^{2}}.$$
+$$\frac{\partial ll}{\partial P(y_{m}|x_{g})P(y_{n}|x_{g})} = \frac{n\sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k})P(x_{g})\prod\limits_{j \neq m,n}P(y_{j}|x_{g}) - nP(x_{g})\prod\limits_{j \neq n}P(y_{j}|x_{g})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
 
 The second partial derivative of $ll$ with respect to the probability of
 scoring a particular $y_{m}$ or $y_{n}$ while belonging to the class $g$
 or $h$ is
-$$\frac{\partial ll}{\partial P\left( y_{m}|x_{g} \right)P\left( y_{n}|x_{h} \right)} = -\frac{nP\left( x_{h} \right)\prod\limits_{j \neq n}P\left( y_{j}|x_{h} \right)P\left( x_{g} \right)\prod\limits_{j \neq m}P\left( y_{j}|x_{g} \right)}{(\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right))^{2}}.$$
+$$\frac{\partial ll}{\partial P(y_{m}|x_{g})P(y_{n}|x_{h})} = -\frac{nP(x_{h})\prod\limits_{j \neq n}P(y_{j}|x_{h})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
 
 The second partial derivative of $ll$ between the probability of
 belonging to the class $g$ and the probability of scoring a particular
 $y_{m}$ while belonging to the class $h$ is
 
-$$\frac{\partial ll}{\partial P\left( x_{g} \right)\partial P\left( y_{m}|x_{g} \right)} = \frac{n\prod\limits_{j \neq m}P\left( y_{j}|x_{g} \right)\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right) - n\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{g} \right)P\left( x_{g} \right)\prod\limits_{j \neq m}P\left( y_{j}|x_{g} \right)}{(\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right))^{2}}.$$
+$$\frac{\partial ll}{\partial P(x_{g})\partial P(y_{m}|x_{g})} = \frac{n\prod\limits_{j \neq m}P(y_{j}|x_{g})\sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) - n\prod\limits_{j = 1}^{J}P(y_{j}|x_{g})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
 
-$$\frac{\partial ll}{\partial P\left( x_{h} \right)\partial P\left( y_{m}|x_{g} \right)} = -\frac{n\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{h} \right)P\left( x_{g} \right)\prod\limits_{j \neq m}P\left( y_{j}|x_{g} \right)}{(\sum\limits_{k = 1}^{K}P\left( x_{k} \right)\prod\limits_{j = 1}^{J}P\left( y_{j}|x_{k} \right))^{2}}.$$
+$$\frac{\partial ll}{\partial P(x_{h})\partial P(y_{m}|x_{g})} = -\frac{n\prod\limits_{j = 1}^{J}P(y_{j}|x_{h})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
 
 ### Model for the conditional probabilities
 
@@ -79,16 +79,16 @@ $$\frac{\partial ll}{\partial P\left( x_{h} \right)\partial P\left( y_{m}|x_{g} 
 
 When $y_{j}$ is a bernoulli random variable, the conditional probability
 becomes
-$$P\left( y_{j}|x_{k} \right) = \theta_{j}^{y_{j}}\left( 1 - \theta_{j} \right)^{1 - y_{j}},$$
+$$P(y_{j}|x_{k}) = \theta_{j}^{y_{j}}(1 - \theta_{j})^{1 - y_{j}},$$
 where $\theta_{j}$ is the probability of endorsing item $j$ (i.e.,
 $y_{j} = 1$).
 
 Its partial derivative with respect to $\theta_{j}$ is
-$$\frac{\partial P\left( y_{j}|x_{k} \right)}{\theta_{j}} = \frac{1}{2y_{j} - 1}.$$
+$$\frac{\partial P(y_{j}|x_{k})}{\theta_{j}} = \frac{1}{2y_{j} - 1}.$$
 
 #### Multinomial
 
-$$\frac{\partial P\left( y_{m}|x_{g} \right)}{\partial\theta_{m_{k}|g}} = \frac{n}{l}P\left( x_{g} \right)\prod\limits_{j \neq m}P\left( y_{j}|x_{g} \right).$$
+$$\frac{\partial P(y_{m}|x_{g})}{\partial\theta_{m_{k}|g}} = \frac{n}{l}P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g}).$$
 
 #### Gaussian
 
