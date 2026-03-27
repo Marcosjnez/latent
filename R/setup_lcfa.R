@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 16/03/2026
+# Modification date: 25/03/2026
 
 get_full_cfa_model <- function(data_list, model, control = NULL) {
 
@@ -10,9 +10,9 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
   # Initialize the objects to store the initial parameters:
   param <- trans <- vector("list")
-  fixed <- fixed_values <- nonfixed <- vector("list")
+  fixed <- nonfixed <- fixed_values_list <- vector("list")
 
-  #### Parameters of the model for each group ####
+  #### Model for the transformed parameters ####
 
   # Initialize the target matrices for positive-definite constraints:
   target_psi <- target_theta <- targets <- vector("list", length = ngroups)
@@ -100,22 +100,24 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
   trans <- create_parameters(list_struct)
 
-  # Replace latent labels by lavaan labels:
+  #### Replace latent labels by lavaan labels ####
+
   for(i in 1:ngroups) {
 
     # Get the positions of parameters and fixed values:
 
-    group_i <- c(lambda_group[i], psi_group[i], theta_group[i])
+    # Ensure the same label ordering than in model:
+    group_i <- c(lambda_group[i], theta_group[i], psi_group[i])
 
-    nonfixed[group_i] <- lapply(model[[i]], FUN = \(x) {
+    nonfixed[group_i] <- lapply(model[[i]][1:3], FUN = \(x) {
       which(is.na(suppressWarnings(as.numeric(x))))
     })
 
-    fixed[group_i] <- lapply(model[[i]], FUN = \(x) {
+    fixed[group_i] <- lapply(model[[i]][1:3], FUN = \(x) {
       which(!is.na(suppressWarnings(as.numeric(x))))
     })
 
-    fixed_values[group_i] <- lapply(model[[i]], FUN = \(x) {
+    fixed_values_list[group_i] <- lapply(model[[i]][1:3], FUN = \(x) {
       numerals <- suppressWarnings(as.numeric(x))
       inds <- which(!is.na(numerals))
       return(numerals[inds])
@@ -127,7 +129,10 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
   }
 
-  # Untransformed parameters:
+  transparameters_labels <- unname(unique(unlist(trans)))
+  ntrans <- length(transparameters_labels)
+
+  #### Model for the parameters ####
 
   for(i in 1:ngroups) {
 
@@ -190,96 +195,104 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
     }
   }
 
-  #### Arrange labels ####
-
-  # Arrange parameter labels:
-  vector_param <- unname(unique(unlist(param)))
-
-  # Select the unique, nonnumeric labels:
-  nonfixed_pars <- which(is.na(suppressWarnings(as.numeric(vector_param))))
-  parameters_labels <- vector_param[nonfixed_pars]
-  nparam <- length(parameters_labels)
-
-  # Arrange transparameter labels:
-  vector_trans <- unname(unlist(trans))
-  transparameters_labels <- unique(vector_trans)
-  ntrans <- length(transparameters_labels)
-
-  #### Relate the transformed parameters to the parameters ####
-
-  param2trans <- match(transparameters_labels, parameters_labels)
-  param2trans <- param2trans[!is.na(param2trans)]
-  # Relate the parameters to the transformed parameters:
-  trans2param <- match(parameters_labels, transparameters_labels)
-
   #### Create the initial values for the parameters ####
 
   # Collect the unique nontransformed parameters and the unique transformed parameters:
 
-  init_trans <- vector("list", length = control$rstarts)
+  init_param <- vector("list", length = control$rstarts)
 
   for(rs in 1:control$rstarts) {
 
-    init_trans[[rs]] <- vector("list")
+    init_param[[rs]] <- vector("list")
 
     for(i in 1:ngroups) {
 
-      init_trans[[rs]][[lambda_group[i]]] <- rorth(nitems[[i]], nfactors[[i]])
-      init_trans[[rs]][[lambda_group[i]]][fixed[[lambda_group[i]]]] <- fixed_values[[lambda_group[i]]]
+      init_param[[rs]][[lambda_group[i]]] <- rorth(nitems[[i]], nfactors[[i]])
+      init_param[[rs]][[lambda_group[i]]][fixed[[lambda_group[i]]]] <- fixed_values_list[[lambda_group[i]]]
 
       if(positive) {
 
-        init_trans[[rs]][[xtheta_group[i]]] <- rpoblq(nitems[[i]], nitems[[i]], constraints = target_theta[[i]])
-        init_trans[[rs]][[xpsi_group[i]]] <- rpoblq(nfactors[[i]], nfactors[[i]], constraints = target_psi[[i]])
+        init_param[[rs]][[xtheta_group[i]]] <- rpoblq(nitems[[i]], nitems[[i]], constraints = target_theta[[i]])
+        init_param[[rs]][[xpsi_group[i]]] <- rpoblq(nfactors[[i]], nfactors[[i]], constraints = target_psi[[i]])
 
-        init_trans[[rs]][[theta_group[i]]] <- crossprod(init_trans[[rs]][[xtheta_group[i]]])
-        init_trans[[rs]][[psi_group[i]]] <- crossprod(init_trans[[rs]][[xpsi_group[i]]])
+        init_param[[rs]][[theta_group[i]]] <- crossprod(init_param[[rs]][[xtheta_group[i]]])
+        init_param[[rs]][[psi_group[i]]] <- crossprod(init_param[[rs]][[xpsi_group[i]]])
 
       } else {
 
         U <- diag(1/diag(solve(correl[[i]]$R)))
-        init_trans[[rs]][[theta_group[i]]] <- U
-        init_trans[[rs]][[theta_group[i]]][fixed[[theta_group[i]]]] <- fixed_values[[theta_group[i]]]
+        init_param[[rs]][[theta_group[i]]] <- U
+        init_param[[rs]][[theta_group[i]]][fixed[[theta_group[i]]]] <- fixed_values_list[[theta_group[i]]]
 
         P <- diag(nfactors[[i]])
-        init_trans[[rs]][[psi_group[i]]] <- P
-        init_trans[[rs]][[psi_group[i]]][fixed[[psi_group[i]]]] <- fixed_values[[psi_group[i]]]
+        init_param[[rs]][[psi_group[i]]] <- P
+        init_param[[rs]][[psi_group[i]]][fixed[[psi_group[i]]]] <- fixed_values_list[[psi_group[i]]]
 
       }
 
-      Lambda <- init_trans[[rs]][[lambda_group[i]]]
-      Theta <- init_trans[[rs]][[theta_group[i]]]
-      Psi <- init_trans[[rs]][[psi_group[i]]]
-      init_trans[[rs]][[model_group[i]]] <- Lambda %*% Psi %*% t(Lambda) + Theta
-      init_trans[[rs]][[S_group[i]]] <- correl[[i]]$R
+      # Lambda <- init_param[[rs]][[lambda_group[i]]]
+      # Theta <- init_param[[rs]][[theta_group[i]]]
+      # Psi <- init_param[[rs]][[psi_group[i]]]
+      # init_param[[rs]][[model_group[i]]] <- Lambda %*% Psi %*% t(Lambda) + Theta
+      init_param[[rs]][[S_group[i]]] <- correl[[i]]$R
 
     }
 
   }
 
-  #### Create the vectors of parameters and transformed parameters ####
+  #### Custom initial values ####
 
-  parameters <- transparameters <- vector("list", length = control$rstarts)
-  # Indices of the unique transparameters in init_trans:
-  trans_inds <- match(transparameters_labels, vector_trans)
-  init_inds <- match(parameters_labels, vector_trans)
+  # # Replace initial starting values by custom starting values:
+  #
+  # if(!is.null(control$start)) {
+  #
+  #   nm <- names(control$start)
+  #   nm <- nm[!vapply(control$start, is.null, logical(1))]
+  #
+  #   for (i in seq_len(control$rstarts)) {
+  #     common_nm <- intersect(nm, names(init_param[[i]]))
+  #     for (j in common_nm) {
+  #       init_param[[i]][[j]] <- insert_object(init_param[[i]][[j]],
+  #                                             control$start[[j]])
+  #     }
+  #   }
+  #
+  # }
 
-  for(rs in 1:control$rstarts) {
+  #### Pass the initial values to vectors ####
 
-    transparameters[[rs]] <- unlist(init_trans[[rs]])[trans_inds]
-    names(transparameters[[rs]]) <- transparameters_labels
-    parameters[[rs]] <- unlist(init_trans[[rs]])[init_inds]
-    names(parameters[[rs]]) <- parameters_labels
+  # stop("AHHHH")
 
+  # Collect the parameter labels:
+  vector_param <- unname(unlist(param))
+  indicator <- is.na(suppressWarnings(as.numeric(vector_param)))
+  fixed_indices <- which(!indicator)
+  fixed_values <- as.numeric(vector_param[fixed_indices])
+  parameters_indices <- which(indicator)
+  parameters_labels <- unique(vector_param[parameters_indices])
+  nparam <- length(parameters_labels)
+
+  cfa_all <- trans
+  cfa_all[names(param)] <- param
+
+  parameters <- vector("list", length = control$rstarts)
+  select_params <- match(parameters_labels, vector_param)
+  fixed_trans_vector <- extract_unique_values(trans, cfa_all)
+  trans2param <- match(parameters_labels, transparameters_labels)
+  transparameters <- vector("list", length = control$rstarts)
+  for(i in 1:control$rstarts) {
+    parameters[[i]] <- unlist(init_param[[i]])[select_params]
+    names(parameters[[i]]) <- parameters_labels
+    transparameters[[i]] <- fixed_trans_vector
+    transparameters[[i]][trans2param] <- parameters[[i]]
   }
 
   #### Set up the optimizer ####
 
   # Create defaults for the control of the optimizer:
+  control$init_param <- init_param
   control$parameters <- parameters
   control$transparameters <- transparameters
-  control$init <- init_trans
-  control$param2transparam <- param2trans-1L
   control$transparam2param <- trans2param-1L
 
   #### Return ####
@@ -422,8 +435,8 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   }
 
-  control_transform <- get_transforms(transforms = transforms,
-                                      structures = trans)
+  control_transform <- create_transforms(transforms = transforms,
+                                         structures = trans)
 
   #### Estimators ####
 
@@ -486,8 +499,8 @@ get_cfa_structures <- function(data_list, full_model, control) {
 
   }
 
-  control_estimator <- get_estimators(estimators = estimators,
-                                      structures = trans)
+  control_estimator <- create_estimators(estimators = estimators,
+                                         structures = trans)
 
   #### Return ####
 

@@ -136,3 +136,101 @@ fill_in <- function(lst, values, miss = NA) {
 
   recurse(lst)
 }
+
+extract_unique_values <- function(chars, vals, miss = 0) {
+
+  coerce_numeric_leaf <- function(v, miss) {
+    # Return a numeric vector. Non-numeric entries become `miss`.
+    if (is.null(v) || is.list(v) || !is.atomic(v)) {
+      return(NULL)
+    }
+
+    if (is.numeric(v)) {
+      return(as.vector(v))
+    }
+
+    if (is.character(v)) {
+      out <- suppressWarnings(as.numeric(v))
+      out[is.na(out)] <- miss
+      return(out)
+    }
+
+    # Anything else does not contribute numeric values
+    NULL
+  }
+
+  align_leaf <- function(ch, vl, miss) {
+    n <- length(ch)
+    out <- rep(miss, n)
+    ok  <- rep(FALSE, n)
+
+    v <- coerce_numeric_leaf(vl, miss)
+
+    if (!is.null(v)) {
+      m <- min(n, length(v))
+      if (m > 0L) {
+        out[seq_len(m)] <- v[seq_len(m)]
+        ok[seq_len(m)]  <- !is.na(v[seq_len(m)])
+      }
+    }
+
+    list(vals = out, ok = ok)
+  }
+
+  walk <- function(ch, vl = NULL) {
+    if (is.list(ch) && !is.data.frame(ch)) {
+      nms_ch <- names(ch)
+      if (is.null(nms_ch)) nms_ch <- as.character(seq_along(ch))
+
+      pieces <- lapply(seq_along(ch), function(i) {
+        nm <- nms_ch[i]
+        vl_i <- NULL
+
+        if (!is.null(vl) && is.list(vl) && !is.data.frame(vl)) {
+          nms_vl <- names(vl)
+
+          if (!is.null(nms_vl)) {
+            if (nm %in% nms_vl) vl_i <- vl[[nm]]
+          } else if (length(vl) >= i) {
+            vl_i <- vl[[i]]
+          }
+        }
+
+        walk(ch[[i]], vl_i)
+      })
+
+      return(list(
+        chars = unlist(lapply(pieces, `[[`, "chars"), use.names = FALSE),
+        vals  = unlist(lapply(pieces, `[[`, "vals"),  use.names = FALSE),
+        ok    = unlist(lapply(pieces, `[[`, "ok"),    use.names = FALSE)
+      ))
+    }
+
+    if (!is.character(ch)) {
+      stop("All leaves in `chars` must be character.")
+    }
+
+    tmp <- align_leaf(ch, vl, miss)
+    list(
+      chars = as.vector(ch),
+      vals  = tmp$vals,
+      ok    = tmp$ok
+    )
+  }
+
+  flat <- walk(chars, vals)
+
+  u <- unique(flat$chars)
+  out <- rep(miss, length(u))
+  names(out) <- u
+
+  idx_split <- split(seq_along(flat$chars), flat$chars)
+
+  for (nm in names(idx_split)) {
+    idx <- idx_split[[nm]]
+    first_ok <- match(TRUE, flat$ok[idx])
+    out[nm] <- if (!is.na(first_ok)) flat$vals[idx[first_ok]] else miss
+  }
+
+  out
+}

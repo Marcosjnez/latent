@@ -1,8 +1,8 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 20/03/2026
+# Modification date: 25/03/2026
 
-get_transforms <- function(transforms, structures) {
+create_transforms <- function(transforms, structures) {
 
   # Collect the unique parameter labels that are not fixed values:
   param_structures_vector <- unname(unique(c(unlist(structures))))

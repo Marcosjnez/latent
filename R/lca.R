@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/03/2026
+# Modification date: 25/03/2026
 #'
 #' @title
 #' Latent Class Analysis.
@@ -299,7 +299,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     # labels for each parameter:
     short_model <- get_short_lca_model(data_list = data_list, nclasses = nclasses,
                                        item = item, lca_all = lca_all,
-                                       lca_param = lca_param, model = model)
+                                       param = param, model = model)
     list2env(short_model, envir = environment())
 
     #### Create the structures ####
@@ -328,8 +328,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                       prob_model = prob_model,
                       parameters_labels = parameters_labels,
                       transparameters_labels = transparameters_labels,
-                      lca_param = lca_param,
-                      lca_trans = lca_trans,
+                      param = param,
+                      trans = trans,
                       lca_all = lca_all,
                       control_manifold = control_manifold,
                       control_transform = control_transform,
@@ -388,7 +388,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     transformed_pars <- fill_in(modelInfo$lca_all,
                                 Optim$transparameters)
 
-    parameters <- transformed_pars[names(modelInfo$lca_param)]
+    parameters <- transformed_pars[names(modelInfo$param)]
 
     # Logarithm likelihood of each response pattern:
     loglik_case <- Optim$outputs$estimators$vectors[[1]][[1]]

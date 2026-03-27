@@ -204,8 +204,8 @@ lpoly <- function(data,
 
   }
 
-  control_transform <- get_transforms(transforms = transforms,
-                                      structures = poly_trans)
+  control_transform <- create_transforms(transforms = transforms,
+                                         structures = poly_trans)
 
   #### Estimators ####
 
@@ -228,8 +228,8 @@ lpoly <- function(data,
 
   }
 
-  control_estimator <- get_estimators(estimators = estimators,
-                                      structures = poly_trans)
+  control_estimator <- create_estimators(estimators = estimators,
+                                         structures = poly_trans)
 
   #### Collect all the model information ####
 

@@ -357,8 +357,8 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   }
 
-  control_transform <- get_transforms(transforms = transforms,
-                                      structures = rot_trans)
+  control_transform <- create_transforms(transforms = transforms,
+                                         structures = rot_trans)
 
   #### Estimators ####
 
@@ -379,8 +379,8 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   }
 
-  control_estimator <- get_estimators(estimators = estimators,
-                                      structures = rot_trans)
+  control_estimator <- create_estimators(estimators = estimators,
+                                         structures = rot_trans)
 
   #### Structures ####
 

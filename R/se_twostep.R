@@ -1,16 +1,16 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/03/2026
+# Modification date: 25/03/2026
 
 se_twostep <- function(fit2, type = "standard") {
 
   fit1 <- fit2@modelInfo$original_model
 
   # Variance covariance of step 1:
-  # fit1@modelInfo$lca_param
+  # fit1@modelInfo$param
   VCOV1 <- se(fit1, type = type)
   # Variance covariance of step 2:
-  # fit2@modelInfo$lca_param
+  # fit2@modelInfo$param
   fit2@modelInfo$original_model <- NULL # Avoid infinite recursion
   VCOV2 <- se(fit2, type = type)
 
@@ -19,7 +19,7 @@ se_twostep <- function(fit2, type = "standard") {
   args$do.fit <- FALSE
   args$X <- fit2@data_list$original_X
   fit <- do.call(lca, args)
-  # fit@modelInfo$lca_param
+  # fit@modelInfo$param
 
   # Get the hessian matrix:
   control_manifold <- fit@modelInfo$control_manifold
@@ -57,11 +57,11 @@ se_twostep <- function(fit2, type = "standard") {
   names(VCOV2$se) <- fit2@modelInfo$parameters_labels
 
   # # Create the tables of parameters with standard errors:
-  # indices <- match(unlist(fit2@modelInfo$lca_param),
+  # indices <- match(unlist(fit2@modelInfo$param),
   #                  fit2@modelInfo$parameters_labels)
   # values <- VCOV2$se[indices]
   # values[is.na(values)] <- 0
-  # VCOV2$table_se <- fill_list_with_vector(fit2@modelInfo$lca_param, values)
+  # VCOV2$table_se <- fill_list_with_vector(fit2@modelInfo$param, values)
   # VCOV2$table_se <- allnumeric(VCOV2$table_se)
 
   # se(fit2, type = type)$table_se$beta

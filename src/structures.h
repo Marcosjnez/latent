@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 31/08/2025
+ * Modification date: 24/03/2026
  */
 
 #include <tuple>
@@ -104,6 +104,6 @@ struct arguments_optim{
   int pick = 0L;
 
   int nparam, ntransparam, nrow_post, ncol_post;
-  arma::uvec param2transparam, transparam2param;
+  arma::uvec transparam2param;
 
 };

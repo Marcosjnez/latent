@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/03/2026
+# Modification date: 25/03/2026
 
 #### Install latent ####
 
@@ -305,6 +305,21 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 fit@Optim$SE$se
+
+# saveRDS(list(fit@modelInfo$control_manifold,
+#              fit@modelInfo$control_transform,
+#              fit@modelInfo$control_estimator,
+#              fit@modelInfo$control),
+#         file = "C:/Users/marco/OneDrive/Documentos/deletethis.rds")
+X <- readRDS("C:/Users/marco/OneDrive/Documentos/deletethis.rds")
+X[[3]][[1]][3] <- NULL; X[[3]][[2]][3] <- NULL
+all.equal(fit@modelInfo$control_manifold, X[[1]])
+all.equal(fit@modelInfo$control_transform, X[[2]])
+all.equal(fit@modelInfo$control_estimator, X[[3]])
+all.equal(fit@modelInfo$control, X[[4]])
+fit@modelInfo$control$parameters
+X[[4]]$parameters
+fit@modelInfo$param
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,

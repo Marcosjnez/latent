@@ -733,9 +733,7 @@ public:
 optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
 
   // Store the indices relating parameters and transformed parameters:
-  arma::uvec param2transparam = control_optimizer["param2transparam"];
   arma::uvec transparam2param = control_optimizer["transparam2param"];
-  x.param2transparam = param2transparam;
   x.transparam2param = transparam2param;
 
   // Store the parameters:

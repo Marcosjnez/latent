@@ -206,8 +206,8 @@ pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NU
          parameters_in = "linpred",
          parameters_out = "lambda"))
 
-  control_transform <- get_transforms(transforms = transforms,
-                                      structures = trans)
+  control_transform <- create_transforms(transforms = transforms,
+                                         structures = trans)
 
   #### Estimators ####
 
@@ -216,8 +216,8 @@ pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NU
          parameters = "lambda",
          extra = list(X = Y))
   )
-  control_estimator <- get_estimators(estimators = estimators,
-                                      structures = trans)
+  control_estimator <- create_estimators(estimators = estimators,
+                                         structures = trans)
 
   #### Collect all the model information ####
 

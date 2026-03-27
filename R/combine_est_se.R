@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/03/2026
+# Modification date: 25/03/2026
 
 combine_est_se <- function(est, se, digits = 2) {
 
