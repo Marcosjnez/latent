@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/03/2026
+# Modification date: 28/03/2026
 
 standard_se <- function(fit) {
 
@@ -9,7 +9,7 @@ standard_se <- function(fit) {
   control_manifold <- fit@modelInfo$control_manifold
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
-  control_optimizer <- fit@modelInfo$control
+  control_optimizer <- fit@modelInfo$control_optimizer
   control_optimizer$parameters[[1]] <- fit@Optim$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 

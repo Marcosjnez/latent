@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/10/2025
+# Modification date: 28/03/2026
 #'
 #' @title
 #' Fit indices

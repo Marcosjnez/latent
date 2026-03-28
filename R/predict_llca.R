@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/10/2025
+# Modification date: 28/03/2026
 #'
 #' @title
 #' Predicted values for Latent Class Analysis.
@@ -83,7 +83,7 @@ predict.llcalist <- function(model, digits = NULL) {
   for(i in 1:nmodels) {
 
     out[[i]] <- predict.llca(model[[i]], digits = digits)
-    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
+    names(out)[i] <- paste("nclasses = ", model[[i]]@datalist$nclasses,
                            sep = "")
 
   }

@@ -261,6 +261,8 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
   data_list$cov_short2full <- cov_short2full
   data_list$original_X <- original_X
   data_list$args <- args
+  data_list$original_model <- original_model
+  data_list$nclasses <- nclasses
 
   #### Initialize objects to store all the models ####
 
@@ -305,36 +307,38 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #### Create the structures ####
 
     # Generate the structures for optimization:
-    structures <- get_lca_structures(data_list = data_list,
-                                     full_model = full_model,
-                                     control = control)
-    list2env(structures, envir = environment())
+    modelInfo <- create_lca_modelInfo(data_list = data_list,
+                                      full_model = full_model,
+                                      control = control)
+    modelInfo$original_model <- original_model
+    modelInfo$model <- log_model
+    modelInfo$prob_model <- prob_model
 
     #### Fit the model ####
 
     result <- vector("list") # Initialize the object to be returned
 
-    # Model information:
-    modelInfo <- list(nclasses = nclasses,
-                      item = item,
-                      nobs = nobs,
-                      npatterns = npatterns,
-                      npossible_patterns = npossible_patterns,
-                      nparam = nparam,
-                      dof = npossible_patterns - nparam,
-                      ntrans = ntrans,
-                      original_model = original_model,
-                      model = log_model,
-                      prob_model = prob_model,
-                      parameters_labels = parameters_labels,
-                      transparameters_labels = transparameters_labels,
-                      param = param,
-                      trans = trans,
-                      lca_all = lca_all,
-                      control_manifold = control_manifold,
-                      control_transform = control_transform,
-                      control_estimator = control_estimator,
-                      control = control)
+    # # Model information:
+    # modelInfo <- list(nclasses = nclasses,
+    #                   item = item,
+    #                   nobs = nobs,
+    #                   npatterns = npatterns,
+    #                   npossible_patterns = npossible_patterns,
+    #                   nparam = nparam,
+    #                   dof = npossible_patterns - nparam,
+    #                   ntrans = ntrans,
+    #                   original_model = original_model,
+    #                   model = log_model,
+    #                   prob_model = prob_model,
+    #                   parameters_labels = parameters_labels,
+    #                   transparameters_labels = transparameters_labels,
+    #                   param = param,
+    #                   trans = trans,
+    #                   lca_all = lca_all,
+    #                   control_manifold = control_manifold,
+    #                   control_transform = control_transform,
+    #                   control_estimator = control_estimator,
+    #                   control = control)
 
     # Fit the model or just get the model specification:
     if(!do.fit) {
@@ -364,12 +368,13 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     }
 
-    control$cores <- min(control$rstarts, control$cores)
+    modelInfo$control_optimizer$cores <- min(modelInfo$control_optimizer$rstarts,
+                                             modelInfo$control_optimizer$cores)
     # Perform the optimization (fit the model):
-    Optim <- optimizer(control_manifold = control_manifold,
-                   control_transform = control_transform,
-                   control_estimator = control_estimator,
-                   control_optimizer = control)
+    Optim <- optimizer(control_manifold = modelInfo$control_manifold,
+                       control_transform = modelInfo$control_transform,
+                       control_estimator = modelInfo$control_estimator,
+                       control_optimizer = modelInfo$control_optimizer)
 
     # Collect all the information about the optimization:
 

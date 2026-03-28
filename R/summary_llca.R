@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/10/2025
+# Modification date: 28/03/2026
 #'
 #' @title
 #' Fit indices
@@ -97,7 +97,7 @@ summary.llcalist <- function(model, digits = 3) {
   for(i in 1:nmodels) {
 
     out[[i]] <- summary.llca(model[[i]], digits = digits)
-    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
+    names(out)[i] <- paste("nclasses = ", model[[i]]@datalist$nclasses,
                            sep = "")
 
   }

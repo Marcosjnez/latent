@@ -1,8 +1,8 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/03/2026
+# Modification date: 28/03/2026
 
-get_full_cfa_model <- function(data_list, model, control = NULL) {
+create_cfa_model <- function(data_list, model, control) {
 
   # Generate the model syntax and initial parameter values
 
@@ -129,9 +129,6 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
   }
 
-  transparameters_labels <- unname(unique(unlist(trans)))
-  ntrans <- length(transparameters_labels)
-
   #### Model for the parameters ####
 
   for(i in 1:ngroups) {
@@ -164,13 +161,14 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
     }
 
-    # S:
+    # Free the sample covariance matrix (useful for second-order derivatives):
     if(control$free_S) {
       param[[S_group[i]]] <- trans[[S_group[i]]]
     } else {
       param[[S_group[i]]] <- correl[[i]]$R
     }
 
+    # Fix the diagonal of the sample covariance matrix:
     if(!control$free_S_diag) {
       diag(param[[S_group[i]]]) <- "1"
     }
@@ -184,6 +182,7 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
       target_psi[[i]] <- matrix(0, nrow = nfactors[[i]], ncol = nfactors[[i]])
       target_psi[[i]][nonfixed[[psi_group[i]]]] <- 1
 
+      # UGLY FIX THIS TO COUNT THE DEGREES OF FREEDOM AUTOMATICALLY
       q <- nfactors[[i]]
       p <- nitems[[i]]
       lower_theta <- lower.tri(diag(p), diag = TRUE)
@@ -230,10 +229,10 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
       }
 
-      # Lambda <- init_param[[rs]][[lambda_group[i]]]
-      # Theta <- init_param[[rs]][[theta_group[i]]]
-      # Psi <- init_param[[rs]][[psi_group[i]]]
-      # init_param[[rs]][[model_group[i]]] <- Lambda %*% Psi %*% t(Lambda) + Theta
+      Lambda <- init_param[[rs]][[lambda_group[i]]]
+      Theta <- init_param[[rs]][[theta_group[i]]]
+      Psi <- init_param[[rs]][[psi_group[i]]]
+      init_param[[rs]][[model_group[i]]] <- Lambda %*% Psi %*% t(Lambda) + Theta
       init_param[[rs]][[S_group[i]]] <- correl[[i]]$R
 
     }
@@ -259,50 +258,11 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
   #
   # }
 
-  #### Pass the initial values to vectors ####
-
-  # stop("AHHHH")
-
-  # Collect the parameter labels:
-  vector_param <- unname(unlist(param))
-  indicator <- is.na(suppressWarnings(as.numeric(vector_param)))
-  fixed_indices <- which(!indicator)
-  fixed_values <- as.numeric(vector_param[fixed_indices])
-  parameters_indices <- which(indicator)
-  parameters_labels <- unique(vector_param[parameters_indices])
-  nparam <- length(parameters_labels)
-
-  cfa_all <- trans
-  cfa_all[names(param)] <- param
-
-  parameters <- vector("list", length = control$rstarts)
-  select_params <- match(parameters_labels, vector_param)
-  fixed_trans_vector <- extract_unique_values(trans, cfa_all)
-  trans2param <- match(parameters_labels, transparameters_labels)
-  transparameters <- vector("list", length = control$rstarts)
-  for(i in 1:control$rstarts) {
-    parameters[[i]] <- unlist(init_param[[i]])[select_params]
-    names(parameters[[i]]) <- parameters_labels
-    transparameters[[i]] <- fixed_trans_vector
-    transparameters[[i]][trans2param] <- parameters[[i]]
-  }
-
-  #### Set up the optimizer ####
-
-  # Create defaults for the control of the optimizer:
-  control$init_param <- init_param
-  control$parameters <- parameters
-  control$transparameters <- transparameters
-  control$transparam2param <- trans2param-1L
-
   #### Return ####
 
-  result <- list(parameters_labels = parameters_labels,
-                 nparam = nparam,
-                 transparameters_labels = transparameters_labels,
-                 ntrans = ntrans,
-                 param = param,
+  result <- list(param = param,
                  trans = trans,
+                 init_param = init_param,
                  target_psi = target_psi,
                  target_theta = target_theta,
                  fixed = fixed,
@@ -314,7 +274,7 @@ get_full_cfa_model <- function(data_list, model, control = NULL) {
 
 }
 
-get_cfa_structures <- function(data_list, full_model, control) {
+create_cfa_modelInfo <- function(data_list, full_model, control) {
 
   # Generate control_manifold, control_transform, and control_estimator
 
@@ -502,12 +462,48 @@ get_cfa_structures <- function(data_list, full_model, control) {
   control_estimator <- create_estimators(estimators = estimators,
                                          structures = trans)
 
+  #### Pass the initial values to vectors ####
+
+  idx_transformed <- unlist(lapply(control_transform,
+                                   FUN = \(x) unlist(x$indices_out)+1L))
+  inits <- create_init(trans, param, init_param,
+                       idx_transformed = idx_transformed, control)
+
+  parameters <- inits$parameters
+  parameters_labels <- names(parameters[[1]])
+  nparam <- length(parameters_labels)
+
+  transparameters <- inits$transparameters
+  transparameters_labels <- names(transparameters[[1]])
+  ntrans <- length(transparameters_labels)
+
+  trans2param <- match(parameters_labels, transparameters_labels)
+
+  #### Set up the optimizer ####
+
+  # Create defaults for the control of the optimizer:
+  control_optimizer <- control
+  control_optimizer$init_param <- init_param
+  control_optimizer$parameters <- parameters
+  control_optimizer$transparameters <- transparameters
+  control_optimizer$transparam2param <- trans2param-1L
+
+  #### Collect all the model information ####
+
+  modelInfo <- list(param = param,
+                    trans = trans,
+                    nparam = nparam - rest,
+                    ntrans = ntrans,
+                    parameters_labels = parameters_labels,
+                    transparameters_labels = transparameters_labels,
+                    dof = sum(unlist(npatterns)) - nparam + rest,
+                    control_manifold = control_manifold,
+                    control_transform = control_transform,
+                    control_estimator = control_estimator,
+                    control_optimizer = control_optimizer)
+
   #### Return ####
 
-  result <- list(control_manifold = control_manifold,
-                 control_transform = control_transform,
-                 control_estimator = control_estimator)
-
-  return(result)
+  return(modelInfo)
 
 }

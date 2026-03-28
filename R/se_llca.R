@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/03/2026
+# Modification date: 28/03/2026
 #'
 #' @title
 #' Standard Errors
@@ -35,14 +35,14 @@ se.llca <- function(fit, type = "standard", model = "model", digits = 3) {
   if(model == "user") {
 
     model <- fit@modelInfo$prob_model
-    fit@modelInfo$control$minimal_se <- FALSE
-    fit@modelInfo$control$se_names <- fit@modelInfo$transparameters_labels
+    fit@modelInfo$control_optimizer$minimal_se <- FALSE
+    fit@modelInfo$control_optimizer$se_names <- fit@modelInfo$transparameters_labels
 
   } else if(model == "model") {
 
     model <- fit@modelInfo$model
-    fit@modelInfo$control$minimal_se <- TRUE
-    fit@modelInfo$control$se_names <- fit@modelInfo$parameters_labels
+    fit@modelInfo$control_optimizer$minimal_se <- TRUE
+    fit@modelInfo$control_optimizer$se_names <- fit@modelInfo$parameters_labels
 
   } else {
     stop("Unknown model")
@@ -106,7 +106,7 @@ se.llcalist <- function(model, digits = 3) {
 
     out[[i]] <- se.llca(model[[i]], type = type, model = model,
                         digits = digits)
-    names(out)[i] <- paste("nclasses = ", model[[i]]@modelInfo$nclasses,
+    names(out)[i] <- paste("nclasses = ", model[[i]]@datalist$nclasses,
                            sep = "")
 
   }
@@ -124,7 +124,7 @@ robust_se <- function(fit) {
   control_manifold <- fit@modelInfo$control_manifold
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
-  control_optimizer <- fit@modelInfo$control
+  control_optimizer <- fit@modelInfo$control_optimizer
   control_optimizer$parameters[[1]] <- fit@Optim$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 
@@ -196,7 +196,7 @@ robust_se <- function(fit) {
 
   # Name the parameters:
   names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
-    fit@modelInfo$control$se_names
+    fit@modelInfo$control_optimizer$se_names
 
   colnames(newH) <- rownames(newH) <-
     colnames(result$B) <- rownames(result$B) <-
@@ -218,8 +218,8 @@ ci <- function(fit, type = "standard", model = "model",
 
     model <- fit@modelInfo$prob_model
     # est <- fit@user_model
-    fit@modelInfo$control$minimal_se <- FALSE
-    fit@modelInfo$control$se_names <- fit@modelInfo$transparameters_labels
+    fit@modelInfo$control_optimizer$minimal_se <- FALSE
+    fit@modelInfo$control_optimizer$se_names <- fit@modelInfo$transparameters_labels
 
     x <- c(fit@Optim$transparameters)
     # Number of total parameters and transformed parameters:
@@ -239,8 +239,8 @@ ci <- function(fit, type = "standard", model = "model",
 
     model <- fit@modelInfo$model
     # est <- fit@parameters
-    fit@modelInfo$control$minimal_se <- TRUE
-    fit@modelInfo$control$se_names <- fit@modelInfo$parameters_labels
+    fit@modelInfo$control_optimizer$minimal_se <- TRUE
+    fit@modelInfo$control_optimizer$se_names <- fit@modelInfo$parameters_labels
     x <- c(fit@Optim$parameters)
     ps <- rep(1L, fit@modelInfo$nparam)
 
@@ -272,7 +272,7 @@ ci <- function(fit, type = "standard", model = "model",
 
   # Select the parameter labels for the table:
   mylabels <- unlist(model)
-  selection <- match(mylabels, fit@modelInfo$control$se_names)
+  selection <- match(mylabels, fit@modelInfo$control_optimizer$se_names)
   se <- SE$se[selection]
   se[is.na(se)] <- 0
   names(se) <- mylabels

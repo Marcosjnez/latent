@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/03/2026
+# Modification date: 28/03/2026
 #'
 #' @title
 #' Standard Errors
@@ -103,7 +103,7 @@ general_se <- function(fit, type = "standard") {
   ACOV <- block_diag(VAR)
 
   args <- fit@data_list$args
-  args$control <- fit@modelInfo$control
+  args$control <- fit@modelInfo$control_optimizer
   args$control$free_S <- TRUE
   cor <- fit@data_list$cor
   args$control$free_S_diag <- FALSE
@@ -120,7 +120,7 @@ general_se <- function(fit, type = "standard") {
   control_manifold <- fit2@modelInfo$control_manifold
   control_transform <- fit2@modelInfo$control_transform
   control_estimator <- fit2@modelInfo$control_estimator
-  control_optimizer <- fit2@modelInfo$control
+  control_optimizer <- fit2@modelInfo$control_optimizer
   control_optimizer$parameters[[1]] <- parameters
   control_optimizer$transparameters[[1]] <- transparameters
   x <- get_hess(control_manifold, control_transform,

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/03/2026
+# Modification date: 28/03/2026
 
 se_twostep <- function(fit2, type = "standard") {
 
@@ -25,7 +25,7 @@ se_twostep <- function(fit2, type = "standard") {
   control_manifold <- fit@modelInfo$control_manifold
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
-  control_optimizer <- fit@modelInfo$control
+  control_optimizer <- fit@modelInfo$control_optimizer
   parameters <- fit2@Optim$transparameters[fit@modelInfo$parameters_labels]
   transparameters <- fit2@Optim$transparameters[fit@modelInfo$transparameters_labels]
   control_optimizer$parameters[[1]] <- parameters

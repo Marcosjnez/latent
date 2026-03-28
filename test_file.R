@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/03/2026
+# Modification date: 28/03/2026
 
 #### Install latent ####
 
@@ -137,7 +137,7 @@ latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "model", digits = 4)
+SE <- se(fit, type = "robust", model = "model", digits = 4)
 SE$table
 
 # Get confidence intervals:
@@ -305,21 +305,6 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 fit@Optim$SE$se
-
-# saveRDS(list(fit@modelInfo$control_manifold,
-#              fit@modelInfo$control_transform,
-#              fit@modelInfo$control_estimator,
-#              fit@modelInfo$control),
-#         file = "C:/Users/marco/OneDrive/Documentos/deletethis.rds")
-X <- readRDS("C:/Users/marco/OneDrive/Documentos/deletethis.rds")
-X[[3]][[1]][3] <- NULL; X[[3]][[2]][3] <- NULL
-all.equal(fit@modelInfo$control_manifold, X[[1]])
-all.equal(fit@modelInfo$control_transform, X[[2]])
-all.equal(fit@modelInfo$control_estimator, X[[3]])
-all.equal(fit@modelInfo$control, X[[4]])
-fit@modelInfo$control$parameters
-X[[4]]$parameters
-fit@modelInfo$param
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
@@ -514,9 +499,9 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
 fit <- lcfa(model = model.EM, data = mooc,
             ordered = TRUE, estimator = "dwls",
             do.fit = TRUE, control = NULL)
-fit@loglik # -90154.77
-fit@penalized_loglik # -90154.77
-fit@loss # 90154.77
+fit@loglik # -90154.77 (ml)
+fit@penalized_loglik # -90154.77 (ml)
+fit@loss # 0.3817476 (dwls)
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
@@ -573,9 +558,9 @@ fit <- lcfa(model = model.EM, data = mooc,
             ordered = TRUE, estimator = "dwls",
             group = "school",
             do.fit = TRUE, control = NULL)
-fit@loglik # -90154.77
-fit@penalized_loglik # -90154.77
-fit@loss # 90154.77
+fit@loglik # -45281.39
+fit@penalized_loglik # -45281.39
+fit@loss # 0.394728
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
@@ -654,7 +639,7 @@ fit2@loglik$loglik
 control_manifold <- fit@modelInfo$control_manifold
 control_transform <- fit@modelInfo$control_transform
 control_estimator <- fit@modelInfo$control_estimator
-control_optimizer <- fit@modelInfo$control
+control_optimizer <- fit@modelInfo$control_optimizer
 # control_optimizer$parameters[[1]] <- fit@Optim$parameters
 # control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 # control_optimizer$parameters[[1]] <- fit@modelInfo$control$parameters[[1]] +
@@ -708,3 +693,18 @@ diag(VCOV$vcov)
 x <- get_jacob(control_manifold, control_transform,
           control_estimator, control_optimizer)
 x
+
+# saveRDS(list(fit@modelInfo$control_manifold,
+#              fit@modelInfo$control_transform,
+#              fit@modelInfo$control_estimator,
+#              fit@modelInfo$control),
+#         file = "C:/Users/marco/OneDrive/Documentos/deletethis.rds")
+# X <- readRDS("C:/Users/marco/OneDrive/Documentos/deletethis.rds")
+# X[[3]][[1]][3] <- NULL; X[[3]][[2]][3] <- NULL
+# all.equal(fit@modelInfo$control_manifold, X[[1]])
+# all.equal(fit@modelInfo$control_transform, X[[2]])
+# all.equal(fit@modelInfo$control_estimator, X[[3]])
+# all.equal(fit@modelInfo$control, X[[4]])
+# fit@modelInfo$control$parameters
+# X[[4]]$parameters
+# fit@modelInfo$param

@@ -223,36 +223,17 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   #### Create the model ####
 
   # Get the model specification:
-  full_model <- get_full_cfa_model(data_list = data_list,
-                                   model = model,
-                                   control = control)
+  full_model <- create_cfa_model(data_list = data_list,
+                                 model = model,
+                                 control = control)
   list2env(full_model, envir = environment())
 
-  #### Create the structures ####
+  #### Create the modelInfo ####
 
   # Generate the structures for optimization:
-  structures <- get_cfa_structures(data_list = data_list,
-                                   full_model = full_model,
-                                   control = control)
-  list2env(structures, envir = environment())
-
-  #### Collect all the model information ####
-
-  # Model information:
-  modelInfo <- list(nobs = nobs,
-                    nparam = nparam - rest,
-                    npatterns = npatterns,
-                    dof = sum(unlist(npatterns)) - nparam + rest,
-                    ntrans = ntrans,
-                    parameters_labels = parameters_labels,
-                    transparameters_labels = transparameters_labels,
-                    param = param,
-                    trans = trans,
-                    lavaan_model = model,
-                    control_manifold = control_manifold,
-                    control_transform = control_transform,
-                    control_estimator = control_estimator,
-                    control = control)
+  modelInfo <- create_cfa_modelInfo(data_list = data_list,
+                                    full_model = full_model,
+                                    control = control)
 
   #### Fit the model ####
 
@@ -285,12 +266,13 @@ lcfa <- function(data, model = NULL, estimator = "ml",
         "+", strrep("-", w), "+\n\n", sep = "")
   }
 
-  control$cores <- min(control$rstarts, control$cores)
+  modelInfo$control_optimizer$cores <- min(modelInfo$control_optimizer$rstarts,
+                                           modelInfo$control_optimizer$cores)
   # Fit the model:
-  Optim <- optimizer(control_manifold = control_manifold,
-                     control_transform = control_transform,
-                     control_estimator = control_estimator,
-                     control_optimizer = control)
+  Optim <- optimizer(control_manifold = modelInfo$control_manifold,
+                     control_transform = modelInfo$control_transform,
+                     control_estimator = modelInfo$control_estimator,
+                     control_optimizer = modelInfo$control_optimizer)
   names(Optim$parameters) <- modelInfo$parameters_labels
   names(Optim$transparameters) <- modelInfo$transparameters_labels
 
@@ -547,7 +529,7 @@ lat_model_fit <- function (lavpartable = NULL,
   fx.group <- loss["loss"]
   logl.group <- loss["loglik"]
   logl <- loss["loglik"]
-  control <- modelInfo$control
+  control <- modelInfo$control_optimizer
   attributes(fx) <- NULL
   x.copy <- x
   attributes(x.copy) <- NULL

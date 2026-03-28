@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/03/2026
+# Modification date: 28/03/2026
 
 get_full_lca_model <- function(data_list, nclasses, item,
                                model = NULL, control = NULL) {
@@ -414,7 +414,7 @@ get_short_lca_model <- function(data_list, nclasses, item,
 
 }
 
-get_lca_structures <- function(data_list, full_model, control) {
+create_lca_modelInfo <- function(data_list, full_model, control) {
 
   # Generate control_manifold, control_transform, and control_estimator
 
@@ -650,12 +650,22 @@ get_lca_structures <- function(data_list, full_model, control) {
 
   control_estimator <- create_estimators(estimators = estimators,
                                          structures = lca_all)
+
   #### Return ####
 
-  result <- list(control_manifold = control_manifold,
-                 control_transform = control_transform,
-                 control_estimator = control_estimator)
+  modelInfo <- list(nparam = nparam,
+                    dof = npossible_patterns - nparam,
+                    ntrans = ntrans,
+                    parameters_labels = parameters_labels,
+                    transparameters_labels = transparameters_labels,
+                    param = param,
+                    trans = trans,
+                    lca_all = lca_all,
+                    control_manifold = control_manifold,
+                    control_transform = control_transform,
+                    control_estimator = control_estimator,
+                    control_optimizer = control)
 
-  return(result)
+  return(modelInfo)
 
 }
