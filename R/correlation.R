@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 29/03/2026
+# Modification date: 31/03/2026
 
 asymptotic_poly <- function(X, taus) {
 

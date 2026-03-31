@@ -22,9 +22,6 @@ public:
     S = arma::reshape(x.transparameters(indices_S), p, p);
     Shat = arma::reshape(x.transparameters(indices_Shat), p, p);
 
-    logdetS = arma::log_det_sympd(S);
-    logdetShat = arma::log_det_sympd(Shat);
-
     if(!Shat.is_sympd()) {
       arma::vec eigval;
       arma::mat eigvec;
@@ -32,11 +29,15 @@ public:
       arma::vec d = arma::clamp(eigval, 0.1, eigval.max());
       Shat = eigvec * arma::diagmat(d) * eigvec.t();
     }
+
     Shat_inv = arma::inv_sympd(Shat);
 
   }
 
   void F(arguments_optim& x) {
+
+    logdetS = arma::log_det_sympd(S);
+    logdetShat = arma::log_det_sympd(Shat);
 
     f = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p);
     x.f += f;
@@ -61,7 +62,9 @@ public:
 
     arma::mat dS_inv = -S_inv * dS * S_inv;
     arma::mat dShat_inv = -Shat_inv * dShat * Shat_inv;
-    arma::mat dgShat = dShat_inv * (I - S * Shat_inv) - Shat_inv * S * dShat_inv;
+    arma::mat dgShat = dShat_inv * (I - S * Shat_inv)
+      - Shat_inv * dS * Shat_inv
+    - Shat_inv * S * dShat_inv;
 
     x.dgrad.elem(indices_S) += w*arma::vectorise(dShat_inv - dS_inv);
     x.dgrad.elem(indices_Shat) += w*arma::vectorise(dgShat);

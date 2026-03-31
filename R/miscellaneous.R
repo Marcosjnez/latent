@@ -95,28 +95,36 @@ fill_in <- function(lst, values, miss = NA) {
     stop("`values` must be a named atomic vector.")
   }
 
-  fill_leaf <- function(x) {
-    if (!is.character(x)) {
-      stop("All terminal objects in `lst` must be character.")
-    }
-
-    x_vec <- as.vector(x)
-    idx   <- match(x_vec, names(values))
-
-    # initialize output with the same atomic type as `values`
-    out <- values[rep(NA_integer_, length(x_vec))]
+  make_miss_like <- function(x) {
+    out <- values[rep(NA_integer_, length(x))]
     out[] <- miss
 
-    hit <- !is.na(idx)
-    out[hit] <- unname(values[idx[hit]])
-
-    # restore original structure
     if (!is.null(dim(x))) {
       dim(out) <- dim(x)
       dimnames(out) <- dimnames(x)
     } else {
       names(out) <- names(x)
     }
+
+    out
+  }
+
+  fill_leaf <- function(x) {
+    if (is.numeric(x)) {
+      return(make_miss_like(x))
+    }
+
+    if (!is.character(x)) {
+      stop("All terminal objects in `lst` must be character or numeric.")
+    }
+
+    x_vec <- as.vector(x)
+    idx <- match(x_vec, names(values))
+
+    out <- make_miss_like(x)
+
+    hit <- !is.na(idx)
+    out[hit] <- unname(values[idx[hit]])
 
     out
   }

@@ -247,7 +247,7 @@ set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml", positive = FALSE,
             ordered = FALSE, std.lv = TRUE,
-            acov = "standard", se = TRUE,
+            acov = "standard", se = F,
             mimic = "latent", do.fit = TRUE,
             control = NULL)
 fit@loss   # 0.283407
@@ -636,8 +636,16 @@ fit@loss
 fit@loglik
 fit2@loglik$loglik
 
-lavInspect(fit2, what = "est")$lambda
-round(fit@parameters$lambda.g1, 3)
+indices <- fit2@ParTable$plabel %in% fit@modelInfo$parameters_labels
+params_lav <- abs(c(fit2@ParTable$est[indices]))
+names(params_lav) <- fit@modelInfo$parameters_labels
+X <- fill_in(fit@modelInfo$trans, params_lav, miss = 0)
+X$lambda.g1
+fit@parameters$lambda.g1
+X$theta.g1
+fit@parameters$theta.g1
+X$psi.g1
+fit@parameters$psi.g1
 
 #### Check derivatives ####
 

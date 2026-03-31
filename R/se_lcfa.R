@@ -41,11 +41,7 @@ se.lcfa <- function(fit, type = "standard", digits = 5) {
   SE <- general_se(fit = fit, type = type)
 
   # Create the tables of parameters with standard errors:
-  indices <- match(unlist(fit@modelInfo$param),
-                   fit@modelInfo$parameters_labels)
-  values <- SE$se[indices]
-  values[is.na(values)] <- 0
-  table_se <- fill_list_with_vector(fit@modelInfo$param, values)
+  table_se <- fill_in(fit@modelInfo$param, SE$se, miss = 0)
   table_se <- allnumeric(table_se)
 
   # Return:
@@ -95,7 +91,17 @@ general_se <- function(fit, type = "standard") {
   for(i in 1:ngroups) {
 
     # Get the asymptotic correlation matrix:
-    ACOVi <- fit@data_list$correl[[i]]$ACOV/fit@data_list$nobs[[i]]
+    if(is.null(fit@data_list$correl[[i]]$missing)) {
+      ACOVi <- fit@data_list$correl[[i]]$ACOV/fit@data_list$nobs[[i]]
+    } else {
+      ACOVij <- vector("list", length = length(fit@data_list$correl[[i]]$missing))
+      for(j in 1:length(fit@data_list$correl[[i]]$missing)) {
+        ACOVij[[j]] <- fit@data_list$correl[[i]]$missing[[j]]$ACOV /
+          fit@data_list$correl[[i]]$missing[[j]]$nobs
+      }
+      ACOVi <- block_diag(ACOVij)
+    }
+
     VAR[[i]] <- ACOVi
 
   }
@@ -105,13 +111,8 @@ general_se <- function(fit, type = "standard") {
   args <- fit@data_list$args
   args$control <- fit@modelInfo$control_optimizer
   args$control$free_S <- TRUE
-  cor <- fit@data_list$cor
   args$control$free_S_diag <- FALSE
-  # if(cor == "poly" || cor == "polys" ||
-  #    cor == "polychoric" || cor == "polychorics") {
-  # }
   args$do.fit <- FALSE
-  # args$estimator <- paste(args$estimator, "r", sep = "")
   fit2 <- do.call(lcfa, args) # AVOID RECOMPUTING CORRELATIONS HERE
 
   parameters <- fit@Optim$transparameters[fit2@modelInfo$parameters_labels]

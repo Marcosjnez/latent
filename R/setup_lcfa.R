@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 31/03/2026
 
 create_cfa_model <- function(data_list, model, control) {
 
@@ -18,13 +18,22 @@ create_cfa_model <- function(data_list, model, control) {
   target_psi <- target_theta <- targets <- vector("list", length = ngroups)
   rest <- 0L
 
-  S_group <- paste("S.g", 1:ngroups, sep = "")
   lambda_group <- paste("lambda.g", 1:ngroups, sep = "")
   psi_group <- paste("psi.g", 1:ngroups, sep = "")
   theta_group <- paste("theta.g", 1:ngroups, sep = "")
   xpsi_group <- paste("xpsi.g", 1:ngroups, sep = "")
   xtheta_group <- paste("xtheta.g", 1:ngroups, sep = "")
   model_group <- paste("model.g", 1:ngroups, sep = "")
+  S_group <- vector("list", length = ngroups)
+  for(i in 1:ngroups) {
+    if(is.null(correl[[i]]$missing)) {
+      S_group[[i]][[1]] <- paste("S.g", i, sep = "")
+    } else {
+      for(j in 1:length(correl[[i]]$missing)) {
+        S_group[[i]][[j]] <- paste("S.g", i, ".miss", j, sep = "")
+      }
+    }
+  }
 
   # Transformed parameters:
   list_struct <- vector("list")
@@ -88,13 +97,33 @@ create_cfa_model <- function(data_list, model, control) {
     k <- k+1L
 
     # S:
-    list_struct[[k]] <- list(name = S_group[i],
-                             type = "matrix",
-                             dim = c(nitems[[i]], nitems[[i]]),
-                             rownames = item_label[[i]],
-                             colnames = item_label[[i]],
-                             symmetric = TRUE)
-    k <- k+1L
+    if(is.null(correl[[i]]$missing)) {
+
+      list_struct[[k]] <- list(name = S_group[[i]][[1]],
+                               type = "matrix",
+                               dim = c(nitems[[i]], nitems[[i]]),
+                               rownames = item_label[[i]],
+                               colnames = item_label[[i]],
+                               symmetric = TRUE)
+      k <- k+1L
+
+    } else {
+
+      for(j in 1:length(correl[[i]]$missing)) {
+
+        nitems_ij <- nrow(correl[[i]]$missing[[j]]$R)
+        item_label_ij <- correl[[i]]$missing[[j]]$item_names
+        list_struct[[k]] <- list(name = S_group[[i]][[j]],
+                                 type = "matrix",
+                                 dim = c(nitems_ij, nitems_ij),
+                                 rownames = item_label_ij,
+                                 colnames = item_label_ij,
+                                 symmetric = TRUE)
+        k <- k+1L
+
+      }
+
+    }
 
   }
 
@@ -161,16 +190,29 @@ create_cfa_model <- function(data_list, model, control) {
 
     }
 
-    # Free the sample covariance matrix (useful for second-order derivatives):
     if(control$free_S) {
-      param[[S_group[i]]] <- trans[[S_group[i]]]
+      param[unlist(S_group[[i]])] <- trans[unlist(S_group[[i]])]
     } else {
-      param[[S_group[i]]] <- correl[[i]]$R
+      if(is.null(correl[[i]]$missing)) {
+        param[[S_group[[i]][[1]]]] <- correl[[i]]$R
+      } else {
+        for(j in 1:length(correl[[i]]$missing)) {
+          param[[S_group[[i]][[j]]]] <- correl[[i]]$missing[[j]]$R
+        }
+      }
     }
 
     # Fix the diagonal of the sample covariance matrix:
     if(!control$free_S_diag) {
-      diag(param[[S_group[i]]]) <- "1"
+
+      if(is.null(correl[[i]]$missing)) {
+        diag(param[[S_group[[i]][[1]]]]) <- "1"
+      } else {
+        for(j in 1:length(correl[[i]]$missing)) {
+          diag(param[[S_group[[i]][[j]]]]) <- "1"
+        }
+      }
+
     }
 
     # Create the target matrices for positive-definite constraints:
@@ -233,7 +275,14 @@ create_cfa_model <- function(data_list, model, control) {
       Theta <- init_param[[rs]][[theta_group[i]]]
       Psi <- init_param[[rs]][[psi_group[i]]]
       init_param[[rs]][[model_group[i]]] <- Lambda %*% Psi %*% t(Lambda) + Theta
-      init_param[[rs]][[S_group[i]]] <- correl[[i]]$R
+
+      if(is.null(correl[[i]]$missing)) {
+        init_param[[rs]][[S_group[[i]][[1]]]] <- correl[[i]]$R
+      } else {
+        for(j in 1:length(correl[[i]]$missing)) {
+          init_param[[rs]][[S_group[[i]][[j]]]] <- correl[[i]]$missing[[j]]$R
+        }
+      }
 
     }
 
@@ -278,13 +327,22 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
   list2env(data_list, envir = environment())
   list2env(full_model, envir = environment())
 
-  S_group <- paste("S.g", 1:ngroups, sep = "")
   lambda_group <- paste("lambda.g", 1:ngroups, sep = "")
   psi_group <- paste("psi.g", 1:ngroups, sep = "")
   theta_group <- paste("theta.g", 1:ngroups, sep = "")
   xpsi_group <- paste("xpsi.g", 1:ngroups, sep = "")
   xtheta_group <- paste("xtheta.g", 1:ngroups, sep = "")
   model_group <- paste("model.g", 1:ngroups, sep = "")
+  S_group <- vector("list", length = ngroups)
+  for(i in 1:ngroups) {
+    if(is.null(correl[[i]]$missing)) {
+      S_group[[i]][[1]] <- paste("S.g", i, sep = "")
+    } else {
+      for(j in 1:length(correl[[i]]$missing)) {
+        S_group[[i]][[j]] <- paste("S.g", i, ".miss", j, sep = "")
+      }
+    }
+  }
 
   #### Manifolds ####
 
@@ -294,8 +352,11 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
   for(i in 1:ngroups) {
 
     manifolds[[k]] <- list(manifold = "euclidean",
-                           parameters = c(lambda_group[i],
-                                          S_group[i]))
+                           parameters = lambda_group[i])
+    k <- k+1L
+
+    manifolds[[k]] <- list(manifold = "euclidean",
+                           parameters = list(param[unlist(S_group[[i]])]))
     k <- k+1L
 
     if(positive) {
@@ -411,12 +472,11 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
                             stop("Unknown estimator: ", estimator)
     )
 
-    lower_diag <- lower.tri(trans[[model_group[i]]], diag = TRUE)
-
     if(is.null(correl[[i]]$missing)) {
 
       estimators[[k]] <- list(estimator = cfa_estimator,
-                              parameters = c(model_group[i], S_group[i]),
+                              parameters = c(model_group[i],
+                                             S_group[[i]][[1]]),
                               extra = list(W = correl[[i]]$W,
                                            w = nobs[[i]] / sum(unlist(nobs)),
                                            q = nrow(trans[[psi_group[i]]]),
@@ -429,11 +489,11 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
 
       for(j in 1:length(correl[[i]]$missing)) {
 
-        # stop("AHHHHH")
         pick <- correl[[i]]$missing[[j]]$item_names
+        S_group_ij <- S_group[[i]][[j]]
         estimators[[k]] <- list(estimator = cfa_estimator,
                                 parameters = list(c(trans[[model_group[i]]][pick, pick]),
-                                                  c(trans[[S_group[i]]][pick, pick])),
+                                                  c(trans[[S_group_ij]])),
                                 extra = list(W = correl[[i]]$missing[[j]]$W,
                                              w = correl[[i]]$missing[[j]]$nobs /
                                                sum(unlist(nobs)),
