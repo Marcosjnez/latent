@@ -187,9 +187,9 @@ create_cfa_model <- function(data_list, model, control) {
       p <- nitems[[i]]
       lower_theta <- lower.tri(diag(p), diag = TRUE)
       lower_psi <- lower.tri(diag(q), diag = TRUE)
-      targets[[i]] <- unlist(c(target_theta[[i]][lower_theta],
-                               target_psi[[i]][lower_psi]))
-      rest <- rest + 0.5*q*(q-1) + 0.5*p*(p-1) + sum(targets[[i]] == 0)
+      nconstraints <- sum(unlist(c(target_theta[[i]][lower_theta],
+                                   target_psi[[i]][lower_psi])) == 0)
+      rest <- rest + 0.5*q*(q-1) + 0.5*p*(p-1) + nconstraints
 
     }
   }
@@ -265,10 +265,7 @@ create_cfa_model <- function(data_list, model, control) {
                  init_param = init_param,
                  target_psi = target_psi,
                  target_theta = target_theta,
-                 fixed = fixed,
-                 nonfixed = nonfixed,
-                 rest = rest,
-                 control = control)
+                 rest = rest)
 
   return(result)
 
@@ -409,25 +406,46 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
     cfa_estimator <- switch(estimator,
                             uls = "cfa_dwls",
                             dwls  = "cfa_dwls",
-                            ulsr = "cfa_dwls_error",
-                            dwlsr  = "cfa_dwls_error",
                             ml = "cfa_fml",
                             fml  = "cfa_fml",
-                            mlr = "cfa_fml_error",
-                            fmlr  = "cfa_fml_error",
                             stop("Unknown estimator: ", estimator)
     )
 
     lower_diag <- lower.tri(trans[[model_group[i]]], diag = TRUE)
-    estimators[[k]] <- list(estimator = cfa_estimator,
-                            parameters = c(model_group[i], S_group[i]),
-                            extra = list(R = correl[[i]]$R,
-                                         W = correl[[i]]$W,
-                                         w = nobs[[i]] / sum(unlist(nobs)),
-                                         q = nrow(trans[[psi_group[i]]]),
-                                         p = nitems[[i]],
-                                         n = nobs[[i]]))
-    k <- k+1L
+
+    if(is.null(correl[[i]]$missing)) {
+
+      estimators[[k]] <- list(estimator = cfa_estimator,
+                              parameters = c(model_group[i], S_group[i]),
+                              extra = list(W = correl[[i]]$W,
+                                           w = nobs[[i]] / sum(unlist(nobs)),
+                                           q = nrow(trans[[psi_group[i]]]),
+                                           p = nitems[[i]],
+                                           n = nobs[[i]]))
+
+      k <- k+1L
+
+    } else {
+
+      for(j in 1:length(correl[[i]]$missing)) {
+
+        # stop("AHHHHH")
+        pick <- correl[[i]]$missing[[j]]$item_names
+        estimators[[k]] <- list(estimator = cfa_estimator,
+                                parameters = list(c(trans[[model_group[i]]][pick, pick]),
+                                                  c(trans[[S_group[i]]][pick, pick])),
+                                extra = list(W = correl[[i]]$missing[[j]]$W,
+                                             w = correl[[i]]$missing[[j]]$nobs /
+                                               sum(unlist(nobs)),
+                                             q = nrow(trans[[psi_group[i]]]),
+                                             p = nrow(correl[[i]]$missing[[j]]$R),
+                                             n = correl[[i]]$missing[[j]]$nobs))
+
+        k <- k + 1L
+
+      }
+
+    }
 
   }
 
@@ -483,9 +501,9 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
 
   # Create defaults for the control of the optimizer:
   control_optimizer <- control
-  control_optimizer$init_param <- init_param
   control_optimizer$parameters <- parameters
   control_optimizer$transparameters <- transparameters
+  control_optimizer$init_param <- init_param
   control_optimizer$transparam2param <- trans2param-1L
 
   #### Collect all the model information ####

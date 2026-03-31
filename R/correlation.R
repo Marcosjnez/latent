@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 16/03/2026
+# Modification date: 29/03/2026
 
 asymptotic_poly <- function(X, taus) {
 
@@ -23,6 +23,42 @@ asymptotic_poly <- function(X, taus) {
 
 }
 
+split_by_missing_pattern <- function(data) {
+  if (!is.data.frame(data) && !is.matrix(data)) {
+    stop("`data` must be a data.frame or matrix.")
+  }
+
+  p <- ncol(data)
+
+  if (nrow(data) == 0L) {
+    return(list())
+  }
+
+  miss <- is.na(data)
+
+  # One key per row, based on its missing-data pattern
+  pattern_key <- apply(miss, 1L, function(x) paste(as.integer(x), collapse = ""))
+
+  # Keep patterns in order of first appearance
+  pattern_levels <- unique(pattern_key)
+
+  out <- vector("list", length(pattern_levels))
+
+  for (k in seq_along(pattern_levels)) {
+    idx_rows <- which(pattern_key == pattern_levels[k])
+    idx_vars <- !miss[idx_rows[1L], ]   # TRUE = observed in this pattern
+
+    out[[k]] <- list(
+      data = data[idx_rows, idx_vars, drop = FALSE],
+      vars = idx_vars,
+      nobs = length(idx_rows)
+    )
+  }
+
+  names(out) <- NULL
+  out
+}
+
 correlation <- function(data, item_names = colnames(data),
                         cor = "pearson", estimator = "ml",
                         acov = "standard", nobs = NULL,
@@ -34,6 +70,7 @@ correlation <- function(data, item_names = colnames(data),
   cor <- tolower(cor)
   estimator <- tolower(estimator)
   acov <- tolower(acov)
+  missing <- tolower(missing)
   X <- as.matrix(data[, item_names])
   p <- nrow(X) # Number of rows
   q <- ncol(X) # Number of columns
@@ -77,7 +114,11 @@ correlation <- function(data, item_names = colnames(data),
   } else if(cor == "pearson") {
 
     if(is.null(nobs)) nobs <- p
-    result$R <- stats::cor(X, use = missing)
+    if(missing == "fiml") {
+      result$R <- stats::cor(X, use = "pairwise.complete.obs")
+    } else {
+      result$R <- stats::cor(X, use = missing)
+    }
 
     if(acov == "standard") {
 
@@ -123,6 +164,32 @@ correlation <- function(data, item_names = colnames(data),
   } else {
 
     stop("Unknown estimator")
+
+  }
+
+  #### FIML ####
+
+  if(missing == "fiml") {
+
+    result$missing <- split_by_missing_pattern(X)
+    estimator <- "ml"
+    missing <- "pairwise.complete.obs"
+
+    for(i in 1:length(result$missing)) {
+
+      nobsij <- result$missing[[i]]$nobs
+      item_namesij <- colnames(result$missing[[i]]$data)
+      result$missing[[i]] <- correlation(data = result$missing[[i]]$data,
+                                         item_names = colnames(result$missing[[i]]$data),
+                                         cor = cor, estimator = estimator,
+                                         acov = acov, nobs = result$missing[[i]]$nobs,
+                                         missing = missing,
+                                         likelihood = likelihood)
+
+      result$missing[[i]]$nobs <- nobsij
+      result$missing[[i]]$item_names <- item_namesij
+
+    }
 
   }
 

@@ -283,11 +283,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   #### Estimated model structures ####
 
   # Create the structures of transformed parameters:
-  indices_trans <- match(unlist(modelInfo$trans),
-                         modelInfo$transparameters_labels)
-  values <- Optim$transparameters[indices_trans]
-  transformed_pars <- fill_list_with_vector(modelInfo$trans, values)
-  transformed_pars <- allnumeric(transformed_pars)
+  transformed_pars <- fill_in(modelInfo$trans, Optim$transparameters)
 
   # Create the structures of untransformed parameters:
   parameters <- transformed_pars[names(modelInfo$param)]
@@ -295,7 +291,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   #### Process the fit information ####
 
   # Get the indices of the estimator structures "cfa_dwls" and "cfa_ml":
-  all_estimators <- unlist(lapply(modelInfo$control_estimator, FUN = \(x) x$estimator))
+  all_estimators <- unlist(lapply(modelInfo$control_estimator,
+                                  FUN = \(x) x$estimator))
   indices_cfa <- which(all_estimators == "cfa_dwls" |
                          all_estimators == "cfa_ml" |
                          all_estimators == "cfa_fml")

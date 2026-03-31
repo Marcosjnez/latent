@@ -111,7 +111,7 @@ general_se <- function(fit, type = "standard") {
   #    cor == "polychoric" || cor == "polychorics") {
   # }
   args$do.fit <- FALSE
-  args$estimator <- paste(args$estimator, "r", sep = "")
+  # args$estimator <- paste(args$estimator, "r", sep = "")
   fit2 <- do.call(lcfa, args) # AVOID RECOMPUTING CORRELATIONS HERE
 
   parameters <- fit@Optim$transparameters[fit2@modelInfo$parameters_labels]

@@ -161,12 +161,11 @@ fit1 <- lca(data = data, X = NULL, model = NULL,
                            step_maxit = 100,
                            tcg_maxit = 100),
             do.fit = TRUE)
-fit1@loglik # -1841.336
+fit1@loglik           # -1841.336
 fit1@penalized_loglik # -1844.333
 fit1@Optim$iterations
 fit1@Optim$ng
 fit1@timing
-fit1@parameters
 
 set.seed(2026)
 Y <- as.matrix(empathy[, 9:10]) # Covariates
@@ -177,12 +176,12 @@ fit2 <- lca(data = data, X = cbind(X, Y), model = fit1,
            control = list(opt = "lbfgs",
                           step_maxit = 100,
                           tcg_maxit = 100))
-fit2@timing
 fit2@loglik # -1747.135
 fit2@penalized_loglik # -1750.566
 fit2@Optim$iterations
 fit2@Optim$convergence
 fit2@Optim$ng
+fit2@timing
 
 # check that the measurement model was fixed:
 all.equal(fit1@parameters[-1], fit2@parameters[-1])
@@ -603,36 +602,42 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 data_missing <- HolzingerSwineford1939
-data_missing[1:5, "x1"] <- NA
+data_missing[1:60, "x1"] <- NA
 
 set.seed(2026)
 fit <- lcfa(data_missing, model = model,
             estimator = "ml", positive = FALSE,
             ordered = FALSE, std.lv = TRUE,
-            mimic = "latent", do.fit = TRUE,
+            mimic = "latent",
             # missing = "complete.obs",
-            missing = "pairwise",
+            missing = "fiml",
+            do.fit = TRUE,
             control = NULL)
-fit@loss   # 0.283407
-fit@loglik # -3427.131
-fit@penalized_loglik # -3427.131
+fit@Optim$f
+fit@modelInfo$control_estimator
+
+# fit@loss   # 0.283407
+# fit@loglik # -3427.131
+# fit@penalized_loglik # -3427.131
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 fit@Optim$SE$se
 
 # With lavaan:
-fit2 <- lavaan::cfa(model, data = data_missing,
-                    estimator = "ml",
-                    # missing = "listwise",
-                    missing = "pairwise",
-                    # likelihood = "wishart",
-                    std.lv = TRUE, std.ov = TRUE)
+fit2 <- cfa(model, data = data_missing,
+            estimator = "ml",
+            missing = "fiml",
+            # likelihood = "wishart",
+            std.lv = TRUE, std.ov = TRUE)
 # Same loss value: OK
 fit2@Fit@fx*2
 fit@loss
 fit@loglik
 fit2@loglik$loglik
+
+lavInspect(fit2, what = "est")$lambda
+round(fit@parameters$lambda.g1, 3)
 
 #### Check derivatives ####
 

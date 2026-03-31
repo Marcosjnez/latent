@@ -292,15 +292,15 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #### Create the model ####
 
     # Get the model specification:
-    full_model <- get_full_lca_model(data_list = data_list, nclasses = nclasses,
-                                     item = item, model = model,
-                                     control = control)
+    full_model <- create_lca_model(data_list = data_list, nclasses = nclasses,
+                                   item = item, model = model,
+                                   control = control)
     list2env(full_model, envir = environment())
 
     # Get the short model specification (in logarithm and probability scale) with
     # labels for each parameter:
     short_model <- get_short_lca_model(data_list = data_list, nclasses = nclasses,
-                                       item = item, lca_all = lca_all,
+                                       item = item, trans = trans,
                                        param = param, model = model)
     list2env(short_model, envir = environment())
 
@@ -317,28 +317,6 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #### Fit the model ####
 
     result <- vector("list") # Initialize the object to be returned
-
-    # # Model information:
-    # modelInfo <- list(nclasses = nclasses,
-    #                   item = item,
-    #                   nobs = nobs,
-    #                   npatterns = npatterns,
-    #                   npossible_patterns = npossible_patterns,
-    #                   nparam = nparam,
-    #                   dof = npossible_patterns - nparam,
-    #                   ntrans = ntrans,
-    #                   original_model = original_model,
-    #                   model = log_model,
-    #                   prob_model = prob_model,
-    #                   parameters_labels = parameters_labels,
-    #                   transparameters_labels = transparameters_labels,
-    #                   param = param,
-    #                   trans = trans,
-    #                   lca_all = lca_all,
-    #                   control_manifold = control_manifold,
-    #                   control_transform = control_transform,
-    #                   control_estimator = control_estimator,
-    #                   control = control)
 
     # Fit the model or just get the model specification:
     if(!do.fit) {
@@ -390,7 +368,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #                                       FUN = \(x) x[[1]])))
 
     # Create the transformed parameters:
-    transformed_pars <- fill_in(modelInfo$lca_all,
+    transformed_pars <- fill_in(modelInfo$trans,
                                 Optim$transparameters)
 
     parameters <- transformed_pars[names(modelInfo$param)]
@@ -428,7 +406,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     multin <- "multinomial" %in% item
 
     # Create the parameter table:
-    selection <- match(unlist(prob_model), transparameters_labels)
+    selection <- match(unlist(prob_model), modelInfo$transparameters_labels)
     out <- Optim$transparameters[selection]
     user_model <- fill_in(prob_model, out)
 

@@ -53,6 +53,10 @@ lcfa_control <- function(control) {
     control$deltaparam <- FALSE
   }
 
+  if(is.null(control$miss)) {
+    control$miss <- "MAR"
+  }
+
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L
   }

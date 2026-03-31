@@ -2,8 +2,8 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 28/03/2026
 
-get_full_lca_model <- function(data_list, nclasses, item,
-                               model = NULL, control = NULL) {
+create_lca_model <- function(data_list, nclasses, item,
+                             model = NULL, control) {
 
   # Generate the model syntax and initial parameter values
 
@@ -105,17 +105,14 @@ get_full_lca_model <- function(data_list, nclasses, item,
   }
 
   # Create the full transparameter structure:
-  lca_all <- create_parameters(list_struct)
-
-  transparameters_labels <- unname(unique(unlist(lca_all)))
-  ntrans <- length(transparameters_labels)
+  trans <- create_parameters(list_struct)
 
   #### Model for the parameters ####
 
   param <- list()
 
   # Model for the betas:
-  param$beta <- lca_all$beta
+  param$beta <- trans$beta
   param$beta[, 1] <- "0"
 
   # Model for gaussian items:
@@ -123,8 +120,8 @@ get_full_lca_model <- function(data_list, nclasses, item,
 
     cl <- length(param)
     idx_gauss <- (cl + 1L):(cl + Jgauss)
-    param[idx_gauss] <- lca_all[item_names[gauss]]
-    param[idx_gauss] <- lapply(lca_all[item_names[gauss]],
+    param[idx_gauss] <- trans[item_names[gauss]]
+    param[idx_gauss] <- lapply(trans[item_names[gauss]],
                                    FUN = \(x) {
                                      x[2, ] <- "1"
                                      return(x)
@@ -139,7 +136,7 @@ get_full_lca_model <- function(data_list, nclasses, item,
     cl <- length(param)
     idx_multinom <- (cl + 1L):(cl + Jmulti)
     item_names_multinom <- paste("log", item_names[multinom], sep = "_")
-    param[idx_multinom] <- lca_all[item_names_multinom]
+    param[idx_multinom] <- trans[item_names_multinom]
     names(param)[idx_multinom] <- item_names_multinom
 
     param[idx_multinom] <- lapply(param[idx_multinom],
@@ -151,7 +148,7 @@ get_full_lca_model <- function(data_list, nclasses, item,
 
   #### Fixed parameters ####
 
-  trans <- lca_all
+  lca_all <- trans
 
   # Replace the transformed parameter by custom values, if available:
   if(!is.null(model)) {
@@ -162,29 +159,13 @@ get_full_lca_model <- function(data_list, nclasses, item,
     nm <- nm[!vapply(model[nm], is.null, logical(1))]
     param[nm] <- model[nm]
 
-    nm <- intersect(names(model), names(trans))
+    nm <- intersect(names(model), names(lca_all))
     nm <- nm[!vapply(model[nm], is.null, logical(1))]
-    trans[nm] <- model[nm]
+    lca_all[nm] <- model[nm]
 
   }
 
-  trans[names(param)] <- param
-
-  #### Arrange labels ####
-
-  # Collect the parameter labels:
-  vector_param <- unname(unlist(param))
-  indicator <- is.na(suppressWarnings(as.numeric(vector_param)))
-  fixed_indices <- which(!indicator)
-  fixed_values <- as.numeric(vector_param[fixed_indices])
-  parameters_indices <- which(indicator)
-  parameters_labels <- unique(vector_param[parameters_indices])
-  nparam <- length(parameters_labels)
-
-  # Indices of fixed parameters:
-  alltrans <- suppressWarnings(as.numeric(unname(unlist(trans))))
-  fixed_indices <- which(!is.na(alltrans))
-  fixed_values <- alltrans[fixed_indices]
+  lca_all[names(param)] <- param
 
   #### Create the initial values for the parameters ####
 
@@ -302,54 +283,20 @@ get_full_lca_model <- function(data_list, nclasses, item,
 
   }
 
-  #### Pass the initial values to vectors ####
-
-  parameters <- vector("list", length = control$rstarts)
-  select_params <- match(parameters_labels, vector_param)
-  for(i in 1:control$rstarts) {
-    parameters[[i]] <- unlist(init_param[[i]])[select_params]
-    names(parameters[[i]]) <- parameters_labels
-  }
-
-  # Initialize the vector of transformed parameters:
-  # Relate the transformed parameters to the parameters:
-  trans2param <- match(parameters_labels, transparameters_labels)
-  transparameters <- vector("list", length = control$rstarts)
-  for(i in 1:control$rstarts) { # For each random start i...
-    transparameters[[i]] <- vector(length = ntrans)
-    # Copy the parameter values to the transparameters:
-    transparameters[[i]][fixed_indices] <- fixed_values # Fixed parameters
-    transparameters[[i]][trans2param] <- parameters[[i]]
-    names(transparameters[[i]]) <- transparameters_labels
-  }
-
-  #### Set up the optimizer ####
-
-  # Create defaults for the control of the optimizer:
-  control$init_param <- init_param
-  control$parameters <- parameters
-  control$transparameters <- transparameters
-  control$transparam2param <- trans2param-1L
-
   #### Return ####
 
-  result <- list(parameters_labels = parameters_labels,
-                 nparam = nparam,
-                 transparameters_labels = transparameters_labels,
-                 ntrans = ntrans,
-                 param = param,
+  result <- list(param = param,
                  trans = trans,
                  lca_all = lca_all,
-                 pi_hat_list = pi_hat_list,
                  init_param = init_param,
-                 control = control)
+                 pi_hat_list = pi_hat_list)
 
   return(result)
 
 }
 
 get_short_lca_model <- function(data_list, nclasses, item,
-                                lca_all, param, model = NULL) {
+                                trans, param, model = NULL) {
 
   # This function displays the reduced LCA model in logarithm and probability
   # scales. This is a short version of the full model syntax created with
@@ -368,38 +315,38 @@ get_short_lca_model <- function(data_list, nclasses, item,
   item_names <- data_list$item_names
 
   prob_model <- list()
-  prob_model$beta <- lca_all$beta
+  prob_model$beta <- trans$beta
 
   #### Transformed parameters model ####
 
   if(any(item == "gaussian")) {
 
-    prob_model[item_names[gauss]] <- lca_all[data_list$item_names[gauss]]
+    prob_model[item_names[gauss]] <- trans[data_list$item_names[gauss]]
 
   }
 
   if(any(item == "multinomial")) {
 
-    prob_model[item_names[multinom]] <- lca_all[data_list$item_names[multinom]]
+    prob_model[item_names[multinom]] <- trans[data_list$item_names[multinom]]
 
   }
 
   #### Parameters model ####
 
   log_model <- list()
-  log_model$beta <- lca_all$beta
+  log_model$beta <- trans$beta
 
   if(any(item == "gaussian")) {
 
-    log_model[item_names[gauss]] <- lapply(lca_all[data_list$item_names[gauss]],
-                                            FUN = \(x) x[-2, ])
+    log_model[item_names[gauss]] <- lapply(trans[data_list$item_names[gauss]],
+                                           FUN = \(x) x[-2, ])
 
   }
 
   if(any(item == "multinomial")) {
 
     log_probs <- paste("log", data_list$item_names[multinom], sep = "_")
-    log_model[item_names[multinom]] <- lca_all[log_probs]
+    log_model[item_names[multinom]] <- trans[log_probs]
 
   }
 
@@ -421,7 +368,7 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
   list2env(data_list, envir = environment())
   list2env(full_model, envir = environment())
 
-  nclasses <- ncol(lca_all$class)
+  nclasses <- ncol(trans$class)
 
   #### Manifolds ####
 
@@ -448,8 +395,8 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
   for(s in 1:npatterns) {
 
     transforms[[k]] <- list(transform = "softmax",
-                            parameters_in = list(lca_all$theta[s, ]),
-                            parameters_out = list(lca_all$class[s, ]))
+                            parameters_in = list(trans$theta[s, ]),
+                            parameters_out = list(trans$class[s, ]))
     k <- k + 1L
 
   }
@@ -460,11 +407,11 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
     gauss <- which(item == "gaussian")
     Jgauss <- length(gauss) # Number of gaussian items
 
-    means <- c(do.call(rbind, lapply(lca_all[item_names[gauss]],
+    means <- c(do.call(rbind, lapply(trans[item_names[gauss]],
                                      FUN = \(x) x[1, ])))
-    stdv <- c(do.call(rbind, lapply(lca_all[item_names[gauss]],
+    stdv <- c(do.call(rbind, lapply(trans[item_names[gauss]],
                                     FUN = \(x) x[2, ])))
-    log_stdv <- c(do.call(rbind, lapply(lca_all[item_names[gauss]],
+    log_stdv <- c(do.call(rbind, lapply(trans[item_names[gauss]],
                                         FUN = \(x) x[3, ])))
 
     transforms[[k]] <- list(transform = "exponential",
@@ -475,7 +422,7 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
     y <- as.matrix(patterns[, gauss])
     transforms[[k]] <- list(transform = "normal",
                             parameters_in = list(means, stdv),
-                            parameters_out = list(lca_all$loglik[, gauss, ]),
+                            parameters_out = list(trans$loglik[, gauss, ]),
                             extra = list(y = y, S = npatterns, J = Jgauss,
                                          I = nclasses))
     k <- k+1L
@@ -498,8 +445,8 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
       for(i in 1:nclasses) {
 
         transforms[[k]] <- list(transform = "softmax",
-                                parameters_in = list(lca_all[[log_probs]][, i]),
-                                parameters_out = list(lca_all[[probs]][, i]))
+                                parameters_in = list(trans[[log_probs]][, i]),
+                                parameters_out = list(trans[[probs]][, i]))
         k <- k+1L
 
       }
@@ -510,15 +457,15 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
     y <- as.matrix(patterns[, multinom])
     K <- unlist(lapply(data_list$factor_names, FUN = length))
     transforms[[k]] <- list(transform = "multinomial",
-                            parameters_in = list(lca_all[item_names[multinom]]),
-                            parameters_out = list(lca_all$loglik[, multinom, ]),
+                            parameters_in = list(trans[item_names[multinom]]),
+                            parameters_out = list(trans$loglik[, multinom, ]),
                             extra = list(y = y, S = npatterns, J = Jmulti,
                                          I = nclasses, K = K))
 
   }
 
   control_transform <- create_transforms(transforms = transforms,
-                                         structures = lca_all)
+                                         structures = trans)
 
   #### Estimators ####
 
@@ -549,7 +496,7 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
       for(i in uniques) {
 
         estimators[[G]] <- list(estimator = "bayesconst1",
-                                parameters = list(lca_all$class[i, ]),
+                                parameters = list(trans$class[i, ]),
                                 extra = list(K = nclasses,
                                              alpha = alpha,
                                              U = U,
@@ -564,12 +511,12 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
     if(any(item == "gaussian") & alpha != 0) {
 
       Y <- data[, gauss, drop = FALSE]
-      # sigma_class <- split(lca_all$sigma, rep(1:nclasses, each = Jgauss))
+      # sigma_class <- split(trans$sigma, rep(1:nclasses, each = Jgauss))
       varshat <- apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs
 
       for(i in 1:nclasses) {
 
-        stdv_by_class <- unlist(lapply(lca_all[item_names[gauss]],
+        stdv_by_class <- unlist(lapply(trans[item_names[gauss]],
                                        FUN = \(x) x[2, i]))
         estimators[[G]] <- list(estimator = "bayesconst3",
                                 parameters = list(stdv_by_class),
@@ -591,11 +538,11 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
         for(i in 1:nclasses) {
 
           pihat <- pi_hat_list[[j]][, i]
-          probs_by_class <- unlist(lapply(lca_all[item_names[multinom[j]]],
+          probs_by_class <- unlist(lapply(trans[item_names[multinom[j]]],
                                          FUN = \(x) x[, i]))
 
           estimators[[G]] <- list(estimator = "bayesconst2",
-                                  # parameters = list(lca_all$peta[[j]][, i]),
+                                  # parameters = list(trans$peta[[j]][, i]),
                                   parameters = list(probs_by_class),
                                   extra = list(K = nclasses,
                                                pihat = pihat,
@@ -612,14 +559,14 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
     alpha <- control$penalties$beta$alpha
     if(alpha != 0) {
 
-      p <- nrow(lca_all$beta)-1L
-      q <- ncol(lca_all$beta)
+      p <- nrow(trans$beta)-1L
+      q <- ncol(trans$beta)
       means <- matrix(0, nrow = p, ncol = q)
       sds <- apply(cov_patterns2[, -1], MARGIN = 2, sd, na.rm = TRUE)
       sds <- matrix(sds, nrow = p, ncol = q) / alpha
 
       estimators[[G]] <- list(estimator = "gaussian_loglik",
-                              parameters = list(lca_all$beta[-1, ]),
+                              parameters = list(trans$beta[-1, ]),
                               extra = list(means = means,
                                            sds = sds,
                                            alpha = alpha,
@@ -637,7 +584,7 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
       if(lambda != 0 && power != 0) {
 
         estimators[[G]] <- list(estimator = "ridge",
-                                parameters = list(lca_all$beta[-1, ]),
+                                parameters = list(trans$beta[-1, ]),
                                 extra = list(lambda = lambda,
                                              power = power,
                                              N = nobs))
@@ -649,22 +596,47 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
   }
 
   control_estimator <- create_estimators(estimators = estimators,
-                                         structures = lca_all)
+                                         structures = trans)
+
+  #### Pass the initial values to vectors ####
+
+  idx_transformed <- unlist(lapply(control_transform,
+                                   FUN = \(x) unlist(x$indices_out)+1L))
+  inits <- create_init(trans, param, init_param,
+                       idx_transformed = idx_transformed, control)
+
+  parameters <- inits$parameters
+  parameters_labels <- names(parameters[[1]])
+  nparam <- length(parameters_labels)
+
+  transparameters <- inits$transparameters
+  transparameters_labels <- names(transparameters[[1]])
+  ntrans <- length(transparameters_labels)
+
+  trans2param <- match(parameters_labels, transparameters_labels)
+
+  #### Set up the optimizer ####
+
+  # Create defaults for the control of the optimizer:
+  control_optimizer <- control
+  control_optimizer$parameters <- parameters
+  control_optimizer$transparameters <- transparameters
+  control_optimizer$init_param <- init_param
+  control_optimizer$transparam2param <- trans2param-1L
 
   #### Return ####
 
-  modelInfo <- list(nparam = nparam,
-                    dof = npossible_patterns - nparam,
+  modelInfo <- list(param = param,
+                    trans = trans,
+                    nparam = nparam,
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,
-                    param = param,
-                    trans = trans,
-                    lca_all = lca_all,
+                    dof = npatterns - nparam,
                     control_manifold = control_manifold,
                     control_transform = control_transform,
                     control_estimator = control_estimator,
-                    control_optimizer = control)
+                    control_optimizer = control_optimizer)
 
   return(modelInfo)
 
