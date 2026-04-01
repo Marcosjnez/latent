@@ -433,34 +433,39 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     lavvcov$vcov <- Optim$SE$vcov
 
     ## test
-    chi2 <- -2*(loglik - Optim$outputs$estimators$doubles[[1]][5])
-    df <- modelInfo$dof
-    pv <- 1 - pchisq(chi2, df)
+    x <- lavpartable$est[lavpartable$free != 0]
+    fx <- loss/2
+    fx.group <- loss/2
+    attr(fx, "fx.group") <- fx.group
+    attr(x, "fx") <- fx
 
-    TEST <- list(standard =
-                   list(test = lavoptions$test,
-                        stat = chi2,
-                        stat.group = chi2,
-                        df = df,
-                        refdistr = "chisq",
-                        pvalue = pv))
-    ## I am copying here as text, we will need to retrieve this information
-    attributes(TEST) <- list(names = lavoptions$test,
-                             info = list(ngroups = ngroups,
-                                         group.label = group_label,
-                                         information = c("expected", "expected"),
-                                         h1.information = c("structured", "structured"),
-                                         observed.information = c("hessian", "hessian") ))
+    TEST <- lavaan:::lav_model_test(lavobject = NULL,
+                                    lavmodel = lavmodel,
+                                    lavpartable = lavpartable,
+                                    lavsamplestats = lavsamplestats,
+                                    lavimplied = implied,
+                                    lavh1 = h1,
+                                    lavoptions = lavoptions,
+                                    x = x,
+                                    VCOV = Optim$SE$vcov,
+                                    lavcache = lavcache,
+                                    lavdata = lavdata,
+                                    lavloglik = loglik_lav,
+                                    test.UGamma.eigvals = FALSE)
 
     ### FIT
-    lavfit <- lat_model_fit(lavpartable = lavpartable,
-                            lavmodel = lavmodel,
-                            x = lavpartable$est[lavpartable$free != 0],
-                            VCOV = Optim$SE$vcov,
-                            TEST = TEST,
-                            loss = c(loss = loss, loglik = loglik),
-                            Optim = Optim,
-                            modelInfo = modelInfo)
+    attr(x, "iterations") <- Optim$iterations
+    attr(x, "converged") <- Optim$convergence
+    attr(x, "control") <- modelInfo$control_optimizer
+
+    lavfit <-  lavaan:::lav_model_fit(lavpartable = lavpartable,
+                                      lavmodel = lavmodel,
+                                      lavimplied = implied,
+                                      x = x,
+                                      VCOV = Optim$SE$vcov,
+                                      TEST = TEST)
+
+
 
     ##
     ## lavoptim
@@ -472,11 +477,10 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     ## h1
     #### baseline model implied
     ## need to adjust with the estimated baseline model
-    implied_h1 <- implied
-    implied_h1$cov <- lavsamplestats@cov
-    h1 <- list(implied = implied_h1,
-               logl = list(loglik = Optim$outputs$estimators$doubles[[1]][5],
-                           loglik.group = Optim$outputs$estimators$doubles[[1]][5]))
+    h1 <- lavaan:::lav_h1_implied_logl(lavdata = lavdata,
+                                       lavsamplestats = lavsamplestats,
+                                       lavpartable = lavpartable,
+                                       lavoptions = lavoptions)
 
     ######
 
@@ -534,68 +538,4 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
 }
 
-
-### helper function for lavaan like objects
-### edited from blavaan internal functions
-
-lat_model_fit <- function (lavpartable = NULL,
-                           lavmodel = NULL,
-                           x = NULL,
-                           VCOV = NULL,
-                           TEST = NULL,
-                           loss = NULL,
-                           Optim = NULL,
-                           modelInfo = NULL){
-  stopifnot(is.list(lavpartable), inherits(lavmodel, c("Model",
-                                                       "lavModel")))
-
-  iterations <- Optim$iterations
-  converged <- Optim$convergence
-  fx <- loss["loss"]
-  fx.group <- loss["loss"]
-  logl.group <- loss["loglik"]
-  logl <- loss["loglik"]
-  control <- modelInfo$control_optimizer
-  attributes(fx) <- NULL
-  x.copy <- x
-  attributes(x.copy) <- NULL
-  est <- lavpartable$est
-  se <- lavpartable$se
-
-  if (is.null(TEST)) {
-    test <- list()
-  }
-  else {
-    test <- TEST
-  }
-  implied <- lav_model_implied(lavmodel)
-
-  if (lavmodel@conditional.x) {
-    names(implied) <- c("cov", "mean", "slopes", "th", "group.w")
-  }
-  if (!is.null(attr(x, "partrace"))) {
-    PARTRACE <- attr(x, "partrace")
-  }
-  else {
-    PARTRACE <- matrix(0, 0L, 0L)
-  }
-  new("Fit",
-      npar = as.integer(max(lavpartable$free)),
-      x = x.copy,
-      partrace = PARTRACE,
-      start = lavpartable$start,
-      est = est,
-      se = se,
-      fx = fx,
-      fx.group = fx.group,
-      logl = logl,
-      logl.group = logl.group,
-      iterations = as.integer(iterations),
-      converged = converged,
-      control = control,
-      Sigma.hat = implied$cov,
-      Mu.hat = implied$mean,
-      TH = implied$th,
-      test = test)
-}
 
