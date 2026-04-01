@@ -1,3 +1,7 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 01/04/2026
+
 # Miscellaneous functions used in latent
 
 allnumeric <- function(lst) {
@@ -16,35 +20,6 @@ allnumeric <- function(lst) {
   )
 
   return(lst)
-
-}
-
-fill_list_with_vector <- function(lst, values) {
-
-  # Insert a vector of values in an arbitrary list lst
-
-  i <- 1
-
-  assign_recursive <- function(x) {
-    if (is.list(x)) {
-      lapply(x, assign_recursive)
-    } else if (is.matrix(x)) {
-      dims <- dim(x)
-      n <- prod(dims)
-      x[] <- values[i:(i + n - 1)]
-      i <<- i + n
-      x
-    } else if (is.atomic(x)) {
-      n <- length(x)
-      x[] <- values[i:(i + n - 1)]
-      i <<- i + n
-      x
-    } else {
-      stop("Unsupported type")
-    }
-  }
-
-  assign_recursive(lst)
 
 }
 

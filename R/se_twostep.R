@@ -56,24 +56,6 @@ se_twostep <- function(fit2, type = "standard") {
   VCOV2$se <- sqrt(diag(VCOV2$vcov))
   names(VCOV2$se) <- fit2@modelInfo$parameters_labels
 
-  # # Create the tables of parameters with standard errors:
-  # indices <- match(unlist(fit2@modelInfo$param),
-  #                  fit2@modelInfo$parameters_labels)
-  # values <- VCOV2$se[indices]
-  # values[is.na(values)] <- 0
-  # VCOV2$table_se <- fill_list_with_vector(fit2@modelInfo$param, values)
-  # VCOV2$table_se <- allnumeric(VCOV2$table_se)
-
-  # se(fit2, type = type)$table_se$beta
-  # VCOV2$table_se$beta
-
-  # effects_vcov <- effects_coding(fit2@parameters$beta, VCOV2$vcov)
-  # rownames(effects_vcov$vcov_new) <- colnames(effects_vcov$vcov_new) <-
-  #   names(effects_vcov$se_new) <- c(fit2@modelInfo$lca_all$beta)
-
-  # round(effects_vcov$se_new, 4)
-  # round(effects_vcov$vcov_new, 4)
-
   return(VCOV2)
 
 }

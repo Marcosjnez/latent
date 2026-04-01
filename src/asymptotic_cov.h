@@ -1,27 +1,13 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 06/03/2025
+ * Modification date: 01/04/2026
  *
  */
 
-arma::mat diagConc(arma::mat X1, arma::mat X2) {
-
-  int p1 = X1.n_rows;
-  int q1 = X1.n_cols;
-  int p2 = X2.n_rows;
-  int q2 = X2.n_cols;
-  arma::mat augmented(p1+p2, q1+q2, arma::fill::zeros);
-  augmented(arma::span(0, p1-1L), arma::span(0, q1-1L)) = X1;
-  augmented(arma::span(p1, p1+p2-1L), arma::span(q1, q1+q2-1L)) = X2;
-
-  return augmented;
-
-}
-
 arma::vec diagcov(arma::mat X) {
 
-  // Get the variance of variabes with missing data
+  // Get the variance of variables with missing data
   const size_t numCols = X.n_cols;
 
   // Initialize the correlation matrix
@@ -55,6 +41,8 @@ arma::mat asymptotic_general(arma::mat X) {
   /*
    * Browne and Shapiro (Equation 3.2; 1986)
    */
+
+  // X is the raw data of scores
 
   arma::vec d;
   arma::mat P;
@@ -128,6 +116,8 @@ arma::mat asymptotic_normal(arma::mat P) {
    * Browne and Shapiro (Equation 4.1; 1986)
    */
 
+  // P is the correlation matrix
+
   int q = P.n_rows;
   int qq = q*q;
 
@@ -163,158 +153,3 @@ arma::mat asymptotic_elliptical(arma::mat P, double eta) {
   return asymptotic;
 
 }
-
-arma::mat asymptotic_poly(const arma::mat X, const arma::mat R, const int cores) {
-
-  /*
-   * Function to estimate the Asymptotic covariance matrix of the polychoric correlations
-   */
-
-  // Rcpp::Timer timer;
-  // Rcpp::List result;
-
-  const int n = X.n_rows;
-  const int q = X.n_cols;
-
-  std::vector<std::vector<int>> cols(q);
-  std::vector<int> maxs(q);
-  std::vector<std::vector<double>> taus(q);
-  std::vector<std::vector<double>> mvphi(q);
-
-  omp_set_num_threads(cores);
-#pragma omp parallel for
-  for(size_t i = 0; i < q; ++i) {
-    cols[i] = arma::conv_to<std::vector<int>>::from(X.col(i));
-    maxs[i] = *max_element(cols[i].begin(), cols[i].end());
-    std::vector<int> frequencies = count(cols[i], n, maxs[i]-1L);
-    mvphi[i] = cumsum(frequencies);
-    taus[i] = mvphi[i]; // Cumulative frequencies
-    for (size_t j = 0; j < maxs[i]; ++j) {
-      mvphi[i][j] /= n;
-      taus[i][j] = Qnorm(mvphi[i][j]);
-    }
-    mvphi[i].push_back(1.0);
-    mvphi[i].insert(mvphi[i].begin(), 0.0);
-    taus[i].push_back(pos_inf);
-    taus[i].insert(taus[i].begin(), neg_inf);
-  }
-
-  // timer.step("Thresholds");
-  // result["taus"] = taus;
-
-  int dq = 0.5*q*(q-1);
-  int k = 0;
-  std::vector<std::vector<int>> indexes(dq, std::vector<int>(2));
-  for(int i=0; i < (q-1); ++i) {
-    for(int j=i+1L; j < q; ++j) {
-      indexes[k][0] = i;
-      indexes[k][1] = j;
-      ++k;
-    }
-  }
-
-  arma::mat ACOV(dq, dq);
-  double f = 0.00;
-
-  for(int i=0; i < dq; ++i) {
-    int indexes1 = indexes[i][0];
-    int indexes2 = indexes[i][1];
-    int s = taus[indexes1].size()+1L;
-    int r = taus[indexes2].size()+1L;
-    double rho1 = R(indexes1, indexes2);
-    Rcpp::List deriv = poly_derivatives(rho1, taus[indexes1], taus[indexes2],
-                                        mvphi[indexes1], mvphi[indexes2]);
-    arma::mat ppi = deriv["ppi"];
-    arma::mat dppidp = deriv["dppidp"];
-    arma::mat dppidtau1 = deriv["dppidtau1"];
-    arma::mat dppidtau2 = deriv["dppidtau2"];
-    // result["ppi"] = ppi;
-    // result["dppidp"] = dppidp;
-    // result["dppidtau1"] = dppidtau1;
-    // result["dppidtau2"] = dppidtau2;
-    // return result;
-    Rcpp::List x1 = COV(rho1, taus[indexes1], taus[indexes2],
-                        mvphi[indexes1], mvphi[indexes2], ppi, dppidp,
-                        dppidtau1, dppidtau2);
-    // return x1;
-    arma::mat Gamma1 = x1["Gamma"];
-    double omega1 = x1["omega"];
-
-    for(int j=0; j < dq; ++j) {
-      int indexes3 = indexes[j][0];
-      int indexes4 = indexes[j][1];
-      int y = taus[indexes3].size()+1L;
-      int w = taus[indexes4].size()+1L;
-      double rho2 = R(indexes3, indexes4);
-      Rcpp::List deriv = poly_derivatives(rho2, taus[indexes3], taus[indexes4],
-                                          mvphi[indexes3], mvphi[indexes4]);
-      arma::mat ppi = deriv["ppi"];
-      arma::mat dppidp = deriv["dppidp"];
-      arma::mat dppidtau3 = deriv["dppidtau1"];
-      arma::mat dppidtau4 = deriv["dppidtau2"];
-      Rcpp::List x2 = COV(rho2, taus[indexes3], taus[indexes4],
-                          mvphi[indexes3], mvphi[indexes4], ppi, dppidp,
-                          dppidtau3, dppidtau4);
-      arma::mat Gamma2 = x2["Gamma"];
-      double omega2 = x2["omega"];
-      double omega_prod = omega1*omega2;
-      for(int a=0; a < s; ++a) {
-        for(int b=0; b < r; ++b) {
-          for(int c=0; c < y; ++c) {
-            for(int d=0; d < w; ++d) {
-              for(int l=0; l < n; ++l) {
-                if(X(l, indexes1) == a && X(l, indexes2) == b &&
-                   X(l, indexes3) == c && X(l, indexes4) == d) {
-                  f += Gamma1(a, b) * Gamma2(d, c) - omega_prod;
-                }
-              }
-            }
-          }
-        }
-      }
-      ACOV(i, j) = ACOV(j, i) = f/n;
-      f = 0.00;
-    }
-  }
-
-  // timer.step("ACOV");
-
-  // result["ACOV"] = ACOV;
-  // result["elapsed"] = timer;
-
-  return ACOV;
-
-}
-
-arma::mat asymp_cov(arma::mat S,
-                    Rcpp::Nullable<arma::mat> nullable_X,
-                    double eta, std::string type) {
-
-  arma::mat asymptotic_cov, X;
-
-  if(type == "normal") {
-    asymptotic_cov = asymptotic_normal(S);
-  } else if(type == "elliptical") {
-    asymptotic_cov = asymptotic_elliptical(S, eta);
-  } else if(type == "general") {
-    if(nullable_X.isNotNull()) {
-      X = Rcpp::as<arma::mat>(nullable_X);
-    } else {
-      Rcpp::stop("The asymptotic covariance matrix of a general correlation matrix requires the raw data");
-    }
-    asymptotic_cov = asymptotic_general(X);
-  } else if(type == "poly") {
-    if(nullable_X.isNotNull()) {
-      X = Rcpp::as<arma::mat>(nullable_X);
-    } else {
-      Rcpp::stop("The asymptotic covariance matrix of a general correlation matrix requires the raw data");
-    }
-    asymptotic_cov = asymptotic_poly(X, S, 1L);
-  } else{
-    Rcpp::stop("The available asymptotic covariance estimators are 'normal', 'elliptical', 'general', and 'poly'");
-  }
-
-  return asymptotic_cov;
-
-}
-

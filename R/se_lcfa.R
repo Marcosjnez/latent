@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 01/04/2026
 #'
 #' @title
 #' Standard Errors
@@ -30,19 +30,10 @@
 #' @export
 se.lcfa <- function(fit, type = "standard", digits = 5) {
 
-  # Select the model parameters:
-  model <- fit@modelInfo$param
-  est <- fit@parameters
-
-  # Collect all the estimators:
-  estimators <- unlist(lapply(fit@modelInfo$control_estimator,
-                              FUN = \(x) x$estimator))
-
   SE <- general_se(fit = fit, type = type)
 
   # Create the tables of parameters with standard errors:
   table_se <- fill_in(fit@modelInfo$param, SE$se, miss = 0)
-  table_se <- allnumeric(table_se)
 
   # Return:
   result <- list()
@@ -91,17 +82,13 @@ general_se <- function(fit, type = "standard") {
   for(i in 1:ngroups) {
 
     # Get the asymptotic correlation matrix:
-    if(is.null(fit@data_list$correl[[i]]$missing)) {
-      ACOVi <- fit@data_list$correl[[i]]$ACOV/fit@data_list$nobs[[i]]
-    } else {
-      ACOVij <- vector("list", length = length(fit@data_list$correl[[i]]$missing))
-      for(j in 1:length(fit@data_list$correl[[i]]$missing)) {
-        ACOVij[[j]] <- fit@data_list$correl[[i]]$missing[[j]]$ACOV /
-          fit@data_list$correl[[i]]$missing[[j]]$nobs
-      }
-      ACOVi <- block_diag(ACOVij)
+    ACOVij <- vector("list", length = fit@data_list$correl[[i]]$npatterns)
+    for(j in 1:fit@data_list$correl[[i]]$npatterns) {
+      ACOVij[[j]] <- fit@data_list$correl[[i]][[j]]$ACOV /
+        fit@data_list$correl[[i]][[j]]$nobs
     }
 
+    ACOVi <- block_diag(ACOVij)
     VAR[[i]] <- ACOVi
 
   }
@@ -111,7 +98,7 @@ general_se <- function(fit, type = "standard") {
   args <- fit@data_list$args
   args$control <- fit@modelInfo$control_optimizer
   args$control$free_S <- TRUE
-  args$control$free_S_diag <- FALSE
+  args$control$free_S_diag <- TRUE
   args$do.fit <- FALSE
   fit2 <- do.call(lcfa, args) # AVOID RECOMPUTING CORRELATIONS HERE
 
@@ -128,7 +115,8 @@ general_se <- function(fit, type = "standard") {
                 control_estimator, control_optimizer)
   colnames(x$h) <- rownames(x$h) <- fit2@modelInfo$parameters_labels
 
-  model_pars <- fit2@modelInfo$parameters_labels %in% fit@modelInfo$parameters_labels
+  model_pars <- fit2@modelInfo$parameters_labels %in%
+    fit@modelInfo$parameters_labels
   nuisance_pars <- !model_pars
   df2_dparamdR <- x$h[nuisance_pars, model_pars]
 

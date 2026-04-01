@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/03/2026
+# Modification date: 01/04/2026
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
@@ -132,8 +132,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
       } else {
         X[[i]] <- data[, item_names[[i]]]
       }
-      nobs[[i]] <- nrow(X[[i]])
 
+      nobs[[i]] <- nrow(X[[i]])
       correl[[i]] <- correlation(data = X[[i]],
                                  item_names = item_names[[i]],
                                  cor = cor,
@@ -142,13 +142,17 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                                  nobs = nobs[[i]],
                                  missing = missing,
                                  likelihood = likelihood)
-      sample.cov[[i]] <- correl[[i]]$R
-      rownames(sample.cov[[i]]) <- colnames(sample.cov[[i]]) <- item_names[[i]]
-      NACOV[[i]] <- correl[[i]]$ACOV
-      if(!is.null(correl[[i]]$thresholds)) {
-        thresholds[[i]] <- correl[[i]]$thresholds
+      correl[[i]]$nobs <- nobs[[i]]
+      correl[[i]]$item_names <- item_names[[i]]
+
+      sample.cov[[i]] <- correl[[i]][[1]]$R
+      rownames(sample.cov[[i]]) <- colnames(sample.cov[[i]]) <-
+        correl[[i]][[1]]$item_names
+      NACOV[[i]] <- correl[[i]][[1]]$ACOV
+      if(!is.null(correl[[i]][[1]]$thresholds)) {
+        thresholds[[i]] <- correl[[i]][[1]]$thresholds
       }
-      WLS.V[[i]] <- diag(c(correl[[i]]$W))
+      WLS.V[[i]] <- diag(c(correl[[i]][[1]]$W))
 
     }
 
@@ -413,12 +417,10 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     ## lavmodel
     ## only for 1 group for now
     ## how to adjust multiple group labels?
-    psi <- transformed_pars$psi.group1
-    psi[upper.tri(psi)]<-t(psi)[upper.tri(psi)]
 
-    lavmodel@GLIST$lambda <- transformed_pars$lambda.group1
-    lavmodel@GLIST$psi <- psi
-    lavmodel@GLIST$theta <- transformed_pars$theta.group1
+    lavmodel@GLIST$lambda <- transformed_pars$lambda.g1
+    lavmodel@GLIST$psi <- transformed_pars$psi.g1
+    lavmodel@GLIST$theta <- transformed_pars$theta.g1
 
     ## implied
     implied <- lav_model_implied(lavmodel)
@@ -468,11 +470,30 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     names(lavoptim) <- optnames
 
     ## h1
-    h1 <- list(implied = implied,
-               logl = list(loglik = loglik,
-                           loglik.group = loglik))
+    #### baseline model implied
+    ## need to adjust with the estimated baseline model
+    implied_h1 <- implied
+    implied_h1$cov <- lavsamplestats@cov
+    h1 <- list(implied = implied_h1,
+               logl = list(loglik = Optim$outputs$estimators$doubles[[1]][5],
+                           loglik.group = Optim$outputs$estimators$doubles[[1]][5]))
+
+    ######
 
     ## add baseline
+    #####
+
+    ## set NACOC as NULL, so its recauclauted in some functions, to match residuals
+    ## the latent NACOV have different dimensions
+    lavsamplestats@NACOV <- vector("list", ngroups)
+
+    ###
+    loglik_lav <- lavaan:::lav_model_loglik(lavdata = lavdata,
+                                            lavsamplestats = lavsamplestats,
+                                            lavh1 = h1,
+                                            lavimplied = implied,
+                                            lavmodel = lavmodel,
+                                            lavoptions = lavoptions)
 
     ####
     ####
@@ -494,10 +515,18 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                   vcov         = lavvcov,             #*
                   test         = TEST,                #* blav_model_test
                   h1           = h1,
+                  loglik       = loglik_lav,
                   baseline     = list(),
                   internal     = list(),
                   external     = list()              # can add extra info from latent
     )
+
+    tt <- lavaan:::lav_object_independence(object = result)
+
+    baseline <- list(partable = tt@ParTable,
+                     test = tt@test)
+
+    result@baseline <- baseline
 
   }
 

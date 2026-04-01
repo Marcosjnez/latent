@@ -289,21 +289,11 @@ lpoly <- function(data,
   #### Estimated model structures ####
 
   # Create the structures of untransformed parameters:
-  indices_pars <- match(modelInfo$parameters_labels,
-                        unlist(modelInfo$poly_param))
-  vv <- rep(0, times = length(unlist(modelInfo$poly_param)))
-  vv[indices_pars] <- Optim$parameters
-  parameters <- fill_list_with_vector(modelInfo$poly_param, vv)
-  parameters <- allnumeric(parameters)
+  parameters <- fill_in(modelInfo$poly_param, Optim$parameters)
   # FIXED PARAMETERS?
 
   # Create the structures of transformed parameters:
-  indices_trans <- match(modelInfo$transparameters_labels,
-                         unlist(modelInfo$poly_trans))
-  vv <- rep(0, times = length(unlist(modelInfo$poly_trans)))
-  vv[indices_trans] <- Optim$transparameters
-  transformed_pars <- fill_list_with_vector(modelInfo$poly_trans, vv)
-  transformed_pars <- allnumeric(transformed_pars)
+  transformed_pars <- fill_in(modelInfo$poly_trans, Optim$transparameters)
 
   #### Process the fit information ####
 

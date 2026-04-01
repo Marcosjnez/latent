@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 31/03/2026
+# Modification date: 01/04/2026
 
 asymptotic_poly <- function(X, taus) {
 
@@ -28,8 +28,6 @@ split_by_missing_pattern <- function(data) {
     stop("`data` must be a data.frame or matrix.")
   }
 
-  p <- ncol(data)
-
   if (nrow(data) == 0L) {
     return(list())
   }
@@ -39,14 +37,22 @@ split_by_missing_pattern <- function(data) {
   # One key per row, based on its missing-data pattern
   pattern_key <- apply(miss, 1L, function(x) paste(as.integer(x), collapse = ""))
 
-  # Keep patterns in order of first appearance
+  # Unique patterns in first-appearance order
   pattern_levels <- unique(pattern_key)
+
+  # Number of rows per pattern
+  counts <- tabulate(match(pattern_key, pattern_levels), nbins = length(pattern_levels))
+
+  # Order by decreasing number of rows; ties keep first appearance order
+  ord <- order(-counts, seq_along(pattern_levels))
+  pattern_levels <- pattern_levels[ord]
+  counts <- counts[ord]
 
   out <- vector("list", length(pattern_levels))
 
   for (k in seq_along(pattern_levels)) {
     idx_rows <- which(pattern_key == pattern_levels[k])
-    idx_vars <- !miss[idx_rows[1L], ]   # TRUE = observed in this pattern
+    idx_vars <- !miss[idx_rows[1L], ]  # TRUE = observed in this pattern
 
     out[[k]] <- list(
       data = data[idx_rows, idx_vars, drop = FALSE],
@@ -65,136 +71,153 @@ correlation <- function(data, item_names = colnames(data),
                         missing = "pairwise.complete.obs",
                         likelihood = NULL) {
 
-  result <- list()
-
   cor <- tolower(cor)
   estimator <- tolower(estimator)
   acov <- tolower(acov)
   missing <- tolower(missing)
-  X <- as.matrix(data[, item_names])
-  p <- nrow(X) # Number of rows
-  q <- ncol(X) # Number of columns
 
-  if(is.null(likelihood)) {
-    if(estimator == "ml") {
-      likelihood <- "normal"
+  X <- as.matrix(data[, item_names, drop = FALSE])
+
+  compute_one_pattern <- function(X, item_names, cor, estimator, acov, nobs,
+                                  missing, likelihood, vars = rep(TRUE, length(item_names))) {
+
+    out <- list()
+    out$item_names <- item_names
+    out$vars <- vars
+    out$nobs <- if (is.null(nobs)) nrow(X) else nobs
+
+    p <- nrow(X)  # rows
+    q <- ncol(X)  # cols
+
+    if (is.null(likelihood)) {
+      likelihood <- if (estimator == "ml") "normal" else "wishart"
+    }
+
+    #### Compute covariance/correlation and ACOV ####
+
+    if (p < q) {
+      stop("Please provide either a full-rank matrix of scores or a covariance matrix.")
+
+    } else if (p == q) {
+
+      if (is.null(nobs)) {
+        stop("A covariance matrix was provided but `nobs` is missing.")
+      }
+
+      out$R <- X
+      out$ACOV <- asymptotic_normal(out$R)
+
+    } else if (cor %in% c("poly", "polys", "polychoric", "polychorics")) {
+
+      polychorics <- polyfast(X)
+      out$R <- polychorics$correlation
+      out$thresholds <- lapply(polychorics$thresholds, function(x) x[-c(1, length(x))])
+      out$cumprop <- polychorics$cumulative_freqs
+      out$contingency_tables <- polychorics$contingency_tables
+
+      out$ACOV <- diag(1 / c(polychorics$hess))
+      # out$ACOV <- asymptotic_poly(X, taus = out$thresholds)
+
+    } else if (cor == "pearson") {
+
+      if (is.null(nobs)) nobs <- p
+      out$nobs <- nobs
+
+      out$R <- stats::cor(X, use = missing)
+
+      if (acov == "standard") {
+        out$ACOV <- asymptotic_normal(out$R)
+      } else if (acov == "robust") {
+        out$ACOV <- asymptotic_general(X)
+      } else {
+        stop("Unknown `acov` argument.")
+      }
+
+      if (likelihood == "normal") {
+        out$R <- out$R * (nobs - 1L) / nobs
+        out$ACOV <- out$ACOV * (nobs - 1L) / nobs
+      }
+
     } else {
-      likelihood <- "wishart"
-    }
-  }
-
-  #### Compute the covariance and asymptotic covariance matrix ####
-
-  if(p < q) {
-
-    stop("Please provide either a full-rank matrix of scores or a covariance matrix")
-
-  } else if(p == q) {
-
-    if(is.null(nobs)) {
-      stop("A covariance matrix was provided but nobs is missing. Standard errors and some statistics will not be computed")
+      stop("Unknown covariance/correlation method.")
     }
 
-    result$R <- X
-    result$ACOV <- asymptotic_normal(result$R)
+    #### Compute weight matrix ####
 
-  } else if(cor == "poly" || cor == "polys" ||
-            cor == "polychoric" || cor == "polychorics") {
+    if (estimator %in% c("uls", "ulsr", "ml", "mlr")) {
 
-    polychorics <- polyfast(X)
-    result$R <- polychorics$correlation
-    result$thresholds <- polychorics$thresholds
-    result$thresholds <- lapply(result$thresholds, FUN = \(x) x[-c(1, length(x))])
-    result$cumprop <- polychorics$cumulative_freqs
-    result$contingency_tables <- polychorics$contingency_tables
+      out$W <- matrix(1, nrow = q, ncol = q)
+      diag(out$W) <- 1
 
-    result$ACOV <- diag(1/c(polychorics$hess))
-    # result$ACOV <- asymptotic_poly(X, taus = thresholds)
+    } else if (estimator %in% c("dwls", "dwlsr")) {
 
-  } else if(cor == "pearson") {
-
-    if(is.null(nobs)) nobs <- p
-    if(missing == "fiml") {
-      result$R <- stats::cor(X, use = "pairwise.complete.obs")
-    } else {
-      result$R <- stats::cor(X, use = missing)
-    }
-
-    if(acov == "standard") {
-
-      result$ACOV <- asymptotic_normal(result$R)
-
-    } else if(acov == "robust") {
-
-      result$ACOV <- asymptotic_general(X)
+      out$W <- matrix(NA_real_, nrow = q, ncol = q)
+      out$W[lower.tri(out$W, diag = FALSE)] <- diag(out$ACOV)
+      out$W[upper.tri(out$W)] <- t(out$W)[upper.tri(out$W)]
+      out$W <- 1 / out$W
+      diag(out$W) <- 1
 
     } else {
-      stop("Unknown acov argument")
+      stop("Unknown `estimator`.")
     }
 
-    if(likelihood == "normal") {
+    out
+  }
 
-      result$R <- result$R*(nobs-1L)/nobs # SQRT??
-      result$ACOV <- result$ACOV*(nobs-1L)/nobs
+  #### FIML-style missing-pattern split ####
 
-    }
+  if (missing == "fiml") {
 
-  } else {
+    patterns <- split_by_missing_pattern(X)
 
-    stop("Unknown covariance matrix method")
+    out <- lapply(seq_along(patterns), function(i) {
+      pat <- patterns[[i]]
+
+      Xi <- if (!is.null(pat$data)) pat$data else pat[[1L]]
+      vars_i <- if (!is.null(pat$vars)) pat$vars else pat[[2L]]
+      item_names_i <- colnames(Xi)
+      nobs_i <- nrow(Xi)
+
+      compute_one_pattern(
+        X = Xi,
+        item_names = item_names_i,
+        cor = cor,
+        estimator = "ml",
+        acov = acov,
+        nobs = nobs_i,
+        missing = "pairwise.complete.obs",
+        likelihood = likelihood,
+        vars = vars_i
+      )
+    })
+
+    names(out) <- paste0("pattern", seq_along(out))
+    out$npatterns <- length(patterns)
+    # out$nobs <- sum(unlist(lapply(out, FUN = \(x) x$nobs)))
+
+    return(out)
 
   }
 
-  #### Compute the weight matrix ####
+  #### Non-FIML ####
 
-  if(estimator == "uls" || estimator == "ulsr" ||
-     estimator == "ml" || estimator == "mlr") {
+  out <- list(
+    pattern1 = compute_one_pattern(
+      X = X,
+      item_names = item_names,
+      cor = cor,
+      estimator = estimator,
+      acov = acov,
+      nobs = nobs,
+      missing = missing,
+      likelihood = likelihood,
+      vars = rep(TRUE, length(item_names))
+    )
+  )
 
-    result$W <- matrix(1, nrow = q, ncol = q)
-    diag(result$W) <- 1
+  out$npatterns <- 1L
+  # out$nobs <- nobs
 
-  } else if(estimator == "dwls" || estimator == "dwlsr") {
-
-    result$W <- matrix(NA, nrow = q, ncol = q)
-    result$W[lower.tri(result$W, diag = FALSE)] <- diag(result$ACOV)
-    result$W[upper.tri(result$W)] <- t(result$W)[upper.tri(result$W)]
-    result$W <- 1 / result$W
-    diag(result$W) <- 1
-
-  } else {
-
-    stop("Unknown estimator")
-
-  }
-
-  #### FIML ####
-
-  if(missing == "fiml") {
-
-    result$missing <- split_by_missing_pattern(X)
-    estimator <- "ml"
-    missing <- "pairwise.complete.obs"
-
-    for(i in 1:length(result$missing)) {
-
-      nobsij <- result$missing[[i]]$nobs
-      item_namesij <- colnames(result$missing[[i]]$data)
-      result$missing[[i]] <- correlation(data = result$missing[[i]]$data,
-                                         item_names = colnames(result$missing[[i]]$data),
-                                         cor = cor, estimator = estimator,
-                                         acov = acov, nobs = result$missing[[i]]$nobs,
-                                         missing = missing,
-                                         likelihood = likelihood)
-
-      result$missing[[i]]$nobs <- nobsij
-      result$missing[[i]]$item_names <- item_namesij
-
-    }
-
-  }
-
-  #### Return ####
-
-  return(result)
+  return(out)
 
 }

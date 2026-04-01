@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 01/04/2026
 
 create_lca_model <- function(data_list, nclasses, item,
                              model = NULL, control) {
@@ -216,10 +216,9 @@ create_lca_model <- function(data_list, nclasses, item,
     names(init_param[[i]]) <- names(param)
 
     # Initial values for betas:
-    init_beta <- replicate(nclasses, rnorm(p))
-    init_param[[i]][["beta"]] <- fill_list_with_vector(param$beta,
-                                                       init_beta)
-    init_param[[i]]$beta[, 1] <- "0"
+    init_beta <- matrix(rnorm(p*nclasses), nrow = p, ncol = nclasses)
+    init_param[[i]][["beta"]] <- init_beta
+    init_param[[i]]$beta[, 1] <- 0
 
     # Initial values for gaussian items:
     if(any(item == "gaussian")) {
@@ -229,15 +228,12 @@ create_lca_model <- function(data_list, nclasses, item,
         rmean <- init_mean[[j]] + rnorm(nclasses,
                                         mean = 0,
                                         sd = init_sd[[j]]/sqrt(nobs))
-        rlogsd <- init_logsd[[j]]
 
-        values <- vector(length = 3*nclasses)
-        values[seq(1, 3*nclasses, by = 3)] <- rmean
-        values[seq(2, 3*nclasses, by = 3)] <- init_sd[[j]]
-        values[seq(3, 3*nclasses, by = 3)] <- rlogsd
-
-        init_param[[i]][item_names[gauss[j]]] <- fill_list_with_vector(param[item_names[gauss[j]]],
-                                                                       values)
+        init_param[[i]][[item_names[gauss[j]]]] <- rbind(rmean,
+                                                         init_logsd[[j]],
+                                                         init_sd[[j]])
+        dimnames(init_param[[i]][[item_names[gauss[j]]]]) <-
+          dimnames(param[[item_names[gauss[j]]]])
 
       }
 
@@ -248,21 +244,22 @@ create_lca_model <- function(data_list, nclasses, item,
 
       item_names_multinom <- paste("log", item_names[multinom], sep = "_")
 
-      values <- unlist(eta_hat_list) + rnorm(sum(Ks), 0, sds)
-      # values <- unlist(eta_hat_list) + rnorm(sum(Ks), 0, 0.01)
-      init_param[[i]][item_names_multinom] <- fill_list_with_vector(param[item_names_multinom],
-                                                                    values)
-
       for(j in 1:Jmulti) {
-        init_param[[i]][[item_names_multinom[j]]][1, ] <- "0"
+
+        sds <- (1-pi_hat_list[[j]])/(nobs*pi_hat_list[[j]])
+
+        init_param[[i]][[item_names_multinom[j]]] <- eta_hat_list[[j]] +
+          rnorm(length(eta_hat_list[[j]]), 0, sds)
+        init_param[[i]][[item_names_multinom[j]]][1, ] <- 0
+
+        dimnames(init_param[[i]][[item_names[item_names_multinom[j]]]]) <-
+          dimnames(param[[item_names[item_names_multinom[j]]]])
+
       }
 
     }
 
   }
-
-  # Transform all the initial parameters in numerical values:
-  init_param <- allnumeric(init_param)
 
   #### Custom initial values ####
 

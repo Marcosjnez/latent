@@ -17,6 +17,7 @@ effects_coding <- function(coeffs, vcov) {
 
   # effects coding parameterization:
   beta_new <- coeffs %*% C
+  dimnames(table_se) <- dimnames(coeffs)
 
   # Jacobian of coeffs %*% C:
   J <- kronecker(t(C[-intercept_index, ]), diag(p))
@@ -26,7 +27,8 @@ effects_coding <- function(coeffs, vcov) {
   se_new <- sqrt(diag(vcov_new))
 
   # Tables:
-  table_se <- fill_list_with_vector(coeffs, se_new)
+  table_se <- matrix(se_new, nrow = p, ncol = q)
+  dimnames(table_se) <- dimnames(coeffs)
 
   # Return:
   result <- list(beta = beta_new,

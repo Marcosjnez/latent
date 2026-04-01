@@ -449,19 +449,12 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
   indices_pars <- match(modelInfo$parameters_labels,
                         unlist(modelInfo$rot_param))
 
-  vv <- rep(0, times = length(unlist(modelInfo$rot_param)))
-  vv[indices_pars] <- Optim$parameters
-  parameters <- fill_list_with_vector(modelInfo$rot_param, vv)
-  parameters <- allnumeric(parameters)
+  parameters <- fill_in(modelInfo$rot_param, Optim$parameters)
   # FIXED PARAMETERS?
 
   # Create the structures of transformed parameters:
-  indices_trans <- match(modelInfo$transparameters_labels,
-                         unlist(modelInfo$rot_trans))
-  vv <- rep(0, times = length(unlist(modelInfo$rot_trans)))
-  vv[indices_trans] <- Optim$transparameters
-  transformed_pars <- fill_list_with_vector(modelInfo$rot_trans, vv)
-  transformed_pars <- allnumeric(transformed_pars)
+  transformed_pars <- fill_in(modelInfo$rot_trans,
+                              Optim$transparameters)
 
   #### Process the fit information ####
 

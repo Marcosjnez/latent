@@ -250,22 +250,12 @@ pois_reg <- function(Y, X = NULL, penalties = FALSE, do.fit = TRUE, control = NU
   #### Estimated model structures ####
 
   # Create the structures of untransformed parameters:
-  indices_pars <- match(modelInfo$parameters_labels,
-                        unlist(modelInfo$param))
-
-  vv <- rep(0, times = length(unlist(modelInfo$param)))
-  vv[indices_pars] <- Optim$parameters
-  parameters <- fill_list_with_vector(modelInfo$param, vv)
-  parameters <- allnumeric(parameters)
+  parameters <- fill_list_with_vector(modelInfo$param, Optim$parameters)
   # FIXED PARAMETERS?
 
   # Create the structures of transformed parameters:
-  indices_trans <- match(modelInfo$transparameters_labels,
-                         unlist(modelInfo$trans))
-  vv <- rep(0, times = length(unlist(modelInfo$trans)))
-  vv[indices_trans] <- Optim$transparameters
-  transformed_pars <- fill_list_with_vector(modelInfo$trans, vv)
-  transformed_pars <- allnumeric(transformed_pars)
+  transformed_pars <- fill_list_with_vector(modelInfo$trans,
+                                            Optim$transparameters)
 
   #### Process the fit information ####
 

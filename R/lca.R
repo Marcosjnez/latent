@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/03/2026
+# Modification date: 01/04/2026
 #'
 #' @title
 #' Latent Class Analysis.
@@ -406,14 +406,7 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     multin <- "multinomial" %in% item
 
     # Create the parameter table:
-    selection <- match(unlist(prob_model), modelInfo$transparameters_labels)
-    out <- Optim$transparameters[selection]
-    user_model <- fill_in(prob_model, out)
-
-    # selection <- match(unlist(log_model), transparameters_labels)
-    # out <- Optim$transparameters[selection]
-    # raw_model <- fill_list_with_vector(log_model, out)
-    # raw_model <- allnumeric(raw_model)
+    user_model <- fill_in(prob_model, Optim$transparameters)
 
     ClassConditional <- user_model[-1]
     RespConditional <- probCat <- list() # Only for full multinomial models

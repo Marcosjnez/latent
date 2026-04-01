@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 01/04/2026
 
 #### Install latent ####
 
@@ -74,9 +74,9 @@ fit <- lca(data = empathy[, 1:6], nclasses = 4L,
                           tcg_maxit = 100))
 latInspect(fit, what = "classes", digits = 3)
 
-fit@loglik # -1841.325
-fit@penalized_loglik # -1844.219
-fit@Optim$iterations # 52
+fit@loglik # -1841.336
+fit@penalized_loglik # -1844.333
+fit@Optim$iterations # 66
 fit@Optim$ng
 max(fit@Optim$rg)
 fit@Optim$convergence # TRUE
@@ -268,6 +268,9 @@ fit2@Fit@fx*2
 fit@loss
 fit2@loglik$loglik
 fit@loglik
+
+NACOV <- lavTech(fit2, "gamma")
+lapply(NACOV, FUN = dim)
 
 W <- lavInspect(fit2, "se")
 W2 <- matrix(0, 9, 9)
@@ -564,7 +567,6 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 fit@Optim$SE$se
-fit@parameters
 
 # With lavaan:
 fit2 <- lavaan::cfa(model = model.EM, data = mooc,
