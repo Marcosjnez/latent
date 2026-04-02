@@ -11,7 +11,7 @@ sample.cov = NULL, nobs = NULL,
 positive = FALSE, penalties = TRUE,
 missing = "pairwise.complete.obs",
 std.lv = FALSE, do.fit = TRUE,
-message = TRUE, mimic = 'latent',
+message = FALSE, mimic = 'latent',
 control = NULL, ...)
 ```
 
@@ -59,7 +59,17 @@ control = NULL, ...)
 
 - std.lv:
 
-  Provide the parameters of the standardized model.
+  Logical. Provide the parameters of the standardized model. Default is
+  TRUE.
+
+- std.ov:
+
+  Logical. Standardize the observed variables before fitting. Default is
+  FALSE.
+
+- acov:
+
+  String. "standard" or "robust". Default is "standard".
 
 - do.fit:
 
@@ -68,7 +78,16 @@ control = NULL, ...)
 
 - message:
 
-  Logical. Defaults to TRUE.
+  Logical. Defaults to FALSE.
+
+- likelihood:
+
+  String. Use N (normal) or N-1 (wishart) in the denominator. Defaults
+  to "normal" for ML and "wishart" otherwise.
+
+- se:
+
+  Logical. Compute standard errors. Defaults to TRUE.
 
 - mimic:
 
