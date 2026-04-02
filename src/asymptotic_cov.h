@@ -1,155 +1,226 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 01/04/2026
+ * Modification date: 02/04/2026
  *
  */
 
 arma::vec diagcov(arma::mat X) {
 
-  // Get the variance of variables with missing data
   const size_t numCols = X.n_cols;
-
-  // Initialize the correlation matrix
   arma::vec diag_cov(numCols);
 
-  // Loop over all pairs of columns
   for (size_t i = 0; i < numCols; ++i) {
-    // Get the columns for the pair (i, j)
     arma::vec col = X.col(i);
-
-    // Find indices where both columns have non-NaN values
     arma::uvec validIndices = arma::find_finite(col);
-
-    // Extract non-NaN values from both columns
     arma::vec validCol = col(validIndices);
     validCol -= arma::mean(validCol);
-
-    // Calculate the correlation between the two columns
-    double d = arma::accu(validCol % validCol) / (validIndices.n_elem-1);
-
-    // Assign the correlation value to the correlation matrix
+    double d = arma::accu(validCol % validCol) / (validIndices.n_elem - 1);
     diag_cov(i) = d;
   }
 
   return diag_cov;
-
 }
 
-arma::mat asymptotic_general(arma::mat X) {
+arma::mat center_finite(arma::mat X) {
+
+  // Center each column ignoring NaNs
+
+  for (arma::uword j = 0; j < X.n_cols; ++j) {
+    arma::vec col = X.col(j);
+    arma::uvec idx = arma::find_finite(col);
+    if (idx.n_elem > 0) {
+      double mu = arma::mean(col(idx));
+      col(idx) -= mu;
+      X.col(j) = col;
+    }
+  }
+  return X;
+}
+
+arma::mat asymptotic_general(arma::mat X, bool cov) {
 
   /*
    * Browne and Shapiro (Equation 3.2; 1986)
+   *
+   * cov = false : asymptotic covariance matrix of item correlations
+   *               (off-diagonal only)
+   * cov = true  : asymptotic covariance matrix of item covariances
+   *               (including variances)
    */
 
-  // X is the raw data of scores
+  int q = X.n_cols;
+  int qq = q * q;
+
+  // Center variables first (important for fourth moments)
+  arma::mat Xc = center_finite(X);
 
   arma::vec d;
-  arma::mat P;
+  arma::mat S, P;
 
-  // Compute the standard deviations and correlation matrix of X:
-  if(X.has_nan()) {
-    d = arma::sqrt(diagcov(X));
-    P = pairwise_cor(X);
+  if (Xc.has_nan()) {
+    d = arma::sqrt(diagcov(Xc));
+    P = pairwise_cor(Xc);                 // assumed available in your codebase
+    arma::mat D = arma::diagmat(d);
+    S = D * P * D;
   } else {
-    arma::mat colmeans = arma::mean(X, 0);
-    X.each_row() -= colmeans; // Centered matrix
-    arma::mat S = arma::cov(X, 1); // Covariance matrix
+    S = (Xc.t() * Xc) / Xc.n_rows;        // asymptotic scaling; correlation unaffected
     d = arma::sqrt(arma::diagvec(S));
-    arma::mat diag_d_inv = arma::diagmat(1/d);
-    P = diag_d_inv * S * diag_d_inv; // Correlation matrix
+    arma::mat Dinv = arma::diagmat(1.0 / d);
+    P = Dinv * S * Dinv;
   }
 
-  arma::vec p = arma::vectorise(P);
-  int q = X.n_cols;
-  int qq = q*q;
-  arma::mat Theta(qq, qq); // Fourth-order moments
+  arma::mat Theta(qq, qq, arma::fill::zeros);
 
   int ij = 0;
-  int kh;
+  int kh = 0;
 
-  for(int j=0; j < q; ++j) {
-    for(int i=0; i < q; ++i) {
+  for (int j = 0; j < q; ++j) {
+    for (int i = 0; i < q; ++i) {
+
       kh = 0;
-      for(int h=0; h < q; ++h) {
-        for(int k=0; k < q; ++k) {
-          arma::vec m = X(arma::span::all, i) % X(arma::span::all, j) %
-          X(arma::span::all, k) % X(arma::span::all, h);
-          // Find indices where the vector has non-NaN values:
+
+      for (int h = 0; h < q; ++h) {
+        for (int k = 0; k < q; ++k) {
+
+          arma::vec m = Xc.col(i) % Xc.col(j) % Xc.col(k) % Xc.col(h);
           arma::uvec validIndices = arma::find_finite(m);
-          // Extract non-NaN values from the vector:
           arma::vec v = m(validIndices);
-          // m.replace(arma::datum::nan, 0);  // replace each NaN with 0
-          Theta(ij, kh) = arma::mean(v) / (d[i]*d[j]*d[k]*d[h]);
+
+          double val = arma::mean(v);
+
+          if (cov) {
+            Theta(ij, kh) = val;
+          } else {
+            Theta(ij, kh) = val / (d[i] * d[j] * d[k] * d[h]);
+          }
+
           ++kh;
         }
       }
+
       ++ij;
     }
   }
 
+  if (cov) {
+    arma::vec s = arma::vectorise(S);
+    arma::mat Gamma = Theta - s * s.t();
+
+    // lower triangle INCLUDING diagonal
+    arma::uvec lower_indices = arma::trimatl_ind(arma::size(S), 0);
+    return Gamma(lower_indices, lower_indices);
+  }
+
+  arma::vec p = arma::vectorise(P);
   arma::mat Gamma = Theta - p * p.t();
 
-  arma::mat Ms = dxt(q, q)*0.5;
+  arma::mat Ms = dxt(q, q) * 0.5;
   Ms.diag() += 0.5;
+
   arma::mat I(q, q, arma::fill::eye);
   arma::mat Kd(qq, q, arma::fill::zeros);
-  for(int i=0; i < q; ++i) {
+
+  for (int i = 0; i < q; ++i) {
     int ii = i * q + i;
-    Kd(ii, i) = 1;
+    Kd(ii, i) = 1.0;
   }
+
   arma::mat A = Ms * arma::kron(I, P) * Kd;
   arma::mat B = Gamma * Kd;
   arma::mat G = Kd.t() * Gamma * Kd;
 
-  arma::mat asymptotic = Gamma - A*B.t() - B*A.t() + A*G*A.t();
+  arma::mat asymptotic = Gamma - A * B.t() - B * A.t() + A * G * A.t();
 
+  // lower triangle EXCLUDING diagonal
   arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), -1);
-
   return asymptotic(lower_indices, lower_indices);
-
 }
 
-arma::mat asymptotic_normal(arma::mat P) {
+arma::mat asymptotic_normal(const arma::mat& S, bool cov) {
 
   /*
    * Browne and Shapiro (Equation 4.1; 1986)
+   *
+   * Input is now the covariance matrix S, not the correlation matrix.
+   *
+   * cov = false : asymptotic covariance matrix of item correlations
+   *               (off-diagonal only)
+   * cov = true  : asymptotic covariance matrix of item covariances
+   *               (including variances)
    */
 
-  // P is the correlation matrix
+  int q = S.n_rows;
+  int qq = q * q;
 
-  int q = P.n_rows;
-  int qq = q*q;
-
-  arma::mat Ms = dxt(q, q)*0.5;
+  arma::mat Ms = dxt(q, q) * 0.5;
   Ms.diag() += 0.5;
+
+  if (cov) {
+    arma::mat Gamma = 2.0 * Ms * arma::kron(S, S);
+
+    // lower triangle INCLUDING diagonal
+    arma::uvec lower_indices = arma::trimatl_ind(arma::size(S), 0);
+    return Gamma(lower_indices, lower_indices);
+  }
+
+  arma::vec d = arma::sqrt(arma::diagvec(S));
+  arma::mat Dinv = arma::diagmat(1.0 / d);
+  arma::mat P = Dinv * S * Dinv;
+
   arma::mat I(q, q, arma::fill::eye);
   arma::mat Kd(qq, q, arma::fill::zeros);
-  for(int i=0; i < q; ++i) {
+
+  for (int i = 0; i < q; ++i) {
     int ii = i * q + i;
-    Kd(ii, i) = 1;
+    Kd(ii, i) = 1.0;
   }
+
   arma::mat A = Ms * arma::kron(I, P) * Kd;
-  arma::mat Gamma = 2*Ms * arma::kron(P, P);
+  arma::mat Gamma = 2.0 * Ms * arma::kron(P, P);
   arma::mat B = Gamma * Kd;
-  arma::mat G = 2*P % P; // Cheaper than Kd.t() * Gamma * Kd
+  arma::mat G = 2.0 * P % P;   // cheaper than Kd.t() * Gamma * Kd
 
-  arma::mat asymptotic = Gamma - A*B.t() - B*A.t() + A*G*A.t();
+  arma::mat asymptotic = Gamma - A * B.t() - B * A.t() + A * G * A.t();
 
+  // lower triangle EXCLUDING diagonal
   arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), -1);
-
   return asymptotic(lower_indices, lower_indices);
-
 }
 
-arma::mat asymptotic_elliptical(arma::mat P, double eta) {
+arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov) {
 
   /*
-   * Browne and Shapiro (Equation 4.2; 1986)
+   * Browne and Shapiro style elliptical correction.
+   *
+   * Input is now the covariance matrix S, not the correlation matrix.
+   *
+   * cov = false : asymptotic covariance matrix of item correlations
+   *               (off-diagonal only)
+   * cov = true  : asymptotic covariance matrix of item covariances
+   *               (including variances)
+   *
+   * Here eta = 1 + kappa.
    */
 
-  arma::mat asymptotic = eta * asymptotic_normal(P);
+  if (!cov) {
+    return eta * asymptotic_normal(S, false);
+  }
 
-  return asymptotic;
+  int q = S.n_rows;
+  int qq = q * q;
 
+  arma::mat Ms = dxt(q, q) * 0.5;
+  Ms.diag() += 0.5;
+
+  arma::mat Gamma_normal = 2.0 * Ms * arma::kron(S, S);
+  arma::vec s = arma::vectorise(S);
+
+  arma::mat Gamma =
+    eta * Gamma_normal +
+    (eta - 1.0) * (s * s.t());
+
+  // lower triangle INCLUDING diagonal
+  arma::uvec lower_indices = arma::trimatl_ind(arma::size(S), 0);
+  return Gamma(lower_indices, lower_indices);
 }

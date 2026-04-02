@@ -372,21 +372,11 @@ create_init <- function(trans, param, init_param,
       return(out)
     }
 
-    split_vals <- split(val, lbl)
-    inconsistent <- vapply(split_vals, function(v) length(unique(v)) > 1, logical(1))
+    # Keep only the first numeric match for each label
+    first_idx <- match(ref_labels, lbl)
+    hit <- !is.na(first_idx)
 
-    if (any(inconsistent)) {
-      bad <- names(split_vals)[inconsistent]
-      stop(
-        sprintf(
-          "Some labels are matched to more than one numerical value: %s",
-          paste(bad, collapse = ", ")
-        )
-      )
-    }
-
-    matched <- ref_labels[ref_labels %in% names(split_vals)]
-    out[matched] <- vapply(matched, function(ch) split_vals[[ch]][1], numeric(1))
+    out[hit] <- val[first_idx[hit]]
     out
   }
 

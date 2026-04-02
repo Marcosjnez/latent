@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 01/04/2026
+# Modification date: 02/04/2026
 
 lcfa_control <- function(control) {
 
@@ -45,16 +45,8 @@ lcfa_control <- function(control) {
     control$free_S <- FALSE
   }
 
-  if(is.null(control$free_S_diag)) {
-    control$free_S_diag <- TRUE
-  }
-
   if(is.null(control$deltaparam)) {
     control$deltaparam <- FALSE
-  }
-
-  if(is.null(control$miss)) {
-    control$miss <- "MAR"
   }
 
   if(is.null(control$step_maxit)) {

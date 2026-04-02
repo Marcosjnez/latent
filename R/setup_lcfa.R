@@ -1,6 +1,199 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 01/04/2026
+# Modification date: 02/04/2026
+
+create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
+                                estimator = "ml", ordered = FALSE,
+                                group = NULL, sample.cov = NULL, nobs = NULL,
+                                positive = FALSE, penalties = TRUE,
+                                missing = "pairwise.complete.obs",
+                                std.lv = TRUE, std.ov = FALSE,
+                                acov = "standard", message = FALSE,
+                                likelihood = NULL, args = NULL,
+                                ...) {
+
+  cor <- tolower(cor)
+  estimator <- tolower(estimator)
+  acov <- tolower(acov)
+  missing <- tolower(missing)
+
+  if (is.null(group)) {
+    ngroups <- 1L
+    group_label <- NULL
+  } else {
+    group_label <- unique(data[[group]])
+    ngroups <- length(group_label)
+  }
+
+  item_names <- extract_item_names_lavaan(model, ngroups = ngroups)
+
+  get_group_data <- function(i) {
+    if (ngroups > 1L) {
+      data[data[[group]] == group_label[i], item_names[[i]], drop = FALSE]
+    } else {
+      data[, item_names[[i]], drop = FALSE]
+    }
+  }
+
+  unwrap_single <- function(x) {
+    if (length(x) == 0L || all(vapply(x, is.null, logical(1)))) {
+      return(NULL)
+    }
+    if (ngroups == 1L) x[[1L]] else x
+  }
+
+  normalize_to_list <- function(x, ngroups) {
+    if (is.null(x)) {
+      return(vector("list", ngroups))
+    }
+    if (ngroups == 1L && !is.list(x)) {
+      return(list(x))
+    }
+    x
+  }
+
+  sample.cov <- normalize_to_list(sample.cov, ngroups)
+
+  if (!is.null(nobs) && ngroups == 1L && !is.list(nobs)) {
+    nobs_in <- list(nobs)
+  } else {
+    nobs_in <- nobs
+  }
+
+  X <- vector("list", ngroups)
+  correl <- vector("list", ngroups)
+  nobs_list <- vector("list", ngroups)
+  NACOV <- vector("list", ngroups)
+  WLS.V <- vector("list", ngroups)
+  thresholds <- vector("list", ngroups)
+
+  if (!all(vapply(sample.cov, is.null, logical(1)))) {
+
+    for (i in seq_len(ngroups)) {
+      X[[i]] <- get_group_data(i)
+
+      if (!is.null(nobs_in)) {
+        nobs_list[[i]] <- nobs_in[[i]]
+      } else {
+        nobs_list[[i]] <- nrow(X[[i]])
+      }
+
+      rownames(sample.cov[[i]]) <- colnames(sample.cov[[i]]) <- item_names[[i]]
+
+      correl[[i]] <- list(
+        S = sample.cov[[i]],
+        W = {
+          p <- nrow(sample.cov[[i]])
+          W <- matrix(1, nrow = p, ncol = p)
+          diag(W) <- 1
+          W
+        },
+        nobs = nobs_list[[i]],
+        item_names = item_names[[i]]
+      )
+    }
+
+  } else {
+
+    sample.cov <- vector("list", ngroups)
+
+    for (i in seq_len(ngroups)) {
+      X[[i]] <- get_group_data(i)
+      nobs_list[[i]] <- nrow(X[[i]])
+
+      correl[[i]] <- lcov(
+        data = X[[i]],
+        item_names = item_names[[i]],
+        cor = cor,
+        estimator = estimator,
+        acov = acov,
+        nobs = nobs_list[[i]],
+        missing = missing,
+        std.ov = std.ov,
+        likelihood = likelihood
+      )
+
+      correl[[i]]$nobs <- nobs_list[[i]]
+      correl[[i]]$item_names <- item_names[[i]]
+
+      sample.cov[[i]] <- correl[[i]][[1]]$S
+      rownames(sample.cov[[i]]) <- colnames(sample.cov[[i]]) <-
+        correl[[i]][[1]]$item_names
+
+      NACOV[[i]] <- correl[[i]][[1]]$ACOV
+
+      if (!is.null(correl[[i]][[1]]$thresholds)) {
+        thresholds[[i]] <- correl[[i]][[1]]$thresholds
+      }
+
+      WLS.V[[i]] <- diag(c(correl[[i]][[1]]$W))
+    }
+  }
+
+  LAV <- lavaan::cfa(
+    model = model,
+    sample.cov = unwrap_single(sample.cov),
+    sample.nobs = unwrap_single(nobs_list),
+    group = group,
+    NACOV = unwrap_single(NACOV),
+    WLS.V = unwrap_single(WLS.V),
+    ordered = ordered,
+    std.lv = std.lv,
+    std.ov = std.ov,
+    do.fit = FALSE,
+    warn = FALSE,
+    ...
+  )
+
+  LAV@Options$positive <- positive
+
+  lavmodel <- LAV@Model
+  ngroups <- LAV@Model@ngroups
+
+  item_label <- LAV@Data@ov.names
+  nobs_list <- LAV@Data@nobs
+  group_label <- LAV@Data@group.label
+  factor_label <- replicate(ngroups, list(LAV@Model@dimNames[[1]][[2]]))
+
+  model_out <- getmodel_fromlavaan(LAV)
+  if (ngroups == 1L) {
+    model_out <- list(model_out)
+  }
+
+  nitems <- as.list(lavmodel@nvar)
+  npatterns <- lapply(nitems, function(p) 0.5 * p * (p + 1))
+  nfactors <- lapply(model_out, function(x) ncol(x$lambda))
+
+  if (is.null(args)) {
+    args <- as.list(match.call(expand.dots = TRUE))[-1]
+  }
+
+  data_list <- list()
+  data_list$ngroups <- ngroups
+  data_list$data <- data
+  data_list$data_per_group <- X
+  data_list$nobs <- nobs_list
+  data_list$nitems <- nitems
+  data_list$npatterns <- npatterns
+  data_list$nfactors <- nfactors
+  data_list$correl <- correl
+  data_list$positive <- positive
+  data_list$estimator <- estimator
+  data_list$cor <- cor
+  data_list$group_label <- group_label
+  data_list$item_label <- item_label
+  data_list$factor_label <- factor_label
+  data_list$LAV <- LAV
+  data_list$args <- args
+  data_list$model <- model_out
+  data_list$sample.cov <- sample.cov
+  data_list$NACOV <- NACOV
+  data_list$WLS.V <- WLS.V
+  data_list$thresholds <- thresholds
+
+  return(data_list)
+
+}
 
 create_cfa_model <- function(data_list, model, control) {
 
@@ -96,7 +289,7 @@ create_cfa_model <- function(data_list, model, control) {
 
       for(j in 1:correl[[i]]$npatterns) {
 
-        nitems_ij <- nrow(correl[[i]][[j]]$R)
+        nitems_ij <- nrow(correl[[i]][[j]]$S)
         item_label_ij <- correl[[i]][[j]]$item_names
         list_struct[[k]] <- list(name = S_group[[i]][[j]],
                                  type = "matrix",
@@ -173,18 +366,19 @@ create_cfa_model <- function(data_list, model, control) {
 
     }
 
+    # Fix the sample covariance matrix:
     if(control$free_S) {
       param[unlist(S_group[[i]])] <- trans[unlist(S_group[[i]])]
     } else {
         for(j in 1:correl[[i]]$npatterns) {
-          param[[S_group[[i]][[j]]]] <- correl[[i]][[j]]$R
+          param[[S_group[[i]][[j]]]] <- correl[[i]][[j]]$S
       }
     }
 
     # Fix the diagonal of the sample covariance matrix:
-    if(!control$free_S_diag) {
+    if(control$std.ov) {
       for(j in 1:correl[[i]]$npatterns) {
-        diag(param[[S_group[[i]][[j]]]]) <- "1"
+        diag(param[[S_group[[i]][[j]]]]) <- 1
       }
     }
 
@@ -248,7 +442,7 @@ create_cfa_model <- function(data_list, model, control) {
       init_param[[rs]][[model_group[i]]] <- Lambda %*% Psi %*% t(Lambda) + Theta
 
       for(j in 1:correl[[i]]$npatterns) {
-        init_param[[rs]][[S_group[[i]][[j]]]] <- correl[[i]][[j]]$R
+        init_param[[rs]][[S_group[[i]][[j]]]] <- correl[[i]][[j]]$S
       }
 
     }
@@ -446,7 +640,7 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
                                            w = correl[[i]][[j]]$nobs /
                                              sum(unlist(nobs)),
                                            q = nrow(trans[[psi_group[i]]]),
-                                           p = nrow(correl[[i]][[j]]$R),
+                                           p = nrow(correl[[i]][[j]]$S),
                                            n = correl[[i]][[j]]$nobs))
 
       k <- k + 1L

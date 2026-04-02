@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 01/04/2026
+# Modification date: 02/04/2026
 
 #### Install latent ####
 
@@ -246,8 +246,8 @@ model <- 'visual  =~ x1 + x2 + x3
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml", positive = FALSE,
-            ordered = FALSE, std.lv = TRUE,
-            acov = "standard", se = F,
+            ordered = FALSE, acov = "standard",
+            std.lv = TRUE, std.ov = FALSE,
             mimic = "latent", do.fit = TRUE,
             control = NULL)
 fit@loss   # 0.283407
@@ -262,7 +262,7 @@ fit@Optim$SE$se
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
                     estimator = "ml",
                     # likelihood = "wishart",
-                    std.lv = TRUE, std.ov = TRUE)
+                    std.lv = TRUE, std.ov = FALSE)
 # Same loss value: OK
 fit2@Fit@fx*2
 fit@loss
@@ -301,8 +301,8 @@ fit <- lcfa(HolzingerSwineford1939, model = model,
             mimic = "latent", do.fit = TRUE)
 
 fit@loss   # 0.3848882
-fit@loglik # -1710.132
-fit@penalized_loglik # -1710.132
+fit@loglik # -1844.98
+fit@penalized_loglik # -1844.98
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
@@ -311,7 +311,7 @@ fit@Optim$SE$se
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
                     group = "school", estimator = "ml",
-                    std.lv = TRUE, std.ov = TRUE)
+                    std.lv = TRUE, std.ov = FALSE)
 fit2@loglik$loglik
 fit2@Fit@fx*2
 fit@loss
@@ -615,7 +615,7 @@ fit <- lcfa(data_missing, model = model,
             missing = "fiml",
             do.fit = TRUE,
             control = NULL)
-fit@Optim$f
+fit@Optim$f # 0.4912133
 fit@modelInfo$control_estimator
 
 # fit@loss   # 0.283407

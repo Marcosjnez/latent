@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 01/04/2026
+# Modification date: 02/04/2026
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
@@ -26,7 +26,8 @@
 #' @param positive Force a positive-definite solution. Defaults to FALSE.
 #' @param penalties list of penalty terms for the parameters.
 #' @param missing Method to handle missing data.
-#' @param std.lv Provide the parameters of the standardized model.
+#' @param std.lv Logical. Provide the parameters of the standardized model. Default is TRUE.
+#' @param std.ov Logical. Standardize the observed variables before fitting. Default is FALSE.
 #' @param acov String. "standard" or "robust". Default is "standard".
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
 #' @param message Logical. Defaults to FALSE.
@@ -66,163 +67,54 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                  sample.cov = NULL, nobs = NULL,
                  positive = FALSE, penalties = TRUE,
                  missing = "pairwise.complete.obs",
-                 std.lv = TRUE, acov = "standard",
+                 std.lv = TRUE, std.ov = FALSE,
+                 acov = "standard",
                  do.fit = TRUE, message = FALSE,
                  likelihood = NULL, se = TRUE,
                  mimic = "latent", control = NULL,
                  ...) {
 
+  ## store original call
+  mc  <- match.call()
+
   if(ordered) {
     cor <- "poly"
     control$deltaparam <- TRUE
+    std.ov <- TRUE
   } else {
     cor <- "pearson"
   }
 
-  # Check the arguments to control_optimizer and create defaults:
+  control$std.ov <- std.ov
   control$positive <- positive
   control$penalties <- penalties
   control$estimator <- tolower(estimator)
   control <- lcfa_control(control)
 
-  if(is.null(group)) {
-    ngroups <- 1L
-  } else {
-    group_label <- unique(data[[group]])
-    ngroups <- length(group_label)
-  }
-
-  item_names <- extract_item_names_lavaan(model, ngroups = ngroups)
-
-  # Estimate the correlation matrix for each group:
-  X <- correl <- nobs <- vector("list", length = ngroups)
-  if(ngroups > 1) {
-    names(X) <- names(correl) <- group_label
-    NACOV <- WLS.V <- thresholds <- vector("list", length = ngroups)
-  } else {
-    NACOV <- WLS.V <- thresholds <- NULL
-  }
-
-  if(!is.null(sample.cov)) {
-
-    for(i in 1:ngroups) {
-
-      if(ngroups > 1) {
-        X[[i]] <- data[data[[group]] == group_label[i], item_names[[i]]]
-      } else {
-        X[[i]] <- data[, item_names[[i]]]
-      }
-      nobs[[i]] <- nrow(X[[i]])
-
-      rownames(sample.cov[[i]]) <- colnames(sample.cov[[i]]) <- item_names[[i]]
-      correl[[i]]$R <- sample.cov[[i]]
-      p <- nrow(sample.cov[[i]])
-      # ACOV?
-      correl[[i]]$W <- matrix(1, nrow = p, ncol = p)
-
-    }
-
-  } else {
-
-    sample.cov <- vector("list", length = ngroups)
-    for(i in 1:ngroups) {
-
-      if(ngroups > 1) {
-        X[[i]] <- data[data[[group]] == group_label[i], item_names[[i]]]
-      } else {
-        X[[i]] <- data[, item_names[[i]]]
-      }
-
-      nobs[[i]] <- nrow(X[[i]])
-      correl[[i]] <- correlation(data = X[[i]],
-                                 item_names = item_names[[i]],
-                                 cor = cor,
-                                 estimator = estimator,
-                                 acov = acov,
-                                 nobs = nobs[[i]],
-                                 missing = missing,
-                                 likelihood = likelihood)
-      correl[[i]]$nobs <- nobs[[i]]
-      correl[[i]]$item_names <- item_names[[i]]
-
-      sample.cov[[i]] <- correl[[i]][[1]]$R
-      rownames(sample.cov[[i]]) <- colnames(sample.cov[[i]]) <-
-        correl[[i]][[1]]$item_names
-      NACOV[[i]] <- correl[[i]][[1]]$ACOV
-      if(!is.null(correl[[i]][[1]]$thresholds)) {
-        thresholds[[i]] <- correl[[i]][[1]]$thresholds
-      }
-      WLS.V[[i]] <- diag(c(correl[[i]][[1]]$W))
-
-    }
-
-  }
-
-  # Extract the lavaan model:
-  model_syntax <- model
-  LAV <- lavaan::cfa(model = model_syntax,
-                     # data = data,
-                     sample.cov = sample.cov,
-                     sample.nobs = nobs,
-                     group = group,
-                     NACOV = NACOV,
-                     WLS.V = WLS.V,
-                     ordered = ordered,
-                     # sample.th = thresholds, # NOT WORKING
-                     # estimator = estimator,
-                     # parameterization = "theta",
-                     std.lv = std.lv,
-                     do.fit = FALSE,
-                     warn = FALSE, # REMOVE THIS FOR DEBUGGING
-                     ...)
-
-  LAV@Options$positive <- positive
-
-  # extract slots from dummy lavaan object
-  lavpartable    <- LAV@ParTable
-  lavmodel       <- LAV@Model
-  lavdata        <- LAV@Data
-  lavoptions     <- LAV@Options
-  lavsamplestats <- LAV@SampleStats
-  lavcache       <- LAV@Cache
-  timing         <- LAV@timing
-  ngroups        <- LAV@Model@ngroups
-  item_names     <- LAV@Data@ov.names
-  nobs           <- LAV@Data@nobs
-  group_label    <- LAV@Data@group.label
-  item_label     <- LAV@Data@ov.names
-  factor_label   <- replicate(ngroups, list(LAV@Model@dimNames[[1]][[2]]))
-
-  # Model for the parameters:
-  model <- getmodel_fromlavaan(LAV)
-
-  if(ngroups == 1) model <- list(model)
-
-  ## store original call
-  mc  <- match.call()
   args <- as.list(match.call(expand.dots = TRUE))[-1]
 
-  # Data and structure information:
-  nitems <- as.list(lavmodel@nvar)
-  npatterns <- lapply(nitems, FUN = \(p) 0.5*p*(p+1))
-  nfactors <- lapply(model, FUN = \(x) ncol(x$lambda))
+  #### Create the datalist ####
 
-  data_list <- vector("list")
-  data_list$ngroups <- ngroups
-  data_list$data <- data
-  data_list$data_per_group <- X
-  data_list$nobs <- nobs
-  data_list$nitems <- nitems
-  data_list$npatterns <- npatterns
-  data_list$nfactors <- nfactors
-  data_list$correl <- correl
-  data_list$positive <- positive
-  data_list$estimator <- estimator
-  data_list$cor <- cor
-  data_list$group_label <- group_label
-  data_list$item_label <- item_label
-  data_list$factor_label <- factor_label
-  data_list$args <- args
+  data_list <- create_cfa_datalist(
+    data = data,
+    model = model,
+    cor = cor,
+    estimator = estimator,
+    ordered = ordered,
+    group = group,
+    sample.cov = sample.cov,
+    nobs = nobs,
+    positive = positive,
+    penalties = penalties,
+    missing = missing,
+    std.lv = std.lv,
+    std.ov = std.ov,
+    acov = acov,
+    message = message,
+    likelihood = likelihood,
+    args = args,
+    ...
+  )
 
   #### Create the model ####
 
@@ -234,7 +126,6 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   #### Create the modelInfo ####
 
-  # Generate the structures for optimization:
   modelInfo <- create_cfa_modelInfo(data_list = data_list,
                                     full_model = full_model,
                                     control = control)
@@ -306,10 +197,10 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   # Initialize the objects to be returned:
   loss <- penalized_loss <- loglik <- penalized_loglik <- penalty <-
-    vector("list", length = ngroups)
+    vector("list", length = data_list$ngroups)
 
   # For each group, extract the loss, penalized loss, loglik and penalized loglik
-  for(i in 1:ngroups) {
+  for(i in 1:data_list$ngroups) {
 
     k <- indices_cfa[i]
 

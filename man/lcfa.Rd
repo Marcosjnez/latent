@@ -10,7 +10,7 @@ sample.cov = NULL, nobs = NULL,
 positive = FALSE, penalties = TRUE,
 missing = "pairwise.complete.obs",
 std.lv = FALSE, do.fit = TRUE,
-message = TRUE, mimic = 'latent',
+message = FALSE, mimic = 'latent',
 control = NULL, ...)
 }
 \arguments{
@@ -34,11 +34,19 @@ control = NULL, ...)
 
 \item{missing}{Method to handle missing data.}
 
-\item{std.lv}{Provide the parameters of the standardized model.}
+\item{std.lv}{Logical. Provide the parameters of the standardized model. Default is TRUE.}
+
+\item{std.ov}{Logical. Standardize the observed variables before fitting. Default is FALSE.}
+
+\item{acov}{String. "standard" or "robust". Default is "standard".}
 
 \item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
 
-\item{message}{Logical. Defaults to TRUE.}
+\item{message}{Logical. Defaults to FALSE.}
+
+\item{likelihood}{String. Use N (normal) or N-1 (wishart) in the denominator. Defaults to "normal" for ML and "wishart" otherwise.}
+
+\item{se}{Logical. Compute standard errors. Defaults to TRUE.}
 
 \item{mimic}{String. Choose the output you want to obtain. Defaults to 'latent'.}
 

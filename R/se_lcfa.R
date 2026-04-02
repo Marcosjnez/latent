@@ -98,7 +98,6 @@ general_se <- function(fit, type = "standard") {
   args <- fit@data_list$args
   args$control <- fit@modelInfo$control_optimizer
   args$control$free_S <- TRUE
-  args$control$free_S_diag <- TRUE
   args$do.fit <- FALSE
   fit2 <- do.call(lcfa, args) # AVOID RECOMPUTING CORRELATIONS HERE
 

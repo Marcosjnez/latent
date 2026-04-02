@@ -29,16 +29,16 @@ polyfast <- function(data, missing = "pairwise.complete.cases", smooth = "none",
     .Call(`_latent_polyfast`, data, missing, smooth, min_eigval, nboot, fit, cores)
 }
 
-asymptotic_normal <- function(P) {
-    .Call(`_latent_asymptotic_normal`, P)
+asymptotic_normal <- function(S, cov = TRUE) {
+    .Call(`_latent_asymptotic_normal`, S, cov)
 }
 
-asymptotic_elliptical <- function(P, eta = 1.00) {
-    .Call(`_latent_asymptotic_elliptical`, P, eta)
+asymptotic_elliptical <- function(S, eta = 1.00, cov = TRUE) {
+    .Call(`_latent_asymptotic_elliptical`, S, eta, cov)
 }
 
-asymptotic_general <- function(X) {
-    .Call(`_latent_asymptotic_general`, X)
+asymptotic_general <- function(X, cov = TRUE) {
+    .Call(`_latent_asymptotic_general`, X, cov)
 }
 
 DACOV2 <- function(n, poly, tabs, taus, mvphis) {

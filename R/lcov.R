@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 01/04/2026
+# Modification date: 02/04/2026
 
 asymptotic_poly <- function(X, taus) {
 
@@ -65,11 +65,11 @@ split_by_missing_pattern <- function(data) {
   out
 }
 
-correlation <- function(data, item_names = colnames(data),
-                        cor = "pearson", estimator = "ml",
-                        acov = "standard", nobs = NULL,
-                        missing = "pairwise.complete.obs",
-                        likelihood = NULL) {
+lcov <- function(data, item_names = colnames(data),
+                 cor = "pearson", estimator = "ml",
+                 acov = "standard", nobs = NULL,
+                 missing = "pairwise.complete.obs",
+                 std.ov = FALSE, likelihood = NULL) {
 
   cor <- tolower(cor)
   estimator <- tolower(estimator)
@@ -79,7 +79,8 @@ correlation <- function(data, item_names = colnames(data),
   X <- as.matrix(data[, item_names, drop = FALSE])
 
   compute_one_pattern <- function(X, item_names, cor, estimator, acov, nobs,
-                                  missing, likelihood, vars = rep(TRUE, length(item_names))) {
+                                  missing, std.ov, likelihood,
+                                  vars = rep(TRUE, length(item_names))) {
 
     out <- list()
     out$item_names <- item_names
@@ -89,7 +90,7 @@ correlation <- function(data, item_names = colnames(data),
     p <- nrow(X)  # rows
     q <- ncol(X)  # cols
 
-    if (is.null(likelihood)) {
+    if(is.null(likelihood)) {
       likelihood <- if (estimator == "ml") "normal" else "wishart"
     }
 
@@ -104,14 +105,15 @@ correlation <- function(data, item_names = colnames(data),
         stop("A covariance matrix was provided but `nobs` is missing.")
       }
 
-      out$R <- X
-      out$ACOV <- asymptotic_normal(out$R)
+      out$S <- X
+      out$ACOV <- asymptotic_normal(out$S, cov = !std.ov)
 
     } else if (cor %in% c("poly", "polys", "polychoric", "polychorics")) {
 
       polychorics <- polyfast(X)
-      out$R <- polychorics$correlation
-      out$thresholds <- lapply(polychorics$thresholds, function(x) x[-c(1, length(x))])
+      out$S <- polychorics$correlation
+      out$thresholds <- lapply(polychorics$thresholds,
+                               FUN = function(x) x[-c(1, length(x))])
       out$cumprop <- polychorics$cumulative_freqs
       out$contingency_tables <- polychorics$contingency_tables
 
@@ -123,24 +125,34 @@ correlation <- function(data, item_names = colnames(data),
       if (is.null(nobs)) nobs <- p
       out$nobs <- nobs
 
-      out$R <- stats::cor(X, use = missing)
+      if(std.ov) {
+        out$S <- stats::cor(X, use = missing)
+      } else {
+        out$S <- stats::cov(X, use = missing)
+      }
 
       if (acov == "standard") {
-        out$ACOV <- asymptotic_normal(out$R)
+        out$ACOV <- asymptotic_normal(out$S, cov = !std.ov)
       } else if (acov == "robust") {
-        out$ACOV <- asymptotic_general(X)
+        out$ACOV <- asymptotic_general(X, cov = !std.ov)
       } else {
         stop("Unknown `acov` argument.")
       }
 
       if (likelihood == "normal") {
-        out$R <- out$R * (nobs - 1L) / nobs
-        out$ACOV <- out$ACOV * (nobs - 1L) / nobs
+        out$S <- out$S * (nobs - 1L) / nobs
+        if(std.ov) {
+          inv_sqrtdiagS <- diag(1/sqrt(diag(out$S)))
+          out$S <- inv_sqrtdiagS %*% out$S %*% inv_sqrtdiagS
+        }
+        # out$ACOV <- out$ACOV * (nobs - 1L) / nobs
       }
 
     } else {
       stop("Unknown covariance/correlation method.")
     }
+
+    out$NACOV <- out$ACOV * nobs
 
     #### Compute weight matrix ####
 
@@ -186,6 +198,7 @@ correlation <- function(data, item_names = colnames(data),
         acov = acov,
         nobs = nobs_i,
         missing = "pairwise.complete.obs",
+        std.ov = std.ov,
         likelihood = likelihood,
         vars = vars_i
       )
@@ -211,6 +224,7 @@ correlation <- function(data, item_names = colnames(data),
       nobs = nobs,
       missing = missing,
       likelihood = likelihood,
+      std.ov = std.ov,
       vars = rep(TRUE, length(item_names))
     )
   )
