@@ -73,7 +73,7 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    double loglik = w*n*0.5*(-plogpi2 -
+    double loglik = n*0.5*(-plogpi2 -
                        arma::log_det_sympd(Shat) -
                        arma::accu(S % Shat_inv));
     arma::mat I(p, p, arma::fill::eye);

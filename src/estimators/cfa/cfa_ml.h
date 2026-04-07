@@ -67,6 +67,9 @@ public:
 
   void outcomes(arguments_optim& x) {
 
+    double loglik = n*0.5*(-plogpi2 -
+                           arma::log_det_sympd(Shat) -
+                           arma::accu(S % Shat_inv));
     double loglik_indep = w*n*0.5*(-plogpi2 -
                                    arma::trace(S));
     arma::mat Rinv = arma::inv_sympd(S);
@@ -76,7 +79,7 @@ public:
 
     doubles.resize(5);
     doubles[0] =  f;             // loss   actual model
-    doubles[1] = -f;             // loglik actual model
+    doubles[1] =  loglik;        // loglik actual model
     doubles[2] =  loglik_indep;  // loglik independence model
     doubles[3] =  loglik_sat;    // loglik saturated model
     doubles[4] =  0.00;          // penalty

@@ -298,6 +298,7 @@ model <- 'visual  =~ x1 + x2 + x3
 fit <- lcfa(HolzingerSwineford1939, model = model,
             group = "school", estimator = "ml",
             ordered = FALSE, std.lv = TRUE,
+            std.ov = FALSE,
             mimic = "latent", do.fit = TRUE)
 
 fit@loss   # 0.3848882
@@ -614,9 +615,10 @@ fit <- lcfa(data_missing, model = model,
             # missing = "complete.obs",
             missing = "fiml",
             do.fit = TRUE,
+            std.ov = TRUE,
             control = NULL)
 fit@Optim$f # 0.4912133
-fit@modelInfo$control_estimator
+fit@data_list$correl
 
 # fit@loss   # 0.283407
 # fit@loglik # -3427.131
@@ -632,22 +634,14 @@ fit2 <- cfa(model, data = data_missing,
             missing = "fiml",
             # likelihood = "wishart",
             std.lv = TRUE, std.ov = TRUE)
+fit2@SampleStats@cov
+fit2@SampleStats[[1]][[2]]$SY
+
 # Same loss value: OK
 fit2@Fit@fx*2
 fit@loss
 fit@loglik
 fit2@loglik$loglik
-
-indices <- fit2@ParTable$plabel %in% fit@modelInfo$parameters_labels
-params_lav <- abs(c(fit2@ParTable$est[indices]))
-names(params_lav) <- fit@modelInfo$parameters_labels
-X <- fill_in(fit@modelInfo$trans, params_lav, miss = 0)
-X$lambda.g1
-fit@parameters$lambda.g1
-X$theta.g1
-fit@parameters$theta.g1
-X$psi.g1
-fit@parameters$psi.g1
 
 #### Check derivatives ####
 
