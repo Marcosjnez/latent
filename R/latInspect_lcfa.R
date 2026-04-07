@@ -104,7 +104,8 @@ latInspect.lcfa <- function(fit,
                                           loglik = loglik,
                                           penalized_loglik = penalized_loglik,
                                           loglik_indep = loglik_indep,
-                                          loglik_sat = loglik_sat)
+                                          loglik_sat = loglik_sat,
+                                          penalty = penalty)
 
   #### Extract the parameters ####
 

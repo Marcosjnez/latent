@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 02/04/2026
+# Modification date: 07/04/2026
 
 create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
                                 estimator = "ml", ordered = FALSE,
@@ -19,7 +19,7 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
 
   if (is.null(group)) {
     ngroups <- 1L
-    group_label <- NULL
+    group_label <- "group"
   } else {
     group_label <- unique(data[[group]])
     ngroups <- length(group_label)
