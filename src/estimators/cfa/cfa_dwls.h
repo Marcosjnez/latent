@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 06/03/2026
+ * Modification date: 03/04/2026
  */
 
 /*
@@ -13,7 +13,7 @@ class cfa_dwls: public estimators {
 public:
 
   int p;
-  double w;
+  double f, w;
   arma::uvec indices_S, indices_Shat, diag, lower_diag;
   arma::mat S, Shat, dShat, dS, residuals, W, W_residuals;
 
@@ -53,17 +53,18 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(5);
     arma::mat residuals_indep = S;
     residuals_indep.diag().zeros();
     arma::mat W_residuals_indep = W % residuals_indep;
     double loss_indep = w*0.5*arma::accu(residuals_indep % W_residuals_indep);
     double loss_sat = 0.00;
+
+    doubles.resize(5);
     doubles[0] =  f;
     doubles[1] =  0.00;        // loglik actual model
-    doubles[2] =  w;
-    doubles[3] =  loss_indep;  // loglik independence model
-    doubles[4] =  loss_sat;    // loglik saturated model
+    doubles[2] =  loss_indep;  // loglik independence model
+    doubles[3] =  loss_sat;    // loglik saturated model
+    doubles[4] =  0.00;        // penalty
 
     matrices.resize(2);
     matrices[0] = residuals;

@@ -152,7 +152,7 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
 
   item_label <- LAV@Data@ov.names
   nobs_list <- LAV@Data@nobs
-  group_label <- LAV@Data@group.label
+  # group_label <- LAV@Data@group.label
   factor_label <- replicate(ngroups, list(LAV@Model@dimNames[[1]][[2]]))
 
   model_out <- getmodel_fromlavaan(LAV)
@@ -211,16 +211,17 @@ create_cfa_model <- function(data_list, model, control) {
   target_psi <- target_theta <- targets <- vector("list", length = ngroups)
   rest <- 0L
 
-  lambda_group <- paste("lambda.g", 1:ngroups, sep = "")
-  psi_group <- paste("psi.g", 1:ngroups, sep = "")
-  theta_group <- paste("theta.g", 1:ngroups, sep = "")
-  xpsi_group <- paste("xpsi.g", 1:ngroups, sep = "")
-  xtheta_group <- paste("xtheta.g", 1:ngroups, sep = "")
-  model_group <- paste("model.g", 1:ngroups, sep = "")
+  lambda_group <- paste("lambda.", data_list$group_label, sep = "")
+  psi_group <- paste("psi.", data_list$group_label, sep = "")
+  theta_group <- paste("theta.", data_list$group_label, sep = "")
+  xpsi_group <- paste("xpsi.", data_list$group_label, sep = "")
+  xtheta_group <- paste("xtheta.", data_list$group_label, sep = "")
+  model_group <- paste("model.", data_list$group_label, sep = "")
   S_group <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
       for(j in 1:correl[[i]]$npatterns) {
-        S_group[[i]][[j]] <- paste("S.g", i, ".pattern", j, sep = "")
+        S_group[[i]][[j]] <- paste("S.", data_list$group_label[i],
+                                   ".pattern", j, sep = "")
     }
   }
 
@@ -488,16 +489,17 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
   list2env(data_list, envir = environment())
   list2env(full_model, envir = environment())
 
-  lambda_group <- paste("lambda.g", 1:ngroups, sep = "")
-  psi_group <- paste("psi.g", 1:ngroups, sep = "")
-  theta_group <- paste("theta.g", 1:ngroups, sep = "")
-  xpsi_group <- paste("xpsi.g", 1:ngroups, sep = "")
-  xtheta_group <- paste("xtheta.g", 1:ngroups, sep = "")
-  model_group <- paste("model.g", 1:ngroups, sep = "")
+  lambda_group <- paste("lambda.", data_list$group_label, sep = "")
+  psi_group <- paste("psi.", data_list$group_label, sep = "")
+  theta_group <- paste("theta.", data_list$group_label, sep = "")
+  xpsi_group <- paste("xpsi.", data_list$group_label, sep = "")
+  xtheta_group <- paste("xtheta.", data_list$group_label, sep = "")
+  model_group <- paste("model.", data_list$group_label, sep = "")
   S_group <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
     for(j in 1:correl[[i]]$npatterns) {
-      S_group[[i]][[j]] <- paste("S.g", i, ".pattern", j, sep = "")
+      S_group[[i]][[j]] <- paste("S.", data_list$group_label[i],
+                                 ".pattern", j, sep = "")
     }
   }
 

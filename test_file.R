@@ -247,7 +247,7 @@ set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml", positive = FALSE,
             ordered = FALSE, acov = "standard",
-            std.lv = TRUE, std.ov = FALSE,
+            std.lv = TRUE, std.ov = TRUE,
             mimic = "latent", do.fit = TRUE,
             control = NULL)
 fit@loss   # 0.283407

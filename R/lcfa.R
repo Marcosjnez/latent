@@ -185,49 +185,11 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   #### Process the fit information ####
 
-  # Get the indices of the estimator structures "cfa_dwls" and "cfa_ml":
-  all_estimators <- unlist(lapply(modelInfo$control_estimator,
-                                  FUN = \(x) x$estimator))
-  indices_cfa <- which(all_estimators == "cfa_dwls" |
-                         all_estimators == "cfa_ml" |
-                         all_estimators == "cfa_fml")
-
-  # Get the indices of the estimator structures "logdetmat" (penalties):
-  indices_logdetmat <- which(all_estimators == "logdetmat")
-
-  # Initialize the objects to be returned:
-  loss <- penalized_loss <- loglik <- penalized_loglik <- penalty <-
-    vector("list", length = data_list$ngroups)
-
-  # For each group, extract the loss, penalized loss, loglik and penalized loglik
-  for(i in 1:data_list$ngroups) {
-
-    k <- indices_cfa[i]
-
-    loss[[i]] <- c(Optim$outputs$estimators$doubles[[k]][[1]])
-    loglik[[i]] <- c(Optim$outputs$estimators$doubles[[k]][[2]])
-
-    # If there are penalties, add the penalties to the loss or loglik:
-    if(length(indices_logdetmat) > 0) {
-
-      l <- indices_logdetmat[i]
-      penalty[[i]] <- c(Optim$outputs$estimators$doubles[[l]][[1]])
-      penalized_loss[[i]] <- loss[[i]] + penalty[[i]]
-      penalized_loglik[[i]] <- loglik[[i]] + penalty[[i]]
-
-    } else {
-
-      penalized_loss[[i]] <- loss[[i]]
-      penalized_loglik[[i]] <- loglik[[i]]
-
-    }
-
-  }
-
-  loss <- sum(unlist(loss))
-  penalized_loss <- sum(unlist(penalized_loss))
-  loglik <- sum(unlist(loglik))
-  penalized_loglik <- sum(unlist(penalized_loglik))
+  loss <- Optim$f
+  penalized_loss <- loss
+  loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
+                              FUN = \(x) x[[2]])))
+  penalized_loglik <- loglik
 
   #### latent object ####
 
@@ -258,6 +220,14 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   if(se != "none" || isFALSE(se)) {
     Optim$SE <- se(result, type = "standard", digits = 9)
   }
+
+  # Fit by group:
+  fit_by_group <- latInspect(result, what = "fit")
+  loss.group <- unlist(lapply(fit_by_group, FUN = \(x) x["loss"]))
+  penalized_loss.group <- unlist(lapply(fit_by_group, FUN = \(x) x["penalized_loss"]))
+  loglik.group <- unlist(lapply(fit_by_group, FUN = \(x) x["loglik"]))
+  penalized_loglik.group <- unlist(lapply(fit_by_group, FUN = \(x) x["penalized_loglik"]))
+  penalty.group <- unlist(lapply(fit_by_group, FUN = \(x) x["penalty"]))
 
   result@Optim <- Optim
 

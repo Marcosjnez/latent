@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 07/03/2026
+ * Modification date: 03/04/2026
  */
 
 /*
@@ -13,7 +13,7 @@ class cfa_fml: public estimators {
 public:
 
   int p, n;
-  double w, logdetS, logdetShat, plogpi2;
+  double f, w, logdetS, logdetShat, plogpi2;
   arma::uvec indices_S, indices_Shat, lower_diag;
   arma::mat S, Shat, residuals, dShat, dS, Shat_inv, S_inv, gShat, gS, I;
 
@@ -73,7 +73,6 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(5);
     double loglik = w*n*0.5*(-plogpi2 -
                        arma::log_det_sympd(Shat) -
                        arma::accu(S % Shat_inv));
@@ -84,14 +83,16 @@ public:
     double loglik_sat = w*n*0.5*(-plogpi2 -
                                  arma::log_det_sympd(S) -
                                  arma::accu(S % Sinv));
+
+    doubles.resize(5);
     doubles[0] =  f;             // loss   actual model
     doubles[1] =  loglik;        // loglik actual model
-    doubles[2] =  w;             // weight scalar
-    doubles[3] =  loglik_indep;  // loglik independence model
-    doubles[4] =  loglik_sat;    // loglik saturated model
+    doubles[2] =  loglik_indep;  // loglik independence model
+    doubles[3] =  loglik_sat;    // loglik saturated model
+    doubles[4] =  0.00;          // penalty
 
-    matrices.resize(2);
     arma::mat W;
+    matrices.resize(2);
     matrices[0] = S - Shat;
     matrices[1] = W;
 

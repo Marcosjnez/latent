@@ -473,3 +473,14 @@ create_init <- function(trans, param, init_param,
     transparameters = transparameters
   )
 }
+
+group_lists_by_sublists <- function(...) {
+  # Transpose lists of objects with same names
+  x <- list(...)
+  nm <- names(x[[1]])
+
+  setNames(
+    lapply(nm, function(n) lapply(x, `[[`, n)),
+    nm
+  )
+}

@@ -206,6 +206,7 @@ lcov <- function(data, item_names = colnames(data),
 
     names(out) <- paste0("pattern", seq_along(out))
     out$npatterns <- length(patterns)
+    out$patterns_names <- names(patterns)
     # out$nobs <- sum(unlist(lapply(out, FUN = \(x) x$nobs)))
 
     return(out)
@@ -230,6 +231,7 @@ lcov <- function(data, item_names = colnames(data),
   )
 
   out$npatterns <- 1L
+  out$patterns_names <- "pattern1"
   # out$nobs <- nobs
 
   return(out)
