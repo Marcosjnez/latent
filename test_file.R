@@ -247,45 +247,34 @@ set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml", positive = FALSE,
             ordered = FALSE, acov = "standard",
-            std.lv = TRUE, std.ov = TRUE,
+            std.lv = TRUE, std.ov = FALSE,
             mimic = "latent", do.fit = TRUE,
+            meanstructure = FALSE, likelihood = "normal",
             control = NULL)
-fit@loss   # 0.283407
-fit@loglik # -3422.624
-fit@penalized_loglik # -3422.624
+fit@loss             # 0.283407
+fit@loglik           # -3737.745
+fit@penalized_loglik # -3737.745
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
-fit@Optim$SE$se
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
                     estimator = "ml",
-                    # likelihood = "wishart",
-                    std.lv = TRUE, std.ov = FALSE)
+                    likelihood = "normal",
+                    std.lv = TRUE, std.ov = FALSE,
+                    meanstructure = FALSE)
 # Same loss value: OK
-fit2@Fit@fx*2
-fit@loss
-fit2@loglik$loglik
-fit@loglik
+fit2@Fit@fx*2      # 0.283407
+fit@loss           # 0.283407
+fit2@loglik$loglik # -3737.745
+fit@loglik         # -3737.745
 
-NACOV <- lavTech(fit2, "gamma")
-lapply(NACOV, FUN = dim)
+fit@Optim$SE$se
+fit2@ParTable$se
 
-W <- lavInspect(fit2, "se")
-W2 <- matrix(0, 9, 9)
-W2[lower.tri(W2, diag = TRUE)] <- diag(W)
-W2 <- (W2+t(W2))/2
-round(W2, 2)
-round(fit@data_list$correl[[1]]$W, 2)
-
-fit@loglik
-# WHAT'S THE DIFFERENCE?
-fit2@loglik$loglik
-fit2@h1$logl$loglik # SATURATED
-
-lavaan::inspect(fit2, what = "se")
-fit@Optim$SE$table_se
+# NACOV <- lavTech(fit2, "gamma")
+# lapply(NACOV, FUN = dim)
 
 #### Multigroup CFA ####
 
@@ -298,24 +287,28 @@ model <- 'visual  =~ x1 + x2 + x3
 fit <- lcfa(HolzingerSwineford1939, model = model,
             group = "school", estimator = "ml",
             ordered = FALSE, std.lv = TRUE,
-            std.ov = FALSE,
+            std.ov = FALSE, likelihood = "normal",
             mimic = "latent", do.fit = TRUE)
 
-fit@loss   # 0.3848882
-fit@loglik # -1844.98
-fit@penalized_loglik # -1844.98
+fit@loss             # 0.3848882
+fit@loglik           # -3682.198
+fit@penalized_loglik # -3682.198
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
-fit@Optim$SE$se
 
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
                     group = "school", estimator = "ml",
+                    likelihood = "normal",
                     std.lv = TRUE, std.ov = FALSE)
-fit2@loglik$loglik
-fit2@Fit@fx*2
-fit@loss
+fit2@loglik$loglik # -3682.198
+fit@loglik         # -3682.198
+fit2@Fit@fx*2      # 0.3848882
+fit@loss           # 0.3848882
+
+fit@Optim$SE$se
+fit2@ParTable$se
 
 #### CFA (nonpositive definite) ####
 
@@ -502,38 +495,27 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
 fit <- lcfa(model = model.EM, data = mooc,
             ordered = TRUE, estimator = "dwls",
             do.fit = TRUE, control = NULL)
-fit@loglik # -90154.77 (ml)
+fit@loglik           # -90154.77 (ml)
 fit@penalized_loglik # -90154.77 (ml)
-fit@loss # 0.3817476 (dwls)
+fit@loss             # 0.3817476 (dwls)
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
-fit@Optim$SE$se
 
 # With lavaan:
 fit2 <- lavaan::cfa(model = model.EM, data = mooc,
                     ordered = TRUE,
                     estimator = "dwls",
                     # likelihood = "wishart",
-                    std.lv = TRUE, std.ov = TRUE,
+                    std.lv = TRUE, std.ov = FALSE,
                     parameterization = "theta")
-# Same loss value: OK
-fit2@Fit@fx*2
-fit@loss
+fit2@Fit@fx*2      # 0.4663271
+fit@loss           # 0.3817476
+fit2@loglik$loglik # -3737.745
+fit@loglik         # -90154.77
 
-lavaan::inspect(fit2, what = "se")$lambda
-round(fit@Optim$SE$table_se$lambda.group1, 3)
-diag(lavaan::inspect(fit2, what = "se")$theta)
-round(diag(fit@Optim$SE$table_se$theta.group1), 3)
-lavaan::inspect(fit2, what = "se")$psi
-round(fit@Optim$SE$table_se$psi.group1, 3)
-
-W <- lavInspect(fit2, "wls.v")
-W2 <- matrix(0, 16, 16)
-W2[lower.tri(W2, diag = TRUE)] <- diag(W)
-W2 <- (W2+t(W2))/2
-round(W2, 2)
-round(fit@data_list$correl[[1]]$W, 2)
+fit@Optim$SE$se
+fit2@ParTable$se
 
 #### Multigroup CFA polychorics ####
 
@@ -609,20 +591,21 @@ data_missing[1:60, "x1"] <- NA
 
 set.seed(2026)
 fit <- lcfa(data_missing, model = model,
-            estimator = "ml", positive = FALSE,
-            ordered = FALSE, std.lv = TRUE,
+            estimator = "dwls",
+            positive = FALSE,
+            ordered = FALSE,
+            std.lv = TRUE,
             mimic = "latent",
-            # missing = "complete.obs",
+            # missing = "pairwise.complete.obs",
             missing = "fiml",
             do.fit = TRUE,
-            std.ov = TRUE,
+            std.ov = FALSE,
+            meanstructure = TRUE,
             control = NULL)
-fit@Optim$f # 0.4912133
-fit@data_list$correl
 
-# fit@loss   # 0.283407
-# fit@loglik # -3427.131
-# fit@penalized_loglik # -3427.131
+fit@loss   # 0.283407
+fit@loglik # -3427.131
+fit@penalized_loglik # -3427.131
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
@@ -633,15 +616,16 @@ fit2 <- cfa(model, data = data_missing,
             estimator = "ml",
             missing = "fiml",
             # likelihood = "wishart",
-            std.lv = TRUE, std.ov = TRUE)
-fit2@SampleStats@cov
-fit2@SampleStats[[1]][[2]]$SY
+            std.lv = TRUE, std.ov = FALSE)
 
+inspect(fit2, what = "est")$lambda
+fit@transformed_pars$lambda.group
 # Same loss value: OK
-fit2@Fit@fx*2
-fit@loss
-fit@loglik
 fit2@loglik$loglik
+fit@loglik
+fit2@Fit@fx
+fit@loss
+lavInspect(fit2, "se")
 
 #### Check derivatives ####
 

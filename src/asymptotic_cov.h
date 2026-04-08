@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 02/04/2026
+ * Modification date: 08/04/2026
  *
  */
 
@@ -133,7 +133,7 @@ arma::mat asymptotic_general(arma::mat X, bool cov) {
   arma::mat asymptotic = Gamma - A * B.t() - B * A.t() + A * G * A.t();
 
   // lower triangle EXCLUDING diagonal
-  arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), -1);
+  arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), 0);
   return asymptotic(lower_indices, lower_indices);
 }
 
@@ -184,7 +184,7 @@ arma::mat asymptotic_normal(const arma::mat& S, bool cov) {
   arma::mat asymptotic = Gamma - A * B.t() - B * A.t() + A * G * A.t();
 
   // lower triangle EXCLUDING diagonal
-  arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), -1);
+  arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), 0);
   return asymptotic(lower_indices, lower_indices);
 }
 

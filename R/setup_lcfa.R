@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/04/2026
+# Modification date: 08/04/2026
 
 create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
                                 estimator = "ml", ordered = FALSE,
@@ -9,7 +9,8 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
                                 missing = "pairwise.complete.obs",
                                 std.lv = TRUE, std.ov = FALSE,
                                 acov = "standard", message = FALSE,
-                                likelihood = NULL, args = NULL,
+                                likelihood = NULL, meanstructure = TRUE,
+                                args = NULL,
                                 ...) {
 
   cor <- tolower(cor)
@@ -110,7 +111,8 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
         nobs = nobs_list[[i]],
         missing = missing,
         std.ov = std.ov,
-        likelihood = likelihood
+        likelihood = likelihood,
+        meanstructure = meanstructure
       )
 
       correl[[i]]$nobs <- nobs_list[[i]]
@@ -140,6 +142,7 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
     ordered = ordered,
     std.lv = std.lv,
     std.ov = std.ov,
+    meanstructure = TRUE,
     do.fit = FALSE,
     warn = FALSE,
     ...
@@ -217,11 +220,14 @@ create_cfa_model <- function(data_list, model, control) {
   xpsi_group <- paste("xpsi.", data_list$group_label, sep = "")
   xtheta_group <- paste("xtheta.", data_list$group_label, sep = "")
   model_group <- paste("model.", data_list$group_label, sep = "")
-  S_group <- vector("list", length = ngroups)
+  nu_group <- paste("nu.", data_list$group_label, sep = "")
+  S_group <- M_group <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
       for(j in 1:correl[[i]]$npatterns) {
         S_group[[i]][[j]] <- paste("S.", data_list$group_label[i],
                                    ".pattern", j, sep = "")
+        M_group[[i]][[j]] <- paste("means.", data_list$group_label[i],
+                                       ".pattern", j, sep = "")
     }
   }
 
@@ -286,7 +292,17 @@ create_cfa_model <- function(data_list, model, control) {
                              symmetric = TRUE)
     k <- k+1L
 
-    # S:
+    if(control$meanstructure) {
+      # Model means vector:
+      list_struct[[k]] <- list(name = nu_group[i],
+                               type = "matrix",
+                               dim = c(nitems[[i]], 1),
+                               rownames = item_label[[i]],
+                               colnames = "intrcp")
+      k <- k+1L
+    }
+
+    # S and M:
 
       for(j in 1:correl[[i]]$npatterns) {
 
@@ -299,6 +315,16 @@ create_cfa_model <- function(data_list, model, control) {
                                  colnames = item_label_ij,
                                  symmetric = TRUE)
         k <- k+1L
+
+        if(control$meanstructure) {
+          nitems_ij <- length(correl[[i]][[j]]$item_names)
+          list_struct[[k]] <- list(name = M_group[[i]][[j]],
+                                   type = "matrix",
+                                   dim = c(nitems_ij, 1),
+                                   rownames = item_label_ij,
+                                   colnames = "intrcp")
+          k <- k+1L
+        }
 
     }
 
@@ -313,17 +339,17 @@ create_cfa_model <- function(data_list, model, control) {
     # Get the positions of parameters and fixed values:
 
     # Ensure the same label ordering than in model:
-    group_i <- c(lambda_group[i], theta_group[i], psi_group[i])
+    group_i <- c(lambda_group[i], theta_group[i], psi_group[i], nu_group[i])
 
-    nonfixed[group_i] <- lapply(model[[i]][1:3], FUN = \(x) {
+    nonfixed[group_i] <- lapply(model[[i]][1:4], FUN = \(x) {
       which(is.na(suppressWarnings(as.numeric(x))))
     })
 
-    fixed[group_i] <- lapply(model[[i]][1:3], FUN = \(x) {
+    fixed[group_i] <- lapply(model[[i]][1:4], FUN = \(x) {
       which(!is.na(suppressWarnings(as.numeric(x))))
     })
 
-    fixed_values_list[group_i] <- lapply(model[[i]][1:3], FUN = \(x) {
+    fixed_values_list[group_i] <- lapply(model[[i]][1:4], FUN = \(x) {
       numerals <- suppressWarnings(as.numeric(x))
       inds <- which(!is.na(numerals))
       return(numerals[inds])
@@ -332,6 +358,9 @@ create_cfa_model <- function(data_list, model, control) {
     trans[[lambda_group[i]]][nonfixed[[lambda_group[i]]]] <- model[[i]]$lambda[nonfixed[[lambda_group[i]]]]
     trans[[theta_group[i]]][nonfixed[[theta_group[i]]]] <- model[[i]]$theta[nonfixed[[theta_group[i]]]]
     trans[[psi_group[i]]][nonfixed[[psi_group[i]]]] <- model[[i]]$psi[nonfixed[[psi_group[i]]]]
+    if(control$meanstructure) {
+      trans[[nu_group[i]]][nonfixed[[nu_group[i]]]] <- model[[i]]$nu[nonfixed[[nu_group[i]]]]
+    }
 
   }
 
@@ -376,11 +405,40 @@ create_cfa_model <- function(data_list, model, control) {
       }
     }
 
+    if(cor %in% c("poly", "polys", "polychoric", "polychorics")) {
+      fix_diag <- TRUE
+    } else {
+      fix_diag <- FALSE
+    }
+
     # Fix the diagonal of the sample covariance matrix:
-    if(control$std.ov) {
+    if(fix_diag) {
       for(j in 1:correl[[i]]$npatterns) {
         diag(param[[S_group[[i]][[j]]]]) <- 1
       }
+    }
+
+    if(control$meanstructure) {
+
+      if(fix_diag) {
+        for(j in 1:correl[[i]]$npatterns) {
+          param[[M_group[[i]][[j]]]] <- matrix(rep(0, length(correl[[i]]$item_names)),
+                                               ncol = 1L)
+        }
+        param[[nu_group[[i]]]] <- matrix(rep(0, nitems[[i]]), ncol = 1L)
+      } else {
+        for(j in 1:correl[[i]]$npatterns) {
+          param[[M_group[[i]][[j]]]] <- matrix(correl[[i]][[j]]$means, ncol = 1L)
+        }
+        param[[nu_group[i]]] <- trans[[nu_group[i]]]
+      }
+
+      if(control$free_M) {
+        param[unlist(M_group[[i]])] <- trans[unlist(M_group[[i]])]
+      }
+      # # Insert fixed values in the model:
+      # param[[nu_group[i]]][fixed[[nu_group[i]]]] <- model[[i]]$nu[fixed[[nu_group[i]]]]
+
     }
 
     # Create the target matrices for positive-definite constraints:
@@ -442,8 +500,17 @@ create_cfa_model <- function(data_list, model, control) {
       Psi <- init_param[[rs]][[psi_group[i]]]
       init_param[[rs]][[model_group[i]]] <- Lambda %*% Psi %*% t(Lambda) + Theta
 
+      if(control$meanstructure) {
+        init_param[[rs]][[nu_group[i]]] <- matrix(colMeans(data_list$data_per_group[[i]],
+                                                           na.rm = TRUE), ncol = 1L)
+      }
+
       for(j in 1:correl[[i]]$npatterns) {
         init_param[[rs]][[S_group[[i]][[j]]]] <- correl[[i]][[j]]$S
+        if(control$meanstructure) {
+          init_param[[rs]][[M_group[[i]][[j]]]] <- matrix(correl[[i]][[j]]$means,
+                                                          ncol = 1L)
+        }
       }
 
     }
@@ -495,10 +562,13 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
   xpsi_group <- paste("xpsi.", data_list$group_label, sep = "")
   xtheta_group <- paste("xtheta.", data_list$group_label, sep = "")
   model_group <- paste("model.", data_list$group_label, sep = "")
-  S_group <- vector("list", length = ngroups)
+  nu_group <- paste("nu.", data_list$group_label, sep = "")
+  S_group <- M_group <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
     for(j in 1:correl[[i]]$npatterns) {
       S_group[[i]][[j]] <- paste("S.", data_list$group_label[i],
+                                 ".pattern", j, sep = "")
+      M_group[[i]][[j]] <- paste("means.", data_list$group_label[i],
                                  ".pattern", j, sep = "")
     }
   }
@@ -512,6 +582,15 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
 
     manifolds[[k]] <- list(manifold = "euclidean",
                            parameters = lambda_group[i])
+    k <- k+1L
+
+    manifolds[[k]] <- list(manifold = "euclidean",
+                           parameters = nu_group[i])
+    k <- k+1L
+
+
+    manifolds[[k]] <- list(manifold = "euclidean",
+                           parameters = unlist(M_group[[i]]))
     k <- k+1L
 
     manifolds[[k]] <- list(manifold = "euclidean",
@@ -628,6 +707,9 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
                             dwls  = "cfa_dwls",
                             ml = "cfa_fml",
                             fml  = "cfa_fml",
+                            means_fml = "cfa_means_fml",
+                            means_dwls = "cfa_means_dwls",
+                            means_uls = "cfa_means_dwls",
                             stop("Unknown estimator: ", estimator)
     )
 
@@ -635,12 +717,16 @@ create_cfa_modelInfo <- function(data_list, full_model, control) {
 
       pick <- correl[[i]][[j]]$item_names
       S_group_ij <- S_group[[i]][[j]]
+      M_group_ij <- M_group[[i]][[j]]
       estimators[[k]] <- list(estimator = cfa_estimator,
                               parameters = list(c(trans[[model_group[i]]][pick, pick]),
-                                                c(trans[[S_group_ij]])),
+                                                c(trans[[S_group_ij]]),
+                                                c(trans[[nu_group[i]]][pick, ]),
+                                                c(trans[[M_group_ij]])),
                               extra = list(W = correl[[i]][[j]]$W,
                                            w = correl[[i]][[j]]$nobs /
                                              sum(unlist(nobs)),
+                                           w_means = correl[[i]][[j]]$w_means,
                                            q = nrow(trans[[psi_group[i]]]),
                                            p = nrow(correl[[i]][[j]]$S),
                                            n = correl[[i]][[j]]$nobs))

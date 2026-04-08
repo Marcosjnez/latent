@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 01/04/2026
+# Modification date: 08/04/2026
 #'
 #' @title
 #' Standard Errors
@@ -98,6 +98,7 @@ general_se <- function(fit, type = "standard") {
   args <- fit@data_list$args
   args$control <- fit@modelInfo$control_optimizer
   args$control$free_S <- TRUE
+  args$control$free_M <- TRUE
   args$do.fit <- FALSE
   fit2 <- do.call(lcfa, args) # AVOID RECOMPUTING CORRELATIONS HERE
 

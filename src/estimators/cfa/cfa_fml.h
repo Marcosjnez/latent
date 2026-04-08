@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/04/2026
+ * Modification date: 07/04/2026
  */
 
 /*
@@ -74,15 +74,15 @@ public:
   void outcomes(arguments_optim& x) {
 
     double loglik = n*0.5*(-plogpi2 -
-                       arma::log_det_sympd(Shat) -
-                       arma::accu(S % Shat_inv));
+                           arma::log_det_sympd(Shat) -
+                           arma::accu(S % Shat_inv));
     arma::mat I(p, p, arma::fill::eye);
-    double loglik_indep = w*n*0.5*(-plogpi2 -
-                                   arma::trace(S));
+    double loglik_indep = n*0.5*(-plogpi2 -
+                                 arma::trace(S));
     arma::mat Sinv = arma::inv_sympd(S);
-    double loglik_sat = w*n*0.5*(-plogpi2 -
-                                 arma::log_det_sympd(S) -
-                                 arma::accu(S % Sinv));
+    double loglik_sat = n*0.5*(-plogpi2 -
+                               arma::log_det_sympd(S) -
+                               arma::accu(S % Sinv));
 
     doubles.resize(5);
     doubles[0] =  f;             // loss   actual model

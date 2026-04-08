@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 02/04/2026
+# Modification date: 08/04/2026
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
@@ -29,6 +29,7 @@
 #' @param std.lv Logical. Provide the parameters of the standardized model. Default is TRUE.
 #' @param std.ov Logical. Standardize the observed variables before fitting. Default is FALSE.
 #' @param acov String. "standard" or "robust". Default is "standard".
+#' @param meanstructure Logical. Estimate the means of the variables. Default is FALSE.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
 #' @param message Logical. Defaults to FALSE.
 #' @param se Logical. Compute standard errors. Defaults to TRUE.
@@ -69,6 +70,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                  missing = "pairwise.complete.obs",
                  std.lv = TRUE, std.ov = FALSE,
                  acov = "standard",
+                 meanstructure = NULL,
                  do.fit = TRUE, message = FALSE,
                  likelihood = NULL, se = TRUE,
                  mimic = "latent", control = NULL,
@@ -85,10 +87,29 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     cor <- "pearson"
   }
 
+  estimator <- tolower(estimator)
+  missing <- tolower(missing)
+  if(missing == "fiml") estimator <- "ml"
+
+  if(is.null(meanstructure)) {
+    if(missing == "fiml") {
+      meanstructure <- TRUE
+    } else {
+      meanstructure <- FALSE
+    }
+  }
+
+  if(meanstructure) {
+    if(estimator == "ml" || estimator == "fml") estimator <- "means_fml"
+    if(estimator == "uls") estimator <- "means_uls"
+    if(estimator == "dwls") estimator <- "means_dwls"
+  }
+
   control$std.ov <- std.ov
   control$positive <- positive
   control$penalties <- penalties
   control$estimator <- tolower(estimator)
+  control$meanstructure <- meanstructure
   control <- lcfa_control(control)
 
   args <- as.list(match.call(expand.dots = TRUE))[-1]
@@ -112,6 +133,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
     acov = acov,
     message = message,
     likelihood = likelihood,
+    meanstructure = meanstructure,
     args = args,
     ...
   )

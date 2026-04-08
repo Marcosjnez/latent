@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/03/2026
+# Modification date: 08/04/2026
 
 create_estimators <- function(estimators, structures) {
 
@@ -58,8 +58,10 @@ create_estimators <- function(estimators, structures) {
                           bayesconst3        = c("K", "alpha", "N", "varshat"),
                           logdetmat          = c("lower_indices", "logdetw", "p"),
                           cfa_dwls           = c("q", "w", "p", "W"),
+                          cfa_means_dwls     = c("q", "w", "p", "W", "w_means"),
                           cfa_ml             = c("p", "w", "n"),
                           cfa_fml            = c("p", "w", "n"),
+                          cfa_means_fml      = c("p", "w", "n"),
                           stop("Unknown estimator: ", estimator)
     )
 

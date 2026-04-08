@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 19/03/2026
+# Modification date: 07/04/2026
 
 getmodel_fromlavaan <- function(obj) {
 

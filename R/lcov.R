@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 02/04/2026
+# Modification date: 08/04/2026
 
 asymptotic_poly <- function(X, taus) {
 
@@ -69,7 +69,8 @@ lcov <- function(data, item_names = colnames(data),
                  cor = "pearson", estimator = "ml",
                  acov = "standard", nobs = NULL,
                  missing = "pairwise.complete.obs",
-                 std.ov = FALSE, likelihood = NULL) {
+                 std.ov = FALSE, likelihood = NULL,
+                 meanstructure = TRUE) {
 
   cor <- tolower(cor)
   estimator <- tolower(estimator)
@@ -79,7 +80,7 @@ lcov <- function(data, item_names = colnames(data),
   X <- as.matrix(data[, item_names, drop = FALSE])
 
   compute_one_pattern <- function(X, item_names, cor, estimator, acov, nobs,
-                                  missing, std.ov, likelihood,
+                                  missing, std.ov, likelihood, meanstructure,
                                   vars = rep(TRUE, length(item_names))) {
 
     out <- list()
@@ -91,7 +92,7 @@ lcov <- function(data, item_names = colnames(data),
     q <- ncol(X)  # cols
 
     if(is.null(likelihood)) {
-      likelihood <- if (estimator == "ml") "normal" else "wishart"
+      likelihood <- if (estimator %in% c("ml", "fml", "means_fml")) "normal" else "wishart"
     }
 
     #### Compute covariance/correlation and ACOV ####
@@ -106,6 +107,10 @@ lcov <- function(data, item_names = colnames(data),
       }
 
       out$S <- X
+      if(std.ov) {
+        inv_sqrtdiagS <- diag(1/sqrt(diag(out$S)))
+        out$S <- inv_sqrtdiagS %*% out$S %*% inv_sqrtdiagS
+      }
       out$ACOV <- asymptotic_normal(out$S, cov = !std.ov)
 
     } else if (cor %in% c("poly", "polys", "polychoric", "polychorics")) {
@@ -125,10 +130,16 @@ lcov <- function(data, item_names = colnames(data),
       if (is.null(nobs)) nobs <- p
       out$nobs <- nobs
 
+      out$S <- stats::cov(X, use = missing)
+
       if(std.ov) {
-        out$S <- stats::cor(X, use = missing)
-      } else {
-        out$S <- stats::cov(X, use = missing)
+        inv_sqrtdiagS <- diag(1/sqrt(diag(out$S)))
+        out$S <- inv_sqrtdiagS %*% out$S %*% inv_sqrtdiagS
+      }
+
+      if (likelihood == "normal") {
+        out$S <- out$S * (nobs - 1L) / nobs
+        # out$ACOV <- out$ACOV * (nobs - 1L) / nobs
       }
 
       if (acov == "standard") {
@@ -136,44 +147,63 @@ lcov <- function(data, item_names = colnames(data),
       } else if (acov == "robust") {
         out$ACOV <- asymptotic_general(X, cov = !std.ov)
       } else {
-        stop("Unknown `acov` argument.")
-      }
-
-      if (likelihood == "normal") {
-        out$S <- out$S * (nobs - 1L) / nobs
-        if(std.ov) {
-          inv_sqrtdiagS <- diag(1/sqrt(diag(out$S)))
-          out$S <- inv_sqrtdiagS %*% out$S %*% inv_sqrtdiagS
-        }
-        # out$ACOV <- out$ACOV * (nobs - 1L) / nobs
+        stop("Unknown `acov` argument")
       }
 
     } else {
-      stop("Unknown covariance/correlation method.")
+      stop("Unknown covariance/correlation method")
+    }
+
+    #### Compute weight matrices ####
+
+    if (estimator %in% c("uls", "means_uls", "ml", "fml", "means_fml")) {
+
+      out$W <- matrix(1, nrow = q, ncol = q)
+      diag(out$W) <- 1
+      out$w_means <- rep(1, times = q)
+
+    } else if (estimator %in% c("dwls", "means_dwls")) {
+
+      if(cor %in% c("poly", "polys", "polychoric", "polychorics")) {
+        fix_diag <- TRUE
+      } else {
+        fix_diag <- FALSE
+      }
+
+      out$W <- matrix(NA_real_, nrow = q, ncol = q)
+      out$W[lower.tri(out$W, diag = !fix_diag)] <- diag(out$ACOV)
+      out$W[upper.tri(out$W)] <- t(out$W)[upper.tri(out$W)]
+      out$W <- 1 / out$W
+      if(std.ov) diag(out$W) <- 1
+
+      var_means <- apply(X, MARGIN = 2, FUN = var, na.rm = TRUE)
+      out$w_means <- 1/var_means
+
+    } else {
+      stop("Unknown `estimator`")
+    }
+
+    #### Mean structure ####
+
+    if(meanstructure) {
+
+      if(std.ov) {
+        out$means <- rep(0, times = q)
+      } else {
+        out$means <- colMeans(X, na.rm = TRUE)
+      }
+
+      acov_means <- apply(X, MARGIN = 2, FUN = var, na.rm = TRUE)
+      out$ACOV <- block_diag(list(diag(acov_means), out$ACOV))
+
     }
 
     out$NACOV <- out$ACOV * nobs
 
-    #### Compute weight matrix ####
+    #### Return ####
 
-    if (estimator %in% c("uls", "ulsr", "ml", "mlr")) {
+    return(out)
 
-      out$W <- matrix(1, nrow = q, ncol = q)
-      diag(out$W) <- 1
-
-    } else if (estimator %in% c("dwls", "dwlsr")) {
-
-      out$W <- matrix(NA_real_, nrow = q, ncol = q)
-      out$W[lower.tri(out$W, diag = FALSE)] <- diag(out$ACOV)
-      out$W[upper.tri(out$W)] <- t(out$W)[upper.tri(out$W)]
-      out$W <- 1 / out$W
-      diag(out$W) <- 1
-
-    } else {
-      stop("Unknown `estimator`.")
-    }
-
-    out
   }
 
   #### FIML-style missing-pattern split ####
@@ -200,6 +230,7 @@ lcov <- function(data, item_names = colnames(data),
         missing = "pairwise.complete.obs",
         std.ov = std.ov,
         likelihood = likelihood,
+        meanstructure = meanstructure,
         vars = vars_i
       )
     })
@@ -226,6 +257,7 @@ lcov <- function(data, item_names = colnames(data),
       missing = missing,
       likelihood = likelihood,
       std.ov = std.ov,
+      meanstructure = meanstructure,
       vars = rep(TRUE, length(item_names))
     )
   )
@@ -233,6 +265,8 @@ lcov <- function(data, item_names = colnames(data),
   out$npatterns <- 1L
   out$patterns_names <- "pattern1"
   # out$nobs <- nobs
+
+  #### Return ####
 
   return(out)
 

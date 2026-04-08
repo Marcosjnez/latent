@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/04/2026
+ * Modification date: 07/04/2026
  */
 
 /*
@@ -70,12 +70,12 @@ public:
     double loglik = n*0.5*(-plogpi2 -
                            arma::log_det_sympd(Shat) -
                            arma::accu(S % Shat_inv));
-    double loglik_indep = w*n*0.5*(-plogpi2 -
-                                   arma::trace(S));
+    double loglik_indep = n*0.5*(-plogpi2 -
+                                 arma::trace(S));
     arma::mat Rinv = arma::inv_sympd(S);
-    double loglik_sat = w*n*0.5*(-plogpi2 -
-                                 arma::log_det_sympd(S) -
-                                 arma::accu(S % Rinv));
+    double loglik_sat = n*0.5*(-plogpi2 -
+                               arma::log_det_sympd(S) -
+                               arma::accu(S % Rinv));
 
     doubles.resize(5);
     doubles[0] =  f;             // loss   actual model
