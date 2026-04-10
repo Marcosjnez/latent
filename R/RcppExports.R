@@ -41,10 +41,6 @@ asymptotic_general <- function(X, cov = TRUE) {
     .Call(`_latent_asymptotic_general`, X, cov)
 }
 
-DACOV2 <- function(n, poly, tabs, taus, mvphis) {
-    .Call(`_latent_DACOV2`, n, poly, tabs, taus, mvphis)
-}
-
 orth <- function(X) {
     .Call(`_latent_orth`, X)
 }
@@ -85,8 +81,8 @@ get_dgrad <- function(control_manifold, control_transform, control_estimator, co
     .Call(`_latent_get_dgrad`, control_manifold, control_transform, control_estimator, control_optimizer)
 }
 
-get_hess <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
-    .Call(`_latent_get_hess`, control_manifold, control_transform, control_estimator, control_optimizer)
+get_hess <- function(control_manifold, control_transform, control_estimator, control_optimizer, cores = 1L) {
+    .Call(`_latent_get_hess`, control_manifold, control_transform, control_estimator, control_optimizer, cores)
 }
 
 get_vcov <- function(control_manifold, control_transform, control_estimator, control_optimizer, H) {
@@ -109,15 +105,15 @@ joint_frequency_table <- function(X, n, max_X, Y, max_Y) {
     .Call(`_latent_joint_frequency_table`, X, n, max_X, Y, max_Y)
 }
 
+poly_deriv <- function(rho, tau1, tau2, pnorm_tau1, pnorm_tau2, n) {
+    .Call(`_latent_poly_deriv`, rho, tau1, tau2, pnorm_tau1, pnorm_tau2, n)
+}
+
 fpoly <- function(p, tau1, tau2, pnorm_tau1, pnorm_tau2, n) {
     .Call(`_latent_fpoly`, p, tau1, tau2, pnorm_tau1, pnorm_tau2, n)
 }
 
 fpoly2 <- function(R, tau, pnorm_tau, n) {
     .Call(`_latent_fpoly2`, R, tau, pnorm_tau, n)
-}
-
-poly_deriv <- function(rho, tau1, tau2, pnorm_tau1, pnorm_tau2, n) {
-    .Call(`_latent_poly_deriv`, rho, tau1, tau2, pnorm_tau1, pnorm_tau2, n)
 }
 

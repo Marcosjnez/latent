@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 02/04/2026
+# Modification date: 09/04/2026
 
 #### Install latent ####
 
@@ -286,7 +286,7 @@ model <- 'visual  =~ x1 + x2 + x3
 
 fit <- lcfa(HolzingerSwineford1939, model = model,
             group = "school", estimator = "ml",
-            ordered = FALSE, std.lv = TRUE,
+            ordered = FALSE, std.lv = FALSE,
             std.ov = FALSE, likelihood = "normal",
             mimic = "latent", do.fit = TRUE)
 
@@ -301,7 +301,7 @@ fit@timing
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
                     group = "school", estimator = "ml",
                     likelihood = "normal",
-                    std.lv = TRUE, std.ov = FALSE)
+                    std.lv = FALSE, std.ov = FALSE)
 fit2@loglik$loglik # -3682.198
 fit@loglik         # -3682.198
 fit2@Fit@fx*2      # 0.3848882
@@ -393,7 +393,7 @@ names(Ns) <- samples
 
 # Subset the items pertaining to the HEXACO-100
 selection <- 5:104
-selection <- 5:7
+selection <- 5:10
 full <- hexaco[, selection]
 
 mooc <- full[hexaco$sample == samples[2], ]
@@ -402,7 +402,7 @@ set.seed(2026)
 POLY <- polyfast(as.matrix(mooc))
 taus <- lapply(POLY$thresholds, FUN = \(x) x[-c(1, length(x))])
 fit <- lpoly(data = mooc, do.fit = TRUE, penalties = FALSE,
-             model = list(taus = taus),
+             # model = list(taus = taus),
              method = "crossprodn",
              control = list(opt = "newton",
                             maxit = 500,
@@ -417,61 +417,21 @@ fit@penalized_loglik # -176520.8
 fit@Optim$iterations
 fit@Optim$ng
 fit@Optim$convergence
-fit@Optim$f
+fit@Optim$f # 41.18545
 max(fit@Optim$rg)
 max(fit@Optim$g)
 fit@timing
 
+fit@modelInfo$control$parameters[[1]] <- fit@Optim$parameters
+fit@modelInfo$control$transparameters[[1]] <- fit@Optim$transparameters
+x <- get_hess(fit@modelInfo$control_manifold, fit@modelInfo$control_transform,
+              fit@modelInfo$control_estimator, fit@modelInfo$control,
+              cores = 32L)
+ACOV <- solve(x$h)
+
 Tur <- Turbofuns:::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)
 
-# If all columns in mooc are ordinal items:
-library(lavaan)
-
-## 1) Make all variables ordered factors
-mooc[] <- lapply(mooc, function(x) {
-  if (is.ordered(x)) x else ordered(x)
-})
-
-## 2) Fit the unrestricted ordinal model
-##    Use output = "fit" to get a fitted lavaan object
-fit_un <- lavCor(
-  mooc,
-  ordered = names(mooc),
-  se      = "standard",
-  output  = "fit"
-)
-
-## 3) Extract the raw asymptotic covariance matrix of the sample statistics
-##    (lavTech avoids the dimnames/labelling issue)
-Gamma <- lavTech(fit_un, "gamma")[[1]]
-
-## 4) Count thresholds:
-##    for each ordinal variable, #thresholds = #categories - 1
-n_th <- sum(vapply(mooc, function(x) nlevels(x) - 1L, integer(1)))
-
-## 5) Number of variables and number of polychoric correlations
-p <- ncol(mooc)
-n_rho <- p * (p - 1L) / 2L
-
-## 6) Keep only the block corresponding to the polychoric correlations
-##    (thresholds come first, then the polychoric correlations)
-idx_rho <- seq.int(from = n_th + 1L, length.out = n_rho)
-Gamma_rho <- Gamma[idx_rho, idx_rho, drop = FALSE]
-
-## 7) Convert from N * ACM to ACM if needed
-##    (Gamma is scaled by sample size in lavaan's WLS machinery)
-N <- nrow(mooc)
-ACM_rho <- Gamma_rho / N
-
-lav <- diag(round(Gamma_rho, 4))
-Turbo <- diag(round(Tur$ACM, 4))
-lat1 <- diag(round(solve(diag(c(POLY$hess))), 4))
-lat2 <- diag(round(solve(x$h), 4))
-pairs(cbind(lav, Turbo, lat1, lat2))
-
-## 8) Optional: assign readable names matching the lower triangle of the correlation matrix
-
-#### CFA polychorics ####
+#### CFA (polychorics) ####
 
 library(latent)
 library(lavaan)
@@ -494,6 +454,8 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
 
 fit <- lcfa(model = model.EM, data = mooc,
             ordered = TRUE, estimator = "dwls",
+            # meanstructure = TRUE,
+            std.ov = FALSE, std.lv = FALSE,
             do.fit = TRUE, control = NULL)
 fit@loglik           # -90154.77 (ml)
 fit@penalized_loglik # -90154.77 (ml)
@@ -507,7 +469,7 @@ fit2 <- lavaan::cfa(model = model.EM, data = mooc,
                     ordered = TRUE,
                     estimator = "dwls",
                     # likelihood = "wishart",
-                    std.lv = TRUE, std.ov = FALSE,
+                    std.ov = FALSE, std.lv = FALSE,
                     parameterization = "theta")
 fit2@Fit@fx*2      # 0.4663271
 fit@loss           # 0.3817476
@@ -517,7 +479,10 @@ fit@loglik         # -90154.77
 fit@Optim$SE$se
 fit2@ParTable$se
 
-#### Multigroup CFA polychorics ####
+# thresholds only
+TH <- lavInspect(fit2, "th")
+
+#### Multigroup CFA (polychorics) ####
 
 library(latent)
 library(lavaan)
@@ -587,7 +552,7 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 data_missing <- HolzingerSwineford1939
-data_missing[1:60, "x1"] <- NA
+data_missing[1:10, "x1"] <- NA
 
 set.seed(2026)
 fit <- lcfa(data_missing, model = model,

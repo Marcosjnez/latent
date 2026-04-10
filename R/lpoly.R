@@ -51,39 +51,25 @@ lpoly <- function(data,
 
   #### Create the data_list ####
 
-  # Estimate the polychoric correlations without positive-definite constraints:
-  polychorics <- polyfast(as.matrix(data))
-  R <- polychorics$correlation # Polychoric correlation matrix
-  taus <- polychorics$thresholds # Thresholds
-  n <- polychorics$contingency_tables # Contingency tables
-  p <- ncol(data) # Number of items
-  nobs <- nrow(data)
-  nitems <- ncol(data)
-  item_label <- colnames(data)
-  npatterns <- length(unlist(n))
-
-  data_list <- vector("list")
-  data_list$data <- data
-  data_list$nobs <- nobs
-  data_list$nitems <- nitems
-  data_list$npatterns <- npatterns
-  data_list$positive <- control$reg
-  data_list$item_label <- item_label
+  data_list <- create_lpoly_datalist(data, control)
+  list2env(data_list, envir = environment())
 
   #### Parameters of the model ####
 
   poly_param <- list()
-  poly_param$taus <- vector("list", length = p)
-  K <- vector(length = p)
-  for(i in 1:p) {
+  poly_param$taus <- vector("list", length = nitems)
+  K <- vector(length = nitems)
+  for(i in 1:nitems) {
     K[i] <- length(taus[[i]])-2L
     poly_param$taus[[i]] <- paste(".tau", i, ".", 1:K[i], sep = "")
   }
 
   if(method == "crossprod") {
-    poly_param$X <- matrix(paste(".X", 1:(p*p), sep = ""), nrow = p, ncol = p)
+    poly_param$X <- matrix(paste(".X", 1:(nitems*nitems), sep = ""),
+                           nrow = nitems, ncol = nitems)
   } else {
-    poly_param$R <- matrix(paste("r", 1:(p*p), sep = ""), nrow = p, ncol = p)
+    poly_param$R <- matrix(paste("r", 1:(nitems*nitems), sep = ""),
+                           nrow = nitems, ncol = nitems)
     diag(poly_param$R) <- "1"
     poly_param$R[upper.tri(poly_param$R)] <- t(poly_param$R)[upper.tri(poly_param$R)]
   }
@@ -91,7 +77,8 @@ lpoly <- function(data,
   # Create the model for the transformed parameters:
 
   poly_trans <- poly_param
-  poly_trans$R <- matrix(paste("r", 1:(p*p), sep = ""), nrow = p, ncol = p)
+  poly_trans$R <- matrix(paste("r", 1:(nitems*nitems), sep = ""),
+                         nrow = nitems, ncol = nitems)
   poly_trans$R[upper.tri(poly_trans$R)] <- t(poly_trans$R)[upper.tri(poly_trans$R)]
 
   #### Fix parameters ####
@@ -130,12 +117,12 @@ lpoly <- function(data,
   init_param$taus <- threslds # Initial values for the thresholds
   if(method == "crossprod") {
     # Initial values for the square root of correlations:
-    init_param$X <- real_sqrtmat(R)
+    init_param$X <- real_sqrtmat(data_list$R)
     init_trans <- init_param
     # Initial values for the polychoric correlations:
     init_trans$R <- crossprod(init_trans$X)
   } else {
-    init_param$R <- R
+    init_param$R <- data_list$R
     init_trans <- init_param
   }
 
@@ -166,7 +153,7 @@ lpoly <- function(data,
     manifolds <- list(
       list(manifold = "euclidean", parameters = "taus"),
       list(manifold = "oblq", parameters = "X",
-           extra = list(p = p, q = p))
+           extra = list(p = nitems, q = nitems))
     )
 
   } else {
@@ -174,20 +161,20 @@ lpoly <- function(data,
     manifolds <- list(
       list(manifold = "euclidean", parameters = "taus"),
       list(manifold = "euclidean", parameters = "R",
-           extra = list(p = p, q = p))
+           extra = list(p = nitems, q = nitems))
     )
 
   }
 
   control_manifold <- create_manifolds(manifolds = manifolds,
-                                   structures = poly_param)
+                                       structures = poly_param)
 
   #### Transformations ####
 
   transform <- list()
 
   lower_indices <- which(lower.tri(poly_trans$R, diag = TRUE))
-  dots$p <- p
+  dots$p <- nitems
 
   if(method == "crossprod") {
 
@@ -214,8 +201,8 @@ lpoly <- function(data,
   estimators[[1]] <- list(estimator = "polycor",
                           parameters = c(list(poly_trans$R),
                                          poly_trans$taus),
-                          extra = list(n = n,
-                                       p = p,
+                          extra = list(n = data_list$n,
+                                       p = nitems,
                                        N = data_list$nobs))
 
   if(control$reg) {
@@ -223,7 +210,7 @@ lpoly <- function(data,
     estimators[[2]] <- list(estimator = "logdetmat",
                             parameters = "R",
                             extra = list(lower_indices = lower_indices-1L,
-                                         p = p,
+                                         p = nitems,
                                          logdetw = control$penalties$logdet$w))
 
   }
@@ -234,7 +221,7 @@ lpoly <- function(data,
   #### Collect all the model information ####
 
   # Model information:
-  nparam <- 0.5*p*(p-1) + sum(K)
+  nparam <- 0.5*nitems*(nitems-1) + sum(K)
   modelInfo <- list(nobs = nobs,
                     nparam = nparam,
                     npatterns = npatterns,
@@ -254,7 +241,7 @@ lpoly <- function(data,
   if(!do.fit) {
 
     result <- new("lpoly",
-                  version            = as.character( packageVersion('latent') ),
+                  version            = as.character(packageVersion('latent')),
                   call               = mc,
                   timing             = numeric(),
                   modelInfo          = modelInfo,
@@ -276,15 +263,11 @@ lpoly <- function(data,
 
   Optim <- optimizer(control_manifold, control_transform,
                      control_estimator, control)
+  names(Optim$parameters) <- modelInfo$parameters_labels
+  names(Optim$transparameters) <- modelInfo$transparameters_labels
 
   # Collect all the information about the optimization:
   elapsed <- Optim$elapsed
-
-  # x$f
-  # x$iterations
-  # x$ng
-  # polys <- matrix(fit$outputs$estimators$matrices[[1]][[1]], 16, 16)
-  # det(polys)
 
   #### Estimated model structures ####
 
@@ -302,7 +285,8 @@ lpoly <- function(data,
   loss <- Optim$outputs$estimators$doubles[[index_estimator]][1]
   penalized_loss <- Optim$f
   loglik <- Optim$outputs$estimators$doubles[[index_estimator]][2]
-  penalized_loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles, FUN = \(x) x[[2]])))
+  penalized_loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
+                                        FUN = \(x) x[[2]])))
 
   #### Return ####
 
@@ -322,5 +306,51 @@ lpoly <- function(data,
   )
 
   return(result)
+
+}
+
+asymptotic_poly <- function(fit, model = NULL) {
+
+  control_manifold <- fit@modelInfo$control_manifold
+  control_transform <- fit@modelInfo$control_transform
+  control_estimator <- fit@modelInfo$control_estimator
+  control_optimizer <- fit@modelInfo$control
+
+  control_optimizer$parameters[[1]] <- fit@Optim$parameters
+  control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
+
+  x <- get_hess(control_manifold, control_transform,
+                control_estimator, control_optimizer,
+                cores = parallel::detectCores())
+  ACOV <- solve(x$h)
+
+  return(ACOV)
+
+}
+
+create_lpoly_datalist <- function(data, control) {
+
+  # Estimate the polychoric correlations without positive-definite constraints:
+  polychorics <- polyfast(as.matrix(data))
+  R <- polychorics$correlation # Polychoric correlation matrix
+  taus <- polychorics$thresholds # Thresholds
+  n <- polychorics$contingency_tables # Contingency tables
+  nobs <- nrow(data)
+  nitems <- ncol(data)
+  item_label <- colnames(data)
+  npatterns <- length(unlist(n))
+
+  data_list <- vector("list")
+  data_list$data <- data
+  data_list$nobs <- nobs
+  data_list$nitems <- nitems
+  data_list$npatterns <- npatterns
+  data_list$positive <- control$reg
+  data_list$item_label <- item_label
+  data_list$n <- n
+  data_list$R <- R
+  data_list$taus <- taus
+
+  return(data_list)
 
 }

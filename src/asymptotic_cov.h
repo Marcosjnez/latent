@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 08/04/2026
+ * Modification date: 09/04/2026
  *
  */
 
@@ -60,7 +60,7 @@ arma::mat asymptotic_general(arma::mat X, bool cov) {
 
   if (Xc.has_nan()) {
     d = arma::sqrt(diagcov(Xc));
-    P = pairwise_cor(Xc);                 // assumed available in your codebase
+    P = pairwise_cor(Xc);
     arma::mat D = arma::diagmat(d);
     S = D * P * D;
   } else {

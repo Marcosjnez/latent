@@ -380,8 +380,6 @@ public:
     }
 
     R = arma::reshape(x.transparameters(indices_R), p, p);
-    // R = arma::symmatl(R);
-    // R.diag().ones(); // Ensure ones in the diagonal of the correlation matrix
 
   }
 
@@ -437,8 +435,6 @@ public:
         dfdp(k,l) = dfdp(l,k);
         dfdtaus[l] += dtau1;
         dfdtaus[k] += dtau2;
-        // Rprintf("dfdtaus[l] = %.10f\n", dtau1);
-        // Rprintf("dfdtaus[k] = %.10f\n", dtau2);
 
       }
     }
@@ -460,7 +456,6 @@ public:
     }
 
     arma::mat dR = arma::reshape(x.dtransparameters(indices_R), p, p);
-    // dR = arma::symmatl(dR);
 
     // compute the differentials:
     std::vector<arma::vec> ddfdtaus(p);
@@ -501,13 +496,18 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(2);
-    doubles[0] = loss;
-    doubles[1] = -loss;
+    double loglik = -loss;
+    double loglik_indep = 0.00;
+
+    doubles.resize(5);
+    doubles[0] =  loss;          // loss   actual model
+    doubles[1] =  loglik;        // loglik actual model
+    doubles[2] =  0.00;          // loglik independence model
+    doubles[3] =  0.00;          // loglik saturated model
+    doubles[4] =  0.00;          // penalty
 
     matrices.resize(1);
     matrices[0] = R;
-    // matrices[1] = loglik;
 
     list_vectors.resize(2);
     list_vectors[0] = taus;
@@ -547,76 +547,3 @@ polycor* choose_polycor(const Rcpp::List& estimator_setup) {
   return myestimator;
 
 }
-
-// void poly_dderivs(double& ddf_dp, arma::vec& ddf_dtau1, arma::vec& ddf_dtau2,
-//                   double dp, arma::vec dtau1, arma::vec dtau2,
-//                   double rho, arma::vec tau1, arma::vec tau2,
-//                   arma::vec pnorm_tau1, arma::vec pnorm_tau2,
-//                   std::vector<std::vector<int>> n) {
-//
-//   // This function computes the differential of the polychoric loglik derivatives
-//
-//   // ddf_dp = Directional derivative of the derivative of the latent correlation
-//   // ddf_dtau1 = Directional derivative of the derivatives of thresholds of the first variable
-//   // ddf_dtau2 = Directional derivative of the derivatives of thresholds of the second variable
-//   // rho = latent correlation
-//   // dp = Direction for the latent correlation
-//   // dtau1 = Directions for the thresholds of the first variable
-//   // dtau2 = Directions for the thresholds of the second variable
-//   // tau1 = Vector of thresholds of the first variable (It must start at -Infinite and end at Infinite)
-//   // tau2 = Vector of thresholds of the second variable (It must start at -Infinite and end at Infinite)
-//   // pnorm_tau1 = pnorm of tau1
-//   // pnorm_tau2 = pnorm of tau2
-//   // n = contingency table
-//
-//   int s = tau1.size()-1L;
-//   int r = tau2.size()-1L;
-//   arma::mat pbi(s, r); // CDF of the bivariate normal
-//   arma::mat dpbi_dp(s, r); // PDF of the Bivariate normal
-//   arma::mat ddpbi_dp(s, r); // Derivative of the PDF of the Bivariate normal
-//   double denominator = std::sqrt(1-rho*rho);
-//   for (size_t i = 0; i < s; ++i) { // Loop over the thresholds of first variable
-//     for (size_t j = 0; j < r; ++j) { // Loop over the thresholds of second variable
-//       // CDF of the bivariate normal:
-//       pbi(i, j) = pbinorm(rho, tau1[i], tau2[j], tau1[i+1], tau2[j+1],
-//           pnorm_tau1[i], pnorm_tau2[j], pnorm_tau1[i+1], pnorm_tau2[j+1]);
-//       // PDF of the Bivariate normal:
-//       dpbi_dp(i, j) = dbinorm(rho, tau1[i+1], tau2[j+1]) -
-//         dbinorm(rho, tau1[i], tau2[j+1]) -
-//         dbinorm(rho, tau1[i+1], tau2[j]) +
-//         dbinorm(rho, tau1[i], tau2[j]);
-//       // Derivative of the PDF of the Bivariate normal:
-//       ddpbi_dp(i, j) = ddbinorm(rho, tau1[i+1], tau2[j+1]) -
-//         ddbinorm(rho, tau1[i], tau2[j+1]) -
-//         ddbinorm(rho, tau1[i+1], tau2[j]) +
-//         ddbinorm(rho, tau1[i], tau2[j]);
-//       // df_dp -= n[i][j] * dpbi_dp(i,j) / pbi(i,j);
-//       // ddf_dp -= help me compute the differential of df_dp in direction dp;
-//     }
-//   }
-//
-//   // Loop over the thresholds of first variable:
-//   for(int k=0; k < (s-1); ++k) {
-//     for(int j=0; j < r; ++j) {
-//       double numerator1 = tau2[j+1]-rho*tau1[k+1];
-//       double numerator2 = tau2[j]-rho*tau1[k+1];
-//       double dpbi_dtau1 = Dnorm(tau1[k+1])*(Pnorm(numerator1/denominator) -
-//                                 Pnorm(numerator2/denominator));
-//       // df_dtau1(k) -= dpbi_dtau1 * (n[k][j]/pbi(k,j)-n[k+1][j]/pbi(k+1,j));
-//       // ddf_dtau1(k) -= help me compute the differential of df_dtau1(k) in direction dtau1(k);
-//     }
-//   }
-//
-//   // Loop over the thresholds of second variable
-//   for(int m=0; m < (r-1); ++m) {
-//     for(int i=0; i < s; ++i) {
-//       double numerator1 = tau1[i+1]-rho*tau2[m+1];
-//       double numerator2 = tau1[i]-rho*tau2[m+1];
-//       double dpbi_dtau2 = Dnorm(tau2[m+1])*(Pnorm(numerator1/denominator) -
-//                                 Pnorm(numerator2/denominator));
-//       // df_dtau2(m) -= dpbi_dtau2 * (n[i][m]/pbi(i,m)-n[i][m+1]/pbi(i,m+1));
-//       // ddf_dtau2(m) -= help me compute the differential of df_dtau2(m) in direction dtau2(m);
-//     }
-//   }
-//
-// }

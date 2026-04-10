@@ -221,6 +221,7 @@ create_cfa_model <- function(data_list, model, control) {
   xtheta_group <- paste("xtheta.", data_list$group_label, sep = "")
   model_group <- paste("model.", data_list$group_label, sep = "")
   nu_group <- paste("nu.", data_list$group_label, sep = "")
+  tau_group <- paste("tau.", data_list$group_label, sep = "")
   S_group <- M_group <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
       for(j in 1:correl[[i]]$npatterns) {

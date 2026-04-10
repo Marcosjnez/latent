@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 10/04/2026
 #'
 #' @title
 #' Standard Errors
@@ -131,7 +131,8 @@ robust_se <- function(fit) {
   H <- get_hess(control_manifold = control_manifold,
                 control_transform = control_transform,
                 control_estimator = control_estimator,
-                control_optimizer = control_optimizer)$h
+                control_optimizer = control_optimizer,
+                cores = parallel::detectCores())$h
 
   #### Collect the gradient by response pattern ####
 

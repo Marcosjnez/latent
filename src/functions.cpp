@@ -73,12 +73,6 @@ arma::mat asymptotic_elliptical(const arma::mat& S, double eta = 1.00,
 arma::mat asymptotic_general(arma::mat X, bool cov = true);
 
 // [[Rcpp::export]]
-arma::mat DACOV2(int n, arma::mat poly,
-                 std::vector<std::vector<std::vector<int>>> tabs,
-                 std::vector<std::vector<double>> taus,
-                 std::vector<std::vector<double>> mvphis);
-
-// [[Rcpp::export]]
 arma::mat orth(arma::mat X);
 
 // [[Rcpp::export]]
@@ -123,7 +117,8 @@ Rcpp::List get_dgrad(Rcpp::List control_manifold,
 Rcpp::List get_hess(Rcpp::List control_manifold,
                     Rcpp::List control_transform,
                     Rcpp::List control_estimator,
-                    Rcpp::List control_optimizer);
+                    Rcpp::List control_optimizer,
+                    int cores = 1L);
 
 // [[Rcpp::export]]
 Rcpp::List get_vcov(Rcpp::List control_manifold,

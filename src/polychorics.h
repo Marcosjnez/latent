@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/09/2025
+ * Modification date: 10/04/2026
  */
 
 // #include <armadillo>
@@ -115,64 +115,6 @@ double drezner(double h1, double hk, const double pnorm_tau_h, const double pnor
   }
   //--- OUTPUT
   return bv;
-}
-
-// [[Rcpp::export]]
-double fpoly(double p, std::vector<double> tau1, std::vector<double> tau2,
-             std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2,
-             std::vector<std::vector<int>> n) {
-
-  // tau1 = Vector of thresholds for the first variable (It must start at -Infinite and end at Infinite)
-  // tau2 = Vector of thresholds for the second variable (It must start at -Infinite and end at Infinite)
-  // n =  Contingency table for the variables
-  // pnorm_tau1 = pnorm of tau1
-  // pnorm_tau2 = pnorm of tau2
-
-  const size_t s1 = tau1.size()-1L;
-  const size_t s2 = tau2.size()-1L;
-
-  double f = 0.0;
-  for (size_t i = 0; i < s1; ++i) {
-    for (size_t j = 0; j < s2; ++j) {
-      f -= n[i][j] * arma::trunc_log(pbinorm(p,
-                                             tau1[i], tau2[j], tau1[i + 1], tau2[j + 1],
-                                             pnorm_tau1[i], pnorm_tau2[j], pnorm_tau1[i+1], pnorm_tau2[j+1]));
-    }
-  }
-
-  return f;
-
-}
-
-// [[Rcpp::export]]
-double fpoly2(arma::mat R, const std::vector<arma::vec>& tau,
-              const std::vector<arma::vec>& pnorm_tau,
-              const std::vector<std::vector<std::vector<int>>>& n) {
-
-
-  const size_t q = tau.size(); // Number of items
-  int m = 0L;
-
-  double f = 0.0;
-  for(size_t l=0; l < (q-1L); ++l) {
-    const size_t s1 = tau[l].size()-1L;
-    for(int k=(l+1L); k < q; ++k) {
-      const size_t s2 = tau[k].size()-1L;
-      for (size_t i = 0; i < s1; ++i) {
-        for (size_t j = 0; j < s2; ++j) {
-          f -= n[m][i][j] * arma::trunc_log(pbinorm(R(l, k),
-                                            tau[l][i], tau[k][j],
-                                            tau[l][i+1], tau[k][j+1],
-                                            pnorm_tau[l][i], pnorm_tau[k][j],
-                                            pnorm_tau[l][i+1], pnorm_tau[k][j+1]));
-        }
-      }
-      ++m;
-    }
-  }
-
-  return f;
-
 }
 
 const double GOLDEN_RATIO = (3.0 - std::sqrt(5.0)) / 2.0;
@@ -337,7 +279,7 @@ Rcpp::List poly_deriv(double rho, std::vector<double> tau1, std::vector<double> 
       // dppidtau1(j*s+k+1, k) = -dppidtau1(j*s+k, k);
       double dppidtau1 = Dnorm(tau1[k+1])*(Pnorm(numerator1/denominator) -
                                Pnorm(numerator2/denominator));
-      dldtau1(k) += dppidtau1 * (n[k][j]/ppi(k,j)-n[k+1][j]/ppi(k+1,j));
+      dldtau1(k) -= dppidtau1 * (n[k][j]/ppi(k,j)-n[k+1][j]/ppi(k+1,j));
     }
   }
 
@@ -352,7 +294,7 @@ Rcpp::List poly_deriv(double rho, std::vector<double> tau1, std::vector<double> 
       // dppidtau2(m*s+i+s, m) = -dppidtau2(m*s+i, m);
       double dppidtau2 = Dnorm(tau2[m+1])*(Pnorm(numerator1/denominator) -
                                Pnorm(numerator2/denominator));
-      dldtau2(m) += dppidtau2 * (n[i][m]/ppi(i,m)-n[i][m+1]/ppi(i,m+1));
+      dldtau2(m) -= dppidtau2 * (n[i][m]/ppi(i,m)-n[i][m+1]/ppi(i,m+1));
     }
   }
 
@@ -362,237 +304,66 @@ Rcpp::List poly_deriv(double rho, std::vector<double> tau1, std::vector<double> 
   // result["dppidtau1"] = dppidtau1;
   // result["dppidtau2"] = dppidtau2;
   result["dldp"] = dldp;
-  result["dldtau1"] = -dldtau1;
-  result["dldtau2"] = -dldtau2;
+  result["dldtau1"] = dldtau1;
+  result["dldtau2"] = dldtau2;
 
   return result;
 }
 
-Rcpp::List poly_derivatives(double rho, std::vector<double> tau1, std::vector<double> tau2,
-                            std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2) {
+// [[Rcpp::export]]
+double fpoly(double p, std::vector<double> tau1, std::vector<double> tau2,
+             std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2,
+             std::vector<std::vector<int>> n) {
 
   // tau1 = Vector of thresholds for the first variable (It must start at -Infinite and end at Infinite)
   // tau2 = Vector of thresholds for the second variable (It must start at -Infinite and end at Infinite)
+  // n =  Contingency table for the variables
   // pnorm_tau1 = pnorm of tau1
   // pnorm_tau2 = pnorm of tau2
 
-  int s = tau1.size()-1L;
-  int r = tau2.size()-1L;
-  arma::mat ppi(s, r);
-  arma::mat dppidp(s, r);
-  double denominator = std::sqrt(1-rho*rho);
-  for (size_t i = 0; i < s; ++i) {
-    for (size_t j = 0; j < r; ++j) {
-      // CDF of the bivariate normal:
-      ppi(i, j) = pbinorm(rho, tau1[i], tau2[j], tau1[i + 1], tau2[j + 1],
-          pnorm_tau1[i], pnorm_tau2[j], pnorm_tau1[i+1], pnorm_tau2[j+1]);
-      // PDF of the Bivariate normal:
-      dppidp(i, j) = dbinorm(rho, tau1[i+1], tau2[j+1]) -
-        dbinorm(rho, tau1[i], tau2[j+1]) -
-        dbinorm(rho, tau1[i+1], tau2[j]) +
-        dbinorm(rho, tau1[i], tau2[j]);
+  const size_t s1 = tau1.size()-1L;
+  const size_t s2 = tau2.size()-1L;
+
+  double f = 0.0;
+  for (size_t i = 0; i < s1; ++i) {
+    for (size_t j = 0; j < s2; ++j) {
+      f -= n[i][j] * arma::trunc_log(pbinorm(p,
+                                             tau1[i], tau2[j], tau1[i + 1], tau2[j + 1],
+                                                                                pnorm_tau1[i], pnorm_tau2[j], pnorm_tau1[i+1], pnorm_tau2[j+1]));
     }
   }
 
-  arma::mat dppidtau1(s*r, s-1, arma::fill::zeros);
-  for(int k=0; k < (s-1); ++k) {
-    for(int j=0; j < r; ++j) {
-      double numerator1 = tau2[j+1]-rho*tau1[k+1];
-      double numerator2 = tau2[j]-rho*tau1[k+1];
-      dppidtau1(j*s+k, k) = Dnorm(tau1[k+1])*(Pnorm(numerator1/denominator) -
-        Pnorm(numerator2/denominator));
-      dppidtau1(j*s+k+1, k) = -dppidtau1(j*s+k, k);
-    }
-  }
-  arma::mat dppidtau2(r*s, r-1, arma::fill::zeros);
-  for(int m=0; m < (r-1); ++m) {
-    for(int i=0; i < s; ++i) {
-      double numerator1 = tau1[i+1]-rho*tau2[m+1];
-      double numerator2 = tau1[i]-rho*tau2[m+1];
-      dppidtau2(m*s+i, m) = Dnorm(tau2[m+1])*(Pnorm(numerator1/denominator) -
-        Pnorm(numerator2/denominator));
-      dppidtau2(m*s+i+s, m) = -dppidtau2(m*s+i, m);
-    }
-  }
-
-  Rcpp::List result;
-  result["ppi"] = ppi;
-  result["dppidp"] = dppidp;
-  result["dppidtau1"] = dppidtau1;
-  result["dppidtau2"] = dppidtau2;
-
-  return result;
-}
-
-Rcpp::List COV(double rho, std::vector<double> tau1, std::vector<double> tau2,
-               std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2,
-               arma::mat ppi, arma::mat dppidp, arma::mat dppidtau1, arma::mat dppidtau2) {
-
-  tau1.erase(tau1.begin());  // remove the first element
-  tau1.erase(tau1.end() - 1);  // remove the last element
-  tau2.erase(tau2.begin());  // remove the first element
-  tau2.erase(tau2.end() - 1);  // remove the last element
-
-  int s = tau1.size() + 1L;
-  arma::mat Ag(s, s-1L, arma::fill::zeros);
-  arma::vec dnorm_tau1(s-1L);
-  for(int i=0; i < (s-1L); ++i) dnorm_tau1(i) = Dnorm(tau1[i]);
-  Ag.diag() = dnorm_tau1;
-  Ag.diag(-1) = -dnorm_tau1;
-  arma::mat Dg = arma::diagmat(1/arma::sum(ppi, 1));
-  arma::mat Bg = (arma::inv(Ag.t() * Dg * Ag) * Ag.t() * Dg).t();
-
-  int r = tau2.size() + 1L;
-  arma::mat Ah(r, r-1L, arma::fill::zeros);
-  arma::vec dnorm_tau2(r-1L);
-  for(int i=0; i < (r-1L); ++i) dnorm_tau2(i) = Dnorm(tau2[i]);
-  Ah.diag() = dnorm_tau2;
-  Ah.diag(-1) = -dnorm_tau2;
-  arma::mat Dh = arma::diagmat(1/arma::sum(ppi, 0));
-  arma::mat Bh = (arma::inv(Ah.t() * Dh * Ah) * Ah.t() * Dh).t();
-
-  double D = arma::accu(dppidp % dppidp / ppi);
-  arma::mat alpha = (1/D) * (1/ppi) % dppidp;
-
-  // Set alpha cells to zero?
-
-  arma::vec Betag(s-1L);
-  for(int i=0; i < (s-1L); ++i) {
-    Betag[i] = (1/D) * arma::accu(1/arma::vectorise(ppi) % arma::vectorise(dppidp) % dppidtau1.col(i));
-  }
-  arma::vec Betah(r-1L);
-  for(int i=0; i < (r-1L); ++i) {
-    Betah[i] = (1/D) * arma::accu(1/arma::vectorise(ppi) % arma::vectorise(dppidp) % dppidtau2.col(i));
-  }
-  arma::rowvec ones_r(r, arma::fill::ones);
-  arma::vec ones_s(s, arma::fill::ones);
-  // Rcpp::List result;
-  // result["ppi"] = ppi;
-  // result["dppidp"] = dppidp;
-  // result["D"] = D;
-  // result["tau1"] = tau1;
-  // result["tau2"] = tau2;
-  // result["dnorm_tau1"] = dnorm_tau1;
-  // result["dnorm_tau2"] = dnorm_tau2;
-  // result["alpha"] = alpha;
-  // result["Bg"] = Bg;
-  // result["Betag"] = Betag;
-  // result["ones_r"] = ones_r;
-  // result["dppidtau1"] = dppidtau1;
-  // result["dppidtau2"] = dppidtau2;
-  // result["alpha"] = alpha;
-  // return result;
-  arma::mat Gamma = alpha + Bg * Betag * ones_r + ones_s * Betah.t() * Bh.t();
-  double omega = arma::accu(Gamma % ppi);
-
-  Rcpp::List result;
-  result["Gamma"] = Gamma;
-  result["omega"] = omega;
-
-  return result;
+  return f;
 
 }
 
-Rcpp::List COV2(double rho,
-                std::vector<double> tau1, std::vector<double> tau2,
-                std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2) {
+// [[Rcpp::export]]
+double fpoly2(arma::mat R, const std::vector<arma::vec>& tau,
+              const std::vector<arma::vec>& pnorm_tau,
+              const std::vector<std::vector<std::vector<int>>>& n) {
 
-  // Compute the asymptotic variance of the polychoric correlations
 
-  Rcpp::List deriv = poly_derivatives(rho, tau1, tau2, pnorm_tau1, pnorm_tau2);
-  arma::mat ppi = deriv["ppi"];
-  arma::mat dppidp = deriv["dppidp"];
-  arma::mat dppidtau1 = deriv["dppidtau1"];
-  arma::mat dppidtau2 = deriv["dppidtau2"];
+  const size_t q = tau.size(); // Number of items
+  int m = 0L;
 
-  tau1.erase(tau1.begin());  // remove the first element
-  tau1.erase(tau1.end() - 1);  // remove the last element
-  tau2.erase(tau2.begin());  // remove the first element
-  tau2.erase(tau2.end() - 1);  // remove the last element
-
-  int s = tau1.size() + 1L;
-  arma::mat Ag(s, s-1L, arma::fill::zeros);
-  arma::vec dnorm_tau1(s-1L);
-  for(int i=0; i < (s-1L); ++i) dnorm_tau1(i) = Dnorm(tau1[i]);
-  Ag.diag() = dnorm_tau1;
-  Ag.diag(-1) = -dnorm_tau1;
-  arma::mat Dg = arma::diagmat(1/arma::sum(ppi, 1));
-  arma::mat Bg = (arma::inv(Ag.t() * Dg * Ag) * Ag.t() * Dg).t();
-
-  int r = tau2.size() + 1L;
-  arma::mat Ah(r, r-1L, arma::fill::zeros);
-  arma::vec dnorm_tau2(r-1L);
-  for(int i=0; i < (r-1L); ++i) dnorm_tau2(i) = Dnorm(tau2[i]);
-  Ah.diag() = dnorm_tau2;
-  Ah.diag(-1) = -dnorm_tau2;
-  arma::mat Dh = arma::diagmat(1/arma::sum(ppi, 0));
-  arma::mat Bh = (arma::inv(Ah.t() * Dh * Ah) * Ah.t() * Dh).t();
-
-  double D = arma::accu(dppidp % dppidp / ppi);
-  arma::mat alpha = (1/D) * (1/ppi) % dppidp;
-
-  // Set alpha cells to zero?
-
-  arma::vec Betag(s-1L);
-  for(int i=0; i < (s-1L); ++i) {
-    Betag[i] = (1/D) * arma::accu(1/arma::vectorise(ppi) % arma::vectorise(dppidp) % dppidtau1.col(i));
-  }
-  arma::vec Betah(r-1L);
-  for(int i=0; i < (r-1L); ++i) {
-    Betah[i] = (1/D) * arma::accu(1/arma::vectorise(ppi) % arma::vectorise(dppidp) % dppidtau2.col(i));
-  }
-  arma::rowvec ones_r(r, arma::fill::ones);
-  arma::vec ones_s(s, arma::fill::ones);
-
-  arma::mat Gamma = alpha + Bg * Betag * ones_r + ones_s * Betah.t() * Bh.t();
-  double omega = arma::accu(Gamma % ppi);
-
-  Rcpp::List result;
-  result["Gamma"] = Gamma;
-  result["omega"] = omega;
-
-  return result;
-
-}
-
-arma::mat std_2_matrix(std::vector<std::vector<int>> tabs, int n) {
-
-  int p = tabs.size();
-  int q = tabs[0].size();
-  arma::mat matrix(p, q);
-
-  for(int i=0; i < p; ++i) { // Fill rows
-    for(int j=0; j < q; ++j) {
-      matrix(i, j) = (tabs[i][j] + 0.0) / (n + 0.0);
+  double f = 0.0;
+  for(size_t l=0; l < (q-1L); ++l) {
+    const size_t s1 = tau[l].size()-1L;
+    for(int k=(l+1L); k < q; ++k) {
+      const size_t s2 = tau[k].size()-1L;
+      for (size_t i = 0; i < s1; ++i) {
+        for (size_t j = 0; j < s2; ++j) {
+          f -= n[m][i][j] * arma::trunc_log(pbinorm(R(l, k),
+                                                    tau[l][i], tau[k][j],
+                                                                     tau[l][i+1], tau[k][j+1],
+                                                                                        pnorm_tau[l][i], pnorm_tau[k][j],
+                                                                                                                     pnorm_tau[l][i+1], pnorm_tau[k][j+1]));
+        }
+      }
+      ++m;
     }
   }
 
-  return matrix;
-
-}
-
-arma::mat DACOV2(int n, arma::mat poly,
-                 std::vector<std::vector<std::vector<int>>> tabs,
-                 std::vector<std::vector<double>> taus,
-                 std::vector<std::vector<double>> pnorm_taus) {
-
-  // Compute the asymptotic variance of the polychoric correlations
-
-  int p = taus.size();
-  arma::mat dacov(p, p);
-  int k = 0;
-  for(int i=0; i < (p-1); ++i) {
-    for(int j=(i+1); j < p; ++j) {
-      Rcpp::List x = COV2(poly(i, j), taus[i], taus[j], pnorm_taus[i], pnorm_taus[j]);
-      arma::mat Gamma = x["Gamma"];
-      double omega = x["omega"];
-      arma::mat table = std_2_matrix(tabs[k], n);
-      dacov(i, j) = arma::accu(Gamma % table % Gamma.t() - omega*omega); // Use Gamma.t() or Gamma???
-      dacov(j, i) = dacov(i, j);
-      ++k;
-    }
-  }
-
-  return dacov;
+  return f;
 
 }

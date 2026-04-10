@@ -89,9 +89,9 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   estimator <- tolower(estimator)
   missing <- tolower(missing)
-  if(missing == "fiml") estimator <- "ml"
 
   if(is.null(meanstructure)) {
+    if(std.ov) meanstructure <- FALSE
     if(missing == "fiml") {
       meanstructure <- TRUE
     } else {

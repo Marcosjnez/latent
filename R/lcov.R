@@ -2,27 +2,6 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 08/04/2026
 
-asymptotic_poly <- function(X, taus) {
-
-  fit_poly <- lpoly(data = X, do.fit = FALSE,
-                    model = list(taus = taus),
-                    method = "crossprodn",
-                    penalties = FALSE,
-                    control = NULL)
-
-  control_manifold <- fit_poly@modelInfo$control_manifold
-  control_transform <- fit_poly@modelInfo$control_transform
-  control_estimator <- fit_poly@modelInfo$control_estimator
-  control_optimizer <- fit_poly@modelInfo$control
-
-  x <- get_hess(control_manifold, control_transform,
-                control_estimator, control_optimizer)
-  ACOV <- solve(x$h)
-
-  return(ACOV)
-
-}
-
 split_by_missing_pattern <- function(data) {
   if (!is.data.frame(data) && !is.matrix(data)) {
     stop("`data` must be a data.frame or matrix.")
@@ -98,6 +77,7 @@ lcov <- function(data, item_names = colnames(data),
     #### Compute covariance/correlation and ACOV ####
 
     if (p < q) {
+
       stop("Please provide either a full-rank matrix of scores or a covariance matrix.")
 
     } else if (p == q) {
@@ -121,9 +101,13 @@ lcov <- function(data, item_names = colnames(data),
                                FUN = function(x) x[-c(1, length(x))])
       out$cumprop <- polychorics$cumulative_freqs
       out$contingency_tables <- polychorics$contingency_tables
-
       out$ACOV <- diag(1 / c(polychorics$hess))
-      # out$ACOV <- asymptotic_poly(X, taus = out$thresholds)
+
+      # fit_poly <- lpoly(data = X,
+      #                   model = NULL,
+      #                   method = "none", penalties = FALSE,
+      #                   do.fit = TRUE)
+      # out$ACOV <- asymptotic_poly(fit_poly, model = NULL)
 
     } else if (cor == "pearson") {
 

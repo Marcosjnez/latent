@@ -139,21 +139,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// DACOV2
-arma::mat DACOV2(int n, arma::mat poly, std::vector<std::vector<std::vector<int>>> tabs, std::vector<std::vector<double>> taus, std::vector<std::vector<double>> mvphis);
-RcppExport SEXP _latent_DACOV2(SEXP nSEXP, SEXP polySEXP, SEXP tabsSEXP, SEXP tausSEXP, SEXP mvphisSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type poly(polySEXP);
-    Rcpp::traits::input_parameter< std::vector<std::vector<std::vector<int>>> >::type tabs(tabsSEXP);
-    Rcpp::traits::input_parameter< std::vector<std::vector<double>> >::type taus(tausSEXP);
-    Rcpp::traits::input_parameter< std::vector<std::vector<double>> >::type mvphis(mvphisSEXP);
-    rcpp_result_gen = Rcpp::wrap(DACOV2(n, poly, tabs, taus, mvphis));
-    return rcpp_result_gen;
-END_RCPP
-}
 // orth
 arma::mat orth(arma::mat X);
 RcppExport SEXP _latent_orth(SEXP XSEXP) {
@@ -282,8 +267,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // get_hess
-Rcpp::List get_hess(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
-RcppExport SEXP _latent_get_hess(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+Rcpp::List get_hess(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, int cores);
+RcppExport SEXP _latent_get_hess(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP coresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -291,7 +276,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_hess(control_manifold, control_transform, control_estimator, control_optimizer));
+    Rcpp::traits::input_parameter< int >::type cores(coresSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_hess(control_manifold, control_transform, control_estimator, control_optimizer, cores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -363,6 +349,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// poly_deriv
+Rcpp::List poly_deriv(double rho, std::vector<double> tau1, std::vector<double> tau2, std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2, std::vector<std::vector<int>> n);
+RcppExport SEXP _latent_poly_deriv(SEXP rhoSEXP, SEXP tau1SEXP, SEXP tau2SEXP, SEXP pnorm_tau1SEXP, SEXP pnorm_tau2SEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type tau1(tau1SEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type tau2(tau2SEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type pnorm_tau1(pnorm_tau1SEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type pnorm_tau2(pnorm_tau2SEXP);
+    Rcpp::traits::input_parameter< std::vector<std::vector<int>> >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(poly_deriv(rho, tau1, tau2, pnorm_tau1, pnorm_tau2, n));
+    return rcpp_result_gen;
+END_RCPP
+}
 // fpoly
 double fpoly(double p, std::vector<double> tau1, std::vector<double> tau2, std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2, std::vector<std::vector<int>> n);
 RcppExport SEXP _latent_fpoly(SEXP pSEXP, SEXP tau1SEXP, SEXP tau2SEXP, SEXP pnorm_tau1SEXP, SEXP pnorm_tau2SEXP, SEXP nSEXP) {
@@ -393,22 +395,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// poly_deriv
-Rcpp::List poly_deriv(double rho, std::vector<double> tau1, std::vector<double> tau2, std::vector<double> pnorm_tau1, std::vector<double> pnorm_tau2, std::vector<std::vector<int>> n);
-RcppExport SEXP _latent_poly_deriv(SEXP rhoSEXP, SEXP tau1SEXP, SEXP tau2SEXP, SEXP pnorm_tau1SEXP, SEXP pnorm_tau2SEXP, SEXP nSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type tau1(tau1SEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type tau2(tau2SEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type pnorm_tau1(pnorm_tau1SEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type pnorm_tau2(pnorm_tau2SEXP);
-    Rcpp::traits::input_parameter< std::vector<std::vector<int>> >::type n(nSEXP);
-    rcpp_result_gen = Rcpp::wrap(poly_deriv(rho, tau1, tau2, pnorm_tau1, pnorm_tau2, n));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_latent_dxt", (DL_FUNC) &_latent_dxt, 2},
@@ -421,7 +407,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 2},
     {"_latent_asymptotic_elliptical", (DL_FUNC) &_latent_asymptotic_elliptical, 3},
     {"_latent_asymptotic_general", (DL_FUNC) &_latent_asymptotic_general, 2},
-    {"_latent_DACOV2", (DL_FUNC) &_latent_DACOV2, 5},
     {"_latent_orth", (DL_FUNC) &_latent_orth, 1},
     {"_latent_oblq", (DL_FUNC) &_latent_oblq, 1},
     {"_latent_poblq", (DL_FUNC) &_latent_poblq, 2},
@@ -432,15 +417,15 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 6},
     {"_latent_get_grad", (DL_FUNC) &_latent_get_grad, 4},
     {"_latent_get_dgrad", (DL_FUNC) &_latent_get_dgrad, 4},
-    {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 4},
+    {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 5},
     {"_latent_get_vcov", (DL_FUNC) &_latent_get_vcov, 5},
     {"_latent_get_jacob", (DL_FUNC) &_latent_get_jacob, 4},
     {"_latent_real_sqrtmat", (DL_FUNC) &_latent_real_sqrtmat, 1},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},
     {"_latent_joint_frequency_table", (DL_FUNC) &_latent_joint_frequency_table, 5},
+    {"_latent_poly_deriv", (DL_FUNC) &_latent_poly_deriv, 6},
     {"_latent_fpoly", (DL_FUNC) &_latent_fpoly, 6},
     {"_latent_fpoly2", (DL_FUNC) &_latent_fpoly2, 4},
-    {"_latent_poly_deriv", (DL_FUNC) &_latent_poly_deriv, 6},
     {NULL, NULL, 0}
 };
 

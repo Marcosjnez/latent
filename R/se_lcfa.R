@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 08/04/2026
+# Modification date: 10/04/2026
 #'
 #' @title
 #' Standard Errors
@@ -112,7 +112,8 @@ general_se <- function(fit, type = "standard") {
   control_optimizer$parameters[[1]] <- parameters
   control_optimizer$transparameters[[1]] <- transparameters
   x <- get_hess(control_manifold, control_transform,
-                control_estimator, control_optimizer)
+                control_estimator, control_optimizer,
+                cores = parallel::detectCores())
   colnames(x$h) <- rownames(x$h) <- fit2@modelInfo$parameters_labels
 
   model_pars <- fit2@modelInfo$parameters_labels %in%
