@@ -68,7 +68,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                  sample.cov = NULL, nobs = NULL,
                  positive = FALSE, penalties = TRUE,
                  missing = "pairwise.complete.obs",
-                 std.lv = TRUE, std.ov = FALSE,
+                 std.lv = FALSE, std.ov = FALSE,
                  acov = "standard",
                  meanstructure = NULL,
                  do.fit = TRUE, message = FALSE,
@@ -116,7 +116,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   #### Create the datalist ####
 
-  data_list <- create_cfa_datalist(
+  dataList <- create_cfa_datalist(
     data = data,
     model = model,
     cor = cor,
@@ -140,15 +140,14 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   #### Create the model ####
 
-  # Get the model specification:
-  full_model <- create_cfa_model(data_list = data_list,
+  full_model <- create_cfa_model(dataList = dataList,
                                  model = model,
                                  control = control)
   list2env(full_model, envir = environment())
 
   #### Create the modelInfo ####
 
-  modelInfo <- create_cfa_modelInfo(data_list = data_list,
+  modelInfo <- create_cfa_modelInfo(dataList = dataList,
                                     full_model = full_model,
                                     control = control)
 
@@ -156,16 +155,16 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   if(!do.fit) {
 
-    lcfa_list <- new("lcfa",
+    lcfa_list <- new("latent",
                      version            = as.character( packageVersion('latent') ),
-                     call               = mc, # matched call
-                     timing             = numeric(), # timing information
-                     data_list          = data_list,
+                     call               = mc,
+                     timing             = numeric(),
+                     dataList           = dataList,
                      modelInfo          = modelInfo,
                      Optim              = list(),
                      parameters         = list(),
                      transformed_pars   = list(),
-                     loglik             = numeric(), # loglik values
+                     loglik             = numeric(),
                      penalized_loglik   = numeric(),
                      loss               = numeric(),
                      penalized_loss     = numeric()
@@ -207,24 +206,27 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   #### Process the fit information ####
 
-  loss <- Optim$f
-  penalized_loss <- loss
+  loss <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
+                            FUN = \(x) x[[1]])))
   loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
                               FUN = \(x) x[[2]])))
-  penalized_loglik <- loglik
+  penalty <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
+                               FUN = \(x) x[[5]])))
+  penalized_loss <- loss + penalty
+  penalized_loglik <- loglik + penalty
 
   #### latent object ####
 
   result <- new("lcfa",
                 version            = as.character( packageVersion('latent') ),
-                call               = mc, # matched call
-                timing             = elapsed, # timing information
-                data_list          = data_list,
+                call               = mc,
+                timing             = elapsed,
+                dataList           = dataList,
                 modelInfo          = modelInfo,
                 Optim              = Optim,
                 parameters         = parameters,
                 transformed_pars   = transformed_pars,
-                loglik             = loglik, # loglik values
+                loglik             = loglik,
                 penalized_loglik   = penalized_loglik,
                 loss               = loss,
                 penalized_loss     = penalized_loss
@@ -254,168 +256,6 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   result@Optim <- Optim
 
   #### Return ####
-
-  if(mimic == "lavaan") {
-
-    ## for lavaan like object
-    ## need to fill in these objects into the lav dummy objects
-    ## will take me longer to find how to match these slots
-
-
-    ###
-    ### cecks for latent things that cannot be mimimc == lavaan
-    ###
-
-    ## optiosn
-    lavoptions$se <- "standard" ## se type argument?
-    lavoptions$test <- "standard" ## test type argument?
-    lavoptions$do.fit <- do.fit
-
-    ## parameters
-    parsdf <- data.frame(plabel = names(Optim$parameters),
-                         est = Optim$parameters)
-
-    sedf <- data.frame(plabel = modelInfo$parameters_labels,
-                       se = Optim$SE$se)
-
-    parsdf <- merge(parsdf, sedf)
-    #parsdf
-
-    ## partable
-    lavpartable$est <- NULL
-    lavpartable <- merge(lavpartable, parsdf, all =T)
-    lavpartable$est <- ifelse(lavpartable$free == 0,
-                              lavpartable$start,
-                              lavpartable$est)
-    lavpartable$se <- ifelse(lavpartable$free == 0, 0,
-                             lavpartable$se)
-    lavpartable <- lavpartable[order(lavpartable$id),]
-    lavpartable <- as.list(lavpartable)
-    #lp
-
-    ## pta
-    pta <- LAV@pta
-    pta$names <- names(lavpartable)
-
-    ## lavmodel
-    ## only for 1 group for now
-    ## how to adjust multiple group labels?
-
-    lavmodel@GLIST$lambda <- transformed_pars$lambda.g1
-    lavmodel@GLIST$psi <- transformed_pars$psi.g1
-    lavmodel@GLIST$theta <- transformed_pars$theta.g1
-
-    ## implied
-    implied <- lav_model_implied(lavmodel)
-
-
-    ## lavvcov
-    ### order vcov from 1  up .. in names
-    lavvcov <- LAV@vcov
-    lavvcov$se <- lavoptions$se
-    lavvcov$vcov <- Optim$SE$vcov
-
-    ## test
-    x <- lavpartable$est[lavpartable$free != 0]
-    fx <- loss/2
-    fx.group <- loss/2
-    attr(fx, "fx.group") <- fx.group
-    attr(x, "fx") <- fx
-
-    TEST <- lavaan:::lav_model_test(lavobject = NULL,
-                                    lavmodel = lavmodel,
-                                    lavpartable = lavpartable,
-                                    lavsamplestats = lavsamplestats,
-                                    lavimplied = implied,
-                                    lavh1 = h1,
-                                    lavoptions = lavoptions,
-                                    x = x,
-                                    VCOV = Optim$SE$vcov,
-                                    lavcache = lavcache,
-                                    lavdata = lavdata,
-                                    lavloglik = loglik_lav,
-                                    test.UGamma.eigvals = FALSE)
-
-    ### FIT
-    attr(x, "iterations") <- Optim$iterations
-    attr(x, "converged") <- Optim$convergence
-    attr(x, "control") <- modelInfo$control_optimizer
-
-    lavfit <-  lavaan:::lav_model_fit(lavpartable = lavpartable,
-                                      lavmodel = lavmodel,
-                                      lavimplied = implied,
-                                      x = x,
-                                      VCOV = Optim$SE$vcov,
-                                      TEST = TEST)
-
-
-
-    ##
-    ## lavoptim
-    optnames <- c('x','npar','iterations','converged','fx','fx.group','logl.group',
-                  'logl','control')
-    lavoptim <- lapply(optnames, function(x) slot(lavfit, x))
-    names(lavoptim) <- optnames
-
-    ## h1
-    #### baseline model implied
-    ## need to adjust with the estimated baseline model
-    h1 <- lavaan:::lav_h1_implied_logl(lavdata = lavdata,
-                                       lavsamplestats = lavsamplestats,
-                                       lavpartable = lavpartable,
-                                       lavoptions = lavoptions)
-
-    ######
-
-    ## add baseline
-    #####
-
-    ## set NACOC as NULL, so its recauclauted in some functions, to match residuals
-    ## the latent NACOV have different dimensions
-    lavsamplestats@NACOV <- vector("list", ngroups)
-
-    ###
-    loglik_lav <- lavaan:::lav_model_loglik(lavdata = lavdata,
-                                            lavsamplestats = lavsamplestats,
-                                            lavh1 = h1,
-                                            lavimplied = implied,
-                                            lavmodel = lavmodel,
-                                            lavoptions = lavoptions)
-
-    ####
-    ####
-    result <- new("lavaan",
-                  version      = as.character( packageVersion('latent') ),
-                  call         = mc,                  # match.call
-                  timing       = timing,              # list
-                  Options      = lavoptions,          # list *
-                  ParTable     = lavpartable,         # list *
-                  pta          = pta,             # list
-                  Data         = lavdata,             # S4 class
-                  SampleStats  = lavsamplestats,      # S4 class
-                  Model        = lavmodel,            # S4 class *
-                  Cache        = lavcache,            # list
-                  Fit          = lavfit,              # S4 class * blav_model_fit
-                  boot         = list(),
-                  optim        = lavoptim,
-                  implied      = implied,          # list *
-                  vcov         = lavvcov,             #*
-                  test         = TEST,                #* blav_model_test
-                  h1           = h1,
-                  loglik       = loglik_lav,
-                  baseline     = list(),
-                  internal     = list(),
-                  external     = list()              # can add extra info from latent
-    )
-
-    tt <- lavaan:::lav_object_independence(object = result)
-
-    baseline <- list(partable = tt@ParTable,
-                     test = tt@test)
-
-    result@baseline <- baseline
-
-  }
 
   return(result)
 

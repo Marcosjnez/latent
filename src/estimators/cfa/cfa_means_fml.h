@@ -101,6 +101,8 @@ public:
 
   void outcomes(arguments_optim& x) {
 
+    double loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p +
+      arma::as_scalar(delta.t() * Shat_inv * delta));
     double mean_term = arma::as_scalar(delta.t() * Shat_inv * delta);
     double loglik = n * 0.5 * (-plogpi2 -
                                arma::log_det_sympd(Shat) -
@@ -114,7 +116,7 @@ public:
                                    arma::accu(S % Sinv));
 
     doubles.resize(5);
-    doubles[0] = f;
+    doubles[0] = loss;
     doubles[1] = loglik;
     doubles[2] = loglik_indep;
     doubles[3] = loglik_sat;

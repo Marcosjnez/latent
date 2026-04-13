@@ -76,24 +76,25 @@ lcov <- function(data, item_names = colnames(data),
 
     #### Compute covariance/correlation and ACOV ####
 
-    if (p < q) {
-
-      stop("Please provide either a full-rank matrix of scores or a covariance matrix.")
-
-    } else if (p == q) {
-
-      if (is.null(nobs)) {
-        stop("A covariance matrix was provided but `nobs` is missing.")
-      }
-
-      out$S <- X
-      if(std.ov) {
-        inv_sqrtdiagS <- diag(1/sqrt(diag(out$S)))
-        out$S <- inv_sqrtdiagS %*% out$S %*% inv_sqrtdiagS
-      }
-      out$ACOV <- asymptotic_normal(out$S, cov = !std.ov)
-
-    } else if (cor %in% c("poly", "polys", "polychoric", "polychorics")) {
+    # if (p < q) {
+    #
+    #   stop("Please provide either a full-rank matrix of scores or a covariance matrix.")
+    #
+    # } else if (p == q) {
+    #
+    #   if (is.null(nobs)) {
+    #     stop("A covariance matrix was provided but `nobs` is missing.")
+    #   }
+    #
+    #   out$S <- X
+    #   if(std.ov) {
+    #     inv_sqrtdiagS <- diag(1/sqrt(diag(out$S)))
+    #     out$S <- inv_sqrtdiagS %*% out$S %*% inv_sqrtdiagS
+    #   }
+    #   out$ACOV <- asymptotic_normal(out$S, cov = !std.ov)
+    #
+    # } else
+      if (cor %in% c("poly", "polys", "polychoric", "polychorics")) {
 
       polychorics <- polyfast(X)
       out$S <- polychorics$correlation

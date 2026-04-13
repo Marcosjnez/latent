@@ -30,11 +30,11 @@
 getfit.lcfa <- function(model, digits = 3) {
 
   nobs <- sum(unlist(model@modelInfo$nobs))
-  nitems <- model@Optim$data_list$nitems
-  nfactors <- model@Optim$data_list$nfactors
+  nitems <- model@Optim$dataList$nitems
+  nfactors <- model@Optim$dataList$nfactors
   nparam <- model@modelInfo$nparam
   dof <- model@modelInfo$dof
-  S <- model@Optim$data_list$correl[[1]]$R
+  S <- model@Optim$dataList$correl[[1]]$R
 
   # Compute fit statistics if using ML:
   if(length(model@loglik) == 0) {

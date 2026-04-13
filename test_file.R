@@ -247,9 +247,10 @@ set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml", positive = FALSE,
             ordered = FALSE, acov = "standard",
-            std.lv = TRUE, std.ov = FALSE,
+            std.lv = FALSE, std.ov = FALSE,
             mimic = "latent", do.fit = TRUE,
-            meanstructure = FALSE, likelihood = "normal",
+            meanstructure = TRUE,
+            # likelihood = "wishart",
             control = NULL)
 fit@loss             # 0.283407
 fit@loglik           # -3737.745
@@ -261,8 +262,8 @@ fit@timing
 # With lavaan:
 fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
                     estimator = "ml",
-                    likelihood = "normal",
-                    std.lv = TRUE, std.ov = FALSE,
+                    # likelihood = "wishart",
+                    std.lv = FALSE, std.ov = FALSE,
                     meanstructure = FALSE)
 # Same loss value: OK
 fit2@Fit@fx*2      # 0.283407
@@ -401,17 +402,18 @@ dim(mooc)
 set.seed(2026)
 POLY <- polyfast(as.matrix(mooc))
 taus <- lapply(POLY$thresholds, FUN = \(x) x[-c(1, length(x))])
-fit <- lpoly(data = mooc, do.fit = TRUE, penalties = FALSE,
+fit <- lpoly(data = mooc,
              # model = list(taus = taus),
-             method = "crossprodn",
-             control = list(opt = "newton",
+             method = "two-step",
+             positive = TRUE,
+             penalties = TRUE,
+             do.fit = TRUE,
+             control = list(opt = "grad",
                             maxit = 500,
                             step_maxit = 50,
                             tcg_maxit = 30,
                             ss = 0.001,
-                            eps = 1e-06,
-                            print = TRUE,
-                            print_interval = 10))
+                            eps = 1e-06))
 fit@loglik # -176520.8
 fit@penalized_loglik # -176520.8
 fit@Optim$iterations
@@ -552,45 +554,47 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 data_missing <- HolzingerSwineford1939
-data_missing[1:10, "x1"] <- NA
+data_missing[1:19, "x1"] <- NA
 
 set.seed(2026)
-fit <- lcfa(data_missing, model = model,
-            estimator = "dwls",
+fit <- lcfa(data_missing,
+            model = model,
+            estimator = "ml",
             positive = FALSE,
             ordered = FALSE,
-            std.lv = TRUE,
-            mimic = "latent",
+            std.lv = FALSE,
             # missing = "pairwise.complete.obs",
             missing = "fiml",
             do.fit = TRUE,
             std.ov = FALSE,
-            meanstructure = TRUE,
+            # meanstructure = TRUE,
             control = NULL)
 
 fit@loss   # 0.283407
-fit@loglik # -3427.131
-fit@penalized_loglik # -3427.131
+fit@loglik # -3714.303
+fit@penalized_loglik # -3714.303
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
-fit@Optim$SE$se
 
 # With lavaan:
 fit2 <- cfa(model, data = data_missing,
             estimator = "ml",
             missing = "fiml",
             # likelihood = "wishart",
-            std.lv = TRUE, std.ov = FALSE)
+            # meanstructure = TRUE,
+            std.lv = FALSE, std.ov = FALSE)
 
-inspect(fit2, what = "est")$lambda
-fit@transformed_pars$lambda.group
-# Same loss value: OK
 fit2@loglik$loglik
 fit@loglik
 fit2@Fit@fx
 fit@loss
+
 lavInspect(fit2, "se")
+fit@Optim$SE$se
+
+inspect(fit2, what = "est")$lambda
+fit@transformed_pars$lambda.group
 
 #### Check derivatives ####
 

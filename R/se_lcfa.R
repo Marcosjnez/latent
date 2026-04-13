@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/04/2026
+# Modification date: 13/04/2026
 #'
 #' @title
 #' Standard Errors
@@ -75,17 +75,18 @@ block_diag <- function(mats) {
 
 general_se <- function(fit, type = "standard") {
 
-  ngroups <- fit@data_list$ngroups
+  ngroups <- fit@dataList$ngroups
 
   # Get the matrix of second-order derivatives between R and the parameters:
   VAR <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
 
     # Get the asymptotic correlation matrix:
-    ACOVij <- vector("list", length = fit@data_list$correl[[i]]$npatterns)
-    for(j in 1:fit@data_list$correl[[i]]$npatterns) {
-      ACOVij[[j]] <- fit@data_list$correl[[i]][[j]]$ACOV /
-        fit@data_list$correl[[i]][[j]]$nobs
+    npatterns <- fit@dataList$correl[[i]]$npatterns
+    ACOVij <- vector("list", length = npatterns)
+    for(j in 1:npatterns) {
+      ACOVij[[j]] <- fit@dataList$correl[[i]][[j]]$ACOV /
+        fit@dataList$correl[[i]][[j]]$nobs
     }
 
     ACOVi <- block_diag(ACOVij)
@@ -95,7 +96,7 @@ general_se <- function(fit, type = "standard") {
 
   ACOV <- block_diag(VAR)
 
-  args <- fit@data_list$args
+  args <- fit@dataList$args
   args$control <- fit@modelInfo$control_optimizer
   args$control$free_S <- TRUE
   args$control$free_M <- TRUE
@@ -113,7 +114,7 @@ general_se <- function(fit, type = "standard") {
   control_optimizer$transparameters[[1]] <- transparameters
   x <- get_hess(control_manifold, control_transform,
                 control_estimator, control_optimizer,
-                cores = parallel::detectCores())
+                cores = 1L)
   colnames(x$h) <- rownames(x$h) <- fit2@modelInfo$parameters_labels
 
   model_pars <- fit2@modelInfo$parameters_labels %in%

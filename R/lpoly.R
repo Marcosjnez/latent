@@ -4,13 +4,17 @@
 #' @usage
 #'
 #' lpoly(data = NULL,
-#' penalties = TRUE,
+#' method = "two-step,
+#' positive = FALSE,
+#' penalties = FALSE,
 #' do.fit = TRUE,
 #' control = NULL)
 #'
 #' @param data data frame or matrix with the raw data.
-#' @param penalties Force a positive-definite solution. Defaults to TRUE.
-#' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
+#' @param method String. "one-step" or "two-step". Default is "two-step".
+#' @param positive Force a positive-semidefinite solution. Default is FALSE.
+#' @param penalties Force a positive-definite solution. Default is FALSE.
+#' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Default is TRUE.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #'
 #' @details \code{lpoly} estimates positive-definite polychoric correlation matrices.
@@ -33,10 +37,12 @@
 #'
 #' @export
 lpoly <- function(data,
+                  method = "two-step",
                   model = NULL,
-                  method = "crossprod",
-                  penalties = TRUE,
+                  positive = FALSE,
+                  penalties = FALSE,
                   do.fit = TRUE,
+                  message = FALSE,
                   control = NULL,
                   ...) {
 
@@ -45,8 +51,14 @@ lpoly <- function(data,
   ## store original call
   mc  <- match.call()
 
+  if(method == "two-step") {
+    positive <- FALSE
+    penalties <- FALSE
+  }
+
   # Check the arguments to control_optimizer and create defaults:
   control$penalties <- penalties
+  control$positive <- positive
   control <- lpoly_control(control)
 
   #### Create the data_list ####
@@ -54,104 +66,285 @@ lpoly <- function(data,
   data_list <- create_lpoly_datalist(data, control)
   list2env(data_list, envir = environment())
 
-  #### Parameters of the model ####
+  #### Create the model ####
 
-  poly_param <- list()
-  poly_param$taus <- vector("list", length = nitems)
+  full_model <- create_lpoly_model(data_list = data_list,
+                                   model = model,
+                                   control = control)
+  list2env(full_model, envir = environment())
+
+  #### Create the modelInfo ####
+
+  modelInfo <- create_lpoly_modelInfo(data_list = data_list,
+                                      full_model = full_model,
+                                      control = control)
+
+  #### Fit the model ####
+
+  if(!do.fit) {
+
+    lcfa_list <- new("lcfa",
+                     version            = as.character( packageVersion('latent') ),
+                     call               = mc, # matched call
+                     timing             = numeric(), # timing information
+                     data_list          = data_list,
+                     modelInfo          = modelInfo,
+                     Optim              = list(),
+                     parameters         = list(),
+                     transformed_pars   = list(),
+                     loglik             = numeric(), # loglik values
+                     penalized_loglik   = numeric(),
+                     loss               = numeric(),
+                     penalized_loss     = numeric()
+    )
+
+    return(lcfa_list)
+
+  }
+
+  if(message) {
+    msg <- "Fitting the model"
+    w <- nchar(msg) + 4
+    cat("\n", "+", strrep("-", w), "+\n",
+        "|  ", msg, "  |\n",
+        "+", strrep("-", w), "+\n\n", sep = "")
+  }
+
+  if(method == "one-step") {
+
+    modelInfo$control_optimizer$cores <- min(modelInfo$control_optimizer$rstarts,
+                                             modelInfo$control_optimizer$cores)
+
+    # Fit the model:
+    Optim <- optimizer(control_manifold = modelInfo$control_manifold,
+                       control_transform = modelInfo$control_transform,
+                       control_estimator = modelInfo$control_estimator,
+                       control_optimizer = modelInfo$control_optimizer)
+
+  } else if(method == "two-step") {
+    Optim <- polyfast(as.matrix(data), cores = parallel::detectCores())
+    threslds <- lapply(Optim$thresholds, FUN = \(x) matrix(x[!is.infinite(x)],
+                                                           ncol = 1L))
+    Optim$parameters <- c(unlist(threslds),
+                          Optim$correlation[lower.tri(Optim$correlation,
+                                                      diag = FALSE)])
+    Optim$transparameters <- c(unlist(threslds),
+                               Optim$correlation[lower.tri(Optim$correlation,
+                                                           diag = TRUE)])
+    Optim$f <- 0
+  } else {
+    stop("Unknown method")
+  }
+
+  names(Optim$parameters) <- modelInfo$parameters_labels
+  names(Optim$transparameters) <- modelInfo$transparameters_labels
+
+  # Collect all the information about the optimization:
+
+  elapsed <- Optim$elapsed
+
+  #### Estimated model structures ####
+
+  # Create the structures of transformed parameters:
+  transformed_pars <- fill_in(modelInfo$trans, Optim$transparameters)
+
+  # Create the structures of untransformed parameters:
+  parameters <- transformed_pars[names(modelInfo$param)]
+
+  #### Process the fit information ####
+
+  loss <- Optim$f
+  penalized_loss <- loss
+  loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
+                              FUN = \(x) x[[2]])))
+  penalized_loglik <- loglik
+
+  #### latent object ####
+
+  result <- new("latent",
+                version            = as.character( packageVersion('latent') ),
+                call               = mc,
+                timing             = elapsed,
+                dataList           = data_list,
+                modelInfo          = modelInfo,
+                Optim              = Optim,
+                parameters         = parameters,
+                transformed_pars   = transformed_pars,
+                loglik             = loglik,
+                penalized_loglik   = penalized_loglik,
+                loss               = loss,
+                penalized_loss     = penalized_loss
+  )
+
+  #### Return ####
+
+  return(result)
+
+}
+
+create_lpoly_datalist <- function(data, control) {
+
+  # Estimate the polychoric correlations without positive-definite constraints:
+  polychorics <- polyfast(as.matrix(data))
+  S <- polychorics$correlation # Polychoric correlation matrix
+  taus <- polychorics$thresholds # Thresholds
+  n <- polychorics$contingency_tables # Contingency tables
+  nobs <- nrow(data)
+  nitems <- ncol(data)
+  item_label <- colnames(data)
+  npatterns <- length(unlist(n))
+
   K <- vector(length = nitems)
+  item_cat <- vector("list", length = nitems)
   for(i in 1:nitems) {
     K[i] <- length(taus[[i]])-2L
-    poly_param$taus[[i]] <- paste(".tau", i, ".", 1:K[i], sep = "")
+    item_cat[[i]] <- unique(data[, i])
   }
 
-  if(method == "crossprod") {
-    poly_param$X <- matrix(paste(".X", 1:(nitems*nitems), sep = ""),
-                           nrow = nitems, ncol = nitems)
-  } else {
-    poly_param$R <- matrix(paste("r", 1:(nitems*nitems), sep = ""),
-                           nrow = nitems, ncol = nitems)
-    diag(poly_param$R) <- "1"
-    poly_param$R[upper.tri(poly_param$R)] <- t(poly_param$R)[upper.tri(poly_param$R)]
+  data_list <- vector("list")
+  data_list$data <- data
+  data_list$nobs <- nobs
+  data_list$nitems <- nitems
+  data_list$npatterns <- npatterns
+  data_list$item_label <- item_label
+  data_list$n <- n
+  data_list$S <- S
+  data_list$taus <- taus
+  data_list$K <- K
+  data_list$item_cat <- item_cat
+
+  return(data_list)
+
+}
+
+create_lpoly_model <- function(data_list, model, control) {
+
+  # Generate the model syntax and initial parameter values
+
+  list2env(data_list, envir = environment())
+
+  # Initialize the objects to store the initial parameters:
+  param <- trans <- vector("list")
+  fixed <- nonfixed <- fixed_values_list <- vector("list")
+
+  #### Model for the transformed parameters ####
+
+  taus_item <- paste("taus.", item_label, control$subfix, sep = "")
+
+  # Transformed parameters:
+  list_struct <- vector("list")
+  k <- 1L
+  for(i in 1:nitems) {
+
+    # Taus:
+    list_struct[[k]] <- list(name = taus_item[i],
+                             type = "matrix",
+                             dim = c(K[i], 1),
+                             rownames = 1:K[i],
+                             colnames = item_label[i])
+    k <- k+1L
+
   }
 
-  # Create the model for the transformed parameters:
+  if(control$positive) {
 
-  poly_trans <- poly_param
-  poly_trans$R <- matrix(paste("r", 1:(nitems*nitems), sep = ""),
-                         nrow = nitems, ncol = nitems)
-  poly_trans$R[upper.tri(poly_trans$R)] <- t(poly_trans$R)[upper.tri(poly_trans$R)]
+    # X:
+    list_struct[[k]] <- list(name = "X",
+                             type = "matrix",
+                             dim = c(nitems, nitems),
+                             rownames = item_label,
+                             colnames = item_label)
+    k <- k+1L
 
-  #### Fix parameters ####
-
-  if(!is.null(model$taus)) {
-    poly_param$taus <- model$taus
   }
 
-  #### Arrange labels ####
+  # Covariance matrix:
+  list_struct[[k]] <- list(name = "S",
+                           type = "matrix",
+                           dim = c(nitems, nitems),
+                           rownames = item_label,
+                           colnames = item_label,
+                           symmetric = TRUE)
+  k <- k+1L
 
-  # Arrange parameter labels:
-  vector_param <- unname(unique(unlist(poly_param)))
+  trans <- create_parameters(list_struct)
 
-  # Select the unique, nonnumeric labels:
-  nonfixed_pars <- which(is.na(suppressWarnings(as.numeric(vector_param))))
-  parameters_labels <- vector_param[nonfixed_pars]
-  nparam <- length(parameters_labels)
+  #### Model for the parameters ####
 
-  # Arrange transparameter labels:
-  vector_trans <- unname(unlist(poly_trans))
-  transparameters_labels <- unique(vector_trans)
-  ntrans <- length(transparameters_labels)
-
-  #### Relate the transformed parameters to the parameters ####
-
-  param2trans <- match(transparameters_labels, parameters_labels)
-  param2trans <- param2trans[!is.na(param2trans)]
-  # Relate the parameters to the transformed parameters:
-  trans2param <- match(parameters_labels, transparameters_labels)
+  param <- trans
+  diag(param$S) <- "1"
 
   #### Create the initial values for the parameters ####
 
+  init_param <- vector("list", length = control$rstarts)
   # Thresholds without the infite values:
   threslds <- lapply(taus, FUN = \(x) x[!is.infinite(x)])
-  init_param <- list()
-  init_param$taus <- threslds # Initial values for the thresholds
-  if(method == "crossprod") {
-    # Initial values for the square root of correlations:
-    init_param$X <- real_sqrtmat(data_list$R)
-    init_trans <- init_param
-    # Initial values for the polychoric correlations:
-    init_trans$R <- crossprod(init_trans$X)
-  } else {
-    init_param$R <- data_list$R
-    init_trans <- init_param
+
+  for(rs in 1:control$rstarts) {
+
+    init_param[[rs]] <- vector("list")
+
+    for(i in 1:nitems) {
+      init_param[[rs]][[taus_item[i]]] <- matrix(threslds[[i]], ncol = 1L)
+    }
+
+    if(control$positive) {
+      # Initial values for the square root of correlations:
+      init_param[[rs]]$X <- real_sqrtmat(data_list$S)
+      # Initial values for the polychoric correlations:
+      init_param[[rs]]$S <- crossprod(init_param[[rs]]$X)
+    } else {
+      init_param[[rs]]$S <- data_list$S
+    }
+
   }
 
-  #### Create the vectors of parameters and transformed parameters ####
 
-  parameters <- transparameters <- vector("list", length = control$rstarts)
-  # Indices of the unique transparameters in init_trans:
-  trans_inds <- match(transparameters_labels, vector_trans)
-  init_inds <- match(parameters_labels, vector_trans)
+  #### Custom initial values ####
 
-  transparameters <- unlist(init_trans)[trans_inds]
-  names(transparameters) <- transparameters_labels
-  parameters <- unlist(init_trans)[init_inds]
-  names(parameters) <- parameters_labels
+  # # Replace initial starting values by custom starting values:
+  #
+  # if(!is.null(control$start)) {
+  #
+  #   nm <- names(control$start)
+  #   nm <- nm[!vapply(control$start, is.null, logical(1))]
+  #
+  #   for (i in seq_len(control$rstarts)) {
+  #     common_nm <- intersect(nm, names(init_param[[i]]))
+  #     for (j in common_nm) {
+  #       init_param[[i]][[j]] <- insert_object(init_param[[i]][[j]],
+  #                                             control$start[[j]])
+  #     }
+  #   }
+  #
+  # }
 
-  #### Set up the optimizer ####
+  #### Return ####
 
-  # Create defaults for the control of the optimizer:
-  control$parameters <- list(parameters)
-  control$transparameters <- list(transparameters)
-  control$param2transparam <- param2trans-1L
-  control$transparam2param <- trans2param-1L
+  result <- list(param = param,
+                 trans = trans,
+                 init_param = init_param)
+
+  return(result)
+
+}
+
+create_lpoly_modelInfo <- function(data_list, full_model, control) {
+
+  # Generate control_manifold, control_transform, and control_estimator
+
+  list2env(data_list, envir = environment())
+  list2env(full_model, envir = environment())
+
+  taus_item <- paste("taus.", item_label, control$subfix, sep = "")
 
   #### Manifolds ####
 
-  if(method == "crossprod") {
+  if(control$positive) {
 
     manifolds <- list(
-      list(manifold = "euclidean", parameters = "taus"),
+      list(manifold = "euclidean",
+           parameters = list(param[taus_item])),
       list(manifold = "oblq", parameters = "X",
            extra = list(p = nitems, q = nitems))
     )
@@ -159,30 +352,28 @@ lpoly <- function(data,
   } else {
 
     manifolds <- list(
-      list(manifold = "euclidean", parameters = "taus"),
-      list(manifold = "euclidean", parameters = "R",
+      list(manifold = "euclidean",
+           parameters = list(param[taus_item])),
+      list(manifold = "euclidean", parameters = "S",
            extra = list(p = nitems, q = nitems))
     )
 
   }
 
   control_manifold <- create_manifolds(manifolds = manifolds,
-                                       structures = poly_param)
+                                       structures = param)
 
   #### Transformations ####
 
   transform <- list()
 
-  lower_indices <- which(lower.tri(poly_trans$R, diag = TRUE))
-  dots$p <- nitems
-
-  if(method == "crossprod") {
+  if(control$positive) {
 
     transforms <- list(
       list(transform = "crossprod",
            parameters_in = "X",
-           parameters_out = "R",
-           extra = dots)
+           parameters_out = "S",
+           extra = list(p = nitems))
     )
 
   } else {
@@ -192,23 +383,24 @@ lpoly <- function(data,
   }
 
   control_transform <- create_transforms(transforms = transforms,
-                                         structures = poly_trans)
+                                         structures = trans)
 
   #### Estimators ####
 
   estimators <- list()
 
   estimators[[1]] <- list(estimator = "polycor",
-                          parameters = c(list(poly_trans$R),
-                                         poly_trans$taus),
+                          parameters = c(list(S = trans$S),
+                                         trans[taus_item]),
                           extra = list(n = data_list$n,
                                        p = nitems,
                                        N = data_list$nobs))
 
   if(control$reg) {
 
+    lower_indices <- which(lower.tri(trans$S, diag = TRUE))
     estimators[[2]] <- list(estimator = "logdetmat",
-                            parameters = "R",
+                            parameters = "S",
                             extra = list(lower_indices = lower_indices-1L,
                                          p = nitems,
                                          logdetw = control$penalties$logdet$w))
@@ -216,96 +408,51 @@ lpoly <- function(data,
   }
 
   control_estimator <- create_estimators(estimators = estimators,
-                                         structures = poly_trans)
+                                         structures = trans)
+
+  #### Pass the initial values to vectors ####
+
+  idx_transformed <- unlist(lapply(control_transform,
+                                   FUN = \(x) unlist(x$indices_out)+1L))
+  inits <- create_init(trans, param, init_param,
+                       idx_transformed = idx_transformed, control)
+
+  parameters <- inits$parameters
+  parameters_labels <- names(parameters[[1]])
+  nparam <- length(parameters_labels)
+
+  transparameters <- inits$transparameters
+  transparameters_labels <- names(transparameters[[1]])
+  ntrans <- length(transparameters_labels)
+
+  trans2param <- match(parameters_labels, transparameters_labels)
+
+  #### Set up the optimizer ####
+
+  # Create defaults for the control of the optimizer:
+  control_optimizer <- control
+  control_optimizer$parameters <- parameters
+  control_optimizer$transparameters <- transparameters
+  control_optimizer$init_param <- init_param
+  control_optimizer$transparam2param <- trans2param-1L
 
   #### Collect all the model information ####
 
-  # Model information:
-  nparam <- 0.5*nitems*(nitems-1) + sum(K)
-  modelInfo <- list(nobs = nobs,
+  modelInfo <- list(param = param,
+                    trans = trans,
                     nparam = nparam,
-                    npatterns = npatterns,
-                    dof = npatterns - nparam,
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,
-                    poly_param = poly_param,
-                    poly_trans = poly_trans,
-                    init_param = init_param,
-                    init_trans = init_trans,
+                    dof = npatterns - nparam,
                     control_manifold = control_manifold,
                     control_transform = control_transform,
                     control_estimator = control_estimator,
-                    control = control)
-
-  if(!do.fit) {
-
-    result <- new("lpoly",
-                  version            = as.character(packageVersion('latent')),
-                  call               = mc,
-                  timing             = numeric(),
-                  modelInfo          = modelInfo,
-                  Optim              = list(),
-                  dataList           = data_list,
-                  parameters         = list(),
-                  transformed_pars   = list(),
-                  loglik             = numeric(),
-                  penalized_loglik   = numeric(),
-                  loss               = numeric(),
-                  penalized_loss     = numeric()
-    )
-
-    return(result)
-
-  }
-
-  #### Fit the model ####
-
-  Optim <- optimizer(control_manifold, control_transform,
-                     control_estimator, control)
-  names(Optim$parameters) <- modelInfo$parameters_labels
-  names(Optim$transparameters) <- modelInfo$transparameters_labels
-
-  # Collect all the information about the optimization:
-  elapsed <- Optim$elapsed
-
-  #### Estimated model structures ####
-
-  # Create the structures of untransformed parameters:
-  parameters <- fill_in(modelInfo$poly_param, Optim$parameters)
-  # FIXED PARAMETERS?
-
-  # Create the structures of transformed parameters:
-  transformed_pars <- fill_in(modelInfo$poly_trans, Optim$transparameters)
-
-  #### Process the fit information ####
-
-  all_estimators <- unlist(lapply(modelInfo$control_estimator, FUN = \(x) x$estimator))
-  index_estimator <- which(all_estimators == "polycor")
-  loss <- Optim$outputs$estimators$doubles[[index_estimator]][1]
-  penalized_loss <- Optim$f
-  loglik <- Optim$outputs$estimators$doubles[[index_estimator]][2]
-  penalized_loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-                                        FUN = \(x) x[[2]])))
+                    control_optimizer = control_optimizer)
 
   #### Return ####
 
-  result <- new("lpoly",
-                version            = as.character( packageVersion('latent') ),
-                call               = mc, # matched call
-                timing             = elapsed, # timing information
-                modelInfo          = modelInfo, # modelInfo
-                Optim              = Optim, # Optim
-                dataList           = data_list, # All data information
-                parameters         = parameters,
-                transformed_pars   = transformed_pars,
-                loglik             = loglik, # loglik values
-                penalized_loglik   = penalized_loglik,
-                loss               = loss,
-                penalized_loss     = penalized_loss
-  )
-
-  return(result)
+  return(modelInfo)
 
 }
 
@@ -314,7 +461,7 @@ asymptotic_poly <- function(fit, model = NULL) {
   control_manifold <- fit@modelInfo$control_manifold
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
-  control_optimizer <- fit@modelInfo$control
+  control_optimizer <- fit@modelInfo$control_optimizer
 
   control_optimizer$parameters[[1]] <- fit@Optim$parameters
   control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
@@ -325,32 +472,5 @@ asymptotic_poly <- function(fit, model = NULL) {
   ACOV <- solve(x$h)
 
   return(ACOV)
-
-}
-
-create_lpoly_datalist <- function(data, control) {
-
-  # Estimate the polychoric correlations without positive-definite constraints:
-  polychorics <- polyfast(as.matrix(data))
-  R <- polychorics$correlation # Polychoric correlation matrix
-  taus <- polychorics$thresholds # Thresholds
-  n <- polychorics$contingency_tables # Contingency tables
-  nobs <- nrow(data)
-  nitems <- ncol(data)
-  item_label <- colnames(data)
-  npatterns <- length(unlist(n))
-
-  data_list <- vector("list")
-  data_list$data <- data
-  data_list$nobs <- nobs
-  data_list$nitems <- nitems
-  data_list$npatterns <- npatterns
-  data_list$positive <- control$reg
-  data_list$item_label <- item_label
-  data_list$n <- n
-  data_list$R <- R
-  data_list$taus <- taus
-
-  return(data_list)
 
 }

@@ -78,7 +78,7 @@ public:
                                arma::accu(S % Rinv));
 
     doubles.resize(5);
-    doubles[0] =  f;             // loss   actual model
+    doubles[0] =  loglik;        // loss   actual model
     doubles[1] =  loglik;        // loglik actual model
     doubles[2] =  loglik_indep;  // loglik independence model
     doubles[3] =  loglik_sat;    // loglik saturated model

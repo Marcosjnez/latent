@@ -71,11 +71,13 @@ public:
     arma::mat residuals_indep = S;
     residuals_indep.diag().zeros();
     arma::mat W_residuals_indep = W % residuals_indep;
-    double loss_indep = w*0.5*arma::accu(residuals_indep % W_residuals_indep);
+    double loss = 0.5*arma::accu(residuals % W_residuals) +
+      arma::accu(w_means % delta % delta);
+    double loss_indep = 0.5*arma::accu(residuals_indep % W_residuals_indep);
     double loss_sat = 0.00;
 
     doubles.resize(5);
-    doubles[0] =  f;
+    doubles[0] =  loss;
     doubles[1] =  0.00;
     doubles[2] =  loss_indep;
     doubles[3] =  loss_sat;

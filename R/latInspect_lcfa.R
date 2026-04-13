@@ -37,8 +37,8 @@ latInspect.lcfa <- function(fit,
   # be case insensitive
   what <- tolower(what)
 
-  groups <- vector("list", length = fit@data_list$ngroups)
-  names(groups) <- fit@data_list$group_label
+  groups <- vector("list", length = fit@dataList$ngroups)
+  names(groups) <- fit@dataList$group_label
 
   #### Extract the fit ####
 
@@ -57,10 +57,10 @@ latInspect.lcfa <- function(fit,
 
   # Fit by group and pattern:
   # For each group...
-  for(i in 1:fit@data_list$ngroups) {
+  for(i in 1:fit@dataList$ngroups) {
 
     # For each pattern within each group...
-    for(j in 1:fit@data_list$correl[[i]]$npatterns) {
+    for(j in 1:fit@dataList$correl[[i]]$npatterns) {
 
       groups[[i]]$loss[[j]] <- losses_vector[k]
       groups[[i]]$loglik[[j]] <- logliks_vector[k]
@@ -73,7 +73,7 @@ latInspect.lcfa <- function(fit,
 
     names(groups[[i]]$loss) <- names(groups[[i]]$loglik) <-
       names(groups[[i]]$loglik_indep) <- names(groups[[i]]$loglik_sat) <-
-      names(groups[[i]]$penalty) <- fit@data_list$correl[[i]]$patterns_names
+      names(groups[[i]]$penalty) <- fit@dataList$correl[[i]]$patterns_names
 
   }
 
@@ -110,27 +110,27 @@ latInspect.lcfa <- function(fit,
   #### Extract the parameters ####
 
   lambda <- theta <- psi <- model <- xtheta <- xpsi <- S <- resids <-
-    vector("list", length = fit@data_list$ngroups)
+    vector("list", length = fit@dataList$ngroups)
   names(lambda) <- names(theta) <- names(psi) <- names(xtheta) <-
     names(xpsi) <- names(model) <- names(S) <- names(resids) <-
-    fit@data_list$group_label
+    fit@dataList$group_label
 
-  lambda_group <- paste("lambda.", fit@data_list$group_label, sep = "")
-  psi_group <- paste("psi.", fit@data_list$group_label, sep = "")
-  theta_group <- paste("theta.", fit@data_list$group_label, sep = "")
-  xpsi_group <- paste("xpsi.", fit@data_list$group_label, sep = "")
-  xtheta_group <- paste("xtheta.", fit@data_list$group_label, sep = "")
-  model_group <- paste("model.", fit@data_list$group_label, sep = "")
-  S_group <- vector("list", length = fit@data_list$ngroups)
-  for(i in 1:fit@data_list$ngroups) {
-    for(j in 1:fit@data_list$correl[[i]]$npatterns) {
-      S_group[[i]][[j]] <- paste("S.", fit@data_list$group_label[i],
+  lambda_group <- paste("lambda.", fit@dataList$group_label, sep = "")
+  psi_group <- paste("psi.", fit@dataList$group_label, sep = "")
+  theta_group <- paste("theta.", fit@dataList$group_label, sep = "")
+  xpsi_group <- paste("xpsi.", fit@dataList$group_label, sep = "")
+  xtheta_group <- paste("xtheta.", fit@dataList$group_label, sep = "")
+  model_group <- paste("model.", fit@dataList$group_label, sep = "")
+  S_group <- vector("list", length = fit@dataList$ngroups)
+  for(i in 1:fit@dataList$ngroups) {
+    for(j in 1:fit@dataList$correl[[i]]$npatterns) {
+      S_group[[i]][[j]] <- paste("S.", fit@dataList$group_label[i],
                                  ".pattern", j, sep = "")
     }
   }
 
   # For each group...
-  for(i in 1:fit@data_list$ngroups) {
+  for(i in 1:fit@dataList$ngroups) {
 
     lambda[[i]] <- fit@transformed_pars[lambda_group[i]]
     theta[[i]] <- fit@transformed_pars[theta_group[i]]
@@ -139,11 +139,11 @@ latInspect.lcfa <- function(fit,
     xtheta[[i]] <- fit@transformed_pars[xtheta_group[i]]
     xpsi[[i]] <- fit@transformed_pars[xpsi_group[i]]
 
-    for(j in 1:fit@data_list$correl[[i]]$npatterns) {
+    for(j in 1:fit@dataList$correl[[i]]$npatterns) {
       S[[i]][j] <- fit@transformed_pars[S_group[[i]][[j]]]
       resids[[i]][[j]] <- S[[i]][[j]][[1]] - model[[i]][[1]]
     }
-    names(S[[i]]) <- names(resids[[i]]) <- fit@data_list$correl[[i]]$patterns_names
+    names(S[[i]]) <- names(resids[[i]]) <- fit@dataList$correl[[i]]$patterns_names
 
   }
 
@@ -155,7 +155,7 @@ latInspect.lcfa <- function(fit,
      what == "fixed" ||
      what == "items") {
 
-    for(i in 1:fit@data_list$ngroups) {
+    for(i in 1:fit@dataList$ngroups) {
       groups[[i]]$lambda <- lambda[[i]][[1]]
       groups[[i]]$psi <- psi[[i]][[1]]
       groups[[i]]$theta <- theta[[i]][[1]]

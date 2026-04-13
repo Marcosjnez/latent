@@ -171,41 +171,41 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
     args <- as.list(match.call(expand.dots = TRUE))[-1]
   }
 
-  data_list <- list()
-  data_list$ngroups <- ngroups
-  data_list$data <- data
-  data_list$data_per_group <- X
-  data_list$nobs <- nobs_list
-  data_list$nitems <- nitems
-  data_list$npatterns <- npatterns
-  data_list$nfactors <- nfactors
-  data_list$correl <- correl
-  data_list$positive <- positive
-  data_list$estimator <- estimator
-  data_list$cor <- cor
-  data_list$group_label <- group_label
-  data_list$item_label <- item_label
-  data_list$factor_label <- factor_label
-  data_list$LAV <- LAV
-  data_list$args <- args
-  data_list$model <- model_out
-  data_list$sample.cov <- sample.cov
-  data_list$NACOV <- NACOV
-  data_list$WLS.V <- WLS.V
-  data_list$thresholds <- thresholds
+  dataList <- list()
+  dataList$ngroups <- ngroups
+  dataList$data <- data
+  dataList$data_per_group <- X
+  dataList$nobs <- nobs_list
+  dataList$nitems <- nitems
+  dataList$npatterns <- npatterns
+  dataList$nfactors <- nfactors
+  dataList$correl <- correl
+  dataList$positive <- positive
+  dataList$estimator <- estimator
+  dataList$cor <- cor
+  dataList$group_label <- group_label
+  dataList$item_label <- item_label
+  dataList$factor_label <- factor_label
+  dataList$LAV <- LAV
+  dataList$args <- args
+  dataList$model <- model_out
+  dataList$sample.cov <- sample.cov
+  dataList$NACOV <- NACOV
+  dataList$WLS.V <- WLS.V
+  dataList$thresholds <- thresholds
 
-  return(data_list)
+  return(dataList)
 
 }
 
-create_cfa_model <- function(data_list, model, control) {
+create_cfa_model <- function(dataList, model, control) {
 
   # Generate the model syntax and initial parameter values
 
-  list2env(data_list, envir = environment())
+  list2env(dataList, envir = environment())
 
   # Initialize the objects to store the initial parameters:
-  param <- trans <- vector("list")
+  trans <- vector("list")
   fixed <- nonfixed <- fixed_values_list <- vector("list")
 
   #### Model for the transformed parameters ####
@@ -214,20 +214,20 @@ create_cfa_model <- function(data_list, model, control) {
   target_psi <- target_theta <- targets <- vector("list", length = ngroups)
   rest <- 0L
 
-  lambda_group <- paste("lambda.", data_list$group_label, sep = "")
-  psi_group <- paste("psi.", data_list$group_label, sep = "")
-  theta_group <- paste("theta.", data_list$group_label, sep = "")
-  xpsi_group <- paste("xpsi.", data_list$group_label, sep = "")
-  xtheta_group <- paste("xtheta.", data_list$group_label, sep = "")
-  model_group <- paste("model.", data_list$group_label, sep = "")
-  nu_group <- paste("nu.", data_list$group_label, sep = "")
-  tau_group <- paste("tau.", data_list$group_label, sep = "")
+  lambda_group <- paste("lambda.", dataList$group_label, sep = "")
+  psi_group <- paste("psi.", dataList$group_label, sep = "")
+  theta_group <- paste("theta.", dataList$group_label, sep = "")
+  xpsi_group <- paste("xpsi.", dataList$group_label, sep = "")
+  xtheta_group <- paste("xtheta.", dataList$group_label, sep = "")
+  model_group <- paste("model.", dataList$group_label, sep = "")
+  nu_group <- paste("nu.", dataList$group_label, sep = "")
+  tau_group <- paste("tau.", dataList$group_label, sep = "")
   S_group <- M_group <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
       for(j in 1:correl[[i]]$npatterns) {
-        S_group[[i]][[j]] <- paste("S.", data_list$group_label[i],
+        S_group[[i]][[j]] <- paste("S.", dataList$group_label[i],
                                    ".pattern", j, sep = "")
-        M_group[[i]][[j]] <- paste("means.", data_list$group_label[i],
+        M_group[[i]][[j]] <- paste("means.", dataList$group_label[i],
                                        ".pattern", j, sep = "")
     }
   }
@@ -367,6 +367,8 @@ create_cfa_model <- function(data_list, model, control) {
 
   #### Model for the parameters ####
 
+  param <- list()
+
   for(i in 1:ngroups) {
 
     param[[lambda_group[i]]] <- trans[[lambda_group[i]]]
@@ -463,6 +465,21 @@ create_cfa_model <- function(data_list, model, control) {
     }
   }
 
+  # param <- param[names(trans) %in% names(param)]
+
+  #### Fixed parameters ####
+
+  # # Replace the parameters by custom values, if available:
+  # if(!is.null(model)) {
+  #
+  #   # Replace the parameters by custom values:
+  #
+  #   nm <- intersect(names(model), names(param))
+  #   nm <- nm[!vapply(model[nm], is.null, logical(1))]
+  #   param[nm] <- model[nm]
+  #
+  # }
+
   #### Create the initial values for the parameters ####
 
   # Collect the unique nontransformed parameters and the unique transformed parameters:
@@ -502,7 +519,7 @@ create_cfa_model <- function(data_list, model, control) {
       init_param[[rs]][[model_group[i]]] <- Lambda %*% Psi %*% t(Lambda) + Theta
 
       if(control$meanstructure) {
-        init_param[[rs]][[nu_group[i]]] <- matrix(colMeans(data_list$data_per_group[[i]],
+        init_param[[rs]][[nu_group[i]]] <- matrix(colMeans(dataList$data_per_group[[i]],
                                                            na.rm = TRUE), ncol = 1L)
       }
 
@@ -520,8 +537,8 @@ create_cfa_model <- function(data_list, model, control) {
 
   #### Custom initial values ####
 
-  # # Replace initial starting values by custom starting values:
-  #
+  # Replace initial starting values by custom starting values:
+
   # if(!is.null(control$start)) {
   #
   #   nm <- names(control$start)
@@ -550,26 +567,26 @@ create_cfa_model <- function(data_list, model, control) {
 
 }
 
-create_cfa_modelInfo <- function(data_list, full_model, control) {
+create_cfa_modelInfo <- function(dataList, full_model, control) {
 
   # Generate control_manifold, control_transform, and control_estimator
 
-  list2env(data_list, envir = environment())
+  list2env(dataList, envir = environment())
   list2env(full_model, envir = environment())
 
-  lambda_group <- paste("lambda.", data_list$group_label, sep = "")
-  psi_group <- paste("psi.", data_list$group_label, sep = "")
-  theta_group <- paste("theta.", data_list$group_label, sep = "")
-  xpsi_group <- paste("xpsi.", data_list$group_label, sep = "")
-  xtheta_group <- paste("xtheta.", data_list$group_label, sep = "")
-  model_group <- paste("model.", data_list$group_label, sep = "")
-  nu_group <- paste("nu.", data_list$group_label, sep = "")
+  lambda_group <- paste("lambda.", dataList$group_label, sep = "")
+  psi_group <- paste("psi.", dataList$group_label, sep = "")
+  theta_group <- paste("theta.", dataList$group_label, sep = "")
+  xpsi_group <- paste("xpsi.", dataList$group_label, sep = "")
+  xtheta_group <- paste("xtheta.", dataList$group_label, sep = "")
+  model_group <- paste("model.", dataList$group_label, sep = "")
+  nu_group <- paste("nu.", dataList$group_label, sep = "")
   S_group <- M_group <- vector("list", length = ngroups)
   for(i in 1:ngroups) {
     for(j in 1:correl[[i]]$npatterns) {
-      S_group[[i]][[j]] <- paste("S.", data_list$group_label[i],
+      S_group[[i]][[j]] <- paste("S.", dataList$group_label[i],
                                  ".pattern", j, sep = "")
-      M_group[[i]][[j]] <- paste("means.", data_list$group_label[i],
+      M_group[[i]][[j]] <- paste("means.", dataList$group_label[i],
                                  ".pattern", j, sep = "")
     }
   }

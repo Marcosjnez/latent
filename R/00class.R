@@ -1,16 +1,16 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/12/2025
+# Modification date: 12/04/2026
 
 # class definitions
 #
 
 setClass("llca",
          slots = c(
-           version            = "character", # version
-           call               = "call", # matched call
-           timing             = "numeric", # timing information
+           version            = "character",
+           call               = "call",
+           timing             = "numeric",
            data_list          = "list",
            modelInfo          = "list",
            Optim              = "list",
@@ -19,8 +19,8 @@ setClass("llca",
            transformed_pars   = "list",
            posterior          = "matrix",
            state              = "vector",
-           loglik             = "numeric", # loglik values
-           penalized_loglik   = "numeric", # penalized loglik
+           loglik             = "numeric",
+           penalized_loglik   = "numeric",
            loglik_case        = "numeric",
            summary_table      = "data.frame",
            ClassConditional   = "list",
@@ -31,16 +31,16 @@ setClass("llca",
 
 setClass("lcfa",
          slots = c(
-           version            = "character", # version
-           call               = "call", # matched call
-           timing             = "numeric", # timing information
-           data_list          = "list",
+           version            = "character",
+           call               = "call",
+           timing             = "numeric",
+           dataList           = "list",
            modelInfo          = "list",
            Optim              = "list",
            parameters         = "list",
            transformed_pars   = "list",
-           loglik             = "numeric", # loglik values
-           penalized_loglik   = "numeric", # penalized loglik
+           loglik             = "numeric",
+           penalized_loglik   = "numeric",
            loss               = "numeric",
            penalized_loss     = "numeric"
          )
@@ -50,19 +50,18 @@ setClass("lcfa",
 #         contains = "lavaan"
 #)
 
-setClass("lpoly",
+setClass("latent",
          slots = c(
-           version            = "character", # version
-           call               = "call", # matched call
-           timing             = "numeric", # timing information
-           data_list          = "list",
+           version            = "character",
+           call               = "call",
+           timing             = "numeric",
+           dataList           = "list",
            modelInfo          = "list",
            Optim              = "list",
-           dataList           = "list",
            parameters         = "list",
            transformed_pars   = "list",
-           loglik             = "numeric", # loglik values
-           penalized_loglik   = "numeric", # penalized loglik
+           loglik             = "numeric",
+           penalized_loglik   = "numeric",
            loss               = "numeric",
            penalized_loss     = "numeric"
          )
