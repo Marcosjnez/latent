@@ -90,13 +90,15 @@ The package development is supported by two projects:
   Latent Class Analysis.
 - [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
   Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+- [`lcfa_to_lavaan()`](https://marcosjnez.github.io/latent/reference/lcfa_to_lavaan.md)
+  : Convert a fitted lcfa object (latent) to a lavaan object
 - [`lclass_diag()`](https://marcosjnez.github.io/latent/reference/lclass_diag.md)
   : Classification Diagnostics for Latent Class Analysis
 - [`lefa()`](https://marcosjnez.github.io/latent/reference/lefa.md) :
   Fit an Exploratory Factor Analysis (EFA) model.
 - [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
-  Maximum likelihood estimation of positive definite polychoric
-  correlation matrices.
+  Maximum likelihood estimation of positive-definite polychoric
+  correlation matrices
 - [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md)
   : Rotate the lambda matrix of an orthogonal factor model.
 - [`plot()`](https://marcosjnez.github.io/latent/reference/plot.llca.md)

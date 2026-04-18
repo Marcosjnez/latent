@@ -71,6 +71,10 @@ control = NULL, ...)
 
   String. "standard" or "robust". Default is "standard".
 
+- meanstructure:
+
+  Logical. Estimate the means of the variables. Default is FALSE.
+
 - do.fit:
 
   TRUE to fit the model and FALSE to return only the model setup.
