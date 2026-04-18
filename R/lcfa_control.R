@@ -33,6 +33,9 @@ lcfa_control <- function(control) {
 
   } else if(is.list(control$penalties)) {
 
+    if(control$penalties$logdet$w <= 0) {
+      stop("The penalty w must be positive")
+    }
     control$reg <- TRUE
 
   } else {

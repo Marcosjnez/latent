@@ -326,7 +326,7 @@ model <- 'visual  =~ x1 + x2 + x3
 
 # With lavaan:
 fit2 <- cfa(model, data = HolzingerSwineford1939,
-            estimator = "ml", std.lv = TRUE, std.ov = TRUE)
+            estimator = "ml", std.lv = FALSE, std.ov = FALSE)
 inspect(fit2, what = "est") # NEGATIVE VARIANCE
 det(inspect(fit2, what = "est")$theta)
 fit2@Fit@fx*2
@@ -334,20 +334,28 @@ fit2@Fit@fx*2
 # With latent:
 set.seed(2026)
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
-            estimator = "dwls", positive = TRUE,
-            penalties = list(logdet = list(w = 0.01)),
-            ordered = FALSE, std.lv = TRUE,
-            mimic = "latent", do.fit = TRUE,
-            control = NULL)
+            estimator = "ml", ordered = FALSE,
+            positive = TRUE,
+            # penalties = TRUE,
+            penalties = list(logdet = list(w = 0.001)),
+            std.lv = FALSE, std.ov = FALSE,
+            likelihood = "normal",
+            do.fit = TRUE, control = NULL)
 
-fit@loglik # -3422.761 (ML)
-fit@penalized_loglik # -3422.766 (ML)
-fit@loss # 0.1419955 (ULS) / 0.2467385 (ML)
+fit@loglik # -3732.196 (ML; w = 0.001)
+fit@penalized_loglik # -3732.198 (ML; w = 0.001)
+fit@loss # 0.2451833 (ML; w = 0.001)
+fit@penalized_loss # 0.2438276 (ML; w = 0.001)
 fit@Optim$iterations
 fit@Optim$convergence
 fit@Optim$ng
 fit@timing
-fit@Optim$SE$se
+# fit@Optim$SE$se
+det(fit@transformed_pars$theta.group)
+det(fit@transformed_pars$psi.group)
+fit@parameters$lambda.group
+fit@transformed_pars$psi.group
+diag(fit@transformed_pars$theta.group)
 
 #### Multigroup CFA (nonpositive definite) ####
 
@@ -404,7 +412,7 @@ POLY <- polyfast(as.matrix(mooc))
 taus <- lapply(POLY$thresholds, FUN = \(x) x[-c(1, length(x))])
 fit <- lpoly(data = mooc,
              # model = list(taus = taus),
-             method = "two-step",
+             method = "one-step",
              positive = TRUE,
              penalties = TRUE,
              do.fit = TRUE,

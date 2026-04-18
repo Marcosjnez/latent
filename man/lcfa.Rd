@@ -40,6 +40,8 @@ control = NULL, ...)
 
 \item{acov}{String. "standard" or "robust". Default is "standard".}
 
+\item{meanstructure}{Logical. Estimate the means of the variables. Default is FALSE.}
+
 \item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
 
 \item{message}{Logical. Defaults to FALSE.}

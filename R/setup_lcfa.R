@@ -755,24 +755,26 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
 
   }
 
-  if(positive & control$reg) {
+  if(control$reg) {
 
     for(i in 1:ngroups) {
 
       # For the psi matrix:
 
       lower_indices <- which(lower.tri(trans[[psi_group[i]]], diag = TRUE))
-      estimators[[k]] <- list(estimator = "logdetmat",
+      logdetw <- control$penalties$logdet$w #* nfactors[[i]]
+      estimators[[k]] <- list(estimator = "logdetR",
                               parameters = psi_group[i],
                               extra = list(lower_indices = lower_indices-1L,
                                            p = nrow(trans[[psi_group[i]]]),
-                                           logdetw = control$penalties$logdet$w))
+                                           logdetw = logdetw))
       k <- k+1L
 
       # For the theta matrix:
 
       lower_indices <- which(lower.tri(trans[[theta_group[i]]], diag = TRUE))
-      estimators[[k]] <- list(estimator = "logdetmat",
+      logdetw <- control$penalties$logdet$w * nitems[[i]]
+      estimators[[k]] <- list(estimator = "logdetR",
                               parameters = theta_group[i],
                               extra = list(lower_indices = lower_indices-1L,
                                            p = nrow(trans[[theta_group[i]]]),

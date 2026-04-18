@@ -2,43 +2,98 @@
 % Please edit documentation in R/lpoly.R
 \name{lpoly}
 \alias{lpoly}
-\title{Maximum likelihood estimation of positive definite polychoric correlation matrices.}
+\title{Maximum likelihood estimation of positive-definite polychoric correlation matrices}
 \usage{
-lpoly(data = NULL,
-penalties = TRUE,
-do.fit = TRUE,
-control = NULL)
+lpoly(data,
+      method = "two-step",
+      model = NULL,
+      positive = FALSE,
+      penalties = FALSE,
+      do.fit = TRUE,
+      message = FALSE,
+      control = NULL,
+      ...)
 }
 \arguments{
-\item{data}{data frame or matrix with the raw data.}
+\item{data}{A data frame or matrix containing the raw ordinal data.}
 
-\item{penalties}{Force a positive-definite solution. Defaults to TRUE.}
+\item{method}{Character string indicating the estimation method. Possible
+values are \code{"one-step"} and \code{"two-step"}. Default is
+\code{"two-step"}.}
 
-\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+\item{model}{Optional model object used internally for initialization or
+custom model setup. Default is \code{NULL}.}
 
-\item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+\item{positive}{Logical. If \code{TRUE}, the estimated polychoric correlation
+matrix is forced to be positive semidefinite. Default is \code{FALSE}.}
+
+\item{penalties}{Logical. If \code{TRUE}, penalties are added to the
+objective function to encourage a positive-definite solution. Default is
+\code{FALSE}.}
+
+\item{do.fit}{Logical. If \code{TRUE}, the model is fitted. If \code{FALSE},
+only the model setup is returned. Default is \code{TRUE}.}
+
+\item{message}{Logical. If \code{TRUE}, progress messages are printed during
+estimation. Default is \code{FALSE}.}
+
+\item{control}{A list of control parameters for the optimization algorithm.
+This may include starting values, convergence tolerances, maximum number of
+iterations, and other optimizer-specific options.}
+
+\item{...}{Additional arguments passed to internal optimization and model
+setup routines.}
 }
 \value{
-List with the following objects:
-\item{version}{Version number of 'latent' when the model was estimated.}
-\item{call}{Code used to estimate the model.}
-\item{ModelInfo}{Model information.}
-\item{Optim}{Output of the optimizer.}
-\item{parameters}{Structure with all model parameters.}
-\item{transparameters}{Structure with all transformed model parameters.}
-\item{loglik}{Logarithm likelihood of the model.}
-\item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
+A list containing the fitted model and related information. Typical elements
+include:
+\itemize{
+  \item \code{version}: Version number of \pkg{latent} used when the model
+  was estimated.
+  \item \code{call}: Matched call used to estimate the model.
+  \item \code{ModelInfo}: Information about the model specification and data.
+  \item \code{Optim}: Output of the optimization routine.
+  \item \code{parameters}: Structure containing the model parameters.
+  \item \code{transparameters}: Structure containing transformed model
+  parameters.
+  \item \code{loglik}: Log-likelihood of the fitted model.
+  \item \code{penalized_loglik}: Penalized log-likelihood of the fitted model.
+}
 }
 \description{
-Maximum likelihood estimation of positive definite polychoric correlation matrices.
+\code{lpoly} estimates a polychoric correlation matrix from ordinal data using
+maximum likelihood. The function can use either a one-step or a two-step
+estimation approach and optionally enforce positive-semidefiniteness or
+positive-definiteness through constrained estimation or penalties.
 }
 \details{
-\code{lpoly} estimates positive-definite polychoric correlation matrices.
+\code{lpoly} estimates positive-definite or positive-semidefinite
+polychoric correlation matrices from ordinal data. The function is designed
+for situations in which the unrestricted polychoric matrix is not
+guaranteed to be admissible, for example because of sampling variability or
+sparse response patterns.
+
+Two estimation strategies are available:
+\itemize{
+  \item \code{"two-step"}: thresholds are estimated first and the correlation
+  matrix is estimated in a second step.
+  \item \code{"one-step"}: thresholds and correlations are estimated jointly.
+}
+
+If \code{positive = TRUE}, the estimated matrix is constrained to be
+positive semidefinite. If \code{penalties = TRUE}, penalty terms are added
+to the objective function to encourage positive-definiteness.
+
+If \code{do.fit = FALSE}, the function returns the model setup without
+running the optimizer.
 }
 \examples{
-
 \dontrun{
 fit <- lpoly(data = values)
+
+fit_psd <- lpoly(data = values, positive = TRUE)
+
+setup_only <- lpoly(data = values, do.fit = FALSE)
 }
 
 }

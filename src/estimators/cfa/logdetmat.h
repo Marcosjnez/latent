@@ -56,11 +56,11 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(5);
-    doubles[0] =  f;       // loss   actual model
-    doubles[1] =  0.00;    // loglik actual model
-    doubles[2] =  0.00;    // loglik independence model
-    doubles[3] =  0.00;    // loglik saturated model
-    doubles[4] =  f;       // penalty
+    doubles[0] =  -f;       // loss   actual model
+    doubles[1] =  0.00;     // loglik actual model
+    doubles[2] =  0.00;     // loglik independence model
+    doubles[3] =  0.00;     // loglik saturated model
+    doubles[4] =  -f;       // penalty
 
   };
 

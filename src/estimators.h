@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/02/2026
+ * Modification date: 16/04/2026
  */
 
 class estimators {
@@ -57,6 +57,7 @@ public:
 #include "estimators/lca/bayesconst3.h"
 #include "estimators/lca/bayesconst1.h"
 #include "estimators/cfa/logdetmat.h"
+#include "estimators/cfa/logdetR.h"
 
 #include "estimators/lreg/lreg.h"
 
@@ -93,6 +94,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "bayesconst2",                 choose_bayesconst2               },
   { "bayesconst3",                 choose_bayesconst3               },
   { "logdetmat",                   choose_logdetmat                 },
+  { "logdetR",                     choose_logdetR                   },
   { "lreg",                        choose_lreg                      },
   { "gaussian_loglik",             choose_gaussian_loglik           },
   { "poisson_loglik",              choose_poisson_loglik            },
