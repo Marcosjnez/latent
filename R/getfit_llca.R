@@ -60,7 +60,7 @@ getfit.llca <- function(model, digits = 3) {
   }
 
   ##
-  penalized <- model@loglik != model@penalized_loglik
+  penalized <- abs(model@loglik) != abs(model@penalized_loglik)
 
   ##
   ##
