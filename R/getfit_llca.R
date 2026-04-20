@@ -60,7 +60,7 @@ getfit.llca <- function(model, digits = 3) {
   }
 
   ##
-  penalized <- isFALSE(model@modelInfo$control$penalties) == FALSE
+  penalized <- model@loglik != model@penalized_loglik
 
   ##
   ##
@@ -86,7 +86,7 @@ getfit.llca <- function(model, digits = 3) {
     dof <- NA
   }
 
-  nobs <- model@modelInfo$nobs
+  nobs <- model@data_list$nobs
   ###
   AIC  <- (-2 * loglik) + (k * 2)
   AIC3 <- (-2 * loglik) + (k * 3)
