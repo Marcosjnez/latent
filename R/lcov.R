@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 08/04/2026
+# Modification date: 20/04/2026
 
 split_by_missing_pattern <- function(data) {
   if (!is.data.frame(data) && !is.matrix(data)) {
@@ -100,6 +100,7 @@ lcov <- function(data, item_names = colnames(data),
       out$S <- polychorics$correlation
       out$thresholds <- lapply(polychorics$thresholds,
                                FUN = function(x) x[-c(1, length(x))])
+      rownames(out$S) <- colnames(out$S) <- names(out$thresholds) <- out$item_names
       out$cumprop <- polychorics$cumulative_freqs
       out$contingency_tables <- polychorics$contingency_tables
       out$ACOV <- diag(1 / c(polychorics$hess))
@@ -116,6 +117,7 @@ lcov <- function(data, item_names = colnames(data),
       out$nobs <- nobs
 
       out$S <- stats::cov(X, use = missing)
+      rownames(out$S) <- colnames(out$S) <- out$item_names
 
       if(std.ov) {
         inv_sqrtdiagS <- diag(1/sqrt(diag(out$S)))

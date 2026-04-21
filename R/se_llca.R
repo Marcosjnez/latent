@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/04/2026
+# Modification date: 20/04/2026
 #'
 #' @title
 #' Standard Errors

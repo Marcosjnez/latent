@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 08/04/2026
+# Modification date: 20/04/2026
 
 lcfa_control <- function(control) {
 
@@ -17,6 +17,12 @@ lcfa_control <- function(control) {
     } else {
       control$opt <- "lbfgs"
     }
+  }
+
+  if(!control$positive) {
+
+    control$penalties <- FALSE
+
   }
 
   if(isFALSE(control$penalties)) {

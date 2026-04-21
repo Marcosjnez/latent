@@ -1,3 +1,7 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 20/04/2026
+#'
 #' @title Maximum likelihood estimation of positive-definite polychoric correlation matrices
 #'
 #' @description
@@ -179,7 +183,8 @@ lpoly <- function(data,
                                                       diag = FALSE)])
     Optim$transparameters <- c(unlist(threslds),
                                Optim$correlation[lower.tri(Optim$correlation,
-                                                           diag = TRUE)])
+                                                           diag = TRUE)],
+                               rep(1, times = nitems))
     Optim$f <- 0
   } else {
     stop("Unknown method")
@@ -237,6 +242,7 @@ create_lpoly_datalist <- function(data, control) {
   polychorics <- polyfast(as.matrix(data))
   S <- polychorics$correlation # Polychoric correlation matrix
   taus <- polychorics$thresholds # Thresholds
+  rownames(S) <- colnames(S) <- names(taus) <- colnames(data)
   n <- polychorics$contingency_tables # Contingency tables
   nobs <- nrow(data)
   nitems <- ncol(data)
@@ -316,12 +322,21 @@ create_lpoly_model <- function(data_list, model, control) {
                            symmetric = TRUE)
   k <- k+1L
 
+  # latent variances:
+  list_struct[[k]] <- list(name = "delta",
+                           type = "matrix",
+                           dim = c(nitems, 1L),
+                           rownames = item_label,
+                           colnames = "latent.var")
+  k <- k+1L
+
   trans <- create_parameters(list_struct)
 
   #### Model for the parameters ####
 
   param <- trans
   diag(param$S) <- "1"
+  param$delta[] <- "1"
 
   #### Create the initial values for the parameters ####
 
@@ -345,6 +360,8 @@ create_lpoly_model <- function(data_list, model, control) {
     } else {
       init_param[[rs]]$S <- data_list$S
     }
+
+    init_param[[rs]]$delta <- matrix(1, nrow = nitems, ncol = 1L)
 
   }
 
@@ -395,7 +412,9 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
       list(manifold = "euclidean",
            parameters = list(param[taus_item])),
       list(manifold = "oblq", parameters = "X",
-           extra = list(p = nitems, q = nitems))
+           extra = list(p = nitems, q = nitems)),
+      list(manifold = "euclidean",
+           parameters = "delta")
     )
 
   } else {
@@ -403,8 +422,10 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
     manifolds <- list(
       list(manifold = "euclidean",
            parameters = list(param[taus_item])),
-      list(manifold = "euclidean", parameters = "S",
-           extra = list(p = nitems, q = nitems))
+      list(manifold = "euclidean",
+           parameters = "S"),
+      list(manifold = "euclidean",
+           parameters = "delta")
     )
 
   }
@@ -448,7 +469,7 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
   if(control$reg) {
 
     lower_indices <- which(lower.tri(trans$S, diag = TRUE))
-    estimators[[2]] <- list(estimator = "logdetmat",
+    estimators[[2]] <- list(estimator = "logdetR",
                             parameters = "S",
                             extra = list(lower_indices = lower_indices-1L,
                                          p = nitems,

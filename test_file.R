@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/04/2026
+# Modification date: 20/04/2026
 
 #### Install latent ####
 
@@ -245,11 +245,12 @@ model <- 'visual  =~ x1 + x2 + x3
 
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "ml", positive = FALSE,
+            estimator = "ml",
+            positive = TRUE, penalties = TRUE,
             ordered = FALSE, acov = "standard",
             std.lv = FALSE, std.ov = FALSE,
             mimic = "latent", do.fit = TRUE,
-            meanstructure = TRUE,
+            meanstructure = FALSE,
             # likelihood = "wishart",
             control = NULL)
 fit@loss             # 0.283407
@@ -427,7 +428,7 @@ fit@penalized_loglik # -176520.8
 fit@Optim$iterations
 fit@Optim$ng
 fit@Optim$convergence
-fit@Optim$f # 41.18545
+fit@Optim$f # 41.18626
 max(fit@Optim$rg)
 max(fit@Optim$g)
 fit@timing
@@ -464,8 +465,9 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
 
 fit <- lcfa(model = model.EM, data = mooc,
             ordered = TRUE, estimator = "dwls",
-            # meanstructure = TRUE,
-            std.ov = FALSE, std.lv = FALSE,
+            # meanstructure = FALSE, std.ov = TRUE,
+            positive = TRUE, penalties = TRUE,
+            std.lv = TRUE,
             do.fit = TRUE, control = NULL)
 fit@loglik           # -90154.77 (ml)
 fit@penalized_loglik # -90154.77 (ml)
@@ -479,12 +481,14 @@ fit2 <- lavaan::cfa(model = model.EM, data = mooc,
                     ordered = TRUE,
                     estimator = "dwls",
                     # likelihood = "wishart",
-                    std.ov = FALSE, std.lv = FALSE,
+                    meanstructure = FALSE,
+                    std.ov = FALSE, std.lv = TRUE,
                     parameterization = "theta")
 fit2@Fit@fx*2      # 0.4663271
 fit@loss           # 0.3817476
 fit2@loglik$loglik # -3737.745
 fit@loglik         # -90154.77
+lavaan::inspect(fit2, "est")
 
 fit@Optim$SE$se
 fit2@ParTable$se
