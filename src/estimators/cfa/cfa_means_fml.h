@@ -34,6 +34,14 @@ public:
       Shat = eigvec * arma::diagmat(d) * eigvec.t();
     }
 
+    if(!S.is_sympd()) {
+      arma::vec eigval;
+      arma::mat eigvec;
+      eig_sym(eigval, eigvec, S);
+      arma::vec d = arma::clamp(eigval, 0.001, eigval.max());
+      S = eigvec * arma::diagmat(d) * eigvec.t();
+    }
+
     Shat_inv = arma::inv_sympd(Shat);
 
   }

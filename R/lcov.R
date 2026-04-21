@@ -113,10 +113,13 @@ lcov <- function(data, item_names = colnames(data),
 
     } else if (cor == "pearson") {
 
-      if (is.null(nobs)) nobs <- p
-      out$nobs <- nobs
-
-      out$S <- stats::cov(X, use = missing)
+      if(nobs < 2) {
+        out$S <- t(X) %*% X
+        acov <- "standard"
+        likelihood <- "wishart"
+      } else {
+        out$S <- stats::cov(X, use = missing)
+      }
       rownames(out$S) <- colnames(out$S) <- out$item_names
 
       if(std.ov) {

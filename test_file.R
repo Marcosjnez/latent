@@ -387,9 +387,10 @@ fit <- lcfa(data = HolzingerSwineford1939,
             positive = TRUE, penalties = TRUE,
             do.fit = TRUE, control = NULL)
 
-fit@loglik # -3415.092 (ML)
-fit@penalized_loglik # -3415.095 (ML)
-fit@loss # 0.1419955 (ULS) / 0.3327037 (ML)
+fit@loglik # -3674.3 (ML)
+fit@penalized_loglik # -3674.298 (ML)
+fit@loss # 0.1419955 (ULS) / 0.3343969 (ML)
+fit@penalized_loss # 0.3363794 (ML)
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
@@ -566,7 +567,7 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 data_missing <- HolzingerSwineford1939
-data_missing[1:19, "x1"] <- NA
+data_missing[1:1, "x1"] <- NA
 
 set.seed(2026)
 fit <- lcfa(data_missing,

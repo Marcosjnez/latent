@@ -30,6 +30,14 @@ public:
       Shat = eigvec * arma::diagmat(d) * eigvec.t();
     }
 
+    if(!S.is_sympd()) {
+      arma::vec eigval;
+      arma::mat eigvec;
+      eig_sym(eigval, eigvec, S);
+      arma::vec d = arma::clamp(eigval, 0.001, eigval.max());
+      S = eigvec * arma::diagmat(d) * eigvec.t();
+    }
+
     Shat_inv = arma::inv_sympd(Shat);
 
   }
@@ -74,16 +82,11 @@ public:
   void outcomes(arguments_optim& x) {
 
     double loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p);
-    double loglik = n*0.5*(-plogpi2 -
-                           arma::log_det_sympd(Shat) -
-                           arma::accu(S % Shat_inv));
+    double loglik = n*0.5*(-plogpi2 - logdetShat - arma::accu(S % Shat_inv));
     arma::mat I(p, p, arma::fill::eye);
-    double loglik_indep = n*0.5*(-plogpi2 -
-                                 arma::trace(S));
-    arma::mat Sinv = arma::inv_sympd(S);
-    double loglik_sat = n*0.5*(-plogpi2 -
-                               arma::log_det_sympd(S) -
-                               arma::accu(S % Sinv));
+    double loglik_indep = n*0.5*(-plogpi2 - arma::trace(S));
+    // arma::mat Sinv = arma::inv_sympd(S);
+    double loglik_sat = n*0.5*(-plogpi2 - logdetS - p);
 
     doubles.resize(5);
     doubles[0] =  loss;          // loss   actual model
