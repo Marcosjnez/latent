@@ -567,7 +567,7 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 data_missing <- HolzingerSwineford1939
-data_missing[1:1, "x1"] <- NA
+data_missing[1:2, "x1"] <- NA
 
 set.seed(2026)
 fit <- lcfa(data_missing,

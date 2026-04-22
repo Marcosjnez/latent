@@ -30,7 +30,7 @@ public:
       arma::vec eigval;
       arma::mat eigvec;
       eig_sym(eigval, eigvec, Shat);
-      arma::vec d = arma::clamp(eigval, 0.1, eigval.max());
+      arma::vec d = arma::clamp(eigval, 0.00001, eigval.max());
       Shat = eigvec * arma::diagmat(d) * eigvec.t();
     }
 
@@ -38,7 +38,7 @@ public:
       arma::vec eigval;
       arma::mat eigvec;
       eig_sym(eigval, eigvec, S);
-      arma::vec d = arma::clamp(eigval, 0.001, eigval.max());
+      arma::vec d = arma::clamp(eigval, 0.00001, eigval.max());
       S = eigvec * arma::diagmat(d) * eigvec.t();
     }
 
@@ -112,16 +112,11 @@ public:
     double loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p +
       arma::as_scalar(delta.t() * Shat_inv * delta));
     double mean_term = arma::as_scalar(delta.t() * Shat_inv * delta);
-    double loglik = n * 0.5 * (-plogpi2 -
-                               arma::log_det_sympd(Shat) -
-                               arma::accu(S % Shat_inv) -
-                               mean_term);
+    double loglik = n * 0.5 * (-plogpi2 - logdetShat -
+                               arma::accu(S % Shat_inv) - mean_term);
     double loglik_indep = n * 0.5 * (-plogpi2 -
                                      arma::trace(S));
-    arma::mat Sinv = arma::inv_sympd(S);
-    double loglik_sat = n * 0.5 * (-plogpi2 -
-                                   arma::log_det_sympd(S) -
-                                   arma::accu(S % Sinv));
+    double loglik_sat = n * 0.5 * (-plogpi2 - logdetS - p);
 
     doubles.resize(5);
     doubles[0] = loss;

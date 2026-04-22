@@ -67,8 +67,8 @@ lcov <- function(data, item_names = colnames(data),
     out$vars <- vars
     out$nobs <- if (is.null(nobs)) nrow(X) else nobs
 
-    p <- nrow(X)  # rows
-    q <- ncol(X)  # cols
+    p <- nrow(X)
+    q <- ncol(X)
 
     if(is.null(likelihood)) {
       likelihood <- if (estimator %in% c("ml", "fml", "means_fml")) "normal" else "wishart"
@@ -76,25 +76,7 @@ lcov <- function(data, item_names = colnames(data),
 
     #### Compute covariance/correlation and ACOV ####
 
-    # if (p < q) {
-    #
-    #   stop("Please provide either a full-rank matrix of scores or a covariance matrix.")
-    #
-    # } else if (p == q) {
-    #
-    #   if (is.null(nobs)) {
-    #     stop("A covariance matrix was provided but `nobs` is missing.")
-    #   }
-    #
-    #   out$S <- X
-    #   if(std.ov) {
-    #     inv_sqrtdiagS <- diag(1/sqrt(diag(out$S)))
-    #     out$S <- inv_sqrtdiagS %*% out$S %*% inv_sqrtdiagS
-    #   }
-    #   out$ACOV <- asymptotic_normal(out$S, cov = !std.ov)
-    #
-    # } else
-      if (cor %in% c("poly", "polys", "polychoric", "polychorics")) {
+    if(cor %in% c("poly", "polys", "polychoric", "polychorics")) {
 
       polychorics <- polyfast(X)
       out$S <- polychorics$correlation
@@ -111,7 +93,7 @@ lcov <- function(data, item_names = colnames(data),
       #                   do.fit = TRUE)
       # out$ACOV <- asymptotic_poly(fit_poly, model = NULL)
 
-    } else if (cor == "pearson") {
+    } else if(cor == "pearson") {
 
       if(nobs < 2) {
         out$S <- t(X) %*% X
@@ -127,12 +109,12 @@ lcov <- function(data, item_names = colnames(data),
         out$S <- inv_sqrtdiagS %*% out$S %*% inv_sqrtdiagS
       }
 
-      if (likelihood == "normal") {
+      if(likelihood == "normal") {
         out$S <- out$S * (nobs - 1L) / nobs
         # out$ACOV <- out$ACOV * (nobs - 1L) / nobs
       }
 
-      if (acov == "standard") {
+      if(acov == "standard") {
         out$ACOV <- asymptotic_normal(out$S, cov = !std.ov)
       } else if (acov == "robust") {
         out$ACOV <- asymptotic_general(X, cov = !std.ov)
@@ -261,3 +243,22 @@ lcov <- function(data, item_names = colnames(data),
   return(out)
 
 }
+
+# if (p < q) {
+#
+#   stop("Please provide either a full-rank matrix of scores or a covariance matrix.")
+#
+# } else if (p == q) {
+#
+#   if (is.null(nobs)) {
+#     stop("A covariance matrix was provided but `nobs` is missing.")
+#   }
+#
+#   out$S <- X
+#   if(std.ov) {
+#     inv_sqrtdiagS <- diag(1/sqrt(diag(out$S)))
+#     out$S <- inv_sqrtdiagS %*% out$S %*% inv_sqrtdiagS
+#   }
+#   out$ACOV <- asymptotic_normal(out$S, cov = !std.ov)
+#
+# }
