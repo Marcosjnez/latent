@@ -63,14 +63,15 @@ Rcpp::List polyfast(arma::mat data, std::string missing = "pairwise.complete.cas
                     const int cores = 1L);
 
 // [[Rcpp::export]]
-arma::mat asymptotic_normal(const arma::mat& S, bool cov = true);
+arma::mat asymptotic_normal(const arma::mat& S, bool cov = true,
+                            bool diag = true);
 
 // [[Rcpp::export]]
 arma::mat asymptotic_elliptical(const arma::mat& S, double eta = 1.00,
-                                bool cov = true);
+                                bool cov = true, bool diag = true);
 
 // [[Rcpp::export]]
-arma::mat asymptotic_general(arma::mat X, bool cov = true);
+arma::mat asymptotic_general(arma::mat X, bool cov = true, bool diag = true);
 
 // [[Rcpp::export]]
 arma::mat orth(arma::mat X);

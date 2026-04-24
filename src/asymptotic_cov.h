@@ -38,7 +38,7 @@ arma::mat center_finite(arma::mat X) {
   return X;
 }
 
-arma::mat asymptotic_general(arma::mat X, bool cov) {
+arma::mat asymptotic_general(arma::mat X, bool cov, bool diag) {
 
   /*
    * Browne and Shapiro (Equation 3.2; 1986)
@@ -132,12 +132,18 @@ arma::mat asymptotic_general(arma::mat X, bool cov) {
 
   arma::mat asymptotic = Gamma - A * B.t() - B * A.t() + A * G * A.t();
 
-  // lower triangle EXCLUDING diagonal
-  arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), 0);
+  arma::uvec lower_indices;
+  if(diag) {
+    // lower triangle EXCLUDING diagonal
+    lower_indices = arma::trimatl_ind(arma::size(P), 0);
+  } else {
+    lower_indices = arma::trimatl_ind(arma::size(P), -1);
+  }
+
   return asymptotic(lower_indices, lower_indices);
 }
 
-arma::mat asymptotic_normal(const arma::mat& S, bool cov) {
+arma::mat asymptotic_normal(const arma::mat& S, bool cov, bool diag) {
 
   /*
    * Browne and Shapiro (Equation 4.1; 1986)
@@ -183,12 +189,19 @@ arma::mat asymptotic_normal(const arma::mat& S, bool cov) {
 
   arma::mat asymptotic = Gamma - A * B.t() - B * A.t() + A * G * A.t();
 
-  // lower triangle EXCLUDING diagonal
-  arma::uvec lower_indices = arma::trimatl_ind(arma::size(P), 0);
+  arma::uvec lower_indices;
+  if(diag) {
+    // lower triangle EXCLUDING diagonal
+    lower_indices = arma::trimatl_ind(arma::size(P), 0);
+  } else {
+    lower_indices = arma::trimatl_ind(arma::size(P), -1);
+  }
+
   return asymptotic(lower_indices, lower_indices);
 }
 
-arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov) {
+arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov,
+                                bool diag) {
 
   /*
    * Browne and Shapiro style elliptical correction.
@@ -204,7 +217,7 @@ arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov) {
    */
 
   if (!cov) {
-    return eta * asymptotic_normal(S, false);
+    return eta * asymptotic_normal(S, false, false);
   }
 
   int q = S.n_rows;
@@ -220,7 +233,13 @@ arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov) {
     eta * Gamma_normal +
     (eta - 1.0) * (s * s.t());
 
-  // lower triangle INCLUDING diagonal
-  arma::uvec lower_indices = arma::trimatl_ind(arma::size(S), 0);
+  arma::uvec lower_indices;
+  if(diag) {
+    // lower triangle EXCLUDING diagonal
+    lower_indices = arma::trimatl_ind(arma::size(S), 0);
+  } else {
+    lower_indices = arma::trimatl_ind(arma::size(S), -1);
+  }
+
   return Gamma(lower_indices, lower_indices);
 }

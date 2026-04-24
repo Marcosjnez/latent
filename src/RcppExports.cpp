@@ -103,39 +103,42 @@ BEGIN_RCPP
 END_RCPP
 }
 // asymptotic_normal
-arma::mat asymptotic_normal(const arma::mat& S, bool cov);
-RcppExport SEXP _latent_asymptotic_normal(SEXP SSEXP, SEXP covSEXP) {
+arma::mat asymptotic_normal(const arma::mat& S, bool cov, bool diag);
+RcppExport SEXP _latent_asymptotic_normal(SEXP SSEXP, SEXP covSEXP, SEXP diagSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type S(SSEXP);
     Rcpp::traits::input_parameter< bool >::type cov(covSEXP);
-    rcpp_result_gen = Rcpp::wrap(asymptotic_normal(S, cov));
+    Rcpp::traits::input_parameter< bool >::type diag(diagSEXP);
+    rcpp_result_gen = Rcpp::wrap(asymptotic_normal(S, cov, diag));
     return rcpp_result_gen;
 END_RCPP
 }
 // asymptotic_elliptical
-arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov);
-RcppExport SEXP _latent_asymptotic_elliptical(SEXP SSEXP, SEXP etaSEXP, SEXP covSEXP) {
+arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov, bool diag);
+RcppExport SEXP _latent_asymptotic_elliptical(SEXP SSEXP, SEXP etaSEXP, SEXP covSEXP, SEXP diagSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type S(SSEXP);
     Rcpp::traits::input_parameter< double >::type eta(etaSEXP);
     Rcpp::traits::input_parameter< bool >::type cov(covSEXP);
-    rcpp_result_gen = Rcpp::wrap(asymptotic_elliptical(S, eta, cov));
+    Rcpp::traits::input_parameter< bool >::type diag(diagSEXP);
+    rcpp_result_gen = Rcpp::wrap(asymptotic_elliptical(S, eta, cov, diag));
     return rcpp_result_gen;
 END_RCPP
 }
 // asymptotic_general
-arma::mat asymptotic_general(arma::mat X, bool cov);
-RcppExport SEXP _latent_asymptotic_general(SEXP XSEXP, SEXP covSEXP) {
+arma::mat asymptotic_general(arma::mat X, bool cov, bool diag);
+RcppExport SEXP _latent_asymptotic_general(SEXP XSEXP, SEXP covSEXP, SEXP diagSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
     Rcpp::traits::input_parameter< bool >::type cov(covSEXP);
-    rcpp_result_gen = Rcpp::wrap(asymptotic_general(X, cov));
+    Rcpp::traits::input_parameter< bool >::type diag(diagSEXP);
+    rcpp_result_gen = Rcpp::wrap(asymptotic_general(X, cov, diag));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -404,9 +407,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_mytest", (DL_FUNC) &_latent_mytest, 1},
     {"_latent_optimizer", (DL_FUNC) &_latent_optimizer, 4},
     {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 7},
-    {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 2},
-    {"_latent_asymptotic_elliptical", (DL_FUNC) &_latent_asymptotic_elliptical, 3},
-    {"_latent_asymptotic_general", (DL_FUNC) &_latent_asymptotic_general, 2},
+    {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 3},
+    {"_latent_asymptotic_elliptical", (DL_FUNC) &_latent_asymptotic_elliptical, 4},
+    {"_latent_asymptotic_general", (DL_FUNC) &_latent_asymptotic_general, 3},
     {"_latent_orth", (DL_FUNC) &_latent_orth, 1},
     {"_latent_oblq", (DL_FUNC) &_latent_oblq, 1},
     {"_latent_poblq", (DL_FUNC) &_latent_poblq, 2},

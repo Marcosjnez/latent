@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 20/04/2026
+# Modification date: 23/04/2026
 #'
 #' @title Maximum likelihood estimation of positive-definite polychoric correlation matrices
 #'
@@ -183,8 +183,7 @@ lpoly <- function(data,
                                                       diag = FALSE)])
     Optim$transparameters <- c(unlist(threslds),
                                Optim$correlation[lower.tri(Optim$correlation,
-                                                           diag = TRUE)],
-                               rep(1, times = nitems))
+                                                           diag = TRUE)])
     Optim$f <- 0
   } else {
     stop("Unknown method")
@@ -196,6 +195,28 @@ lpoly <- function(data,
   # Collect all the information about the optimization:
 
   elapsed <- Optim$elapsed
+
+  #### Standard errors ####
+
+  # ACOV <- diag(1 / c(polychorics$hess))
+
+  # fit_poly <- lpoly(data = X,
+  #                   model = NULL,
+  #                   method = "none", penalties = FALSE,
+  #                   do.fit = TRUE)
+  # out$ACOV <- asymptotic_poly(fit_poly, model = NULL)
+
+  modelInfo$control_optimizer$parameters[[1]] <- Optim$parameters
+  modelInfo$control_optimizer$transparameters[[1]] <- Optim$transparameters
+
+  x <- get_hess(modelInfo$control_manifold, modelInfo$control_transform,
+                modelInfo$control_estimator, modelInfo$control_optimizer,
+                cores = parallel::detectCores())
+
+  Optim$SE$ACOV <- solve(x$h)
+  rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <- modelInfo$parameters_labels
+  Optim$SE$se <- sqrt(diag(Optim$SE$ACOV))
+  # ADD CONSTRAINTS FOR OBLIQUE MANIFOLD
 
   #### Estimated model structures ####
 
@@ -322,21 +343,12 @@ create_lpoly_model <- function(data_list, model, control) {
                            symmetric = TRUE)
   k <- k+1L
 
-  # latent variances:
-  list_struct[[k]] <- list(name = "delta",
-                           type = "matrix",
-                           dim = c(nitems, 1L),
-                           rownames = item_label,
-                           colnames = "latent.var")
-  k <- k+1L
-
   trans <- create_parameters(list_struct)
 
   #### Model for the parameters ####
 
   param <- trans
   diag(param$S) <- "1"
-  param$delta[] <- "1"
 
   #### Create the initial values for the parameters ####
 
@@ -360,8 +372,6 @@ create_lpoly_model <- function(data_list, model, control) {
     } else {
       init_param[[rs]]$S <- data_list$S
     }
-
-    init_param[[rs]]$delta <- matrix(1, nrow = nitems, ncol = 1L)
 
   }
 
@@ -412,9 +422,7 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
       list(manifold = "euclidean",
            parameters = list(param[taus_item])),
       list(manifold = "oblq", parameters = "X",
-           extra = list(p = nitems, q = nitems)),
-      list(manifold = "euclidean",
-           parameters = "delta")
+           extra = list(p = nitems, q = nitems))
     )
 
   } else {
@@ -423,9 +431,7 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
       list(manifold = "euclidean",
            parameters = list(param[taus_item])),
       list(manifold = "euclidean",
-           parameters = "S"),
-      list(manifold = "euclidean",
-           parameters = "delta")
+           parameters = "S")
     )
 
   }

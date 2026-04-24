@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 16/04/2026
+# Modification date: 22/04/2026
 
 create_estimators <- function(estimators, structures) {
 
@@ -25,7 +25,7 @@ create_estimators <- function(estimators, structures) {
   # For each estimator:
   result <- vector("list", length = nestimators)
   k <- 1L
-  for(i in 1:nestimators) {
+  for(i in seq_len(nestimators)) {
 
     estimator <- estimators[[i]]
 

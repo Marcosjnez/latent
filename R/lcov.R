@@ -165,7 +165,11 @@ lcov <- function(data, item_names = colnames(data),
         out$means <- colMeans(X, na.rm = TRUE)
       }
 
-      acov_means <- apply(X, MARGIN = 2, FUN = var, na.rm = TRUE)
+      if(out$nobs < 2) {
+        acov_means <- rep(0, times = length(out$vars))
+      } else {
+        acov_means <- apply(X, MARGIN = 2, FUN = var, na.rm = TRUE)
+      }
       out$ACOV <- block_diag(list(diag(acov_means), out$ACOV))
 
     }

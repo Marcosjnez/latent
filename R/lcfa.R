@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 20/04/2026
+# Modification date: 25/04/2026
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
@@ -70,7 +70,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                  missing = "pairwise.complete.obs",
                  std.lv = FALSE, std.ov = FALSE,
                  acov = "standard",
-                 meanstructure = NULL,
+                 meanstructure = TRUE,
                  do.fit = TRUE, message = FALSE,
                  likelihood = NULL, se = TRUE,
                  mimic = "latent", control = NULL,
@@ -94,15 +94,10 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   estimator <- tolower(estimator)
   missing <- tolower(missing)
-  if(std.ov) meanstructure <- FALSE
 
-  if(is.null(meanstructure)) {
-    if(missing == "fiml") {
-      meanstructure <- TRUE
-      std.ov <- FALSE
-    } else {
-      meanstructure <- FALSE
-    }
+  if(missing == "fiml") {
+    meanstructure <- TRUE
+    std.ov <- FALSE
   }
 
   if(meanstructure) {
@@ -248,20 +243,21 @@ lcfa <- function(data, model = NULL, estimator = "ml",
         "+", strrep("-", w), "+\n\n", sep = "")
   }
 
-  # Standard errors:
-  if(se != "none" || isFALSE(se)) {
+  #### Standard errors ####
+
+  if(se != "none" || isTRUE(se)) {
     Optim$SE <- se(result, type = "standard", digits = 9)
   }
 
-  # Fit by group:
-  fit_by_group <- latInspect(result, what = "fit")
-  loss.group <- unlist(lapply(fit_by_group, FUN = \(x) x["loss"]))
-  penalized_loss.group <- unlist(lapply(fit_by_group, FUN = \(x) x["penalized_loss"]))
-  loglik.group <- unlist(lapply(fit_by_group, FUN = \(x) x["loglik"]))
-  penalized_loglik.group <- unlist(lapply(fit_by_group, FUN = \(x) x["penalized_loglik"]))
-  penalty.group <- unlist(lapply(fit_by_group, FUN = \(x) x["penalty"]))
-
   result@Optim <- Optim
+
+  # # Fit by group:
+  # fit_by_group <- latInspect(result, what = "fit")
+  # loss.group <- unlist(lapply(fit_by_group, FUN = \(x) x["loss"]))
+  # penalized_loss.group <- unlist(lapply(fit_by_group, FUN = \(x) x["penalized_loss"]))
+  # loglik.group <- unlist(lapply(fit_by_group, FUN = \(x) x["loglik"]))
+  # penalized_loglik.group <- unlist(lapply(fit_by_group, FUN = \(x) x["penalized_loglik"]))
+  # penalty.group <- unlist(lapply(fit_by_group, FUN = \(x) x["penalty"]))
 
   #### Return ####
 
@@ -285,15 +281,27 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
   acov <- tolower(acov)
   missing <- tolower(missing)
 
-  if (is.null(group)) {
+  if(is.null(group)) {
     ngroups <- 1L
-    group_label <- "group"
+    group <- "group"
+    group_label <- "."
+    data$group <- group_label
   } else {
     group_label <- unique(data[[group]])
     ngroups <- length(group_label)
   }
 
   item_names <- extract_item_names_lavaan(model, ngroups = ngroups)
+
+  # Remove group cases with all missing data for given item_names:
+  keep <- rep(FALSE, nrow(data))
+  for(i in seq_len(ngroups)) {
+    group_i <- data[[group]] == group_label[i]
+    items_i <- item_names[[i]]
+    not_all_na_i <- !apply(is.na(data[group_i, items_i, drop = FALSE]), 1, all)
+    keep[group_i] <- not_all_na_i
+  }
+  data <- data[keep, , drop = FALSE]
 
   get_group_data <- function(i) {
     if (ngroups > 1L) {
@@ -702,7 +710,7 @@ create_cfa_model <- function(dataList, model, control) {
 
     if(control$meanstructure) {
 
-      if(fix_diag) {
+      if(fix_diag || control$std.ov) {
         for(j in 1:correl[[i]]$npatterns) {
           param[[M_group[[i]][[j]]]] <- matrix(rep(0, length(correl[[i]]$item_names)),
                                                ncol = 1L,

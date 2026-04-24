@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 20/04/2026
+# Modification date: 23/04/2026
 
 #### Install latent ####
 
@@ -246,11 +246,11 @@ model <- 'visual  =~ x1 + x2 + x3
 set.seed(2026)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml",
-            positive = TRUE, penalties = TRUE,
+            positive = FALSE, penalties = FALSE,
             ordered = FALSE, acov = "standard",
             std.lv = FALSE, std.ov = FALSE,
             mimic = "latent", do.fit = TRUE,
-            meanstructure = FALSE,
+            meanstructure = TRUE,
             # likelihood = "wishart",
             control = NULL)
 fit@loss             # 0.283407
@@ -265,7 +265,7 @@ fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
                     estimator = "ml",
                     # likelihood = "wishart",
                     std.lv = FALSE, std.ov = FALSE,
-                    meanstructure = FALSE)
+                    meanstructure = TRUE)
 # Same loss value: OK
 fit2@Fit@fx*2      # 0.283407
 fit@loss           # 0.283407
@@ -274,6 +274,8 @@ fit@loglik         # -3737.745
 
 fit@Optim$SE$se
 fit2@ParTable$se
+inspect(fit2, "est")
+fit@parameters
 
 # NACOV <- lavTech(fit2, "gamma")
 # lapply(NACOV, FUN = dim)
@@ -286,11 +288,16 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
-fit <- lcfa(HolzingerSwineford1939, model = model,
-            group = "school", estimator = "ml",
-            ordered = FALSE, std.lv = FALSE,
-            std.ov = FALSE, likelihood = "normal",
-            mimic = "latent", do.fit = TRUE)
+fit <- lcfa(HolzingerSwineford1939,
+            model = model,
+            group = "school",
+            estimator = "ml",
+            ordered = FALSE,
+            std.lv = FALSE,
+            std.ov = FALSE,
+            likelihood = "normal",
+            meanstructure = FALSE,
+            do.fit = TRUE)
 
 fit@loss             # 0.3848882
 fit@loglik           # -3682.198
@@ -412,9 +419,10 @@ dim(mooc)
 set.seed(2026)
 POLY <- polyfast(as.matrix(mooc))
 taus <- lapply(POLY$thresholds, FUN = \(x) x[-c(1, length(x))])
+
 fit <- lpoly(data = mooc,
              # model = list(taus = taus),
-             method = "one-step",
+             method = "two-step",
              positive = TRUE,
              penalties = TRUE,
              do.fit = TRUE,
@@ -567,7 +575,7 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 data_missing <- HolzingerSwineford1939
-data_missing[1:2, "x1"] <- NA
+data_missing[1:3, "x1"] <- NA
 
 set.seed(2026)
 fit <- lcfa(data_missing,
@@ -608,6 +616,15 @@ fit@Optim$SE$se
 
 inspect(fit2, what = "est")$lambda
 fit@transformed_pars$lambda.group
+
+#### lpearson ####
+
+data <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
+fit <- lpearson(data = data, std.ov = FALSE,
+                acov = "standard", likelihood = "normal",
+                missing = "pairwise.complete.obs",
+                do.fit = TRUE)
+fit@parameters
 
 #### Check derivatives ####
 
