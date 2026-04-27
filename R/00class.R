@@ -63,7 +63,8 @@ setClass("latent",
            loglik             = "numeric",
            penalized_loglik   = "numeric",
            loss               = "numeric",
-           penalized_loss     = "numeric"
+           penalized_loss     = "numeric",
+           extra              = "list"
          )
 )
 

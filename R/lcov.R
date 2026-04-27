@@ -131,7 +131,6 @@ lcov <- function(data, item_names = colnames(data),
     if (estimator %in% c("uls", "means_uls", "ml", "fml", "means_fml")) {
 
       out$W <- matrix(1, nrow = q, ncol = q)
-      diag(out$W) <- 1
       out$w_means <- rep(1, times = q)
 
     } else if (estimator %in% c("dwls", "means_dwls")) {

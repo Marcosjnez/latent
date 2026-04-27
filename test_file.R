@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 23/04/2026
+# Modification date: 27/04/2026
 
 #### Install latent ####
 
@@ -244,14 +244,17 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 set.seed(2026)
+# control <- list(free_S = TRUE, free_M = TRUE)
 fit <- lcfa(HolzingerSwineford1939, model = model,
             estimator = "ml",
             positive = FALSE, penalties = FALSE,
             ordered = FALSE, acov = "standard",
             std.lv = FALSE, std.ov = FALSE,
-            mimic = "latent", do.fit = TRUE,
+            mimic = "latent",
             meanstructure = TRUE,
             # likelihood = "wishart",
+            se = TRUE,
+            do.fit = TRUE,
             control = NULL)
 fit@loss             # 0.283407
 fit@loglik           # -3737.745
@@ -296,7 +299,8 @@ fit <- lcfa(HolzingerSwineford1939,
             std.lv = FALSE,
             std.ov = FALSE,
             likelihood = "normal",
-            meanstructure = FALSE,
+            meanstructure = TRUE,
+            se = TRUE,
             do.fit = TRUE)
 
 fit@loss             # 0.3848882
@@ -307,10 +311,15 @@ fit@Optim$convergence
 fit@timing
 
 # With lavaan:
-fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
-                    group = "school", estimator = "ml",
+fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
+                    model = model,
+                    group = "school",
+                    estimator = "ml",
                     likelihood = "normal",
-                    std.lv = FALSE, std.ov = FALSE)
+                    std.lv = FALSE,
+                    std.ov = FALSE,
+                    meanstructure = TRUE,
+                    do.fit = TRUE)
 fit2@loglik$loglik # -3682.198
 fit@loglik         # -3682.198
 fit2@Fit@fx*2      # 0.3848882
@@ -422,11 +431,12 @@ taus <- lapply(POLY$thresholds, FUN = \(x) x[-c(1, length(x))])
 
 fit <- lpoly(data = mooc,
              # model = list(taus = taus),
-             method = "two-step",
-             positive = TRUE,
-             penalties = TRUE,
+             method = "one-step",
+             positive = FALSE,
+             penalties = FALSE,
              do.fit = TRUE,
              control = list(opt = "grad",
+                            # subfix = ".group1",
                             maxit = 500,
                             step_maxit = 50,
                             tcg_maxit = 30,
@@ -475,9 +485,13 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
 fit <- lcfa(model = model.EM, data = mooc,
             ordered = TRUE, estimator = "dwls",
             # meanstructure = FALSE, std.ov = TRUE,
-            positive = TRUE, penalties = TRUE,
-            std.lv = TRUE,
-            do.fit = TRUE, control = NULL)
+            positive = FALSE, penalties = FALSE,
+            std.ov = FALSE,
+            std.lv = FALSE,
+            meanstructure = FALSE,
+            se = TRUE,
+            do.fit = TRUE,
+            control = NULL)
 fit@loglik           # -90154.77 (ml)
 fit@penalized_loglik # -90154.77 (ml)
 fit@loss             # 0.3817476 (dwls)
@@ -491,19 +505,26 @@ fit2 <- lavaan::cfa(model = model.EM, data = mooc,
                     estimator = "dwls",
                     # likelihood = "wishart",
                     meanstructure = FALSE,
-                    std.ov = FALSE, std.lv = TRUE,
-                    parameterization = "theta")
+                    std.ov = FALSE,
+                    std.lv = FALSE,
+                    parameterization = "theta",
+                    # parameterization = "delta",
+                    do.fit = TRUE)
 fit2@Fit@fx*2      # 0.4663271
 fit@loss           # 0.3817476
 fit2@loglik$loglik # -3737.745
 fit@loglik         # -90154.77
-lavaan::inspect(fit2, "est")
+lavaan::inspect(fit2, "est")$delta
+round(fit@parameters$delta, 3)
+diag(lavaan::inspect(fit2, "est")$theta)
+diag(round(fit@parameters$theta., 3))
+lavaan::inspect(fit2, "est")$lambda
+round(fit@parameters$lambda., 3)
+lavaan::inspect(fit2, "est")$psi
+round(fit@parameters$psi., 3)
 
 fit@Optim$SE$se
 fit2@ParTable$se
-
-# thresholds only
-TH <- lavInspect(fit2, "th")
 
 #### Multigroup CFA (polychorics) ####
 
@@ -586,9 +607,9 @@ fit <- lcfa(data_missing,
             std.lv = FALSE,
             # missing = "pairwise.complete.obs",
             missing = "fiml",
-            do.fit = TRUE,
             std.ov = FALSE,
-            # meanstructure = TRUE,
+            se = TRUE,
+            do.fit = TRUE,
             control = NULL)
 
 fit@loss   # 0.283407
@@ -612,10 +633,8 @@ fit2@Fit@fx
 fit@loss
 
 lavInspect(fit2, "se")
+fit2@ParTable$se
 fit@Optim$SE$se
-
-inspect(fit2, what = "est")$lambda
-fit@transformed_pars$lambda.group
 
 #### lpearson ####
 

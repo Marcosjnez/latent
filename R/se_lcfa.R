@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/04/2026
+# Modification date: 27/04/2026
 #'
 #' @title
 #' Standard Errors
@@ -49,18 +49,48 @@ se.lcfa <- function(fit, type = "standard", digits = 5) {
 
 block_diag <- function(mats) {
   if (!is.list(mats) || length(mats) == 0L) {
-    stop("`mats` must be a non-empty list of square matrices.")
+    stop("`mats` must be a non-empty list of square matrices or nested lists.")
+  }
+
+  flatten_mats <- function(x) {
+    if (is.matrix(x)) {
+      list(x)
+    } else if (is.list(x)) {
+      unlist(lapply(x, flatten_mats), recursive = FALSE)
+    } else {
+      stop("All elements must be matrices or lists containing matrices.")
+    }
+  }
+
+  mats <- flatten_mats(mats)
+
+  if (length(mats) == 0L) {
+    stop("No matrices found in `mats`.")
   }
 
   dims <- vapply(mats, function(M) {
-    if (!is.matrix(M)) stop("All elements of `mats` must be matrices.")
-    nr <- nrow(M); nc <- ncol(M)
+    nr <- nrow(M)
+    nc <- ncol(M)
     if (nr != nc) stop("All matrices must be square.")
     nr
   }, integer(1))
 
   n_tot <- sum(dims)
-  out <- matrix(0, n_tot, n_tot)
+
+  rn <- unlist(Map(function(M, d) {
+    if (is.null(rownames(M))) rep(NA_character_, d) else rownames(M)
+  }, mats, dims), use.names = FALSE)
+
+  cn <- unlist(Map(function(M, d) {
+    if (is.null(colnames(M))) rep(NA_character_, d) else colnames(M)
+  }, mats, dims), use.names = FALSE)
+
+  out <- matrix(
+    0,
+    nrow = n_tot,
+    ncol = n_tot,
+    dimnames = list(rn, cn)
+  )
 
   idx <- 0L
   for (k in seq_along(mats)) {
@@ -77,27 +107,39 @@ general_se <- function(fit, type = "standard") {
 
   ngroups <- fit@dataList$ngroups
 
-  # Get the matrix of second-order derivatives between R and the parameters:
-  VAR <- vector("list", length = ngroups)
-  for(i in 1:ngroups) {
+  # Get the asymptotic variance-covariance matrix:
+  ACOV_covij <- lapply(fit@dataList$fit_cov, FUN = \(grp) {
 
-    # Get the asymptotic correlation matrix:
-    npatterns <- fit@dataList$correl[[i]]$npatterns
-    ACOVij <- vector("list", length = npatterns)
-    for(j in 1:npatterns) {
-      ACOVij[[j]] <- fit@dataList$correl[[i]][[j]]$ACOV /
-        fit@dataList$correl[[i]][[j]]$nobs
+    if(length(grp@extra) == 0) {
+      object <- list(grp)
+    } else {
+      object <- grp@extra
     }
 
-    ACOVi <- block_diag(ACOVij)
-    VAR[[i]] <- ACOVi
+    return(lapply(object, FUN = \(ij) ij@Optim$SE$ACOV / ij@dataList$nobs[[1]]))
 
+  })
+  ACOV_meansij <- lapply(fit@dataList$fit_means, FUN = \(grp) {
+
+    if(length(grp@extra) == 0) {
+      object <- list(grp)
+    } else {
+      object <- grp@extra
+    }
+
+    return(lapply(object, FUN = \(ij) ij@Optim$SE$ACOV / ij@dataList$nobs[[1]]))
+
+  })
+
+  if(fit@modelInfo$control_optimizer$meanstructure) {
+    ACOV <- block_diag(c(ACOV_meansij, ACOV_covij))
+  } else {
+    ACOV <- block_diag(ACOV_covij)
   }
 
-  ACOV <- block_diag(VAR)
-
   args <- fit@dataList$args
-  args$control <- fit@modelInfo$control_optimizer
+  # args$control <- fit@modelInfo$control_optimizer
+  args$control <- list()
   args$control$free_S <- TRUE
   args$control$free_M <- TRUE
   args$do.fit <- FALSE
@@ -123,6 +165,10 @@ general_se <- function(fit, type = "standard") {
   df2_dparamdR <- x$h[nuisance_pars, model_pars]
 
   # Ham of sandwich estimator:
+  inter <- intersect(rownames(ACOV), rownames(df2_dparamdR))
+  df2_dparamdR <- df2_dparamdR[inter, ]
+  ACOV <- ACOV[inter, inter]
+  # cbind(rownames(df2_dparamdR), rownames(ACOV))
   B <- t(df2_dparamdR) %*% ACOV %*% df2_dparamdR
 
   # Get the hessian matrix of second-step model:

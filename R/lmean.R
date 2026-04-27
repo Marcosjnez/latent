@@ -2,53 +2,39 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 26/04/2026
 
-lpearson <- function(data,
-                     model = NULL,
-                     std.ov = FALSE,
-                     acov = "standard",
-                     likelihood = "normal",
-                     missing = "pairwise.complete.obs",
-                     do.fit = TRUE,
-                     message = FALSE,
-                     control = NULL,
-                     ...) {
-
-  missing <- tolower(missing)
-  if(missing == "fiml") {
-    missing <- "pairwise.complete.obs"
-  }
-
-  acov <- tolower(acov)
-  likelihood <- tolower(likelihood)
+lmean <- function(data,
+                  model = NULL,
+                  std.ov = FALSE,
+                  do.fit = TRUE,
+                  message = FALSE,
+                  control = NULL,
+                  ...) {
 
   control$std.ov <- std.ov
-  control$acov <- acov
-  control$likelihood <- likelihood
-  control$missing <- missing
 
   ## store original call
   mc  <- match.call()
 
   # Check the arguments to control_optimizer and create defaults:
-  control <- lpearson_control(control)
+  control <- lmean_control(control)
 
   #### Create the data_list ####
 
-  data_list <- create_lpearson_datalist(data, control)
+  data_list <- create_lmean_datalist(data, control)
   list2env(data_list, envir = environment())
 
   #### Create the model ####
 
-  full_model <- create_lpearson_model(data_list = data_list,
-                                      model = model,
-                                      control = control)
+  full_model <- create_lmean_model(data_list = data_list,
+                                   model = model,
+                                   control = control)
   list2env(full_model, envir = environment())
 
   #### Create the modelInfo ####
 
-  modelInfo <- create_lpearson_modelInfo(data_list = data_list,
-                                         full_model = full_model,
-                                         control = control)
+  modelInfo <- create_lmean_modelInfo(data_list = data_list,
+                                      full_model = full_model,
+                                      control = control)
 
   #### Fit the model ####
 
@@ -81,42 +67,26 @@ lpearson <- function(data,
         "+", strrep("-", w), "+\n\n", sep = "")
   }
 
-  if(nobs < 2) {
-    S <- t(data) %*% data
-    acov <- "standard"
-    likelihood <- "wishart"
-  } else {
-    S <- stats::cov(data, use = missing)
-  }
-  rownames(S) <- colnames(S) <- item_names
-
   if(std.ov) {
-    inv_sqrtdiagS <- diag(1/sqrt(diag(S)))
-    S <- inv_sqrtdiagS %*% S %*% inv_sqrtdiagS
-  }
-
-  if(likelihood == "normal") {
-    S <- S * (nobs - 1L) / nobs
+    means <- matrix(0, nrow = nitems, ncol = 1L)
+  } else {
+    means <- colMeans(data, na.rm = TRUE)
   }
 
   Optim <- list()
   Optim$f <- 0
 
-  Optim$parameters <- S[lower.tri(S, diag = TRUE)]
-  Optim$transparameters <- S[lower.tri(S, diag = TRUE)]
+  Optim$parameters <- means
+  Optim$transparameters <- means
   names(Optim$parameters) <- modelInfo$parameters_labels
   names(Optim$transparameters) <- modelInfo$transparameters_labels
 
   #### Standard errors ####
 
-  if(acov == "standard") {
-    Optim$SE$ACOV <- ACOV <- asymptotic_normal(S, cov = !std.ov,
-                                               diag = FALSE)
-  } else if (acov == "robust") {
-    Optim$SE$ACOV <- ACOV <- asymptotic_general(as.matrix(data), cov = !std.ov,
-                                                diag = FALSE)
+  if(data_list$nobs < 2) {
+    Optim$SE$ACOV <- matrix(0, nrow = nitems, ncol = nitems)
   } else {
-    stop("Unknown `acov` argument")
+    Optim$SE$ACOV <- diag(apply(data, MARGIN = 2, FUN = var, na.rm = TRUE))
   }
 
   rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <-
@@ -167,7 +137,7 @@ lpearson <- function(data,
 
 }
 
-create_lpearson_datalist <- function(data, control) {
+create_lmean_datalist <- function(data, control) {
 
   data_list <- vector("list")
   data_list$data <- data
@@ -180,7 +150,7 @@ create_lpearson_datalist <- function(data, control) {
 
 }
 
-create_lpearson_model <- function(data_list, model, control) {
+create_lmean_model <- function(data_list, model, control) {
 
   # Generate the model syntax and initial parameter values
 
@@ -192,18 +162,18 @@ create_lpearson_model <- function(data_list, model, control) {
 
   #### Model for the transformed parameters ####
 
-  S_matrix <- paste("S.", control$subfix, sep = "")
+  means_vector <- paste("means.", control$subfix, sep = "")
 
   # Transformed parameters:
   list_struct <- vector("list")
   k <- 1L
 
   # Covariance matrix:
-  list_struct[[k]] <- list(name = S_matrix,
+  list_struct[[k]] <- list(name = means_vector,
                            type = "matrix",
-                           dim = c(nitems, nitems),
+                           dim = c(nitems, 1L),
                            rownames = item_names,
-                           colnames = item_names,
+                           colnames = "intrcpt",
                            symmetric = TRUE)
   k <- k+1L
 
@@ -212,9 +182,6 @@ create_lpearson_model <- function(data_list, model, control) {
   #### Model for the parameters ####
 
   param <- trans
-  if(std.ov) {
-    diag(param[[S_matrix]]) <- 1
-  }
 
   #### Create the initial values for the parameters ####
 
@@ -222,7 +189,9 @@ create_lpearson_model <- function(data_list, model, control) {
   for(rs in 1:control$rstarts) {
 
     init_param[[rs]] <- vector("list")
-    init_param[[rs]][[S_matrix]] <- stats::cov(data, use = control$missing)
+    init_param[[rs]][[means_vector]] <- matrix(colMeans(data, na.rm = TRUE),
+                                               nrow = nitems, ncol = 1L,
+                                               dimnames = dimnames(trans[[means_vector]]))
 
   }
 
@@ -256,7 +225,7 @@ create_lpearson_model <- function(data_list, model, control) {
 
 }
 
-create_lpearson_modelInfo <- function(data_list, full_model, control) {
+create_lmean_modelInfo <- function(data_list, full_model, control) {
 
   # Generate control_manifold, control_transform, and control_estimator
 
@@ -264,13 +233,13 @@ create_lpearson_modelInfo <- function(data_list, full_model, control) {
   list2env(full_model, envir = environment())
   list2env(control, envir = environment())
 
-  S_matrix <- paste("S", control$subfix, sep = "")
+  means_vector <- paste("means", control$subfix, sep = "")
 
   #### Manifolds ####
 
   manifolds <- list(
     list(manifold = "euclidean",
-         parameters = S_matrix)
+         parameters = means_vector)
   )
 
   control_manifold <- create_manifolds(manifolds = manifolds,
@@ -336,7 +305,7 @@ create_lpearson_modelInfo <- function(data_list, full_model, control) {
 
 }
 
-lpearson_control <- function(control) {
+lmean_control <- function(control) {
 
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L

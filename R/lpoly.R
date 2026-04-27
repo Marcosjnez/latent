@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 23/04/2026
+# Modification date: 26/04/2026
 #'
 #' @title Maximum likelihood estimation of positive-definite polychoric correlation matrices
 #'
@@ -99,8 +99,6 @@ lpoly <- function(data,
                   control = NULL,
                   ...) {
 
-  dots <- list(...)
-
   ## store original call
   mc  <- match.call()
 
@@ -198,23 +196,19 @@ lpoly <- function(data,
 
   #### Standard errors ####
 
-  # ACOV <- diag(1 / c(polychorics$hess))
+  Optim$SE$ACOV <- diag(c(polychorics$hess))
+  rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <-
+    modelInfo$parameters_labels[startsWith(modelInfo$parameters_labels, "S.")]
 
-  # fit_poly <- lpoly(data = X,
-  #                   model = NULL,
-  #                   method = "none", penalties = FALSE,
-  #                   do.fit = TRUE)
-  # out$ACOV <- asymptotic_poly(fit_poly, model = NULL)
+  # modelInfo$control_optimizer$parameters[[1]] <- Optim$parameters
+  # modelInfo$control_optimizer$transparameters[[1]] <- Optim$transparameters
+  #
+  # x <- get_hess(modelInfo$control_manifold, modelInfo$control_transform,
+  #               modelInfo$control_estimator, modelInfo$control_optimizer,
+  #               cores = parallel::detectCores())
+  # Optim$SE$ACOV <- solve(x$h)
+  # rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <- modelInfo$parameters_labels
 
-  modelInfo$control_optimizer$parameters[[1]] <- Optim$parameters
-  modelInfo$control_optimizer$transparameters[[1]] <- Optim$transparameters
-
-  x <- get_hess(modelInfo$control_manifold, modelInfo$control_transform,
-                modelInfo$control_estimator, modelInfo$control_optimizer,
-                cores = parallel::detectCores())
-
-  Optim$SE$ACOV <- solve(x$h)
-  rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <- modelInfo$parameters_labels
   Optim$SE$se <- sqrt(diag(Optim$SE$ACOV))
   # ADD CONSTRAINTS FOR OBLIQUE MANIFOLD
 
@@ -248,7 +242,8 @@ lpoly <- function(data,
                 loglik             = loglik,
                 penalized_loglik   = penalized_loglik,
                 loss               = loss,
-                penalized_loss     = penalized_loss
+                penalized_loss     = penalized_loss,
+                extra              = list()
   )
 
   #### Return ####
@@ -284,6 +279,7 @@ create_lpoly_datalist <- function(data, control) {
   data_list$npatterns <- npatterns
   data_list$item_label <- item_label
   data_list$n <- n
+  data_list$polychorics <- polychorics
   data_list$S <- S
   data_list$taus <- taus
   data_list$K <- K
@@ -303,9 +299,11 @@ create_lpoly_model <- function(data_list, model, control) {
   param <- trans <- vector("list")
   fixed <- nonfixed <- fixed_values_list <- vector("list")
 
-  #### Model for the transformed parameters ####
-
   taus_item <- paste("taus.", item_label, control$subfix, sep = "")
+  X_matrix <- paste("X.", control$subfix, sep = "")
+  S_matrix <- paste("S.", control$subfix, sep = "")
+
+  #### Model for the transformed parameters ####
 
   # Transformed parameters:
   list_struct <- vector("list")
@@ -325,7 +323,7 @@ create_lpoly_model <- function(data_list, model, control) {
   if(control$positive) {
 
     # X:
-    list_struct[[k]] <- list(name = "X",
+    list_struct[[k]] <- list(name = X_matrix,
                              type = "matrix",
                              dim = c(nitems, nitems),
                              rownames = item_label,
@@ -335,7 +333,7 @@ create_lpoly_model <- function(data_list, model, control) {
   }
 
   # Covariance matrix:
-  list_struct[[k]] <- list(name = "S",
+  list_struct[[k]] <- list(name = S_matrix,
                            type = "matrix",
                            dim = c(nitems, nitems),
                            rownames = item_label,
@@ -348,7 +346,7 @@ create_lpoly_model <- function(data_list, model, control) {
   #### Model for the parameters ####
 
   param <- trans
-  diag(param$S) <- "1"
+  diag(param[[S_matrix]]) <- "1"
 
   #### Create the initial values for the parameters ####
 
@@ -366,15 +364,14 @@ create_lpoly_model <- function(data_list, model, control) {
 
     if(control$positive) {
       # Initial values for the square root of correlations:
-      init_param[[rs]]$X <- real_sqrtmat(data_list$S)
+      init_param[[rs]][[X_matrix]] <- real_sqrtmat(data_list$S)
       # Initial values for the polychoric correlations:
-      init_param[[rs]]$S <- crossprod(init_param[[rs]]$X)
+      init_param[[rs]][[S_matrix]] <- crossprod(init_param[[rs]][[X_matrix]])
     } else {
-      init_param[[rs]]$S <- data_list$S
+      init_param[[rs]][[S_matrix]] <- data_list$S
     }
 
   }
-
 
   #### Custom initial values ####
 
@@ -413,6 +410,8 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
   list2env(full_model, envir = environment())
 
   taus_item <- paste("taus.", item_label, control$subfix, sep = "")
+  X_matrix <- paste("X.", control$subfix, sep = "")
+  S_matrix <- paste("S.", control$subfix, sep = "")
 
   #### Manifolds ####
 
@@ -421,7 +420,7 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
     manifolds <- list(
       list(manifold = "euclidean",
            parameters = list(param[taus_item])),
-      list(manifold = "oblq", parameters = "X",
+      list(manifold = "oblq", parameters = X_matrix,
            extra = list(p = nitems, q = nitems))
     )
 
@@ -431,7 +430,7 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
       list(manifold = "euclidean",
            parameters = list(param[taus_item])),
       list(manifold = "euclidean",
-           parameters = "S")
+           parameters = S_matrix)
     )
 
   }
@@ -447,8 +446,8 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
 
     transforms <- list(
       list(transform = "crossprod",
-           parameters_in = "X",
-           parameters_out = "S",
+           parameters_in = X_matrix,
+           parameters_out = S_matrix,
            extra = list(p = nitems))
     )
 
@@ -466,7 +465,7 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
   estimators <- list()
 
   estimators[[1]] <- list(estimator = "polycor",
-                          parameters = c(list(S = trans$S),
+                          parameters = c(list(trans[[S_matrix]]),
                                          trans[taus_item]),
                           extra = list(n = data_list$n,
                                        p = nitems,
@@ -474,9 +473,9 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
 
   if(control$reg) {
 
-    lower_indices <- which(lower.tri(trans$S, diag = TRUE))
+    lower_indices <- which(lower.tri(trans[[S_matrix]], diag = TRUE))
     estimators[[2]] <- list(estimator = "logdetR",
-                            parameters = "S",
+                            parameters = S_matrix,
                             extra = list(lower_indices = lower_indices-1L,
                                          p = nitems,
                                          logdetw = control$penalties$logdet$w))
@@ -529,6 +528,99 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
   #### Return ####
 
   return(modelInfo)
+
+}
+
+lpoly_control <- function(control) {
+
+  # Auxiliary function for poly.R
+
+  # Control input
+
+  if(is.null(control$opt)) {
+    control$opt <- "lbfgs"
+  }
+
+  if(isFALSE(control$penalties)) {
+
+    control$reg <- FALSE
+
+  } else if(isTRUE(control$penalties)) {
+
+    control$reg <- TRUE
+
+    control$penalties <- list(
+      logdet = list(w = 1e-03)
+    )
+
+  } else if(is.list(control$penalties)) {
+
+    control$reg <- TRUE
+
+  } else {
+
+    stop("penalties should be TRUE, FALSE, or a list")
+
+  }
+
+  if(is.null(control$step_maxit)) {
+    control$step_maxit <- 30L
+  }
+
+  if(is.null(control$c1)) {
+    control$c1 <- 0.5
+  }
+
+  if(is.null(control$c2)) {
+    control$c2 <- 0.5
+  }
+
+  if(is.null(control$step_eps)) {
+    control$step_eps <- 1e-09
+  }
+
+  if(is.null(control$df_eps)) {
+    control$df_eps <- 1e-09
+  }
+
+  if(is.null(control$M)) {
+    control$M <- 100L
+  }
+
+  if(is.null(control$eps)) {
+    control$eps <- 1e-04
+  }
+
+  if(is.null(control$ss_fac)) {
+    control$ss_fac <- 2
+  }
+
+  if(is.null(control$maxit)) {
+    control$maxit <- 1000L
+  }
+
+  if(is.null(control$rstarts)) {
+    control$rstarts <- 1L
+  }
+
+  if(is.null(control$cores)) {
+    control$cores <- 1L
+  }
+
+  if(is.null(control$tcg_maxit)) {
+    control$tcg_maxit <- 10L
+  }
+
+  if(is.null(control$ss)) {
+    # Step sizes should be small so taus are not far from sensible bounds
+    control$ss <- 0.001
+  }
+
+  # Fixed rstarts and cores:
+  control$rstarts <- 1L
+  control$cores <- 1L
+
+  return(control)
 
 }
 
