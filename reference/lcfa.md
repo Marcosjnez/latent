@@ -75,15 +75,6 @@ control = NULL, ...)
 
   Logical. Estimate the means of the variables. Default is FALSE.
 
-- do.fit:
-
-  TRUE to fit the model and FALSE to return only the model setup.
-  Defaults to TRUE.
-
-- message:
-
-  Logical. Defaults to FALSE.
-
 - likelihood:
 
   String. Use N (normal) or N-1 (wishart) in the denominator. Defaults
@@ -93,14 +84,19 @@ control = NULL, ...)
 
   Logical. Compute standard errors. Defaults to TRUE.
 
-- mimic:
-
-  String. Choose the output you want to obtain. Defaults to 'latent'.
-
 - control:
 
   List of control parameters for the optimization algorithm. See
   'details' for more information.
+
+- message:
+
+  Logical. Defaults to FALSE.
+
+- do.fit:
+
+  TRUE to fit the model and FALSE to return only the model setup.
+  Defaults to TRUE.
 
 - ...:
 
