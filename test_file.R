@@ -1,14 +1,14 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 27/04/2026
-
-#### Install latent ####
-
-# devtools::install_github("marcosjnez/latent", force = TRUE)
+# Modification date: 29/04/2026
 
 #### Build the package ####
 
 # roxygen2::roxygenise()
+
+#### Install latent ####
+
+# devtools::install_github("marcosjnez/latent", force = TRUE)
 
 #### LCA (multinomial) ####
 
@@ -244,19 +244,25 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 set.seed(2026)
-# control <- list(free_S = TRUE, free_M = TRUE)
-fit <- lcfa(HolzingerSwineford1939, model = model,
-            estimator = "ml",
-            positive = FALSE, penalties = FALSE,
-            ordered = FALSE, acov = "standard",
-            std.lv = FALSE, std.ov = FALSE,
-            mimic = "latent",
-            meanstructure = TRUE,
-            # likelihood = "wishart",
+estimator <- "ml"
+std.ov <- FALSE
+std.lv <- FALSE
+meanstructure <- TRUE
+likelihood <- "normal"
+acov <- "standard"
+
+fit <- lcfa(HolzingerSwineford1939,
+            model = model,
+            estimator = estimator,
+            acov = acov,
+            std.ov = std.ov,
+            std.lv = std.lv,
+            meanstructure = meanstructure,
+            likelihood = likelihood,
             se = TRUE,
-            do.fit = TRUE,
-            control = NULL)
-fit@loss             # 0.283407
+            control = NULL,
+            do.fit = TRUE)
+fit@loss             # 0.283407 (ml)
 fit@loglik           # -3737.745
 fit@penalized_loglik # -3737.745
 fit@Optim$iterations
@@ -264,11 +270,14 @@ fit@Optim$convergence
 fit@timing
 
 # With lavaan:
-fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
-                    estimator = "ml",
-                    # likelihood = "wishart",
-                    std.lv = FALSE, std.ov = FALSE,
-                    meanstructure = TRUE)
+fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
+                    model = model,
+                    estimator = estimator,
+                    std.lv = std.lv,
+                    std.ov = std.ov,
+                    meanstructure = meanstructure,
+                    likelihood = likelihood,
+                    do.fit = TRUE)
 # Same loss value: OK
 fit2@Fit@fx*2      # 0.283407
 fit@loss           # 0.283407
@@ -291,16 +300,24 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
+estimator <- "ml"
+std.ov <- FALSE
+std.lv <- FALSE
+meanstructure <- TRUE
+likelihood <- "normal"
+acov <- "standard"
+
 fit <- lcfa(HolzingerSwineford1939,
             model = model,
             group = "school",
-            estimator = "ml",
-            ordered = FALSE,
-            std.lv = FALSE,
-            std.ov = FALSE,
-            likelihood = "normal",
-            meanstructure = TRUE,
+            estimator = estimator,
+            acov = acov,
+            std.ov = std.ov,
+            std.lv = std.lv,
+            meanstructure = meanstructure,
+            likelihood = likelihood,
             se = TRUE,
+            control = NULL,
             do.fit = TRUE)
 
 fit@loss             # 0.3848882
@@ -314,11 +331,11 @@ fit@timing
 fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
                     model = model,
                     group = "school",
-                    estimator = "ml",
-                    likelihood = "normal",
-                    std.lv = FALSE,
-                    std.ov = FALSE,
-                    meanstructure = TRUE,
+                    estimator = estimator,
+                    std.ov = std.ov,
+                    std.lv = std.lv,
+                    meanstructure = meanstructure,
+                    likelihood = likelihood,
                     do.fit = TRUE)
 fit2@loglik$loglik # -3682.198
 fit@loglik         # -3682.198
@@ -341,15 +358,13 @@ model <- 'visual  =~ x1 + x2 + x3
           x4 ~~ x5
           x4 ~~ x6'
 
-# With lavaan:
-fit2 <- cfa(model, data = HolzingerSwineford1939,
-            estimator = "ml", std.lv = FALSE, std.ov = FALSE)
-inspect(fit2, what = "est") # NEGATIVE VARIANCE
-det(inspect(fit2, what = "est")$theta)
-fit2@Fit@fx*2
-
 # With latent:
-set.seed(2026)
+estimator <- "ml"
+std.ov <- FALSE
+std.lv <- FALSE
+meanstructure <- TRUE
+likelihood <- "normal"
+acov <- "standard"
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
             estimator = "ml", ordered = FALSE,
             positive = TRUE,
@@ -373,6 +388,13 @@ det(fit@transformed_pars$psi.group)
 fit@parameters$lambda.group
 fit@transformed_pars$psi.group
 diag(fit@transformed_pars$theta.group)
+
+# With lavaan:
+fit2 <- cfa(model, data = HolzingerSwineford1939,
+            estimator = "ml", std.lv = FALSE, std.ov = FALSE)
+inspect(fit2, what = "est") # NEGATIVE VARIANCE
+det(inspect(fit2, what = "est")$theta)
+fit2@Fit@fx*2
 
 #### Multigroup CFA (nonpositive definite) ####
 
@@ -484,7 +506,6 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
 
 fit <- lcfa(model = model.EM, data = mooc,
             ordered = TRUE, estimator = "dwls",
-            # meanstructure = FALSE, std.ov = TRUE,
             positive = FALSE, penalties = FALSE,
             std.ov = FALSE,
             std.lv = FALSE,
@@ -507,24 +528,67 @@ fit2 <- lavaan::cfa(model = model.EM, data = mooc,
                     meanstructure = FALSE,
                     std.ov = FALSE,
                     std.lv = FALSE,
-                    parameterization = "theta",
-                    # parameterization = "delta",
+                    # parameterization = "theta",
+                    parameterization = "delta",
                     do.fit = TRUE)
 fit2@Fit@fx*2      # 0.4663271
 fit@loss           # 0.3817476
 fit2@loglik$loglik # -3737.745
 fit@loglik         # -90154.77
+
 lavaan::inspect(fit2, "est")$delta
 round(fit@parameters$delta, 3)
+
 diag(lavaan::inspect(fit2, "est")$theta)
 diag(round(fit@parameters$theta., 3))
+
 lavaan::inspect(fit2, "est")$lambda
 round(fit@parameters$lambda., 3)
+
 lavaan::inspect(fit2, "est")$psi
 round(fit@parameters$psi., 3)
 
+# fit@Optim$SE$se
+# fit2@ParTable$se
+
+#### CFA (Yule correlation) ####
+
+library(latent)
+library(lavaan)
+
+samples <- unique(hexaco$sample) # industry mooc fire student dutch
+Ns <- sapply(samples, FUN = function(x) sum(hexaco$sample == x))
+names(Ns) <- samples
+
+# Subset the items pertaining to the HEXACO-100
+selection <- 5:104
+full <- hexaco[, selection]
+
+mooc <- full[hexaco$sample == samples[2], ]
+dim(mooc)
+
+model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
+             ANX =~ hexemanx128 + hexemanx8 + hexemanx80 + hexemanx176
+             DEP =~ hexemdep62 + hexemdep182 + hexemdep134 + hexemdep158
+             SEN =~ hexemsen44 + hexemsen164 + hexemsen20 + hexemsen68"
+
+fit <- lcfa(model = model.EM, data = mooc,
+            ordered = "yule", estimator = "dwls",
+            positive = FALSE, penalties = FALSE,
+            std.ov = FALSE,
+            std.lv = FALSE,
+            meanstructure = FALSE,
+            se = TRUE,
+            do.fit = TRUE,
+            control = NULL)
+fit@loglik           # -90154.77 (ml)
+fit@penalized_loglik # -90154.77 (ml)
+fit@loss             # 497.0507 (dwls)
+fit@Optim$iterations
+fit@Optim$convergence
+fit@timing
+
 fit@Optim$SE$se
-fit2@ParTable$se
 
 #### Multigroup CFA (polychorics) ####
 
@@ -638,12 +702,33 @@ fit@Optim$SE$se
 
 #### lpearson ####
 
+library(latent)
+
 data <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
 fit <- lpearson(data = data, std.ov = FALSE,
                 acov = "standard", likelihood = "normal",
                 missing = "pairwise.complete.obs",
                 do.fit = TRUE)
 fit@parameters
+
+#### Polychorics ####
+
+library(latent)
+
+samples <- unique(hexaco$sample) # industry mooc fire student dutch
+Ns <- sapply(samples, FUN = function(x) sum(hexaco$sample == x))
+names(Ns) <- samples
+
+# Subset the items pertaining to the HEXACO-100
+selection <- 5:104
+selection <- 5:10
+full <- hexaco[, selection]
+
+mooc <- full[hexaco$sample == samples[2], ]
+dim(mooc)
+
+fit <- lyule(data = as.matrix(mooc),
+             do.fit = TRUE)
 
 #### Check derivatives ####
 

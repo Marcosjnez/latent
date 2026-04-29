@@ -1,38 +1,34 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/04/2026
+# Modification date: 29/04/2026
 
-lmean <- function(data,
+lyule <- function(data,
                   model = NULL,
-                  std.ov = FALSE,
                   do.fit = TRUE,
-                  message = FALSE,
                   control = NULL,
                   ...) {
-
-  control$std.ov <- std.ov
 
   ## store original call
   mc  <- match.call()
 
   # Check the arguments to control_optimizer and create defaults:
-  control <- lmean_control(control)
+  control <- lyule_control(control)
 
   #### Create the data_list ####
 
-  data_list <- create_lmean_datalist(data, control)
+  data_list <- create_lyule_datalist(data, control)
   list2env(data_list, envir = environment())
 
   #### Create the model ####
 
-  full_model <- create_lmean_model(data_list = data_list,
+  full_model <- create_lyule_model(data_list = data_list,
                                    model = model,
                                    control = control)
   list2env(full_model, envir = environment())
 
   #### Create the modelInfo ####
 
-  modelInfo <- create_lmean_modelInfo(data_list = data_list,
+  modelInfo <- create_lyule_modelInfo(data_list = data_list,
                                       full_model = full_model,
                                       control = control)
 
@@ -41,7 +37,7 @@ lmean <- function(data,
   if(!do.fit) {
 
     lcfa_list <- new("lcfa",
-                     version            = as.character( packageVersion('latent') ),
+                     version            = as.character(packageVersion('latent')),
                      call               = mc, # matched call
                      timing             = numeric(), # timing information
                      data_list          = data_list,
@@ -59,35 +55,22 @@ lmean <- function(data,
 
   }
 
-  if(message) {
-    msg <- "Fitting the model"
-    w <- nchar(msg) + 4
-    cat("\n", "+", strrep("-", w), "+\n",
-        "|  ", msg, "  |\n",
-        "+", strrep("-", w), "+\n\n", sep = "")
-  }
-
-  if(std.ov) {
-    means <- matrix(0, nrow = nitems, ncol = 1L)
-  } else {
-    means <- colMeans(data, na.rm = TRUE)
-  }
+  est_and_se <- yule_cor_full_rcpp(data)
+  S <- est_and_se$cor
+  rownames(S) <- colnames(S) <- item_names
 
   Optim <- list()
   Optim$f <- 0
 
-  Optim$parameters <- means
-  Optim$transparameters <- means
+  Optim$parameters <- S[lower.tri(S, diag = FALSE)]
+  Optim$transparameters <- S[lower.tri(S, diag = TRUE)]
   names(Optim$parameters) <- modelInfo$parameters_labels
   names(Optim$transparameters) <- modelInfo$transparameters_labels
 
   #### Standard errors ####
 
-  if(data_list$nobs < 2) {
-    Optim$SE$ACOV <- matrix(0, nrow = nitems, ncol = nitems)
-  } else {
-    Optim$SE$ACOV <- diag(apply(data, MARGIN = 2, FUN = var, na.rm = TRUE))
-  }
+  lower_idx <- lower.tri(est_and_se$cor, diag = FALSE)
+  Optim$SE$ACOV <- diag(est_and_se$se[lower_idx]^2)*data_list$nobs
 
   rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <-
     modelInfo$parameters_labels
@@ -116,7 +99,7 @@ lmean <- function(data,
   #### latent object ####
 
   result <- new("latent",
-                version            = as.character( packageVersion('latent') ),
+                version            = as.character(packageVersion('latent')),
                 call               = mc,
                 timing             = elapsed,
                 dataList           = data_list,
@@ -137,7 +120,7 @@ lmean <- function(data,
 
 }
 
-create_lmean_datalist <- function(data, control) {
+create_lyule_datalist <- function(data, control) {
 
   data_list <- vector("list")
   data_list$data <- data
@@ -150,7 +133,7 @@ create_lmean_datalist <- function(data, control) {
 
 }
 
-create_lmean_model <- function(data_list, model, control) {
+create_lyule_model <- function(data_list, model, control) {
 
   # Generate the model syntax and initial parameter values
 
@@ -160,20 +143,20 @@ create_lmean_model <- function(data_list, model, control) {
   # Initialize the objects to store the initial parameters:
   param <- trans <- vector("list")
 
-  #### Model for the transformed parameters ####
+  S_matrix <- paste("S.", control$subfix, sep = "")
 
-  means_vector <- paste("means.", control$subfix, sep = "")
+  #### Model for the transformed parameters ####
 
   # Transformed parameters:
   list_struct <- vector("list")
   k <- 1L
 
   # Covariance matrix:
-  list_struct[[k]] <- list(name = means_vector,
+  list_struct[[k]] <- list(name = S_matrix,
                            type = "matrix",
-                           dim = c(nitems, 1L),
+                           dim = c(nitems, nitems),
                            rownames = item_names,
-                           colnames = "intrcpt",
+                           colnames = item_names,
                            symmetric = TRUE)
   k <- k+1L
 
@@ -182,6 +165,7 @@ create_lmean_model <- function(data_list, model, control) {
   #### Model for the parameters ####
 
   param <- trans
+  diag(param[[S_matrix]]) <- 1
 
   #### Create the initial values for the parameters ####
 
@@ -189,9 +173,7 @@ create_lmean_model <- function(data_list, model, control) {
   for(rs in 1:control$rstarts) {
 
     init_param[[rs]] <- vector("list")
-    init_param[[rs]][[means_vector]] <- matrix(colMeans(data, na.rm = TRUE),
-                                               nrow = nitems, ncol = 1L,
-                                               dimnames = dimnames(trans[[means_vector]]))
+    init_param[[rs]][[S_matrix]] <- diag(1, nrow = data_list$nitems)
 
   }
 
@@ -225,7 +207,7 @@ create_lmean_model <- function(data_list, model, control) {
 
 }
 
-create_lmean_modelInfo <- function(data_list, full_model, control) {
+create_lyule_modelInfo <- function(data_list, full_model, control) {
 
   # Generate control_manifold, control_transform, and control_estimator
 
@@ -233,13 +215,13 @@ create_lmean_modelInfo <- function(data_list, full_model, control) {
   list2env(full_model, envir = environment())
   list2env(control, envir = environment())
 
-  means_vector <- paste("means", control$subfix, sep = "")
+  S_matrix <- paste("S.", control$subfix, sep = "")
 
   #### Manifolds ####
 
   manifolds <- list(
     list(manifold = "euclidean",
-         parameters = means_vector)
+         parameters = S_matrix)
   )
 
   control_manifold <- create_manifolds(manifolds = manifolds,
@@ -305,7 +287,7 @@ create_lmean_modelInfo <- function(data_list, full_model, control) {
 
 }
 
-lmean_control <- function(control) {
+lyule_control <- function(control) {
 
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L

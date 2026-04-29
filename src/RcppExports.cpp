@@ -313,6 +313,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// yule_cor_full_rcpp
+Rcpp::List yule_cor_full_rcpp(const Rcpp::DataFrame& X_df, int ipfp_maxit, double ipfp_tol, double pinv_tol);
+RcppExport SEXP _latent_yule_cor_full_rcpp(SEXP X_dfSEXP, SEXP ipfp_maxitSEXP, SEXP ipfp_tolSEXP, SEXP pinv_tolSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type X_df(X_dfSEXP);
+    Rcpp::traits::input_parameter< int >::type ipfp_maxit(ipfp_maxitSEXP);
+    Rcpp::traits::input_parameter< double >::type ipfp_tol(ipfp_tolSEXP);
+    Rcpp::traits::input_parameter< double >::type pinv_tol(pinv_tolSEXP);
+    rcpp_result_gen = Rcpp::wrap(yule_cor_full_rcpp(X_df, ipfp_maxit, ipfp_tol, pinv_tol));
+    return rcpp_result_gen;
+END_RCPP
+}
 // real_sqrtmat
 arma::mat real_sqrtmat(arma::mat R);
 RcppExport SEXP _latent_real_sqrtmat(SEXP RSEXP) {
@@ -423,6 +437,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 5},
     {"_latent_get_vcov", (DL_FUNC) &_latent_get_vcov, 5},
     {"_latent_get_jacob", (DL_FUNC) &_latent_get_jacob, 4},
+    {"_latent_yule_cor_full_rcpp", (DL_FUNC) &_latent_yule_cor_full_rcpp, 4},
     {"_latent_real_sqrtmat", (DL_FUNC) &_latent_real_sqrtmat, 1},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},
     {"_latent_joint_frequency_table", (DL_FUNC) &_latent_joint_frequency_table, 5},

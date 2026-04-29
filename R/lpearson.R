@@ -110,18 +110,18 @@ lpearson <- function(data,
   #### Standard errors ####
 
   if(acov == "standard") {
-    Optim$SE$ACOV <- ACOV <- asymptotic_normal(S, cov = !std.ov,
-                                               diag = FALSE)
+    Optim$SE$ACOV <- asymptotic_normal(S, cov = !std.ov,
+                                       diag = FALSE)
   } else if (acov == "robust") {
-    Optim$SE$ACOV <- ACOV <- asymptotic_general(as.matrix(data), cov = !std.ov,
-                                                diag = FALSE)
+    Optim$SE$ACOV <- asymptotic_general(as.matrix(data), cov = !std.ov,
+                                        diag = FALSE)
   } else {
     stop("Unknown `acov` argument")
   }
 
   rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <-
     modelInfo$parameters_labels
-  Optim$SE$se <- sqrt(diag(Optim$SE$ACOV))
+  Optim$SE$se <- sqrt(diag(Optim$SE$ACOV) / data_list$nobs)
 
   # Collect all the information about the optimization:
 
@@ -190,9 +190,9 @@ create_lpearson_model <- function(data_list, model, control) {
   # Initialize the objects to store the initial parameters:
   param <- trans <- vector("list")
 
-  #### Model for the transformed parameters ####
-
   S_matrix <- paste("S.", control$subfix, sep = "")
+
+  #### Model for the transformed parameters ####
 
   # Transformed parameters:
   list_struct <- vector("list")
@@ -264,7 +264,7 @@ create_lpearson_modelInfo <- function(data_list, full_model, control) {
   list2env(full_model, envir = environment())
   list2env(control, envir = environment())
 
-  S_matrix <- paste("S", control$subfix, sep = "")
+  S_matrix <- paste("S.", control$subfix, sep = "")
 
   #### Manifolds ####
 

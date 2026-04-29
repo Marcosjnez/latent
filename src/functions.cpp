@@ -49,6 +49,7 @@
 #include <R_ext/Utils.h>
 #include <Rinternals.h>
 #include <R_ext/Print.h>   // For Rprintf()
+#include "yule_copula_measure.h"
 
 // [[Rcpp::export]]
 Rcpp::List optimizer(Rcpp::List control_manifold,
@@ -133,3 +134,9 @@ Rcpp::List get_jacob(Rcpp::List control_manifold,
                      Rcpp::List control_transform,
                      Rcpp::List control_estimator,
                      Rcpp::List control_optimizer);
+
+// [[Rcpp::export]]
+Rcpp::List yule_cor_full_rcpp(const Rcpp::DataFrame& X_df,
+                              int ipfp_maxit = 2000,
+                              double ipfp_tol = 1e-12,
+                              double pinv_tol = 1e-12);

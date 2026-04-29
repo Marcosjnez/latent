@@ -1,10 +1,5 @@
-// yule_copula_measure.cpp
-#include <RcppArmadillo.h>
-#include <unordered_map>
 using namespace Rcpp;
 using namespace arma;
-
-// [[Rcpp::depends(RcppArmadillo)]]
 
 // -----------------------------
 // Utilities
@@ -31,7 +26,6 @@ static inline arma::uword pos_idx(unsigned int i, unsigned int j, unsigned int R
 // targets: floor(total / R) repeated R times ; floor(total / S) repeated S times
 // returns a matrix that sums to 1 (copula pmf)
 // -----------------------------
-// [[Rcpp::export]]
 arma::mat copula_pmf_armadillo(const arma::mat& H,
     int max_iter = 2000,
     double tol = 1e-12) {
@@ -189,7 +183,6 @@ static inline arma::mat build_A_Sp_from_H(const arma::mat& H) {
 // Core: compute upsilon + variance + se from contingency H
 // Returns list(upsilon, variance, se, structural_zeros)
 // -----------------------------
-// [[Rcpp::export]]
 Rcpp::List upsilon_full_H_rcpp(const arma::mat& H_in,
     int ipfp_maxit = 2000,
     double ipfp_tol = 1e-12,
@@ -280,7 +273,6 @@ Rcpp::List upsilon_full_H_rcpp(const arma::mat& H_in,
 // Overload: compute from two integer-coded vectors (R factors -> as.integer)
 // xi, yi are IntegerVector (R-side) - may contain arbitrary integer codes
 // -----------------------------
-// [[Rcpp::export]]
 Rcpp::List upsilon_full_xy_rcpp(const IntegerVector& x_in,
     const IntegerVector& y_in,
     int ipfp_maxit = 2000,
@@ -317,11 +309,10 @@ Rcpp::List upsilon_full_xy_rcpp(const IntegerVector& x_in,
 // Pairwise matrix: accepts R data.frame (handles factor columns)
 // Returns list(cor=matrix, se=matrix) similar to R version
 // -----------------------------
-// [[Rcpp::export]]
 Rcpp::List yule_cor_full_rcpp(const Rcpp::DataFrame& X_df,
-    int ipfp_maxit = 2000,
-    double ipfp_tol = 1e-12,
-    double pinv_tol = 1e-12) {
+    int ipfp_maxit,
+    double ipfp_tol,
+    double pinv_tol) {
     int P = X_df.size();
     int N = X_df.nrows();
 
@@ -359,7 +350,6 @@ Rcpp::List yule_cor_full_rcpp(const Rcpp::DataFrame& X_df,
 // -----------------------------
 // Recover observed joint pmf from copula pmf + marginals
 // -----------------------------
-// [[Rcpp::export]]
 arma::mat observed_pmf_from_copula_rcpp(const arma::mat& Cop,      // copula pmf (R x S)
     const arma::vec& pr,       // row marginals (length R)
     const arma::vec& pc,       // column marginals (length S)
@@ -419,7 +409,6 @@ arma::mat observed_pmf_from_copula_rcpp(const arma::mat& Cop,      // copula pmf
 // Simulate contingency table from copula + marginals
 // Asymptotically: H / N -> observed_pmf_from_copula
 // -----------------------------
-// [[Rcpp::export]]
 arma::mat simulate_table_from_copula_rcpp(const arma::mat& Cop,   // copula pmf (R x S)
     const arma::vec& pr,    // row marginals
     const arma::vec& pc,    // column marginals

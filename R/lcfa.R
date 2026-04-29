@@ -34,7 +34,6 @@
 #' @param message Logical. Defaults to FALSE.
 #' @param se Logical. Compute standard errors. Defaults to TRUE.
 #' @param likelihood String. Use N (normal) or N-1 (wishart) in the denominator. Defaults to "normal" for ML and "wishart" otherwise.
-#' @param mimic String. Choose the output you want to obtain. Defaults to 'latent'.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
 #' @param ... Additional lavaan arguments. See ?lavaan for more information.
 #'
@@ -70,6 +69,7 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                  missing = "pairwise.complete.obs",
                  std.lv = FALSE, std.ov = FALSE,
                  acov = "standard", meanstructure = TRUE,
+                 parameterization = NULL,
                  likelihood = NULL, se = TRUE,
                  control = NULL, message = FALSE,
                  do.fit = TRUE,
@@ -78,11 +78,19 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   ## store original call
   mc  <- match.call()
 
-  if(ordered) {
+  estimator <- tolower(estimator)
+  missing <- tolower(missing)
+
+  if(isTRUE(ordered)) {
 
     cor <- "poly"
     std.ov <- TRUE
-    # control$free_M <- FALSE
+
+    # if(parameterization == "theta") {
+    #   control$deltaparam <- FALSE
+    # } else if(parameterization == "delta") {
+    #   control$deltaparam <- TRUE
+    # }
 
     if(positive) {
       control$deltaparam <- FALSE
@@ -91,12 +99,13 @@ lcfa <- function(data, model = NULL, estimator = "ml",
       control$deltaparam <- TRUE
     }
 
+  } else if(ordered == "yule") {
+    cor <- "yule"
+    std.ov <- TRUE
+    control$deltaparam <- TRUE
   } else {
     cor <- "pearson"
   }
-
-  estimator <- tolower(estimator)
-  missing <- tolower(missing)
 
   if(estimator == "ml" || is.null(likelihood)) {
     likelihood <- "normal"
@@ -409,6 +418,10 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
                             method = "two-step",
                             control = control,
                             do.fit = TRUE)
+    } else if(cor == "yule") {
+      fit_cov[[i]] <- lyule(data = X[[i]],
+                            control = control,
+                            do.fit = TRUE)
     } else {
       stop("Unknown correlation type")
     }
@@ -422,20 +435,6 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
     thresholds[[i]] <- fit_cov[[i]]@transformed_pars[idx_taus]
 
   }
-
-  # # Compute the weight matrices:
-  # for (i in seq_len(ngroups)) {
-  #   p <- fit_cov[[i]]@dataList$nitems
-  #   if(estimator %in% c("uls", "means_uls", "ml", "fml", "means_fml")) {
-  #     W[[i]] <- matrix(1, nrow = p, ncol = p)
-  #   } else {
-  #     W[[i]] <- matrix(NA_real_, nrow = p, ncol = p)
-  #     W[[i]][lower.tri(W[[i]], diag = !std.ov)] <- diag(ACOV[[i]])
-  #     W[[i]][upper.tri(W[[i]])] <- t(W[[i]])[upper.tri(W[[i]])]
-  #     W[[i]] <- 1 / W[[i]]
-  #     if(std.ov) diag(W[[i]]) <- 1
-  #   }
-  # }
 
   LAV <- lavaan::cfa(
     model = model,
@@ -1104,7 +1103,7 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
         idx <- startsWith(rownames(acov_cov[[i]][[j]]), "S.")
         W_cov <- matrix(NA_real_, nrow = p, ncol = p)
         W_cov[lower.tri(W_cov, diag = !control$std.ov)] <-
-          diag(acov_cov[[i]][[j]][idx, idx])
+          diag(acov_cov[[i]][[j]][idx, idx]) / nobs_ij[[i]][[j]]
         W_cov[upper.tri(W_cov)] <- t(W_cov)[upper.tri(W_cov)]
         W_cov <- 1 / W_cov
         # if(control$std.ov) {
@@ -1112,7 +1111,8 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
         # } else {
         #   diag(W_cov) <- 0
         # }
-        diag(W_cov) <- 1
+        diag(W_cov) <- 100000
+        # if(control$std.ov) diag(W_cov) <- 0
       }
       w_means <- diag(acov_means[[i]][[j]])
 

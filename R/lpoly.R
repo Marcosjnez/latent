@@ -209,7 +209,7 @@ lpoly <- function(data,
   # Optim$SE$ACOV <- solve(x$h)
   # rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <- modelInfo$parameters_labels
 
-  Optim$SE$se <- sqrt(diag(Optim$SE$ACOV))
+  Optim$SE$se <- sqrt(diag(Optim$SE$ACOV) / data_list$nobs)
   # ADD CONSTRAINTS FOR OBLIQUE MANIFOLD
 
   #### Estimated model structures ####

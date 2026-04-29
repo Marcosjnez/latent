@@ -42,17 +42,15 @@ control = NULL, ...)
 
 \item{meanstructure}{Logical. Estimate the means of the variables. Default is FALSE.}
 
-\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
-
-\item{message}{Logical. Defaults to FALSE.}
-
 \item{likelihood}{String. Use N (normal) or N-1 (wishart) in the denominator. Defaults to "normal" for ML and "wishart" otherwise.}
 
 \item{se}{Logical. Compute standard errors. Defaults to TRUE.}
 
-\item{mimic}{String. Choose the output you want to obtain. Defaults to 'latent'.}
-
 \item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+
+\item{message}{Logical. Defaults to FALSE.}
+
+\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
 
 \item{...}{Additional lavaan arguments. See ?lavaan for more information.}
 }

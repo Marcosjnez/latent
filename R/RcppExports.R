@@ -93,6 +93,10 @@ get_jacob <- function(control_manifold, control_transform, control_estimator, co
     .Call(`_latent_get_jacob`, control_manifold, control_transform, control_estimator, control_optimizer)
 }
 
+yule_cor_full_rcpp <- function(X_df, ipfp_maxit = 2000L, ipfp_tol = 1e-12, pinv_tol = 1e-12) {
+    .Call(`_latent_yule_cor_full_rcpp`, X_df, ipfp_maxit, ipfp_tol, pinv_tol)
+}
+
 real_sqrtmat <- function(R) {
     .Call(`_latent_real_sqrtmat`, R)
 }
