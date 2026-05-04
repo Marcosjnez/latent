@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 04/05/2026
 
 se_twostep <- function(fit2, type = "standard") {
 
@@ -15,9 +15,9 @@ se_twostep <- function(fit2, type = "standard") {
   VCOV2 <- se(fit2, type = type)
 
   # Get the full model structure without constraints:
-  args <- fit1@data_list$args
+  args <- fit1@dataList$args
   args$do.fit <- FALSE
-  args$X <- fit2@data_list$original_X
+  args$X <- fit2@dataList$original_X
   fit <- do.call(lca, args)
   # fit@modelInfo$param
 

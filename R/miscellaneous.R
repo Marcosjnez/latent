@@ -118,6 +118,7 @@ fill_in <- function(lst, values, miss = NA) {
   }
 
   recurse(lst)
+
 }
 
 extract_unique_values <- function(chars, vals, miss = 0) {

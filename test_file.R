@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 29/04/2026
+# Modification date: 04/05/2026
 
 #### Build the package ####
 
@@ -15,13 +15,9 @@
 library(latent)
 set.seed(2026)
 fit <- lca(data = gss82, nclasses = 3,
-           # multinomial = c("X1", "X2"),
-           # poisson = ,
-           # beta = ,
-           # mimic = "LT",
+           multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
            # model = formula(X1 ~ 1 + cluster1,
            #                 X2 ~ 1 + cluster2),
-           item = rep("multinomial", ncol(gss82)),
            penalties = TRUE,
            control = list(opt = "newton",
                           step_maxit = 100,
@@ -46,33 +42,35 @@ getfit(fit)
 summary(fit)
 
 # Inspect model objects:
-latInspect(fit, what = "pattern", digits = 3)
-latInspect(fit, what = "coefs", digits = 3)
-latInspect(fit, what = "classes", digits = 3)
-latInspect(fit, what = "profile", digits = 3)
-latInspect(fit, what = "posterior", digits = 3)
-latInspect(fit, what = "table", digits = 3)
+latInspect(fit, what = "pattern")
+latInspect(fit, what = "coefs")
+latInspect(fit, what = "classes")
+latInspect(fit, what = "profile")
+latInspect(fit, what = "posterior")
+latInspect(fit, what = "table")
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "model", digits = 4)
+SE <- se(fit, type = "standard", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "model",
-         confidence = 0.95, digits = 2)
+CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
 CI$table
+
+# Plot coefficients' odds ratios:
+plot(fit, type = "standard", what = "OR", effects = "coding",
+     confidence = 0.95, mfrow = c(2, 2))
 
 #### LCA (gaussian) ####
 
 library(latent)
 set.seed(2026)
-fit <- lca(data = empathy[, 1:6], nclasses = 4L,
-           item = rep("gaussian", ncol(empathy[, 1:6])),
+fit <- lca(data = empathy, nclasses = 4L,
+           gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
            penalties = TRUE, do.fit = TRUE,
            control = list(opt = "lbfgs",
                           step_maxit = 100,
                           tcg_maxit = 100))
-latInspect(fit, what = "classes", digits = 3)
 
 fit@loglik # -1841.336
 fit@penalized_loglik # -1844.333
@@ -90,28 +88,31 @@ fit
 getfit(fit)
 
 # Inspect model objects:
-latInspect(fit, what = "coefs", digits = 3)
-latInspect(fit, what = "classes", digits = 3)
-latInspect(fit, what = "profile", digits = 3)
-latInspect(fit, what = "posterior", digits = 3)
+latInspect(fit, what = "coefs")
+latInspect(fit, what = "classes")
+latInspect(fit, what = "profile")
+latInspect(fit, what = "posterior")
 
 # Get standard errors:
-SE <- se(fit, type = "standard", model = "model", digits = 4)
+SE <- se(fit, type = "standard", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "model",
-         confidence = 0.95, digits = 2)
+CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
 CI$table
+
+# Plot coefficients' odds ratios:
+plot(fit, type = "standard", what = "OR", effects = "coding",
+     confidence = 0.95, mfrow = c(2, 2))
 
 #### Mixed LCA (multinomial and gaussian) ####
 
 library(latent)
 set.seed(2026)
-fit <- lca(data = cancer[, 1:6], nclasses = 3L,
-           item = c("gaussian", "gaussian",
-                    "multinomial", "multinomial",
-                    "gaussian", "gaussian"),
+fit <- lca(data = cancer, nclasses = 3L,
+           gaussian = c("Age", "WeightIndex", "SystolicBloodPressure",
+                        "DiastolicBloodPressure"),
+           multinomial = c("PerformanceRating", "CardiovascularDiseaseHistory"),
            control = list(opt = "lbfgs",
                           step_maxit = 100,
                           tcg_maxit = 100),
@@ -131,32 +132,34 @@ fit
 getfit(fit)
 
 # Inspect model objects:
-latInspect(fit, what = "coefs", digits = 3)
-latInspect(fit, what = "classes", digits = 3)
-latInspect(fit, what = "profile", digits = 3)
-latInspect(fit, what = "posterior", digits = 3)
+latInspect(fit, what = "coefs")
+latInspect(fit, what = "classes")
+latInspect(fit, what = "profile")
+latInspect(fit, what = "posterior")
 
 # Get standard errors:
-SE <- se(fit, type = "robust", model = "model", digits = 4)
+SE <- se(fit, type = "standard", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", model = "model",
-         confidence = 0.95, digits = 2)
+CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
 CI$table
+
+# Plot coefficients' odds ratios:
+plot(fit, type = "standard", what = "OR", effects = "coding",
+     confidence = 0.95, mfrow = c(2, 2))
 
 # hypothesis(fit, "b1|2 - b1|3 = 0")
 
 #### LCA with covariates (gaussian) ####
 
 library(latent)
-data <- empathy[, 1:6]
-X <- as.matrix(empathy[, 7:8]) # Covariates
 
 set.seed(2026)
-fit1 <- lca(data = data, X = NULL, model = NULL,
-            item = rep("gaussian", ncol(data)),
-            nclasses = 4L, penalties = TRUE,
+fit1 <- lca(data = empathy,
+            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+            nclasses = 4L,
+            penalties = TRUE,
             control = list(opt = "lbfgs",
                            step_maxit = 100,
                            tcg_maxit = 100),
@@ -168,15 +171,17 @@ fit1@Optim$ng
 fit1@timing
 
 set.seed(2026)
-Y <- as.matrix(empathy[, 9:10]) # Covariates
-fit2 <- lca(data = data, X = cbind(X, Y), model = fit1,
-           item = rep("gaussian", ncol(data)),
-           nclasses = 4L, penalties = TRUE,
-           do.fit = TRUE,
-           control = list(opt = "lbfgs",
-                          step_maxit = 100,
-                          tcg_maxit = 100))
-fit2@loglik # -1747.135
+fit2 <- lca(data = empathy,
+            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+            nclasses = 4L,
+            penalties = TRUE,
+            X = c("pt1", "pt2", "pt3", "pt4"),
+            model = fit1,
+            do.fit = TRUE,
+            control = list(opt = "lbfgs",
+                           step_maxit = 100,
+                           tcg_maxit = 100))
+fit2@loglik           # -1747.135
 fit2@penalized_loglik # -1750.566
 fit2@Optim$iterations
 fit2@Optim$convergence
@@ -187,9 +192,9 @@ fit2@timing
 all.equal(fit1@parameters[-1], fit2@parameters[-1])
 
 # Standard errors:
-SE1 <- se(fit1, type = "standard", model = "model", digits = 4)
+SE1 <- se(fit1, type = "standard", digits = 4)
 SE1$se
-SE2 <- se(fit2, type = "standard", model = "model", digits = 4)
+SE2 <- se(fit2, type = "standard", digits = 4)
 SE2$se
 
 # Effects-coding parameterization:
@@ -202,21 +207,20 @@ new_se$se
 fit2
 
 # Get fit2 indices:
-getfit2(fit2)
+getfit(fit2)
 
 # Inspect model objects:
-latInspect(fit2, what = "coefs", digits = 5)
-latInspect(fit2, what = "classes", digits = 5)
-latInspect(fit2, what = "profile", digits = 3)
-latInspect(fit2, what = "posterior", digits = 3)
+latInspect(fit2, what = "coefs")
+latInspect(fit2, what = "classes")
+latInspect(fit2, what = "profile")
+latInspect(fit2, what = "posterior")
 
 predict(fit2, new = rbind(c(2, 2, 2.428571, 2.142857),
-                         c(1, 2, 3, 4)))
+                          c(1, 2, 3, 4)))
 fitted(fit2)
 
 # Get confidence intervals:
-CI <- ci(fit2, type = "standard", model = "model",
-         confidence = 0.95, digits = 2)
+CI <- ci(fit2, type = "standard", confidence = 0.95, digits = 2)
 CI$table
 
 x <- plot.llca(fit2,
@@ -495,7 +499,6 @@ names(Ns) <- samples
 # Subset the items pertaining to the HEXACO-100
 selection <- 5:104
 full <- hexaco[, selection]
-
 mooc <- full[hexaco$sample == samples[2], ]
 dim(mooc)
 
@@ -504,27 +507,28 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
              DEP =~ hexemdep62 + hexemdep182 + hexemdep134 + hexemdep158
              SEN =~ hexemsen44 + hexemsen164 + hexemsen20 + hexemsen68"
 
-fit <- lcfa(model = model.EM, data = mooc,
-            ordered = TRUE, estimator = "dwls",
-            positive = FALSE, penalties = FALSE,
+fit <- lcfa(data = mooc,
+            model = model.EM,
+            ordered = TRUE,
+            estimator = "dwls",
             std.ov = FALSE,
             std.lv = FALSE,
             meanstructure = FALSE,
             se = TRUE,
-            do.fit = TRUE,
-            control = NULL)
+            control = NULL,
+            do.fit = TRUE)
 fit@loglik           # -90154.77 (ml)
 fit@penalized_loglik # -90154.77 (ml)
-fit@loss             # 0.3817476 (dwls)
+fit@loss             # 0.3845136 (dwls)
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 
 # With lavaan:
-fit2 <- lavaan::cfa(model = model.EM, data = mooc,
+fit2 <- lavaan::cfa(data = mooc,
+                    model = model.EM,
                     ordered = TRUE,
                     estimator = "dwls",
-                    # likelihood = "wishart",
                     meanstructure = FALSE,
                     std.ov = FALSE,
                     std.lv = FALSE,

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 04/05/2026
 #'
 #' @title
 #' Predicted values for Latent Class Analysis.
@@ -25,11 +25,12 @@
 #' None yet.
 #'
 #' @export
-predict.llca <- function(model, new = NULL, digits = NULL) {
+predict.llca <- function(model, new = NULL) {
 
   if(is.null(new) || ncol(new) == 0) {
 
-    X <- model@data_list$X
+    X <- model@dataList$X
+    rownames(X) <- rownames(model@dataList$data)
 
   } else {
 
@@ -56,34 +57,30 @@ predict.llca <- function(model, new = NULL, digits = NULL) {
 
   }
 
-  Z0 <- X %*% model@parameters$beta
+  Z0 <- X %*% model@transformed_pars$beta
   linpreds <- apply(Z0, MARGIN = 1, FUN = latent::soft, a = 1.00)
   if(is.vector(linpreds)) {
     P0 <- matrix(linpreds, ncol = 1)
   } else {
     P0 <- t(linpreds)
   }
-  rownames(P0) <- rownames(X)
   colnames(P0) <- colnames(model@transformed_pars$class)
 
-  if(!is.null(digits)) {
-    P0 <- round(P0, digits = digits)
-  }
-
-  return(data.frame(X[,-1], P0) )
+  remove <- -match("(Intercept)", colnames(X))
+  return(data.frame(X[, remove], P0))
 
 }
 
 #' @method predict llcalist
 #' @export
-predict.llcalist <- function(model, digits = NULL) {
+predict.llcalist <- function(model) {
 
   nmodels <- length(model)
   out <- vector("list", length = nmodels)
   for(i in 1:nmodels) {
 
-    out[[i]] <- predict.llca(model[[i]], digits = digits)
-    names(out)[i] <- paste("nclasses = ", model[[i]]@datalist$nclasses,
+    out[[i]] <- predict.llca(model[[i]])
+    names(out)[i] <- paste("nclasses = ", model[[i]]@dataList$nclasses,
                            sep = "")
 
   }

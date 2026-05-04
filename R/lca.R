@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/04/2026
+# Modification date: 04/05/2026
 #'
 #' @title
 #' Latent Class Analysis.
@@ -12,7 +12,7 @@
 #' @usage
 #'
 #' lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-#'     X = NULL, penalties = TRUE, model = NULL, mimic = "LG",
+#'     X = NULL, penalties = TRUE, model = NULL,
 #'     start = NULL, do.fit = TRUE, verbose = TRUE, control = NULL)
 #'
 #' @param data data frame or matrix.
@@ -21,7 +21,6 @@
 #' @param X Matrix of covariates.
 #' @param penalties Boolean or list of penalty terms for the parameters.
 #' @param model List of parameter labels. See 'details' for more information.
-#' @param mimic String. Replicate the output of other softwares. Use "LG" to replicate the output of LatentGOLD.
 #' @param start List of starting values for the parameters. See 'details' for more information.
 #' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
 #' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
@@ -90,13 +89,33 @@
 #' None yet.
 #'
 #' @export
-lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-                X = NULL, penalties = TRUE, model = NULL, mimic = "LG",
-                start = NULL, do.fit = TRUE, control = NULL, verbose = TRUE) {
+lca <- function(data, nclasses = 1L,
+                gaussian = NULL,
+                multinomial = NULL,
+                X = NULL,
+                penalties = TRUE,
+                model = NULL,
+                start = NULL,
+                control = NULL,
+                do.fit = TRUE,
+                verbose = TRUE) {
 
   ## store original call
   mc  <- match.call()
   args <- as.list(match.call(expand.dots = TRUE))[-1]
+
+  if(is.character(X)) {
+    X <- data[, X]
+  }
+
+  ngaussian <- length(gaussian)
+  nmultinomial <- length(multinomial)
+  model_labels <- rep(c("gaussian", "multinomial"),
+                      times = c(ngaussian, nmultinomial))
+  model_vector <- c(gaussian, multinomial)
+  idx <- match(colnames(data), model_vector); idx <- idx[!is.na(idx)]
+  data <- data[, model_vector[idx]]
+  item <- model_labels[idx]
 
   original_model <- model
   original_X <- X
@@ -239,30 +258,30 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
                                                        with = FALSE]))
 
   # Put in a list the objects generated form the data:
-  data_list <- vector("list")
-  data_list$data <- data
-  data_list$X <- X
-  data_list$item <- item
-  data_list$nobs <- nobs
-  data_list$patterns <- patterns
-  data_list$cov_patterns2 <- cov_patterns2
-  data_list$npatterns <- npatterns
-  data_list$npossible_patterns <- npossible_patterns
-  data_list$nitems <- nitems
-  data_list$weights <- weights
-  data_list$full2short <- full2short
-  data_list$short2full <- short2full
-  data_list$item_names <- colnames(data)
-  data_list$factor_indices <- factor_indices
-  data_list$factor_names <- factor_names
-  data_list$cov_patterns <- cov_patterns
-  data_list$ncov_patterns <- ncov_patterns
-  data_list$cov_full2short <- cov_full2short
-  data_list$cov_short2full <- cov_short2full
-  data_list$original_X <- original_X
-  data_list$args <- args
-  data_list$original_model <- original_model
-  data_list$nclasses <- nclasses
+  dataList <- vector("list")
+  dataList$data <- data
+  dataList$X <- X
+  dataList$item <- item
+  dataList$nobs <- nobs
+  dataList$patterns <- patterns
+  dataList$cov_patterns2 <- cov_patterns2
+  dataList$npatterns <- npatterns
+  dataList$npossible_patterns <- npossible_patterns
+  dataList$nitems <- nitems
+  dataList$weights <- weights
+  dataList$full2short <- full2short
+  dataList$short2full <- short2full
+  dataList$item_names <- colnames(data)
+  dataList$factor_indices <- factor_indices
+  dataList$factor_names <- factor_names
+  dataList$cov_patterns <- cov_patterns
+  dataList$ncov_patterns <- ncov_patterns
+  dataList$cov_full2short <- cov_full2short
+  dataList$cov_short2full <- cov_short2full
+  dataList$original_X <- original_X
+  dataList$args <- args
+  dataList$original_model <- original_model
+  dataList$nclasses <- nclasses
 
   #### Initialize objects to store all the models ####
 
@@ -292,27 +311,18 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     #### Create the model ####
 
     # Get the model specification:
-    full_model <- create_lca_model(data_list = data_list, nclasses = nclasses,
+    full_model <- create_lca_model(dataList = dataList, nclasses = nclasses,
                                    item = item, model = model,
                                    control = control)
     list2env(full_model, envir = environment())
 
-    # Get the short model specification (in logarithm and probability scale) with
-    # labels for each parameter:
-    short_model <- get_short_lca_model(data_list = data_list, nclasses = nclasses,
-                                       item = item, trans = trans,
-                                       param = param, model = model)
-    list2env(short_model, envir = environment())
-
     #### Create the structures ####
 
     # Generate the structures for optimization:
-    modelInfo <- create_lca_modelInfo(data_list = data_list,
+    modelInfo <- create_lca_modelInfo(dataList = dataList,
                                       full_model = full_model,
                                       control = control)
     modelInfo$original_model <- original_model
-    modelInfo$model <- log_model
-    modelInfo$prob_model <- prob_model
 
     #### Fit the model ####
 
@@ -322,24 +332,19 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
     if(!do.fit) {
 
       llca_list[[NK]] <- new("llca",
-                             version            = as.character( packageVersion('latent') ),
-                             call               = mc, # matched call
-                             timing             = numeric(), # timing information
-                             data_list          = data_list,
+                             version            = as.character(packageVersion('latent')),
+                             call               = mc,
+                             timing             = numeric(),
+                             dataList           = dataList,
                              modelInfo          = modelInfo,
                              Optim              = list(),
-                             user_model         = list(),
                              parameters         = list(),
                              transformed_pars   = list(),
-                             posterior          = matrix(),
-                             state              = vector(),
-                             loglik             = numeric(), # loglik values
+                             loglik             = numeric(),
                              penalized_loglik   = numeric(),
-                             loglik_case        = numeric(),
-                             summary_table      = data.frame(),
-                             ClassConditional   = list(),
-                             RespConditional    = list(),
-                             probCat            = list()
+                             loss               = numeric(),
+                             penalized_loss     = numeric(),
+                             extra              = list()
       )
 
       next # Go to the next model with a different value of "nclasses"
@@ -361,113 +366,41 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
     #### Process the outputs ####
 
-    # Logarithm likelihood:
-    loglik <- Optim$outputs$estimators$doubles[[1]][1]
-    penalized_loglik <- Optim$f
-    # penalized_loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-    #                                       FUN = \(x) x[[1]])))
-
     # Create the transformed parameters:
     transformed_pars <- fill_in(modelInfo$trans,
                                 Optim$transparameters)
 
     parameters <- transformed_pars[names(modelInfo$param)]
 
-    # Logarithm likelihood of each response pattern:
-    loglik_case <- Optim$outputs$estimators$vectors[[1]][[1]]
-    # Sum of logarithm likelihoods by response pattern:
-    loglik_pattern <- weights * loglik_case
+    #### Process the fit information ####
 
-    ## Summary table with information for each response pattern ##
-    # Estimated "counts" for each response pattern:
-    estimated <- exp(loglik_case) * nobs
-    # Posterior:
-    posterior <- exp(matrix(Optim$outputs$estimators$matrices[[1]][[2]],
-                            nrow = npatterns, ncol = nclasses))
-    colnames(posterior) <- paste("P(", "Class", 1:nclasses, "|Y)", sep = "")
-    # Posterior classification:
-    state <- apply(posterior, MARGIN = 1, FUN = which.max)
-    # Data table of response patterns:
-    summary_table <- cbind(Pattern = patterns + 1,
-                           Observed = weights,
-                           Estimated = estimated,
-                           Posterior = posterior,
-                           State = state,
-                           loglik_case = loglik_case,
-                           loglik_pattern = loglik_pattern)
-    summary_table <- as.data.frame(summary_table)
-    # Sort the patterns by increasing order:
-    summary_table <- summary_table[do.call(order, as.data.frame(summary_table)), ]
-    rownames(summary_table) <- paste("pattern", 1:nrow(summary_table), sep = "")
+    loss <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
+                              FUN = \(x) x[[1]])))
+    loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
+                                FUN = \(x) x[[2]])))
+    penalty <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
+                                 FUN = \(x) x[[5]])))
+    penalized_loss <- loss + penalty
+    penalized_loglik <- loglik - penalty
 
-    # Check the existence of gaussian items:
-    gauss <- "gaussian" %in% item
-    # Check the existence of multinomial items:
-    multin <- "multinomial" %in% item
-
-    # Create the parameter table:
-    user_model <- fill_in(prob_model, Optim$transparameters)
-
-    ClassConditional <- user_model[-1]
-    RespConditional <- probCat <- list() # Only for full multinomial models
-
-    # Additional outputs for full multinomial models:
-    if(all(item == "multinomial")) {
-
-      classes <- colMeans(transformed_pars$class)
-      conditionals <- ClassConditional
-
-      probCat <- lapply(conditionals, FUN = \(mat) {
-        # Calculate P(y|X)*P(X), the joint probability:
-        jointp <- t(mat) * classes
-        # Calculate P(y), the denominator of the posterior:
-        probCat <- colSums(jointp)
-        return(probCat)
-      })
-
-      RespConditional <- lapply(conditionals, FUN = \(mat) {
-        # Calculate P(y|X)*P(X), the joint probability:
-        jointp <- t(mat) * classes
-        # Calculate P(y), the denominator of the posterior:
-        probCat <- colSums(jointp)
-        # Calculate P(X|y) = P(y|X)*P(X)/P(y), the posterior:
-        posterior <- t(jointp) / probCat
-        return(posterior)
-      })
-
-      names(RespConditional) <- colnames(data)
-
-    }
-
-    #### Return ####
-
-    loglik_case <- loglik_case[short2full]
-    posterior <- posterior[short2full, , drop = FALSE]
-    state <- state[short2full]
-    rownames(posterior) <- names(state) <-
-      names(loglik_case) <- rownames(data)
+    #### latent object ####
 
     elapsed <- Optim$elapsed
 
     llca_list[[NK]] <- new("llca",
-                           version            = as.character( packageVersion('latent') ),
-                           call               = mc, # matched call
-                           timing             = elapsed, # timing information
-                           data_list          = data_list,
+                           version            = as.character(packageVersion('latent')),
+                           call               = mc,
+                           timing             = elapsed,
+                           dataList           = dataList,
                            modelInfo          = modelInfo,
                            Optim              = Optim,
-                           user_model         = user_model,
                            parameters         = parameters,
                            transformed_pars   = transformed_pars,
-                           posterior          = posterior,
-                           state              = state,
                            loglik             = loglik,
                            penalized_loglik   = penalized_loglik,
-                           loglik_case        = loglik_case,
-                           summary_table      = summary_table,
-                           ClassConditional   = ClassConditional,
-                           RespConditional    = RespConditional,
-                           probCat            = probCat
+                           loss               = loss,
+                           penalized_loss     = penalized_loss,
+                           extra              = list()
     )
 
 
@@ -485,12 +418,12 @@ lca <- function(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
 }
 
-create_lca_model <- function(data_list, nclasses, item,
+create_lca_model <- function(dataList, nclasses, item,
                              model = NULL, control) {
 
   # Generate the model syntax and initial parameter values
 
-  list2env(data_list, envir = environment())
+  list2env(dataList, envir = environment())
 
   class_names <- paste("Class", 1:nclasses, sep = "")
   pattern_names <- paste("pattern", 1:npatterns, sep = "")
@@ -775,77 +708,11 @@ create_lca_model <- function(data_list, nclasses, item,
 
 }
 
-get_short_lca_model <- function(data_list, nclasses, item,
-                                trans, param, model = NULL) {
-
-  # This function displays the reduced LCA model in logarithm and probability
-  # scales. This is a short version of the full model syntax created with
-  # get_full_lca_covariate_model.
-
-  # Create a short summary model:
-
-  data <- data_list$data
-  gauss <- which(item == "gaussian")
-  multinom <- which(item == "multinomial")
-  K <- lapply(data_list$factor_names, FUN = length)
-  nitems <- ncol(data)
-  items <- vector("list", length = nitems)
-  names(items) <- colnames(data)
-
-  item_names <- data_list$item_names
-
-  prob_model <- list()
-  prob_model$beta <- trans$beta
-
-  #### Transformed parameters model ####
-
-  if(any(item == "gaussian")) {
-
-    prob_model[item_names[gauss]] <- trans[data_list$item_names[gauss]]
-
-  }
-
-  if(any(item == "multinomial")) {
-
-    prob_model[item_names[multinom]] <- trans[data_list$item_names[multinom]]
-
-  }
-
-  #### Parameters model ####
-
-  log_model <- list()
-  log_model$beta <- trans$beta
-
-  if(any(item == "gaussian")) {
-
-    log_model[item_names[gauss]] <- lapply(trans[data_list$item_names[gauss]],
-                                           FUN = \(x) x[-2, ])
-
-  }
-
-  if(any(item == "multinomial")) {
-
-    log_probs <- paste("log", data_list$item_names[multinom], sep = "_")
-    log_model[item_names[multinom]] <- trans[log_probs]
-
-  }
-
-  # rownames(log_model$beta) <- colnames(data_list$cov_patterns2)
-
-  #### Return ####
-
-  # Return the model in the logarithm and probability scales:
-  result <- list(prob_model = prob_model, log_model = log_model)
-
-  return(result)
-
-}
-
-create_lca_modelInfo <- function(data_list, full_model, control) {
+create_lca_modelInfo <- function(dataList, full_model, control) {
 
   # Generate control_manifold, control_transform, and control_estimator
 
-  list2env(data_list, envir = environment())
+  list2env(dataList, envir = environment())
   list2env(full_model, envir = environment())
 
   nclasses <- ncol(trans$class)
@@ -935,7 +802,7 @@ create_lca_modelInfo <- function(data_list, full_model, control) {
     # Multinomial transformation:
 
     y <- as.matrix(patterns[, multinom])
-    K <- unlist(lapply(data_list$factor_names, FUN = length))
+    K <- unlist(lapply(dataList$factor_names, FUN = length))
     transforms[[k]] <- list(transform = "multinomial",
                             parameters_in = list(trans[item_names[multinom]]),
                             parameters_out = list(trans$loglik[, multinom, ]),

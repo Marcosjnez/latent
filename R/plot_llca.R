@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 02/02/2026
+# Modification date: 04/05/2026
 #'
 #' @title
 #' Plot regression coefficients
@@ -42,8 +42,8 @@ plot.llca <- function(fit,
                       ...) {
 
   # Get standard errors:
-  SE <- se(fit = fit, type = type, model = "model", digits = 9)
-  select_betas <- match(fit@modelInfo$lca_trans$beta, colnames(SE$vcov))
+  SE <- se(fit = fit, type = type, digits = 9)
+  select_betas <- match(fit@modelInfo$trans$beta, colnames(SE$vcov))
   select_betas <- select_betas[!is.na(select_betas)]
 
   #### log(odds ratio) ####
@@ -113,7 +113,7 @@ plot.llca <- function(fit,
   }
 
   if(is.null(predictors)) {
-    predictors <- c(predictors, colnames(fit@data_list$X))
+    predictors <- c(predictors, colnames(fit@dataList$X))
   }
 
   if(intercept) {

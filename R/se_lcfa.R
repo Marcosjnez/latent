@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 27/04/2026
+# Modification date: 30/04/2026
 #'
 #' @title
 #' Standard Errors
@@ -140,6 +140,7 @@ general_se <- function(fit, type = "standard") {
   args <- fit@dataList$args
   # args$control <- fit@modelInfo$control_optimizer
   args$control <- list()
+  args$control$free_taus <- TRUE
   args$control$free_S <- TRUE
   args$control$free_M <- TRUE
   args$do.fit <- FALSE

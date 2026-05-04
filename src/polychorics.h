@@ -202,7 +202,7 @@ std::vector<double> optimize(const std::vector<double>& tau1, const std::vector<
   double iteration = 1;
 
   // Start the iterative algorithm
-  for(int i=0; i < 20L; ++i) {
+  for(int k=0; k < 20L; ++k) {
     // double f = 0.0;  // Objective value (no needed)
     g = 0.0;     // Gradient
     score = 0.0; // Approximated Hessian (asymptotic formula)
@@ -228,9 +228,11 @@ std::vector<double> optimize(const std::vector<double>& tau1, const std::vector<
     double dir = g/score; // Approximated Newton's Descent direction
     p -= dir;             // Update parameter (no need for step-size)
     if(p > 1 || p < -1) {
+      Rprintf("parameter ");
       return optimize2(tau1, tau2, n, s1, s2, pnorm_tau1, pnorm_tau2, nobs, cor);
     }
     if((g*g) < 1e-09) break; // Tolerance criteria
+
     ++ iteration;
   }
 

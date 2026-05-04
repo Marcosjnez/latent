@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 03/11/2025
+# Modification date: 04/05/2026
 
 setMethod("show", "llca", function(object) {
 

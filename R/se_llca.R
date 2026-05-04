@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 20/04/2026
+# Modification date: 04/05/2026
 #'
 #' @title
 #' Standard Errors
@@ -28,25 +28,11 @@
 #'
 #' @method se llca
 #' @export
-se.llca <- function(fit, type = "standard", model = "model", digits = 3) {
+se.llca <- function(fit, type = "standard", digits = 3) {
 
   # Select the parameters to display according to model type:
 
-  if(model == "user") {
-
-    model <- fit@modelInfo$prob_model
-    fit@modelInfo$control_optimizer$minimal_se <- FALSE
-    fit@modelInfo$control_optimizer$se_names <- fit@modelInfo$transparameters_labels
-
-  } else if(model == "model") {
-
-    model <- fit@modelInfo$model
-    fit@modelInfo$control_optimizer$minimal_se <- TRUE
-    fit@modelInfo$control_optimizer$se_names <- fit@modelInfo$parameters_labels
-
-  } else {
-    stop("Unknown model")
-  }
+  fit@modelInfo$control_optimizer$minimal_se <- TRUE
 
   if(class(fit@modelInfo$original_model) == "llca") {
 
@@ -70,16 +56,9 @@ se.llca <- function(fit, type = "standard", model = "model", digits = 3) {
 
   }
 
-  # Select the parameter labels for the table:
-  mylabels <- unlist(model)
-  selection <- match(mylabels, fit@modelInfo$control$se_names)
-  se <- SE$se[selection]
-  se[is.na(se)] <- 0
-  names(se) <- mylabels
-
   # Tables:
-  est <- fill_in(model, fit@Optim$transparameters, miss = 0)
-  table_se <- fill_in(model, se, miss = NA)
+  est <- fill_in(fit@modelInfo$param, fit@Optim$transparameters, miss = 0)
+  table_se <- fill_in(fit@modelInfo$param, SE$se, miss = NA)
   table <- combine_est_se(est, table_se, digits = digits)
 
   # Return:
@@ -137,21 +116,21 @@ robust_se <- function(fit) {
   #### Collect the gradient by response pattern ####
 
   transparameters_labels <- fit@modelInfo$transparameters_labels
-  lca_all <- fit@modelInfo$lca_all
-  full_loglik <- lca_all$loglik
-  weights <- fit@data_list$weights
-  npatterns <- fit@data_list$npatterns
-  nitems <- fit@data_list$nitems
+  trans <- fit@modelInfo$trans
+  full_loglik <- trans$loglik
+  weights <- fit@dataList$weights
+  npatterns <- fit@dataList$npatterns
+  nitems <- fit@dataList$nitems
   nparam <- fit@modelInfo$nparam
-  nobs <- fit@data_list$nobs
+  nobs <- fit@dataList$nobs
 
   control_estimator <- control_estimator[-1]
-  nclasses <- ncol(fit@modelInfo$lca_all$class)
+  nclasses <- ncol(fit@modelInfo$trans$class)
   K <- length(control_estimator)
 
   for(s in 1:npatterns) {
 
-    indices <- list(match(lca_all$class[s, ], transparameters_labels)-1L,
+    indices <- list(match(trans$class[s, ], transparameters_labels)-1L,
                     match(full_loglik[s,,], transparameters_labels)-1L)
 
     control_estimator[[K+s]] <- list(estimator = "lca",
@@ -210,44 +189,11 @@ robust_se <- function(fit) {
 
 }
 
-ci <- function(fit, type = "standard", model = "model",
-               confidence = 0.95, digits = 3) {
+ci <- function(fit, type = "standard", confidence = 0.95, digits = 3) {
 
   # Select the parameters to display according to model type:
 
-  if(model == "user") {
-
-    model <- fit@modelInfo$prob_model
-    # est <- fit@user_model
-    fit@modelInfo$control_optimizer$minimal_se <- FALSE
-    fit@modelInfo$control_optimizer$se_names <- fit@modelInfo$transparameters_labels
-
-    x <- c(fit@Optim$transparameters)
-    # Number of total parameters and transformed parameters:
-    ntrans <- length(fit@Optim$transparameters)
-    # Initialize a vector of degrees of freedom:
-    ps <- rep(1, times = ntrans)
-    # slot for extracting the degrees of freedom from the transformations:
-    slot <- 2
-    # Get the indices of each transformed parameter:
-    indices <- unlist(lapply(fit@modelInfo$control_transform,
-                             FUN = \(x) x$indices_out[[1]]+1L))
-    # Update the degrees of freedom of each transformed parameter:
-    ps[indices] <- unlist(lapply(fit@Optim$outputs$transformations$vectors,
-                                 FUN = \(x) x[[slot]]))
-
-  } else if(model == "model") {
-
-    model <- fit@modelInfo$model
-    # est <- fit@parameters
-    fit@modelInfo$control_optimizer$minimal_se <- TRUE
-    fit@modelInfo$control_optimizer$se_names <- fit@modelInfo$parameters_labels
-    x <- c(fit@Optim$parameters)
-    ps <- rep(1L, fit@modelInfo$nparam)
-
-  } else {
-    stop("Unknown model")
-  }
+  fit@modelInfo$control_optimizer$minimal_se <- TRUE
 
   if(class(fit@modelInfo$original_model) == "llca") {
 
@@ -271,32 +217,21 @@ ci <- function(fit, type = "standard", model = "model",
 
   }
 
-  # Select the parameter labels for the table:
-  mylabels <- unlist(model)
-  selection <- match(mylabels, fit@modelInfo$control_optimizer$se_names)
-  se <- SE$se[selection]
-  se[is.na(se)] <- 0
-  names(se) <- mylabels
-
-  x <- x[selection]
-  x[is.na(x)] <- 0
-  ps <- ps[selection]
-  ps[is.na(ps)] <- 0
+  x <- c(fit@Optim$parameters)
+  ps <- rep(1L, fit@modelInfo$nparam)
 
   # Compute confidence intervals for each transformed parameter:
-  lower <- x - sqrt(qchisq(confidence, df = ps)) * se
-  upper <- x + sqrt(qchisq(confidence, df = ps)) * se
-  names(lower) <- names(upper) <- mylabels
+  lower <- x - sqrt(qchisq(confidence, df = ps)) * SE$se
+  upper <- x + sqrt(qchisq(confidence, df = ps)) * SE$se
+  names(lower) <- names(upper) <- fit@modelInfo$parameters_labels
 
   # Get confidence limits for the user model or raw model parameters:
 
-  est <- fill_in(model, fit@Optim$transparameters, miss = NA)
+  est <- fill_in(fit@modelInfo$param, fit@Optim$transparameters, miss = NA)
 
   # Tables:
-  lower_ci <- fill_in(model, lower)
-  # lower_ci <- allnumeric(lower_ci)
-  upper_ci <- fill_in(model, upper)
-  # upper_ci <- allnumeric(upper_ci)
+  lower_ci <- fill_in(fit@modelInfo$param, lower)
+  upper_ci <- fill_in(fit@modelInfo$param, upper)
 
   table <- combine_est_ci(lower_ci, est, upper_ci, digits = digits)
 
@@ -313,5 +248,58 @@ ci <- function(fit, type = "standard", model = "model",
   result$H <- SE$H
 
   return(result)
+
+}
+
+se_twostep <- function(fit2, type = "standard") {
+
+  fit1 <- fit2@modelInfo$original_model
+
+  # Variance covariance of step 1:
+  VCOV1 <- se(fit1, type = type)
+  # Variance covariance of step 2:
+  fit2@modelInfo$original_model <- NULL # Avoid infinite recursion
+  VCOV2 <- se(fit2, type = type)
+
+  # Get the full model structure without constraints:
+  args <- fit1@dataList$args
+  args$do.fit <- FALSE
+  args$X <- fit2@dataList$original_X
+  fit <- do.call(lca, args)
+
+  # Get the hessian matrix:
+  control_manifold <- fit@modelInfo$control_manifold
+  control_transform <- fit@modelInfo$control_transform
+  control_estimator <- fit@modelInfo$control_estimator
+  control_optimizer <- fit@modelInfo$control_optimizer
+  parameters <- fit2@Optim$transparameters[fit@modelInfo$parameters_labels]
+  transparameters <- fit2@Optim$transparameters[fit@modelInfo$transparameters_labels]
+  control_optimizer$parameters[[1]] <- parameters
+  control_optimizer$transparameters[[1]] <- transparameters
+  x <- get_hess(control_manifold, control_transform,
+                control_estimator, control_optimizer)
+  colnames(x$h) <- rownames(x$h) <- fit@modelInfo$parameters_labels
+
+  # Get the second-order devarivates between fixed and estimated parameters:
+  model_pars <- fit@modelInfo$parameters_labels %in% fit2@modelInfo$parameters_labels
+  nuisance_pars <- !model_pars
+  df2_dparamdR <- x$h[nuisance_pars, model_pars]
+
+  # Pick the right coefficients from the VCOV of the first step:
+  ACOV <- VCOV1$vcov[fit@modelInfo$parameters_labels[nuisance_pars],
+                     fit@modelInfo$parameters_labels[nuisance_pars]]
+  # Ham of sandwich estimator:
+  B <- t(df2_dparamdR) %*% ACOV %*% df2_dparamdR
+  VCOV2$B <- B
+
+  # Get the hessian matrix of second-step model:
+  H_inv <- solve(VCOV2$H)
+  VCOV2$vcov <- H_inv %*% B %*% H_inv
+
+  # Update the standard errors of the model parameters in the VCOV2 object:
+  VCOV2$se <- sqrt(diag(VCOV2$vcov))
+  names(VCOV2$se) <- fit2@modelInfo$parameters_labels
+
+  return(VCOV2)
 
 }

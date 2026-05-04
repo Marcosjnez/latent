@@ -26,7 +26,7 @@ public:
   arma::vec loglik_case; // loglik of each response pattern
   arma::vec logliks; // accumulated loglik contribution of each response pattern
   arma::mat posterior, logposterior;
-  double N;
+  double loss, N;
 
   void param(arguments_optim& x) {
 
@@ -56,8 +56,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = arma::accu(logliks);
-    x.f -= f;
+    loss = -arma::accu(logliks);
+    x.f += loss;
 
   }
 
@@ -165,9 +165,12 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(2);
-    doubles[0] = f;
-    doubles[1] = -f;
+    doubles.resize(5);
+    doubles[0] =  loss;          // loss   actual model
+    doubles[1] =  -loss;         // loglik actual model
+    doubles[2] =  0.00;          // loglik independence model
+    doubles[3] =  0.00;          // loglik saturated model
+    doubles[4] =  0.00;          // penalty
 
     vectors.resize(3);
     vectors[0] = loglik_case;

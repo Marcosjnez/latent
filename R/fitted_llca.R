@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 04/05/2026
 #'
 #' @title
 #' Fitted values for Latent Class Analysis.
@@ -24,10 +24,10 @@
 #' None yet.
 #'
 #' @export
-fitted.llca <- function(model, digits = NULL) {
+fitted.llca <- function(model) {
 
-  X <- model@data_list$X
-  P0 <- predict.llca(model = model, new = X[, -1], digits = digits)
+  X <- model@dataList$X
+  P0 <- predict.llca(model = model, new = X[, -1])
 
   return(P0)
 
@@ -35,14 +35,14 @@ fitted.llca <- function(model, digits = NULL) {
 
 #' @method fitted llcalist
 #' @export
-fitted.llcalist <- function(model, digits = NULL) {
+fitted.llcalist <- function(model) {
 
   nmodels <- length(model)
   out <- vector("list", length = nmodels)
   for(i in 1:nmodels) {
 
-    out[[i]] <- fitted.llca(model[[i]], digits = digits)
-    names(out)[i] <- paste("nclasses = ", model[[i]]@datalist$nclasses,
+    out[[i]] <- fitted.llca(model[[i]])
+    names(out)[i] <- paste("nclasses = ", model[[i]]@dataList$nclasses,
                            sep = "")
 
   }

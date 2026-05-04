@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 04/05/2026
 #'
 #' @title
 #' Inspect objects from fitted lca models.
@@ -30,8 +30,7 @@
 #' @method latInspect llca
 #' @export
 latInspect.llca <- function(fit,
-                            what = "classconditional",
-                            digits = 3) {
+                            what = "profile") {
 
   # fit must inherit from class llca
   stopifnot(inherits(fit, "llca"))
@@ -39,63 +38,102 @@ latInspect.llca <- function(fit,
   # be case insensitive
   what <- tolower(what)
 
-  ### result fits
+  list2env(fit@dataList, envir = environment())
+  list2env(fit@modelInfo, envir = environment())
+
+  # Logarithm likelihood of each response pattern:
+  loglik_case <- fit@Optim$outputs$estimators$vectors[[1]][[1]]
+  # Sum of logarithm likelihoods by response pattern:
+  loglik_pattern <- weights * loglik_case
+
+  # Estimated "counts" for each response pattern:
+  estimated <- exp(loglik_case) * nobs
+  # Posterior:
+  posterior <- exp(matrix(fit@Optim$outputs$estimators$matrices[[1]][[2]],
+                          nrow = npatterns, ncol = nclasses))
+  colnames(posterior) <- paste("P(", "Class", 1:nclasses, "|data)", sep = "")
+  # Posterior classification:
+  state <- apply(posterior, MARGIN = 1, FUN = which.max)
+  # Data table of response patterns:
+  summary_table <- cbind(Pattern = patterns + 1,
+                         Observed = weights,
+                         Estimated = estimated,
+                         Posterior = posterior,
+                         State = state,
+                         loglik_case = loglik_case,
+                         loglik_pattern = loglik_pattern)
+  summary_table <- as.data.frame(summary_table)
+  # Sort the patterns by increasing order:
+  summary_table <- summary_table[do.call(order, as.data.frame(summary_table)), ]
+  rownames(summary_table) <- paste("pattern", 1:nrow(summary_table), sep = "")
+
+  # Check the existence of gaussian items:
+  gauss <- "gaussian" %in% item
+  # Check the existence of multinomial items:
+  multin <- "multinomial" %in% item
+
+  classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
+  ClassConditional <- fit@transformed_pars[item_names]
+  RespConditional <- probCat <- list() # Only for full multinomial models
+
+  # Additional outputs for full multinomial models:
+  if(all(item == "multinomial")) {
+
+    classes <- colMeans(fit@transformed_pars$class)
+    conditionals <- ClassConditional
+
+    probCat <- lapply(conditionals, FUN = \(mat) {
+      # Calculate P(y|X)*P(X), the joint probability:
+      jointp <- t(mat) * classes
+      # Calculate P(y), the denominator of the posterior:
+      probCat <- colSums(jointp)
+      return(probCat)
+    })
+
+    RespConditional <- lapply(conditionals, FUN = \(mat) {
+      # Calculate P(y|X)*P(X), the joint probability:
+      jointp <- t(mat) * classes
+      # Calculate P(y), the denominator of the posterior:
+      probCat <- colSums(jointp)
+      # Calculate P(X|y) = P(y|X)*P(X)/P(y), the posterior:
+      posterior <- t(jointp) / probCat
+      return(posterior)
+    })
+
+    names(RespConditional) <- colnames(data)
+
+  }
+
+  loglik_case <- loglik_case[short2full]
+  posterior <- posterior[short2full, , drop = FALSE]
+  state <- state[short2full]
+  rownames(posterior) <- names(state) <-
+    names(loglik_case) <- rownames(data)
+
+  profile <- list(class = classes, item = ClassConditional)
+
+  #### Result ####
 
   if (what == "profile") {
 
-    weights <- fit@data_list$weights
-    classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
-    temp <- fit@ClassConditional
-
-    if(!is.null(digits)) {
-      for(j in 1:length(temp)) {
-        temp[[j]] <- round(temp[[j]], digits = digits)
-      }
-      classes <- round(classes, digits = digits)
-    }
-
-    return(list(class = classes, item = temp))
+    return(profile)
 
   } else if (what == "classconditional" ||
              what == "items" ||
              what == "item") {
 
-    temp <- fit@ClassConditional
-
-    if(!is.null(digits)) {
-      for(j in 1:length(temp)) {
-        temp[[j]] <- round(temp[[j]], digits = digits)
-      }
-    }
-
-    return(temp)
+    return(ClassConditional)
 
   } else if (what == "class" ||
              what == "classes" ||
              what == "cluster" ||
              what == "clusters") {
 
-    weights <- fit@data_list$weights
-    temp <- colSums(fit@transformed_pars$class * weights) / sum(weights)
-    names(temp) <- paste0("Class", 1:length(temp))
-
-    if(!is.null(digits)) {
-      temp <- round(temp, digits = digits)
-    }
-
-    return(temp)
+    return(classes)
 
   } else if (what == "fullclasses") {
 
-    temp <- fit@transformed_pars$class
-    colnames(temp) <- paste0("Class", 1:ncol(temp))
-    rownames(temp) <- rownames(fit@Optim$data)
-
-    if(!is.null(digits)) {
-      temp <- round(temp, digits = digits)
-    }
-
-    return(temp)
+    return(fit@transformed_pars$class)
 
   } else if (what == "beta"  ||
              what == "betas" ||
@@ -105,25 +143,11 @@ latInspect.llca <- function(fit,
              what == "coefficient" ||
              what == "coefficients") {
 
-    temp <- fit@transformed_pars$beta
-    colnames(temp) <- paste0("Class", 1:ncol(temp))
-    rownames(temp) <- colnames(fit@data_list$cov_patterns)
-
-    if(!is.null(digits)) {
-      temp <- round(temp, digits = digits)
-    }
-
-    return(temp)
+    return(fit@transformed_pars$beta)
 
   } else if (what == "respconditional") {
 
-    temp <- fit@RespConditional
-
-    for(j in 1:length(temp)){
-      temp[[j]] <- round(temp[[j]], digits)
-    }
-
-    return(temp)
+    return(RespConditional)
 
   } else if (what == "convergence") {
 
@@ -131,43 +155,36 @@ latInspect.llca <- function(fit,
 
   } else if (what == "data") {
 
-    return(fit@Optim$data)
+    return(fit@dataList$data)
 
   } else if (what == "pattern") {
 
-    temp <- cbind(fit@data_list$patterns,
-                  times = fit@data_list$weights)
+    return(cbind(patterns, times = weights))
 
-    return(temp)
+  } else if (what == "table" ||
+             what == "summary") {
 
-  } else if (what == "table") {
-
-    temp <- fit@summary_table
-
-    if(!is.null(digits)) {
-      temp <- round(temp, digits = digits)
-    }
-
-    return(temp)
+    return(summary_table)
 
   } else if (what == "posterior") {
 
-    temp <- fit@posterior
-
-    if(!is.null(digits)) {
-      temp <- round(temp, digits = digits)
-    }
-
-    return(temp)
+    return(posterior)
 
   } else if (what == "state") {
 
-    fit@state
+    return(state)
 
-  }else if (what == "loglik_case" ||
-            what == "casell") {
+  } else if (what == "loglik_case" ||
+             what == "loglik.case" ||
+             what == "case") {
 
-    return(fit@loglik_case)
+    return(loglik_case)
+
+  } else if (what == "loglik_pattern" ||
+             what == "loglik.pattern" ||
+             what == "pattern") {
+
+    return(loglik_pattern)
 
   } else if (what == "loglik" ||
              what == "ll" ||
@@ -177,17 +194,12 @@ latInspect.llca <- function(fit,
 
   } else if (what == "probcat") {
 
-    temp <- fit@probCat
+    return(probCat)
 
-    if(!is.null(digits)) {
-      for(j in 1:length(temp)) {
-        temp[[j]] <- round(temp[[j]], digits = digits)
-      }
-    }
+  } else if (what == "timing" ||
+             what == "elapsed") {
 
-  } else if (what == "timing") {
-
-    return(fit@timing)
+    return(fit@Optim$elapsed)
 
   }
 
@@ -195,7 +207,7 @@ latInspect.llca <- function(fit,
 
 #' @method latInspect llcalist
 #' @export
-latInspect.llcalist <- function(model, what = "classconditional",
+latInspect.llcalist <- function(model, what = "profile",
                                 digits = 3) {
 
   nmodels <- length(model)

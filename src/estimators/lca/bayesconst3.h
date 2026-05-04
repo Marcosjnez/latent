@@ -14,7 +14,7 @@ class bayesconst3: public estimators {
 public:
 
   int K;
-  double alpha, constant, prod_vars, N;
+  double alpha, constant, prod_vars, N, loss;
   arma::uvec indices;
   arma::vec vars, varshat, sds, logvars;
 
@@ -29,8 +29,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = -0.5*constant * (arma::accu(logvars) + arma::accu(varshat/vars));
-    x.f -= f;
+    loss = 0.5*constant * (arma::accu(logvars) + arma::accu(varshat/vars));
+    x.f += loss;
 
   }
 
@@ -49,9 +49,12 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(2);
-    doubles[0] = f;
-    doubles[1] = -f;
+    doubles.resize(5);
+    doubles[0] =  0.00;          // loss   actual model
+    doubles[1] =  0.00;          // loglik actual model
+    doubles[2] =  0.00;          // loglik independence model
+    doubles[3] =  0.00;          // loglik saturated model
+    doubles[4] =  loss;          // penalty
 
     // vectors.resize(1);
     //

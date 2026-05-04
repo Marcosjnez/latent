@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/03/2026
+# Modification date: 02/05/2026
 
 effects_coding <- function(coeffs, vcov) {
 
@@ -17,7 +17,6 @@ effects_coding <- function(coeffs, vcov) {
 
   # effects coding parameterization:
   beta_new <- coeffs %*% C
-  dimnames(table_se) <- dimnames(coeffs)
 
   # Jacobian of coeffs %*% C:
   J <- kronecker(t(C[-intercept_index, ]), diag(p))

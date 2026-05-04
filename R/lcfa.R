@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/04/2026
+# Modification date: 30/04/2026
 #'
 #' @title
 #' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
@@ -190,7 +190,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                      loglik             = numeric(),
                      penalized_loglik   = numeric(),
                      loss               = numeric(),
-                     penalized_loss     = numeric()
+                     penalized_loss     = numeric(),
+                     extra              = list()
     )
 
     return(lcfa_list)
@@ -252,7 +253,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                 loglik             = loglik,
                 penalized_loglik   = penalized_loglik,
                 loss               = loss,
-                penalized_loss     = penalized_loss
+                penalized_loss     = penalized_loss,
+                extra              = list()
   )
 
   if(message) {
@@ -756,6 +758,13 @@ create_cfa_model <- function(dataList, model, control) {
       param[S_group[[i]]] <- cov_params[[i]][S_group[[i]]]
     }
 
+    # Fix the sample thresholds:
+    if(control$free_taus) {
+      param[unlist(taus_group[[i]])] <- trans[unlist(taus_group[[i]])]
+    } else {
+      param[taus_group[[i]]] <- cov_params[[i]][taus_group[[i]]]
+    }
+
     if(cor %in% c("poly", "polys", "polychoric", "polychorics")) {
       fix_diag <- TRUE
     } else {
@@ -769,8 +778,6 @@ create_cfa_model <- function(dataList, model, control) {
                                       diag(x) <- 1; return(x)
                                     })
     }
-
-    param[taus_group[[i]]] <- cov_params[[i]][taus_group[[i]]]
 
     if(control$meanstructure) {
 
@@ -1103,7 +1110,7 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
         idx <- startsWith(rownames(acov_cov[[i]][[j]]), "S.")
         W_cov <- matrix(NA_real_, nrow = p, ncol = p)
         W_cov[lower.tri(W_cov, diag = !control$std.ov)] <-
-          diag(acov_cov[[i]][[j]][idx, idx]) / nobs_ij[[i]][[j]]
+          diag(acov_cov[[i]][[j]][idx, idx]) #/ nobs_ij[[i]][[j]]
         W_cov[upper.tri(W_cov)] <- t(W_cov)[upper.tri(W_cov)]
         W_cov <- 1 / W_cov
         # if(control$std.ov) {
@@ -1264,6 +1271,10 @@ lcfa_control <- function(control) {
 
   if(is.null(control$free_S)) {
     control$free_S <- FALSE
+  }
+
+  if(is.null(control$free_taus)) {
+    control$free_taus <- FALSE
   }
 
   if(is.null(control$free_M)) {

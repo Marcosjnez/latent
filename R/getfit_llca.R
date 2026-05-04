@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 04/05/2026
 #'
 #' @title
 #' Fit indices
@@ -28,7 +28,7 @@
 #' @method getfit llca
 #' @export
 
-getfit.llca <- function(model, digits = 3) {
+getfit.llca <- function(model, digits = 4) {
 
   icl_default <- function (post_prob, BIC){
     tryCatch({
@@ -62,18 +62,21 @@ getfit.llca <- function(model, digits = 3) {
   ##
   penalized <- abs(model@loglik) != abs(model@penalized_loglik)
 
+  posterior <- latInspect(model, what = "posterior")
+  summary_table <- latInspect(model, what = "summary")
+
   ##
   ##
-  nclasses <- ncol(model@posterior)
+
+  nclasses <- ncol(posterior)
   k <- model@modelInfo$nparam
   loglik <- model@loglik
-
 
   ##
   # if(sum(model@modelInfo$item != "multinomial") == 0){
   if(all(model@modelInfo$item == "multinomial")){
-    ni <- model@summary_table$Observed
-    mi <- model@summary_table$Estimated
+    ni <- summary_table$Observed
+    mi <- summary_table$Estimated
     dof <- model@modelInfo$dof
     term <- ni*log(ni/mi)
     # Set to zero Inf terms due to 0 values in Estimated
@@ -86,7 +89,7 @@ getfit.llca <- function(model, digits = 3) {
     dof <- NA
   }
 
-  nobs <- model@data_list$nobs
+  nobs <- model@dataList$nobs
   ###
   AIC  <- (-2 * loglik) + (k * 2)
   AIC3 <- (-2 * loglik) + (k * 3)
@@ -94,14 +97,14 @@ getfit.llca <- function(model, digits = 3) {
   CAIC <- -2 * loglik + (k * (log(nobs) + 1))
   KIC <- -2 * loglik + (3 * (k + 1))
   SABIC <- -2 * loglik + (k * log(((nobs + 2)/24)))
-  ICL <- icl_default(model@posterior, BIC )
+  ICL <- icl_default(posterior, BIC)
 
   if(nclasses < 2) {
     entropyR2 <- 1.00 # To match LG output
   } else {
-    weights <- model@data_list$weights
+    weights <- model@dataList$weights
     classes <- colSums(model@transformed_pars$class * weights) / sum(weights)
-    entropyR2 <- entropy.R2(classes, model@posterior)
+    entropyR2 <- entropy.R2(classes, posterior)
   }
 
   if(penalized){
@@ -113,7 +116,7 @@ getfit.llca <- function(model, digits = 3) {
     CAICp <- -2 * penalized_loglik + (k * (log(nobs) + 1))
     KICp <- -2 * penalized_loglik + (3 * (k + 1))
     SABICp <- -2 * penalized_loglik + (k * log(((nobs + 2)/24)))
-    ICLp <- icl_default(model@posterior, BICp )
+    ICLp <- icl_default(posterior, BICp)
 
     result <- c(nclasses = nclasses,
                 npar = k, nobs = nobs,
@@ -153,9 +156,9 @@ getfit.llca <- function(model, digits = 3) {
 
 #' @method getfit llcalist
 #' @export
-getfit.llcalist <- function(model, digits = 3) {
+getfit.llcalist <- function(model, digits = 4) {
 
-  out <- t(sapply(model, getfit.llca, digits=digits))
+  out <- t(sapply(model, getfit.llca, digits = digits))
 
   class(out) <- "getfit.llcalist"
 

@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 04/05/2026
 #'
 #' @title
 #' Fit indices
@@ -27,7 +27,7 @@
 #'
 #' @method summary llca
 #' @export
-summary.llca <- function(fit, digits = 3) {
+summary.llca <- function(fit) {
 
   #### Print fit ####
 
@@ -66,8 +66,9 @@ summary.llca <- function(fit, digits = 3) {
 
   # Print Model Test Section
   if(sum(fit@modelInfo$item != "multinomial") == 0) {
-    ni <- fit@summary_table$Observed
-    mi <- fit@summary_table$Estimated
+    summary_table <- latInspect(fit, what = "summary")
+    ni <- summary_table$Observed
+    mi <- summary_table$Estimated
     dof <- fit@modelInfo$dof
     L2 <- 2*sum(ni*log(ni/mi))
     pv <- 1-pchisq(L2, dof)
@@ -90,14 +91,14 @@ summary.llca <- function(fit, digits = 3) {
 
 #' @method summary llcalist
 #' @export
-summary.llcalist <- function(model, digits = 3) {
+summary.llcalist <- function(model) {
 
   nmodels <- length(model)
   out <- vector("list", length = nmodels)
   for(i in 1:nmodels) {
 
-    out[[i]] <- summary.llca(model[[i]], digits = digits)
-    names(out)[i] <- paste("nclasses = ", model[[i]]@datalist$nclasses,
+    out[[i]] <- summary.llca(model[[i]])
+    names(out)[i] <- paste("nclasses = ", model[[i]]@dataList$nclasses,
                            sep = "")
 
   }

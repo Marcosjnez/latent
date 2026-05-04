@@ -5,7 +5,7 @@
 \title{Latent Class Analysis.}
 \usage{
 lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-    X = NULL, penalties = TRUE, model = NULL, mimic = "LG",
+    X = NULL, penalties = TRUE, model = NULL,
     start = NULL, do.fit = TRUE, verbose = TRUE, control = NULL)
 }
 \arguments{
@@ -13,23 +13,21 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
 \item{nclasses}{Number of latent classes.}
 
-\item{item}{Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.}
-
 \item{X}{Matrix of covariates.}
 
 \item{penalties}{Boolean or list of penalty terms for the parameters.}
 
 \item{model}{List of parameter labels. See 'details' for more information.}
 
-\item{mimic}{String. Replicate the output of other softwares. Use "LG" to replicate the output of LatentGOLD.}
-
 \item{start}{List of starting values for the parameters. See 'details' for more information.}
-
-\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
 
 \item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
 
+\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+
 \item{verbose}{Print information of model estimation. Defaults to FALSE.}
+
+\item{item}{Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.}
 }
 \value{
 List with the following objects:

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/04/2026
+# Modification date: 30/04/2026
 #'
 #' @title Maximum likelihood estimation of positive-definite polychoric correlation matrices
 #'
@@ -202,12 +202,12 @@ lpoly <- function(data,
 
   # modelInfo$control_optimizer$parameters[[1]] <- Optim$parameters
   # modelInfo$control_optimizer$transparameters[[1]] <- Optim$transparameters
-  #
   # x <- get_hess(modelInfo$control_manifold, modelInfo$control_transform,
   #               modelInfo$control_estimator, modelInfo$control_optimizer,
   #               cores = parallel::detectCores())
   # Optim$SE$ACOV <- solve(x$h)
-  # rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <- modelInfo$parameters_labels
+  # rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <-
+  #   modelInfo$parameters_labels
 
   Optim$SE$se <- sqrt(diag(Optim$SE$ACOV) / data_list$nobs)
   # ADD CONSTRAINTS FOR OBLIQUE MANIFOLD
