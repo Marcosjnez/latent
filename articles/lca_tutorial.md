@@ -14,81 +14,112 @@ conditioning in the given class.
 
 ### The likelihood
 
-Suppose that a sample of people respond to $J$ items and $\mathbf{y}$ is
-a vector that contains the scores to each item $j$. Also, let $K$ denote
-the number of latent classes and $x_{k}$, the specific class $k$. Then,
-the likelihood of this response pattern $\mathbf{y}$, if it was observed
-$n$ times in the sample, can be written as
+Suppose that a sample of people respond to $`J`$ items and
+$`\boldsymbol{y}`$ is a vector that contains the scores to each item
+$`j`$. Also, let $`K`$ denote the number of latent classes and $`x_k`$,
+the specific class $`k`$. Then, the likelihood of this response pattern
+$`\boldsymbol{y}`$, if it was observed $`n`$ times in the sample, can be
+written as
 
-$$\begin{aligned}
-l & {= P(\mathbf{y})^{n}} \\
- & {= \left( \sum\limits_{k = 1}^{K}P(x_{k})P(\mathbf{y}|x_{k}) \right)^{n},}
-\end{aligned}$$
+``` math
+\begin{aligned}
+l &= P(\boldsymbol{y})^n \\
+&= \Bigg (\sum_{k=1}^K P(x_k)P(\boldsymbol{y}|x_k)\Bigg)^n,
+\end{aligned}
+```
 
 Assuming local independence, we can rewrite the conditional
 probabilities as
 
-$$P(\mathbf{y}|x_{k}) = \prod\limits_{j = 1}^{J}P(y_{j}|x_{k}),$$
+``` math
+P(\boldsymbol{y}|x_k) = \prod_{j=1}^J P(y_j|x_k),
+```
 
-where $y_{j}$ denotes the score in item $j$.
+where $`y_j`$ denotes the score in item $`j`$.
 
 With this assumption, the likelihood can be rewritten as
-$$l = \left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{n},$$
+``` math
+l = \Bigg(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Bigg)^n,
+```
 
 and the logarithm likelihood becomes
-$$ll = n{\log}\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right).$$
+``` math
+ll = n \log\Bigg(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Bigg).
+```
 
 ### First-order derivatives
 
-The partial derivative of $ll$ with respect to the probability of
-belonging to the class $k$ is
-$$\frac{\partial ll}{\partial P(x_{g})} = \frac{n}{\sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k})}\prod\limits_{j = 1}^{J}P(y_{j}|x_{g}).$$
+The partial derivative of $`ll`$ with respect to the probability of
+belonging to the class $`k`$ is
+``` math
+\frac{\partial ll}{\partial P(x_g)} = \frac{n}{\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)} \prod_{j=1}^J P(y_j|x_g).
+```
 
-On the other hand, the partial derivative of $ll$ with respect to the
-probability of scoring a particular $y_{j}$ while belonging to the class
-$k$ is
-$$\frac{\partial ll}{\partial P(y_{m}|x_{g})} = \frac{n}{\sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k})}P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g}).$$
+On the other hand, the partial derivative of $`ll`$ with respect to the
+probability of scoring a particular $`y_j`$ while belonging to the class
+$`k`$ is
+``` math
+\frac{\partial ll}{\partial P(y_m|x_g)} = \frac{n}{\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)} P(x_g)\prod_{j\neq m} P(y_j|x_g).
+```
 
 ### Second-order derivatives
 
-The second partial derivative of $ll$ with respect to the probability of
-belonging to the class $k$ is
+The second partial derivative of $`ll`$ with respect to the probability
+of belonging to the class $`k`$ is
 
-$$\frac{\partial^{2}ll}{\partial P(x_{g})\partial P(x_{h})} = -\frac{n\prod\limits_{j = 1}^{J}P(y_{j}|x_{h})\prod\limits_{j = 1}^{J}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}$$
+``` math
+\frac{\partial^2 ll}{\partial P(x_g) \partial P(x_h)} = -\frac{n \prod_{j=1}^J P(y_j|x_h) \prod_{j=1}^J P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}
+```
 
-$$\frac{\partial ll}{\partial P(y_{m}|x_{g})P(y_{m}|x_{g})} = -\frac{nP(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
+``` math
+\frac{\partial ll}{\partial P(y_m|x_g) P(y_m|x_g)} = -\frac{n P(x_g)\prod_{j \neq m} P(y_j|x_g) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+```
 
-$$\frac{\partial ll}{\partial P(y_{m}|x_{g})P(y_{n}|x_{g})} = \frac{n\sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k})P(x_{g})\prod\limits_{j \neq m,n}P(y_{j}|x_{g}) - nP(x_{g})\prod\limits_{j \neq n}P(y_{j}|x_{g})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
+``` math
+\frac{\partial ll}{\partial P(y_m|x_g) P(y_n|x_g)} = \frac{n \sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k) P(x_g) \prod_{j\neq m,n} P(y_j|x_g) - n P(x_g)\prod_{j \neq n} P(y_j|x_g) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+```
 
-The second partial derivative of $ll$ with respect to the probability of
-scoring a particular $y_{m}$ or $y_{n}$ while belonging to the class $g$
-or $h$ is
-$$\frac{\partial ll}{\partial P(y_{m}|x_{g})P(y_{n}|x_{h})} = -\frac{nP(x_{h})\prod\limits_{j \neq n}P(y_{j}|x_{h})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
+The second partial derivative of $`ll`$ with respect to the probability
+of scoring a particular $`y_m`$ or $`y_n`$ while belonging to the class
+$`g`$ or $`h`$ is
+``` math
+\frac{\partial ll}{\partial P(y_m|x_g) P(y_n|x_h)} = -\frac{n P(x_h) \prod_{j\neq n} P(y_j|x_h) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+```
 
-The second partial derivative of $ll$ between the probability of
-belonging to the class $g$ and the probability of scoring a particular
-$y_{m}$ while belonging to the class $h$ is
+The second partial derivative of $`ll`$ between the probability of
+belonging to the class $`g`$ and the probability of scoring a particular
+$`y_m`$ while belonging to the class $`h`$ is
 
-$$\frac{\partial ll}{\partial P(x_{g})\partial P(y_{m}|x_{g})} = \frac{n\prod\limits_{j \neq m}P(y_{j}|x_{g})\sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) - n\prod\limits_{j = 1}^{J}P(y_{j}|x_{g})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
+``` math
+\frac{\partial ll}{\partial P(x_g) \partial P(y_m|x_g)} = \frac{n \prod_{j\neq m} P(y_j|x_g) \sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k) - n \prod_{j=1}^J P(y_j|x_g) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+```
 
-$$\frac{\partial ll}{\partial P(x_{h})\partial P(y_{m}|x_{g})} = -\frac{n\prod\limits_{j = 1}^{J}P(y_{j}|x_{h})P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g})}{\left( \sum\limits_{k = 1}^{K}P(x_{k})\prod\limits_{j = 1}^{J}P(y_{j}|x_{k}) \right)^{2}}.$$
+``` math
+\frac{\partial ll}{\partial P(x_h) \partial P(y_m|x_g)} = -\frac{n \prod_{j=1}^J P(y_j|x_h) P(x_g) \prod_{j\neq m} P(y_j|x_g)}{\Big(\sum_{k=1}^K P(x_k)\prod_{j=1}^J P(y_j|x_k)\Big)^2}.
+```
 
 ### Model for the conditional probabilities
 
 #### Bernoulli
 
-When $y_{j}$ is a bernoulli random variable, the conditional probability
+When $`y_j`$ is a bernoulli random variable, the conditional probability
 becomes
-$$P(y_{j}|x_{k}) = \theta_{j}^{y_{j}}(1 - \theta_{j})^{1 - y_{j}},$$
-where $\theta_{j}$ is the probability of endorsing item $j$ (i.e.,
-$y_{j} = 1$).
+``` math
+P(y_j|x_k) = \theta_j^{y_j} (1-\theta_j)^{1-y_j},
+```
+where $`\theta_j`$ is the probability of endorsing item $`j`$ (i.e.,
+$`y_j=1`$).
 
-Its partial derivative with respect to $\theta_{j}$ is
-$$\frac{\partial P(y_{j}|x_{k})}{\theta_{j}} = \frac{1}{2y_{j} - 1}.$$
+Its partial derivative with respect to $`\theta_j`$ is
+``` math
+\frac{\partial P(y_j|x_k)}{\theta_j} = \frac{1}{2y_j - 1}.
+```
 
 #### Multinomial
 
-$$\frac{\partial P(y_{m}|x_{g})}{\partial\theta_{m_{k}|g}} = \frac{n}{l}P(x_{g})\prod\limits_{j \neq m}P(y_{j}|x_{g}).$$
+``` math
+\frac{\partial P(y_m|x_g)}{\partial \theta_{m_k|g}} = \frac{n}{l} P(x_g)\prod_{j\neq m} P(y_j|x_g).
+```
 
 #### Gaussian
 

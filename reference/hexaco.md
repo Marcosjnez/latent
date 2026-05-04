@@ -27,6 +27,7 @@ Generated example
 ## Examples
 
 ``` r
+
 if (FALSE) { # \dontrun{
 # Check samples and sample sizes
 samples <- unique(hexaco$sample) # industry mooc fire student dutch

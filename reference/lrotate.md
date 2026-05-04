@@ -93,6 +93,7 @@ List with the following objects:
 ## Examples
 
 ``` r
+
 if (FALSE) { # \dontrun{
 
 fit <- lrotate(lambda = , projection = "oblq", rotation = "oblimin")

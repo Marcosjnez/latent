@@ -2,20 +2,30 @@
 
 ## Parametrization
 
-$$R = S - \widehat{S}(\theta)$$
+``` math
+R = S -\hat{S}(\theta)
+```
 
 ## Loss
 
-$$loss = 0.5\,\left. \parallel W \odot R\parallel \right.^{2}$$
+``` math
+loss = 0.5 \, \left \lVert W \odot R \right \rVert^2
+```
 
 ## Gradient
 
-$$\Delta_{\widehat{S}(\theta)} = -W \odot R$$
+``` math
+\Delta_{\hat{S}(\theta)} = -W \odot R
+```
 
 ## Differential of the gradient
 
-$$\partial\Delta_{\widehat{S}(\theta)} = W \odot \partial\widehat{S}(\theta)$$
+``` math
+\partial\Delta_{\hat{S}(\theta)} = W \odot \partial \hat{S}(\theta)
+```
 
 ## Hessian
 
-$$H_{\widehat{S}(\theta)} = {diag}({vec}(W))$$
+``` math
+H_{\hat{S}(\theta)} = \operatorname{diag}(\operatorname{vec}(W))
+```

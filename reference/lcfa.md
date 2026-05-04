@@ -145,6 +145,7 @@ List with the following objects:
 ## Examples
 
 ``` r
+
 if (FALSE) { # \dontrun{
 # The famous Holzinger and Swineford (1939) example
 HS.model <- ' visual  =~ x1 + x2 + x3

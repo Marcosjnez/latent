@@ -7,7 +7,7 @@ with or without covariates to predict class membership.
 
 ``` r
 lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-    X = NULL, penalties = TRUE, model = NULL, mimic = "LG",
+    X = NULL, penalties = TRUE, model = NULL,
     start = NULL, do.fit = TRUE, verbose = TRUE, control = NULL)
 ```
 
@@ -21,11 +21,6 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   Number of latent classes.
 
-- item:
-
-  Character vector with the model for each item (i.e., "gaussian" or
-  "multinomial"). Defaults to "gaussian" for all the items.
-
 - X:
 
   Matrix of covariates.
@@ -38,29 +33,29 @@ lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
 
   List of parameter labels. See 'details' for more information.
 
-- mimic:
-
-  String. Replicate the output of other softwares. Use "LG" to replicate
-  the output of LatentGOLD.
-
 - start:
 
   List of starting values for the parameters. See 'details' for more
   information.
-
-- do.fit:
-
-  TRUE to fit the model and FALSE to return only the model setup.
-  Defaults to TRUE.
 
 - control:
 
   List of control parameters for the optimization algorithm. See
   'details' for more information.
 
+- do.fit:
+
+  TRUE to fit the model and FALSE to return only the model setup.
+  Defaults to TRUE.
+
 - verbose:
 
   Print information of model estimation. Defaults to FALSE.
+
+- item:
+
+  Character vector with the model for each item (i.e., "gaussian" or
+  "multinomial"). Defaults to "gaussian" for all the items.
 
 ## Value
 
@@ -144,6 +139,7 @@ None yet.
 ## Examples
 
 ``` r
+
 if (FALSE) { # \dontrun{
 
 fit <- lca(data = gss82, nclasses = 3L,

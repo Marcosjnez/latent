@@ -12,79 +12,130 @@ latent class model, we aim to estimate two kinds of probabilities:
 
 ## The likelihood
 
-Suppose that a sample of people respond to $J$ items and $\mathbf{y}$ is
-a vector that contains the scores to each item $j$. Let $K$ denote the
-number of latent classes and let $x_{k}$ be class $k$. Then, the
-likelihood of the response pattern $\mathbf{y}$, if it was observed $n$
-times in the sample and every person responds independently of each
-other, can be written as
-$$\ell\; = \; P(\mathbf{y})^{n}\; = \;\left( \sum\limits_{k = 1}^{K}P(x_{k})\, P(\mathbf{y} \mid x_{k}) \right)^{n}.$$
+Suppose that a sample of people respond to $`J`$ items and
+$`\mathbf{y}`$ is a vector that contains the scores to each item $`j`$.
+Let $`K`$ denote the number of latent classes and let $`x_k`$ be class
+$`k`$. Then, the likelihood of the response pattern $`\mathbf{y}`$, if
+it was observed $`n`$ times in the sample and every person responds
+independently of each other, can be written as
+``` math
+\ell \;=\; P(\mathbf{y})^{n}
+\;=\;
+\Bigg(\sum_{k=1}^{K} P(x_k)\, P(\mathbf{y}\mid x_k)\Bigg)^{n}.
+```
 
 Assuming **local independence** (responses within a person are
 independent conditional on class), we have
-$$P(\mathbf{y} \mid x_{k})\; = \;\prod\limits_{j = 1}^{J}P(y_{j} \mid x_{k}),$$
-where $y_{j}$ denotes the score on item $j$. Hence,
-$$\ell\; = \;\left( \sum\limits_{k = 1}^{K}P(x_{k})\,\prod\limits_{j = 1}^{J}P(y_{j} \mid x_{k}) \right)^{\! n},$$
+``` math
+P(\mathbf{y}\mid x_k) \;=\; \prod_{j=1}^{J} P(y_j \mid x_k),
+```
+where $`y_j`$ denotes the score on item $`j`$. Hence,
+``` math
+\ell \;=\; \Bigg(\sum_{k=1}^{K} P(x_k)\, \prod_{j=1}^{J} P(y_j \mid x_k)\Bigg)^{\!n},
+```
 and the log-likelihood becomes
-$$\ell\ell\; = \; n{\log}\left( \sum\limits_{k = 1}^{K}P(x_{k})\,\prod\limits_{j = 1}^{J}P(y_{j} \mid x_{k}) \right).$$
+``` math
+\ell\ell \;=\; n \log \Bigg(\sum_{k=1}^{K} P(x_k)\, \prod_{j=1}^{J} P(y_j \mid x_k)\Bigg).
+```
 The term inside the parenthesis is the probability of a single pattern,
-$P(\mathbf{y})$. Assuming independence between people with different
+$`P(\mathbf{y})`$. Assuming independence between people with different
 response patterns, the log-likelihood of the whole sample is the sum of
 log-likelihoods of each response pattern.
 
 To simplify the computation of the logarithm likelihood and related
-derivatives, let $l_{y_{m} \mid x_{g}} = {\log}P(y_{m} \mid x_{g})$, so
-that
+derivatives, let $`l_{y_m \mid x_g} = \log P(y_m \mid x_g)`$, so that
 
-$$\ell\ell\; = \; n{\log}\left( \sum\limits_{k = 1}^{K}P(x_{k})\,{\exp}\left( \sum\limits_{j = 1}^{J}l_{y_{m} \mid x_{g}} \right) \right).$$
+``` math
+\ell\ell \;=\; n \log \Bigg(\sum_{k=1}^{K} P(x_k)\, \exp\bigg(\sum_{j=1}^{J} l_{y_m \mid x_g}\bigg)\Bigg).
+```
 
 ## First-order derivatives
 
-For a fixed pattern $\mathbf{y}$, define $$\begin{aligned}
-{P(\mathbf{y})\;} & {= \;\sum\limits_{k = 1}^{K}P(x_{k})\,\prod\limits_{j = 1}^{J}P(y_{j} \mid x_{k})} \\
- & {= \;\sum\limits_{k = 1}^{K}P(x_{k})\,{\exp}\left( \sum\limits_{j = 1}^{J}l_{y_{m} \mid x_{g}} \right).}
-\end{aligned}$$ Then
-$$\frac{\partial\ell\ell}{\partial P(x_{g})}\; = \; n\,\frac{1}{P(\mathbf{y})}\,\prod\limits_{j = 1}^{J}P(y_{j} \mid x_{g}).$$
-For a specific item $m$ and class $g$,
-$$\frac{\partial\ell\ell}{\partial l_{y_{m} \mid x_{g}}}\; = \; n\,\frac{1}{P(\mathbf{y})}\, P(x_{g})\,\prod\limits_{j = 1}^{J}P(y_{j} \mid x_{g}).$$
+For a fixed pattern $`\mathbf{y}`$, define
+``` math
+\begin{aligned}
+P(\mathbf{y}) \;&=\; \sum_{k=1}^{K} P(x_k)\, \prod_{j=1}^{J} P(y_j \mid x_k) \\
+&=\; \sum_{k=1}^{K} P(x_k)\, \exp\bigg(\sum_{j=1}^{J} l_{y_m \mid x_g}\bigg).
+\end{aligned}
+```
+Then
+``` math
+\frac{\partial \ell\ell}{\partial P(x_g)} \;=\; n \,\frac{1}{P(\mathbf{y})}\, \prod_{j=1}^{J} P(y_j \mid x_g).
+```
+For a specific item $`m`$ and class $`g`$,
+``` math
+\frac{\partial \ell\ell}{\partial l_{y_m \mid x_g}}
+\;=\;
+n \,\frac{1}{P(\mathbf{y})}\,
+P(x_g)\, \prod_{j=1}^{J} P(y_j \mid x_g).
+```
 
 Notice that this last expression is just the posterior,
-$P(x_{g} \mid y_{m})$, weighted by $n$.
+$`P(x_g \mid y_m)`$, weighted by $`n`$.
 
 ## Directional derivatives of first-order derivatives
 
-$$d\left\lbrack \frac{\partial\ell\ell}{\partial P(x_{g})} \right\rbrack\; = \; n\,\frac{P(\mathbf{y})\; d\left\lbrack \prod\limits_{j = 1}^{J}P(y_{j} \mid x_{g}) \right\rbrack - d\left\lbrack P(\mathbf{y}) \right\rbrack\;\prod\limits_{j = 1}^{J}P(y_{j} \mid x_{g})}{P(\mathbf{y})^{2}},$$
+``` math
+d \Bigg[ \frac{\partial \ell\ell}{\partial P(x_g)} \Bigg] \;=\; n \,\frac{P(\mathbf{y}) \; d\big[\prod_{j=1}^{J} P(y_j \mid x_g)\big] - d\big[P(\mathbf{y})\big] \; \prod_{j=1}^{J} P(y_j \mid x_g)}{P(\mathbf{y})^2},
+```
 where
 
-$$d\left\lbrack \prod\limits_{j = 1}^{J}P(y_{j} \mid x_{g}) \right\rbrack = \frac{\prod\limits_{j = 1}^{J}P(y_{j} \mid x_{g})}{P(y_{j} \mid x_{g})\, d\left\lbrack P(y_{j} \mid x_{g}) \right\rbrack},$$
+``` math
+d\big[\prod_{j=1}^{J} P(y_j \mid x_g)\big] = \frac{\prod_{j=1}^{J} P(y_j \mid x_g)}{P(y_j \mid x_g) \, d\big[P(y_j \mid x_g)\big]},
+```
 and
 
-$$d\left\lbrack P(\mathbf{y}) \right\rbrack = \sum\limits_{k = 1}^{K}d\left\lbrack P(x_{k})\rbrack\,\prod\limits_{j = 1}^{J}P(y_{j} \mid x_{k}) + \sum\limits_{k = 1}^{K}P(x_{k})\, d\left\lbrack \prod\limits_{j = 1}^{J}P(y_{j} \mid x_{k})\rbrack. \right. \right.$$
+``` math
+d\big[P(\mathbf{y})\big] = \sum_{k=1}^{K} d\big[P(x_k)] \, \prod_{j=1}^{J} P(y_j \mid x_k) +
+\sum_{k=1}^{K} P(x_k) \, d\big[\prod_{j=1}^{J} P(y_j \mid x_k)].
+```
 
 ## Second-order derivatives
 
-For classes $g,h$, $$\begin{aligned}
-{\frac{\partial^{2}\ell\ell}{\partial P(x_{g})\,\partial P(x_{h})}\;} & {= \; - \, n\,\frac{1}{P(\mathbf{y})^{2}}\,\left( \prod\limits_{j = 1}^{J}P(y_{j} \mid x_{g}) \right)\!\left( \prod\limits_{j = 1}^{J}P(y_{j} \mid x_{h}) \right)} \\
- & {= \; - n\frac{P(x_{g} \mid y)P(x_{h} \mid y)}{P(x_{g})P(x_{h})}.}
-\end{aligned}$$
+For classes $`g,h`$,
+``` math
+\begin{aligned}
+\frac{\partial^2 \ell\ell}{\partial P(x_g)\,\partial P(x_h)} \;&=\; -\,n \,\frac{1}{P(\mathbf{y})^{2}} \,
+\Bigg(\prod_{j=1}^{J} P(y_j \mid x_g)\Bigg)\!
+\Bigg(\prod_{j=1}^{J} P(y_j \mid x_h)\Bigg) \\
+&=\; -n \frac{P(x_g \mid y) P(x_h \mid y)}{P(x_g) P(x_h)}.
+\end{aligned}
+```
 
-For items $m,n$ and classes $g,h$,
-$$\frac{\partial^{2}\ell\ell}{\partial l_{y_{m} \mid x_{g}}\,\partial l_{y_{n} \mid x_{h}}} = \begin{cases}
-{\, n\, P(x_{g} \mid y)\!\ \left( 1 - P(x_{g} \mid y) \right),} & {{\text{if}\mspace{6mu}}\!\ g = h,} \\
-{-\, n\, P(x_{g} \mid y)\!\ P(x_{h} \mid y),} & \text{otherwise.}
-\end{cases}$$
+For items $`m,n`$ and classes $`g,h`$,
+``` math
+\frac{\partial^2 \ell\ell}{\partial l_{y_m \mid x_g}\,\partial l_{y_n \mid x_h}}
+=
+\begin{cases}
+\,n \, P(x_g \mid y) \!\ \big(1-P(x_g \mid y)\big),
+& \text{if } \!\ g=h,\\[1.25em]
+-\,n \, P(x_g \mid y) \!\ P(x_h \mid y),
+& \text{otherwise.}
+\end{cases}
+```
 
 For the mixed second derivative,
-$$\frac{\partial^{2}\ell\ell}{\partial P(x_{h})\,\partial l_{y_{m} \mid x_{g}}} = \begin{cases}
-{\frac{1}{P(x_{g})}\, n\, P(x_{g} \mid y)\left( 1 - P(x_{g} \mid y) \right),} & {{\text{if}\mspace{6mu}}g = h,} \\
-{-\,\frac{1}{P(x_{h})}\, n\, P(x_{g} \mid y)P(x_{h} \mid y),} & \text{otherwise.}
-\end{cases}$$
+``` math
+\frac{\partial^2 \ell\ell}{\partial P(x_h)\,\partial l_{y_m \mid x_g}}
+=
+\begin{cases}
+\frac{1}{P(x_g)} \, n \, P(x_g \mid y) \big(1-P(x_g \mid y)\big),
+& \text{if } g=h,\\[1.0em]
+-\, \frac{1}{P(x_h)} \, n \, P(x_g \mid y) P(x_h \mid y),
+& \text{otherwise.}
+\end{cases}
+```
 
 Collecting these terms gives the Hessian in block form:
-$${Hess}(\ell\ell)\; = \;\begin{bmatrix}
-\frac{\partial^{2}\ell\ell}{\partial P(x_{g})\,\partial P(x_{h})} & \frac{\partial^{2}\ell\ell}{\partial P(x_{h})\,\partial l_{y_{m} \mid x_{g}}} \\
-\frac{\partial^{2}\ell\ell}{\partial l_{y_{m} \mid x_{g}}\,\partial P(x_{h})} & \frac{\partial^{2}\ell\ell}{\partial l_{y_{m} \mid x_{g}}\,\partial l_{y_{m} \mid x_{g}}}
-\end{bmatrix}\!.$$
+``` math
+\mathrm{Hess}(\ell\ell) \;=\;
+\begin{bmatrix}
+\displaystyle \frac{\partial^2 \ell\ell}{\partial P(x_g)\,\partial P(x_h)} &
+\displaystyle \frac{\partial^2 \ell\ell}{\partial P(x_h)\,\partial l_{y_m \mid x_g}} \\[0.8em]
+\displaystyle \frac{\partial^2 \ell\ell}{\partial l_{y_m \mid x_g}\,\partial P(x_h)} &
+\displaystyle \frac{\partial^2 \ell\ell}{\partial l_{y_m \mid x_g}\,\partial l_{y_m \mid x_g}}
+\end{bmatrix}\!.
+```
 
 ## Models for the conditional likelihoods
 
@@ -94,70 +145,109 @@ items and a **Gaussian** likelihood for continuous items.
 
 ### Multinomial
 
-For categorical items, let $\pi_{m_{k} \mid g}$ be the probability of
-scoring category $k$ on item $m$ if a subject belongs to class $g$. Then
-$$P(y_{m} \mid x_{g})\; = \;\pi_{m_{k} \mid g},$$ where $k$ is such that
-$y_{m} = k$. With this parameterization,
-$$\frac{\partial l_{y_{m} \mid x_{g}}}{\partial\pi_{n_{k} \mid h}} = \begin{cases}
-{\frac{1}{\pi_{n_{k} \mid h}},} & {{\text{if}\mspace{6mu}}y_{m} = k,\ m = n,\ g = h,} \\
-{0,} & \text{otherwise.}
-\end{cases}$$ and
-$$\frac{\partial^{2}l_{y_{j} \mid x_{i}}}{\partial\pi_{m_{k} \mid g}\partial\pi_{n_{l} \mid h}} = \begin{cases}
-{-\frac{1}{\pi_{m_{j} \mid i}^{2}},} & {{\text{if}\mspace{6mu}}y_{j} = k = l,\ y = m = n,\ i = g = h,} \\
-{0,} & \text{otherwise.}
-\end{cases}$$
+For categorical items, let $`\pi_{m_k \mid g}`$ be the probability of
+scoring category $`k`$ on item $`m`$ if a subject belongs to class
+$`g`$. Then
+``` math
+P(y_m \mid x_g) \;=\; \pi_{m_k \mid g},
+```
+where $`k`$ is such that $`y_m = k`$. With this parameterization,
+``` math
+\frac{\partial l_{y_m \mid x_g}}{\partial \pi_{n_k \mid h}}
+=
+\begin{cases}
+\frac{1}{\pi_{n_k \mid h}}, & \text{if } y_m = k,\ m=n,\ g=h,\\
+0, & \text{otherwise.}
+\end{cases}
+```
+and
+``` math
+\frac{\partial^2 l_{y_j \mid x_i}}{\partial \pi_{m_k \mid g} \partial \pi_{n_l \mid h}} =
+\begin{cases}
+-\frac{1}{\pi_{m_j \mid i}^2}, & \text{if } y_j = k = l,\ y=m=n,\ i=g=h,\\
+0, & \text{otherwise.}
+\end{cases}
+```
 
 Consequently, the Hessian for each conditional parameter has the
 following block form:
-$${Hess}(l_{y_{m} \mid x_{g}})\; = \;\mathbf{e}\;\frac{\partial^{2}l_{y_{j} \mid x_{i}}}{\partial\pi_{m_{k} \mid g}\partial\pi_{n_{l} \mid h}}\;\mathbf{e}^{\top},$$
-where $\mathbf{e}$ is a vector of zeroes with a 1 in the position
-corresponding to the parameter $\pi_{y_{j} \mid i}$.
+``` math
+\mathrm{Hess}(l_{y_m \mid x_g}) \;=\;
+\mathbf{e} \; \displaystyle \frac{\partial^2 l_{y_j \mid x_i}}{\partial \pi_{m_k \mid g} \partial \pi_{n_l \mid h}} \; \mathbf{e}^\top,
+```
+where $`\mathbf{e}`$ is a vector of zeroes with a 1 in the position
+corresponding to the parameter $`\pi_{y_j \mid i}`$.
 
-Notice that each conditional parameter $l_{y_{m} \mid x_{g}}$ has a
+Notice that each conditional parameter $`l_{y_m \mid x_g}`$ has a
 Hessian matrix.
 
 ### Gaussian
 
-For continuous items, let $\varphi$ denote the normal density. Let
-$\mu_{m \mid g}$ and $\sigma_{m \mid g}$ be the mean and standard
-deviation for item $m$ in class $g$. Then
-$$P(y_{m} \mid x_{g})\; = \;\varphi\!\left( y_{m};\,\mu_{m \mid g},\,\sigma_{m \mid g} \right).$$
+For continuous items, let $`\varphi`$ denote the normal density. Let
+$`\mu_{m\mid g}`$ and $`\sigma_{m\mid g}`$ be the mean and standard
+deviation for item $`m`$ in class $`g`$. Then
+``` math
+P(y_m \mid x_g) \;=\; \varphi\!\big(y_m;\, \mu_{m\mid g},\, \sigma_{m\mid g}\big).
+```
 
 First derivatives:
-$$\frac{\partial l_{y_{m} \mid x_{g}}}{\partial\mu_{n \mid h}} = \begin{cases}
-{\frac{y_{m} - \mu_{m \mid g}}{\sigma_{m \mid g}^{2}},} & {{\text{if}\mspace{6mu}}m = n,\ g = h,} \\
-{0,} & \text{otherwise,}
-\end{cases}$$
+``` math
+\frac{\partial l_{y_m \mid x_g}}{\partial \mu_{n\mid h}}
+=
+\begin{cases}
+\dfrac{y_m - \mu_{m\mid g}}{\sigma_{m\mid g}^{2}}, & \text{if } m=n,\ g=h,\\[0.6em]
+0, & \text{otherwise,}
+\end{cases}
+```
 
-$$\frac{\partial l_{y_{m} \mid x_{g}}}{\partial\sigma_{n \mid h}} = \begin{cases}
-{\frac{(y_{m} - \mu_{m \mid g})^{2} - \sigma_{m \mid g}^{2}}{\sigma_{m \mid g}^{3}},} & {{\text{if}\mspace{6mu}}m = n,\ g = h,} \\
-{0,} & \text{otherwise.}
-\end{cases}$$
+``` math
+\frac{\partial l_{y_m \mid x_g}}{\partial \sigma_{n\mid h}}
+=
+\begin{cases}
+\dfrac{(y_m-\mu_{m\mid g})^{2}-\sigma_{m\mid g}^{2}}{\sigma_{m\mid g}^{3}}, & \text{if } m=n,\ g=h,\\[0.6em]
+0, & \text{otherwise.}
+\end{cases}
+```
 
 Second-order derivatives:
-$$\frac{\partial^{2}l_{y_{m} \mid x_{g}}}{\partial\mu_{m \mid g}\,\partial\mu_{n \mid h}} = \begin{cases}
-{-\frac{1}{\sigma_{m \mid g}^{2}},} & {{\text{if}\mspace{6mu}}m = n,\ g = h,} \\
-{0,} & \text{otherwise,}
-\end{cases}$$
+``` math
+\frac{\partial^{2} l_{y_m \mid x_g}}{\partial \mu_{m\mid g}\, \partial \mu_{n\mid h}}
+=
+\begin{cases}
+-\dfrac{1}{\sigma_{m\mid g}^{2}}, & \text{if } m=n,\ g=h,\\[0.6em]
+0, & \text{otherwise,}
+\end{cases}
+```
 
-$$\frac{\partial^{2}l_{y_{m} \mid x_{g}}}{\partial\sigma_{m \mid g}\,\partial\sigma_{n \mid h}} = \begin{cases}
-{\frac{1}{\sigma_{m \mid g}^{2}} - \frac{3(y_{m} - \mu_{m \mid g})^{2}}{\sigma_{m \mid g}^{4}},} & {{\text{if}\mspace{6mu}}m = n,\ g = h,} \\
-{0,} & \text{otherwise,}
-\end{cases}$$
+``` math
+\frac{\partial^{2} l_{y_m \mid x_g}}{\partial \sigma_{m\mid g}\, \partial \sigma_{n\mid h}}
+=
+\begin{cases}
+\dfrac{1}{\sigma_{m\mid g}^{2}} - \dfrac{3(y_m-\mu_{m\mid g})^{2}}{\sigma_{m\mid g}^{4}}, & \text{if } m=n,\ g=h,\\[1.0em]
+0, & \text{otherwise,}
+\end{cases}
+```
 
-$$\frac{\partial^{2}l_{y_{m} \mid x_{g}}}{\partial\mu_{m \mid g}\,\partial\sigma_{n \mid h}} = \begin{cases}
-{-\frac{2(y_{m} - \mu_{m \mid g})}{\sigma_{m \mid g}^{3}},} & {{\text{if}\mspace{6mu}}m = n,\ g = h,} \\
-{0,} & \text{otherwise.}
-\end{cases}$$
+``` math
+\frac{\partial^{2} l_{y_m \mid x_g}}{\partial \mu_{m\mid g}\, \partial \sigma_{n\mid h}}
+=
+\begin{cases}
+-\dfrac{2(y_m-\mu_{m\mid g})}{\sigma_{m\mid g}^{3}}, & \text{if } m=n,\ g=h,\\[0.6em]
+0, & \text{otherwise.}
+\end{cases}
+```
 
 Consequently, the Hessian for each conditional parameter has the
 following block form:
-$${Hess}(l_{y_{m} \mid x_{g}})\; = \;\begin{bmatrix}
-\frac{\partial^{2}l_{y_{m} \mid x_{g}}}{\partial\mu_{m \mid g}\,\partial\mu_{n \mid h}} & \frac{\partial^{2}l_{y_{m} \mid x_{g}}}{\partial\mu_{m \mid g}\,\partial\sigma_{n \mid h}} \\
-\frac{\partial^{2}l_{y_{m} \mid x_{g}}}{\partial\sigma_{n \mid h}\,\partial\mu_{m \mid g}} & \frac{\partial^{2}l_{y_{m} \mid x_{g}}}{\partial\sigma_{m \mid g}\,\partial\sigma_{n \mid h}}
-\end{bmatrix}.$$
+``` math
+\mathrm{Hess}(l_{y_m \mid x_g}) \;=\;
+\begin{bmatrix}
+\displaystyle \frac{\partial^{2} l_{y_m \mid x_g}}{\partial \mu_{m \mid g}\,\partial \mu_{n \mid h}} & \displaystyle \frac{\partial^{2} l_{y_m \mid x_g}}{\partial \mu_{m \mid g}\,\partial \sigma_{n \mid h}} \\[0.6em]
+\displaystyle \frac{\partial^{2} l_{y_m \mid x_g}}{\partial \sigma_{n \mid h}\,\partial \mu_{m \mid g}} & \displaystyle \frac{\partial^{2} l_{y_m \mid x_g}}{\partial \sigma_{m \mid g}\,\partial \sigma_{n \mid h}}
+\end{bmatrix}.
+```
 
-Notice that each conditional parameter $l_{y_{m} \mid x_{g}}$ has a
+Notice that each conditional parameter $`l_{y_m \mid x_g}`$ has a
 Hessian matrix.
 
 ## Model for the latent class probabilities
@@ -165,33 +255,46 @@ Hessian matrix.
 Probabilities of class membership are parameterized with the softmax
 transformation:
 
-$$P(x_{g}) = \frac{{\exp}(\theta_{g})}{\sum\limits_{j}{\exp}(\theta_{j})},$$
-where $\theta_{g}$ is the log-scale parameter associated with class $g$.
+``` math
+P(x_g) = \frac{\exp(\theta_g)}{\sum_j \exp(\theta_j)},
+```
+where $`\theta_g`$ is the log-scale parameter associated with class
+$`g`$.
 
 The jacobian of this transformation is given by
 
-$$J = {diag}(P) - PP^{\top}.$$ Finally, the Hessian for each probability
-is
+``` math
+J = \mathrm{diag}(P) - PP^\top.
+```
+Finally, the Hessian for each probability is
 
-$${Hess}\left( P(x_{g}) \right)\; = \; P(x_{g})\left( (e_{g} - P)(e_{g} - P)^{\top} - J \right),$$
-where $e_{g}$ is a vector of zeroes with a $1$ in position $g$.
+``` math
+\mathrm{Hess}\big(P(x_g)\big) \;=\; P(x_g)\bigg((e_g−P)(e_g−P)^\top−J\bigg),
+```
+where $`e_g`$ is a vector of zeroes with a $`1`$ in position $`g`$.
 
 ## Model for the conditional probabilities of the multinomial model
 
 Probabilities of conditional responses are parameterized with the
 softmax transformation:
 
-$$\pi_{m_{k} \mid g} = \frac{{\exp}(\eta_{m_{k} \mid g})}{\sum\limits_{j}{\exp}(\eta_{m_{j} \mid g})},$$
-where $\eta_{m_{k} \mid g}$ is the log-scale parameter associated with
-response $k$ to item $m$ in class $g$.
+``` math
+\pi_{m_k \mid g} = \frac{\exp(\eta_{m_k \mid g})}{\sum_j \exp(\eta_{m_j \mid g})},
+```
+where $`\eta_{m_k \mid g}`$ is the log-scale parameter associated with
+response $`k`$ to item $`m`$ in class $`g`$.
 
 The jacobian of this transformation is given by
 
-$$J_{m \mid g} = {diag}(\pi_{m \mid g}) - \pi_{m \mid g}(\pi_{m \mid g})^{\top}.$$
+``` math
+J_{m \mid g} = \mathrm{diag}(\pi_{m \mid g}) - \pi_{m \mid g} (\pi_{m \mid g})^\top.
+```
 Finally, the Hessian for each probability is
 
-$${Hess}\left( \pi_{m_{k} \mid g} \right)\; = \;\pi_{m \mid g}\left( (e_{k} - \pi_{m \mid g})(e_{k} - \pi_{m \mid g})^{\top} - J \right),$$
-where $e_{k}$ is a vector of zeroes with a $1$ in position $k$.
+``` math
+\mathrm{Hess}\big( \pi_{m_k \mid g} \big) \;=\; \pi_{m \mid g}\bigg((e_k−\pi_{m \mid g})(e_k−\pi_{m \mid g})^\top−J\bigg),
+```
+where $`e_k`$ is a vector of zeroes with a $`1`$ in position $`k`$.
 
 ## Constant priors
 
@@ -202,36 +305,49 @@ where $e_{k}$ is a vector of zeroes with a $1$ in position $k$.
 #### Multinomial
 
 For the conditional probabilities modeled with a multinomial likelihood,
-we add the following term to the log-likelihood for each class $g$:
+we add the following term to the log-likelihood for each class $`g`$:
 
-$$\lambda_{2} = \sum\limits_{m}\sum\limits_{k}{\widehat{\pi}}_{m_{k}}\sum\limits_{g}\frac{\alpha}{K}{\log}(\pi_{m_{k} \mid g}),$$
+``` math
+\lambda_2 = \sum_m \sum_k \hat{\pi}_{m_k} \sum_g \frac{\alpha}{K} \log (\pi_{m_k \mid g}),
+```
 
-Where ${\widehat{\pi}}_{m_{k}}$ is the proportion of times category $k$
-was selected in item $m$.
+Where $`\hat{\pi}_{m_k}`$ is the proportion of times category $`k`$ was
+selected in item $`m`$.
 
 The first-order derivatives are
 
-$$\frac{\partial\lambda_{2}}{\partial\pi_{m_{k} \mid g}} = \sum\limits_{m}\sum\limits_{k}{\widehat{\pi}}_{m_{k}}\sum\limits_{g}\frac{\alpha}{K}\frac{1}{\pi_{m_{k} \mid g}}.$$
+``` math
+\frac{\partial \lambda_2}{\partial \pi_{m_k \mid g}} = \sum_m \sum_k \hat{\pi}_{m_k} \sum_g \frac{\alpha}{K} \frac{1}{\pi_{m_k \mid g}}.
+```
 
 The second-order derivatives are
 
-$$\frac{\partial^{2}\lambda_{2}}{\partial\pi_{m_{k} \mid g}\;\partial\pi_{m_{k} \mid g}} = -\sum\limits_{m}\sum\limits_{k}{\widehat{\pi}}_{m_{k}}\sum\limits_{g}\frac{\alpha}{K}\frac{1}{\pi_{m_{k} \mid g}^{2}}.$$
+``` math
+\frac{\partial^2 \lambda_2}{\partial \pi_{m_k \mid g} \; \partial \pi_{m_k \mid g}} = -\sum_m \sum_k \hat{\pi}_{m_k} \sum_g \frac{\alpha}{K} \frac{1}{\pi^2_{m_k \mid g}}.
+```
 
 #### Gaussian
 
 For the conditional probabilities modeled with a gaussian likelihood, we
-add the following term to the log-likelihood for each class $g$:
-$$\begin{aligned}
-\lambda_{3} & {= \sum\limits_{g}^{K}\left( -0.5\frac{\alpha}{K}\log\left( \prod\limits_{j}\sigma_{j \mid g}^{2} \right) - 0.5\frac{\alpha}{K}\sum\limits_{j}\frac{{\widehat{\sigma}}_{j}^{2}}{\sigma_{j \mid g}^{2}} \right)} \\
- & {= \sum\limits_{g}^{K}\left( -\frac{\alpha}{K}\sum\limits_{j}s_{j \mid g} - 0.5\frac{\alpha}{K}\sum\limits_{j}\frac{{\widehat{\sigma}}_{j}^{2}}{\sigma_{j \mid g}^{2}} \right),}
-\end{aligned}$$
+add the following term to the log-likelihood for each class $`g`$:
+``` math
+\begin{aligned}
+\lambda_3 &= \sum_g^K \left( -0.5\frac{\alpha}{K} \log\bigg(\prod_j \sigma^2_{j\mid g}\bigg) - 0.5\frac{\alpha}{K} \sum_j \frac{\hat{\sigma}^2_j}{\sigma^2_{j \mid g}} \right) \\
+&= \sum_g^K \left( -\frac{\alpha}{K} \sum_j s_{j\mid g} - 0.5\frac{\alpha}{K} \sum_j \frac{\hat{\sigma}^2_j}{\sigma^2_{j \mid g}} \right),
+\end{aligned}
+```
 
-where ${\widehat{\sigma}}_{j}^{2}$ is the variance of item $j$.
+where $`\hat{\sigma}^2_j`$ is the variance of item $`j`$.
 
-The first-order derivatives are $$\begin{aligned}
-{\frac{\partial\lambda_{3}}{\partial\sigma_{m \mid g}}\;} & {= \;\sum\limits_{g}^{K} - \frac{\alpha}{K\sigma_{m \mid g}} + \frac{\alpha}{K\sigma_{m \mid g}^{3}}{\widehat{\sigma}}_{m \mid g}^{2}} \\
- & {= \sum\limits_{g}^{K}\frac{\alpha}{K}\left( \frac{{\widehat{\sigma}}_{m \mid g}^{2}}{\sigma_{m \mid g}^{3}} - \frac{1}{\sigma_{m \mid g}} \right).}
-\end{aligned}$$
+The first-order derivatives are
+``` math
+\begin{aligned}
+\frac{\partial \lambda_3}{\partial \sigma_{m \mid g}} \;&=\; \sum_g^K -\frac{\alpha}{K \sigma_{m \mid g}} + \frac{\alpha}{K \sigma^3_{m \mid g}} \hat{\sigma}^2_{m \mid g}\\
+&= \sum_g^K \frac{\alpha}{K} \Bigg(\frac{\hat{\sigma}^2_{m \mid g}}{\sigma^3_{m \mid g}} - \frac{1}{\sigma_{m \mid g}}\Bigg).
+\end{aligned}
+```
 
 The second-order derivatives are
-$$\frac{\partial^{2}\lambda_{3}}{\partial\sigma_{m \mid g}\partial\sigma_{m \mid g}}\; = \;\sum\limits_{g}^{K}\frac{\alpha}{K}\left( \frac{1}{\sigma_{m \mid g}} - 3\frac{{\widehat{\sigma}}_{m \mid g}^{2}}{\sigma_{m \mid g}^{4}} \right).$$
+``` math
+\frac{\partial^2 \lambda_3}{\partial \sigma_{m \mid g} \partial \sigma_{m \mid g}} \;=\; \sum_g^K \frac{\alpha}{K} \Bigg(\frac{1}{\sigma_{m \mid g}} - 3\frac{\hat{\sigma}^2_{m \mid g}}{\sigma^4_{m \mid g}}\Bigg).
+```
