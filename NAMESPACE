@@ -27,3 +27,4 @@ S3method(fitted, llcalist)
 S3method(plot, llca)
 S3method(print, lbvr)
 S3method(print, lclassd)
+
