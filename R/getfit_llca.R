@@ -60,7 +60,7 @@ getfit.llca <- function(model, digits = 4) {
   }
 
   ##
-  penalized <- abs(model@loglik) != abs(model@penalized_loglik)
+  penalized <- model@modelInfo$control_optimizer$reg
 
   posterior <- latInspect(model, what = "posterior")
   summary_table <- latInspect(model, what = "summary")
@@ -149,6 +149,7 @@ getfit.llca <- function(model, digits = 4) {
   }
 
   class(result) <- "getfit.llca"
+  attr(result, "penalized") <- penalized
 
   return(result)
 
@@ -161,6 +162,7 @@ getfit.llcalist <- function(model, digits = 4) {
   out <- t(sapply(model, getfit.llca, digits = digits))
 
   class(out) <- "getfit.llcalist"
+  attr(out, "penalized") <- model[[1]]@modelInfo$control_optimizer$reg
 
   return(out)
 
