@@ -281,7 +281,6 @@ lca <- function(data, nclasses = 1L,
   dataList$original_X <- original_X
   dataList$args <- args
   dataList$original_model <- original_model
-  dataList$nclasses <- nclasses
 
   #### Initialize objects to store all the models ####
 

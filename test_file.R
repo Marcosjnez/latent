@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/05/2026
+# Modification date: 05/05/2026
 
 #### Build the package ####
 
@@ -26,11 +26,7 @@ fit <- lca(data = gss82, nclasses = 3,
 fit@loglik # -2754.643
 fit@penalized_loglik # -2759.507
 fit@Optim$iterations # 67
-fit@Optim$ng
-max(fit@Optim$rg)
-fit@Optim$convergence
 fit@timing
-fit@parameters
 
 # Plot model fit info:
 fit
@@ -109,7 +105,7 @@ plot(fit, type = "standard", what = "OR", effects = "coding",
 
 library(latent)
 set.seed(2026)
-fit <- lca(data = cancer, nclasses = 3L,
+fit <- lca(data = cancer, nclasses = 1:3L,
            gaussian = c("Age", "WeightIndex", "SystolicBloodPressure",
                         "DiastolicBloodPressure"),
            multinomial = c("PerformanceRating", "CardiovascularDiseaseHistory"),
@@ -273,6 +269,9 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 
+latInspect(fit, "est")
+getfit(fit)
+
 # With lavaan:
 fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
                     model = model,
@@ -292,6 +291,14 @@ fit@Optim$SE$se
 fit2@ParTable$se
 inspect(fit2, "est")
 fit@parameters
+
+fitmeasures(fit2)
+getfit(fit)
+latInspect(fit, "loglik")
+latInspect(fit, "loss")
+fitMeasures(fit2, "unrestricted.logl")
+fitMeasures(fit2, "baseline.chisq")
+fitmeasures(fit2, "rmr")
 
 # NACOV <- lavTech(fit2, "gamma")
 # lapply(NACOV, FUN = dim)
@@ -330,6 +337,8 @@ fit@penalized_loglik # -3682.198
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
+
+latInspect(fit, what = "loglik")
 
 # With lavaan:
 fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
@@ -680,12 +689,14 @@ fit <- lcfa(data_missing,
             do.fit = TRUE,
             control = NULL)
 
-fit@loss   # 0.283407
-fit@loglik # -3714.303
-fit@penalized_loglik # -3714.303
+fit@loss   # 0.9767859
+fit@loglik # -3733.769
+fit@penalized_loglik # -3733.769
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
+
+latInspect(fit, what = "loglik")
 
 # With lavaan:
 fit2 <- cfa(model, data = data_missing,

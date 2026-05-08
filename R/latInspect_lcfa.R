@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/04/2026
+# Modification date: 05/05/2026
 #'
 #' @title
 #' Standard Errors
@@ -28,8 +28,7 @@
 #'
 #' @method latInspect lcfa
 #' @export
-latInspect.lcfa <- function(fit,
-                            what = "est") {
+latInspect.lcfa <- function(fit, what = "est") {
 
   # fit must inherit from class lcfa
   stopifnot(inherits(fit, "lcfa"))
@@ -42,109 +41,77 @@ latInspect.lcfa <- function(fit,
 
   #### Extract the fit ####
 
-  losses_vector <- unlist(lapply(fit@Optim$outputs$estimators$doubles,
-                                 FUN = \(x) x[[1]]))
-  logliks_vector <- unlist(lapply(fit@Optim$outputs$estimators$doubles,
-                                  FUN = \(x) x[[2]]))
-  logliks_indep_vector <- unlist(lapply(fit@Optim$outputs$estimators$doubles,
-                                        FUN = \(x) x[[3]]))
-  logliks_sat_vector <- unlist(lapply(fit@Optim$outputs$estimators$doubles,
-                                      FUN = \(x) x[[4]]))
-  penalty_vector <- unlist(lapply(fit@Optim$outputs$estimators$doubles,
-                                  FUN = \(x) x[[5]]))
+  doubles <- fit@Optim$outputs$estimators$doubles
 
-  k <- 1L
+  fit_matrix <- vapply(
+    doubles,
+    FUN = function(x) {
+      c(
+        loss             = x[[1]],
+        loss_base        = x[[2]],
+        loss_sat         = x[[3]],
+        loglik           = x[[4]],
+        loglik_base      = x[[5]],
+        loglik_sat       = x[[6]],
+        penalty          = x[[7]],
+        penalized_loss   = x[[1]] + x[[7]],
+        penalized_loglik = x[[4]] - x[[7]]
+      )
+    },
+    FUN.VALUE = numeric(9)
+  )
 
-  # Fit by group and pattern:
-  # For each group...
-  for(i in 1:fit@dataList$ngroups) {
+  colnames(fit_matrix) <- unlist(fit@dataList$data_param$S_group)
 
-    # For each pattern within each group...
-    for(j in 1:fit@dataList$correl[[i]]$npatterns) {
+  # group_by_fit <- matrix(rowSums(fit_matrix), ncol = 1L,
+  #                        dimnames = list(rownames(fit_matrix), "value"))
 
-      groups[[i]]$loss[[j]] <- losses_vector[k]
-      groups[[i]]$loglik[[j]] <- logliks_vector[k]
-      groups[[i]]$loglik_indep[[j]] <- logliks_indep_vector[k]
-      groups[[i]]$loglik_sat[[j]] <- logliks_sat_vector[k]
-      groups[[i]]$penalty[[j]] <- penalty_vector[k]
-      k <- k+1L
+  if(fit@dataList$ngroups > 1) {
 
-    }
+    Ind <- sapply(fit@dataList$group_label, FUN = \(x) {
+      idx <- grepl(paste0(x, "($|\\.)"), colnames(fit_matrix)) + 0.00
+    })
+    Ind <- cbind(Ind, 1)
+    fit_by_group <- fit_matrix %*% Ind
+    colnames(fit_by_group) <- c(as.character(fit@dataList$group_label),
+                                "overall")
 
-    names(groups[[i]]$loss) <- names(groups[[i]]$loglik) <-
-      names(groups[[i]]$loglik_indep) <- names(groups[[i]]$loglik_sat) <-
-      names(groups[[i]]$penalty) <- fit@dataList$correl[[i]]$patterns_names
+  } else {
+
+    fit_by_group <- matrix(rowSums(fit_matrix), ncol = 1L,
+                           dimnames = list(rownames(fit_matrix), "overall"))
 
   }
 
-  # Fit by group:
-  loss <- lapply(groups, FUN = \(x) sum(unlist(x$loss)))
-  penalized_loss <- lapply(groups, FUN = \(x) sum(unlist(x$loss) +
-                                                    unlist(x$penalty)))
+  #### Compute residuals ####
 
-  loglik <- lapply(groups, FUN = \(x) sum(unlist(x$loglik)))
-  penalized_loglik <- lapply(groups, FUN = \(x) sum(unlist(x$loglik) +
-                                                      unlist(x$penalty)))
-
-  loglik_indep <- lapply(groups, FUN = \(x) sum(unlist(x$loglik_indep)))
-  loglik_sat <- lapply(groups, FUN = \(x) sum(unlist(x$loglik_sat)))
-
-  penalty <- lapply(groups, FUN = \(x) sum(unlist(x$penalty)))
-
-  group_by_fit <- list(loss = loss,
-                       penalized_loss = penalized_loss,
-                       loglik = loglik,
-                       penalized_loglik = penalized_loglik,
-                       loglik_indep = loglik_indep,
-                       loglik_sat = loglik_sat,
-                       penalty = penalty)
-
-  fit_by_group <- group_lists_by_sublists(loss = loss,
-                                          penalized_loss = penalized_loss,
-                                          loglik = loglik,
-                                          penalized_loglik = penalized_loglik,
-                                          loglik_indep = loglik_indep,
-                                          loglik_sat = loglik_sat,
-                                          penalty = penalty)
-
-  #### Extract the parameters ####
-
-  lambda <- theta <- psi <- model <- xtheta <- xpsi <- S <- resids <-
-    vector("list", length = fit@dataList$ngroups)
-  names(lambda) <- names(theta) <- names(psi) <- names(xtheta) <-
-    names(xpsi) <- names(model) <- names(S) <- names(resids) <-
-    fit@dataList$group_label
-
-  lambda_group <- paste("lambda.", fit@dataList$group_label, sep = "")
-  psi_group <- paste("psi.", fit@dataList$group_label, sep = "")
-  theta_group <- paste("theta.", fit@dataList$group_label, sep = "")
-  xpsi_group <- paste("xpsi.", fit@dataList$group_label, sep = "")
-  xtheta_group <- paste("xtheta.", fit@dataList$group_label, sep = "")
-  model_group <- paste("model.", fit@dataList$group_label, sep = "")
-  S_group <- vector("list", length = fit@dataList$ngroups)
-  for(i in 1:fit@dataList$ngroups) {
-    for(j in 1:fit@dataList$correl[[i]]$npatterns) {
-      S_group[[i]][[j]] <- paste("S.", fit@dataList$group_label[i],
-                                 ".pattern", j, sep = "")
-    }
+  matrices <- fit@Optim$outputs$estimators$matrices
+  idx_S <- grepl(paste(c("S"), collapse = "|"),
+                 names(fit@transformed_pars))
+  idx_means <- grepl(paste(c("means"), collapse = "|"),
+                     names(fit@transformed_pars))
+  resids_S <- vector("list", length = sum(idx_S))
+  for(i in 1:sum(idx_S)) {
+    p <- sqrt(length(matrices[[1]][[i]]))
+    resids_S[[i]] <- matrix(matrices[[1]][[i]], nrow = p, ncol = p)
+    rownames(resids_S[[i]]) <- colnames(resids_S[[i]]) <-
+      rownames(fit@transformed_pars[idx_S][[i]])
+    names(resids_S)[i] <- names(fit@transformed_pars[idx_S])[i]
   }
 
-  # For each group...
-  for(i in 1:fit@dataList$ngroups) {
+  if(fit@modelInfo$control_optimizer$meanstructure) {
 
-    lambda[[i]] <- fit@transformed_pars[lambda_group[i]]
-    theta[[i]] <- fit@transformed_pars[theta_group[i]]
-    psi[[i]] <- fit@transformed_pars[psi_group[i]]
-    model[[i]] <- fit@transformed_pars[model_group[i]]
-    xtheta[[i]] <- fit@transformed_pars[xtheta_group[i]]
-    xpsi[[i]] <- fit@transformed_pars[xpsi_group[i]]
-
-    for(j in 1:fit@dataList$correl[[i]]$npatterns) {
-      S[[i]][j] <- fit@transformed_pars[S_group[[i]][[j]]]
-      resids[[i]][[j]] <- S[[i]][[j]][[1]] - model[[i]][[1]]
+    resids_means <- vector("list", length = sum(idx_means))
+    for(i in 1:sum(idx_S)) {
+      p <- length(matrices[[2]][[i]])
+      resids_means[[i]] <- matrices[[2]][[i]]
     }
-    names(S[[i]]) <- names(resids[[i]]) <- fit@dataList$correl[[i]]$patterns_names
+    names(resids_means)[i] <- names(fit@transformed_pars[idx_means])[i]
 
+    resids <- c(resids_S, resids_means)
+
+  } else {
+    resids <- resids_S
   }
 
   #### Return ####
@@ -155,16 +122,18 @@ latInspect.lcfa <- function(fit,
      what == "fixed" ||
      what == "items") {
 
-    for(i in 1:fit@dataList$ngroups) {
-      groups[[i]]$lambda <- lambda[[i]][[1]]
-      groups[[i]]$psi <- psi[[i]][[1]]
-      groups[[i]]$theta <- theta[[i]][[1]]
-    }
+    idx <- grepl(paste(c("lambda", "theta", "psi"), collapse = "|"),
+                 names(fit@transformed_pars))
 
-    return(lapply(groups, FUN = \(x) x[c("lambda", "theta", "psi")]))
+    return(fit@transformed_pars[idx])
 
   } else if(what == "rhat" ||
             what == "model") {
+
+    idx <- grepl(paste(c("model"), collapse = "|"),
+                 names(fit@transformed_pars))
+
+    return(fit@transformed_pars[idx])
 
     return(model)
 
@@ -176,20 +145,31 @@ latInspect.lcfa <- function(fit,
   } else if(what == "lambda" ||
             what == "loadings") {
 
-    return(lambda)
+    idx <- grepl(paste(c("lambda"), collapse = "|"),
+                 names(fit@transformed_pars))
+
+    return(fit@transformed_pars[idx])
 
   } else if(what == "psi") {
 
-    return(psi)
+    idx <- grepl(paste(c("psi"), collapse = "|"),
+                 names(fit@transformed_pars))
+
+    return(fit@transformed_pars[idx])
 
   } else if(what == "theta") {
 
-    return(theta)
+    idx <- grepl(paste(c("theta"), collapse = "|"),
+                 names(fit@transformed_pars))
+
+    return(fit@transformed_pars[idx])
 
   } else if(what == "uniquenesses") {
 
-    uniquenesses <- lapply(theta, FUN = \(x) lapply(x, FUN = diag))
-    return(uniquenesses)
+    idx <- grepl(paste(c("theta"), collapse = "|"),
+                 names(fit@transformed_pars))
+
+    return(lapply(fit@transformed_pars[idx], FUN = diag))
 
   } else if(what == "W") {
 
@@ -204,23 +184,24 @@ latInspect.lcfa <- function(fit,
   } else if(what == "loss" ||
             what == "f") {
 
-    # return(group_by_fit[c("loss", "penalized_loss")])
-
-    return(lapply(fit_by_group, FUN = \(x) x[c("loss", "penalized_loss")]))
+    return(fit_by_group[c("loss", "penalized_loss",
+                          "loss_base", "loss_sat"), , drop = FALSE])
 
   } else if(what == "loglik") {
 
-    # return(group_by_fit[c("loglik", "penalized_loglik",
-    #                       "loglik_indep", "loglik_sat")])
-
-    return(lapply(fit_by_group, FUN = \(x) x[c("loglik", "penalized_loglik",
-                                               "loglik_indep", "loglik_sat")]))
+    return(fit_by_group[c("loglik", "penalized_loglik",
+                          "loglik_base", "loglik_sat"), , drop = FALSE])
 
   } else if(what == "fit") {
 
     # return(group_by_fit)
 
     return(fit_by_group)
+
+  } else if(what == "fit.matrix" ||
+            what == "fit_matrix") {
+
+    return(fit_matrix)
 
   } else {
 

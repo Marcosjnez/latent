@@ -143,7 +143,7 @@ create_lyule_model <- function(data_list, model, control) {
   # Initialize the objects to store the initial parameters:
   param <- trans <- vector("list")
 
-  S_matrix <- paste("S.", control$subfix, sep = "")
+  S_matrix <- paste("S", control$subfix, sep = "")
 
   #### Model for the transformed parameters ####
 
@@ -215,7 +215,7 @@ create_lyule_modelInfo <- function(data_list, full_model, control) {
   list2env(full_model, envir = environment())
   list2env(control, envir = environment())
 
-  S_matrix <- paste("S.", control$subfix, sep = "")
+  S_matrix <- paste("S", control$subfix, sep = "")
 
   #### Manifolds ####
 

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 07/04/2026
+ * Modification date: 07/05/2026
  */
 
 /*
@@ -13,7 +13,7 @@ class cfa_ml: public estimators {
 public:
 
   int p, n;
-  double f, w, logdetS, plogpi2;
+  double loss, w, logdetS, plogpi2;
   arma::uvec indices_S, indices_Shat, diag, lower_diag;
   arma::mat S, Shat, residuals, dS, dShat, Shat_inv, gShat, I;
 
@@ -35,10 +35,10 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = w*n*0.5*(plogpi2 +
+    loss = w*n*0.5*(plogpi2 +
       arma::log_det_sympd(Shat) +
       arma::accu(S % Shat_inv));
-    x.f += f;
+    x.f += loss;
 
   }
 
@@ -67,27 +67,27 @@ public:
 
   void outcomes(arguments_optim& x) {
 
+    arma::mat Sinv = arma::inv_sympd(S);
     double loglik = n*0.5*(-plogpi2 -
                            arma::log_det_sympd(Shat) -
                            arma::accu(S % Shat_inv));
     double loglik_indep = n*0.5*(-plogpi2 -
                                  arma::trace(S));
-    arma::mat Rinv = arma::inv_sympd(S);
     double loglik_sat = n*0.5*(-plogpi2 -
                                arma::log_det_sympd(S) -
-                               arma::accu(S % Rinv));
+                               arma::accu(S % Sinv));
 
-    doubles.resize(5);
-    doubles[0] =  loglik;        // loss   actual model
-    doubles[1] =  loglik;        // loglik actual model
-    doubles[2] =  loglik_indep;  // loglik independence model
-    doubles[3] =  loglik_sat;    // loglik saturated model
-    doubles[4] =  0.00;          // penalty
+    doubles.resize(7);
+    doubles[0] =  -loglik;          // loss   actual model
+    doubles[1] =  -loglik_indep;    // loss independence model
+    doubles[2] =  -loglik_sat;      // loss saturated model
+    doubles[3] =   loglik;          // loglik actual model
+    doubles[4] =   loglik_indep;    // loglik independence model
+    doubles[5] =   loglik_sat;      // loglik saturated model
+    doubles[6] =   0.00;            // penalty
 
-    arma::mat W;
-    matrices.resize(2);
+    matrices.resize(1);
     matrices[0] = S - Shat;
-    matrices[1] = W;
 
   };
 

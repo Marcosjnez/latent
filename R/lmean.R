@@ -162,7 +162,7 @@ create_lmean_model <- function(data_list, model, control) {
 
   #### Model for the transformed parameters ####
 
-  means_vector <- paste("means.", control$subfix, sep = "")
+  means_vector <- paste("means", control$subfix, sep = "")
 
   # Transformed parameters:
   list_struct <- vector("list")

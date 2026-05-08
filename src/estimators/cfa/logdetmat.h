@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/04/2026
+ * Modification date: 07/05/2026
  */
 
 /*
@@ -13,7 +13,7 @@ class logdetmat: public estimators {
 public:
 
   int p;
-  double f, tr, logdetw;
+  double loss, tr, logdetw;
   arma::mat X, dX, Xinv;
   arma::uvec indices, lower_indices;
 
@@ -26,8 +26,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = logdetw * (arma::log_det_sympd(X) - p*std::log(tr/p));
-    x.f -= f;
+    loss = -logdetw * (arma::log_det_sympd(X) - p*std::log(tr/p));
+    x.f += loss;
 
   }
 
@@ -55,12 +55,14 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(5);
-    doubles[0] =  -f;       // loss   actual model
-    doubles[1] =  0.00;     // loglik actual model
-    doubles[2] =  0.00;     // loglik independence model
-    doubles[3] =  0.00;     // loglik saturated model
-    doubles[4] =  -f;       // penalty
+    doubles.resize(7);
+    doubles[0] =  loss;          // loss   actual model
+    doubles[1] =  0.00;          // loss independence model
+    doubles[2] =  0.00;          // loss saturated model
+    doubles[3] =  0.00;          // loglik actual model
+    doubles[4] =  0.00;          // loglik independence model
+    doubles[5] =  0.00;          // loglik saturated model
+    doubles[6] =  loss;          // penalty
 
   };
 

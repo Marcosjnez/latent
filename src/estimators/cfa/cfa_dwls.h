@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 08/04/2026
+ * Modification date: 07/05/2026
  */
 
 /*
@@ -13,7 +13,7 @@ class cfa_dwls: public estimators {
 public:
 
   int p;
-  double f, w;
+  double loss, w;
   arma::uvec indices_S, indices_Shat, diag, lower_diag;
   arma::mat S, Shat, dShat, dS, residuals, W, W_residuals;
 
@@ -29,8 +29,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = w*0.5*arma::accu(residuals % W_residuals);
-    x.f += f;
+    loss = w*0.5*arma::accu(residuals % W_residuals);
+    x.f += loss;
 
   }
 
@@ -56,20 +56,20 @@ public:
     arma::mat residuals_indep = S;
     residuals_indep.diag().zeros();
     arma::mat W_residuals_indep = W % residuals_indep;
-    double loss = 0.5*arma::accu(residuals % W_residuals);
     double loss_indep = 0.5*arma::accu(residuals_indep % W_residuals_indep);
     double loss_sat = 0.00;
 
-    doubles.resize(5);
+    doubles.resize(7);
     doubles[0] =  loss;        // loss actual model
-    doubles[1] =  0.00;        // loglik actual model
-    doubles[2] =  loss_indep;  // loglik independence model
-    doubles[3] =  loss_sat;    // loglik saturated model
-    doubles[4] =  0.00;        // penalty
+    doubles[1] =  loss_indep;  // loss independence model
+    doubles[2] =  loss_sat;    // loss saturated model
+    doubles[3] =  0.00;        // loglik actual model
+    doubles[4] =  0.00;        // loglik independence model
+    doubles[5] =  0.00;        // loglik saturated model
+    doubles[6] =  0.00;        // penalty
 
-    matrices.resize(2);
+    matrices.resize(1);
     matrices[0] = residuals;
-    matrices[1] = W;
 
   };
 

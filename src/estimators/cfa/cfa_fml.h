@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 07/04/2026
+ * Modification date: 07/05/2026
  */
 
 /*
@@ -81,23 +81,26 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    double loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p);
-    double loglik = n*0.5*(-plogpi2 - logdetShat - arma::accu(S % Shat_inv));
     arma::mat I(p, p, arma::fill::eye);
+    double loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p);
+    double loss_indep = w*(-logdetS + arma::accu(S % I) - p);
+    double loss_sat = 0.00;
+
+    double loglik = n*0.5*(-plogpi2 - logdetShat - arma::accu(S % Shat_inv));
     double loglik_indep = n*0.5*(-plogpi2 - arma::trace(S));
     double loglik_sat = n*0.5*(-plogpi2 - logdetS - p);
 
-    doubles.resize(5);
+    doubles.resize(7);
     doubles[0] =  loss;          // loss   actual model
-    doubles[1] =  loglik;        // loglik actual model
-    doubles[2] =  loglik_indep;  // loglik independence model
-    doubles[3] =  loglik_sat;    // loglik saturated model
-    doubles[4] =  0.00;          // penalty
+    doubles[1] =  loss_indep;    // loss independence model
+    doubles[2] =  loss_sat;      // loss saturated model
+    doubles[3] =  loglik;        // loglik actual model
+    doubles[4] =  loglik_indep;  // loglik independence model
+    doubles[5] =  loglik_sat;    // loglik saturated model
+    doubles[6] =  0.00;          // penalty
 
-    arma::mat W;
-    matrices.resize(2);
+    matrices.resize(1);
     matrices[0] = S - Shat;
-    matrices[1] = W;
 
   };
 

@@ -299,9 +299,9 @@ create_lpoly_model <- function(data_list, model, control) {
   param <- trans <- vector("list")
   fixed <- nonfixed <- fixed_values_list <- vector("list")
 
-  taus_item <- paste("taus.", item_label, control$subfix, sep = "")
-  X_matrix <- paste("X.", control$subfix, sep = "")
-  S_matrix <- paste("S.", control$subfix, sep = "")
+  taus_item <- paste("taus", item_label, control$subfix, sep = "")
+  X_matrix <- paste("X", control$subfix, sep = "")
+  S_matrix <- paste("S", control$subfix, sep = "")
 
   #### Model for the transformed parameters ####
 
@@ -409,9 +409,9 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
   list2env(data_list, envir = environment())
   list2env(full_model, envir = environment())
 
-  taus_item <- paste("taus.", item_label, control$subfix, sep = "")
-  X_matrix <- paste("X.", control$subfix, sep = "")
-  S_matrix <- paste("S.", control$subfix, sep = "")
+  taus_item <- paste("taus", item_label, control$subfix, sep = "")
+  X_matrix <- paste("X", control$subfix, sep = "")
+  S_matrix <- paste("S", control$subfix, sep = "")
 
   #### Manifolds ####
 

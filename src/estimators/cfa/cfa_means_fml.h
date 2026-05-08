@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 08/04/2026
+ * Modification date: 07/05/2026
  */
 
 /*
@@ -109,24 +109,33 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    double loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p +
-      arma::as_scalar(delta.t() * Shat_inv * delta));
+    arma::mat I(p, p, arma::fill::eye);
     double mean_term = arma::as_scalar(delta.t() * Shat_inv * delta);
-    double loglik = n * 0.5 * (-plogpi2 - logdetShat -
-                               arma::accu(S % Shat_inv) - mean_term);
-    double loglik_indep = n * 0.5 * (-plogpi2 -
-                                     arma::trace(S));
-    double loglik_sat = n * 0.5 * (-plogpi2 - logdetS - p);
+    double mean_term_indep = arma::as_scalar(delta.t() * I * delta);
+    double mean_term_sat = arma::as_scalar(delta.t() * S_inv * delta);
 
-    doubles.resize(5);
-    doubles[0] = loss;
-    doubles[1] = loglik;
-    doubles[2] = loglik_indep;
-    doubles[3] = loglik_sat;
-    doubles[4] = 0.00;
+    double loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p +
+                     mean_term);
+    double loss_indep = w*(-logdetS + arma::trace(S) - p + mean_term_indep);
+    double loss_sat = w*mean_term_sat;
+
+    double loglik = n*0.5*(-plogpi2 - logdetShat - arma::accu(S % Shat_inv) -
+                           mean_term);
+    double loglik_indep = n*0.5*(-plogpi2 - arma::trace(S) - mean_term_indep);
+    double loglik_sat = n*0.5*(-plogpi2 - logdetS - p - mean_term_sat);
+
+    doubles.resize(7);
+    doubles[0] =  loss;          // loss   actual model
+    doubles[1] =  loss_indep;    // loss independence model
+    doubles[2] =  loss_sat;      // loss saturated model
+    doubles[3] =  loglik;        // loglik actual model
+    doubles[4] =  loglik_indep;  // loglik independence model
+    doubles[5] =  loglik_sat;    // loglik saturated model
+    doubles[6] =  0.00;          // penalty
 
     matrices.resize(2);
     matrices[0] = S - Shat;
+    matrices[1] = delta;
 
   };
 
