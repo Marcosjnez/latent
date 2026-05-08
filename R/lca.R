@@ -309,6 +309,8 @@ lca <- function(data, nclasses = 1L,
 
     #### Create the model ####
 
+    dataList$nclasses <- nclasses
+
     # Get the model specification:
     full_model <- create_lca_model(dataList = dataList, nclasses = nclasses,
                                    item = item, model = model,
@@ -322,6 +324,7 @@ lca <- function(data, nclasses = 1L,
                                       full_model = full_model,
                                       control = control)
     modelInfo$original_model <- original_model
+
 
     #### Fit the model ####
 
@@ -385,6 +388,7 @@ lca <- function(data, nclasses = 1L,
     #### latent object ####
 
     elapsed <- Optim$elapsed
+
 
     llca_list[[NK]] <- new("llca",
                            version            = as.character(packageVersion('latent')),

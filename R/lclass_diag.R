@@ -55,9 +55,9 @@ lclass_diag <- function(x, digits = 4,
   type <- match.arg(type, choices = valid_types, several.ok = TRUE)
 
   # ---- Extract basic quantities from model ----
-  post_probs <- latInspect(x, what = "posterior", digits = digits, ...)
+  post_probs <- latInspect(x, what = "posterior", ...)
   state      <- latInspect(x, what = "state", ...)
-  class_prop <- latInspect(x, what = "profile", digits = digits, ...)$class
+  class_prop <- latInspect(x, what = "classes", ...)
 
   # ---- Helper functions (kept inside for portability) ----
   avgprobs_mostlikely <- function(post_prob, class = NULL) {
@@ -105,12 +105,12 @@ lclass_diag <- function(x, digits = 4,
                proportion = round(as.vector(prop.table(classif)), digits))
   }
 
-  sum_postprob <- function(post_prob, class_pp) {
+  sum_postprob <- function(post_prob, class_pp, digits = 4) {
     mix_names <- colnames(post_prob)
     numObs <- nrow(post_prob)
     data.frame(class = mix_names,
-               count = as.vector(class_pp * numObs),
-               proportion = as.vector(class_pp))
+               count = round(as.vector(class_pp * numObs), digits),
+               proportion = round(as.vector(class_pp), digits))
   }
 
   # ---- Pre‑compute commonly used matrices (avoids redundant calculations) ----
@@ -138,7 +138,7 @@ lclass_diag <- function(x, digits = 4,
     switch(thetype,
            "Mostlikely.Class"           = round(class_most, digits),
            "Avg.Mostlikely"              = round(avg_most, digits),
-           "Sum.Posterior"                = sum_postprob(post_probs, class_prop),
+           "Sum.Posterior"                = sum_postprob(post_probs, class_prop, digits = digits),
            "Sum.Mostlikely"                = sum_ml,
            "AvePP"                          = AV,
            "Entropy"                        = getfit(x, digits = digits)[["R2_entropy"]],

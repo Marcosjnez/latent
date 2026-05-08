@@ -54,9 +54,9 @@
 #' @export
 lbvr <- function(model, digits = 4){
 
-  data <- model@data_list$data
-  types <- model@data_list$item
-  posterior <- latInspect(model, "posterior", digits = 8)
+  data <- model@dataList$data
+  types <- model@dataList$item
+  posterior <- latInspect(model, "posterior")
 
   n <- nrow(data)
   J <- ncol(data)
@@ -68,12 +68,12 @@ lbvr <- function(model, digits = 4){
   n_cont <- length(cont_vars)
   n_cat <- length(cat_vars)
 
-  profile <- latInspect(model, what = "item", digits = 10)[cont_vars]
+  profile <- latInspect(model, what = "item")[cont_vars]
   class_means <- sapply(profile, FUN = function(x){ x[1, ] })
 
-  class_probs <- latInspect(model, what = "item", digits = 10)[cat_vars]
+  class_probs <- latInspect(model, what = "item")[cat_vars]
 
-  pi <- latInspect(model, what = "class", digits = 10)
+  pi <- latInspect(model, what = "class")
 
   data[, cat_vars] <- data[, cat_vars] + 1
 
