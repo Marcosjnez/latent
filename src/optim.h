@@ -73,6 +73,7 @@ void wolfe(arguments_optim& x,
 
     ++x.step_iteration;
     x.parameters = parameters + x.ss*x.dir;
+
     // Projection onto the manifold
     final_manifold->param(x, xmanifolds);
     final_manifold->retr(x, xmanifolds);
@@ -379,8 +380,8 @@ optim_result lbfgs(arguments_optim x,
     double dot_yy = arma::dot(y[k], y[k]);
     double gamma = dot_ys / dot_yy;
     if(gamma < arma::datum::eps) {
-      // Rcpp::Rcout << "Continue" << std::endl;
       // x.dir = -x.rg;
+      // Rprintf("gamma < arma::datum::eps");
       continue;
     }
     arma::mat H0 = gamma*B;
@@ -747,6 +748,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   x.ntransparam = transparameters[0].n_elem;
   x.transparameters = transparameters[0];
   x.transparameters(x.transparam2param) = x.parameters;
+  x.transparameters_init = x.transparameters;
 
   // Initial values for dparameters:
   x.dparameters = arma::randu(x.nparam);

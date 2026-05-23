@@ -188,10 +188,6 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                      Optim              = list(),
                      parameters         = list(),
                      transformed_pars   = list(),
-                     loglik             = numeric(),
-                     penalized_loglik   = numeric(),
-                     loss               = numeric(),
-                     penalized_loss     = numeric(),
                      extra              = list()
     )
 
@@ -251,10 +247,6 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                 Optim              = Optim,
                 parameters         = parameters,
                 transformed_pars   = transformed_pars,
-                loglik             = loglik,
-                penalized_loglik   = penalized_loglik,
-                loss               = loss,
-                penalized_loss     = penalized_loss,
                 extra              = list()
   )
 
@@ -1160,11 +1152,11 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
         # } else {
         #   diag(W_cov) <- 0
         # }
-        diag(W_cov) <- 100000
-        # if(control$std.ov) diag(W_cov) <- 0
+        if(control$std.ov) diag(W_cov) <- 0
       }
       w_means <- diag(acov_means[[i]][[j]])
 
+      group_pattern_name <- dataList$data_param$S_group[j]
       estimators[[k]] <- list(estimator = cfa_estimator,
                               parameters = list(c(trans[[model_group[i]]][pick, pick]),
                                                 c(trans[[S_group_ij]]),
@@ -1176,7 +1168,10 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
                                            w_means = w_means,
                                            q = nrow(trans[[psi_group[i]]]),
                                            p = p,
-                                           n = nobs_ij[[i]][[j]]))
+                                           n = nobs_ij[[i]][[j]],
+                                           double_names = c(S_group_ij),
+                                           matrix_names = c(S_group_ij,
+                                                            M_group_ij)))
 
       k <- k + 1L
 
@@ -1196,7 +1191,8 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
                               parameters = psi_group[i],
                               extra = list(lower_indices = lower_indices-1L,
                                            p = nrow(trans[[psi_group[i]]]),
-                                           logdetw = logdetw))
+                                           logdetw = logdetw,
+                                           double_names = "logdetR psi"))
       k <- k+1L
 
       # For the theta matrix:
@@ -1207,7 +1203,8 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
                               parameters = theta_group[i],
                               extra = list(lower_indices = lower_indices-1L,
                                            p = nrow(trans[[theta_group[i]]]),
-                                           logdetw = control$penalties$logdet$w))
+                                           logdetw = control$penalties$logdet$w,
+                                           double_names = "logdetR theta"))
       k <- k+1L
 
     }

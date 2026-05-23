@@ -42,7 +42,8 @@ fitted.llcalist <- function(model) {
   for(i in 1:nmodels) {
 
     out[[i]] <- fitted.llca(model[[i]])
-    names(out)[i] <- paste("nclasses = ", model[[i]]@dataList$nclasses,
+    names(out)[i] <- paste("nclasses=",
+                           ncol(model[[i]]@modelInfo$trans$class),
                            sep = "")
 
   }

@@ -9,11 +9,11 @@ setMethod("show", "llca", function(object) {
   # Print header with model name and version
   if(conv){
     cat(sprintf("%s %s converged after %d iterations\n\n",
-                "latent", as.character( packageVersion('latent') ),
+                "latent", as.character(packageVersion('latent')),
                 object@Optim$iterations))
   }else{
     cat(sprintf("%s %s did not converged after %d iterations\n\n",
-                "latent", as.character( packageVersion('latent') ),
+                "latent", as.character(packageVersion('latent')),
                 object@Optim$iterations))
   }
 
@@ -56,11 +56,11 @@ setMethod("show", "lcfa", function(object) {
   # Print header with model name and version
   if(conv) {
     cat(sprintf("%s %s converged after %d iterations\n\n",
-                "latent", as.character( packageVersion('latent') ),
+                "latent", as.character(packageVersion('latent')),
                 object@Optim$iterations))
   } else {
     cat(sprintf("%s %s did not converged after %d iterations\n\n",
-                "latent", as.character( packageVersion('latent') ),
+                "latent", as.character(packageVersion('latent')),
                 object@Optim$iterations))
   }
 
@@ -72,22 +72,26 @@ setMethod("show", "lcfa", function(object) {
   nparam <- object@modelInfo$nparam
   npatterns <- sum(unlist(object@modelInfo$npatterns))
   nobs <- sum(unlist(object@modelInfo$nobs))
+  fit_mat <- latInspect(object, "fit.matrix")
+  penalized_loss <- fit_mat["penalized_loss", "overall"]
+  penalized_loglik <- fit_mat["penalized_loglik", "overall"]
 
   # Print Estimator, Optimization, and Parameters section
-  if(object@loglik == 0) {
+  if(object@modelInfo@control_optimizer$reg) {
 
     loglik <- NA
     X2 <- NA
     pval <- NA
     est <- "ULS"
-    test_message <- sprintf("  %-45s %.3f\n", "Test statistic", object@loss)
+    test_message <- sprintf("  %-45s %.3f\n", "Test statistic", penalized_loss)
     pval_message <- sprintf("  %-45s %.3f\n", "P-value (Unknown)", pval)
 
   } else {
 
-    # FIX HERE: COMPARE ESTIMATED AND SATURATED MODEL
-    loglik <- object@loglik
-    X2 <- object@loss*nobs
+    llsat <- fit_mat["loglik_sat", "overall"]
+    ll <- fit_mat["loglik", "overall"]
+    llbas <- fit_mat["loglik_base", "overall"]
+    X2 <- 2*(llsat - ll)
     pval <- 1-pchisq(X2, df = dof)
     est <- "ML"
     test_message <- sprintf("  %-45s %.3f\n", "Test statistic (Chi-square)", X2)

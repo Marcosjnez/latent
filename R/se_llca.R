@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/05/2026
+# Modification date: 16/05/2026
 #'
 #' @title
 #' Standard Errors
@@ -83,9 +83,9 @@ se.llcalist <- function(model, digits = 3) {
   out <- vector("list", length = nmodels)
   for(i in 1:nmodels) {
 
-    out[[i]] <- se.llca(model[[i]], type = type, model = model,
-                        digits = digits)
-    names(out)[i] <- paste("nclasses = ", model[[i]]@datalist$nclasses,
+    out[[i]] <- se.llca(model[[i]], type = type, digits = digits)
+    names(out)[i] <- paste("nclasses=",
+                           ncol(model[[i]]@modelInfo$trans$class),
                            sep = "")
 
   }

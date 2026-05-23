@@ -49,12 +49,14 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(5);
-    doubles[0] =  0.00;          // loss   actual model
-    doubles[1] =  0.00;          // loglik actual model
-    doubles[2] =  0.00;          // loglik independence model
-    doubles[3] =  0.00;          // loglik saturated model
-    doubles[4] =  loss;          // penalty
+    doubles.resize(7);
+    doubles[0] =  0.00;        // loss actual model
+    doubles[1] =  0.00;        // loss independence model
+    doubles[2] =  0.00;        // loss saturated model
+    doubles[3] =  0.00;        // loglik actual model
+    doubles[4] =  0.00;        // loglik independence model
+    doubles[5] =  0.00;        // loglik saturated model
+    doubles[6] =  loss;        // penalty
 
     // vectors.resize(1);
     //

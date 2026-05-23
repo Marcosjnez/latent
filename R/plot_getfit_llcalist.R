@@ -44,15 +44,15 @@ plot.getfit.llcalist <- function(x, indices = NULL, ...) {
     )
   }))
 
-  ggplot(long_df, aes(x = nclasses, y = Value, group = IC)) +
-    geom_point(aes(color = IC)) +
-    geom_line(aes(color = IC)) +
-    labs(
+  ggplot2::ggplot(long_df, ggplot2::aes(x = nclasses, y = Value, group = IC)) +
+    ggplot2::geom_point(ggplot2::aes(color = IC)) +
+    ggplot2::geom_line(ggplot2::aes(color = IC)) +
+    ggplot2::labs(
       title = "Model fit by number of classes",
       x     = "Class Solution",
       y     = "Value"
     ) +
-    theme_minimal() +
-    scale_color_discrete(name = "Information Criterion")
+    ggplot2::theme_minimal() +
+    ggplot2::scale_color_discrete(name = "Information Criterion")
 }
 

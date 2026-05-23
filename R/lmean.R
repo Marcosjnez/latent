@@ -41,18 +41,15 @@ lmean <- function(data,
   if(!do.fit) {
 
     lcfa_list <- new("lcfa",
-                     version            = as.character( packageVersion('latent') ),
-                     call               = mc, # matched call
-                     timing             = numeric(), # timing information
+                     version            = as.character(packageVersion('latent')),
+                     call               = mc,
+                     timing             = numeric(),
                      data_list          = data_list,
                      modelInfo          = modelInfo,
                      Optim              = list(),
                      parameters         = list(),
                      transformed_pars   = list(),
-                     loglik             = numeric(), # loglik values
-                     penalized_loglik   = numeric(),
-                     loss               = numeric(),
-                     penalized_loss     = numeric()
+                     extra              = list()
     )
 
     return(lcfa_list)
@@ -116,7 +113,7 @@ lmean <- function(data,
   #### latent object ####
 
   result <- new("latent",
-                version            = as.character( packageVersion('latent') ),
+                version            = as.character(packageVersion('latent')),
                 call               = mc,
                 timing             = elapsed,
                 dataList           = data_list,
@@ -124,10 +121,6 @@ lmean <- function(data,
                 Optim              = Optim,
                 parameters         = parameters,
                 transformed_pars   = transformed_pars,
-                loglik             = loglik,
-                penalized_loglik   = penalized_loglik,
-                loss               = loss,
-                penalized_loss     = penalized_loss,
                 extra              = list()
   )
 

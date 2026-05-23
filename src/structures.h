@@ -34,7 +34,8 @@ struct arguments_optim{
   std::string search = "back";
   bool convergence = false;
   arma::vec parameters, dparameters, g, dg, rg, drg, dH;
-  arma::vec transparameters, dtransparameters, grad, dgrad;
+  arma::vec transparameters, transparameters_init, dtransparameters, grad,
+  dgrad, grad_init, dgrad_init;
   arma::mat jacob, h, B, inv_h, inv_hess, vcov;
   arma::mat hess; // Returned as dgCMatrix class type from Matrix package
   arma::mat posterior;

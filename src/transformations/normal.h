@@ -25,9 +25,9 @@ public:
     sigma3 = sigma2 % sigma;
     arma::mat log_sigma = arma::trunc_log(sigma);
 
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s) {
+    for(int i=0; i < I; ++i) { // classes
+      for(int j=0; j < J; ++j) { // items
+        for(int s=0; s < S; ++s) { // response patterns
           if (std::isnan(y(s,j))) continue;
           double x = y(s,j)-mu(j,i);
           loglik(s,j,i) = -0.5 * x * x / sigma2(j,i) - log_sigma(j,i) - LOG2M_PI05;

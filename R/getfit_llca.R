@@ -30,6 +30,8 @@
 
 getfit.llca <- function(model, digits = 4) {
 
+  nclasses <- ncol(model@modelInfo$trans$class)
+
   icl_default <- function (post_prob, BIC){
     tryCatch({
       if (!is.null(dim(post_prob))) {
@@ -68,9 +70,11 @@ getfit.llca <- function(model, digits = 4) {
   ##
   ##
 
+  fit_loglik <- latInspect(model, what = "loglik")
   nclasses <- ncol(posterior)
   k <- model@modelInfo$nparam
-  loglik <- model@loglik
+  loglik <- fit_loglik["loglik", "overall"]
+  penalized_loglik <- fit_loglik["penalized_loglik", "overall"]
 
   ##
   # if(sum(model@modelInfo$item != "multinomial") == 0){
@@ -108,7 +112,6 @@ getfit.llca <- function(model, digits = 4) {
   }
 
   if(penalized){
-    penalized_loglik <- model@penalized_loglik
 
     AICp  <- (-2 * penalized_loglik) + (k * 2)
     AIC3p <- (-2 * penalized_loglik) + (k * 3)
@@ -160,6 +163,10 @@ getfit.llca <- function(model, digits = 4) {
 getfit.llcalist <- function(model, digits = 4) {
 
   out <- t(sapply(model, getfit.llca, digits = digits))
+  rownames(out) <- paste("nclasses=",
+                         unlist(lapply(model, FUN = \(x)
+                                       ncol(x@modelInfo$trans$class))),
+                         sep = "")
 
   class(out) <- "getfit.llcalist"
   attr(out, "penalized") <- model[[1]]@modelInfo$control_optimizer$reg

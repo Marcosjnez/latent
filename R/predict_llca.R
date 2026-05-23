@@ -80,7 +80,8 @@ predict.llcalist <- function(model) {
   for(i in 1:nmodels) {
 
     out[[i]] <- predict.llca(model[[i]])
-    names(out)[i] <- paste("nclasses = ", model[[i]]@dataList$nclasses,
+    names(out)[i] <- paste("nclasses=",
+                           ncol(model[[i]]@modelInfo$trans$class),
                            sep = "")
 
   }

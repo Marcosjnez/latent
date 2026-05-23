@@ -322,6 +322,56 @@ arma::mat pairwise_cor(arma::mat X) {
   return corrMatrix;
 }
 
+void print_double(const double x, const char* name) {
+
+  Rprintf("%s = %.17g\n", name, x);
+
+}
+
+void print_arma_vector(const arma::vec& x, const char* name) {
+
+  Rprintf("%s = [", name);
+
+  for (arma::uword i = 0; i < x.n_elem; ++i) {
+    Rprintf("%.17g", x[i]);
+
+    if (i + 1 < x.n_elem) {
+      Rprintf(", ");
+    }
+  }
+
+  Rprintf("]\n");
+}
+
+void print_arma_matrix(const arma::mat& x, const char* name) {
+
+  Rprintf("%s = [\n", name);
+
+  for (arma::uword i = 0; i < x.n_rows; ++i) {
+
+    Rprintf("  [");
+
+    for (arma::uword j = 0; j < x.n_cols; ++j) {
+
+      Rprintf("%.17g", x(i, j));
+
+      if (j + 1 < x.n_cols) {
+        Rprintf(", ");
+      }
+    }
+
+    Rprintf("]");
+
+    if (i + 1 < x.n_rows) {
+      Rprintf(",");
+    }
+
+    Rprintf("\n");
+  }
+
+  Rprintf("]\n");
+}
+
 // arma::mat center_mat(arma::mat X) {
 //   return X.each_row() - arma::mean(X, 0);
 // }

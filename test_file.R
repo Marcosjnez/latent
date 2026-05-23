@@ -1,6 +1,10 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/05/2026
+# Modification date: 22/05/2026
+
+#### Store a dataset ####
+
+# usethis::use_data(gss82, overwrite = TRUE)
 
 #### Build the package ####
 
@@ -14,19 +18,15 @@
 
 library(latent)
 set.seed(2026)
-fit <- lca(data = gss82, nclasses = 3,
+# gss82$UC <- paste(gss82$UNDERSTA, gss82$COOPERAT, sep = ".")
+
+fit <- lca(data = gss82,
+           nclasses = 2L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           # model = formula(X1 ~ 1 + cluster1,
-           #                 X2 ~ 1 + cluster2),
+           # multinomial = c("PURPOSE", "ACCURACY", "UC"),
+           model = list("UNDERSTA ~~ COOPERAT"),
            penalties = TRUE,
-           control = list(opt = "newton",
-                          step_maxit = 100,
-                          tcg_maxit = 100),
            do.fit = TRUE)
-fit@loglik # -2754.643
-fit@penalized_loglik # -2759.507
-fit@Optim$iterations # 67
-fit@timing
 
 # Plot model fit info:
 fit
@@ -37,12 +37,16 @@ getfit(fit)
 # Get a summary:
 summary(fit)
 
+# Bivariate residuals:
+lbvr(fit) # Modify this to accomodate residual dependencies
+
 # Inspect model objects:
-latInspect(fit, what = "pattern")
-latInspect(fit, what = "coefs")
-latInspect(fit, what = "classes")
+latInspect(fit, what = "loglik")
+# loglik: -3940.668 # penalized_loglik: -3945.117
+# loglik: -3883.015 # penalized_loglik: -3887.560 ("UNDERSTA ~~ COOPERAT")
 latInspect(fit, what = "profile")
-latInspect(fit, what = "posterior")
+latInspect(fit, what = "coefs")
+latInspect(fit, what = "pattern")
 latInspect(fit, what = "table")
 
 # Get standard errors:
@@ -53,40 +57,33 @@ SE$table
 CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
 CI$table
 
-# Plot coefficients' odds ratios:
-plot(fit, type = "standard", what = "OR", effects = "coding",
-     confidence = 0.95, mfrow = c(2, 2))
-
 #### LCA (gaussian) ####
 
 library(latent)
 set.seed(2026)
-fit <- lca(data = empathy, nclasses = 4L,
+fit <- lca(data = empathy,
+           nclasses = 1L,
            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-           penalties = TRUE, do.fit = TRUE,
-           control = list(opt = "lbfgs",
-                          step_maxit = 100,
-                          tcg_maxit = 100))
+           model = list("ec2 ~~ ec3 ~~ ec6"),
+           penalties = TRUE,
+           control = list(opt = "lbfgs"),
+           do.fit = TRUE)
 
-fit@loglik # -1841.336
-fit@penalized_loglik # -1844.333
-fit@Optim$iterations # 66
-fit@Optim$ng
-max(fit@Optim$rg)
-fit@Optim$convergence # TRUE
-fit@timing
-fit@parameters
-
+# FIX LBFGS WITH nclasses = 1L
 # Plot model fit info:
 fit
 
 # Get fit indices:
 getfit(fit)
 
+lbvr(fit) # FIX
+
 # Inspect model objects:
+latInspect(fit, what = "loglik")
+# loglik: -1841.336 # penalized_loglik: -1844.333
+# loglik: -1808.949 # penalized_loglik: -1812.014
+latInspect(fit, what = "profile") # FIX profile for multivariate items
 latInspect(fit, what = "coefs")
-latInspect(fit, what = "classes")
-latInspect(fit, what = "profile")
 latInspect(fit, what = "posterior")
 
 # Get standard errors:
@@ -96,30 +93,26 @@ SE$table
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
 CI$table
-
-# Plot coefficients' odds ratios:
-plot(fit, type = "standard", what = "OR", effects = "coding",
-     confidence = 0.95, mfrow = c(2, 2))
 
 #### Mixed LCA (multinomial and gaussian) ####
 
 library(latent)
 set.seed(2026)
-fit <- lca(data = cancer, nclasses = 1:3L,
+penalties <- list(
+  # beta  = list(alpha = 0, lambda = 0, power = 0),
+  beta  = list(alpha = 0),
+  class = list(alpha = 1),
+  prob  = list(alpha = 1),
+  sd    = list(alpha = 1),
+  Sigma = list(alpha = 1)
+) # FIX defaults in penalties
+fit <- lca(data = cancer,
+           nclasses = 3L,
            gaussian = c("Age", "WeightIndex", "SystolicBloodPressure",
                         "DiastolicBloodPressure"),
            multinomial = c("PerformanceRating", "CardiovascularDiseaseHistory"),
-           control = list(opt = "lbfgs",
-                          step_maxit = 100,
-                          tcg_maxit = 100),
+           penalties = penalties,
            do.fit = TRUE)
-fit@loglik # -5784.701
-fit@penalized_loglik # -5795.573
-fit@Optim$iterations
-fit@Optim$ng
-max(fit@Optim$rg)
-fit@Optim$convergence
-fit@timing
 
 # Plot model fit info:
 fit
@@ -128,24 +121,25 @@ fit
 getfit(fit)
 
 # Inspect model objects:
+latInspect(fit, what = "loglik")
+# loglik: -5784.741 # penalized_loglik: -5795.573
+latInspect(fit, what = "fit.matrix")
 latInspect(fit, what = "coefs")
 latInspect(fit, what = "classes")
 latInspect(fit, what = "profile")
 latInspect(fit, what = "posterior")
 
 # Get standard errors:
-SE <- se(fit, type = "standard", digits = 4)
+SE <- se(fit, type = "standard", digits = 4) # FIX stdv
 SE$table
 
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
 CI$table
 
-# Plot coefficients' odds ratios:
-plot(fit, type = "standard", what = "OR", effects = "coding",
-     confidence = 0.95, mfrow = c(2, 2))
-
 # hypothesis(fit, "b1|2 - b1|3 = 0")
+
+plot(fit)
 
 #### LCA with covariates (gaussian) ####
 
@@ -153,36 +147,19 @@ library(latent)
 
 set.seed(2026)
 fit1 <- lca(data = empathy,
-            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             nclasses = 4L,
+            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             penalties = TRUE,
-            control = list(opt = "lbfgs",
-                           step_maxit = 100,
-                           tcg_maxit = 100),
             do.fit = TRUE)
-fit1@loglik           # -1841.336
-fit1@penalized_loglik # -1844.333
-fit1@Optim$iterations
-fit1@Optim$ng
-fit1@timing
 
 set.seed(2026)
 fit2 <- lca(data = empathy,
-            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             nclasses = 4L,
-            penalties = TRUE,
+            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             X = c("pt1", "pt2", "pt3", "pt4"),
             model = fit1,
-            do.fit = TRUE,
-            control = list(opt = "lbfgs",
-                           step_maxit = 100,
-                           tcg_maxit = 100))
-fit2@loglik           # -1747.135
-fit2@penalized_loglik # -1750.566
-fit2@Optim$iterations
-fit2@Optim$convergence
-fit2@Optim$ng
-fit2@timing
+            penalties = TRUE,
+            do.fit = TRUE)
 
 # check that the measurement model was fixed:
 all.equal(fit1@parameters[-1], fit2@parameters[-1])
@@ -190,7 +167,7 @@ all.equal(fit1@parameters[-1], fit2@parameters[-1])
 # Standard errors:
 SE1 <- se(fit1, type = "standard", digits = 4)
 SE1$se
-SE2 <- se(fit2, type = "standard", digits = 4)
+SE2 <- se(fit2, type = "standard", digits = 4) # FIX: put all together with fit1
 SE2$se
 
 # Effects-coding parameterization:
@@ -206,6 +183,8 @@ fit2
 getfit(fit2)
 
 # Inspect model objects:
+latInspect(fit2, what = "loglik")
+# loglik: -1747.135 # penalized_loglik: -1750.566
 latInspect(fit2, what = "coefs")
 latInspect(fit2, what = "classes")
 latInspect(fit2, what = "profile")
@@ -228,7 +207,7 @@ x <- plot.llca(fit2,
           est_ci_header_cex = 0.5,
           cex_y = 0.5,
           mfrow = c(2, 2),
-          xlim = c(0, 5))
+          xlim = c(0, 5)) # FIX forest plot
 
 # new_se <- move_intercept(beta, vcov)
 # new_se$beta_new
@@ -262,14 +241,9 @@ fit <- lcfa(HolzingerSwineford1939,
             se = TRUE,
             control = NULL,
             do.fit = TRUE)
-fit@loss             # 0.283407 (ml)
-fit@loglik           # -3737.745
-fit@penalized_loglik # -3737.745
-fit@Optim$iterations
-fit@Optim$convergence
-fit@timing
 
 latInspect(fit, "est")
+latInspect(fit, "loglik")
 getfit(fit)
 
 # With lavaan:
@@ -283,9 +257,9 @@ fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
                     do.fit = TRUE)
 # Same loss value: OK
 fit2@Fit@fx*2      # 0.283407
-fit@loss           # 0.283407
 fit2@loglik$loglik # -3737.745
-fit@loglik         # -3737.745
+latInspect(fit, "loss")
+latInspect(fit, "loglik")
 
 fit@Optim$SE$se
 fit2@ParTable$se
@@ -294,7 +268,6 @@ fit@parameters
 
 fitmeasures(fit2)
 getfit(fit)
-latInspect(fit, "loglik")
 latInspect(fit, "loss")
 fitMeasures(fit2, "unrestricted.logl")
 fitMeasures(fit2, "baseline.chisq")
@@ -751,30 +724,26 @@ control_manifold <- fit@modelInfo$control_manifold
 control_transform <- fit@modelInfo$control_transform
 control_estimator <- fit@modelInfo$control_estimator
 control_optimizer <- fit@modelInfo$control_optimizer
-# control_optimizer$parameters[[1]] <- fit@Optim$parameters
-# control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
-# control_optimizer$parameters[[1]] <- fit@modelInfo$control$parameters[[1]] +
-#                                   rnorm(length(fit@modelInfo$control$parameters[[1]]), 0, 0.001)
-# control_optimizer$transparameters[[1]] <- fit@modelInfo$control$transparameters[[1]]
+
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control_optimizer,
                compute = "all",
                eps = 1e-07)
-# x$f
+x$f # 4362.65 # 13800.13
+
 round(c(x$g) - c(x$numg), 5)
 max(abs(c(x$g) - c(x$numg)))
 round(c(x$dg) - c(x$numdg), 5)
 max(abs(c(x$dg) - c(x$numdg)))
 
+Optim <- optimizer(control_manifold, control_transform,
+                   control_estimator, control_optimizer)
+Optim$f
+
 x2 <- get_grad(control_manifold, control_transform,
                control_estimator, control_optimizer)
 round(c(x2$g)-c(x$numg), 3)
 max(abs(c(x$g) - c(x$numg)))
-
-# x3 <- get_dgrad(control_manifold, control_transform,
-#                 control_estimator, control_optimizer)
-# round(c(x3$dg)-c(x$numdg), 3)
-# round(c(x3$dg)/c(x$numdg), 3)
 
 # Calculate the Hessian matrix using numerical approximations:
 G <- function(parameters) {

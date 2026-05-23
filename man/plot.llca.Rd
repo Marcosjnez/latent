@@ -2,27 +2,18 @@
 % Please edit documentation in R/plot_llca.R
 \name{plot.llca}
 \alias{plot.llca}
-\title{Plot regression coefficients}
+\title{Plot method for latent class analysis (llca) objects}
 \usage{
-plot(fit)
+\method{plot}{llca}(x, ...)
 }
 \arguments{
-\item{fit}{model fitted with lca.}
+\item{x}{An object of class \code{"llca"}, typically from \code{latent}.}
 
-\item{confidence}{Coverage of the confidence interval.}
+\item{...}{Additional arguments passed to \code{plot_lca_mixed}.}
 }
 \value{
-List with the following objects:
-\item{vcov}{Variance-covariance matrix between the parameters.}
-\item{se}{Standard errors.}
-\item{SE}{Standard errors in the model list.}
+A list of ggplot objects (as from \code{plot_lca_mixed}).
 }
 \description{
-Plot the coefficients of latent models.
-}
-\details{
-Obtain a plot with the coefficients of latent models.
-}
-\references{
-None yet.
+Plot method for latent class analysis (llca) objects
 }

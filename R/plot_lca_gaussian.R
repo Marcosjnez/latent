@@ -30,26 +30,26 @@ plot_lca_gaussian <- function(
     data$variable <- factor(data$variable, levels = unique(data$variable))
   }
 
-  p <- ggplot(data, aes(x = variable, y = mean, group = 1)) +
-    geom_point(size = point_size, color = "steelblue") +
-    geom_line(color = "steelblue") +
-    geom_errorbar(
-      aes(ymin = mean - sd, ymax = mean + sd),
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = variable, y = mean, group = 1)) +
+    ggplot2::geom_point(size = point_size, color = "steelblue") +
+    ggplot2::geom_line(color = "steelblue") +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(ymin = mean - sd, ymax = mean + sd),
       width = err_width,
       color = "grey40"
     ) +
-    facet_wrap(~ class, nrow = nrow, ncol = ncol) +
-    scale_y_continuous(limits = c(NA, NA)) +
-    labs(
+    ggplot2::facet_wrap(~ class, nrow = nrow, ncol = ncol) +
+    ggplot2::scale_y_continuous(limits = c(NA, NA)) +
+    ggplot2::labs(
       x       = NULL,
       y       = ylab,
       title   = title,
       caption = caption
     ) +
-    theme_minimal(base_size = base_size) +
-    theme(
-      axis.text.x   = element_text(angle = angle, hjust = 1),
-      panel.spacing = unit(1, "lines")
+    ggplot2::theme_minimal(base_size = base_size) +
+    ggplot2::theme(
+      axis.text.x   = ggplot2::element_text(angle = angle, hjust = 1),
+      panel.spacing = ggplot2::unit(1, "lines")
     )
 
   p

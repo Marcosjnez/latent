@@ -30,25 +30,26 @@ plot_lca_multinomial <- function(
 
   if (nrow(df) < 2) stop("Insufficient data to plot.")
 
-  p <- ggplot(df) +
-    aes(
+  p <- ggplot2::ggplot(df) +
+    ggplot2::aes(
       x     = .data[[bars]],
       y     = .data[["probability"]],
       fill  = .data[["response"]]
     ) +
-    geom_bar(stat = "identity", position = position_fill(reverse = TRUE)) +
-    facet_wrap(facet, scales = "free_x") +
-    scale_x_discrete(expand = c(0, 0)) +
-    scale_y_continuous(expand = c(0, 0), name = NULL) +
-    theme_bw() +
-    scale_fill_viridis_d(guide = guide_legend(reverse = TRUE)) +
-    theme(
-      axis.text.x   = element_text(angle = angle, hjust = 1),
-      panel.spacing = unit(1, "lines")
+    ggplot2::geom_bar(stat = "identity",
+                      position = ggplot2::position_fill(reverse = TRUE)) +
+    ggplot2::facet_wrap(facet, scales = "free_x") +
+    ggplot2::scale_x_discrete(expand = c(0, 0)) +
+    ggplot2::scale_y_continuous(expand = c(0, 0), name = NULL) +
+    ggplot2::theme_bw() +
+    ggplot2::scale_fill_viridis_d(guide = ggplot2::guide_legend(reverse = TRUE)) +
+    ggplot2::theme(
+      axis.text.x   = ggplot2::element_text(angle = angle, hjust = 1),
+      panel.spacing = ggplot2::unit(1, "lines")
     )
 
   if (bw) {
-    p <- p + scale_fill_grey(guide = guide_legend(reverse = TRUE))
+    p <- p + ggplot2::scale_fill_grey(guide = ggplot2::guide_legend(reverse = TRUE))
   }
   p
 }

@@ -36,12 +36,12 @@ getfit.lcfa <- function(model, digits = 3) {
   dof <- model@modelInfo$dof
 
   # Compute fit statistics if using ML:
-  if(model@loglik == 0) {
+  if(model@modelInfo$control_optimizer$reg) {
 
     fit_mat <- latInspect(model, what = "loss")
 
     loglik <- NA
-    X2 <- -model@loss*(nobs-1L)
+    X2 <- -fit_mat["loss", "overall"]*(nobs-1L)
     pval <- NULL
     F_id <- fit_mat["loss_base", "overall"]
     X2_id <- -F_id*(nobs-1L)
@@ -69,11 +69,12 @@ getfit.lcfa <- function(model, digits = 3) {
 
   }
 
-  resids <- latInspect(model, what = "residuals")
-  SRMR_list <- lapply(resids, FUN = \(x) {
-    x[lower.tri(x, diag = TRUE)]
-  })
-  SRMR <- sqrt(mean(unlist(SRMR_list)^2))
+  # resids <- latInspect(model, what = "residuals")
+  # SRMR_list <- lapply(resids, FUN = \(x) {
+  #   x[lower.tri(x, diag = TRUE)]
+  # })
+  # SRMR <- sqrt(mean(unlist(SRMR_list)^2))
+  SRMR <- NA
 
   result <- c(nfactors = nfactors,
               npar = nparam,

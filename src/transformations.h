@@ -55,6 +55,10 @@ public:
 #include "transformations/XY.h"
 #include "transformations/XYt.h"
 #include "transformations/deltaparam.h"
+#include "transformations/mvnormal2.h"
+#include "transformations/normal2.h"
+#include "transformations/multinomial2.h"
+#include "transformations/sum_vectors.h"
 
 using TransformFactory =
   std::function< transformations*(const Rcpp::List&) >;
@@ -67,12 +71,16 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "normal",   choose_normal   },
   { "crossprod", choose_crossprod },
   { "multinomial", choose_multinomial },
+  { "multinomial2", choose_multinomial2 },
   { "column_space", choose_column_space },
   { "factor_cor", choose_factor_cor },
   { "matrix_inverse", choose_matrix_inverse },
   { "XY", choose_XY },
   { "XYt", choose_XYt },
-  { "deltaparam", choose_deltaparam }
+  { "deltaparam", choose_deltaparam },
+  { "mvnormal2",   choose_mvnormal2   },
+  { "normal2",   choose_normal2   },
+  { "sum_vectors",   choose_sum_vectors   }
 };
 
 transformations* choose_transform(const Rcpp::List& trans_setup) {
@@ -92,6 +100,9 @@ public:
 
   void transform(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
+    // Reset the initial transparameters vector.
+    // This will include fixed values and allow overriding parameters
+    x.transparameters = x.transparameters_init;
     x.transparameters(x.transparam2param) = x.parameters;
 
     for(int i=0; i < x.ntransforms; ++i) {
@@ -107,9 +118,12 @@ public:
     // Update the gradient after each parameter transformation:
     // Use the gradient of the transformed parameters (grad) to get the final gradient (g):
     // x.g = x.jacob.t() * x.grad;
-    // This sequence avoids this multiplication to reduce computing cost
+    // The following sequence avoids this multiplication to reduce computing cost
 
-    // x.g.zeros();
+    // Restore the gradient from the estimator:
+    // x.grad_init = x.grad;
+    // x.grad = x.grad_init;
+
     // Iterate top-down:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 
@@ -136,6 +150,10 @@ public:
   }
 
   void update_dgrad(arguments_optim& x, std::vector<transformations*>& xtransformations) {
+
+    // Restore the dgrad from the estimator:
+    // x.dgrad_init = x.dgrad;
+    // x.dgrad = x.dgrad_init;
 
     // Iterate top-down:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {

@@ -515,8 +515,8 @@ library(latent)
 \tiny
 
 ```{r}
-library(summarytools)
 library(collapse)
+library(summarytools)
 library(stevemisc)
 library(ggplot2)
 library(patchwork)

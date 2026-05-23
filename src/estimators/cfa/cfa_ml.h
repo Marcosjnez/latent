@@ -35,9 +35,7 @@ public:
 
   void F(arguments_optim& x) {
 
-    loss = w*n*0.5*(plogpi2 +
-      arma::log_det_sympd(Shat) +
-      arma::accu(S % Shat_inv));
+    loss = w*n*0.5*(plogpi2 + arma::log_det_sympd(Shat) + arma::accu(S % Shat_inv));
     x.f += loss;
 
   }

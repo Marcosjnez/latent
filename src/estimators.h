@@ -53,9 +53,11 @@ public:
 #include "estimators/rotation/lclf.h"
 
 #include "estimators/lca/lca.h"
+#include "estimators/lca/lca2.h"
+#include "estimators/lca/bayesconst1.h"
 #include "estimators/lca/bayesconst2.h"
 #include "estimators/lca/bayesconst3.h"
-#include "estimators/lca/bayesconst1.h"
+#include "estimators/lca/bayesconst4.h"
 #include "estimators/cfa/logdetmat.h"
 #include "estimators/cfa/logdetR.h"
 
@@ -90,9 +92,11 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "xtarget",                     choose_xtarget                   },
   { "lclf",                        choose_lclf                      },
   { "lca",                         choose_lca                       },
+  { "lca2",                        choose_lca2                      },
   { "bayesconst1",                 choose_bayesconst1               },
   { "bayesconst2",                 choose_bayesconst2               },
   { "bayesconst3",                 choose_bayesconst3               },
+  { "bayesconst4",                 choose_bayesconst4               },
   { "logdetmat",                   choose_logdetmat                 },
   { "logdetR",                     choose_logdetR                   },
   { "lreg",                        choose_lreg                      },
@@ -149,6 +153,8 @@ public:
 
     }
 
+    // x.grad_init = x.grad;
+
   }
 
   void dG(arguments_optim& x, std::vector<estimators*>& xestimators) {
@@ -160,6 +166,8 @@ public:
       xestimators[i]->dG(x);
 
     }
+
+    // x.dgrad_init = x.dgrad;
 
   }
 

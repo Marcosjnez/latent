@@ -40,22 +40,26 @@ latInspect.llca <- function(fit,
 
   list2env(fit@dataList, envir = environment())
   list2env(fit@modelInfo, envir = environment())
+  nclasses <- ncol(trans$class)
 
   # Logarithm likelihood of each response pattern:
   loglik_case <- fit@Optim$outputs$estimators$vectors[[1]][[1]]
+  weights <- fit@dataList$weights
   # Sum of logarithm likelihoods by response pattern:
   loglik_pattern <- weights * loglik_case
 
   # Estimated "counts" for each response pattern:
   estimated <- exp(loglik_case) * nobs
   # Posterior:
-  posterior <- exp(matrix(fit@Optim$outputs$estimators$matrices[[1]][[2]],
+  posterior <- exp(matrix(fit@Optim$outputs$estimators$matrices[[1]][[1]],
                           nrow = npatterns, ncol = nclasses))
   colnames(posterior) <- paste("P(", "Class", 1:nclasses, "|data)", sep = "")
   # Posterior classification:
   state <- apply(posterior, MARGIN = 1, FUN = which.max)
   # Data table of response patterns:
-  summary_table <- cbind(Pattern = patterns + 1,
+  patterns <- fit@dataList$patterns
+  summary_table <- cbind(Pattern = patterns_original,
+                         # Pattern = patterns + 1,
                          Observed = weights,
                          Estimated = estimated,
                          Posterior = posterior,
@@ -64,7 +68,7 @@ latInspect.llca <- function(fit,
                          loglik_pattern = loglik_pattern)
   summary_table <- as.data.frame(summary_table)
   # Sort the patterns by increasing order:
-  summary_table <- summary_table[do.call(order, as.data.frame(summary_table)), ]
+  summary_table <- summary_table[do.call(order, summary_table), ]
   rownames(summary_table) <- paste("pattern", 1:nrow(summary_table), sep = "")
 
   # Check the existence of gaussian items:
@@ -80,9 +84,7 @@ latInspect.llca <- function(fit,
   if(all(item == "multinomial")) {
 
     classes <- colMeans(fit@transformed_pars$class)
-    conditionals <- ClassConditional
-
-    probCat <- lapply(conditionals, FUN = \(mat) {
+    probCat <- lapply(ClassConditional, FUN = \(mat) {
       # Calculate P(y|X)*P(X), the joint probability:
       jointp <- t(mat) * classes
       # Calculate P(y), the denominator of the posterior:
@@ -90,7 +92,7 @@ latInspect.llca <- function(fit,
       return(probCat)
     })
 
-    RespConditional <- lapply(conditionals, FUN = \(mat) {
+    RespConditional <- lapply(ClassConditional, FUN = \(mat) {
       # Calculate P(y|X)*P(X), the joint probability:
       jointp <- t(mat) * classes
       # Calculate P(y), the denominator of the posterior:
@@ -100,7 +102,7 @@ latInspect.llca <- function(fit,
       return(posterior)
     })
 
-    names(RespConditional) <- colnames(data)
+    names(RespConditional) <- colnames(measurement)
 
   }
 
@@ -108,9 +110,35 @@ latInspect.llca <- function(fit,
   posterior <- posterior[short2full, , drop = FALSE]
   state <- state[short2full]
   rownames(posterior) <- names(state) <-
-    names(loglik_case) <- rownames(data)
+    names(loglik_case) <- rownames(measurement)
 
   profile <- list(class = classes, item = ClassConditional)
+
+  #### Extract the fit ####
+
+  doubles <- fit@Optim$outputs$estimators$doubles
+
+  fit_matrix <- vapply(
+    doubles,
+    FUN = function(x) {
+      c(
+        loss             = x[[1]],
+        loss_base        = x[[2]],
+        loss_sat         = x[[3]],
+        loglik           = x[[4]],
+        loglik_base      = x[[5]],
+        loglik_sat       = x[[6]],
+        penalty          = x[[7]],
+        penalized_loss   = x[[1]] + x[[7]],
+        penalized_loglik = x[[4]] - x[[7]]
+      )
+    },
+    FUN.VALUE = numeric(9)
+  )
+
+  colnames(fit_matrix) <- unlist(lapply(fit@modelInfo$control_estimator,
+                                        FUN = \(x) x$double_names))
+  fit_matrix <- cbind(fit_matrix, overall = rowSums(fit_matrix))
 
   #### Result ####
 
@@ -157,9 +185,19 @@ latInspect.llca <- function(fit,
 
     return(fit@dataList$data)
 
-  } else if (what == "pattern") {
+  } else if (what == "measurement") {
 
-    return(cbind(patterns, times = weights))
+    return(fit@dataList$measurement)
+
+  } else if (what == "pattern" ||
+             what == "patterns") {
+
+    pattern <- data.frame(patterns_original, Observed = weights)
+    # Sort the patterns by increasing order:
+    pattern <- pattern[do.call(order, pattern), ]
+    rownames(pattern) <- paste("pattern", 1:nrow(pattern), sep = "")
+
+    return(pattern)
 
   } else if (what == "table" ||
              what == "summary") {
@@ -186,11 +224,21 @@ latInspect.llca <- function(fit,
 
     return(loglik_pattern)
 
+  } else if (what == "loss" ||
+             what == "losses") {
+
+    return(fit_matrix[c("loss", "penalized_loss"), "overall", drop = FALSE])
+
   } else if (what == "loglik" ||
              what == "ll" ||
              what == "LL") {
 
-    return(fit@loglik)
+    return(fit_matrix[c("loglik", "penalized_loglik"), "overall", drop = FALSE])
+
+  } else if (what == "fit_matrix" ||
+             what == "fit.matrix") {
+
+    return(fit_matrix)
 
   } else if (what == "probcat") {
 
@@ -207,15 +255,15 @@ latInspect.llca <- function(fit,
 
 #' @method latInspect llcalist
 #' @export
-latInspect.llcalist <- function(model, what = "profile",
-                                digits = 3) {
+latInspect.llcalist <- function(model, what = "profile") {
 
   nmodels <- length(model)
   out <- vector("list", length = nmodels)
   for(i in 1:nmodels) {
 
-    out[[i]] <- latInspect.llca(model[[i]], what = what, digits = digits)
-    names(out)[i] <- paste("nclasses = ", model[[i]]@datalist$nclasses,
+    out[[i]] <- latInspect.llca(model[[i]], what = what)
+    names(out)[i] <- paste("nclasses=",
+                           ncol(model[[i]]@modelInfo$trans$class),
                            sep = "")
 
   }

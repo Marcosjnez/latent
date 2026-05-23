@@ -36,13 +36,13 @@ summary.llca <- function(fit) {
   if(conv) {
 
     cat(sprintf("%s %s converged after %d iterations\n\n",
-                "latent", as.character( packageVersion('latent') ),
+                "latent", as.character(packageVersion('latent')),
                 fit@Optim$iterations))
 
   } else {
 
     cat(sprintf("%s %s did not converged after %d iterations\n\n",
-                "latent", as.character( packageVersion('latent') ),
+                "latent", as.character(packageVersion('latent')),
                 fit@Optim$iterations))
 
   }
@@ -98,7 +98,8 @@ summary.llcalist <- function(model) {
   for(i in 1:nmodels) {
 
     out[[i]] <- summary.llca(model[[i]])
-    names(out)[i] <- paste("nclasses = ", model[[i]]@dataList$nclasses,
+    names(out)[i] <- paste("nclasses=",
+                           ncol(model[[i]]@modelInfo$trans$class),
                            sep = "")
 
   }

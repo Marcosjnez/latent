@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 15/02/2026
+ * Modification date: 08/05/2026
  */
 
 /*
@@ -165,27 +165,20 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(5);
-    doubles[0] =  loss;          // loss   actual model
-    doubles[1] =  -loss;         // loglik actual model
-    doubles[2] =  0.00;          // loglik independence model
-    doubles[3] =  0.00;          // loglik saturated model
-    doubles[4] =  0.00;          // penalty
+    doubles.resize(7);
+    doubles[0] =  loss;        // loss actual model
+    doubles[1] =  0.00;        // loss independence model
+    doubles[2] =  0.00;        // loss saturated model
+    doubles[3] = -loss;        // loglik actual model
+    doubles[4] =  0.00;        // loglik independence model
+    doubles[5] =  0.00;        // loglik saturated model
+    doubles[6] =  0.00;        // penalty
 
-    vectors.resize(3);
+    vectors.resize(1);
     vectors[0] = loglik_case;
-    vectors[1] = logliks;
-    vectors[2] = weights;
 
-    matrices.resize(5);
-    matrices[0] = classloglik;
-    matrices[1] = logposterior;
-    matrices[2] = joint_classloglik;
-    matrices[3] = classes;
-    matrices[4] = logclasses;
-
-    cubes.resize(1);
-    cubes[0] = cubeloglik;
+    matrices.resize(1);
+    matrices[0] = logposterior;
 
   }
 

@@ -1,3 +1,7 @@
+# Author: Mauricio Garnier-Villarreal
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 25/05/2026 by Marcos Jimenez
+#'
 #' Local Bivariate Residuals for Latent Class Analysis
 #'
 #' Computes bivariate residuals (BVR) and related diagnostics for a fitted latent
@@ -54,28 +58,29 @@
 #' @export
 lbvr <- function(model, digits = 4){
 
-  data <- model@dataList$data
+  data <- model@dataList$measurement_recoded
+
   types <- model@dataList$item
   posterior <- latInspect(model, "posterior")
 
-  n <- nrow(data)
-  J <- ncol(data)
-  names(types) <- names(data)
+  n <- model@dataList$nobs
+  J <- model@dataList$nitems
+  item_names <- model@dataList$item_names
+  names(types) <- item_names
   K <- ncol(posterior)
 
-  cont_vars <- names(types)[types == "gaussian"]
-  cat_vars  <- names(types)[types == "multinomial"]
+  cont_vars <- item_names[types == "gaussian"]
+  cat_vars  <- item_names[types == "multinomial"]
+  data[, cat_vars] <- data[, cat_vars] + 1L
   n_cont <- length(cont_vars)
   n_cat <- length(cat_vars)
 
-  profile <- latInspect(model, what = "item")[cont_vars]
-  class_means <- sapply(profile, FUN = function(x){ x[1, ] })
+  profile <- latInspect(model, what = "item")
+  class_means <- sapply(profile[cont_vars], FUN = function(x){ x[1, ] })
 
   class_probs <- latInspect(model, what = "item")[cat_vars]
 
   pi <- latInspect(model, what = "class")
-
-  data[, cat_vars] <- data[, cat_vars] + 1
 
   # Check and align class_means
   if (n_cont > 0) {
@@ -97,11 +102,11 @@ lbvr <- function(model, digits = 4){
   }
 
   # Output matrices
-  resid_mat <- matrix(NA, J, J, dimnames = list(names(data), names(data)))
-  pval_mat <- matrix(NA, J, J, dimnames = list(names(data), names(data)))
-  r_mat <- matrix(NA, J, J, dimnames = list(names(data), names(data)))
-  names_mat <- matrix(NA, J, J, dimnames = list(names(data), names(data)))
-  types_mat <- matrix(NA, J, J, dimnames = list(names(data), names(data)))
+  resid_mat <- matrix(NA, J, J, dimnames = list(item_names, item_names))
+  pval_mat <- matrix(NA, J, J, dimnames = list(item_names, item_names))
+  r_mat <- matrix(NA, J, J, dimnames = list(item_names, item_names))
+  names_mat <- matrix(NA, J, J, dimnames = list(item_names, item_names))
+  types_mat <- matrix(NA, J, J, dimnames = list(item_names, item_names))
 
   details <- list()
 
@@ -203,7 +208,8 @@ lbvr <- function(model, digits = 4){
   }
 
   # ----- Main loop -----
-  var_names <- names(data)
+
+  var_names <- item_names
   for (i in 1:(J-1)) {
     for (j in (i+1):J) {
       v1 <- var_names[i]

@@ -13,7 +13,7 @@ class cfa_means_fml: public estimators {
 public:
 
   int p, n;
-  double f, w, logdetS, logdetShat, plogpi2;
+  double loss, w, logdetS, logdetShat, plogpi2;
   arma::uvec indices_S, indices_Shat, indices_nu, indices_means, lower_diag;
   arma::mat S, Shat, residuals, dShat, dS, Shat_inv, S_inv, gShat, gS, I;
   arma::vec nu, means, delta, dnu, dmeans, gnu, gmeans;
@@ -51,9 +51,9 @@ public:
     logdetS = arma::log_det_sympd(S);
     logdetShat = arma::log_det_sympd(Shat);
 
-    f = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p +
+    loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p +
       arma::as_scalar(delta.t() * Shat_inv * delta));
-    x.f += f;
+    x.f += loss;
 
   }
 

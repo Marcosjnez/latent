@@ -78,6 +78,7 @@ latInspect.lcfa <- function(fit, what = "est") {
 
   } else {
 
+    # fit_by_group <- cbind(fit_by_group, overall = rowSums(fit_matrix))
     fit_by_group <- matrix(rowSums(fit_matrix), ncol = 1L,
                            dimnames = list(rownames(fit_matrix), "overall"))
 
@@ -85,34 +86,34 @@ latInspect.lcfa <- function(fit, what = "est") {
 
   #### Compute residuals ####
 
-  matrices <- fit@Optim$outputs$estimators$matrices
-  idx_S <- grepl(paste(c("S"), collapse = "|"),
-                 names(fit@transformed_pars))
-  idx_means <- grepl(paste(c("means"), collapse = "|"),
-                     names(fit@transformed_pars))
-  resids_S <- vector("list", length = sum(idx_S))
-  for(i in 1:sum(idx_S)) {
-    p <- sqrt(length(matrices[[1]][[i]]))
-    resids_S[[i]] <- matrix(matrices[[1]][[i]], nrow = p, ncol = p)
-    rownames(resids_S[[i]]) <- colnames(resids_S[[i]]) <-
-      rownames(fit@transformed_pars[idx_S][[i]])
-    names(resids_S)[i] <- names(fit@transformed_pars[idx_S])[i]
-  }
-
-  if(fit@modelInfo$control_optimizer$meanstructure) {
-
-    resids_means <- vector("list", length = sum(idx_means))
-    for(i in 1:sum(idx_S)) {
-      p <- length(matrices[[2]][[i]])
-      resids_means[[i]] <- matrices[[2]][[i]]
-    }
-    names(resids_means)[i] <- names(fit@transformed_pars[idx_means])[i]
-
-    resids <- c(resids_S, resids_means)
-
-  } else {
-    resids <- resids_S
-  }
+  # matrices <- fit@Optim$outputs$estimators$matrices
+  # idx_S <- grepl(paste(c("S"), collapse = "|"),
+  #                names(fit@transformed_pars))
+  # idx_means <- grepl(paste(c("means"), collapse = "|"),
+  #                    names(fit@transformed_pars))
+  # resids_S <- vector("list", length = sum(idx_S))
+  # for(i in 1:sum(idx_S)) {
+  #   p <- sqrt(length(matrices[[1]][[i]]))
+  #   resids_S[[i]] <- matrix(matrices[[1]][[i]], nrow = p, ncol = p)
+  #   rownames(resids_S[[i]]) <- colnames(resids_S[[i]]) <-
+  #     rownames(fit@transformed_pars[idx_S][[i]])
+  #   names(resids_S)[i] <- names(fit@transformed_pars[idx_S])[i]
+  # }
+  #
+  # if(fit@modelInfo$control_optimizer$meanstructure) {
+  #
+  #   resids_means <- vector("list", length = sum(idx_means))
+  #   for(i in 1:sum(idx_S)) {
+  #     p <- length(matrices[[2]][[i]])
+  #     resids_means[[i]] <- matrices[[2]][[i]]
+  #   }
+  #   names(resids_means)[i] <- names(fit@transformed_pars[idx_means])[i]
+  #
+  #   resids <- c(resids_S, resids_means)
+  #
+  # } else {
+  #   resids <- resids_S
+  # }
 
   #### Return ####
 
@@ -193,8 +194,6 @@ latInspect.lcfa <- function(fit, what = "est") {
                           "loglik_base", "loglik_sat"), , drop = FALSE])
 
   } else if(what == "fit") {
-
-    # return(group_by_fit)
 
     return(fit_by_group)
 

@@ -13,7 +13,7 @@ class cfa_means_dwls: public estimators {
 public:
 
   int p;
-  double f, w;
+  double loss, w;
   arma::uvec indices_S, indices_Shat, indices_nu, indices_means, diag, lower_diag;
   arma::mat S, Shat, dShat, dS, residuals, W, W_residuals;
   arma::vec nu, means, delta, dnu, dmeans, w_means;
@@ -33,8 +33,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = w*0.5*(arma::accu(residuals % W_residuals) + arma::accu(w_means % delta % delta));
-    x.f += f;
+    loss = w*0.5*(arma::accu(residuals % W_residuals) + arma::accu(w_means % delta % delta));
+    x.f += loss;
 
   }
 

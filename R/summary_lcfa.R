@@ -45,7 +45,10 @@ summary.lcfa <- function(fit, digits = 3) {
 
 
   # Print Estimator, Optimization, and Parameters section
-  if(is.null(fit@loglik)) {
+  fit_mat <- latInspect(fit, "fit.matrix")
+  penalized_loss <- fit_mat["penalized_loss", "overall"]
+  penalized_loglik <- fit_mat["penalized_loglik", "overall"]
+  if(fit@modelInfo@control_optimizer$reg) {
     est <- "ULS"
   } else{
     est <- "ML"
@@ -60,9 +63,11 @@ summary.lcfa <- function(fit, digits = 3) {
   N <- fit@modelInfo$nobs
   cat(sprintf("  %-45s %d\n\n", "Number of observations", fit@modelInfo$nobs))
 
+  llsat <- fit_mat["loglik_sat", "overall"]
+  ll <- fit_mat["loglik", "overall"]
+  llbas <- fit_mat["loglik_base", "overall"]
   dof <- fit@modelInfo$dof
-  loglik <- fit@loss
-  X2 <- loglik*N
+  X2 <- 2*(llsat - ll)
   pval <- 1-pchisq(X2, df = dof)
   cat("Model Test User Model:\n")
   cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")

@@ -33,9 +33,9 @@ public:
     }
 
     arma::cube loglik(S, J, I, arma::fill::zeros);
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s) {
+    for(int i=0; i < I; ++i) { // classes
+      for(int j=0; j < J; ++j) { // items
+        for(int s=0; s < S; ++s) { // response patterns
           if (std::isnan(y(s,j))) continue;
           int value = y(s,j);
           loglik(s,j,i) = eta[j](value,i);

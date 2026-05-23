@@ -53,9 +53,11 @@ create_estimators <- function(estimators, structures) {
                           lreg               = c("y", "X"),
                           polycor            = c("p", "n", "N"),
                           lca                = c("S", "J", "I", "weights"),
+                          lca2               = c("S", "I", "weights"),
                           bayesconst1        = c("K", "alpha", "N", "U"),
                           bayesconst2        = c("K", "alpha", "N", "pihat"),
                           bayesconst3        = c("K", "alpha", "N", "varshat"),
+                          bayesconst4        = c("K", "alpha", "J", "D"),
                           logdetmat          = c("lower_indices", "logdetw", "p"),
                           logdetR            = c("lower_indices", "logdetw", "p"),
                           cfa_dwls           = c("q", "w", "p", "W"),
@@ -67,7 +69,7 @@ create_estimators <- function(estimators, structures) {
     )
 
     # Pick only those objects from 'dots':
-    extra <- dots[[i]][est_objects]
+    extra <- dots[[i]][c(est_objects, "double_names", "matrix_names")]
 
     # Ensure the required extras are present and named:
     if (length(est_objects) > 0L) {
