@@ -112,6 +112,13 @@ latInspect.llca <- function(fit,
   rownames(posterior) <- names(state) <-
     names(loglik_case) <- rownames(measurement)
 
+  if(fit@dataList$any_gaussian) {
+    gaussian_names <- fit@modelInfo$control_optimizer$gaussian$gaussian_names
+    ClassConditional[gaussian_names] <- lapply(ClassConditional[gaussian_names],
+                                               FUN = \(x) {
+                                                 x[c(1, 4), ]
+                                               })
+  }
   profile <- list(class = classes, item = ClassConditional)
 
   #### Extract the fit ####
@@ -179,7 +186,11 @@ latInspect.llca <- function(fit,
 
   } else if (what == "convergence") {
 
-    return(fit@Optim$convergence)
+    conv <- data.frame(Iterations = fit@Optim$iterations,
+                       convergence = fit@Optim$convergence,
+                       grad.norm = fit@Optim$ng)
+
+    return(conv)
 
   } else if (what == "data") {
 

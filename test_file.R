@@ -4,7 +4,7 @@
 
 #### Store a dataset ####
 
-# usethis::use_data(gss82, overwrite = TRUE)
+# usethis::use_data(hs_academic, overwrite = TRUE)
 
 #### Build the package ####
 
@@ -62,14 +62,12 @@ CI$table
 library(latent)
 set.seed(2026)
 fit <- lca(data = empathy,
-           nclasses = 1L,
+           nclasses = 4L,
            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-           model = list("ec2 ~~ ec3 ~~ ec6"),
+           # model = list("ec2 ~~ ec3 ~~ ec6"),
            penalties = TRUE,
-           control = list(opt = "lbfgs"),
            do.fit = TRUE)
 
-# FIX LBFGS WITH nclasses = 1L
 # Plot model fit info:
 fit
 
@@ -100,11 +98,11 @@ library(latent)
 set.seed(2026)
 penalties <- list(
   # beta  = list(alpha = 0, lambda = 0, power = 0),
-  beta  = list(alpha = 0),
+  # beta  = list(alpha = 0),
   class = list(alpha = 1),
   prob  = list(alpha = 1),
-  sd    = list(alpha = 1),
-  Sigma = list(alpha = 1)
+  var   = list(alpha = 1)
+  # Sigma = list(alpha = 1)
 ) # FIX defaults in penalties
 fit <- lca(data = cancer,
            nclasses = 3L,
@@ -122,7 +120,7 @@ getfit(fit)
 
 # Inspect model objects:
 latInspect(fit, what = "loglik")
-# loglik: -5784.741 # penalized_loglik: -5795.573
+# loglik: -5784.701 # penalized_loglik: -5795.573
 latInspect(fit, what = "fit.matrix")
 latInspect(fit, what = "coefs")
 latInspect(fit, what = "classes")
@@ -151,6 +149,9 @@ fit1 <- lca(data = empathy,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             penalties = TRUE,
             do.fit = TRUE)
+latInspect(fit1, what = "loglik")
+# loglik: -1841.336 # penalized_loglik: -1844.333
+# loglik: -1808.949 # penalized_loglik: -1812.014
 
 set.seed(2026)
 fit2 <- lca(data = empathy,
@@ -198,16 +199,16 @@ fitted(fit2)
 CI <- ci(fit2, type = "standard", confidence = 0.95, digits = 2)
 CI$table
 
-x <- plot.llca(fit2,
-          type = "standard",
-          what = "OR",
-          effects = "coding",
-          confidence = 0.95,
-          show_est_ci = TRUE,
-          est_ci_header_cex = 0.5,
-          cex_y = 0.5,
-          mfrow = c(2, 2),
-          xlim = c(0, 5)) # FIX forest plot
+x <- plot_coeffs(fit2,
+                 type = "standard",
+                 what = "OR",
+                 effects = "coding",
+                 confidence = 0.95,
+                 show_est_ci = TRUE,
+                 est_ci_header_cex = 0.5,
+                 cex_y = 0.5,
+                 mfrow = c(2, 2),
+                 xlim = c(0, 5))
 
 # new_se <- move_intercept(beta, vcov)
 # new_se$beta_new

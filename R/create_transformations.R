@@ -51,6 +51,7 @@ create_transforms <- function(transforms, structures) {
                                 mvnormal2   = c("y", "S", "J", "I"),
                                 normal2   = c("y", "S", "J", "I"),
                                 sum_vectors   = character(0),
+                                sqrt_vector = character(0),
                                 stop("Unknown transform: ", transform)
     )
 

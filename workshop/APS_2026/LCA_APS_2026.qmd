@@ -521,8 +521,8 @@ library(stevemisc)
 library(ggplot2)
 library(patchwork)
 
-dat <- rio::import("ESS_datLCA.sav")
-dat <- sbt(dat, cntry == "FR")
+# ESS_datLCA <- rio::import("ESS_datLCA.sav")
+dat <- sbt(ESS_datLCA, cntry == "FR")
 dat <- tidyr::drop_na(dat)
 
 dat[,1:8] <- dapply(dat[,1:8], MARGIN = 2,
@@ -1239,7 +1239,8 @@ $$
 # LCA with continuous and categorical items
 
 ```{r}
-dat3 <- rio::import("hs_academic.sav")
+# dat3 <- rio::import("hs_academic.sav")
+dat3 <- hs_academic
 
 vars_rev <- c("hm","he","voc","nocol")
 
@@ -1583,11 +1584,25 @@ latInspect(fit4_step2, "coefs")
 
 # Adding predictors - `latent`
 
-- Estimate corrected standard errors
+- Estimate corrected standard errors and confidence intervals
 
 ```{r}
 se_step2 <- se(fit4_step2)
 se_step2$table$beta
+
+# Compute 95% confidence intervals for predictor coefficients.
+ci_step2 <- ci(fit4_step2, confidence = 0.95)
+ci_step2$table$beta
+```
+
+Even better, plot the Odds Ratios + confidence intervals in forestplot style:
+```{r}
+x <- plot_coeffs(fit4_step2,
+                 what = "OR",        # Odds ratios
+                 effects = "coding", # Effects-coding parametrization
+                 confidence = 0.95,  # Confidence level
+                 xlim = c(0, 3),     # Plot limits for x-axis
+                 mfrow = c(2, 2))    # Grid of viewer panel
 ```
 
 # Adding predictors - `latent`
@@ -1629,15 +1644,56 @@ predict(fit4_step2,
 - `latent` has *good* defaults, but you can change the `control` arguments
 - These are the main control arguments ... 
 
+```{r}
+control = list(opt     = "lbfgs", # newton
+               maxit   = 1000L,   # Maximum number of iterations
+               rstarts = 16L,     # Number of random starts
+               cores   = 1L,      # Number or parallel runs
+               eps     = 1e-05)   # Convergence criteria (gradient norm)
+```
+
+You can check the convergence information to assess nonconvergence problems:
+```{r}
+latInspect(fit4_step2, what = "convergence")
+
+fit4_step2 <- lca(data = dat,
+                  nclasses = 3,
+                  multinomial = c("contplt", "badge", 
+                                  "sgnptit", "bctprd", 
+                                  "donprty", "pbldmna", 
+                                  "volunfp","pstplonl"),
+                 X = c("gndr", "agea"),
+                 model = fit4,
+                 control = control)
+
+```
 
 # Penalties
 
-- `latent` has *good* defaults, and by default runs penalized estimation
+- `latent` has *good* defaults, and by default it runs penalized estimation
 - But it has a *small* penalization by default
-- You can adjust it like ... 
+- You can adjust penalties for certain parameters by modifying the alpha values:
 
+```{r}
+penalty_defaults <- list(
+  class = list(alpha = 1), # Penalty for class probabilities
+  prob  = list(alpha = 1), # Penalty for item probabilities (multinomial items)
+  var   = list(alpha = 1), # Penalty for item variances (gaussian items)
+  Sigma = list(alpha = 1)  # Penalty for covariance matrices (gaussian items)
+)
+```
 
+- Higher alpha values imply higher regularization (i.e., probabilities are pulled away from their 0 and 1 boundaries and variances are pulled away from 0).
 
+```{r}
+latInspect(fit4, what = "profile")
+set.seed(15)
+fit4.2 <- lca(data = dat, nclasses = 3,
+            multinomial = c("contplt", "badge", "sgnptit", "bctprd", 
+                            "donprty", "pbldmna", "volunfp","pstplonl"),
+            penalties = list(prob = list(alpha = 10)))
+latInspect(fit4.2, what = "profile")
+```
 
 # References {.scrollable}
 

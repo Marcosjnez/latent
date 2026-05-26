@@ -16,34 +16,41 @@ public:
   int K;
   double alpha, constant, prod_vars, N, loss;
   arma::uvec indices;
-  arma::vec vars, varshat, sds, logvars;
+  arma::vec vars, dvars, varshat, logvars;
 
   void param(arguments_optim& x) {
 
-    sds = x.transparameters(indices);
-    vars = sds % sds;
+    vars = x.transparameters(indices);
+
+    vars.elem(arma::find(vars < arma::datum::eps)).fill(arma::datum::eps);
+
     logvars = arma::trunc_log(vars);
-    constant = alpha/(K + 0.00);
+    constant = alpha / (K + 0.00);
 
   }
 
   void F(arguments_optim& x) {
 
-    loss = 0.5*constant * (arma::accu(logvars) + arma::accu(varshat/vars));
+    loss = 0.5 * constant * (arma::accu(logvars) + arma::accu(varshat / vars));
     x.f += loss;
 
   }
 
   void G(arguments_optim& x) {
 
-    x.grad.elem(indices) -= constant * (varshat/(vars % sds) - 1/sds);
+    x.grad.elem(indices) +=
+      0.5 * constant * (1.0 / vars - varshat / (vars % vars));
 
   }
 
   void dG(arguments_optim& x) {
 
-    arma::vec dsds = x.dtransparameters(indices);
-    x.dgrad.elem(indices) += constant * (3 * varshat % dsds / (vars % vars) - dsds / vars);
+    dvars = x.dtransparameters(indices);
+
+    x.dgrad.elem(indices) +=
+      0.5 * constant *
+      (-dvars / (vars % vars) +
+      2.0 * varshat % dvars / (vars % vars % vars));
 
   }
 
@@ -57,12 +64,6 @@ public:
     doubles[4] =  0.00;        // loglik independence model
     doubles[5] =  0.00;        // loglik saturated model
     doubles[6] =  loss;        // penalty
-
-    // vectors.resize(1);
-    //
-    // matrices.resize(1);
-    //
-    // cubes.resize(1);
 
   }
 

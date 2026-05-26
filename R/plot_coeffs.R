@@ -27,18 +27,18 @@
 #' None yet.
 #'
 #' @export
-plot_llca_reg <- function(fit,
-                      type = "standard",
-                      what = "OR",
-                      effects = "coding",
-                      confidence = 0.95,
-                      predictors = NULL,
-                      intercept = TRUE,
-                      show_est_ci = TRUE,
-                      est_ci_header_cex = 0.5,
-                      cex_y = 0.5,
-                      mfrow = c(1, 1),
-                      ...) {
+plot_coeffs <- function(fit,
+                        type = "standard",
+                        what = "OR",
+                        effects = "coding",
+                        confidence = 0.95,
+                        predictors = NULL,
+                        intercept = TRUE,
+                        show_est_ci = TRUE,
+                        est_ci_header_cex = 0.5,
+                        cex_y = 0.5,
+                        mfrow = c(1, 1),
+                        ...) {
 
   # Get standard errors:
   SE <- se(fit = fit, type = type, digits = 9)

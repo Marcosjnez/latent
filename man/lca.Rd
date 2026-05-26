@@ -2,95 +2,185 @@
 % Please edit documentation in R/lca.R
 \name{lca}
 \alias{lca}
-\title{Latent Class Analysis.}
+\title{Estimate latent class models for continuous and categorical indicators, with
+optional covariates for latent class membership probabilities.}
 \usage{
-lca(data, nclasses = 2L, item = rep("gaussian", ncol(data)),
-    X = NULL, penalties = TRUE, model = NULL,
-    start = NULL, do.fit = TRUE, verbose = TRUE, control = NULL)
+lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
+X = NULL, penalties = TRUE, model = NULL, start = NULL,
+control = NULL, do.fit = TRUE, verbose = TRUE)
 }
 \arguments{
-\item{data}{data frame or matrix.}
+\item{data}{A \code{data.frame} or \code{matrix} containing the observed data.
+Columns listed in \code{gaussian} and/or \code{multinomial} are used as
+measurement indicators. Columns used in \code{X} may also be taken from
+\code{data}.}
 
-\item{nclasses}{Number of latent classes.}
+\item{nclasses}{A positive integer giving the number of latent classes. If a
+vector of positive integers is supplied, one model is fitted for each value
+and the result is returned as an object of class \code{"llcalist"}.}
 
-\item{X}{Matrix of covariates.}
+\item{gaussian}{Optional character vector with the names of the variables in
+\code{data} to be modeled as Gaussian indicators. These variables are
+modeled with class-specific means and variances. If residual covariance
+terms involving Gaussian indicators are specified in \code{model}, the
+corresponding variables are modeled jointly with a class-specific
+multivariate Gaussian distribution.}
 
-\item{penalties}{Boolean or list of penalty terms for the parameters.}
+\item{multinomial}{Optional character vector with the names of the variables
+in \code{data} to be modeled as multinomial indicators. Variables are
+internally converted to factors, and the first factor level is used as the
+reference category for the multinomial logits. Variables with more than 30
+observed categories are not allowed.}
 
-\item{model}{List of parameter labels. See 'details' for more information.}
+\item{X}{Optional covariates for predicting latent class membership. It can be
+\code{NULL}, a character vector with column names in \code{data}, or a
+\code{data.frame}/\code{matrix} with the same number of rows as
+\code{data}. An intercept is always included. Character covariates are
+converted to factors and factors are expanded using \code{model.matrix()}.}
 
-\item{start}{List of starting values for the parameters. See 'details' for more information.}
+\item{penalties}{Logical value or named list controlling regularization.
+If \code{FALSE}, no penalties are used. If \code{TRUE}, default penalties are
+used. If a named list is supplied, missing penalty blocks are filled with
+their defaults. Valid penalty blocks are \code{beta}, \code{class},
+\code{prob}, \code{var}, and \code{Sigma}. The default is
+\code{list(beta = list(alpha = 0), class = list(alpha = 1),
+prob = list(alpha = 1), var = list(alpha = 1),
+Sigma = list(alpha = 1))}. The \code{beta} block may also contain
+\code{lambda} and \code{power} for ridge-type regularization.}
 
-\item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+\item{model}{Optional model specification. This can be a named list used to
+fix parameters, impose equality constraints, or provide custom parameter
+labels. Names should match the internal parameter blocks, for example
+\code{beta}, Gaussian item names, \code{log_<item>} for multinomial logits,
+\code{means}, \code{logsigma}, or \code{sigma|Class<i>} for multivariate
+Gaussian blocks. Character strings containing residual-dependency syntax
+such as \code{"y1 ~~ y2"} are also used to identify residual covariances
+among Gaussian indicators or residual associations among multinomial
+indicators. If an object of class \code{"llca"} is supplied, its measurement
+parameters are reused while the class-membership regression coefficients
+are re-estimated.}
 
-\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+\item{start}{Optional named list of starting values. Names should correspond
+to parameter blocks in the model. Supplied values replace the corresponding
+default initial values, allowing partial specification of starting values.}
 
-\item{verbose}{Print information of model estimation. Defaults to FALSE.}
+\item{control}{Optional list of optimizer and estimation controls. Common
+entries include \code{rstarts} for the number of random starts,
+\code{cores} for parallel computation, \code{maxit} for the maximum number
+of optimizer iterations, \code{opt} for the optimizer type, and convergence
+tolerances such as \code{eps}, \code{df_eps}, and \code{step_eps}. Missing
+entries are replaced by internal defaults.}
 
-\item{item}{Character vector with the model for each item (i.e., "gaussian" or "multinomial"). Defaults to "gaussian" for all the items.}
+\item{do.fit}{Logical. If \code{TRUE}, the model is estimated. If \code{FALSE},
+the function returns an \code{"llca"} object containing the processed data,
+model structure, and optimization setup, but without running the optimizer.}
+
+\item{verbose}{Logical. If \code{TRUE}, progress information is printed,
+especially when fitting several values of \code{nclasses}.}
 }
 \value{
-List with the following objects:
-\item{version}{Version number of 'latent' when the model was estimated.}
-\item{call}{Code used to estimate the model.}
-\item{ModelInfo}{Model information.}
-\item{Optim}{Output of the optimizer.}
-\item{user_model}{Structure with most relevant parameters.}
-\item{parameters}{Structure with all model parameters.}
-\item{transparameters}{Structure with all transformed model parameters.}
-\item{posterior}{Posterior probability of class membership.}
-\item{state}{Class with highest posterior probability.}
-\item{loglik}{Logarithm likelihood of the model.}
-\item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
-\item{loglik_case}{Logarithm likelihood of each pattern.}
-\item{summary_table}{Table of summaries of the fitted model. Useful when all the items are 'multinomial'.}
-\item{ClassConditional}{Parameters that are conditional on the class memberships.}
-\item{ResponseConditional}{Probability of class memberships conditional on item response. Only available when all the items have a 'multinomial' likelihood.}
-\item{probCat}{Marginal probability of an item response. Only available when all the items have a 'multinomial' likelihood.}
+If \code{length(nclasses) == 1}, an S4 object of class \code{"llca"} with
+the following slots:
+\describe{
+\item{\code{version}}{Version of the \pkg{latent} package used to fit the model.}
+\item{\code{call}}{The matched function call.}
+\item{\code{timing}}{Elapsed optimization time. Empty when \code{do.fit = FALSE}.}
+\item{\code{dataList}}{Processed data objects, including the measurement data,
+covariate design matrix, unique response patterns, pattern weights, and
+mappings between original rows and unique patterns.}
+\item{\code{modelInfo}}{Internal model structure used by the optimizer,
+including parameter labels, transformed-parameter labels, degrees of
+freedom, manifolds, transformations, estimators, and optimizer controls.}
+\item{\code{Optim}}{Raw output from the optimizer. Empty when
+\code{do.fit = FALSE}.}
+\item{\code{parameters}}{Estimated model parameters on the estimation scale,
+organized by parameter block. Empty when \code{do.fit = FALSE}.}
+\item{\code{transformed_pars}}{Estimated parameters after applying model
+transformations, including class probabilities, item probabilities,
+variances, standard deviations, and log-likelihood components. Empty when
+\code{do.fit = FALSE}.}
+\item{\code{extra}}{Additional information reserved for downstream methods.}
+}
+
+If \code{nclasses} contains several values, a list of \code{"llca"} objects is
+returned with class \code{"llcalist"}.
 }
 \description{
-Estimate latent class models with gaussian and multinomial item models,
-with or without covariates to predict class membership.
+\code{lca()} fits latent class models in which the measurement model may
+contain Gaussian indicators, multinomial indicators, or both. Class membership
+probabilities can be unconditional or modeled as a multinomial-logit function
+of observed covariates. The function also supports class enumeration by
+passing several values to \code{nclasses}.
 }
 \details{
-\code{lca} estimates models with categorical and continuous data.
+The measurement model is defined by the variables supplied through
+\code{gaussian} and \code{multinomial}. Variables not listed there are ignored
+by the measurement model unless they are used as covariates in \code{X}.
+
+For Gaussian indicators, the model estimates class-specific means and
+variances. For multinomial indicators, the model estimates class-specific
+category probabilities through a softmax parameterization with the first
+category fixed as the reference.
+
+When covariates are supplied through \code{X}, class probabilities are modeled
+through multinomial-logit coefficients stored in the \code{beta} parameter
+block. The first class is the reference class, so its coefficients are fixed
+to zero for identification.
+
+The function compresses the data into unique response/covariate patterns
+before estimation and uses their frequencies as weights. This can make
+estimation more efficient, especially for categorical data with repeated
+response patterns.
+
+Residual dependencies can be requested by including covariance-style
+statements such as \code{"y1 ~~ y2"} in \code{model}. For Gaussian indicators,
+such terms define class-specific residual covariance parameters. For
+multinomial indicators, they define joint categorical response structures
+with residual interaction parameters.
 }
 \examples{
-
 \dontrun{
+# Three-class model for categorical indicators
+fit <- lca(
+data = gss82,
+nclasses = 3L,
+multinomial = names(gss82),
+penalties = TRUE
+)
 
-fit <- lca(data = gss82, nclasses = 3L,
-           item = rep("multinomial", ncol(gss82)),
-           penalties = TRUE, do.fit = TRUE)
-fit@timing
-fit@loglik # -2754.643
-fit@penalized_loglik # -2759.507
-fit@Optim$opt$iterations
-
-# Plot model fit info:
 fit
-
-# Get fit indices:
+summary(fit)
 getfit(fit)
 
-# Get a summary:
-summary(fit)
-
-# Inspect model objects:
 latInspect(fit, what = "coefs", digits = 3)
 latInspect(fit, what = "classes", digits = 3)
 latInspect(fit, what = "profile", digits = 3)
 latInspect(fit, what = "posterior", digits = 3)
-latInspect(fit, what = "table", digits = 3)
-latInspect(fit, what = "pattern", digits = 3)
 
-# Get standard errors:
-SE <- se(fit, type = "standard", digits = 4)
-SE$table
+# Class enumeration
+fits <- lca(
+data = gss82,
+nclasses = 1:4,
+multinomial = names(gss82),
+penalties = TRUE
+)
 
-# Get confidence intervals:
-CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
-CI$table
+# Latent class regression with covariates
+fit_x <- lca(
+data = mydata,
+nclasses = 3L,
+gaussian = c("y1", "y2"),
+multinomial = c("u1", "u2"),
+X = c("age", "gender")
+)
+
+# Return only the processed model setup
+setup <- lca(
+data = mydata,
+nclasses = 2L,
+gaussian = c("y1", "y2"),
+do.fit = FALSE
+)
 }
 
 }

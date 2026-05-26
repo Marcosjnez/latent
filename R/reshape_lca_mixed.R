@@ -37,7 +37,6 @@ reshape_lca_multinomial <- function(object) {
   }))
 }
 
-
 reshape_lca_continuous <- function(object) {
   do.call(rbind, lapply(names(object), function(varname) {
     mat <- object[[varname]]

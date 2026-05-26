@@ -8,26 +8,26 @@
 
 // Logarithm gaussian density transformation:
 
+// Logarithm gaussian density transformation:
+
 class normal2: public transformations {
 
 public:
 
   int S, J, I, n_in, n_out;
   arma::uvec indices_mu, indices_sigma, indices_loglik, indices_in, indices_out;
-  arma::mat y, mu, sigma, loglik, sigma2, sigma3, sigma4, dmu, dsigma, jacob;
+  arma::mat y, mu, sigma2, loglik, sigma4, sigma6, dmu, dsigma2, jacob;
 
   void transform(arguments_optim& x) {
 
     mu = arma::reshape(x.transparameters(indices_mu), J, I);
-    sigma = arma::reshape(x.transparameters(indices_sigma), J, I);
+    sigma2 = arma::reshape(x.transparameters(indices_sigma), J, I);
     loglik = arma::reshape(x.transparameters(indices_loglik), S, I);
 
-    // Avoid too small values of sigma:
-    sigma.elem(arma::find(sigma < arma::datum::eps)).fill(arma::datum::eps);
+    sigma2.elem(arma::find(sigma2 < arma::datum::eps)).fill(arma::datum::eps);
 
-    sigma2 = sigma % sigma;
-    sigma3 = sigma2 % sigma;
-    arma::mat log_sigma = arma::trunc_log(sigma);
+    sigma4 = sigma2 % sigma2;
+    arma::mat log_sigma2 = arma::trunc_log(sigma2);
 
     for (int i = 0; i < I; ++i) {
       for (int s = 0; s < S; ++s) {
@@ -35,7 +35,7 @@ public:
         for (int j = 0; j < J; ++j) {
           if (std::isnan(y(s,j))) continue;
           double x_ = y(s,j) - mu(j,i);
-          ll += -0.5 * x_ * x_ / sigma2(j,i) - log_sigma(j,i) - LOG2M_PI05;
+          ll += -0.5 * x_ * x_ / sigma2(j,i) - 0.5 * log_sigma2(j,i) - LOG2M_PI05;
         }
         loglik(s,i) += ll;
       }
@@ -48,7 +48,7 @@ public:
   void update_grad(arguments_optim& x) {
 
     arma::mat df_dmu(J, I, arma::fill::zeros);
-    arma::mat df_dsigma(J, I, arma::fill::zeros);
+    arma::mat df_dsigma2(J, I, arma::fill::zeros);
 
     arma::vec grad_out = x.grad(indices_out);
 
@@ -60,21 +60,20 @@ public:
           if (std::isnan(y(s,j))) continue;
           double x_ = y(s,j) - mu(j,i);
           df_dmu(j,i) += gk * x_ / sigma2(j,i);
-          df_dsigma(j,i) += gk * (x_ * x_ - sigma2(j,i)) / sigma3(j,i);
+          df_dsigma2(j,i) += gk * (x_ * x_ - sigma2(j,i)) / (2.0 * sigma4(j,i));
         }
       }
     }
 
     x.grad(indices_mu) += arma::vectorise(df_dmu);
-    x.grad(indices_sigma) += arma::vectorise(df_dsigma);
-    // x.grad(indices_loglik) += grad_out;
+    x.grad(indices_sigma) += arma::vectorise(df_dsigma2);
 
   }
 
   void dtransform(arguments_optim& x) {
 
     dmu = arma::reshape(x.dtransparameters(indices_mu), J, I);
-    dsigma = arma::reshape(x.dtransparameters(indices_sigma), J, I);
+    dsigma2 = arma::reshape(x.dtransparameters(indices_sigma), J, I);
     arma::mat dloglik = arma::reshape(x.dtransparameters(indices_loglik), S, I);
 
     for (int i = 0; i < I; ++i) {
@@ -85,7 +84,7 @@ public:
           double x_ = y(s,j) - mu(j,i);
           dll +=
             (x_ / sigma2(j,i)) * dmu(j,i) +
-            ((x_ * x_ - sigma2(j,i)) / sigma3(j,i)) * dsigma(j,i);
+            ((x_ * x_ - sigma2(j,i)) / (2.0 * sigma4(j,i))) * dsigma2(j,i);
         }
         dloglik(s,i) += dll;
       }
@@ -97,10 +96,10 @@ public:
 
   void update_dgrad(arguments_optim& x) {
 
-    sigma4 = sigma2 % sigma2;
+    sigma6 = sigma4 % sigma2;
 
     arma::mat ddf_dmu(J, I, arma::fill::zeros);
-    arma::mat ddf_dsigma(J, I, arma::fill::zeros);
+    arma::mat ddf_dsigma2(J, I, arma::fill::zeros);
 
     arma::vec grad_out = x.grad(indices_out);
     arma::vec dgrad_out = x.dgrad(indices_out);
@@ -116,25 +115,27 @@ public:
           if (std::isnan(y(s,j))) continue;
 
           double x_ = y(s,j) - mu(j,i);
-          double s2 = sigma2(j,i);
-          double s3 = sigma3(j,i);
-          double s4 = sigma4(j,i);
+          double v = sigma2(j,i);
+          double v2 = sigma4(j,i);
+          double v3 = sigma6(j,i);
 
-          double f_mu = x_ / s2;
-          double f_sigma = (x_ * x_ - s2) / s3;
+          double f_mu = x_ / v;
+          double f_sigma2 = (x_ * x_ - v) / (2.0 * v2);
 
-          double df_mu = -dmu(j,i) / s2 - (2.0 * x_ / s3) * dsigma(j,i);
-          double df_sigma = -(2.0 * x_ / s3) * dmu(j,i) +
-            ((s2 - 3.0 * x_ * x_) / s4) * dsigma(j,i);
+          double df_mu = -dmu(j,i) / v - (x_ / v2) * dsigma2(j,i);
+
+          double df_sigma2 =
+            -(x_ / v2) * dmu(j,i) +
+            ((0.5 * v - x_ * x_) / v3) * dsigma2(j,i);
 
           ddf_dmu(j,i) += dgk * f_mu + gk * df_mu;
-          ddf_dsigma(j,i) += dgk * f_sigma + gk * df_sigma;
+          ddf_dsigma2(j,i) += dgk * f_sigma2 + gk * df_sigma2;
         }
       }
     }
 
     x.dgrad(indices_mu) += arma::vectorise(ddf_dmu);
-    x.dgrad(indices_sigma) += arma::vectorise(ddf_dsigma);
+    x.dgrad(indices_sigma) += arma::vectorise(ddf_dsigma2);
 
   }
 
@@ -160,7 +161,7 @@ public:
           const int ij = j + i * J;
 
           jacob(k, offset_mu + ij) = x_ / sigma2(j,i);
-          jacob(k, offset_sigma + ij) = (x_ * x_ - sigma2(j,i)) / sigma3(j,i);
+          jacob(k, offset_sigma + ij) = (x_ * x_ - sigma2(j,i)) / (2.0 * sigma4(j,i));
         }
       }
     }
@@ -215,7 +216,8 @@ normal2* choose_normal2(const Rcpp::List& trans_setup) {
   arma::uvec indices_mu = indices_in[0];
   arma::uvec indices_sigma = indices_in[1];
   arma::uvec indices_loglik = indices_in[2];
-  int n_in = indices_mu.n_elem + indices_sigma.n_elem;
+
+  int n_in = indices_mu.n_elem + indices_sigma.n_elem + indices_loglik.n_elem;
   int n_out = indices_out[0].n_elem;
 
   mytrans->indices_mu = indices_mu;
@@ -232,4 +234,3 @@ normal2* choose_normal2(const Rcpp::List& trans_setup) {
   return mytrans;
 
 }
-
