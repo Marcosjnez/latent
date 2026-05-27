@@ -1,6 +1,6 @@
 ---
 title: "Latent Class Analysis: latent R package"
-date: "2026-28-05"
+date: "2026-05-28"
 author: "Marcos Jimenez, Mauricio Garnier-Villarreal, & Vithor Rosa Franco"
 
 format:
@@ -37,16 +37,17 @@ bibliography: references.bib
 
 # Classical test theory
 
-- Even simple measures include a level of random error, that is unrelated to the True score
+- Even simple measures include a level of random error that is unrelated to the True score:
 
-$$E(x) = T + e$$
-
+$$E(x) = T + e,$$
+where
 $$e \sim N(0, \sigma)$$
+This equation:
 
-- Accounts for random measurement error
-- Direct translation of Linear models
-- But, now everything that not True score, is random error
-  - Age .. error by months for example
+- Accounts for random measurement error.
+- Is a direct translation of linear models.
+- Implies that everything that is not True score becomes random error.
+  - Age in years carries error by months, for example.
 
 # Modeling framework
 
@@ -65,15 +66,15 @@ $$E(x) = T + C + ... + e$$
   - Reliability: common + specific
   - Unique: specific + error
   - Unreliability: error
-- Here we attempt to “model” the different sources of information in a variable
-- Requires us to think and expand on what are we measuring? How is it measure? What specific elements can affect it?
-- Specific variance can be interpret as “systematic” error/bias
+- Here we attempt to “model” the different sources of information in a variable.
+- Requires us to think and expand on what we are measuring, how is it measured, and what specific elements can affect it?
+- Specific variance can be interpret as “systematic” error/bias.
 
 # Modeling framework
 
 - How can we approach this partition?
-- Need to multiple indicators/items to approximate the True underlying construct
-- Measurement models such as: EFA, CFA, IRT, LCA, LPA
+- Need to use multiple indicators/items to estimate the True underlying construct.
+- Measurement models such as: EFA, CFA, IRT, LCA, LPA.
 
 # A construct is what indicators share
 
@@ -146,23 +147,23 @@ lavInspect(fit, "cor.lv")
 
 # Selecting indicators
 
-- Think of indicators as the **symptoms** of the construct
+- Think of indicators as the **symptoms** of the construct.
 - Which symptoms do you want to take into account, and which ones do you want to ignore?
 - Example, Math ability
   - 2+2
   - 9\*2
   - Explain differential equation models
-  - All are examples of math ability, but at different levels, your indicators have to appropriate for the level of interest and/or the sample
+  - All are examples of math ability, but at different levels, your indicators have to be appropriate for the level of interest and/or the sample.
 
 # “There is no true model…”
 
-- Models are parsimonious approximations of real world phenomena
+- Models are parsimonious approximations of real world phenomena.
 
-- Equivalent models may be just as appropriate
+- Equivalent models may just be equally appropriate.
 
-- Models with good fit are not necessarily meaningful (i.e., does not imply effect size)
+- Models with good fit are not necessarily meaningful (i.e., does not imply effect size).
 
-- “A finding of good fit does not imply that a model is correct or true, but only plausible” (MacCallum& Austin, 2000)
+- “A finding of good fit does not imply that a model is correct or true, but only plausible” (MacCallum & Austin, 2000).
 
 # Why do we care for latent variables?
 
@@ -184,15 +185,15 @@ lavInspect(fit, "cor.lv")
 
 # Person-centered vs Variable-centered
 
-- Person-centered approaches describe similarities and differences among individuals with respect to how variables relate w each other and are predicated on the assumption that the population is heterogeneous with respect w the relationships between variables
+- Person-centered approaches describe similarities and differences among individuals with respect to how variables relate to each other and are predicated on the assumption that the population is heterogeneous with respect to the relationships between variables.
 - Variable-cenrered approaches describe associations among variables and are predicated on the assumption that the population is homogeneous with respect to the relationships between variables
-- Complementary views
-- Theoretically and practically, choose the most fitting type of model
+- Complementary views.
+- Theoretically and practically, choose the most fitting type of model.
 
 
 # Latent Class Analysis
 
-- Latent Class Analysis (LCA) is a statistical model to uncover hidden groupings in empirical data. More specifically, it is a way to group subjects from multivariate data into latent classes — groups or subgroups with similar, unobservable, membership – based on their pattern of responses on a set of (categorical) measured variables (Collins & Lanza, 2010)
+- Latent Class Analysis (LCA) is a statistical model to uncover hidden groupings in empirical data. More specifically, it is a way to group subjects from multivariate data into latent classes — groups or subgroups with similar, unobservable, membership – based on their pattern of responses on a set of (categorical or continuous) measured variables (Collins & Lanza, 2010).
 
   - The term latent implies that the analysis is based on an error-free latent variable (Collins & Lanza, 2010).
   - A latent or “hidden” variable is not directly measurable or observable. Instead, it is measured indirectly by means of two or more observed variables (indicators)
@@ -244,7 +245,7 @@ lavInspect(fit, "cor.lv")
 
 - Ruscio and Ruscio (2008) outline the differences between the two:
   - **Categorical latent variables (LCA)**: “…qualitative differences exist between groups of people or objects”.
-  - **Continuous latent variables (Factor Analysis)**: “…people or objects differ qualitatively along one or more continua.”
+  - **Continuous latent variables (Factor Analysis)**: “…people or objects differ quantitatively along one or more continua.”
 
 \scriptsize
 
@@ -279,7 +280,7 @@ lavInspect(fit, "cor.lv")
 
 # Model assumptions
 
-- Linear relation between the latent variable and the indicators (logistic for categorical indicators)
+- Linear relation between the latent variable and the indicators through a link function (e.g, logistic function for categorical indicators).
 
 - **Local independence of the indicators**: the indicators are unrelated above and beyond the latent variable, latent class membership explains all of the associations among the observed items (see Figure).
 
@@ -305,7 +306,7 @@ lavInspect(fit, "cor.lv")
 - Suppose that there are
 
   - $j=1,...,J$ observed variables
-  - $r_j = 1,...,R_j$ response categories The contingency table formed by cross-tabulating the $J$ variables has $W = \sum^J_{j=1} R_j$ cells.
+  - $r_j = 1,...,R_j$ response categories. The contingency table formed by cross-tabulating the $J$ variables has $W = \prod^J_{j=1} R_j$ cells.
 
 # Model notation
 
@@ -313,11 +314,11 @@ lavInspect(fit, "cor.lv")
 ::: {.column width="50%"}
 Solution:
 
-- the observed variables are the questionnaire items, $J=4$
-- For the first questionnaire item there are two response alternatives, *No* and *Yes*, so $𝑅_1=2$
+- the observed variables are the questionnaire items, $J=4$.
+- For the first questionnaire item there are two response alternatives, *No* and *Yes*, so $𝑅_1=2$.
 - $𝑅_2=3$; $𝑅_3=3$ ; $𝑅_4=3$ ,
 - Therefore, in that example,
-  - $𝑊=2∗3∗3∗3=54$
+  - $𝑊=2∗3∗3∗3=54.$
 :::
 
 ::: {.column width="50%"}
@@ -360,6 +361,24 @@ $$\sum_{r_j = 1}^{R_j} \rho_{j,r_j | c} = 1 $$
 
 $$P(Y = y) = \sum_{c=1}^{C} \gamma_C \prod_{j=1}^{J} \prod_{r_j =1}^{R_j} =  \rho_{j,r_j | c}^{I(𝑦_𝑗  =𝑟_𝑗)} $$
 
+# Alternative notation
+
+Latent class analysis (LCA) is an umbrella term that refers to a number
+of techniques for estimating unobserved group membership based on a
+parametric model of one or more observed indicators of group membership.
+
+People belong to different groups (i.e., classes) that are not directly observable. 
+There are two types of parameter:
+
+- The probability that a person belongs to a particular class $k$: $P(\theta_k)$.
+
+- The conditional probability (density) of a response to item $j$ if a person belongs to the class $k$: $f(y_j\mid \theta_k)$.
+
+The likelihood of a response pattern is given by
+$$
+\ell \;=\; \sum_{k=1}^{K} P(\theta_k)\, \prod_{j=1}^J f(y_j\mid \theta_k).
+$$
+
 # LCA example
 
 - European Social Survey Round 10 - France
@@ -377,9 +396,9 @@ $$P(Y = y) = \sum_{c=1}^{C} \gamma_C \prod_{j=1}^{J} \prod_{r_j =1}^{R_j} =  \rh
 
 # LCA Example: (1) Naming the latent variable
 
-- With LVMs we need to defined what is the latent variables that we are measuring
-- Relates to the construct validity, what does the items represent?
-- **Political Activism**
+- In Latent Variable Modeling we need to define the constructs that we are measuring.
+- Related to construct validity: what do the items represent or reflect?
+- with the previous items, we may be measuring **Political Activism**.
 
 # Evaluating model fit and model selection
 
@@ -422,9 +441,9 @@ $$P(Y = y) = \sum_{c=1}^{C} \gamma_C \prod_{j=1}^{J} \prod_{r_j =1}^{R_j} =  \rh
 
 # Model selection: Information Criteria
 
-- Correct for overfittins
+- Correct for overfitting.
 
-- **Akaike information criterion** (AIC; Akaike, 1987): approximates the out-of sample prediction accuracy
+- **Akaike information criterion** (AIC; Akaike, 1987): approximated measure of the out-of sample prediction accuracy.
 
 $$AIC = -2LL+2p$$
 
@@ -432,7 +451,7 @@ $$AIC = -2LL+2p$$
 
 $$BIC = -2LL+ p \ln(n)$$
 
-- The BIC generally penalizes free parameters more strongly than the AIC, though it depends on the size of $n$ and relative magnitude of $n$ and $p$.
+- The BIC generally penalizes free parameters more strongly than the AIC, though it also depends on the sample size $n$.
 
 # Expectation Maximization (EM)
 
@@ -455,9 +474,9 @@ $$BIC = -2LL+ p \ln(n)$$
 
 # Class Enumeration
 
-- We estimate LCAs with increase number of $C$ classes
-- Compare the models ICs
-- Choose 1 or 3 models that present *similar* fit to evaluate the theoretical interpretability
+- Estimate many LCAs with increasing numbers of classes $C$.
+- Compare the models ICs.
+- Choose 2 or 3 models that present *similar* fit to evaluate their interpretability.
 
 # The latent R package
 
@@ -521,7 +540,6 @@ library(stevemisc)
 library(ggplot2)
 library(patchwork)
 
-# ESS_datLCA <- rio::import("ESS_datLCA.sav")
 dat <- sbt(ESS_datLCA, cntry == "FR")
 dat <- tidyr::drop_na(dat)
 
@@ -567,8 +585,8 @@ freq(dat[,7:8])
 
 ```{r}
 fit1 <- lca(data = dat, nclasses = 1:7,
-           multinomial = c("contplt", "badge", "sgnptit", "bctprd", 
-                           "donprty", "pbldmna", "volunfp","pstplonl") )
+            multinomial = c("contplt", "badge", "sgnptit", "bctprd", 
+                            "donprty", "pbldmna", "volunfp","pstplonl") )
 
 ```
 
@@ -646,14 +664,17 @@ pr3$item[4:8]
 
 # LCA example
 
-- (will continue with the 3 class solution)
+- We will continue with the 3 class solution.
 
-- From the chosen solution (here 3 classes), we need to **assign names to each latent class**
+- From the chosen solution with 3 classes, we need to **assign names to each latent class**.
 
-  - based on what characterizes it (qualitative differences among the groups).
+  - based on what characterizes them (qualitative differences among the groups).
   - The interpretation of the latent classes is based on the item-response probabilities.
 
 # LCA example
+
+::: {.columns}
+::: {.column width="60%"}
 
 ```{r}
 #| fig-width: 8
@@ -665,13 +686,29 @@ plot(fit1_3)
 
 ```
 
+:::
+::: {.column width="40%"}
+
+During the last 12 months, have you done any of the following? Have you... (Yes =1, No=2)
+
+  - ... contacted a politician, government or local government official?\
+  - ... worn or displayed a campaign badge/sticker?\
+  - ... signed a petition?\
+  - ... boycotted certain products?\
+  - ... donated to or participated in a political party or pressure group?\
+  - ... volunteered for a not-for-profit or charitable organisation?\
+  - ... taken part in a public demonstration?\
+  - ... posted or shared anything about politics online, for example on blogs, via email or on social media such as Facebook or Twitter?
+
+:::
+:::
 
 # LCA example
 
-- What would you named the classes?
-  - It seems we have a class of *Not politically active*, with 59% of the sample
-  - Then we have a class that is *Somewhat active*, with 35% of the sample
-  - And lastly we have a *Very active*, with 6% of the sample
+- What names would you choose for the classes?
+  - It seems that we have a *Not politically active* class, comprising 59% of the sample.
+  - Then we have a class of *Somewhat active* people, comprising 35% of the sample.
+  - And lastly we have a *Very active* class, comprising 6% of the sample.
 
 \small
 
@@ -691,7 +728,7 @@ cl_diag <- lclass_diag(fit1_3, digits = 3, type = "all")
 cl_diag$Sum.Posterior
 ```
 
-- With the most likely class membership based on the highest posterior class probability
+- With the class membership proportions based on modal assignment
 
 ```{r}
 cl_diag$Sum.Mostlikely
@@ -701,7 +738,7 @@ cl_diag$Sum.Mostlikely
 
 \scriptsize
 
-- **AvePP**: average predicted probability for the subjects clarified in each class
+- **AvePP**: average predicted probability for the subjects classified in each class
 
 ```{r}
 cl_diag$AvePP
@@ -723,8 +760,8 @@ cl_diag
 
 # LCA example: predicted classes
 
-- We can save the predicted classes, and predicted probabilities
-- Can do descriptive statistics post estimation (be aware you may have error based on the predicted probabilities)
+- We can save the predicted classes, and predicted probabilities.
+- Can do descriptive statistics post estimation (be aware you may have error based on the predicted probabilities).
 
 ```{r}
 latInspect(fit1_3, "state")
@@ -745,17 +782,17 @@ ctable(dat$gndr, dat$State, prop="r")
 
 # Global model fit evaluation
 
-- One of the first things users do is test the model fit
-- Global model fit is usually measure with a variety of indices
-- Commonly done by reporting $\chi^2$ ($LL$) overall model fit indices, and relative fit indices to compare models (AIC and BIC)
+- One of the first things users do is test the model fit.
+- Global model fit is usually measured with a variety of indices.
+- Commonly done by reporting $\chi^2$ ($LL$) overall model fit indices, and relative fit indices to compare models (AIC and BIC).
 
 # Global model fit evaluation
 
-- The most common test of global fit is the $\chi^2_{LR}$
-- Under the null hypothesis that the data are governed by the assumed distribution of the specified model
-- Test of *absolute* fit
-- Follows a $\chi^2$ distribution
-- It is considered a sensitivity test for small/negligible misfit, as it is very sensitive (specially with large sample sizes)
+- The most common test of global fit is the $\chi^2_{LR}$.
+- Under the null hypothesis that the data are governed by the assumed distribution of the specified model.
+- Test of *absolute* fit.
+- Follows a $\chi^2$ distribution.
+- It is considered a sensitivity test for small/negligible misfit, as it is very sensitive (specially with large sample sizes).
 
 # Global model fit evaluation
 
@@ -852,14 +889,15 @@ res_diag
 
 Refit the LCA model with 3 classes and the residual dependency between `contplt` and `volunfp`.
 
+# Residual evaluation in `latent`
+
 ```{r}
 fit1_3_resid <- lca(data = dat, nclasses = 3,
                     multinomial = c("contplt", "badge", "sgnptit", "bctprd",
                                     "donprty", "pbldmna", "volunfp","pstplonl"),
                     model = list("contplt ~~ volunfp"))
 
-ci_fit1_3_resid <- ci(fit1_3_resid, confidence = 0.95)
-ci_fit1_3_resid$table$log_contpltxlog_volunfp
+fit1_3_resid # Print the model
 ```
 
 # Residual evaluation in `latent`
@@ -869,16 +907,13 @@ ci_fit1_3_resid$table$log_contpltxlog_volunfp
 
 # Local model fit
 
-- You have found that there are local violations of local independence
-- Then you can *model* a residual correlation between the *problematic* variables
-  - Change the model one parameter at the the time
-  - compare the 2 models
-  - Test for local fit again
-  - Repeat
-- Can also check of the modification affect the model interpretation (sensitivity analysis)
-
-
-
+- You have found that there are local violations of local independence.
+- Then you can *model* a residual correlation between the *problematic* variables.
+  - Change the model one parameter at the time.
+  - compare the 2 models.
+  - Test for local fit again (not available yet in `latent`).
+  - Repeat.
+- You should also check how this modification affects the interpretation of the classes (sensitivity analysis).
 
 # LCA with continuous indicators
 
@@ -933,7 +968,7 @@ bfi$Openness <- rowMeans(bfi[,paste0("O",1:5)], na.rm=T)
   - Neuroticism (e.g., “I get irritated easily.”)
   - Openness (e.g., “I am full of ideas.”)
 
-- Do we find profiles of personalities characteristics?
+- Do we find profiles of personality characteristics?
 
 # LCA with continuous indicators
 
@@ -1040,7 +1075,7 @@ plot(fit2_4)
 
 # LCA example
 
-- What would you named these classes?
+- What names would you choose for these classes?
 
 \small
 
@@ -1060,7 +1095,7 @@ cl_diag_cont <- lclass_diag(fit2_4, type = "all", digits = 3)
 cl_diag_cont$Sum.Posterior
 ```
 
-- With the most likely class membership based on the highest posterior class probability
+- With the class membership proportions based on modal assignment
 
 ```{r}
 cl_diag_cont$Sum.Mostlikely
@@ -1070,7 +1105,7 @@ cl_diag_cont$Sum.Mostlikely
 
 \scriptsize
 
-- **AvePP**: average predicted probability for the subjects clarified in each class
+- **AvePP**: average predicted probability for the subjects classified in each class
 
 ```{r}
 cl_diag_cont$AvePP
@@ -1219,13 +1254,14 @@ res_diag2
 
 Refit the model modeling the residual covariance between `Agreeableness` and `Extraversion`.
 
+# Residual evaluation in `latent`
+
 ```{r}
 fit2_4_resid <- lca(data = bfi, nclasses = 4,
             gaussian = c("Agreeableness", "Conscientiousness",
                          "Extraversion", "Neuroticism", "Openness" ),
             model = list("Agreeableness ~~ Extraversion"))
 
-getfit(fit2_4)
 getfit(fit2_4_resid)
 ```
 
@@ -1245,9 +1281,6 @@ $$
 \sigma^2_i = \sum^{C}_{c=1} \pi_{c}(\mu_{ic} - \mu_i)^2 + \sum^{C}_{c=1} \pi_{c} \sigma^2_{ic}
 $$
 
-- We will different models for each type of indicator
-
-
 # LCA with continuous and categorical items
 
 - Dataset with information on high school students’ academic histories
@@ -1262,7 +1295,6 @@ $$
 # LCA with continuous and categorical items
 
 ```{r}
-# dat3 <- rio::import("hs_academic.sav")
 dat3 <- hs_academic
 
 vars_rev <- c("hm","he","voc","nocol")
@@ -1360,7 +1392,7 @@ cl_diag_mix <- lclass_diag(fit3_2, type = "all", digits = 3)
 cl_diag_mix$Sum.Posterior
 ```
 
-- With the most likely class membership based on the highest posterior class probability
+- With the class membership proportions based on modal assignment
 
 ```{r}
 cl_diag_mix$Sum.Mostlikely
@@ -1370,7 +1402,7 @@ cl_diag_mix$Sum.Mostlikely
 
 \scriptsize
 
-- **AvePP**: average predicted probability for the subjects clarified in each class
+- **AvePP**: average predicted probability for the subjects classified in each class
 
 ```{r}
 cl_diag_mix$AvePP
@@ -1385,7 +1417,7 @@ cl_diag_mix$Entropy
 - Can see all the diagnostics provided by `latent`
 
 ```{r}
-cl_diag_cont
+cl_diag_mix
 ```
 
 
@@ -1562,8 +1594,8 @@ $$
 
 # Adding predictors - `latent`
 
-- In `latent` we have available one and two step regressions
-- In these examples we will present the two-step method
+- In `latent` we have available one and two-step regressions.
+- In these examples we will present the two-step method.
 
 # Adding predictors - `latent`
 
@@ -1610,8 +1642,10 @@ ci_step2 <- ci(fit4_step2, confidence = 0.95)
 ci_step2$table$beta
 ```
 
+# Adding predictors - `latent`
+
 Even better, plot the Odds Ratios + confidence intervals in forestplot style:
-```{r, eval = FALSE}
+```{r}
 x <- plot_coeffs(fit4_step2,
                  what = "OR",        # Odds ratios
                  effects = "coding", # Effects-coding parametrization
@@ -1677,7 +1711,7 @@ Explanations:
 You can check the convergence information to assess nonconvergence problems:
 
 - Maximum number of iterations reached without convergence:
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 set.seed(2026)
 fit <- lca(data = empathy,
            nclasses = 2L,
@@ -1689,8 +1723,10 @@ latInspect(fit, what = "convergence")
 latInspect(fit, what = "gradient")
 ```
 
+# Assessing convergence
+
 - Local maxima problem:
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 set.seed(2026)
 fit <- lca(data = cancer,
            nclasses = 3L,
@@ -1704,20 +1740,28 @@ latInspect(fit, what = "convergence")
 latInspect(fit, what = "gradient")
 ```
 
+# Assessing convergence
+
 If any of these happen, you should modify the control arguments accordingly.
 
-```{r}
-control = list(opt     = "lbfgs", # newton
-               maxit   = 1000L,   # Maximum number of iterations
-               rstarts = 16L,     # Number of random starts
-               cores   = 1L,      # Number or parallel runs
-               eps     = 1e-05)   # Convergence criteria (gradient norm)
+```{r, eval = FALSE}
+fit <- lca(data = cancer,
+           nclasses = 3L,
+           gaussian = c("Age", "WeightIndex", "SystolicBloodPressure",
+                        "DiastolicBloodPressure"),
+           multinomial = c("PerformanceRating", "CardiovascularDiseaseHistory"),
+           control = list(opt     = "lbfgs", # newton
+                          maxit   = 1000L,   # Maximum number of iterations
+                          rstarts = 16L,     # Number of random starts
+                          cores   = 1L,      # Number or parallel runs
+                          eps     = 1e-05)   # Convergence criteria (gradient norm))
+)
 ```
 
 # Penalties
 
 Sometimes parameters are too close to their boundaries:
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 set.seed(59) # Pick a seed that creates the problem
 fit_empathy <- lca(data = empathy,
            nclasses = 4L,
@@ -1729,9 +1773,11 @@ latInspect(fit_empathy, what = "convergence")
 latInspect(fit_empathy, what = "profile") # What's wrong in this profile?
 ```
 
+# Penalties
+
 Switch to `penalties = TRUE` and check what happens.
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 set.seed(59) # Pick a seed that creates the problem
 fit_empathy <- lca(data = empathy,
            nclasses = 4L,

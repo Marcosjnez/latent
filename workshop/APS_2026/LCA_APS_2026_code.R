@@ -1,7 +1,8 @@
 # R code extracted from LCA_APS_2026.qmd
-# Updated from the attached LCA_APS_2026_code.R.
-# Source of truth: R chunks in the Quarto file, kept in their original order.
-# Quarto chunk options such as #| fig-width are preserved as comments.
+
+# devtools::install_github("marcosjnez/latent", force = TRUE)
+
+# Visit https://github.com/Marcosjnez/latent for more installation tips
 
 # ---- Effects of ignoring ----
 # CFA example: create scale scores, fit the measurement model, and compare observed and latent correlations.
@@ -63,7 +64,7 @@ freq(dat[,5:6])
 freq(dat[,7:8])
 
 fit1 <- lca(data = dat, nclasses = 1:7,
-           multinomial = c("contplt", "badge", "sgnptit", "bctprd", 
+           multinomial = c("contplt", "badge", "sgnptit", "bctprd",
                            "donprty", "pbldmna", "volunfp","pstplonl") )
 
 fit_ind <- getfit(fit1, digits = 2)
@@ -173,7 +174,7 @@ ggplot(bfi, aes(x=Agreeableness))+geom_density()+
 set.seed(1987)
 
 fit2 <- lca(data = bfi, nclasses = 1:7,
-           gaussian = c("Agreeableness", "Conscientiousness", 
+           gaussian = c("Agreeableness", "Conscientiousness",
                         "Extraversion", "Neuroticism", "Openness" ) )
 
 fit_ind_cont <- getfit(fit2, digits = 2)
@@ -322,14 +323,14 @@ res_diag3
 # Add predictors to the latent class model and inspect their effects.
 
 fit4 <- lca(data = dat, nclasses = 3,
-           multinomial = c("contplt", "badge", "sgnptit", "bctprd", 
+           multinomial = c("contplt", "badge", "sgnptit", "bctprd",
                            "donprty", "pbldmna", "volunfp","pstplonl") )
 
 fit4_step2 <- lca(data = dat,
                   nclasses = 3,
-                  multinomial = c("contplt", "badge", 
-                                  "sgnptit", "bctprd", 
-                                  "donprty", "pbldmna", 
+                  multinomial = c("contplt", "badge",
+                                  "sgnptit", "bctprd",
+                                  "donprty", "pbldmna",
                                   "volunfp","pstplonl"),
                  X = c("gndr", "agea"),
                  model = fit4)
@@ -353,11 +354,11 @@ x <- plot_coeffs(fit4_step2,
 
 head(predict(fit4_step2))
 
-predict(fit4_step2, 
+predict(fit4_step2,
         new = rbind(c(0,50),
                     c(1,50)))
 
-predict(fit4_step2, 
+predict(fit4_step2,
         new = rbind(c(0,45),
                     c(0,50),
                     c(1,45),
