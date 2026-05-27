@@ -144,7 +144,7 @@ with residual interaction parameters.
 fit <- lca(
 data = gss82,
 nclasses = 3L,
-multinomial = names(gss82),
+multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
 penalties = TRUE
 )
 
@@ -161,26 +161,18 @@ latInspect(fit, what = "posterior", digits = 3)
 fits <- lca(
 data = gss82,
 nclasses = 1:4,
-multinomial = names(gss82),
+multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
 penalties = TRUE
 )
 
 # Latent class regression with covariates
 fit_x <- lca(
-data = mydata,
-nclasses = 3L,
-gaussian = c("y1", "y2"),
-multinomial = c("u1", "u2"),
-X = c("age", "gender")
+data = empathy,
+nclasses = 4L,
+gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+X = c("sex", "pt1", "pt2", "pt3", "pt4")
 )
 
-# Return only the processed model setup
-setup <- lca(
-data = mydata,
-nclasses = 2L,
-gaussian = c("y1", "y2"),
-do.fit = FALSE
-)
 }
 
 }

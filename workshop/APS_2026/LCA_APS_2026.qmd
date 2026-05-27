@@ -850,6 +850,18 @@ res_diag <- lbvr(fit1_3, digits = 3)
 res_diag
 ```
 
+Refit the LCA model with 3 classes and the residual dependency between `contplt` and `volunfp`.
+
+```{r}
+fit1_3_resid <- lca(data = dat, nclasses = 3,
+                    multinomial = c("contplt", "badge", "sgnptit", "bctprd",
+                                    "donprty", "pbldmna", "volunfp","pstplonl"),
+                    model = list("contplt ~~ volunfp"))
+
+ci_fit1_3_resid <- ci(fit1_3_resid, confidence = 0.95)
+ci_fit1_3_resid$table$log_contpltxlog_volunfp
+```
+
 # Residual evaluation in `latent`
 
 - We provide a measure of overall residual evaluation (RMSR)
@@ -1205,6 +1217,17 @@ res_diag2 <- lbvr(fit2_4, digits = 3)
 res_diag2
 ```
 
+Refit the model modeling the residual covariance between `Agreeableness` and `Extraversion`.
+
+```{r}
+fit2_4_resid <- lca(data = bfi, nclasses = 4,
+            gaussian = c("Agreeableness", "Conscientiousness",
+                         "Extraversion", "Neuroticism", "Openness" ),
+            model = list("Agreeableness ~~ Extraversion"))
+
+getfit(fit2_4)
+getfit(fit2_4_resid)
+```
 
 # LCA with continuous and categorical items
 
@@ -1429,11 +1452,6 @@ where $\text{SS}_{\text{between}}$ is the sum of squares between categories and 
 - $\eta = 0$: no residual association (the categorical variable explains none of the residual variance).
 - $\eta = 1$: perfect association (residuals perfectly predicted by category membership).
 
-
-
-
-
-
 # RMSR as an Overall Residual Metric
 
 - For continuous–continuous pairs this effect size is the Pearson correlation; for categorical–categorical pairs it is the difference of Cramér’s $V$; and for continuous–categorical pairs it is $\eta$. This uniformity allows computing an overall RMSR (root mean square residual) across all variable pairs.
@@ -1454,9 +1472,6 @@ $$
 res_diag3 <- lbvr(fit3_2, digits = 3)
 res_diag3
 ```
-
-
-
 
 # Adding predictors
 
@@ -1596,7 +1611,7 @@ ci_step2$table$beta
 ```
 
 Even better, plot the Odds Ratios + confidence intervals in forestplot style:
-```{r}
+```{r, eval = FALSE}
 x <- plot_coeffs(fit4_step2,
                  what = "OR",        # Odds ratios
                  effects = "coding", # Effects-coding parametrization
@@ -1653,7 +1668,7 @@ control = list(opt     = "lbfgs", # newton
 ```
 
 You can check the convergence information to assess nonconvergence problems:
-```{r}
+```{r, eval=FALSE}
 latInspect(fit4_step2, what = "convergence")
 
 fit4_step2 <- lca(data = dat,
@@ -1665,7 +1680,6 @@ fit4_step2 <- lca(data = dat,
                  X = c("gndr", "agea"),
                  model = fit4,
                  control = control)
-
 ```
 
 # Penalties
@@ -1685,7 +1699,7 @@ penalty_defaults <- list(
 
 - Higher alpha values imply higher regularization (i.e., probabilities are pulled away from their 0 and 1 boundaries and variances are pulled away from 0).
 
-```{r}
+```{r, eval=FALSE}
 latInspect(fit4, what = "profile")
 set.seed(15)
 fit4.2 <- lca(data = dat, nclasses = 3,

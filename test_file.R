@@ -24,8 +24,12 @@ fit <- lca(data = gss82,
            nclasses = 2L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
            # multinomial = c("PURPOSE", "ACCURACY", "UC"),
-           model = list("UNDERSTA ~~ COOPERAT"),
-           penalties = TRUE,
+           model = list("UNDERSTA ~~ COOPERAT
+                         PURPOSE ~~ ACCURACY"),
+           penalties = list(class = list(alpha=1),
+                            prob  = list(alpha=0)),
+           # penalties = TRUE,
+           control = list(rstarts = 50L),
            do.fit = TRUE)
 
 # Plot model fit info:

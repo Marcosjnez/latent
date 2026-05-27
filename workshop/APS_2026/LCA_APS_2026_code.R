@@ -133,6 +133,12 @@ getfit(fit1_3)[c("L2","dof","pvalue")]
 res_diag <- lbvr(fit1_3, digits = 3)
 res_diag
 
+# Refit the LCA model with 3 classes and the residual dependency between
+# `contplt` and `volunfp`.
+fit1_3_resid <- lca(data = dat, nclasses = 3,
+                    multinomial = c("contplt", "badge", "sgnptit", "bctprd",
+                                    "donprty", "pbldmna", "volunfp","pstplonl"),
+                    model = list("contplt ~~ volunfp"))
 
 # ---- LCA with continuous indicators ----
 # Prepare BFI data, reverse-code items, and compute Big Five scale scores.
@@ -244,6 +250,18 @@ ggplot(bfi, aes(x=Agreeableness, group = State))+
 res_diag2 <- lbvr(fit2_4, digits = 3)
 res_diag2
 
+# Refit the model modeling the residual covariance between Agreeableness and
+# Extraversion.
+fit2_4_resid <- lca(data = bfi, nclasses = 4,
+            gaussian = c("Agreeableness", "Conscientiousness",
+                         "Extraversion", "Neuroticism", "Openness" ),
+            model = list("Agreeableness ~~ Extraversion"))
+
+getfit(fit2_4)
+getfit(fit2_4_resid)
+
+# ci_fit2_4_resid <- ci(fit2_4_resid, confidence = 0.95)
+# ci_fit2_4_resid$table
 
 # ---- LCA with continuous and categorical indicators ----
 # Import mixed-indicator data and recode categorical items.
@@ -364,3 +382,49 @@ predict(fit4_step2,
                     c(0,50),
                     c(1,45),
                     c(1,50)))
+
+control = list(opt     = "lbfgs", # newton
+               maxit   = 1000L,   # Maximum number of iterations
+               rstarts = 16L,     # Number of random starts
+               cores   = 1L,      # Number or parallel runs
+               eps     = 1e-05)   # Convergence criteria (gradient norm)
+
+latInspect(fit4_step2, what = "convergence")
+
+fit4_step2 <- lca(data = dat,
+                  nclasses = 3,
+                  multinomial = c("contplt", "badge",
+                                  "sgnptit", "bctprd",
+                                  "donprty", "pbldmna",
+                                  "volunfp","pstplonl"),
+                  X = c("gndr", "agea"),
+                  model = fit4,
+                  control = control)
+
+latInspect(fit4_step2, what = "convergence")
+
+penalty_defaults <- list(
+  class = list(alpha = 1), # Penalty for class probabilities
+  prob  = list(alpha = 1), # Penalty for item probabilities (multinomial items)
+  var   = list(alpha = 1), # Penalty for item variances (gaussian items)
+  Sigma = list(alpha = 1)  # Penalty for covariance matrices (gaussian items)
+)
+
+latInspect(fit4, what = "profile")
+set.seed(15)
+fit4.2 <- lca(data = dat, nclasses = 3,
+              multinomial = c("contplt", "badge", "sgnptit", "bctprd",
+                              "donprty", "pbldmna", "volunfp","pstplonl"),
+              penalties = list(prob = list(alpha = 10)))
+latInspect(fit4.2, what = "profile")
+
+
+# Default arguments for the optimizer.
+control = list(opt     = "lbfgs", # newton
+               maxit   = 1000L,   # Maximum number of iterations
+               rstarts = 16L,     # Number of random starts
+               cores   = 1L,      # Number or parallel runs
+               eps     = 1e-05)   # Convergence criteria (gradient norm)
+
+
+
