@@ -57,8 +57,15 @@ se.llca <- function(fit, type = "standard", digits = 3) {
   }
 
   # Tables:
-  est <- fill_in(fit@modelInfo$param, fit@Optim$transparameters, miss = 0)
-  table_se <- fill_in(fit@modelInfo$param, SE$se, miss = NA)
+  # est <- fill_in(fit@modelInfo$param, fit@Optim$transparameters, miss = 0)
+  # table_se <- fill_in(fit@modelInfo$param, SE$se, miss = NA)
+
+  est <- fill_in(fit@modelInfo$trans[names(fit@modelInfo$param)],
+                 c(fit@Optim$parameters, fit@Optim$transparameters),
+                 miss = NA)
+  table_se <- fill_in(fit@modelInfo$trans[names(fit@modelInfo$param)],
+                      SE$se, miss = NA)
+
   table <- combine_est_se(est, table_se, digits = digits)
 
   # Return:
@@ -227,7 +234,11 @@ ci <- function(fit, type = "standard", confidence = 0.95, digits = 3) {
 
   # Get confidence limits for the user model or raw model parameters:
 
-  est <- fill_in(fit@modelInfo$param, fit@Optim$transparameters, miss = NA)
+  # est <- fill_in(fit@modelInfo$param,
+  #                fit@Optim$transparameters, miss = NA)
+  est <- fill_in(fit@modelInfo$trans[names(fit@modelInfo$param)],
+                 c(fit@Optim$parameters, fit@Optim$transparameters),
+                 miss = NA)
 
   # Tables:
   lower_ci <- fill_in(fit@modelInfo$param, lower)

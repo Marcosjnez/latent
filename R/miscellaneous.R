@@ -485,3 +485,53 @@ group_lists_by_sublists <- function(...) {
     nm
   )
 }
+
+# rounding <- function(x, digits = 4) {
+#
+#   # Function to round all numeric values in an arbitrary object
+#
+#   round_recursive <- function(obj) {
+#
+#     # Do not modify factors
+#     if (is.factor(obj)) {
+#       return(obj)
+#     }
+#
+#     # Preserve data.frame structure
+#     if (is.data.frame(obj)) {
+#       obj[] <- lapply(obj, round_recursive)
+#       return(obj)
+#     }
+#
+#     # Recursively process lists and sublists
+#     if (is.list(obj)) {
+#       obj[] <- lapply(obj, round_recursive)
+#       return(obj)
+#     }
+#
+#     # Round numeric vectors, scalars, matrices, arrays, etc.
+#     if (is.numeric(obj)) {
+#       return(round(obj, digits = digits))
+#     }
+#
+#     # Leave everything else unchanged
+#     obj
+#   }
+#
+#   round_recursive(x)
+# }
+#
+# rounded_view <- function(x, digits = 4) {
+#   structure(
+#     list(
+#       object = x,
+#       digits = digits
+#     ),
+#     class = "rounded_view"
+#   )
+# }
+#
+# print.rounded_view <- function(x, ...) {
+#   print(rounding(x$object, digits = x$digits), ...)
+#   invisible(x)
+# }

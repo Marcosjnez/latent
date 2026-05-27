@@ -290,6 +290,9 @@ lca <- function(data,
 
   names(Optim$parameters) <- modelInfo$parameters_labels
   names(Optim$transparameters) <- modelInfo$transparameters_labels
+  names(Optim$g) <- modelInfo$parameters_labels
+  names(Optim$rg) <- modelInfo$parameters_labels
+  names(Optim$dir) <- modelInfo$parameters_labels
 
   #### Process the outputs ####
 

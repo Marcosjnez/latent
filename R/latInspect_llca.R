@@ -30,7 +30,8 @@
 #' @method latInspect llca
 #' @export
 latInspect.llca <- function(fit,
-                            what = "profile") {
+                            what = "profile",
+                            digits = 4L) {
 
   # fit must inherit from class llca
   stopifnot(inherits(fit, "llca"))
@@ -151,24 +152,24 @@ latInspect.llca <- function(fit,
 
   if (what == "profile") {
 
-    return(profile)
+    result <- profile
 
   } else if (what == "classconditional" ||
              what == "items" ||
              what == "item") {
 
-    return(ClassConditional)
+    result <- ClassConditional
 
   } else if (what == "class" ||
              what == "classes" ||
              what == "cluster" ||
              what == "clusters") {
 
-    return(classes)
+    result <- classes
 
   } else if (what == "fullclasses") {
 
-    return(fit@transformed_pars$class)
+    result <- fit@transformed_pars$class
 
   } else if (what == "beta"  ||
              what == "betas" ||
@@ -178,11 +179,11 @@ latInspect.llca <- function(fit,
              what == "coefficient" ||
              what == "coefficients") {
 
-    return(fit@transformed_pars$beta)
+    result <- fit@transformed_pars$beta
 
   } else if (what == "respconditional") {
 
-    return(RespConditional)
+    result <- RespConditional
 
   } else if (what == "convergence") {
 
@@ -192,13 +193,22 @@ latInspect.llca <- function(fit,
 
     return(conv)
 
+  } else if (what == "gradient") {
+
+    gradient.info <- data.frame(name = fit@modelInfo$parameters_labels,
+                                gradient = fit@Optim$g,
+                                rgradient = fit@Optim$rg,
+                                dir = fit@Optim$dir)
+
+    return(list(grad.norm = fit@Optim$ng, gradient.info = gradient.info))
+
   } else if (what == "data") {
 
-    return(fit@dataList$data)
+    result <- fit@dataList$data
 
   } else if (what == "measurement") {
 
-    return(fit@dataList$measurement)
+    result <- fit@dataList$measurement
 
   } else if (what == "pattern" ||
              what == "patterns") {
@@ -208,16 +218,16 @@ latInspect.llca <- function(fit,
     pattern <- pattern[do.call(order, pattern), ]
     rownames(pattern) <- paste("pattern", 1:nrow(pattern), sep = "")
 
-    return(pattern)
+    result <- pattern
 
   } else if (what == "table" ||
              what == "summary") {
 
-    return(summary_table)
+    result <- summary_table
 
   } else if (what == "posterior") {
 
-    return(posterior)
+    result <- posterior
 
   } else if (what == "state") {
 
@@ -227,33 +237,33 @@ latInspect.llca <- function(fit,
              what == "loglik.case" ||
              what == "case") {
 
-    return(loglik_case)
+    result <- loglik_case
 
   } else if (what == "loglik_pattern" ||
              what == "loglik.pattern" ||
              what == "pattern") {
 
-    return(loglik_pattern)
+    result <- loglik_pattern
 
   } else if (what == "loss" ||
              what == "losses") {
 
-    return(fit_matrix[c("loss", "penalized_loss"), "overall", drop = FALSE])
+    result <- fit_matrix[c("loss", "penalized_loss"), "overall", drop = FALSE]
 
   } else if (what == "loglik" ||
              what == "ll" ||
              what == "LL") {
 
-    return(fit_matrix[c("loglik", "penalized_loglik"), "overall", drop = FALSE])
+    result <- fit_matrix[c("loglik", "penalized_loglik"), "overall", drop = FALSE]
 
   } else if (what == "fit_matrix" ||
              what == "fit.matrix") {
 
-    return(fit_matrix)
+    result <- fit_matrix
 
   } else if (what == "probcat") {
 
-    return(probCat)
+    result <- probCat
 
   } else if (what == "timing" ||
              what == "elapsed") {
@@ -261,6 +271,8 @@ latInspect.llca <- function(fit,
     return(fit@Optim$elapsed)
 
   }
+
+  return(result)
 
 }
 

@@ -1,6 +1,6 @@
 ---
 title: "Latent Class Analysis: latent R package"
-date: "2026-02-05"
+date: "2026-28-05"
 author: "Marcos Jimenez, Mauricio Garnier-Villarreal, & Vithor Rosa Franco"
 
 format:
@@ -1654,10 +1654,57 @@ predict(fit4_step2,
                     c(1,50)))
 ```
 
-# Control arguments
+# Troubleshooting
 
-- `latent` has *good* defaults, but you can change the `control` arguments
-- These are the main control arguments ... 
+::: {.columns}
+::: {.column width="70%"}
+
+Sometimes models don't converge or converges to wrong solutions.
+Explanations:
+
+(1) Models may be complex and prone to local maxima.
+
+(2) Parameters are estimated too close to their boundaries (i.e., probabilities close to 0 or 1, and variances close to 0).
+
+:::
+::: {.column width="30%"}
+![](fixing.jpg){width=300%}
+:::
+:::
+
+# Assessing convergence
+
+You can check the convergence information to assess nonconvergence problems:
+
+- Maximum number of iterations reached without convergence:
+```{r, echo=FALSE}
+set.seed(2026)
+fit <- lca(data = empathy,
+           nclasses = 2L,
+           gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+           control = list(maxit = 20))
+
+latInspect(fit, what = "loglik")
+latInspect(fit, what = "convergence")
+latInspect(fit, what = "gradient")
+```
+
+- Local maxima problem:
+```{r, echo=FALSE}
+set.seed(2026)
+fit <- lca(data = cancer,
+           nclasses = 3L,
+           gaussian = c("Age", "WeightIndex", "SystolicBloodPressure",
+                        "DiastolicBloodPressure"),
+           multinomial = c("PerformanceRating", "CardiovascularDiseaseHistory"),
+           control = list(rstarts = 1L))
+
+latInspect(fit, what = "loglik")
+latInspect(fit, what = "convergence")
+latInspect(fit, what = "gradient")
+```
+
+If any of these happen, you should modify the control arguments accordingly.
 
 ```{r}
 control = list(opt     = "lbfgs", # newton
@@ -1667,20 +1714,36 @@ control = list(opt     = "lbfgs", # newton
                eps     = 1e-05)   # Convergence criteria (gradient norm)
 ```
 
-You can check the convergence information to assess nonconvergence problems:
-```{r, eval=FALSE}
-latInspect(fit4_step2, what = "convergence")
+# Penalties
 
-fit4_step2 <- lca(data = dat,
-                  nclasses = 3,
-                  multinomial = c("contplt", "badge", 
-                                  "sgnptit", "bctprd", 
-                                  "donprty", "pbldmna", 
-                                  "volunfp","pstplonl"),
-                 X = c("gndr", "agea"),
-                 model = fit4,
-                 control = control)
+Sometimes parameters are too close to their boundaries:
+```{r, echo=FALSE}
+set.seed(59) # Pick a seed that creates the problem
+fit_empathy <- lca(data = empathy,
+           nclasses = 4L,
+           gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+           penalties = FALSE) # Deactivate penalized-ML, just ML
+
+latInspect(fit_empathy, what = "loglik")
+latInspect(fit_empathy, what = "convergence")
+latInspect(fit_empathy, what = "profile") # What's wrong in this profile?
 ```
+
+Switch to `penalties = TRUE` and check what happens.
+
+```{r, echo=FALSE}
+set.seed(59) # Pick a seed that creates the problem
+fit_empathy <- lca(data = empathy,
+           nclasses = 4L,
+           gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+           penalties = TRUE)
+
+latInspect(fit_empathy, what = "loglik")
+latInspect(fit_empathy, what = "convergence")
+latInspect(fit_empathy, what = "profile")
+```
+
+This shows that penalties are important.
 
 # Penalties
 
@@ -1697,17 +1760,20 @@ penalty_defaults <- list(
 )
 ```
 
+# Penalties
+
 - Higher alpha values imply higher regularization (i.e., probabilities are pulled away from their 0 and 1 boundaries and variances are pulled away from 0).
 
 ```{r, eval=FALSE}
-latInspect(fit4, what = "profile")
-set.seed(15)
-fit4.2 <- lca(data = dat, nclasses = 3,
-            multinomial = c("contplt", "badge", "sgnptit", "bctprd", 
-                            "donprty", "pbldmna", "volunfp","pstplonl"),
-            penalties = list(prob = list(alpha = 10)))
-latInspect(fit4.2, what = "profile")
+latInspect(fit_empathy, what = "profile") # Before
+fit_empathy <- lca(data = empathy,
+                   nclasses = 4L,
+                   gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+                   penalties = list(var = list(alpha = 100))) # Extreme penalty
+latInspect(fit_empathy, what = "profile") # After
 ```
+
+After increasing `alpha`, variances become larger.
 
 # References {.scrollable}
 

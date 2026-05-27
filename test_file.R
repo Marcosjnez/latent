@@ -26,9 +26,9 @@ fit <- lca(data = gss82,
            # multinomial = c("PURPOSE", "ACCURACY", "UC"),
            model = list("UNDERSTA ~~ COOPERAT
                          PURPOSE ~~ ACCURACY"),
-           penalties = list(class = list(alpha=1),
-                            prob  = list(alpha=0)),
-           # penalties = TRUE,
+           # penalties = list(class = list(alpha=1),
+           #                  prob  = list(alpha=0)),
+           # penalties = FALSE,
            control = list(rstarts = 50L),
            do.fit = TRUE)
 
