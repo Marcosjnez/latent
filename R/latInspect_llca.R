@@ -59,7 +59,7 @@ latInspect.llca <- function(fit,
   state <- apply(posterior, MARGIN = 1, FUN = which.max)
   # Data table of response patterns:
   patterns <- fit@dataList$patterns
-  summary_table <- cbind(Pattern = patterns_original,
+  summary_table <- cbind(patterns_original,
                          # Pattern = patterns + 1,
                          Observed = weights,
                          Estimated = estimated,

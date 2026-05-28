@@ -568,5 +568,5 @@ latInspect(fit_empathy, what = "profile") # Before
 fit_empathy <- lca(data = empathy,
                    nclasses = 4L,
                    gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-                   penalties = list(var = list(alpha = 100))) # Extreme penalty
+                   penalties = list(var = list(alpha = 2))) # Extreme penalty
 latInspect(fit_empathy, what = "profile") # After
