@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/05/2026
+# Modification date: 07/06/2026
 
 #### Store a dataset ####
 
@@ -23,13 +23,11 @@ set.seed(2026)
 fit <- lca(data = gss82,
            nclasses = 2L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           # multinomial = c("PURPOSE", "ACCURACY", "UC"),
            model = list("UNDERSTA ~~ COOPERAT
-                         PURPOSE ~~ ACCURACY"),
+                         UNDERSTA ~~ ACCURACY"),
            # penalties = list(class = list(alpha=1),
-           #                  prob  = list(alpha=0)),
-           # penalties = FALSE,
-           control = list(rstarts = 50L),
+           #                  prob  = list(alpha=1)),
+           penalties = TRUE,
            do.fit = TRUE)
 
 # Plot model fit info:
@@ -445,8 +443,8 @@ taus <- lapply(POLY$thresholds, FUN = \(x) x[-c(1, length(x))])
 fit <- lpoly(data = mooc,
              # model = list(taus = taus),
              method = "one-step",
-             positive = FALSE,
-             penalties = FALSE,
+             positive = F,
+             penalties = F,
              do.fit = TRUE,
              control = list(opt = "grad",
                             # subfix = ".group1",

@@ -120,6 +120,8 @@ create_transforms <- function(transforms, structures) {
            indices_in  = indices_in,
            indices_out = indices_out),
       extra
+      # labels_in = labels_in[[i]],
+      # labels_out = labels_out[[i]]
     )
     k <- k+1L
 

@@ -86,7 +86,7 @@ fit1 <- lca(data = dat, nclasses = 1:7,
 # Extract and inspect model-fit indices.
 
 fit_ind <- getfit(fit1, digits = 2)
-fit_ind
+fit_ind # TRANSPOSE
 
 # Plot fit indices across the class solutions.
 
@@ -568,5 +568,5 @@ latInspect(fit_empathy, what = "profile") # Before
 fit_empathy <- lca(data = empathy,
                    nclasses = 4L,
                    gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-                   penalties = list(var = list(alpha = 2))) # Extreme penalty
+                   penalties = list(var = list(alpha = 100))) # Extreme penalty
 latInspect(fit_empathy, what = "profile") # After

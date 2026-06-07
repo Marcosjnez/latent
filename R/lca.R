@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/05/2026
+# Modification date: 07/06/2026
 #'
 #'
 #' Estimate latent class models for continuous and categorical indicators, with
@@ -603,60 +603,56 @@ create_lca_dataList <- function(data,
       if(nrow(error_covs) > 0L) {
 
         npairs <- nrow(error_covs)
-        logpair_names <- pair_names <- pair_levels <- vector("list", length = npairs)
-        logjoint_names <- joint_names <- vector("list", length = npairs)
-        logconditional_names <- conditional_names <- vector("list", length = npairs)
+        pairs <- vector("list", length = npairs)
         loginter_names <- vector("list", length = npairs)
-        joint_vars <- matrix(NA, nrow = nrow(patterns), ncol = npairs)
 
         for(h in 1:npairs) {
 
-          pair_names[[h]] <- c(error_covs[h, 1], error_covs[h, 2])
-          levels1 <- multinomial_factor_levels[[pair_names[[h]][1]]]
-          levels2 <- multinomial_factor_levels[[pair_names[[h]][2]]]
-          logpair_names[[h]] <- paste("log_", pair_names[[h]], sep = "")
-          logconditional_names[[h]] <- paste(logpair_names[[h]], "|reference",
-                                             sep = "")
-          conditional_names[[h]] <- paste(pair_names[[h]], "|reference",
-                                          sep = "")
-          pair_levels[[h]] <- paste(rep(levels1, times = length(levels2)),
-                                    rep(levels2, each = length(levels1)), sep = ".")
-          logjoint_names[[h]] <- paste("log_", pair_names[[h]], collapse = ".",
-                                       sep = "")
-          joint_names[[h]] <- paste(pair_names[[h]], collapse = ".")
-
-          joint_vars[, h] <- apply(patterns_original[, pair_names[[h]]], MARGIN = 1,
-                                   FUN = paste, collapse = ".")
-
-          loginter_names[[h]] <- paste("log_", pair_names[[h]], collapse = "x",
+          pairs[[h]] <- c(error_covs[h, 1], error_covs[h, 2])
+          loginter_names[[h]] <- paste("log_", pairs[[h]], collapse = "x",
                                        sep = "")
         }
 
-        colnames(joint_vars) <- names(pair_levels) <- unlist(joint_names)
-        names(logpair_names) <- unlist(logjoint_names)
-        names(logconditional_names) <- names(conditional_names) <- unlist(joint_names)
-        names(pair_names) <- unlist(joint_names)
+        names(pairs) <- unlist(lapply(pairs, FUN = paste, collapse = "."))
 
-      removed_multinomial <- unique(unlist(pair_names))
-      keep <- multinomial_names[!(multinomial_names %in% removed_multinomial)]
-      new_probs <- unlist(c(keep, joint_names))
-      new_J <- length(new_probs)
+        removed_multinomial <- unique(unlist(pairs))
+        keep <- multinomial_names[!(multinomial_names %in% removed_multinomial)]
 
-      y <- data.frame(patterns_original, joint_vars)[, new_probs]
+        indep_pairs <- group_connected_pairs(error_covs)$pairs
+        indep_pairs_list <- group_connected_pairs(error_covs)$elements
+        names(indep_pairs) <- names(indep_pairs_list) <-
+          lapply(indep_pairs_list, FUN = paste, collapse = ".")
+        joints <- lapply(indep_pairs_list, FUN = \(x) {
+          apply(patterns_original[, x], MARGIN = 1, FUN = paste, collapse = ".")
+        })
+        joints <- as.data.frame(joints)
+        new_probs <- unlist(c(keep, colnames(joints)))
+        new_J <- length(new_probs)
+        patterns_mvmultinomial <- data.frame(patterns_original, joints)[, new_probs]
+        joint_levels <- lapply(indep_pairs_list, FUN = \(x) {
+          apply(expand.grid(multinomial_factor_levels[x]),
+                MARGIN = 1, FUN = paste, collapse = ".")
+        })
+        new_levels <- c(multinomial_factor_levels[keep], joint_levels)
+        new_K <- unlist(lapply(new_levels, FUN = length))
+        for(j in 1:length(new_probs)) {
+          patterns_mvmultinomial[[new_probs[j]]] <-
+            factor(patterns_mvmultinomial[[new_probs[j]]], ordered = TRUE,
+                   levels = new_levels[[j]])
+        }
+        njoints <- length(joint_levels)
+        multinomial_factor_levels_numeric <- sapply(multinomial_factor_lengths,
+                                                    FUN = seq_len)
+        joint_orderings <- lapply(indep_pairs_list, FUN = \(x) {
+          expand.grid(multinomial_factor_levels_numeric[x])
+        })
 
-      all_pair_levels <- c(multinomial_factor_levels[keep], pair_levels)
-      new_K <- unlist(lapply(all_pair_levels, FUN = length))
-      for(j in 1:length(new_probs)) {
-        y[[new_probs[j]]] <- factor(y[[new_probs[j]]], ordered = TRUE,
-                                    levels = all_pair_levels[[j]])
-      }
-      patterns_mvmultinomial <- y
-
-      y <- lapply(y,
-                  FUN = function(col) {
-                    if (is.factor(col)) as.integer(col) - 1L else col
-                  })
-      patterns_mvmultinomial_recoded <- as.matrix(as.data.frame(y))
+        patterns_mvmultinomial_recoded <- lapply(patterns_mvmultinomial,
+                    FUN = function(col) {
+                      if (is.factor(col)) as.integer(col) - 1L else col
+                    })
+        patterns_mvmultinomial_recoded <-
+          as.matrix(as.data.frame(patterns_mvmultinomial_recoded))
 
         nremoved_multinomial <- length(removed_multinomial)
         removed_logmultinomial <- paste("log_", removed_multinomial,
@@ -668,16 +664,9 @@ create_lca_dataList <- function(data,
 
         control$mvmultinomial <- list(
           npairs = npairs,
-          logpair_names = logpair_names,
-          logconditional_names = logconditional_names,
-          conditional_names = conditional_names,
-          pair_names = pair_names,
-          pair_levels = pair_levels,
-          logjoint_names = logjoint_names,
-          joint_names = joint_names,
-          joint_vars = joint_vars,
+          pairs = pairs,
+          joints = joints,
           loginter_names = loginter_names,
-          all_pair_levels = all_pair_levels,
           removed_multinomial = removed_multinomial,
           new_J = new_J,
           new_K = new_K,
@@ -687,7 +676,12 @@ create_lca_dataList <- function(data,
           removed_logmultinomial = removed_logmultinomial,
           removed_condmultinomial = removed_condmultinomial,
           removed_multinomial_factor_levels = removed_multinomial_factor_levels,
-          removed_multinomial_factor_lengths = removed_multinomial_factor_lengths
+          removed_multinomial_factor_lengths = removed_multinomial_factor_lengths,
+          indep_pairs = indep_pairs,
+          indep_pairs_list = indep_pairs_list,
+          new_levels = new_levels,
+          njoints = njoints,
+          joint_orderings = joint_orderings
         )
 
       }
@@ -849,28 +843,35 @@ create_lca_model <- function(dataList, nclasses, item,
 
       for(h in seq_len(npairs)) {
 
-        levels1 <- multinomial_factor_levels[[pair_names[[h]][1]]]
-        levels2 <- multinomial_factor_levels[[pair_names[[h]][2]]]
-
-        list_struct[[k]] <- list(name = logjoint_names[[h]],
-                                 type = "matrix",
-                                 dim = c(length(pair_levels[[h]]), nclasses),
-                                 rownames = pair_levels[[h]],
-                                 colnames = class_names)
-        k <- k+1L
-
-        list_struct[[k]] <- list(name = joint_names[[h]],
-                                 type = "matrix",
-                                 dim = c(length(pair_levels[[h]]), nclasses),
-                                 rownames = pair_levels[[h]],
-                                 colnames = class_names)
-        k <- k+1L
+        levels1 <- multinomial_factor_levels[[pairs[[h]][1]]]
+        levels2 <- multinomial_factor_levels[[pairs[[h]][2]]]
 
         list_struct[[k]] <- list(name = loginter_names[[h]],
                                  type = "matrix",
                                  dim = c(length(levels1), length(levels2)),
                                  rownames = levels1,
                                  colnames = levels2)
+        k <- k+1L
+
+      }
+
+      for(h in 1:njoints) {
+
+        joint_name <- paste(indep_pairs_list[[h]], collapse = ".")
+        logjoint_name <- paste("log_", joint_name, sep = "")
+
+        list_struct[[k]] <- list(name = logjoint_name,
+                                 type = "matrix",
+                                 dim = c(new_K[joint_name], nclasses),
+                                 rownames = new_levels[[joint_name]],
+                                 colnames = class_names)
+        k <- k+1L
+
+        list_struct[[k]] <- list(name = joint_name,
+                                 type = "matrix",
+                                 dim = c(new_K[joint_name], nclasses),
+                                 rownames = new_levels[[joint_name]],
+                                 colnames = class_names)
         k <- k+1L
 
       }
@@ -1388,63 +1389,66 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
       }
 
-      for(j in 1:npairs) {
+      for(j in 1:njoints) {
 
-        inter_in <- c(trans[[loginter_names[[j]]]])
-        name1 <- pair_names[[j]][1]
-        name2 <- pair_names[[j]][2]
-        levels1 <- multinomial_factor_levels[[name1]]
-        levels2 <- multinomial_factor_levels[[name2]]
-        A <- length(levels1)
-        B <- length(levels2)
+        joint_name <- paste(indep_pairs_list[[j]], collapse = ".")
+        logjoint_name <- paste("log_", joint_name, sep = "")
+
+        mains_names <- sapply(indep_pairs_list[[j]],
+                              FUN = \(x) paste("log_", x, "|reference",
+                                               sep = ""))
+        mains <- trans[mains_names]
+
+        inters_lognames <- apply(indep_pairs[[j]], MARGIN = 1,
+                              FUN = \(x) paste("log_", x, sep = "",
+                                               collapse = "x"))
+        inters <- trans[inters_lognames]
+
+        orderings <- joint_orderings[[j]][, indep_pairs_list[[j]]]
+        colnames(orderings) <- mains_names
+        orderings2 <- orderings
+        colnames(orderings2) <- indep_pairs_list[[j]]
 
         for(i in 1:nclasses) {
 
-          pairs1 <- trans[[logconditional_names[[j]][1]]][, i]
-          pairs2 <- trans[[logconditional_names[[j]][2]]][, i]
-          pairs_in1 <- rep(pairs1, times = length(pairs2))
-          pairs_in2 <- rep(pairs2, each = length(pairs1))
+          mains_effects <- lapply(mains, FUN = \(x) x[, i])
+          for(l in mains_names) {
+            mains_effects[[l]] <- mains_effects[[l]][orderings[, l]]
+          }
 
-          pars_out <- trans[[logjoint_names[[j]]]][, i]
+          inters_effects <- vector("list", length = length(inters_lognames))
+          for(l in 1:nrow(indep_pairs[[j]])) {
+            rows <- orderings2[, indep_pairs[[j]][l, 1]]
+            cols <- orderings2[, indep_pairs[[j]][l, 2]]
+            inters_effects[[l]] <- inters[[l]][cbind(rows, cols)]
+          }
+
+
+          pars_out <- trans[[logjoint_name]][, i]
           transforms[[k]] <- list(transform = "sum_vectors",
-                                  parameters_in = list(pairs_in1,
-                                                       pairs_in2,
-                                                       inter_in),
+                                  parameters_in = c(mains_effects,
+                                                    inters_effects),
                                   parameters_out = list(pars_out))
 
           k <- k+1L
 
-          pars_in_softmax <- trans[[logjoint_names[[j]]]][, i]
-          pars_out_softmax <- trans[[joint_names[[j]]]][, i]
+          pars_in_softmax <- trans[[logjoint_name]][, i]
+          pars_out_softmax <- trans[[joint_name]][, i]
           transforms[[k]] <- list(transform = "softmax",
                                   parameters_in = list(pars_in_softmax),
                                   parameters_out = list(pars_out_softmax))
 
           k <- k+1L
 
-          # Marginal probabilities for the first variable in the pair.
-          # Given the ordering used in pair_levels, the first variable varies
-          # fastest, so fixed levels of the first variable are found by jumping
-          # by A positions across the joint probability vector.
-          for(a in seq_len(A)) {
+          # Marginal probabilities for the variables involved in the joint:
+          for(lprob in indep_pairs_list[[j]]) {
 
-            idx <- seq(from = a, by = A, length.out = B)
+            group_level <- split(pars_out_softmax, orderings2[, lprob])
+            input <- do.call(Map, c(list(f = c), group_level))
+            pars_out_softmax[orderings2[, lprob]]
             transforms[[k]] <- list(transform = "sum_vectors",
-                                    parameters_in = as.list(trans[[joint_names[[j]]]][idx, i]),
-                                    parameters_out = list(trans[[name1]][a, i]))
-            k <- k+1L
-
-          }
-
-          # Marginal probabilities for the second variable in the pair.
-          # Fixed levels of the second variable are contiguous blocks because
-          # the first variable varies fastest in pair_levels.
-          for(b in seq_len(B)) {
-
-            idx <- ((b - 1L) * A + 1L):(b * A)
-            transforms[[k]] <- list(transform = "sum_vectors",
-                                    parameters_in = as.list(trans[[joint_names[[j]]]][idx, i]),
-                                    parameters_out = list(trans[[name2]][b, i]))
+                                    parameters_in = input,
+                                    parameters_out = list(trans[[lprob]][, i]))
             k <- k+1L
 
           }
@@ -1696,6 +1700,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
   idx_transformed <- unlist(lapply(control_transform,
                                    FUN = \(x) unlist(x$indices_out)+1L))
+  # stop("AHHHH")
   inits <- create_init(trans, param, init_param,
                        idx_transformed = idx_transformed, control)
 
@@ -1991,4 +1996,75 @@ extract_cov_pairs <- function(model) {
 
   as.data.frame(pairs, stringsAsFactors = FALSE)
 
+}
+
+group_connected_pairs <- function(pairs) {
+
+  if (!is.data.frame(pairs) || ncol(pairs) < 2L) {
+    stop("`pairs` must be a data.frame with at least two columns.")
+  }
+
+  lhs <- as.character(pairs[[1L]])
+  rhs <- as.character(pairs[[2L]])
+
+  if (anyNA(lhs) || anyNA(rhs)) {
+    stop("`pairs` cannot contain NA values.")
+  }
+
+  # Preserve order of first appearance
+  elements <- unique(c(rbind(lhs, rhs)))
+
+  # Create adjacency list
+  adj <- setNames(vector("list", length(elements)), elements)
+
+  for (i in seq_along(lhs)) {
+    a <- lhs[i]
+    b <- rhs[i]
+
+    adj[[a]] <- unique(c(adj[[a]], b))
+    adj[[b]] <- unique(c(adj[[b]], a))
+  }
+
+  visited <- setNames(rep(FALSE, length(elements)), elements)
+
+  element_groups <- list()
+  pair_groups <- list()
+
+  for (el in elements) {
+
+    if (visited[[el]]) next
+
+    stack <- el
+    group <- character()
+
+    while (length(stack) > 0L) {
+
+      current <- stack[[1L]]
+      stack <- stack[-1L]
+
+      if (visited[[current]]) next
+
+      visited[[current]] <- TRUE
+      group <- c(group, current)
+
+      neighbours <- adj[[current]]
+      neighbours <- neighbours[!visited[neighbours]]
+
+      stack <- c(stack, neighbours)
+    }
+
+    # Pairs involved in this connected component
+    pair_idx <- lhs %in% group | rhs %in% group
+
+    element_groups[[length(element_groups) + 1L]] <- group
+    pair_groups[[length(pair_groups) + 1L]] <- pairs[pair_idx, , drop = FALSE]
+  }
+
+  names(element_groups) <- paste0("group", seq_along(element_groups))
+  names(pair_groups) <- paste0("group", seq_along(pair_groups))
+
+  list(
+    elements = element_groups,
+    pairs = pair_groups
+  )
 }
