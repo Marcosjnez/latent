@@ -15,7 +15,7 @@ A data frame with 1202 rows and 4 variables:
 Generated example
 }
 \usage{
-gss82
+data(gss82)
 }
 \description{
 A dataset from the poLCA R package with 1202 rows and 4 columns. Items are

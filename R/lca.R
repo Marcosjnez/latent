@@ -15,7 +15,7 @@
 #'
 #' @usage
 #' lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
-#' X = NULL, penalties = TRUE, model = NULL, start = NULL,
+#' X = NULL, Y = NULL, penalties = TRUE, model = NULL, start = NULL,
 #' control = NULL, do.fit = TRUE, verbose = TRUE)
 #'
 #' @param data A \code{data.frame} or \code{matrix} containing the observed data.
@@ -175,6 +175,7 @@ lca <- function(data,
                 gaussian = NULL,
                 multinomial = NULL,
                 X = NULL,
+                Y = NULL,
                 penalties = TRUE,
                 model = NULL,
                 start = NULL,
@@ -223,6 +224,7 @@ lca <- function(data,
 
   dataList_and_control <- create_lca_dataList(data = data,
                                               X = X,
+                                              Y = Y,
                                               gaussian = gaussian,
                                               multinomial = multinomial,
                                               model = model,
@@ -338,6 +340,7 @@ lca <- function(data,
 
 create_lca_dataList <- function(data,
                                 X = NULL,
+                                Y = NULL,
                                 gaussian = NULL,
                                 multinomial = NULL,
                                 model = NULL,
@@ -513,21 +516,37 @@ create_lca_dataList <- function(data,
 
   #### Process the data ####
 
+  # Outcomes:
+  if(is.null(Y)) {
+    control$outcomes <- FALSE
+    Y_patterns <- NULL
+  } else {
+    control$outcomes <- TRUE
+  }
+
   # Append the data and the covariates. This is necessary to find the unique
   # data patterns. Later, we split again:
-  dt <- data.table::as.data.table(cbind(X, measurement_recoded))
-  # dt <- data.table::as.data.table(cbind(X, measurement))
+  stop("AHHH")
+  if(control$outcomes) {
+    dt <- data.table::as.data.table(cbind(X, measurement_recoded, Y))
+  } else {
+    dt <- data.table::as.data.table(cbind(X, measurement_recoded))
+  }
   # Collect some information from the measurement + covariates:
   counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
   # Number of unique response patterns:
   npatterns <- nrow(counts_dt)
   pattern_names <- paste("pattern", 1:npatterns, sep = "")
   # Measurement data with unique response patterns:
-  patterns <- as.matrix(counts_dt[, names(dt), with = FALSE])[, -(1:pX) ,
-                                                              drop = FALSE]
+  patterns <- as.matrix(counts_dt[, colnames(measurement_recoded), with = FALSE])
   # Covariate data with unique patterns:
-  cov_patterns <- as.matrix(counts_dt[, names(dt)[seq_len(pX)], with = FALSE])
-
+  cov_patterns <- as.matrix(counts_dt[, colnames(X), with = FALSE])
+  # Distal outcomes with unique patterns:
+  if(control$outcomes) {
+    Y_patterns <- as.matrix(counts_dt[, colnames(Y), with = FALSE])
+    rownames(Y_patterns) <- pattern_names
+  }
+  # Pattern names:
   rownames(patterns) <- rownames(cov_patterns) <- pattern_names
   # Counts of each response pattern:
   weights <- counts_dt$count
@@ -539,12 +558,14 @@ create_lca_dataList <- function(data,
                                                with = FALSE]))
 
   # Compute the nonrecoded patterns of items (patterns_original):
-  dt <- data.table::as.data.table(cbind(X, measurement))
+  if(control$outcomes) {
+    dt <- data.table::as.data.table(cbind(X, measurement, Y))
+  } else {
+    dt <- data.table::as.data.table(cbind(X, measurement))
+  }
   counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
-  # patterns_original <- as.matrix(counts_dt[, names(dt), with = FALSE])[, -(1:pX) ,
-  #                                                                      drop = FALSE]
-  patterns_original <- as.data.frame(counts_dt[, names(dt), with = FALSE])[, -(1:pX) ,
-                                                                           drop = FALSE]
+  # patterns_original <- as.matrix(counts_dt[, colnames(measurement_recoded),, with = FALSE])
+  patterns_original <- as.data.frame(counts_dt[, colnames(X), with = FALSE])
   rownames(patterns_original) <- pattern_names
 
   #### Store objects in dataList ####
@@ -553,6 +574,8 @@ create_lca_dataList <- function(data,
   dataList$data <- data
   dataList$measurement <- measurement
   dataList$X <- X
+  dataList$Y <- Y
+  dataList$Y_patterns <- Y_patterns
   dataList$measurement_recoded <- measurement_recoded
   dataList$nitems <- nitems
   dataList$item <- item
@@ -917,6 +940,17 @@ create_lca_model <- function(dataList, nclasses, item,
 
   }
 
+  # Distal outcomes:
+  if(control$outcomes) {
+
+    list_struct[[k]] <- list(name = "distal_beta",
+                             type = "matrix",
+                             dim = c(nclasses, ncol(Y_patterns)),
+                             dimnames = list(class_names, "coeffs"))
+    k <- k+1L
+
+  }
+
   # Create the full transparameter structure:
   trans <- create_parameters(list_struct)
 
@@ -1021,6 +1055,9 @@ create_lca_model <- function(dataList, nclasses, item,
     }
 
   }
+
+  # Distal outcomes:
+  param$distal_beta <- trans$distal_beta
 
   #### Fixed parameters and equality constraints ####
 
@@ -1219,6 +1256,13 @@ create_lca_model <- function(dataList, nclasses, item,
 
       }
 
+    }
+
+    # Distal outcomes:
+    if(control$outcomes) {
+      init_param[[i]][["distal_beta"]] <- matrix(rnorm(nclasses*ncol(Y_patterns)),
+                                                 nrow = nclasses, ncol = ncol(Y_patterns))
+      dimnames(init_param[[i]]$distal_beta) <- dimnames(param$distal_beta)
     }
 
   }
@@ -1534,13 +1578,28 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   #                                      weights = weights,
   #                                      double_names = "lca"))
 
-  estimators[[G]] <- list(estimator = "lca2",
-                          parameters = c("class", "loglik"),
-                          extra = list(S = npatterns,
-                                       I = nclasses,
-                                       weights = weights,
-                                       double_names = "lca"))
-  G <- G + 1L
+  if(control$outcomes) {
+
+    estimators[[G]] <- list(estimator = "lca_outcomes",
+                            parameters = c("class", "loglik", "distal_beta"),
+                            extra = list(S = npatterns,
+                                         I = nclasses,
+                                         weights = weights,
+                                         Y = Y_patterns,
+                                         double_names = "lca"))
+    G <- G + 1L
+
+  } else {
+
+    estimators[[G]] <- list(estimator = "lca2",
+                            parameters = c("class", "loglik"),
+                            extra = list(S = npatterns,
+                                         I = nclasses,
+                                         weights = weights,
+                                         double_names = "lca"))
+    G <- G + 1L
+
+  }
 
   # Choose whether using Bayes constants:
   if(control$reg) {
@@ -1700,7 +1759,6 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
   idx_transformed <- unlist(lapply(control_transform,
                                    FUN = \(x) unlist(x$indices_out)+1L))
-  # stop("AHHHH")
   inits <- create_init(trans, param, init_param,
                        idx_transformed = idx_transformed, control)
 
@@ -1880,8 +1938,17 @@ make_design_matrix <- function(X, data) {
     char_cols <- vapply(X_df, is.character, logical(1L))
     X_df[char_cols] <- lapply(X_df[char_cols], factor)
 
+    if (anyNA(X_df)) {
+      stop(
+        "Missing values were found in the covariates. ",
+        "Please use imputation or complete-case data."
+      )
+    }
+
     # Create the design matrix:
-    X_mat <- model.matrix(~ . + 1, X_df)
+    mf <- model.frame(~ . + 1, data = X_df, na.action = na.pass)
+    X_mat  <- model.matrix(~ . + 1, data = mf)
+    # X_mat <- model.matrix(~ . + 1, X_df)
 
     # Center the variables:
     # X_mat[, -1] <- scale(X_mat[, -1], center = TRUE, scale = FALSE)

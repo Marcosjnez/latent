@@ -15,7 +15,7 @@ A data frame with 475 rows and 13 variables:
 Generated example
 }
 \usage{
-cancer
+data(cancer)
 }
 \description{
 A dataset with 475 rows and 13 columns.

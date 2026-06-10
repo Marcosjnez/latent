@@ -15,7 +15,7 @@ A data frame with 467 rows and 13 variables:
 Generated example
 }
 \usage{
-empathy
+data(empathy)
 }
 \description{
 A dataset from the tidySEM R package with 467 rows and 13 columns.

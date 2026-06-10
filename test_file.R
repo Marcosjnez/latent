@@ -4,7 +4,7 @@
 
 #### Store a dataset ####
 
-# usethis::use_data(hs_academic, overwrite = TRUE)
+# usethis::use_data(gss82, overwrite = TRUE)
 
 #### Build the package ####
 
@@ -16,15 +16,20 @@
 
 #### LCA (multinomial) ####
 
+library(haven)
+gg <- read_spss("C:/Users/marcos/Downloads/gss82.sav")
+
 library(latent)
 set.seed(2026)
 # gss82$UC <- paste(gss82$UNDERSTA, gss82$COOPERAT, sep = ".")
 
+gss82$EDUCR <- as.numeric(gg$EDUCR)
 fit <- lca(data = gss82,
-           nclasses = 2L,
+           nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           model = list("UNDERSTA ~~ COOPERAT
-                         UNDERSTA ~~ ACCURACY"),
+           X = c("RACE", "SEX", "EDUCR", "AGE"),
+           # model = list("UNDERSTA ~~ COOPERAT
+           #               UNDERSTA ~~ ACCURACY"),
            # penalties = list(class = list(alpha=1),
            #                  prob  = list(alpha=1)),
            penalties = TRUE,
@@ -63,10 +68,13 @@ CI$table
 
 library(latent)
 set.seed(2026)
+pt1 <- matrix(empathy$pt1, ncol = 1L)
+colnames(pt1) <- "pt1"
 fit <- lca(data = empathy,
            nclasses = 4L,
            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
            # model = list("ec2 ~~ ec3 ~~ ec6"),
+           Y = pt1,
            penalties = TRUE,
            do.fit = TRUE)
 
@@ -82,6 +90,7 @@ lbvr(fit) # FIX
 latInspect(fit, what = "loglik")
 # loglik: -1841.336 # penalized_loglik: -1844.333
 # loglik: -1808.949 # penalized_loglik: -1812.014
+latInspect(fit, what = "convergence")
 latInspect(fit, what = "profile") # FIX profile for multivariate items
 latInspect(fit, what = "coefs")
 latInspect(fit, what = "posterior")

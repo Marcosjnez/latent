@@ -6,7 +6,7 @@
 optional covariates for latent class membership probabilities.}
 \usage{
 lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
-X = NULL, penalties = TRUE, model = NULL, start = NULL,
+X = NULL, Y = NULL, penalties = TRUE, model = NULL, start = NULL,
 control = NULL, do.fit = TRUE, verbose = TRUE)
 }
 \arguments{

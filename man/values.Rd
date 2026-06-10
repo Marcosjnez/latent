@@ -15,7 +15,7 @@ A data frame with 467 rows and 13 variables:
 Generated example
 }
 \usage{
-values
+data(values)
 }
 \description{
 A dataset from the poLCA R package with 216 rows and 4 columns.

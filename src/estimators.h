@@ -54,6 +54,7 @@ public:
 
 #include "estimators/lca/lca.h"
 #include "estimators/lca/lca2.h"
+#include "estimators/lca/lca_outcomes.h"
 #include "estimators/lca/bayesconst1.h"
 #include "estimators/lca/bayesconst2.h"
 #include "estimators/lca/bayesconst3.h"
@@ -93,6 +94,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "lclf",                        choose_lclf                      },
   { "lca",                         choose_lca                       },
   { "lca2",                        choose_lca2                      },
+  { "lca_outcomes",                choose_lca_outcomes              },
   { "bayesconst1",                 choose_bayesconst1               },
   { "bayesconst2",                 choose_bayesconst2               },
   { "bayesconst3",                 choose_bayesconst3               },
