@@ -348,9 +348,6 @@ create_lca_dataList <- function(data,
                                 penalties = FALSE,
                                 start = NULL) {
 
-  # Number of subjects:
-  nobs <- nrow(data)
-
   #### Process the covariates ####
 
   # Matrix of predictors for latent class probabilities:
@@ -358,6 +355,37 @@ create_lca_dataList <- function(data,
   # data or a data.frame or matrix with named predictor variables
   X <- make_design_matrix(X = X, data = data)
   pX <- ncol(X) # Number of columns of the design matrix
+
+  # Remove participants with missing data in any covariate:
+  remove <- which(apply(X, MARGIN = 1, FUN = anyNA))
+
+  if(length(remove) > 0) {
+
+    missing <- colSums(is.na(X))
+    missing <- missing[missing > 0]
+
+    warning(
+      "Missing data detected in covariates:\n",
+      paste0(
+        names(missing), ": ",
+        missing,
+        " missing observation",
+        ifelse(missing == 1L, "", "s"),
+        collapse = "\n"
+      ),
+      "\nIn total, ",
+      length(remove),
+      " observation",
+      if (length(remove) == 1L) " was" else "s were",
+      " removed."
+    )
+
+    X <- X[-remove, ]
+    data <- data[-remove, ]
+  }
+
+  # Number of subjects:
+  nobs <- nrow(data)
 
   #### Indicator types ####
 
@@ -526,7 +554,6 @@ create_lca_dataList <- function(data,
 
   # Append the data and the covariates. This is necessary to find the unique
   # data patterns. Later, we split again:
-  stop("AHHH")
   if(control$outcomes) {
     dt <- data.table::as.data.table(cbind(X, measurement_recoded, Y))
   } else {
@@ -1938,12 +1965,12 @@ make_design_matrix <- function(X, data) {
     char_cols <- vapply(X_df, is.character, logical(1L))
     X_df[char_cols] <- lapply(X_df[char_cols], factor)
 
-    if (anyNA(X_df)) {
-      stop(
-        "Missing values were found in the covariates. ",
-        "Please use imputation or complete-case data."
-      )
-    }
+    # if (anyNA(X_df)) {
+    #   stop(
+    #     "Missing values were found in the covariates. ",
+    #     "Please use imputation or complete-case data."
+    #   )
+    # }
 
     # Create the design matrix:
     mf <- model.frame(~ . + 1, data = X_df, na.action = na.pass)

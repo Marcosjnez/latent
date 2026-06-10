@@ -51,6 +51,7 @@ lbvr(fit) # Modify this to accomodate residual dependencies
 latInspect(fit, what = "loglik")
 # loglik: -3940.668 # penalized_loglik: -3945.117
 # loglik: -3883.015 # penalized_loglik: -3887.560 ("UNDERSTA ~~ COOPERAT")
+latInspect(fit, what = "convergence")
 latInspect(fit, what = "profile")
 latInspect(fit, what = "coefs")
 latInspect(fit, what = "pattern")
