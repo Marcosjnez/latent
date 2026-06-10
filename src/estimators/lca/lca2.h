@@ -47,7 +47,7 @@ public:
         );
 
       logposterior.row(s) = joint_classloglik.row(s) - loglik_case(s);
-      // posterior.row(s) = arma::trunc_exp(logposterior.row(s));
+      posterior.row(s) = arma::trunc_exp(logposterior.row(s));
       logliks(s) = weights(s) * loglik_case(s);
 
     }

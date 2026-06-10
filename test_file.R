@@ -24,13 +24,15 @@ gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           X = c("RACE", "SEX", "EDUCR", "AGE"),
+           # X = c("RACE", "SEX", "EDUCR", "AGE"),
            # model = list("UNDERSTA ~~ COOPERAT
            #               UNDERSTA ~~ ACCURACY"),
            # penalties = list(class = list(alpha=1),
            #                  prob  = list(alpha=1)),
            penalties = TRUE,
            do.fit = TRUE)
+
+fit@modelInfo$control_transform
 
 # Plot model fit info:
 fit
@@ -73,6 +75,7 @@ fit <- lca(data = empathy,
            # model = list("ec2 ~~ ec3 ~~ ec6"),
            Y = c("pt1", "pt2"),
            penalties = TRUE,
+           control = list(rstarts = 50L, cores = 32L),
            do.fit = TRUE)
 
 # Plot model fit info:

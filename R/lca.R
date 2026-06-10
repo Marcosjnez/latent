@@ -232,6 +232,7 @@ lca <- function(data,
                                               control = control,
                                               start = start)
   list2env(dataList_and_control, envir = environment())
+  dataList$args <- args
 
   #### Create the model ####
 
@@ -239,6 +240,7 @@ lca <- function(data,
   # model. This is usually done for two-step estimation:
   if(class(model) == "llca") {
 
+    control$model <- model
     model <- model@parameters
     model$beta <- NULL
 
@@ -350,6 +352,7 @@ create_lca_dataList <- function(data,
 
   #### Process the covariates ####
 
+  original_X <- X
   # Matrix of predictors for latent class probabilities:
   # X can be a character vector with the name of the predictors to be found in
   # data or a data.frame or matrix with named predictor variables
@@ -612,6 +615,7 @@ create_lca_dataList <- function(data,
   dataList$data <- data
   dataList$measurement <- measurement
   dataList$X <- X
+  dataList$original_X <- original_X
   dataList$Y <- Y
   dataList$Y_patterns <- Y_patterns
   dataList$measurement_recoded <- measurement_recoded
@@ -1558,7 +1562,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
       K <- unlist(lapply(multinomial_factor_levels, FUN = length))
 
       # transforms[[k]] <- list(transform = "multinomial",
-      #                         parameters_in = list(trans[item_names[multinom]]),
+      #                         parameters_in = list(trans[multinomial_names]),
       #                         parameters_out = list(trans$loglik[, multinom, ]),
       #                         extra = list(y = y, S = npatterns, J = Jmulti,
       #                                      I = nclasses, K = K))

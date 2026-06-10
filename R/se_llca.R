@@ -34,7 +34,7 @@ se.llca <- function(fit, type = "standard", digits = 3) {
 
   fit@modelInfo$control_optimizer$minimal_se <- TRUE
 
-  if(class(fit@modelInfo$original_model) == "llca") {
+  if(class(fit@modelInfo$control_optimizer$model) == "llca") {
 
     SE <- se_twostep(fit2 = fit, type = type)
 
@@ -264,12 +264,12 @@ ci <- function(fit, type = "standard", confidence = 0.95, digits = 3) {
 
 se_twostep <- function(fit2, type = "standard") {
 
-  fit1 <- fit2@modelInfo$original_model
+  fit1 <- fit2@modelInfo$control_optimizer$model
 
   # Variance covariance of step 1:
   VCOV1 <- se(fit1, type = type)
   # Variance covariance of step 2:
-  fit2@modelInfo$original_model <- NULL # Avoid infinite recursion
+  fit2@modelInfo$control_optimizer$model <- NULL # Avoid infinite recursion
   VCOV2 <- se(fit2, type = type)
 
   # Get the full model structure without constraints:
@@ -311,6 +311,10 @@ se_twostep <- function(fit2, type = "standard") {
   VCOV2$se <- sqrt(diag(VCOV2$vcov))
   names(VCOV2$se) <- fit2@modelInfo$parameters_labels
 
-  return(VCOV2)
+  VCOV <- list()
+  VCOV$vcov <- block_diag(list(VCOV1$vcov, VCOV2$vcov))
+  VCOV$se <- sqrt(diag(VCOV$vcov))
+
+  return(VCOV)
 
 }

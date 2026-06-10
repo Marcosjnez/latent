@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 28/03/2026
+# Modification date: 10/06/2026
 
 standard_se <- function(fit) {
 
