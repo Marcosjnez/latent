@@ -1,9 +1,9 @@
 Version: 1.0
 ProjectId: 0b73466d-fe56-4979-8ee8-91a07be5c764
 
-RestoreWorkspace: Default
-SaveWorkspace: Default
-AlwaysSaveHistory: Default
+RestoreWorkspace: No
+SaveWorkspace: No
+AlwaysSaveHistory: No
 
 EnableCodeIndexing: Yes
 UseSpacesForTab: Yes

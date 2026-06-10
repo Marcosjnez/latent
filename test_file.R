@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/06/2026
+# Modification date: 10/06/2026
 
 #### Store a dataset ####
 
@@ -16,14 +16,11 @@
 
 #### LCA (multinomial) ####
 
-library(haven)
-gg <- read_spss("C:/Users/marcos/Downloads/gss82.sav")
-
 library(latent)
 set.seed(2026)
 # gss82$UC <- paste(gss82$UNDERSTA, gss82$COOPERAT, sep = ".")
 
-gss82$EDUCR <- as.numeric(gg$EDUCR)
+gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
@@ -69,13 +66,12 @@ CI$table
 
 library(latent)
 set.seed(2026)
-pt1 <- matrix(empathy$pt1, ncol = 1L)
-colnames(pt1) <- "pt1"
+
 fit <- lca(data = empathy,
            nclasses = 4L,
            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
            # model = list("ec2 ~~ ec3 ~~ ec6"),
-           Y = pt1,
+           Y = c("pt1", "pt2"),
            penalties = TRUE,
            do.fit = TRUE)
 
@@ -101,7 +97,7 @@ SE <- se(fit, type = "standard", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
+CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2) # FIX THIS
 CI$table
 
 #### Mixed LCA (multinomial and gaussian) ####
@@ -123,6 +119,7 @@ fit <- lca(data = cancer,
            multinomial = c("PerformanceRating", "CardiovascularDiseaseHistory"),
            penalties = penalties,
            do.fit = TRUE)
+# FIX: MATCH INDICATORS AUTOMATICALLY
 
 # Plot model fit info:
 fit

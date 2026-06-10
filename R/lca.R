@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/06/2026
+# Modification date: 10/06/2026
 #'
 #'
 #' Estimate latent class models for continuous and categorical indicators, with
@@ -550,10 +550,21 @@ create_lca_dataList <- function(data,
     Y_patterns <- NULL
   } else {
     control$outcomes <- TRUE
+    if (is.character(Y)) {
+      Y <- data[, Y, drop = FALSE]
+    } else {
+      # Check that X is either a data.frame or a matrix:
+      if (!is.data.frame(Y) && !is.matrix(Y)) {
+        stop("Y must be a character vector, matrix or data.frame")
+      }
+      if (nrow(Y) != nobs) {
+        stop("Number of cases in the data and covariates does not match")
+      }
+    }
   }
 
-  # Append the data and the covariates. This is necessary to find the unique
-  # data patterns. Later, we split again:
+  # Append the covariates, indicators, and distal outcomes.
+  # This is necessary to find the unique data patterns. Later, we split again:
   if(control$outcomes) {
     dt <- data.table::as.data.table(cbind(X, measurement_recoded, Y))
   } else {
@@ -973,7 +984,8 @@ create_lca_model <- function(dataList, nclasses, item,
     list_struct[[k]] <- list(name = "distal_beta",
                              type = "matrix",
                              dim = c(nclasses, ncol(Y_patterns)),
-                             dimnames = list(class_names, "coeffs"))
+                             rownames = class_names,
+                             colnames = colnames(Y_patterns))
     k <- k+1L
 
   }
@@ -2020,7 +2032,7 @@ make_design_matrix <- function(X, data) {
 
       # Check that X is either a data.frame or a matrix:
       if (!is.data.frame(X) && !is.matrix(X)) {
-        stop("X must be a matrix or data.frame")
+        stop("X must be a character vector, matrix or data.frame")
       }
 
       if (nrow(X) != nobs) {

@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/05/2026
+# Modification date: 10/06/2026
 #'
 #' @title
 #' Inspect objects from fitted lca models.
@@ -47,7 +47,7 @@ latInspect.llca <- function(fit,
   loglik_case <- fit@Optim$outputs$estimators$vectors[[1]][[1]]
   weights <- fit@dataList$weights
   # Sum of logarithm likelihoods by response pattern:
-  loglik_pattern <- weights * loglik_case
+  loglik_patterns <- weights * loglik_case
 
   # Estimated "counts" for each response pattern:
   estimated <- exp(loglik_case) * nobs
@@ -58,15 +58,13 @@ latInspect.llca <- function(fit,
   # Posterior classification:
   state <- apply(posterior, MARGIN = 1, FUN = which.max)
   # Data table of response patterns:
-  patterns <- fit@dataList$patterns
-  summary_table <- cbind(patterns_original,
-                         # Pattern = patterns + 1,
+  summary_table <- cbind(patterns_original[, -1],
                          Observed = weights,
                          Estimated = estimated,
                          Posterior = posterior,
                          State = state,
                          loglik_case = loglik_case,
-                         loglik_pattern = loglik_pattern)
+                         loglik_patterns = loglik_patterns)
   summary_table <- as.data.frame(summary_table)
   # Sort the patterns by increasing order:
   summary_table <- summary_table[do.call(order, summary_table), ]
@@ -179,7 +177,8 @@ latInspect.llca <- function(fit,
              what == "coefficient" ||
              what == "coefficients") {
 
-    result <- fit@transformed_pars$beta
+    result <- list(beta        = fit@transformed_pars$beta,
+                   distal_beta = fit@transformed_pars$distal_beta)
 
   } else if (what == "respconditional") {
 
@@ -213,12 +212,12 @@ latInspect.llca <- function(fit,
   } else if (what == "pattern" ||
              what == "patterns") {
 
-    pattern <- data.frame(patterns_original, Observed = weights)
+    patterns <- data.frame(patterns_original[, -1], Observed = weights)
     # Sort the patterns by increasing order:
-    pattern <- pattern[do.call(order, pattern), ]
-    rownames(pattern) <- paste("pattern", 1:nrow(pattern), sep = "")
+    patterns <- patterns[do.call(order, patterns), ]
+    rownames(patterns) <- paste("pattern", 1:nrow(patterns), sep = "")
 
-    result <- pattern
+    result <- patterns
 
   } else if (what == "table" ||
              what == "summary") {
@@ -243,7 +242,7 @@ latInspect.llca <- function(fit,
              what == "loglik.pattern" ||
              what == "pattern") {
 
-    result <- loglik_pattern
+    result <- loglik_patterns
 
   } else if (what == "loss" ||
              what == "losses") {
