@@ -1989,6 +1989,7 @@ make_design_matrix <- function(X, data) {
     # }
 
     # Create the design matrix:
+    X_df <- droplevels(X_df) # Drop absent levels
     mf <- model.frame(~ . + 1, data = X_df, na.action = na.pass)
     X_mat  <- model.matrix(~ . + 1, data = mf)
     # X_mat <- model.matrix(~ . + 1, X_df)

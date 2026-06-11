@@ -32,8 +32,6 @@ fit <- lca(data = gss82,
            penalties = TRUE,
            do.fit = TRUE)
 
-fit@modelInfo$control_transform
-
 # Plot model fit info:
 fit
 
@@ -180,7 +178,7 @@ all.equal(fit1@parameters[-1], fit2@parameters[-1])
 # Standard errors:
 SE1 <- se(fit1, type = "standard", digits = 4)
 SE1$se
-SE2 <- se(fit2, type = "standard", digits = 4) # FIX: put all together with fit1
+SE2 <- se(fit2, type = "standard", digits = 4)
 SE2$se
 
 # Effects-coding parameterization:

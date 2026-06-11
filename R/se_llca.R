@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 16/05/2026
+# Modification date: 11/06/2026
 #'
 #' @title
 #' Standard Errors
@@ -273,9 +273,14 @@ se_twostep <- function(fit2, type = "standard") {
   VCOV2 <- se(fit2, type = type)
 
   # Get the full model structure without constraints:
-  args <- fit1@dataList$args
+  # args <- fit1@dataList$args
+  # args$X <- fit2@dataList$original_X
+  # args$do.fit <- FALSE
+  # fit <- do.call(lca, args)
+
+  args <- fit2@dataList$args
+  args$model <- NULL
   args$do.fit <- FALSE
-  args$X <- fit2@dataList$original_X
   fit <- do.call(lca, args)
 
   # Get the hessian matrix:
@@ -283,6 +288,7 @@ se_twostep <- function(fit2, type = "standard") {
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
   control_optimizer <- fit@modelInfo$control_optimizer
+
   parameters <- fit2@Optim$transparameters[fit@modelInfo$parameters_labels]
   transparameters <- fit2@Optim$transparameters[fit@modelInfo$transparameters_labels]
   control_optimizer$parameters[[1]] <- parameters
