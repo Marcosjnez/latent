@@ -13,12 +13,13 @@ fit1 <- lca(data = gss82,
             nclasses = 3L,
             multinomial = indicators,
             penalties = list(class = list(alpha=1),
-                             prob  = list(alpha=1)),
+                             prob  = list(alpha=0)),
             do.fit = TRUE)
 
 latInspect(fit1, what = "loglik")
 # loglik: -3891.472 # penalized_loglik: -3896.468
 latInspect(fit1, what = "convergence")
+latInspect(fit1, what = "profile", digits = 3)
 
 set.seed(2026)
 fit2 <- lca(data = gss82,
@@ -29,7 +30,7 @@ fit2 <- lca(data = gss82,
             # model = list("UNDERSTA ~~ COOPERAT
             #               UNDERSTA ~~ ACCURACY"),
             penalties = list(class = list(alpha=1),
-                             prob  = list(alpha=1)),
+                             prob  = list(alpha=0)),
             do.fit = TRUE)
 
 latInspect(fit2, what = "loglik")

@@ -463,7 +463,7 @@ create_lca_dataList <- function(data,
                       times = c(ngaussian, nmvgaussian, nmultinomial))
   model_vector <- c(gaussian, mvgaussian, multinomial)
   idx <- match(colnames(data), model_vector); idx <- idx[!is.na(idx)]
-  measurement <- data[, model_vector[idx]]
+  measurement <- data[, model_vector[idx], drop = FALSE]
   measurement_recoded <- measurement
 
   # match each item with a likelihood model:
