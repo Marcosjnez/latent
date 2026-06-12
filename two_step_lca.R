@@ -45,8 +45,8 @@ latInspect(fit2, what = "coefs", digits = 5)
 latInspect(fit2, what = "profile", digits = 3)
 
 # Standard errors:
-SE2 <- se(fit2, type = "standard", digits = 4)
-SE2$se
+SE <- se(fit2, type = "standard", digits = 4)
+SE$se
 
 #### empathy ####
 
@@ -84,5 +84,5 @@ latInspect(fit2, what = "coefs", digits = 5)
 latInspect(fit2, what = "profile", digits = 3)
 
 # Standard errors:
-SE2 <- se(fit2, type = "standard", digits = 4)
-SE2$se
+SE <- se(fit2, type = "standard", digits = 4)
+SE$se

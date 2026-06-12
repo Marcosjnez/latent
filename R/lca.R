@@ -178,6 +178,7 @@ lca <- function(data,
                 Y = NULL,
                 penalties = TRUE,
                 model = NULL,
+                weights = NULL,
                 start = NULL,
                 control = NULL,
                 do.fit = TRUE,
@@ -229,6 +230,7 @@ lca <- function(data,
                                               multinomial = multinomial,
                                               model = model,
                                               penalties = penalties,
+                                              weights = weights,
                                               control = control,
                                               start = start)
   list2env(dataList_and_control, envir = environment())
@@ -346,8 +348,9 @@ create_lca_dataList <- function(data,
                                 gaussian = NULL,
                                 multinomial = NULL,
                                 model = NULL,
-                                control = list(),
                                 penalties = FALSE,
+                                weights = NULL,
+                                control = list(),
                                 start = NULL) {
 
   #### Process the covariates ####
@@ -385,6 +388,8 @@ create_lca_dataList <- function(data,
 
     X <- X[-remove, ]
     data <- data[-remove, ]
+    weights <- weights[-remove, ]
+
   }
 
   # Number of subjects:
@@ -590,7 +595,7 @@ create_lca_dataList <- function(data,
   # Pattern names:
   rownames(patterns) <- rownames(cov_patterns) <- pattern_names
   # Counts of each response pattern:
-  weights <- counts_dt$count
+  pattern_weights <- counts_dt$count
   # Indices to map the full data to the unique patterns:
   full2short <- counts_dt$index
   # Indices to map unique patterns to the full data:
@@ -629,13 +634,14 @@ create_lca_dataList <- function(data,
   dataList$npossible_patterns <- npossible_patterns
   dataList$pattern_names <- pattern_names
   dataList$pX <- pX
-  dataList$weights <- weights
+  dataList$pattern_weights <- pattern_weights
   dataList$full2short <- full2short
   dataList$short2full <- short2full
   dataList$patterns_original <- patterns_original
   dataList$any_gaussian <- any_gaussian
   dataList$any_multinomial <- any_multinomial
   dataList$any_mvgaussian <- any_mvgaussian
+  dataList$weights <- weights[full2short, ]
 
   # Update and check control parameters:
   control$penalties <- penalties # Either a logical or a list of named penalties
@@ -1623,26 +1629,65 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
   if(control$outcomes) {
 
-    estimators[[G]] <- list(estimator = "lca_outcomes",
-                            parameters = c("class", "loglik", "distal_beta"),
-                            extra = list(S = npatterns,
-                                         I = nclasses,
-                                         weights = weights,
-                                         Y = Y_patterns,
-                                         double_names = "lca"))
-    G <- G + 1L
+    if(is.null(dataList$weights)) {
+
+      estimators[[G]] <- list(estimator = "lca_outcomes",
+                              parameters = c("class", "loglik", "distal_beta"),
+                              extra = list(S = npatterns,
+                                           I = nclasses,
+                                           weights = pattern_weights,
+                                           Y = Y_patterns,
+                                           double_names = "lca"))
+      G <- G + 1L
+
+    } else {
+
+      for(i in 1:nclasses) {
+
+        estimators[[G]] <- list(estimator = "lca_outcomes",
+                                parameters = c("class", "loglik", "distal_beta"),
+                                extra = list(S = npatterns,
+                                             I = nclasses,
+                                             weights = pattern_weights*weights[, i],
+                                             Y = Y_patterns,
+                                             double_names = "lca"))
+        G <- G + 1L
+
+      }
+
+    }
 
   } else {
 
-    estimators[[G]] <- list(estimator = "lca2",
-                            parameters = c("class", "loglik"),
-                            extra = list(S = npatterns,
-                                         I = nclasses,
-                                         weights = weights,
-                                         double_names = "lca"))
-    G <- G + 1L
+    if(is.null(dataList$weights)) {
+
+      estimators[[G]] <- list(estimator = "lca2",
+                              parameters = c("class", "loglik"),
+                              extra = list(S = npatterns,
+                                           I = nclasses,
+                                           weights = pattern_weights,
+                                           double_names = "lca"))
+      G <- G + 1L
+
+    } else {
+
+      for(i in 1:nclasses) {
+
+        estimators[[G]] <- list(estimator = "lca2",
+                                parameters = c("class", "loglik"),
+                                extra = list(S = npatterns,
+                                             I = nclasses,
+                                             weights = pattern_weights*weights[, i],
+                                             double_names = "lca"))
+        G <- G + 1L
+
+      }
+
+    }
 
   }
+
+  # IF weights IS A MATRIX, REPEAT LCA2 as many times as columns
 
   # Choose whether using Bayes constants:
   if(control$reg) {

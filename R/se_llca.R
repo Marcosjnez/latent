@@ -125,7 +125,7 @@ robust_se <- function(fit) {
   transparameters_labels <- fit@modelInfo$transparameters_labels
   trans <- fit@modelInfo$trans
   full_loglik <- trans$loglik
-  weights <- fit@dataList$weights
+  pattern_weights <- fit@dataList$pattern_weights
   npatterns <- fit@dataList$npatterns
   nitems <- fit@dataList$nitems
   nparam <- fit@modelInfo$nparam
@@ -146,7 +146,7 @@ robust_se <- function(fit) {
                                      S = 1L,
                                      J = nitems,
                                      I = nclasses,
-                                     weights = weights[s])
+                                     pattern_weights = pattern_weights[s])
 
   }
 
@@ -162,7 +162,7 @@ robust_se <- function(fit) {
                              control_optimizer = control_optimizer)
     f[s] <- computations$f
     g[s, ] <- computations$g
-    B <- B + weights[s]*(g[s, ]/weights[s]) %*% t(g[s, ]/weights[s])
+    B <- B + pattern_weights[s]*(g[s, ]/pattern_weights[s]) %*% t(g[s, ]/pattern_weights[s])
 
   }
 
@@ -318,7 +318,9 @@ se_twostep <- function(fit2, type = "standard") {
   names(VCOV2$se) <- fit2@modelInfo$parameters_labels
 
   VCOV <- list()
-  VCOV$vcov <- block_diag(list(VCOV1$vcov, VCOV2$vcov))
+  name_nuisance_pars <- fit@modelInfo$parameters_labels[nuisance_pars]
+  VCOV$vcov <- block_diag(list(VCOV1$vcov[name_nuisance_pars, name_nuisance_pars],
+                               VCOV2$vcov))
   VCOV$se <- sqrt(diag(VCOV$vcov))
 
   return(VCOV)

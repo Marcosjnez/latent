@@ -1,10 +1,10 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/06/2026
+# Modification date: 12/06/2026
 
 # This code runs the step 3 method of LG with options:
 # Analysis: Covariates
-# Classification: Modal
+# Classification: Proportional
 # Adjustment: ML
 
 library(latent)
@@ -27,35 +27,33 @@ latInspect(fit1, what = "loglik")
 latInspect(fit1, what = "convergence")
 latInspect(fit1, what = "profile")
 
-#### Modal assignment ####
+#### Compute the weights ####
 
-gss82$states <- latInspect(fit1, what = "state")
-fixed <- lclass_diag(fit1)$Mostlikely.Class # Classification table
-logfixed <- log(fixed)
-logfixed <- apply(logfixed, MARGIN = 1L, FUN = \(x) x-x[1])
-# t(apply(logfixed, 2, soft, a=1)) / fixed
+weights <- latInspect(fit1, what = "posterior")
 
 #### Fitting the covariates model using the states ####
 
 # RACE and SEX are treated as nominal and EDUCR and AGE as continuous
+set.seed(2027)
 fit2 <- lca(data = gss82,
             nclasses = 3L,
-            multinomial = "states",
+            multinomial = indicators,
             X = c("RACE", "SEX", "EDUCR", "AGE"),
-            model = list(log_states = logfixed),
+            model = fit1,
             penalties = list(class = list(alpha=1),
                              prob  = list(alpha=0)),
+            weights = weights,
             do.fit = TRUE)
 
 latInspect(fit2, what = "loglik")
-# loglik: -1483.887 # penalized_loglik: -1485.214
+# loglik: -3739.894 # penalized_loglik: -3741.265
 latInspect(fit2, what = "convergence")
 
 latInspect(fit2, what = "profile") # CLUSTER SIZE DIFFERS FROM LG, WHY?
 latInspect(fit2, what = "coefs")
 
-# NO VALID STANDARD ERRORS BECAUSE VAR(logfixed) IS NOT CALCULATED IN fit1
-# Solution:
-# (1) Calculate logfixed as transformed parameters in fit1
-# (2) Provide the full fit1 with logfixed in model
-# (3) Automatically propagate SE estimation for transformed parameters
+# I THINK STANDARD ERRORS SHOULD BE VALID
+
+# Standard errors:
+SE <- se(fit2, type = "standard", digits = 4)
+SE$se

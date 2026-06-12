@@ -45,9 +45,9 @@ latInspect.llca <- function(fit,
 
   # Logarithm likelihood of each response pattern:
   loglik_case <- fit@Optim$outputs$estimators$vectors[[1]][[1]]
-  weights <- fit@dataList$weights
+  pattern_weights <- fit@dataList$pattern_weights
   # Sum of logarithm likelihoods by response pattern:
-  loglik_patterns <- weights * loglik_case
+  loglik_patterns <- pattern_weights * loglik_case
 
   # Estimated "counts" for each response pattern:
   estimated <- exp(loglik_case) * nobs
@@ -59,7 +59,7 @@ latInspect.llca <- function(fit,
   state <- apply(posterior, MARGIN = 1, FUN = which.max)
   # Data table of response patterns:
   summary_table <- cbind(patterns_original[, -1],
-                         Observed = weights,
+                         Observed = pattern_weights,
                          Estimated = estimated,
                          Posterior = posterior,
                          State = state,
@@ -75,7 +75,8 @@ latInspect.llca <- function(fit,
   # Check the existence of multinomial items:
   multin <- "multinomial" %in% item
 
-  classes <- colSums(fit@transformed_pars$class * weights) / sum(weights)
+  classes <- colSums(fit@transformed_pars$class * pattern_weights) /
+    sum(pattern_weights)
   ClassConditional <- fit@transformed_pars[item_names]
   RespConditional <- probCat <- list() # Only for full multinomial models
 
@@ -212,7 +213,7 @@ latInspect.llca <- function(fit,
   } else if (what == "pattern" ||
              what == "patterns") {
 
-    patterns <- data.frame(patterns_original[, -1], Observed = weights)
+    patterns <- data.frame(patterns_original[, -1], Observed = pattern_weights)
     # Sort the patterns by increasing order:
     patterns <- patterns[do.call(order, patterns), ]
     rownames(patterns) <- paste("pattern", 1:nrow(patterns), sep = "")

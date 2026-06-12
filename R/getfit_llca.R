@@ -106,8 +106,9 @@ getfit.llca <- function(model, digits = 4) {
   if(nclasses < 2) {
     entropyR2 <- 1.00 # To match LG output
   } else {
-    weights <- model@dataList$weights
-    classes <- colSums(model@transformed_pars$class * weights) / sum(weights)
+    pattern_weights <- model@dataList$pattern_weights
+    classes <- colSums(model@transformed_pars$class * pattern_weights) /
+      sum(pattern_weights)
     entropyR2 <- entropy.R2(classes, posterior)
   }
 
