@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/06/2026
+# Modification date: 13/06/2026
 
 # This code runs the step 3 method of LG with options:
 # Analysis: Covariates
@@ -9,7 +9,7 @@
 
 library(latent)
 
-#### Measurement model ####
+#### Step 1: Measurement model ####
 
 gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 indicators <- c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT")
@@ -27,11 +27,11 @@ latInspect(fit1, what = "loglik")
 latInspect(fit1, what = "convergence")
 latInspect(fit1, what = "profile")
 
-#### Compute the weights ####
+#### Step 2: Compute the weights ####
 
 weights <- latInspect(fit1, what = "posterior")
 
-#### Fitting the covariates model using the states ####
+#### Step 3: Fitting the covariate model using the states ####
 
 # RACE and SEX are treated as nominal and EDUCR and AGE as continuous
 set.seed(2027)
@@ -49,11 +49,11 @@ latInspect(fit2, what = "loglik")
 # loglik: -3739.894 # penalized_loglik: -3741.265
 latInspect(fit2, what = "convergence")
 
-latInspect(fit2, what = "profile") # CLUSTER SIZE DIFFERS FROM LG, WHY?
+latInspect(fit2, what = "profile")
 latInspect(fit2, what = "coefs")
 
 # I THINK STANDARD ERRORS SHOULD BE VALID
 
 # Standard errors:
-SE <- se(fit2, type = "standard", digits = 4)
+SE <- se(fit2, type = "standard")
 SE$se

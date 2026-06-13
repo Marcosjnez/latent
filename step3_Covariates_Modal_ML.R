@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/06/2026
+# Modification date: 13/06/2026
 
 # This code runs the step 3 method of LG with options:
 # Analysis: Covariates
@@ -9,7 +9,7 @@
 
 library(latent)
 
-#### Measurement model ####
+#### Step 1: Measurement model ####
 
 gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 indicators <- c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT")
@@ -27,7 +27,7 @@ latInspect(fit1, what = "loglik")
 latInspect(fit1, what = "convergence")
 latInspect(fit1, what = "profile")
 
-#### Modal assignment ####
+#### Step 2: Modal assignment ####
 
 gss82$states <- latInspect(fit1, what = "state")
 fixed <- lclass_diag(fit1)$Mostlikely.Class # Classification table
@@ -35,7 +35,7 @@ logfixed <- log(fixed)
 logfixed <- apply(logfixed, MARGIN = 1L, FUN = \(x) x-x[1])
 # t(apply(logfixed, 2, soft, a=1)) / fixed
 
-#### Fitting the covariates model using the states ####
+#### Step 3: Fitting the covariate model using the states ####
 
 # RACE and SEX are treated as nominal and EDUCR and AGE as continuous
 fit2 <- lca(data = gss82,

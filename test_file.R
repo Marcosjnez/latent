@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/06/2026
+# Modification date: 13/06/2026
 
 #### Store a dataset ####
 
@@ -27,9 +27,8 @@ fit <- lca(data = gss82,
            # X = c("RACE", "SEX", "EDUCR", "AGE"),
            # model = list("UNDERSTA ~~ COOPERAT
            #               UNDERSTA ~~ ACCURACY"),
-           # penalties = list(class = list(alpha=1),
-           #                  prob  = list(alpha=1)),
-           penalties = TRUE,
+           penalties = list(class = list(alpha=1),
+                            prob  = list(alpha=0)),
            do.fit = TRUE)
 
 # Plot model fit info:

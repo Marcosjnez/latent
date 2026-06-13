@@ -1,14 +1,17 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/06/2026
+# Modification date: 13/06/2026
+
+library(latent)
 
 #### gss82 ####
 
-library(latent)
+#### Step 1: Measurement model ####
+
 gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 indicators <- c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT")
 
-set.seed(2026)
+set.seed(2027)
 fit1 <- lca(data = gss82,
             nclasses = 3L,
             multinomial = indicators,
@@ -19,9 +22,10 @@ fit1 <- lca(data = gss82,
 latInspect(fit1, what = "loglik")
 # loglik: -3891.472 # penalized_loglik: -3896.468
 latInspect(fit1, what = "convergence")
-latInspect(fit1, what = "profile", digits = 3)
+latInspect(fit1, what = "profile")
 
-set.seed(2026)
+#### Step 2: Fitting the covariate model fixing the measurement part ####
+
 fit2 <- lca(data = gss82,
             nclasses = 3L,
             multinomial = indicators,
@@ -41,16 +45,16 @@ latInspect(fit2, what = "convergence")
 all.equal(fit1@parameters[-1], fit2@parameters[-1])
 
 # Inspect model objects:
-latInspect(fit2, what = "coefs", digits = 5)
-latInspect(fit2, what = "profile", digits = 3)
+latInspect(fit2, what = "coefs")
+latInspect(fit2, what = "profile")
 
 # Standard errors:
-SE <- se(fit2, type = "standard", digits = 4)
+SE <- se(fit2, type = "standard")
 SE$se
 
 #### empathy ####
 
-library(latent)
+#### Step 1: Measurement model ####
 
 set.seed(2026)
 fit1 <- lca(data = empathy,
@@ -62,6 +66,8 @@ latInspect(fit1, what = "loglik")
 # loglik: -1841.336 # penalized_loglik: -1844.333
 
 latInspect(fit1, what = "convergence")
+
+#### Step 2: Fitting the covariate model fixing the measurement part ####
 
 set.seed(2026)
 fit2 <- lca(data = empathy,
@@ -80,9 +86,9 @@ latInspect(fit2, what = "convergence")
 all.equal(fit1@parameters[-1], fit2@parameters[-1])
 
 # Inspect model objects:
-latInspect(fit2, what = "coefs", digits = 5)
-latInspect(fit2, what = "profile", digits = 3)
+latInspect(fit2, what = "coefs")
+latInspect(fit2, what = "profile")
 
 # Standard errors:
-SE <- se(fit2, type = "standard", digits = 4)
+SE <- se(fit2, type = "standard")
 SE$se

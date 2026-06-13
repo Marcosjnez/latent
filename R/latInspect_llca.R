@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/06/2026
+# Modification date: 13/06/2026
 #'
 #' @title
 #' Inspect objects from fitted lca models.
@@ -119,7 +119,7 @@ latInspect.llca <- function(fit,
                                                  x[c(1, 4), ]
                                                })
   }
-  profile <- list(class = classes, item = ClassConditional)
+  profile <- list(class_size = colMeans(posterior), item = ClassConditional)
 
   #### Extract the fit ####
 

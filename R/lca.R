@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/06/2026
+# Modification date: 13/06/2026
 #'
 #'
 #' Estimate latent class models for continuous and categorical indicators, with
@@ -61,6 +61,8 @@
 #' indicators. If an object of class \code{"llca"} is supplied, its measurement
 #' parameters are reused while the class-membership regression coefficients
 #' are re-estimated.
+#' @param weights Optional matrix with the same number of rows as data and
+#' the same number of columns as nclasses. Rows should add up to 1.
 #' @param start Optional named list of starting values. Names should correspond
 #' to parameter blocks in the model. Supplied values replace the corresponding
 #' default initial values, allowing partial specification of starting values.
@@ -187,6 +189,18 @@ lca <- function(data,
   ## Store original call:
   mc  <- match.call()
   args <- as.list(match.call(expand.dots = TRUE))[-1]
+
+  # Check weights if available:
+  if(!is.null(weights)) {
+
+    if(!is.matrix(weights) ||
+       ncol(weights) != nclasses ||
+       nrow(weights) != nrow(data)) {
+      stop("weights must be a matrix with the same number of rows as data and
+           the same number of columns as nclasses. Rows should sum up to 1.")
+    }
+
+  }
 
   # Check that data is either a data.frame or matrix:
   if(!is.data.frame(data) & !is.matrix(data)) {
