@@ -38,7 +38,7 @@ fit2 <- lca(data = gss82,
             do.fit = TRUE)
 
 latInspect(fit2, what = "loglik")
-# loglik: -3741.225 # penalized_loglik: -3746.363
+# loglik: -3739.894 # penalized_loglik: -3741.265
 latInspect(fit2, what = "convergence")
 
 # check that the measurement model was fixed:

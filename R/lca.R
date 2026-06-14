@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/06/2026
+# Modification date: 14/06/2026
 #'
 #'
 #' Estimate latent class models for continuous and categorical indicators, with
@@ -549,7 +549,7 @@ create_lca_dataList <- function(data,
   #### Possible response patterns and degrees of freedom ####
 
   # Get the number of possible response patterns:
-  if(all(item == "multinomial")) { # If all the items are multinomial...
+  if(nitems > 0L & all(item == "multinomial")) { # If all the items are multinomial...
 
     # Count the number of categories:
     Ks <- apply(measurement[, multinomial_names, drop = FALSE], MARGIN = 2,
@@ -607,7 +607,12 @@ create_lca_dataList <- function(data,
     rownames(Y_patterns) <- pattern_names
   }
   # Pattern names:
-  rownames(patterns) <- rownames(cov_patterns) <- pattern_names
+  if(length(patterns) > 0L) {
+    rownames(patterns) <- pattern_names
+  }
+  if(length(cov_patterns) > 0L) {
+    rownames(cov_patterns) <- pattern_names
+  }
   # Counts of each response pattern:
   pattern_weights <- counts_dt$count
   # Indices to map the full data to the unique patterns:
@@ -626,7 +631,9 @@ create_lca_dataList <- function(data,
   counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
   # patterns_original <- as.matrix(counts_dt[, colnames(measurement_recoded),, with = FALSE])
   patterns_original <- as.data.frame(counts_dt[, colnames(X), with = FALSE])
-  rownames(patterns_original) <- pattern_names
+  if(length(patterns_original) > 0L) {
+    rownames(patterns_original) <- pattern_names
+  }
 
   #### Store objects in dataList ####
 
@@ -1002,17 +1009,17 @@ create_lca_model <- function(dataList, nclasses, item,
 
   }
 
-  # Distal outcomes:
-  if(control$outcomes) {
-
-    list_struct[[k]] <- list(name = "distal_beta",
-                             type = "matrix",
-                             dim = c(nclasses, ncol(Y_patterns)),
-                             rownames = class_names,
-                             colnames = colnames(Y_patterns))
-    k <- k+1L
-
-  }
+  # # Distal outcomes:
+  # if(control$outcomes) {
+  #
+  #   list_struct[[k]] <- list(name = "distal_beta",
+  #                            type = "matrix",
+  #                            dim = c(nclasses, ncol(Y_patterns)),
+  #                            rownames = class_names,
+  #                            colnames = colnames(Y_patterns))
+  #   k <- k+1L
+  #
+  # }
 
   # Create the full transparameter structure:
   trans <- create_parameters(list_struct)
@@ -1119,8 +1126,13 @@ create_lca_model <- function(dataList, nclasses, item,
 
   }
 
-  # Distal outcomes:
-  param$distal_beta <- trans$distal_beta
+  if(nitems < 1L) {
+    param$loglik <- matrix("0", nrow = npatterns, ncol = nclasses,
+                           dimnames = list(pattern_names, class_names))
+  }
+
+  # # Distal outcomes:
+  # param$distal_beta <- trans$distal_beta
 
   #### Fixed parameters and equality constraints ####
 
@@ -1321,12 +1333,17 @@ create_lca_model <- function(dataList, nclasses, item,
 
     }
 
-    # Distal outcomes:
-    if(control$outcomes) {
-      init_param[[i]][["distal_beta"]] <- matrix(rnorm(nclasses*ncol(Y_patterns)),
-                                                 nrow = nclasses, ncol = ncol(Y_patterns))
-      dimnames(init_param[[i]]$distal_beta) <- dimnames(param$distal_beta)
+    if(nitems < 1L) {
+      init_param[[i]]$loglik <- matrix(0, nrow = npatterns, ncol = nclasses,
+                                       dimnames = list(pattern_names, class_names))
     }
+
+    # # Distal outcomes:
+    # if(control$outcomes) {
+    #   init_param[[i]][["distal_beta"]] <- matrix(rnorm(nclasses*ncol(Y_patterns)),
+    #                                              nrow = nclasses, ncol = ncol(Y_patterns))
+    #   dimnames(init_param[[i]]$distal_beta) <- dimnames(param$distal_beta)
+    # }
 
   }
 
@@ -1641,67 +1658,31 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   #                                      weights = weights,
   #                                      double_names = "lca"))
 
-  if(control$outcomes) {
+  if(is.null(dataList$weights)) {
 
-    if(is.null(dataList$weights)) {
-
-      estimators[[G]] <- list(estimator = "lca_outcomes",
-                              parameters = c("class", "loglik", "distal_beta"),
-                              extra = list(S = npatterns,
-                                           I = nclasses,
-                                           weights = pattern_weights,
-                                           Y = Y_patterns,
-                                           double_names = "lca"))
-      G <- G + 1L
-
-    } else {
-
-      for(i in 1:nclasses) {
-
-        estimators[[G]] <- list(estimator = "lca_outcomes",
-                                parameters = c("class", "loglik", "distal_beta"),
-                                extra = list(S = npatterns,
-                                             I = nclasses,
-                                             weights = pattern_weights*weights[, i],
-                                             Y = Y_patterns,
-                                             double_names = "lca"))
-        G <- G + 1L
-
-      }
-
-    }
+    estimators[[G]] <- list(estimator = "lca2",
+                            parameters = c("class", "loglik"),
+                            extra = list(S = npatterns,
+                                         I = nclasses,
+                                         weights = pattern_weights,
+                                         double_names = "lca"))
+    G <- G + 1L
 
   } else {
 
-    if(is.null(dataList$weights)) {
+    for(i in 1:nclasses) {
 
       estimators[[G]] <- list(estimator = "lca2",
                               parameters = c("class", "loglik"),
                               extra = list(S = npatterns,
                                            I = nclasses,
-                                           weights = pattern_weights,
+                                           weights = pattern_weights*weights[, i],
                                            double_names = "lca"))
       G <- G + 1L
-
-    } else {
-
-      for(i in 1:nclasses) {
-
-        estimators[[G]] <- list(estimator = "lca2",
-                                parameters = c("class", "loglik"),
-                                extra = list(S = npatterns,
-                                             I = nclasses,
-                                             weights = pattern_weights*weights[, i],
-                                             double_names = "lca"))
-        G <- G + 1L
-
-      }
 
     }
 
   }
-
-  # IF weights IS A MATRIX, REPEAT LCA2 as many times as columns
 
   # Choose whether using Bayes constants:
   if(control$reg) {
@@ -1861,6 +1842,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
   idx_transformed <- unlist(lapply(control_transform,
                                    FUN = \(x) unlist(x$indices_out)+1L))
+  # if(isTRUE(control$stop)) stop("AHHHH")
   inits <- create_init(trans, param, init_param,
                        idx_transformed = idx_transformed, control)
 

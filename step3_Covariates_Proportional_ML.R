@@ -29,30 +29,29 @@ latInspect(fit1, what = "profile")
 
 #### Step 2: Compute the weights ####
 
+gss82$states <- latInspect(fit1, what = "state")
 weights <- latInspect(fit1, what = "posterior")
 
 #### Step 3: Fitting the covariate model using the states ####
 
 # RACE and SEX are treated as nominal and EDUCR and AGE as continuous
 set.seed(2027)
+weights <- latInspect(fit1, what = "posterior")
 fit2 <- lca(data = gss82,
             nclasses = 3L,
-            multinomial = indicators,
+            multinomial = "states",
             X = c("RACE", "SEX", "EDUCR", "AGE"),
-            model = fit1,
             penalties = list(class = list(alpha=1),
-                             prob  = list(alpha=0)),
+                             prob  = list(alpha=1)),
             weights = weights,
             do.fit = TRUE)
 
 latInspect(fit2, what = "loglik")
-# loglik: -3739.894 # penalized_loglik: -3741.265
+# loglik: -1479.806 # penalized_loglik: -1483.852
 latInspect(fit2, what = "convergence")
 
 latInspect(fit2, what = "profile")
 latInspect(fit2, what = "coefs")
-
-# I THINK STANDARD ERRORS SHOULD BE VALID
 
 # Standard errors:
 SE <- se(fit2, type = "standard")
