@@ -58,7 +58,7 @@ latInspect.llca <- function(fit,
   # Posterior classification:
   state <- apply(posterior, MARGIN = 1, FUN = which.max)
   # Data table of response patterns:
-  summary_table <- cbind(patterns_original[, -1],
+  summary_table <- cbind(all_patterns,
                          Observed = pattern_weights,
                          Estimated = estimated,
                          Posterior = posterior,
@@ -213,7 +213,7 @@ latInspect.llca <- function(fit,
   } else if (what == "pattern" ||
              what == "patterns") {
 
-    patterns <- data.frame(patterns_original[, -1], Observed = pattern_weights)
+    patterns <- data.frame(all_patterns, Observed = pattern_weights)
     # Sort the patterns by increasing order:
     patterns <- patterns[do.call(order, patterns), ]
     rownames(patterns) <- paste("pattern", 1:nrow(patterns), sep = "")
@@ -229,7 +229,8 @@ latInspect.llca <- function(fit,
 
     result <- posterior
 
-  } else if (what == "state") {
+  } else if (what == "state" ||
+             what == "states") {
 
     return(state)
 

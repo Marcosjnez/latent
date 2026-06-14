@@ -51,7 +51,7 @@ latInspect(fit2, what = "loglik")
 # loglik: -1483.887 # penalized_loglik: -1485.214
 latInspect(fit2, what = "convergence")
 
-latInspect(fit2, what = "profile") # CLUSTER SIZE DIFFERS FROM LG, WHY?
+latInspect(fit2, what = "profile")
 latInspect(fit2, what = "coefs")
 
 # NO VALID STANDARD ERRORS BECAUSE VAR(logfixed) IS NOT CALCULATED IN fit1

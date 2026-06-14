@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/06/2026
+# Modification date: 14/06/2026
 
 #### Store a dataset ####
 
@@ -25,11 +25,14 @@ fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
            # X = c("RACE", "SEX", "EDUCR", "AGE"),
-           # model = list("UNDERSTA ~~ COOPERAT
-           #               UNDERSTA ~~ ACCURACY"),
+           model = list("UNDERSTA ~~ COOPERAT
+                         PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
            do.fit = TRUE)
+latInspect(fit, what = "loglik")
+# loglik: -3940.668 # penalized_loglik: -3945.117
+# loglik: -3883.015 # penalized_loglik: -3887.560 ("UNDERSTA ~~ COOPERAT")
 
 # Plot model fit info:
 fit
@@ -44,9 +47,6 @@ summary(fit)
 lbvr(fit) # Modify this to accomodate residual dependencies
 
 # Inspect model objects:
-latInspect(fit, what = "loglik")
-# loglik: -3940.668 # penalized_loglik: -3945.117
-# loglik: -3883.015 # penalized_loglik: -3887.560 ("UNDERSTA ~~ COOPERAT")
 latInspect(fit, what = "convergence")
 latInspect(fit, what = "profile")
 latInspect(fit, what = "coefs")

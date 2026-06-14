@@ -61,8 +61,7 @@
 #' indicators. If an object of class \code{"llca"} is supplied, its measurement
 #' parameters are reused while the class-membership regression coefficients
 #' are re-estimated.
-#' @param weights Optional matrix with the same number of rows as data and
-#' the same number of columns as nclasses. Rows should add up to 1.
+#' @param weights Optional vector of weights for each row of data.
 #' @param start Optional named list of starting values. Names should correspond
 #' to parameter blocks in the model. Supplied values replace the corresponding
 #' default initial values, allowing partial specification of starting values.
@@ -193,11 +192,8 @@ lca <- function(data,
   # Check weights if available:
   if(!is.null(weights)) {
 
-    if(!is.matrix(weights) ||
-       ncol(weights) != nclasses ||
-       nrow(weights) != nrow(data)) {
-      stop("weights must be a matrix with the same number of rows as data and
-           the same number of columns as nclasses. Rows should sum up to 1.")
+    if(length(c(weights)) != nrow(data)) {
+      stop("weights must be the same length.")
     }
 
   }
@@ -402,7 +398,7 @@ create_lca_dataList <- function(data,
 
     X <- X[-remove, ]
     data <- data[-remove, ]
-    weights <- weights[-remove, ]
+    weights <- weights[-remove]
 
   }
 
@@ -588,11 +584,15 @@ create_lca_dataList <- function(data,
   # Append the covariates, indicators, and distal outcomes.
   # This is necessary to find the unique data patterns. Later, we split again:
   if(control$outcomes) {
-    dt <- data.table::as.data.table(cbind(X, measurement_recoded, Y))
+    all <- cbind(X, measurement_recoded, Y)
   } else {
-    dt <- data.table::as.data.table(cbind(X, measurement_recoded))
+    all <- cbind(X, measurement_recoded)
   }
-  # Collect some information from the measurement + covariates:
+  # Add the weights if available:
+  if(!is.null(weights)) all <- cbind(all, weights = weights)
+  # Transform to data.table:
+  dt <- data.table::as.data.table(all)
+  # Collect some information:
   counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
   # Number of unique response patterns:
   npatterns <- nrow(counts_dt)
@@ -613,6 +613,10 @@ create_lca_dataList <- function(data,
   if(length(cov_patterns) > 0L) {
     rownames(cov_patterns) <- pattern_names
   }
+  if(!is.null(weights)) {
+    post_weights <- as.matrix(counts_dt[, "weights", with = FALSE])
+    rownames(post_weights) <- pattern_names
+  }
   # Counts of each response pattern:
   pattern_weights <- counts_dt$count
   # Indices to map the full data to the unique patterns:
@@ -624,16 +628,24 @@ create_lca_dataList <- function(data,
 
   # Compute the nonrecoded patterns of items (patterns_original):
   if(control$outcomes) {
-    dt <- data.table::as.data.table(cbind(X, measurement, Y))
+    all <- cbind(X, measurement, Y)
   } else {
-    dt <- data.table::as.data.table(cbind(X, measurement))
+    all <- cbind(X, measurement)
   }
+  # Add the weights if available:
+  if(!is.null(weights)) all <- cbind(all, weights = weights)
+  # Transform to data.table:
+  dt <- data.table::as.data.table(all)
+  # Collect some information:
   counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
   # patterns_original <- as.matrix(counts_dt[, colnames(measurement_recoded),, with = FALSE])
-  patterns_original <- as.data.frame(counts_dt[, colnames(X), with = FALSE])
+  patterns_original <- as.data.frame(counts_dt[, colnames(measurement_recoded),
+                                               with = FALSE])
   if(length(patterns_original) > 0L) {
     rownames(patterns_original) <- pattern_names
   }
+  remove <- which("(Intercept)" %in% colnames(counts_dt))
+  all_patterns <- as.data.frame(counts_dt)[, -remove]
 
   #### Store objects in dataList ####
 
@@ -659,10 +671,11 @@ create_lca_dataList <- function(data,
   dataList$full2short <- full2short
   dataList$short2full <- short2full
   dataList$patterns_original <- patterns_original
+  dataList$all_patterns <- all_patterns
   dataList$any_gaussian <- any_gaussian
   dataList$any_multinomial <- any_multinomial
   dataList$any_mvgaussian <- any_mvgaussian
-  dataList$weights <- weights[full2short, ]
+  if(!is.null(weights)) dataList$weights <- post_weights # weights[full2short, ]
 
   # Update and check control parameters:
   control$penalties <- penalties # Either a logical or a list of named penalties
@@ -1670,17 +1683,13 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
   } else {
 
-    for(i in 1:nclasses) {
-
       estimators[[G]] <- list(estimator = "lca2",
                               parameters = c("class", "loglik"),
                               extra = list(S = npatterns,
                                            I = nclasses,
-                                           weights = pattern_weights*weights[, i],
+                                           weights = pattern_weights*weights,
                                            double_names = "lca"))
       G <- G + 1L
-
-    }
 
   }
 

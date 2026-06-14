@@ -60,8 +60,7 @@ indicators. If an object of class \code{"llca"} is supplied, its measurement
 parameters are reused while the class-membership regression coefficients
 are re-estimated.}
 
-\item{weights}{Optional matrix with the same number of rows as data and
-the same number of columns as nclasses. Rows should add up to 1.}
+\item{weights}{Optional vector of weights for each row of data.}
 
 \item{start}{Optional named list of starting values. Names should correspond
 to parameter blocks in the model. Supplied values replace the corresponding
