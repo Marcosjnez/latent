@@ -266,6 +266,25 @@ latInspect.llca <- function(fit,
 
     result <- probCat
 
+  } else if(what == "classification") {
+
+    # Proportional classification-error matrix:
+    # rows = true latent class C
+    # columns = assigned/pseudo class W
+    class_error_prop <- crossprod(posterior, posterior)
+    class_error_prop <- sweep(class_error_prop, 1L, colSums(posterior), "/")
+    rownames(class_error_prop) <- paste0("assigned.", 1:nclasses)
+    colnames(class_error_prop) <- paste0("avgprob.", 1:nclasses)
+
+    A_modal <- diag(nclasses)[state, , drop = FALSE]
+    class_error_modal <- crossprod(posterior, A_modal)
+    class_error_modal <- sweep(class_error_modal, 1L, colSums(posterior), "/")
+    rownames(class_error_modal) <- paste0("assigned.", 1:nclasses)
+    colnames(class_error_modal) <- paste0("avgprob.", 1:nclasses)
+
+    result <- list(class_error_modal = class_error_modal,
+                   class_error_prop = class_error_prop)
+
   } else if (what == "timing" ||
              what == "elapsed") {
 

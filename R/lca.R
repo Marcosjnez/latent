@@ -2229,3 +2229,30 @@ group_connected_pairs <- function(pairs) {
     pairs = pair_groups
   )
 }
+
+bch_weights <- function(post, class_error, type = c("modal", "proportional")) {
+  type <- match.arg(type)
+  K <- ncol(post)
+
+  if (type == "modal") {
+    modal_class <- max.col(post, ties.method = "first")
+    W <- diag(K)[modal_class, , drop = FALSE]
+  }
+
+  if (type == "proportional") {
+    W <- post
+  }
+
+  # class_error is D:
+  # rows = true latent class X
+  # cols = assigned class W
+  D_inv <- solve(class_error)
+
+  # BCH pseudo-weights for true latent class X
+  W_bch <- W %*% D_inv
+
+  colnames(W_bch) <- paste0("class.", seq_len(K))
+  W_bch
+}
+
+

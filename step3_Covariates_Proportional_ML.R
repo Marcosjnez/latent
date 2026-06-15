@@ -30,41 +30,44 @@ latInspect(fit1, what = "profile")
 #### Step 2: Compute the weights ####
 
 N <- nrow(gss82)
-gss82 <- gss82[rep(seq_len(N), each = 3L), ] # Expand the dataset
-gss82$states <- factor(rep(seq_len(3), times = N), levels = seq_len(3))
+gss82_expanded <- gss82[rep(seq_len(N), each = 3L), ] # Expand the dataset
+gss82_expanded$states <- factor(rep(seq_len(3), times = N), levels = seq_len(3))
 posterior <- latInspect(fit1, what = "posterior")
 weights <- as.vector(t(posterior))
 
 # Proportional classification-error matrix:
 # rows = true latent class C
 # columns = assigned/pseudo class W
-fixed_prop <- crossprod(posterior, posterior)
-fixed_prop <- sweep(fixed_prop, 1L, colSums(posterior), "/")
+class_error_prop <- latInspect(fit1, what = "classification")$class_error_prop
 # Convert to the log-parameterization used by latent
-logfixed_prop <- log(fixed_prop)
-logfixed_prop <- apply(logfixed_prop, MARGIN = 1L, FUN = \(x) x - x[1L])
+log_class_error_prop <- log(class_error_prop)
+log_class_error_prop <- apply(log_class_error_prop, MARGIN = 1L,
+                              FUN = \(x) x - x[1L])
 
 #### Step 3: Fitting the covariate model using the states ####
 
 # RACE and SEX are treated as nominal and EDUCR and AGE as continuous
 set.seed(2027)
-fit2 <- lca(data = gss82,
+fit2 <- lca(data = gss82_expanded,
             nclasses = 3L,
             multinomial = "states",
             X = c("RACE", "SEX", "EDUCR", "AGE"),
-            model = list(log_states = logfixed_prop),
+            model = list(log_states = log_class_error_prop),
             penalties = list(class = list(alpha=1),
                              prob  = list(alpha=0)),
             weights = weights,
             do.fit = TRUE)
 
 latInspect(fit2, what = "loglik")
-# loglik: -1479.613 # penalized_loglik: -1482.190
+# loglik: -1525.833 # penalized_loglik: -1527.195
 latInspect(fit2, what = "convergence")
 
 latInspect(fit2, what = "profile")
 latInspect(fit2, what = "coefs")
 
-# Standard errors:
-SE <- se(fit2, type = "standard")
-SE$se
+# NO VALID STANDARD ERRORS BECAUSE VAR(log_class_error_prop) IS NOT CALCULATED IN fit1
+# Solution:
+# (1) Calculate log_class_error_prop as transformed parameters in fit1
+# (2) Provide the full fit1 with log_class_error_prop in model
+# (3) Automatically propagate SE estimation for transformed parameters
+

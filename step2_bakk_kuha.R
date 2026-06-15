@@ -4,8 +4,6 @@
 
 library(latent)
 
-#### gss82 ####
-
 #### Step 1: Measurement model ####
 
 gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
@@ -31,8 +29,6 @@ fit2 <- lca(data = gss82,
             multinomial = indicators,
             X = c("RACE", "SEX", "EDUCR", "AGE"),
             model = fit1,
-            # model = list("UNDERSTA ~~ COOPERAT
-            #               UNDERSTA ~~ ACCURACY"),
             penalties = list(class = list(alpha=1),
                              prob  = list(alpha=0)),
             do.fit = TRUE)
