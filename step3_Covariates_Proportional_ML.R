@@ -43,6 +43,7 @@ class_error_prop <- latInspect(fit1, what = "classification")$class_error_prop
 log_class_error_prop <- log(class_error_prop)
 log_class_error_prop <- apply(log_class_error_prop, MARGIN = 1L,
                               FUN = \(x) x - x[1L])
+# t(apply(log_class_error_prop, 2, soft, a=1)) / class_error_prop
 
 #### Step 3: Fitting the covariate model using the states ####
 

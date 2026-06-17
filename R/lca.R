@@ -2231,6 +2231,7 @@ group_connected_pairs <- function(pairs) {
 }
 
 bch_weights <- function(post, class_error, type = c("modal", "proportional")) {
+
   type <- match.arg(type)
   K <- ncol(post)
 
@@ -2252,7 +2253,9 @@ bch_weights <- function(post, class_error, type = c("modal", "proportional")) {
   W_bch <- W %*% D_inv
 
   colnames(W_bch) <- paste0("class.", seq_len(K))
-  W_bch
+
+  return(W_bch)
+
 }
 
 

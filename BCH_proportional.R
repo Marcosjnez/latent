@@ -52,6 +52,14 @@ diag(perfect) <- 1 - eps * (K - 1L)
 log_perfect <- log(perfect)
 log_perfect <- apply(log_perfect, MARGIN = 1L,
                      FUN = \(x) x - x[1L])
+t(apply(log_perfect, 2, soft, a=1))
+
+class_error_prop <- latInspect(fit1, what = "classification")$class_error_prop
+# Convert to the log-parameterization used by latent
+log_class_error_prop <- log(class_error_prop)
+log_class_error_prop <- apply(log_class_error_prop, MARGIN = 1L,
+                              FUN = \(x) x - x[1L])
+t(apply(log_class_error_prop, 2, soft, a=1)) / class_error_prop
 
 set.seed(2027)
 
@@ -60,7 +68,7 @@ fit_bch_prop <- lca(data = gss82_bch_prop,
                     multinomial = "states",
                     X = c("RACE", "SEX", "EDUCR", "AGE"),
                     model = list(log_states = log_perfect),
-                    penalties = list(class = list(alpha = 1),
+                    penalties = list(class = list(alpha = 0),
                                      prob  = list(alpha = 0)),
                     weights = weights_bch_prop,
                     do.fit = TRUE)

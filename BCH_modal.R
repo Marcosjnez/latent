@@ -17,6 +17,8 @@ fit1 <- lca(data = gss82,
                              prob  = list(alpha = 0)),
             do.fit = TRUE)
 
+latInspect(fit1, what = "loglik")
+# loglik: -3891.252 # penalized_loglik: -3892.478
 post <- latInspect(fit1, what = "posterior")
 K <- ncol(post)
 N <- nrow(post)
@@ -46,7 +48,7 @@ weights_bch_modal <- as.vector(t(W_bch_modal))
 
 #### Perfect measurement matrix for states ####
 
-eps <- 1e-12
+eps <- 1
 
 perfect <- matrix(eps, nrow = K, ncol = K)
 diag(perfect) <- 1 - eps * (K - 1L)
@@ -55,13 +57,20 @@ log_perfect <- log(perfect)
 log_perfect <- apply(log_perfect, MARGIN = 1L,
                      FUN = \(x) x - x[1L])
 
+class_error_modal <- latInspect(fit1, what = "classification")$class_error_modal
+# Convert to the log-parameterization used by latent
+log_class_error_modal <- log(class_error_modal)
+log_class_error_modal <- apply(log_class_error_modal, MARGIN = 1L,
+                               FUN = \(x) x - x[1L])
+t(apply(log_class_error_modal, 2, soft, a=1)) / class_error_modal
+
 set.seed(2027)
 
 fit_bch_modal <- lca(data = gss82_bch_modal,
                      nclasses = K,
                      multinomial = "states",
                      X = c("RACE", "SEX", "EDUCR", "AGE"),
-                     model = list(log_states = log_perfect),
+                     model = list(log_states = log_class_error_modal),
                      penalties = list(class = list(alpha = 1),
                                       prob  = list(alpha = 0)),
                      weights = weights_bch_modal,
