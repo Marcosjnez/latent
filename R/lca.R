@@ -181,9 +181,60 @@ lca <- function(data,
                 model = NULL,
                 weights = NULL,
                 start = NULL,
+                adjustment = "bk",
+                classification = "modal",
                 control = NULL,
                 do.fit = TRUE,
                 verbose = TRUE) {
+
+  if(!is.null(X) && adjustment != "none") {
+
+    if(!any(X %in% colnames(data))) {
+      stop("No named covariate in X was found in data")
+    }
+
+    adjustment <- tolower(adjustment)
+
+    if(adjustment == "bk") {
+
+      result <- lca_bakk_kuha(data = data,
+                              nclasses = nclasses,
+                              gaussian = gaussian,
+                              multinomial = multinomial,
+                              X = X,
+                              Y = NULL,
+                              penalties = penalties,
+                              model = model,
+                              weights = weights,
+                              start = start,
+                              control = control,
+                              do.fit = do.fit,
+                              verbose = verbose)
+
+    } else if(adjustment == "ml") {
+
+      result <- lca_ml(data = data,
+                       nclasses = nclasses,
+                       gaussian = gaussian,
+                       multinomial = multinomial,
+                       X = X,
+                       Y = NULL,
+                       penalties = penalties,
+                       model = model,
+                       weights = weights,
+                       start = start,
+                       control = control,
+                       do.fit = do.fit,
+                       verbose = verbose,
+                       classification = classification)
+
+    } else {
+      stop("Unknown adjustment method")
+    }
+
+    return(result)
+
+  }
 
   ## Store original call:
   mc  <- match.call()
@@ -248,13 +299,33 @@ lca <- function(data,
 
   #### Create the model ####
 
-  # Fix the measurement part of the model if a previous llca fit was provided
+  # Fix the measurement part of the model if a previous llca fit was provided in
   # model. This is usually done for two-step estimation:
+
   if(class(model) == "llca") {
 
     control$model <- model
     model <- model@parameters
-    model$beta <- NULL
+    # Free the coeffs for covariates if there is no outcome:
+    if(is.null(Y)) model$beta <- NULL
+
+  } else if(length(model) > 1) {
+
+    control$model <- model
+    # Find what objects in model are llca objects:
+    llca_obj <- which(vapply(model, inherits, logical(1), what = "llca"))
+
+    # Collect all the @parameters from the llca objects. If some of them are
+    # repeated (i.e., share the same name), then keep the last one:
+    model <- list()
+    for (obj in control$model[llca_obj]) {
+      if (inherits(obj, "llca")) {
+        model[names(obj@parameters)] <- obj@parameters
+      }
+    }
+
+    # Free the coeffs for covariates if there is no outcome:
+    if(is.null(Y)) model$beta <- NULL
 
   }
 
@@ -2258,4 +2329,164 @@ bch_weights <- function(post, class_error, type = c("modal", "proportional")) {
 
 }
 
+lca_bakk_kuha <- function(data,
+                          nclasses = NULL,
+                          gaussian = NULL,
+                          multinomial = NULL,
+                          X = NULL,
+                          Y = NULL,
+                          penalties = TRUE,
+                          model = NULL,
+                          weights = NULL,
+                          start = NULL,
+                          control = NULL,
+                          do.fit = TRUE,
+                          verbose = TRUE) {
+
+  # This is the Bakk and Kuha method
+
+  #### Step 1: Measurement model ####
+
+  fit1 <- lca(data = data,
+              nclasses = nclasses,
+              gaussian = gaussian,
+              multinomial = multinomial,
+              X = NULL,
+              Y = NULL,
+              penalties = penalties,
+              model = model,
+              weights = weights,
+              start = start,
+              adjustment = "none",
+              control = control,
+              do.fit = do.fit,
+              verbose = verbose)
+
+  #### Step 2: Fitting the covariate model fixing the measurement part ####
+
+  fit2 <- lca(data = data,
+              nclasses = nclasses,
+              gaussian = gaussian,
+              multinomial = multinomial,
+              X = X,
+              Y = NULL,
+              penalties = penalties,
+              model = fit1,
+              weights = weights,
+              start = start,
+              adjustment = "none",
+              control = control,
+              do.fit = do.fit,
+              verbose = verbose)
+
+  # #### Distal outcomes ####
+  #
+  # fit3 <- lca(data = data,
+  #             nclasses = nclasses,
+  #             gaussian = gaussian,
+  #             multinomial = multinomial,
+  #             X = X,
+  #             Y = Y,
+  #             penalties = penalties,
+  #             model = list(fit1, fit2), # FIX THIS
+  #             weights = weights,
+  #             start = start,
+  #             adjustment = "none",
+  #             control = control,
+  #             do.fit = do.fit,
+  #             verbose = verbose)
+
+  #### Return ####
+
+  return(fit2)
+
+}
+
+lca_ml <- function(data,
+                   nclasses = NULL,
+                   gaussian = NULL,
+                   multinomial = NULL,
+                   X = NULL,
+                   Y = NULL,
+                   penalties = TRUE,
+                   model = NULL,
+                   weights = NULL,
+                   start = NULL,
+                   control = NULL,
+                   do.fit = TRUE,
+                   verbose = TRUE,
+                   classification = "modal") {
+
+  # This code runs the three-steps method of LatentGold with options:
+  # Analysis: Covariates
+  # Classification: Modal / Proportional
+  # Adjustment: ML
+
+  #### Step 1: Measurement model ####
+
+  fit1 <- lca(data = data,
+              nclasses = nclasses,
+              gaussian = gaussian,
+              multinomial = multinomial,
+              X = NULL,
+              Y = NULL,
+              penalties = penalties,
+              model = model,
+              weights = weights,
+              start = start,
+              adjustment = "none",
+              control = control,
+              do.fit = do.fit,
+              verbose = verbose)
+
+  #### Step 2: Modal assignment ####
+
+  if(classification == "modal") {
+
+    data$states <- latInspect(fit1, what = "state")
+    class_error <- latInspect(fit1, what = "classification")$class_error_modal
+
+  } else if(classification == "prop") {
+
+    N <- nrow(data)
+    data <- data[rep(seq_len(N), each = nclasses), ] # Expand the dataset
+    data$states <- factor(rep(seq_len(nclasses), times = N),
+                                   levels = seq_len(nclasses))
+    posterior <- latInspect(fit1, what = "posterior")
+    weights <- as.vector(t(posterior))
+    class_error <- latInspect(fit1, what = "classification")$class_error_prop
+
+  } else {
+    stop("Unknown classification method")
+  }
+
+  log_class_error <- log(class_error)
+  log_class_error <- apply(log_class_error, MARGIN = 1L,
+                           FUN = \(x) x - x[1L])
+  # t(apply(log_class_error, 2, soft, a=1)) / log_class_error
+
+  #### Step 3: Fitting the covariate model using the states ####
+
+  fit2 <- lca(data = data,
+              nclasses = nclasses,
+              multinomial = "states",
+              X = X,
+              Y = NULL,
+              model = list(log_states = log_class_error),
+              weights = weights,
+              penalties = penalties,
+              start = start,
+              adjustment = "none",
+              control = control,
+              do.fit = do.fit,
+              verbose = verbose)
+
+  #### Return ####
+
+  return(list(measurement = fit1, covariates = fit2))
+  # return(list(measurement = fit1,
+  #             covariates = fit2,
+  #             outcomes = fit3))
+
+}
 

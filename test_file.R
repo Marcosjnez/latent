@@ -25,8 +25,10 @@ fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
            # X = c("RACE", "SEX", "EDUCR", "AGE"),
-           model = list("UNDERSTA ~~ COOPERAT
-                         PURPOSE ~~ COOPERAT"),
+           # adjustment = "ml",
+           # classification = "prop",
+           # model = list("UNDERSTA ~~ COOPERAT
+           #               PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
            do.fit = TRUE)
