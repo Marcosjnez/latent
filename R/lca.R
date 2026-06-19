@@ -41,6 +41,9 @@
 #' \code{data.frame}/\code{matrix} with the same number of rows as
 #' \code{data}. An intercept is always included. Character covariates are
 #' converted to factors and factors are expanded using \code{model.matrix()}.
+#' @param Y. Optional list containing the outcomes to be predicted. The list
+#' must be named with "multinomial" or "gaussian" slots containing the item
+#' names to be modeled as such. Default is NULL.
 #' @param penalties Logical value or named list controlling regularization.
 #' If \code{FALSE}, no penalties are used. If \code{TRUE}, default penalties are
 #' used. If a named list is supplied, missing penalty blocks are filled with
@@ -62,6 +65,11 @@
 #' parameters are reused while the class-membership regression coefficients
 #' are re-estimated.
 #' @param weights Optional vector of weights for each row of data.
+#' @adjustment Character. "bk" for the Bakk and Kuha method, "ml" for the
+#' error classification method, and "none" for one-step estimation. Default is
+#' "bk".
+#' @classification Character. "modal" or "prop" for computing the error
+#' classification table.
 #' @param start Optional named list of starting values. Names should correspond
 #' to parameter blocks in the model. Supplied values replace the corresponding
 #' default initial values, allowing partial specification of starting values.
@@ -187,6 +195,36 @@ lca <- function(data,
                 do.fit = TRUE,
                 verbose = TRUE) {
 
+  #### Class enumeration: run a model for different number of classes ####
+
+  # Return a list of llca models:
+
+  if(length(nclasses) > 1L) {
+
+    result <- vector("list", length = length(nclasses))
+    for(i in 1:length(nclasses)) {
+
+      if(verbose) print(paste0("Model nclasses=", nclasses[i]))
+
+      result[[i]] <- lca(data, nclasses = nclasses[i],
+                         gaussian = gaussian, multinomial = multinomial,
+                         X = X, penalties = penalties, model = model,
+                         start = start, weights = weights,
+                         adjustment = adjustment, classification = classification,
+                         control = control, do.fit = do.fit, verbose = verbose)
+
+    }
+
+    class(result) <- "llcalist"
+
+    return(result)
+
+  }
+
+  #### Adjustment methods to fit models with covariates and distal outcomes ####
+
+  # Return a list of lcca models:
+
   if(!is.null(X) && adjustment != "none") {
 
     if(!any(X %in% colnames(data))) {
@@ -236,56 +274,18 @@ lca <- function(data,
 
   }
 
-  ## Store original call:
+  # If no adjustment method is used, then proceed...
+
+  #### Store original call ####
+
   mc <- match.call(expand.dots = TRUE)
   args <- as.list(mc)[-1]
   args <- lapply(args, eval, envir = parent.frame())
 
-  # Check weights if available:
-  if(!is.null(weights)) {
-
-    if(length(c(weights)) != nrow(data)) {
-      stop("weights must be the same length.")
-    }
-
-  }
-
-  # Check that data is either a data.frame or matrix:
-  if(!is.data.frame(data) & !is.matrix(data)) {
-    stop("data must be a matrix or data.frame")
-  }
-
-  # Check that nclasses is a (vector of) positive integer(s):
-  if(any(nclasses < 1L)) {
-    stop("nclasses must be a (vector of) positive integer(s)")
-  }
-
-  # Class enumeration: run a model for different number of classes
-  # Returns a list of llca models:
-  if(length(nclasses) > 1L) {
-
-    result <- vector("list", length = length(nclasses))
-    for(i in 1:length(nclasses)) {
-
-      if(verbose) print(paste0("Model nclasses=", nclasses[i]))
-
-      result[[i]] <- lca(data, nclasses = nclasses[i],
-                         gaussian = gaussian, multinomial = multinomial,
-                         X = X, penalties = penalties, model = model,
-                         start = start, control = control,
-                         do.fit = do.fit, verbose = verbose)
-
-    }
-
-    class(result) <- "llcalist"
-
-    return(result)
-
-  }
-
   #### Create the dataList ####
 
   dataList_and_control <- create_lca_dataList(data = data,
+                                              nclasses = nclasses,
                                               X = X,
                                               Y = Y,
                                               gaussian = gaussian,
@@ -424,29 +424,49 @@ lca <- function(data,
 
 }
 
-create_lca_dataList <- function(data,
+create_lca_dataList <- function(data = NULL,
+                                nclasses = NULL,
                                 X = NULL,
                                 Y = NULL,
                                 gaussian = NULL,
                                 multinomial = NULL,
                                 model = NULL,
-                                penalties = FALSE,
+                                penalties = NULL,
                                 weights = NULL,
-                                control = list(),
+                                control = NULL,
                                 start = NULL) {
+
+  #### Check input arguments ####
+
+  # Check weights if available:
+  if(!is.null(weights)) {
+
+    if(length(c(weights)) != nrow(data)) {
+      stop("weights must be the same length.")
+    }
+
+  }
+
+  # Check that data is a data.frame:
+  if(!is.data.frame(data)) {
+    stop("data must be a data.frame")
+  }
+
+  # Check that nclasses is a (vector of) positive integer(s):
+  if(any(nclasses < 1L)) {
+    stop("nclasses must be a (vector of) positive integer(s)")
+  }
 
   #### Process the covariates ####
 
-  original_X <- X
-  # Matrix of predictors for latent class probabilities:
-  # X can be a character vector with the name of the predictors to be found in
-  # data or a data.frame or matrix with named predictor variables
+  original_X <- X # Store the original X, just in case
+  # Create the matrix of predictors for latent class probabilities:
+  # X must be a character vector with the name of the predictors in data:
   X <- make_design_matrix(X = X, data = data)
   pX <- ncol(X) # Number of columns of the design matrix
 
-  # Remove participants with missing data in any covariate:
+  # Remove participants with missing data in any covariate X:
   remove <- which(apply(X, MARGIN = 1, FUN = anyNA))
-
   if(length(remove) > 0) {
 
     missing <- colSums(is.na(X))
@@ -474,7 +494,7 @@ create_lca_dataList <- function(data,
 
   }
 
-  # Number of subjects:
+  # Number of subjects after removing rows with missingness in the covariates X:
   nobs <- nrow(data)
 
   #### Indicator types ####
@@ -553,7 +573,7 @@ create_lca_dataList <- function(data,
   measurement <- data[, model_vector[idx], drop = FALSE]
   measurement_recoded <- measurement
 
-  # match each item with a likelihood model:
+  # match each item with its respective likelihood model:
   item <- model_labels[idx]
   item_names <- colnames(measurement)
   # Number of items:
@@ -564,8 +584,7 @@ create_lca_dataList <- function(data,
     stop("item must be a character vector with as many elements as columns in data")
   }
 
-  # Indicators:
-
+  # Store the indicators in the control list:
   any_gaussian <- any(item == "gaussian")
   if(any_gaussian) {
     gaussian_names <- item_names[which(item == "gaussian")]
@@ -2344,7 +2363,7 @@ lca_bakk_kuha <- function(data,
                           do.fit = TRUE,
                           verbose = TRUE) {
 
-  # This is the Bakk and Kuha method
+  # This is the Bakk and Kuha method for estimating covariates
 
   #### Step 1: Measurement model ####
 

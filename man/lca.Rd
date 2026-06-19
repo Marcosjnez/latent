@@ -79,6 +79,10 @@ model structure, and optimization setup, but without running the optimizer.}
 
 \item{verbose}{Logical. If \code{TRUE}, progress information is printed,
 especially when fitting several values of \code{nclasses}.}
+
+\item{Y.}{Optional list containing the outcomes to be predicted. The list
+must be named with "multinomial" or "gaussian" slots containing the item
+names to be modeled as such. Default is NULL.}
 }
 \value{
 If \code{length(nclasses) == 1}, an S4 object of class \code{"llca"} with

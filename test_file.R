@@ -190,6 +190,8 @@ fit3 <- lca(data = empathy,
             adjustment = "bk",
             penalties = TRUE,
             do.fit = TRUE)
+SE3 <- se(fit3, type = "standard", digits = 4)
+SE3$se
 
 # Effects-coding parameterization:
 new_se <- effects_coding(fit2@parameters$beta, SE2$vcov)
