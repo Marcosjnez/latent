@@ -57,6 +57,7 @@ fit2 <- lca(data = gss82_expanded,
             penalties = list(class = list(alpha=1),
                              prob  = list(alpha=0)),
             weights = weights,
+            adjustment = "none",
             do.fit = TRUE)
 
 latInspect(fit2, what = "loglik")

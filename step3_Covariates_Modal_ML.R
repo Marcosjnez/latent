@@ -50,6 +50,7 @@ fit2 <- lca(data = gss82,
             model = list(log_states = log_class_error_modal),
             penalties = list(class = list(alpha=1),
                              prob  = list(alpha=0)),
+            adjustment = "none",
             do.fit = TRUE)
 
 latInspect(fit2, what = "loglik")

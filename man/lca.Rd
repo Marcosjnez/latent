@@ -66,6 +66,13 @@ are re-estimated.}
 to parameter blocks in the model. Supplied values replace the corresponding
 default initial values, allowing partial specification of starting values.}
 
+\item{adjustment}{Character. "bk" for the Bakk and Kuha method, "ml" for the
+error classification method, and "none" for one-step estimation. Default is
+"bk".}
+
+\item{classification}{Character. "modal" or "prop" for computing the error
+classification table.}
+
 \item{control}{Optional list of optimizer and estimation controls. Common
 entries include \code{rstarts} for the number of random starts,
 \code{cores} for parallel computation, \code{maxit} for the maximum number

@@ -272,12 +272,6 @@ se_twostep <- function(fit2, type = "standard") {
   fit2@modelInfo$control_optimizer$model <- NULL # Avoid infinite recursion
   VCOV2 <- se(fit2, type = type)
 
-  # Get the full model structure without constraints:
-  # args <- fit1@dataList$args
-  # args$X <- fit2@dataList$original_X
-  # args$do.fit <- FALSE
-  # fit <- do.call(lca, args)
-
   args <- fit2@dataList$args
   args$model <- NULL
   args$do.fit <- FALSE

@@ -65,10 +65,10 @@
 #' parameters are reused while the class-membership regression coefficients
 #' are re-estimated.
 #' @param weights Optional vector of weights for each row of data.
-#' @adjustment Character. "bk" for the Bakk and Kuha method, "ml" for the
+#' @param adjustment Character. "bk" for the Bakk and Kuha method, "ml" for the
 #' error classification method, and "none" for one-step estimation. Default is
 #' "bk".
-#' @classification Character. "modal" or "prop" for computing the error
+#' @param classification Character. "modal" or "prop" for computing the error
 #' classification table.
 #' @param start Optional named list of starting values. Names should correspond
 #' to parameter blocks in the model. Supplied values replace the corresponding
@@ -240,7 +240,7 @@ lca <- function(data,
                               gaussian = gaussian,
                               multinomial = multinomial,
                               X = X,
-                              Y = NULL,
+                              Y = Y,
                               penalties = penalties,
                               model = model,
                               weights = weights,
@@ -256,7 +256,7 @@ lca <- function(data,
                        gaussian = gaussian,
                        multinomial = multinomial,
                        X = X,
-                       Y = NULL,
+                       Y = Y,
                        penalties = penalties,
                        model = model,
                        weights = weights,
@@ -307,8 +307,7 @@ lca <- function(data,
 
     control$model <- model
     model <- model@parameters
-    # Free the coeffs for covariates if there is no outcome:
-    if(is.null(Y)) model$beta <- NULL
+    model$beta <- NULL
 
   } else if(length(model) > 1) {
 
@@ -325,8 +324,7 @@ lca <- function(data,
       }
     }
 
-    # Free the coeffs for covariates if there is no outcome:
-    if(is.null(Y)) model$beta <- NULL
+    model$beta <- NULL
 
   }
 
@@ -457,6 +455,22 @@ create_lca_dataList <- function(data = NULL,
     stop("nclasses must be a (vector of) positive integer(s)")
   }
 
+  #### Process the outcomes ####
+
+  if(is.null(Y)) {
+    control$outcomes <- FALSE
+  } else {
+    control$outcomes <- TRUE
+    if(!is.null(Y$multinomial)) {
+      multinomial <- c(multinomial, Y$multinomial)
+      control$outcomes_names <- c(control$outcomes_names, Y$multinomial)
+    }
+    if(!is.null(Y$gaussian)) {
+      gaussian <- c(gaussian, Y$gaussian)
+      control$outcomes_names <- c(control$outcomes_names, Y$gaussian)
+    }
+  }
+
   #### Process the covariates ####
 
   original_X <- X # Store the original X, just in case
@@ -497,7 +511,11 @@ create_lca_dataList <- function(data = NULL,
   # Number of subjects after removing rows with missingness in the covariates X:
   nobs <- nrow(data)
 
-  #### Indicator types ####
+  #### Process the indicators ####
+
+  indicators <- c(multinomial, gaussian)
+  idx <- match(colnames(data), indicators); idx[!is.na(idx)]
+  control$indicators_names <- indicators[idx]
 
   # If at least two items are gaussian, check which of them are involved in
   # covariance structures in the model argument so they are modeled with a
@@ -653,25 +671,6 @@ create_lca_dataList <- function(data = NULL,
 
   #### Process the data ####
 
-  # Outcomes:
-  if(is.null(Y)) {
-    control$outcomes <- FALSE
-    Y_patterns <- NULL
-  } else {
-    control$outcomes <- TRUE
-    if (is.character(Y)) {
-      Y <- data[, Y, drop = FALSE]
-    } else {
-      # Check that X is either a data.frame or a matrix:
-      if (!is.data.frame(Y) && !is.matrix(Y)) {
-        stop("Y must be a character vector, matrix or data.frame")
-      }
-      if (nrow(Y) != nobs) {
-        stop("Number of cases in the data and covariates does not match")
-      }
-    }
-  }
-
   # Append the covariates, indicators, and distal outcomes.
   # This is necessary to find the unique data patterns. Later, we split again:
   if(control$outcomes) {
@@ -692,11 +691,11 @@ create_lca_dataList <- function(data = NULL,
   patterns <- as.matrix(counts_dt[, colnames(measurement_recoded), with = FALSE])
   # Covariate data with unique patterns:
   cov_patterns <- as.matrix(counts_dt[, colnames(X), with = FALSE])
-  # Distal outcomes with unique patterns:
-  if(control$outcomes) {
-    Y_patterns <- as.matrix(counts_dt[, colnames(Y), with = FALSE])
-    rownames(Y_patterns) <- pattern_names
-  }
+  # # Distal outcomes with unique patterns:
+  # if(control$outcomes) {
+  #   Y_patterns <- as.matrix(counts_dt[, colnames(Y), with = FALSE])
+  #   rownames(Y_patterns) <- pattern_names
+  # }
   # Pattern names:
   if(length(patterns) > 0L) {
     rownames(patterns) <- pattern_names
@@ -746,7 +745,7 @@ create_lca_dataList <- function(data = NULL,
   dataList$X <- X
   dataList$original_X <- original_X
   dataList$Y <- Y
-  dataList$Y_patterns <- Y_patterns
+  # dataList$Y_patterns <- Y_patterns
   dataList$measurement_recoded <- measurement_recoded
   dataList$nitems <- nitems
   dataList$item <- item
@@ -2382,14 +2381,14 @@ lca_bakk_kuha <- function(data,
               do.fit = do.fit,
               verbose = verbose)
 
-  #### Step 2: Fitting the covariate model fixing the measurement part ####
+  #### Step 2: Fitting the structural part and fixing the measurement part ####
 
   fit2 <- lca(data = data,
               nclasses = nclasses,
               gaussian = gaussian,
               multinomial = multinomial,
               X = X,
-              Y = NULL,
+              Y = Y,
               penalties = penalties,
               model = fit1,
               weights = weights,
@@ -2399,26 +2398,9 @@ lca_bakk_kuha <- function(data,
               do.fit = do.fit,
               verbose = verbose)
 
-  # #### Distal outcomes ####
-  #
-  # fit3 <- lca(data = data,
-  #             nclasses = nclasses,
-  #             gaussian = gaussian,
-  #             multinomial = multinomial,
-  #             X = X,
-  #             Y = Y,
-  #             penalties = penalties,
-  #             model = list(fit1, fit2), # FIX THIS
-  #             weights = weights,
-  #             start = start,
-  #             adjustment = "none",
-  #             control = control,
-  #             do.fit = do.fit,
-  #             verbose = verbose)
-
   #### Return ####
 
-  return(fit2)
+  return(list(measurement = fit1, structural = fit2))
 
 }
 
@@ -2485,13 +2467,13 @@ lca_ml <- function(data,
                            FUN = \(x) x - x[1L])
   # t(apply(log_class_error, 2, soft, a=1)) / log_class_error
 
-  #### Step 3: Fitting the covariate model using the states ####
+  #### Step 3: Fitting the structural part using the states ####
 
   fit2 <- lca(data = data,
               nclasses = nclasses,
               multinomial = "states",
               X = X,
-              Y = NULL,
+              Y = Y,
               model = list(log_states = log_class_error),
               weights = weights,
               penalties = penalties,
@@ -2503,10 +2485,7 @@ lca_ml <- function(data,
 
   #### Return ####
 
-  return(list(measurement = fit1, covariates = fit2))
-  # return(list(measurement = fit1,
-  #             covariates = fit2,
-  #             outcomes = fit3))
+  return(list(measurement = fit1, structural = fit2))
 
 }
 

@@ -169,6 +169,7 @@ fit2 <- lca(data = empathy,
             nclasses = 4L,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             X = c("pt1", "pt2", "pt3", "pt4"),
+            Y = list(gaussian = "pt5"),
             model = fit1,
             adjustment = "none",
             penalties = TRUE,
@@ -182,16 +183,6 @@ SE1 <- se(fit1, type = "standard", digits = 4)
 SE1$se
 SE2 <- se(fit2, type = "standard", digits = 4)
 SE2$se
-
-fit3 <- lca(data = empathy,
-            nclasses = 4L,
-            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-            X = c("pt1", "pt2", "pt3", "pt4"),
-            adjustment = "bk",
-            penalties = TRUE,
-            do.fit = TRUE)
-SE3 <- se(fit3, type = "standard", digits = 4)
-SE3$se
 
 # Effects-coding parameterization:
 new_se <- effects_coding(fit2@parameters$beta, SE2$vcov)
@@ -235,6 +226,19 @@ x <- plot_coeffs(fit2,
 # new_se <- move_intercept(beta, vcov)
 # new_se$beta_new
 # matrix(new_se$se_new, 3, 3)
+
+fit3 <- lca(data = empathy,
+            nclasses = 4L,
+            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+            X = c("pt1", "pt2", "pt3", "pt4"),
+            Y = list(gaussian = "pt5"),
+            adjustment = "bk",
+            penalties = TRUE,
+            do.fit = TRUE)
+SE3 <- se(fit3, type = "standard", digits = 4)
+SE3$se
+latInspect(fit2, what = "loglik")
+# loglik: -1747.135 # penalized_loglik: -1750.566
 
 #### CFA ####
 
