@@ -237,8 +237,9 @@ lca <- function(data,
   }
 
   ## Store original call:
-  mc  <- match.call()
-  args <- as.list(match.call(expand.dots = TRUE))[-1]
+  mc <- match.call(expand.dots = TRUE)
+  args <- as.list(mc)[-1]
+  args <- lapply(args, eval, envir = parent.frame())
 
   # Check weights if available:
   if(!is.null(weights)) {

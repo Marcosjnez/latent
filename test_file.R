@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/06/2026
+# Modification date: 19/06/2026
 
 #### Store a dataset ####
 
@@ -170,6 +170,7 @@ fit2 <- lca(data = empathy,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             X = c("pt1", "pt2", "pt3", "pt4"),
             model = fit1,
+            adjustment = "none",
             penalties = TRUE,
             do.fit = TRUE)
 
@@ -181,6 +182,14 @@ SE1 <- se(fit1, type = "standard", digits = 4)
 SE1$se
 SE2 <- se(fit2, type = "standard", digits = 4)
 SE2$se
+
+fit3 <- lca(data = empathy,
+            nclasses = 4L,
+            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+            X = c("pt1", "pt2", "pt3", "pt4"),
+            adjustment = "bk",
+            penalties = TRUE,
+            do.fit = TRUE)
 
 # Effects-coding parameterization:
 new_se <- effects_coding(fit2@parameters$beta, SE2$vcov)

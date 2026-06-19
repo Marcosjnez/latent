@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/06/2026
+# Modification date: 19/06/2026
 #'
 #' @title
 #' Inspect objects from fitted lca models.

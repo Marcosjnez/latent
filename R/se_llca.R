@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/06/2026
+# Modification date: 19/06/2026
 #'
 #' @title
 #' Standard Errors
@@ -281,6 +281,7 @@ se_twostep <- function(fit2, type = "standard") {
   args <- fit2@dataList$args
   args$model <- NULL
   args$do.fit <- FALSE
+  args$adjustment <- "none"
   fit <- do.call(lca, args)
 
   # Get the hessian matrix:
