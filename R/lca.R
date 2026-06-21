@@ -669,73 +669,42 @@ create_lca_dataList <- function(data = NULL,
 
   }
 
-  #### Process the data ####
+  #### Find unique patterns in the data ####
 
   # Append the covariates, indicators, and distal outcomes.
-  # This is necessary to find the unique data patterns. Later, we split again:
-  if(control$outcomes) {
-    all <- cbind(X, measurement_recoded, Y)
-  } else {
-    all <- cbind(X, measurement_recoded)
-  }
-  # Add the weights if available:
-  if(!is.null(weights)) all <- cbind(all, weights = weights)
-  # Transform to data.table:
-  dt <- data.table::as.data.table(all)
-  # Collect some information:
-  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
-  # Number of unique response patterns:
-  npatterns <- nrow(counts_dt)
-  pattern_names <- paste("pattern", 1:npatterns, sep = "")
-  # Measurement data with unique response patterns:
-  patterns <- as.matrix(counts_dt[, colnames(measurement_recoded), with = FALSE])
-  # Covariate data with unique patterns:
-  cov_patterns <- as.matrix(counts_dt[, colnames(X), with = FALSE])
-  # # Distal outcomes with unique patterns:
-  # if(control$outcomes) {
-  #   Y_patterns <- as.matrix(counts_dt[, colnames(Y), with = FALSE])
-  #   rownames(Y_patterns) <- pattern_names
-  # }
-  # Pattern names:
-  if(length(patterns) > 0L) {
-    rownames(patterns) <- pattern_names
-  }
-  if(length(cov_patterns) > 0L) {
-    rownames(cov_patterns) <- pattern_names
-  }
-  if(!is.null(weights)) {
-    post_weights <- as.matrix(counts_dt[, "weights", with = FALSE])
-    rownames(post_weights) <- pattern_names
-  }
-  # Counts of each response pattern:
-  pattern_weights <- counts_dt$count
-  # Indices to map the full data to the unique patterns:
-  full2short <- counts_dt$index
-  # Indices to map unique patterns to the full data:
-  short2full <- match(do.call(paste, dt),
-                      do.call(paste, counts_dt[, -c("index", "count"),
-                                               with = FALSE]))
 
-  # Compute the nonrecoded patterns of items (patterns_original):
-  if(control$outcomes) {
-    all <- cbind(X, measurement, Y)
-  } else {
+  # If any item is gaussian, then don't find the unique response patterns
+  if(any_gaussian) {
+
+    pattern_names <- paste("pattern", 1:nobs, sep = "")
+    if(!is.null(weights)) {
+      post_weights <- as.matrix(weights, ncol = 1L)
+      rownames(post_weights) <- pattern_names
+    }
+
     all <- cbind(X, measurement)
+    remove <- which("(Intercept)" %in% colnames(all))
+    all_patterns <- as.data.frame(all)[, -remove]
+
+    data_patterns <- list()
+    data_patterns$patterns <- measurement_recoded
+    data_patterns$cov_patterns <- X
+    data_patterns$npatterns <- nobs
+    data_patterns$pattern_names <- pattern_names
+    data_patterns$pattern_weights <- rep(1, times = nobs)
+    data_patterns$full2short <- seq_len(nobs)
+    data_patterns$short2full <- seq_len(nobs)
+    data_patterns$patterns_original <- measurement
+    data_patterns$all_patterns <- all_patterns
+    data_patterns$post_weights = if(!is.null(weights)) post_weights else NULL
+
+  } else {
+
+    # If no item is gaussian, then collect only the unique response patterns
+    data_patterns <- make_patterns(X = X, measurement_recoded = measurement_recoded,
+                                   measurement = measurement, weights = weights)
+
   }
-  # Add the weights if available:
-  if(!is.null(weights)) all <- cbind(all, weights = weights)
-  # Transform to data.table:
-  dt <- data.table::as.data.table(all)
-  # Collect some information:
-  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
-  # patterns_original <- as.matrix(counts_dt[, colnames(measurement_recoded),, with = FALSE])
-  patterns_original <- as.data.frame(counts_dt[, colnames(measurement_recoded),
-                                               with = FALSE])
-  if(length(patterns_original) > 0L) {
-    rownames(patterns_original) <- pattern_names
-  }
-  remove <- which("(Intercept)" %in% colnames(counts_dt))
-  all_patterns <- as.data.frame(counts_dt)[, -remove]
 
   #### Store objects in dataList ####
 
@@ -745,27 +714,26 @@ create_lca_dataList <- function(data = NULL,
   dataList$X <- X
   dataList$original_X <- original_X
   dataList$Y <- Y
-  # dataList$Y_patterns <- Y_patterns
   dataList$measurement_recoded <- measurement_recoded
   dataList$nitems <- nitems
   dataList$item <- item
   dataList$item_names <- item_names
   dataList$nobs <- nobs
-  dataList$patterns <- patterns
-  dataList$cov_patterns <- cov_patterns
-  dataList$npatterns <- npatterns
+  dataList$patterns <- data_patterns$patterns
+  dataList$cov_patterns <- data_patterns$cov_patterns
+  dataList$npatterns <- data_patterns$npatterns
   dataList$npossible_patterns <- npossible_patterns
-  dataList$pattern_names <- pattern_names
+  dataList$pattern_names <- data_patterns$pattern_names
   dataList$pX <- pX
-  dataList$pattern_weights <- pattern_weights
-  dataList$full2short <- full2short
-  dataList$short2full <- short2full
-  dataList$patterns_original <- patterns_original
-  dataList$all_patterns <- all_patterns
+  dataList$pattern_weights <- data_patterns$pattern_weights
+  dataList$full2short <- data_patterns$full2short
+  dataList$short2full <- data_patterns$short2full
+  dataList$patterns_original <- data_patterns$patterns_original
+  dataList$all_patterns <- data_patterns$all_patterns
   dataList$any_gaussian <- any_gaussian
   dataList$any_multinomial <- any_multinomial
   dataList$any_mvgaussian <- any_mvgaussian
-  if(!is.null(weights)) dataList$weights <- post_weights # weights[full2short, ]
+  if(!is.null(weights)) dataList$weights <- data_patterns$post_weights # weights[full2short, ]
 
   # Update and check control parameters:
   control$penalties <- penalties # Either a logical or a list of named penalties
@@ -817,6 +785,7 @@ create_lca_dataList <- function(data = NULL,
         indep_pairs_list <- group_connected_pairs(error_covs)$elements
         names(indep_pairs) <- names(indep_pairs_list) <-
           lapply(indep_pairs_list, FUN = paste, collapse = ".")
+        patterns_original <- dataList$patterns_original
         joints <- lapply(indep_pairs_list, FUN = \(x) {
           apply(patterns_original[, x], MARGIN = 1, FUN = paste, collapse = ".")
         })
@@ -1111,18 +1080,6 @@ create_lca_model <- function(dataList, nclasses, item,
     }
 
   }
-
-  # # Distal outcomes:
-  # if(control$outcomes) {
-  #
-  #   list_struct[[k]] <- list(name = "distal_beta",
-  #                            type = "matrix",
-  #                            dim = c(nclasses, ncol(Y_patterns)),
-  #                            rownames = class_names,
-  #                            colnames = colnames(Y_patterns))
-  #   k <- k+1L
-  #
-  # }
 
   # Create the full transparameter structure:
   trans <- create_parameters(list_struct)
@@ -1440,13 +1397,6 @@ create_lca_model <- function(dataList, nclasses, item,
       init_param[[i]]$loglik <- matrix(0, nrow = npatterns, ncol = nclasses,
                                        dimnames = list(pattern_names, class_names))
     }
-
-    # # Distal outcomes:
-    # if(control$outcomes) {
-    #   init_param[[i]][["distal_beta"]] <- matrix(rnorm(nclasses*ncol(Y_patterns)),
-    #                                              nrow = nclasses, ncol = ncol(Y_patterns))
-    #   dimnames(init_param[[i]]$distal_beta) <- dimnames(param$distal_beta)
-    # }
 
   }
 
@@ -2320,31 +2270,93 @@ group_connected_pairs <- function(pairs) {
   )
 }
 
-bch_weights <- function(post, class_error, type = c("modal", "proportional")) {
+make_patterns <- function(X, measurement_recoded, measurement, weights = NULL) {
 
-  type <- match.arg(type)
-  K <- ncol(post)
+  # Collect the unique data patterns. Later, we split again:
+  all <- cbind(X, measurement_recoded)
 
-  if (type == "modal") {
-    modal_class <- max.col(post, ties.method = "first")
-    W <- diag(K)[modal_class, , drop = FALSE]
+  # Add the weights if available:
+  if(!is.null(weights)) all <- cbind(all, weights = weights)
+
+  # Transform to data.table:
+  dt <- data.table::as.data.table(all)
+
+  # Collect some information:
+  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
+
+  # Number of unique response patterns:
+  npatterns <- nrow(counts_dt)
+  pattern_names <- paste("pattern", 1:npatterns, sep = "")
+
+  # Measurement data with unique response patterns:
+  patterns <- as.matrix(counts_dt[, colnames(measurement_recoded), with = FALSE])
+
+  # Covariate data with unique patterns:
+  cov_patterns <- as.matrix(counts_dt[, colnames(X), with = FALSE])
+
+  # Pattern names:
+  if(length(patterns) > 0L) {
+    rownames(patterns) <- pattern_names
   }
 
-  if (type == "proportional") {
-    W <- post
+  if(length(cov_patterns) > 0L) {
+    rownames(cov_patterns) <- pattern_names
   }
 
-  # class_error is D:
-  # rows = true latent class X
-  # cols = assigned class W
-  D_inv <- solve(class_error)
+  if(!is.null(weights)) {
+    post_weights <- as.matrix(counts_dt[, "weights", with = FALSE])
+    rownames(post_weights) <- pattern_names
+  }
 
-  # BCH pseudo-weights for true latent class X
-  W_bch <- W %*% D_inv
+  # Counts of each response pattern:
+  pattern_weights <- counts_dt$count
 
-  colnames(W_bch) <- paste0("class.", seq_len(K))
+  # Indices to map the full data to the unique patterns:
+  full2short <- counts_dt$index
 
-  return(W_bch)
+  # Indices to map unique patterns to the full data:
+  short2full <- match(
+    do.call(paste, dt),
+    do.call(paste, counts_dt[, -c("index", "count"), with = FALSE])
+  )
+
+  # Compute the nonrecoded patterns of items (patterns_original):
+  all <- cbind(X, measurement)
+
+  # Add the weights if available:
+  if(!is.null(weights)) all <- cbind(all, weights = weights)
+
+  # Transform to data.table:
+  dt <- data.table::as.data.table(all)
+
+  # Collect some information:
+  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
+
+  patterns_original <- as.data.frame(
+    counts_dt[, colnames(measurement_recoded), with = FALSE]
+  )
+
+  if(length(patterns_original) > 0L) {
+    rownames(patterns_original) <- pattern_names
+  }
+
+  remove <- which("(Intercept)" %in% colnames(counts_dt))
+  all_patterns <- as.data.frame(counts_dt)[, -remove]
+
+  result <- list(
+    npatterns = npatterns,
+    pattern_names = pattern_names,
+    patterns = patterns,
+    cov_patterns = cov_patterns,
+    post_weights = if(!is.null(weights)) post_weights else NULL,
+    pattern_weights = pattern_weights,
+    full2short = full2short,
+    short2full = short2full,
+    patterns_original = patterns_original,
+    all_patterns = all_patterns
+  )
+
+  return(result)
 
 }
 
@@ -2488,4 +2500,3 @@ lca_ml <- function(data,
   return(list(measurement = fit1, structural = fit2))
 
 }
-

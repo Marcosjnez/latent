@@ -27,8 +27,8 @@ fit <- lca(data = gss82,
            # X = c("RACE", "SEX", "EDUCR", "AGE"),
            # adjustment = "ml",
            # classification = "prop",
-           # model = list("UNDERSTA ~~ COOPERAT
-           #               PURPOSE ~~ COOPERAT"),
+           model = list("UNDERSTA ~~ COOPERAT
+                         PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
            do.fit = TRUE)
@@ -233,12 +233,13 @@ fit3 <- lca(data = empathy,
             X = c("pt1", "pt2", "pt3", "pt4"),
             Y = list(gaussian = "pt5"),
             adjustment = "bk",
+            # classification = "modal",
             penalties = TRUE,
             do.fit = TRUE)
 SE3 <- se(fit3, type = "standard", digits = 4)
 SE3$se
-latInspect(fit2, what = "loglik")
-# loglik: -1747.135 # penalized_loglik: -1750.566
+latInspect(fit3$structural, what = "loglik")
+# loglik: -2049.840 # penalized_loglik: -2053.322
 
 #### CFA ####
 
@@ -815,3 +816,9 @@ x
 # fit@modelInfo$control$parameters
 # X[[4]]$parameters
 # fit@modelInfo$param
+
+#### To-do ####
+# Fix class ordering by size
+# Create a class and methods for measurement + structural objects
+# loglik from BK¿?
+#
