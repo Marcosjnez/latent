@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 19/06/2026
+# Modification date: 22/06/2026
 
 #### Store a dataset ####
 
@@ -24,11 +24,11 @@ gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           # X = c("RACE", "SEX", "EDUCR", "AGE"),
-           # adjustment = "ml",
+           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           adjustment = "bk",
            # classification = "prop",
-           model = list("UNDERSTA ~~ COOPERAT
-                         PURPOSE ~~ COOPERAT"),
+           # model = list("UNDERSTA ~~ COOPERAT
+           #               PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
            do.fit = TRUE)
@@ -168,8 +168,8 @@ set.seed(2026)
 fit2 <- lca(data = empathy,
             nclasses = 4L,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-            X = c("pt1", "pt2", "pt3", "pt4"),
-            Y = list(gaussian = "pt5"),
+            covariates = c("pt1", "pt2", "pt3", "pt4"),
+            outcomes = list(gaussian = "pt5"),
             model = fit1,
             adjustment = "none",
             penalties = TRUE,
@@ -230,8 +230,8 @@ x <- plot_coeffs(fit2,
 fit3 <- lca(data = empathy,
             nclasses = 4L,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-            X = c("pt1", "pt2", "pt3", "pt4"),
-            Y = list(gaussian = "pt5"),
+            covariates = c("pt1", "pt2", "pt3", "pt4"),
+            outcomes = list(gaussian = c("pt5")),
             adjustment = "bk",
             # classification = "modal",
             penalties = TRUE,

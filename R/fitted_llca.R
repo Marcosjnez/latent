@@ -26,7 +26,7 @@
 #' @export
 fitted.llca <- function(model) {
 
-  X <- model@dataList$X
+  covariates <- model@dataList$covariates
   P0 <- predict.llca(model = model, new = X[, -1])
 
   return(P0)

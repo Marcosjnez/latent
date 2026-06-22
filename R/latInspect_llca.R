@@ -75,12 +75,28 @@ latInspect.llca <- function(fit,
   # Check the existence of multinomial items:
   multin <- "multinomial" %in% item
 
+  # Loglik by case:
+  loglik_case <- loglik_case[short2full]
+  posterior <- posterior[short2full, , drop = FALSE]
+  state <- state[short2full]
+  rownames(posterior) <- names(state) <-
+    names(loglik_case) <- rownames(measurement)
+
   classes <- colSums(fit@transformed_pars$class * pattern_weights) /
     sum(pattern_weights)
-  ClassConditional <- fit@transformed_pars[item_names]
-  RespConditional <- probCat <- list() # Only for full multinomial models
+  indicators_names <- fit@modelInfo$control_optimizer$indicators_names
+  ClassConditional <- fit@transformed_pars[indicators_names]
+  if(fit@dataList$any_gaussian) {
+    gaussian_names <- intersect(fit@modelInfo$control_optimizer$indicators_names,
+                                fit@modelInfo$control_optimizer$gaussian$gaussian_names)
+    ClassConditional[gaussian_names] <- lapply(ClassConditional[gaussian_names],
+                                               FUN = \(x) {
+                                                 x[c(1, 4), ]
+                                               })
+  }
 
   # Additional outputs for full multinomial models:
+  RespConditional <- probCat <- list() # Only for full multinomial models
   if(all(item == "multinomial")) {
 
     classes <- colMeans(fit@transformed_pars$class)
@@ -106,20 +122,23 @@ latInspect.llca <- function(fit,
 
   }
 
-  loglik_case <- loglik_case[short2full]
-  posterior <- posterior[short2full, , drop = FALSE]
-  state <- state[short2full]
-  rownames(posterior) <- names(state) <-
-    names(loglik_case) <- rownames(measurement)
-
-  if(fit@dataList$any_gaussian) {
-    gaussian_names <- fit@modelInfo$control_optimizer$gaussian$gaussian_names
-    ClassConditional[gaussian_names] <- lapply(ClassConditional[gaussian_names],
-                                               FUN = \(x) {
-                                                 x[c(1, 4), ]
-                                               })
+  if(control_optimizer$outcomes) {
+    ClassConditional_outcomes <- fit@transformed_pars[control_optimizer$outcomes_names]
+    if(fit@dataList$any_gaussian) {
+      gaussian_names <- intersect(fit@modelInfo$control_optimizer$outcomes_names,
+                                  fit@modelInfo$control_optimizer$gaussian$gaussian_names)
+      ClassConditional_outcomes[gaussian_names] <- lapply(ClassConditional_outcomes[gaussian_names],
+                                                          FUN = \(x) {
+                                                            x[c(1, 4), ]
+                                                          })
+    }
+  } else {
+    ClassConditional_outcomes <- NULL
   }
-  profile <- list(class_size = colMeans(posterior), item = ClassConditional)
+
+  profile <- list(class_size = colMeans(posterior),
+                  indicators = ClassConditional,
+                  outcomes = ClassConditional_outcomes)
 
   #### Extract the fit ####
 
