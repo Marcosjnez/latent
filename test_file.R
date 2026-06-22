@@ -821,4 +821,4 @@ x
 # Fix class ordering by size
 # Create a class and methods for measurement + structural objects
 # loglik from BK¿?
-#
+# SE for ML-modal-prop

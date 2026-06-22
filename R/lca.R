@@ -36,7 +36,7 @@
 #' internally converted to factors, and the first factor level is used as the
 #' reference category for the multinomial logits. Variables with more than 30
 #' observed categories are not allowed.
-#' @param X Optional covariates for predicting latent class membership. It can be
+#' @param covariates Optional covariates for predicting latent class membership. It can be
 #' \code{NULL}, a character vector with column names in \code{data}, or a
 #' \code{data.frame}/\code{matrix} with the same number of rows as
 #' \code{data}. An intercept is always included. Character covariates are
@@ -170,7 +170,7 @@
 #' data = empathy,
 #' nclasses = 4L,
 #' gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-#' X = c("sex", "pt1", "pt2", "pt3", "pt4")
+#' covariates = c("sex", "pt1", "pt2", "pt3", "pt4")
 #' )
 #'
 #' }
@@ -183,7 +183,7 @@ lca <- function(data,
                 nclasses = 1L,
                 gaussian = NULL,
                 multinomial = NULL,
-                X = NULL,
+                covariates = NULL,
                 Y = NULL,
                 penalties = TRUE,
                 model = NULL,
@@ -208,8 +208,8 @@ lca <- function(data,
 
       result[[i]] <- lca(data, nclasses = nclasses[i],
                          gaussian = gaussian, multinomial = multinomial,
-                         X = X, penalties = penalties, model = model,
-                         start = start, weights = weights,
+                         covariates = covariates, penalties = penalties,
+                         model = model, start = start, weights = weights,
                          adjustment = adjustment, classification = classification,
                          control = control, do.fit = do.fit, verbose = verbose)
 
@@ -225,10 +225,10 @@ lca <- function(data,
 
   # Return a list of lcca models:
 
-  if(!is.null(X) && adjustment != "none") {
+  if(!is.null(covariates) && adjustment != "none") {
 
-    if(!any(X %in% colnames(data))) {
-      stop("No named covariate in X was found in data")
+    if(!any(covariates %in% colnames(data))) {
+      stop("No named covariate was found in data")
     }
 
     adjustment <- tolower(adjustment)
@@ -239,7 +239,7 @@ lca <- function(data,
                               nclasses = nclasses,
                               gaussian = gaussian,
                               multinomial = multinomial,
-                              X = X,
+                              covariates = covariates,
                               Y = Y,
                               penalties = penalties,
                               model = model,
@@ -255,7 +255,7 @@ lca <- function(data,
                        nclasses = nclasses,
                        gaussian = gaussian,
                        multinomial = multinomial,
-                       X = X,
+                       covariates = covariates,
                        Y = Y,
                        penalties = penalties,
                        model = model,
@@ -286,7 +286,7 @@ lca <- function(data,
 
   dataList_and_control <- create_lca_dataList(data = data,
                                               nclasses = nclasses,
-                                              X = X,
+                                              covariates = covariates,
                                               Y = Y,
                                               gaussian = gaussian,
                                               multinomial = multinomial,
@@ -424,7 +424,7 @@ lca <- function(data,
 
 create_lca_dataList <- function(data = NULL,
                                 nclasses = NULL,
-                                X = NULL,
+                                covariates = NULL,
                                 Y = NULL,
                                 gaussian = NULL,
                                 multinomial = NULL,
@@ -473,17 +473,17 @@ create_lca_dataList <- function(data = NULL,
 
   #### Process the covariates ####
 
-  original_X <- X # Store the original X, just in case
+  original_X <- covariates # Store the original covariates, just in case
   # Create the matrix of predictors for latent class probabilities:
-  # X must be a character vector with the name of the predictors in data:
-  X <- make_design_matrix(X = X, data = data)
-  pX <- ncol(X) # Number of columns of the design matrix
+  # covariates must be a character vector with the name of the predictors in data:
+  covariates <- make_design_matrix(covariates = covariates, data = data)
+  pcovariates <- ncol(covariates) # Number of columns of the design matrix
 
-  # Remove participants with missing data in any covariate X:
-  remove <- which(apply(X, MARGIN = 1, FUN = anyNA))
+  # Remove participants with missing data in any covariate:
+  remove <- which(apply(covariates, MARGIN = 1, FUN = anyNA))
   if(length(remove) > 0) {
 
-    missing <- colSums(is.na(X))
+    missing <- colSums(is.na(covariates))
     missing <- missing[missing > 0]
 
     warning(
@@ -502,7 +502,7 @@ create_lca_dataList <- function(data = NULL,
       " removed."
     )
 
-    X <- X[-remove, ]
+    covariates <- covariates[-remove, ]
     data <- data[-remove, ]
     weights <- weights[-remove]
 
@@ -682,13 +682,13 @@ create_lca_dataList <- function(data = NULL,
       rownames(post_weights) <- pattern_names
     }
 
-    all <- cbind(X, measurement)
+    all <- cbind(covariates, measurement)
     remove <- which("(Intercept)" %in% colnames(all))
     all_patterns <- as.data.frame(all)[, -remove]
 
     data_patterns <- list()
     data_patterns$patterns <- measurement_recoded
-    data_patterns$cov_patterns <- X
+    data_patterns$cov_patterns <- covariates
     data_patterns$npatterns <- nobs
     data_patterns$pattern_names <- pattern_names
     data_patterns$pattern_weights <- rep(1, times = nobs)
@@ -711,7 +711,7 @@ create_lca_dataList <- function(data = NULL,
   dataList <- vector("list")
   dataList$data <- data
   dataList$measurement <- measurement
-  dataList$X <- X
+  dataList$covariates <- covariates
   dataList$original_X <- original_X
   dataList$Y <- Y
   dataList$measurement_recoded <- measurement_recoded
@@ -724,7 +724,7 @@ create_lca_dataList <- function(data = NULL,
   dataList$npatterns <- data_patterns$npatterns
   dataList$npossible_patterns <- npossible_patterns
   dataList$pattern_names <- data_patterns$pattern_names
-  dataList$pX <- pX
+  dataList$pcovariates <- pcovariates
   dataList$pattern_weights <- data_patterns$pattern_weights
   dataList$full2short <- data_patterns$full2short
   dataList$short2full <- data_patterns$short2full
@@ -872,7 +872,7 @@ create_lca_model <- function(dataList, nclasses, item,
 
   #### Model for the transformed parameters ####
 
-  pred_names <- colnames(X) # Names of predictors
+  pred_names <- colnames(covariates) # Names of predictors
 
   list_struct <- vector("list")
   k <- 1L
@@ -881,7 +881,7 @@ create_lca_model <- function(dataList, nclasses, item,
 
   list_struct[[k]] <- list(name = "beta",
                            type = "matrix",
-                           dim = c(pX, nclasses),
+                           dim = c(pcovariates, nclasses),
                            rownames = pred_names,
                            colnames = class_names)
   k <- k+1L
@@ -1191,9 +1191,6 @@ create_lca_model <- function(dataList, nclasses, item,
                            dimnames = list(pattern_names, class_names))
   }
 
-  # # Distal outcomes:
-  # param$distal_beta <- trans$distal_beta
-
   #### Fixed parameters and equality constraints ####
 
   # Replace the transformed parameter by custom values, if available:
@@ -1297,7 +1294,8 @@ create_lca_model <- function(dataList, nclasses, item,
     names(init_param[[i]]) <- names(param)
 
     # Initial values for betas:
-    init_beta <- matrix(rnorm(pX*nclasses), nrow = pX, ncol = nclasses)
+    init_beta <- matrix(rnorm(pcovariates*nclasses),
+                        nrow = pcovariates, ncol = nclasses)
     init_param[[i]][["beta"]] <- init_beta
     init_param[[i]]$beta[, 1] <- 0
     dimnames(init_param[[i]]$beta) <- dimnames(param$beta)
@@ -2062,7 +2060,7 @@ lca_control <- function(control) {
 
 }
 
-make_design_matrix <- function(X, data) {
+make_design_matrix <- function(covariates, data) {
 
   nobs <- nrow(data)
   make_X_matrix <- function(X_df) {
@@ -2107,10 +2105,10 @@ make_design_matrix <- function(X, data) {
     X_mat
   }
 
-  if (is.null(X)) {
+  if (is.null(covariates)) {
 
     # Create just the intercept column:
-    X <- matrix(
+    covariates <- matrix(
       1,
       nrow = nobs,
       ncol = 1L,
@@ -2119,26 +2117,28 @@ make_design_matrix <- function(X, data) {
 
   } else {
 
-    if (is.character(X)) {
+    if (is.character(covariates)) {
 
-      X <- data[, X, drop = FALSE]
+      covariates <- data[, covariates, drop = FALSE]
 
     } else {
 
-      # Check that X is either a data.frame or a matrix:
-      if (!is.data.frame(X) && !is.matrix(X)) {
-        stop("X must be a character vector, matrix or data.frame")
+      # Check that covariates is either a data.frame or a matrix:
+      if (!is.data.frame(covariates) && !is.matrix(covariates)) {
+        stop("covariates must be a character vector, matrix or data.frame")
       }
 
-      if (nrow(X) != nobs) {
+      if (nrow(covariates) != nobs) {
         stop("Number of cases in the data and covariates does not match")
       }
     }
 
-    X <- make_X_matrix(as.data.frame(X))
+    covariates <- make_X_matrix(as.data.frame(covariates))
+
   }
 
-  X
+  return(covariates)
+
 }
 
 extract_cov_pairs <- function(model) {
@@ -2270,10 +2270,10 @@ group_connected_pairs <- function(pairs) {
   )
 }
 
-make_patterns <- function(X, measurement_recoded, measurement, weights = NULL) {
+make_patterns <- function(covariates, measurement_recoded, measurement, weights = NULL) {
 
   # Collect the unique data patterns. Later, we split again:
-  all <- cbind(X, measurement_recoded)
+  all <- cbind(covariates, measurement_recoded)
 
   # Add the weights if available:
   if(!is.null(weights)) all <- cbind(all, weights = weights)
@@ -2321,7 +2321,7 @@ make_patterns <- function(X, measurement_recoded, measurement, weights = NULL) {
   )
 
   # Compute the nonrecoded patterns of items (patterns_original):
-  all <- cbind(X, measurement)
+  all <- cbind(covariates, measurement)
 
   # Add the weights if available:
   if(!is.null(weights)) all <- cbind(all, weights = weights)
@@ -2364,7 +2364,7 @@ lca_bakk_kuha <- function(data,
                           nclasses = NULL,
                           gaussian = NULL,
                           multinomial = NULL,
-                          X = NULL,
+                          covariates = NULL,
                           Y = NULL,
                           penalties = TRUE,
                           model = NULL,
@@ -2382,7 +2382,7 @@ lca_bakk_kuha <- function(data,
               nclasses = nclasses,
               gaussian = gaussian,
               multinomial = multinomial,
-              X = NULL,
+              covariates = NULL,
               Y = NULL,
               penalties = penalties,
               model = model,
@@ -2399,7 +2399,7 @@ lca_bakk_kuha <- function(data,
               nclasses = nclasses,
               gaussian = gaussian,
               multinomial = multinomial,
-              X = X,
+              covariates = covariates,
               Y = Y,
               penalties = penalties,
               model = fit1,
@@ -2420,7 +2420,7 @@ lca_ml <- function(data,
                    nclasses = NULL,
                    gaussian = NULL,
                    multinomial = NULL,
-                   X = NULL,
+                   covariates = NULL,
                    Y = NULL,
                    penalties = TRUE,
                    model = NULL,
@@ -2442,7 +2442,7 @@ lca_ml <- function(data,
               nclasses = nclasses,
               gaussian = gaussian,
               multinomial = multinomial,
-              X = NULL,
+              covariates = NULL,
               Y = NULL,
               penalties = penalties,
               model = model,
@@ -2484,7 +2484,7 @@ lca_ml <- function(data,
   fit2 <- lca(data = data,
               nclasses = nclasses,
               multinomial = "states",
-              X = X,
+              covariates = covariates,
               Y = Y,
               model = list(log_states = log_class_error),
               weights = weights,

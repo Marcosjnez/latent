@@ -29,35 +29,35 @@ predict.llca <- function(model, new = NULL) {
 
   if(is.null(new) || ncol(new) == 0) {
 
-    X <- model@dataList$X
-    rownames(X) <- rownames(model@dataList$data)
+    covariates <- model@dataList$covariates
+    rownames(covariates) <- rownames(model@dataList$data)
 
   } else {
 
-    X <- new
-    # Check that X is either a data.frame or a matrix:
-    if(!is.data.frame(X) & !is.matrix(X)) {
-      stop("data must be a matrix or data.frame")
+    covariates <- new
+    # Check that covariates is either a data.frame or a matrix:
+    if(!is.data.frame(covariates) & !is.matrix(covariates)) {
+      stop("covariates must be a matrix or data.frame")
     }
 
     # Transform characters into factors:
-    X_df <- as.data.frame(X)
+    X_df <- as.data.frame(covariates)
     X_df[] <- lapply(X_df, function(x) if (is.character(x)) factor(x) else x)
 
     # Create the design matrix:
-    X <- model.matrix(~ . + 1, X_df)
+    covariates <- model.matrix(~ . + 1, X_df)
     # Standardize the variables:
-    # X[, -1] <- apply(X[, -1], MARGIN = 2, FUN = \(x) x-mean(x))
+    # covariates[, -1] <- apply(covariates[, -1], MARGIN = 2, FUN = \(x) x-mean(x))
 
     # Put an underscore between the variable names and their level names:
     for (v in names(X_df)[sapply(X_df, is.factor)]) {
-      i <- which(startsWith(colnames(X), v))
-      colnames(X)[i] <- paste0(v, "_", make.names(levels(X_df[[v]]))[seq_along(i)])
+      i <- which(startsWith(colnames(covariates), v))
+      colnames(covariates)[i] <- paste0(v, "_", make.names(levels(X_df[[v]]))[seq_along(i)])
     }
 
   }
 
-  Z0 <- X %*% model@transformed_pars$beta
+  Z0 <- covariates %*% model@transformed_pars$beta
   linpreds <- apply(Z0, MARGIN = 1, FUN = latent::soft, a = 1.00)
   if(is.vector(linpreds)) {
     P0 <- matrix(linpreds, ncol = 1)
@@ -66,8 +66,8 @@ predict.llca <- function(model, new = NULL) {
   }
   colnames(P0) <- colnames(model@transformed_pars$class)
 
-  remove <- -match("(Intercept)", colnames(X))
-  return(data.frame(X[, remove], P0))
+  remove <- -match("(Intercept)", colnames(covariates))
+  return(data.frame(covariates[, remove], P0))
 
 }
 
