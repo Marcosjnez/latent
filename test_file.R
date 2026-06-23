@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/06/2026
+# Modification date: 23/06/2026
 
 #### Store a dataset ####
 
@@ -24,17 +24,18 @@ gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
-           adjustment = "bk",
+           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           # adjustment = "bk",
            # classification = "prop",
-           # model = list("UNDERSTA ~~ COOPERAT
-           #               PURPOSE ~~ COOPERAT"),
+           model = list("UNDERSTA ~~ COOPERAT
+                         PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
            do.fit = TRUE)
 latInspect(fit, what = "loglik")
-# loglik: -3940.668 # penalized_loglik: -3945.117
-# loglik: -3883.015 # penalized_loglik: -3887.560 ("UNDERSTA ~~ COOPERAT")
+# loglik: -3891.252 # penalized_loglik: -3892.478
+# loglik: -3879.167 # penalized_loglik: -3880.371 ("UNDERSTA ~~ COOPERAT
+#                                                   PURPOSE ~~ COOPERAT")
 
 # Plot model fit info:
 fit
@@ -71,8 +72,9 @@ set.seed(2026)
 fit <- lca(data = empathy,
            nclasses = 4L,
            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
+           # covariates = c("pt1", "pt2", "pt3", "pt4"),
+           # outcomes = c("pt1", "pt2"),
            # model = list("ec2 ~~ ec3 ~~ ec6"),
-           Y = c("pt1", "pt2"),
            penalties = TRUE,
            control = list(rstarts = 50L, cores = 32L),
            do.fit = TRUE)
@@ -121,7 +123,6 @@ fit <- lca(data = cancer,
            multinomial = c("PerformanceRating", "CardiovascularDiseaseHistory"),
            penalties = penalties,
            do.fit = TRUE)
-# FIX: MATCH INDICATORS AUTOMATICALLY
 
 # Plot model fit info:
 fit

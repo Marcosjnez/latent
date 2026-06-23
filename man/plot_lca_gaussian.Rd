@@ -7,8 +7,8 @@
 plot_lca_gaussian(
   data,
   title = NULL,
-  ylab = "Mean score (<U+00B1>1 SD)",
-  caption = "Error bars indicate <U+00B1>1 standard deviation",
+  ylab = "Mean score (±1 SD)",
+  caption = "Error bars indicate ±1 standard deviation",
   nrow = NULL,
   ncol = NULL,
   point_size = 2.5,

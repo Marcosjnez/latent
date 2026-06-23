@@ -18,7 +18,8 @@ Variables listed in \code{outcomes} are treated as distal outcomes.}
 
 \item{nclasses}{A positive integer giving the number of latent classes. If a
 vector of positive integers is supplied, one model is fitted for each value
-and the result is returned as an object of class \code{"llcalist"}.}
+and the result is returned as an object of class \code{"llcalist"}. This
+is usually termed as "class enumeration".}
 
 \item{gaussian}{Optional character vector with the names of variables in
 \code{data} to be modeled as Gaussian indicators. These variables are
@@ -30,14 +31,15 @@ multivariate Gaussian distribution.}
 \item{multinomial}{Optional character vector with the names of variables in
 \code{data} to be modeled as multinomial indicators. These variables are
 converted to factors internally. The first factor level is used as the
-reference category for the multinomial logits. Variables with more than 30
-observed categories are not allowed.}
+reference category for the softmax transformation. Variables with more than 30
+observed categories are not allowed because estimated probabilities would be
+unreliable.}
 
 \item{covariates}{Optional character vector with the names of variables in
-\code{data} used to predict latent class membership. An intercept is always
-included. Character covariates are converted to factors and factors are
-expanded using \code{model.matrix()}. Observations with missing values in
-the covariates are removed before estimation.}
+\code{data} used to predict latent class membership. Internally, an intercept
+is always included. Character covariates are converted to factors and factors
+are dummy-coded using \code{model.matrix()}. Observations with missing values
+in the covariates are removed before estimation.}
 
 \item{outcomes}{Optional distal outcomes. It can be either a character vector
 with variable names in \code{data}, or a named list specifying the likelihood
@@ -49,7 +51,8 @@ automatically assigns numeric outcomes to the Gaussian likelihood and
 non-numeric outcomes to the multinomial likelihood;
 \code{outcomes = list(gaussian = c("y1", "y2"))} adds Gaussian distal
 outcomes; and \code{outcomes = list(multinomial = "z")} adds a multinomial
-distal outcome.}
+distal outcome. Is is possible to predict different types of outcomes at a
+time using \code{outcomes = list(gaussian = c("y1", "y2"), multinomial = "z")}}
 
 \item{penalties}{Logical value or named list controlling regularization. If
 \code{FALSE}, no penalties are used. If \code{TRUE}, default penalties are
@@ -64,7 +67,7 @@ Sigma = list(alpha = 1))}. The \code{beta} block may also contain
 \item{model}{Optional model specification. This can be a named list used to
 fix parameters, impose equality constraints, or provide custom parameter
 labels. Names should match internal parameter blocks, for example
-\code{beta}, Gaussian item names, \code{log_<item>} for multinomial logits,
+\code{beta}, Gaussian item names, \code{log_<item>} for multinomial logs,
 \code{means}, \code{logsigma}, or \code{sigma|Class<i>} for multivariate
 Gaussian blocks. Character strings containing residual-dependency syntax
 such as \code{"y1 ~~ y2"} or \code{"u1 ~~ u2 ~~ u3"} are also used to
@@ -87,7 +90,7 @@ ML three-step correction based on classification error. Defaults to
 
 \item{classification}{Character string used when \code{adjustment = "ml"}.
 Use \code{"modal"} for modal assignment or \code{"prop"} for proportional
-assignment based on posterior class probabilities.}
+assignment when estimating the classification-error matrix.}
 
 \item{control}{Optional list of optimizer and estimation controls. Common
 entries include \code{rstarts} for the number of random starts,
@@ -142,7 +145,7 @@ returned with class \code{"llcalist"}.
 \description{
 \code{lca()} estimates latent class models in which the measurement model may
 contain Gaussian indicators, multinomial indicators, or both. Class membership
-probabilities can be unconditional or modeled as a multinomial-logit function
+probabilities can be unconditional or modeled as a softmax transformation
 of observed covariates. Distal outcomes can also be included and modeled
 conditionally on the latent classes. The function supports one-step
 estimation, Bakk--Kuha two-step estimation, ML three-step estimation with
@@ -150,7 +153,7 @@ modal or proportional classification, and class enumeration by passing several
 values to \code{nclasses}.
 }
 \details{
-Estimate latent class models for continuous and categorical indicators, with
+Estimate latent class models with continuous and categorical indicators, with
 optional covariates and distal outcomes.
 
 
@@ -165,10 +168,10 @@ to the positive scale during optimization.
 
 For multinomial indicators, the model estimates class-specific category
 probabilities through a softmax parameterization. The first category is fixed
-to zero on the logit scale for identification.
+to zero on the log scale for identification.
 
 When \code{covariates} are supplied and \code{adjustment = "none"}, class
-probabilities are modeled in one step through multinomial-logit coefficients
+probabilities are modeled in one step through multinomial-log coefficients
 stored in the \code{beta} parameter block. The first class is the reference
 class, so its coefficients are fixed to zero.
 

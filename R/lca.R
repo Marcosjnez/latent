@@ -1,16 +1,16 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/06/2026
+# Modification date: 23/06/2026
 #'
 #' Latent Class Analysis
 #'
-#' Estimate latent class models for continuous and categorical indicators, with
+#' Estimate latent class models with continuous and categorical indicators, with
 #' optional covariates and distal outcomes.
 #'
 #' @description
 #' \code{lca()} estimates latent class models in which the measurement model may
 #' contain Gaussian indicators, multinomial indicators, or both. Class membership
-#' probabilities can be unconditional or modeled as a multinomial-logit function
+#' probabilities can be unconditional or modeled as a softmax transformation
 #' of observed covariates. Distal outcomes can also be included and modeled
 #' conditionally on the latent classes. The function supports one-step
 #' estimation, Bakk--Kuha two-step estimation, ML three-step estimation with
@@ -30,7 +30,8 @@
 #'   Variables listed in \code{outcomes} are treated as distal outcomes.
 #' @param nclasses A positive integer giving the number of latent classes. If a
 #'   vector of positive integers is supplied, one model is fitted for each value
-#'   and the result is returned as an object of class \code{"llcalist"}.
+#'   and the result is returned as an object of class \code{"llcalist"}. This
+#'   is usually termed as "class enumeration".
 #' @param gaussian Optional character vector with the names of variables in
 #'   \code{data} to be modeled as Gaussian indicators. These variables are
 #'   modeled with class-specific means and variances. If residual covariance
@@ -40,13 +41,14 @@
 #' @param multinomial Optional character vector with the names of variables in
 #'   \code{data} to be modeled as multinomial indicators. These variables are
 #'   converted to factors internally. The first factor level is used as the
-#'   reference category for the multinomial logits. Variables with more than 30
-#'   observed categories are not allowed.
+#'   reference category for the softmax transformation. Variables with more than 30
+#'   observed categories are not allowed because estimated probabilities would be
+#'   unreliable.
 #' @param covariates Optional character vector with the names of variables in
-#'   \code{data} used to predict latent class membership. An intercept is always
-#'   included. Character covariates are converted to factors and factors are
-#'   expanded using \code{model.matrix()}. Observations with missing values in
-#'   the covariates are removed before estimation.
+#'   \code{data} used to predict latent class membership. Internally, an intercept
+#'   is always included. Character covariates are converted to factors and factors
+#'   are dummy-coded using \code{model.matrix()}. Observations with missing values
+#'   in the covariates are removed before estimation.
 #' @param outcomes Optional distal outcomes. It can be either a character vector
 #'   with variable names in \code{data}, or a named list specifying the likelihood
 #'   for each outcome. If a character vector is supplied, numeric variables are
@@ -57,7 +59,8 @@
 #'   non-numeric outcomes to the multinomial likelihood;
 #'   \code{outcomes = list(gaussian = c("y1", "y2"))} adds Gaussian distal
 #'   outcomes; and \code{outcomes = list(multinomial = "z")} adds a multinomial
-#'   distal outcome.
+#'   distal outcome. Is is possible to predict different types of outcomes at a
+#'   time using \code{outcomes = list(gaussian = c("y1", "y2"), multinomial = "z")}
 #' @param penalties Logical value or named list controlling regularization. If
 #'   \code{FALSE}, no penalties are used. If \code{TRUE}, default penalties are
 #'   used. If a named list is supplied, missing penalty blocks are filled with
@@ -70,7 +73,7 @@
 #' @param model Optional model specification. This can be a named list used to
 #'   fix parameters, impose equality constraints, or provide custom parameter
 #'   labels. Names should match internal parameter blocks, for example
-#'   \code{beta}, Gaussian item names, \code{log_<item>} for multinomial logits,
+#'   \code{beta}, Gaussian item names, \code{log_<item>} for multinomial logs,
 #'   \code{means}, \code{logsigma}, or \code{sigma|Class<i>} for multivariate
 #'   Gaussian blocks. Character strings containing residual-dependency syntax
 #'   such as \code{"y1 ~~ y2"} or \code{"u1 ~~ u2 ~~ u3"} are also used to
@@ -89,7 +92,7 @@
 #'   \code{"bk"}.
 #' @param classification Character string used when \code{adjustment = "ml"}.
 #'   Use \code{"modal"} for modal assignment or \code{"prop"} for proportional
-#'   assignment based on posterior class probabilities.
+#'   assignment when estimating the classification-error matrix.
 #' @param control Optional list of optimizer and estimation controls. Common
 #'   entries include \code{rstarts} for the number of random starts,
 #'   \code{cores} for parallel computation, \code{maxit} for the maximum number
@@ -115,10 +118,10 @@
 #'
 #' For multinomial indicators, the model estimates class-specific category
 #' probabilities through a softmax parameterization. The first category is fixed
-#' to zero on the logit scale for identification.
+#' to zero on the log scale for identification.
 #'
 #' When \code{covariates} are supplied and \code{adjustment = "none"}, class
-#' probabilities are modeled in one step through multinomial-logit coefficients
+#' probabilities are modeled in one step through multinomial-log coefficients
 #' stored in the \code{beta} parameter block. The first class is the reference
 #' class, so its coefficients are fixed to zero.
 #'
@@ -255,6 +258,8 @@ lca <- function(data,
                          adjustment = adjustment, classification = classification,
                          control = control, do.fit = do.fit, verbose = verbose)
 
+      names(result)[i] <- paste("nclasses=", nclasses[i], sep = "")
+
     }
 
     class(result) <- "llcalist"
@@ -267,10 +272,21 @@ lca <- function(data,
 
   # Return a list of lcca models:
 
-  if(!is.null(covariates) && adjustment != "none") {
+  there_are_covariates <- !is.null(covariates)
+  there_are_outcomes <- !is.null(outcomes)
+  structural <- there_are_covariates || there_are_outcomes
 
-    if(!any(covariates %in% colnames(data))) {
+  if(structural && adjustment != "none") {
+
+    no_covariate_found_in_data <- !any(covariates %in% colnames(data))
+    no_outcome_found_in_data <- !any(outcomes %in% colnames(data))
+
+    if(there_are_covariates && no_covariate_found_in_data) {
       stop("No named covariate was found in data")
+    }
+
+    if(there_are_outcomes && no_outcome_found_in_data) {
+      stop("No named outcome was found in data")
     }
 
     adjustment <- tolower(adjustment)
@@ -1015,7 +1031,7 @@ create_lca_model <- function(dataList, nclasses, item,
     for(j in seq_len(Jmultinom)) {
 
       # For ordinary multinomial items, the item probability matrix is obtained
-      # directly from the item logits with a softmax transformation. For items
+      # directly from the item logs with a softmax transformation. For items
       # involved in residual dependencies, the original item probability matrix
       # is kept in the transformed object, but it is later computed as the
       # marginal probability obtained by summing over the corresponding joint
@@ -1207,7 +1223,7 @@ create_lca_model <- function(dataList, nclasses, item,
 
     if(!is.null(control$mvmultinomial)) {
 
-      # Conditional logits for variables involved in residual dependencies.
+      # Conditional logs for variables involved in residual dependencies.
       # These generate P(u_j | reference level of the paired variable), not the
       # marginal P(u_j). Marginal probabilities are computed later from the
       # joint probabilities using sum_vectors transformations.
@@ -2473,7 +2489,10 @@ lca_bakk_kuha <- function(data,
 
   #### Return ####
 
-  return(list(measurement = fit1, structural = fit2))
+  result <- list(measurement = fit1, structural = fit2)
+  class(result) <- "llcalist"
+
+  return(result)
 
 }
 
@@ -2558,6 +2577,9 @@ lca_ml <- function(data,
 
   #### Return ####
 
-  return(list(measurement = fit1, structural = fit2))
+  result <- list(measurement = fit1, structural = fit2)
+  class(result) <- "llcalist"
+
+  return(result)
 
 }

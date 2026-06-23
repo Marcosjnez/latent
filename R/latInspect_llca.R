@@ -319,19 +319,10 @@ latInspect.llca <- function(fit,
 #' @export
 latInspect.llcalist <- function(model, what = "profile") {
 
-  nmodels <- length(model)
-  out <- vector("list", length = nmodels)
-  for(i in 1:nmodels) {
+  result <- lapply(model, FUN = latInspect, what = what)
 
-    out[[i]] <- latInspect.llca(model[[i]], what = what)
-    names(out)[i] <- paste("nclasses=",
-                           ncol(model[[i]]@modelInfo$trans$class),
-                           sep = "")
+  class(result) <- "latInspect.llcalist"
 
-  }
-
-  class(out) <- "latInspect.llcalist"
-
-  return(out)
+  return(result)
 
 }
