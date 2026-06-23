@@ -18,17 +18,17 @@
 
 library(latent)
 set.seed(2026)
-# gss82$UC <- paste(gss82$UNDERSTA, gss82$COOPERAT, sep = ".")
 
 gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
-           # adjustment = "bk",
+           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           outcomes = "MARITAL",
+           adjustment = "bk",
            # classification = "prop",
-           model = list("UNDERSTA ~~ COOPERAT
-                         PURPOSE ~~ COOPERAT"),
+           # model = list("UNDERSTA ~~ COOPERAT
+           #               PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
            do.fit = TRUE)

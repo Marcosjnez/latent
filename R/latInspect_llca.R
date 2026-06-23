@@ -118,8 +118,6 @@ latInspect.llca <- function(fit,
       return(posterior)
     })
 
-    names(RespConditional) <- colnames(measurement)
-
   }
 
   if(control_optimizer$outcomes) {
@@ -197,8 +195,7 @@ latInspect.llca <- function(fit,
              what == "coefficient" ||
              what == "coefficients") {
 
-    result <- list(beta        = fit@transformed_pars$beta,
-                   distal_beta = fit@transformed_pars$distal_beta)
+    result <- fit@transformed_pars$beta
 
   } else if (what == "respconditional") {
 
