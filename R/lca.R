@@ -724,7 +724,9 @@ create_lca_dataList <- function(data = NULL,
                                 multinomial_factor_levels = multinomial_factor_levels,
                                 multinomial_factor_lengths = multinomial_factor_lengths,
                                 multinomial_reference = multinomial_reference)
-
+    # Check which multinomial items are ordered:
+    idx <- unlist(lapply(data[, multinomial_names, drop = FALSE], FUN = is.ordered))
+    control$ordered_multinomial <- multinomial_names[idx]
   }
 
   #### Possible response patterns and degrees of freedom ####
@@ -1158,6 +1160,7 @@ create_lca_model <- function(dataList, nclasses, item,
 
   }
 
+  # stop("AHHH")
   # Create the full transparameter structure:
   trans <- create_parameters(list_struct)
 
@@ -1967,6 +1970,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   idx_transformed <- unlist(lapply(control_transform,
                                    FUN = \(x) unlist(x$indices_out)+1L))
   # if(isTRUE(control$stop)) stop("AHHHH")
+  # stop("AHHHHH")
   inits <- create_init(trans, param, init_param,
                        idx_transformed = idx_transformed, control)
 

@@ -23,8 +23,8 @@ gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
-           outcomes = "MARITAL",
+           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           # outcomes = "MARITAL",
            adjustment = "bk",
            # classification = "prop",
            # model = list("UNDERSTA ~~ COOPERAT
@@ -753,6 +753,12 @@ control_manifold <- fit@modelInfo$control_manifold
 control_transform <- fit@modelInfo$control_transform
 control_estimator <- fit@modelInfo$control_estimator
 control_optimizer <- fit@modelInfo$control_optimizer
+
+n <- 38
+idx1 <- control_transform[[n]]$indices_in[[1]]+1
+idx2 <- control_transform[[n]]$indices_out[[1]]+1
+cbind(fit@modelInfo$transparameters_labels[idx1],
+      fit@modelInfo$transparameters_labels[idx2])
 
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control_optimizer,

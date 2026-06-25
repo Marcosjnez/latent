@@ -60,6 +60,7 @@ public:
 #include "transformations/multinomial2.h"
 #include "transformations/sum_vectors.h"
 #include "transformations/sqrt_vector.h"
+#include "transformations/pos_incrsng.h"
 
 using TransformFactory =
   std::function< transformations*(const Rcpp::List&) >;
@@ -82,7 +83,8 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "mvnormal2",   choose_mvnormal2   },
   { "normal2",   choose_normal2   },
   { "sum_vectors",   choose_sum_vectors   },
-  { "sqrt_vector",   choose_sqrt_vector   }
+  { "sqrt_vector",   choose_sqrt_vector   },
+  { "pos_incrsng",   choose_pos_incrsng   }
 };
 
 transformations* choose_transform(const Rcpp::List& trans_setup) {
