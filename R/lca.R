@@ -594,6 +594,10 @@ create_lca_dataList <- function(data = NULL,
 
   #### Process the indicators ####
 
+  # Count the number of items for each likelihood model:
+  ngaussian <- length(gaussian)
+  nmultinomial <- length(multinomial)
+
   # If at least two items are gaussian, check which of them are involved in
   # covariance structures in the model argument so they are modeled with a
   # multivariate normal distribution. Create also a target matrix where TRUE
@@ -601,7 +605,7 @@ create_lca_dataList <- function(data = NULL,
   # to zero. The diagonal of target should be FALSE because variances are
   # not estimated directly but parameterized as exp(log variances):
   mvgaussian <- NULL
-  if (length(gaussian) >= 2L) {
+  if(ngaussian > 1L) {
 
     error_covs <- NULL
 
@@ -653,11 +657,7 @@ create_lca_dataList <- function(data = NULL,
       }
     }
   }
-
-  # Count the number of items for each likelihood model:
-  ngaussian <- length(gaussian)
   nmvgaussian <- length(mvgaussian)
-  nmultinomial <- length(multinomial)
 
   # Select the subset of data with the variables that are used in the
   # measurement model (keeping the original ordering):
@@ -828,7 +828,7 @@ create_lca_dataList <- function(data = NULL,
 
   #### Check for residual dependencies in multinomial items ####
 
-  if(nmultinomial >= 2L) {
+  if(nmultinomial > 1L) {
 
     # Define the joint probability parameters:
     error_covs <- NULL
@@ -843,8 +843,8 @@ create_lca_dataList <- function(data = NULL,
       error_covs$rhs <- as.character(error_covs$rhs)
 
       # Keep only pairs where both variables are multinomial:
-      keep <- error_covs$lhs %in% multinomial &
-        error_covs$rhs %in% multinomial &
+      keep <- error_covs$lhs %in% multinomial_names &
+        error_covs$rhs %in% multinomial_names &
         error_covs$lhs != error_covs$rhs
 
       error_covs <- error_covs[keep, , drop = FALSE]
@@ -936,6 +936,8 @@ create_lca_dataList <- function(data = NULL,
 
       }
 
+    } else {
+      dataList$mvmultinomial <- NULL
     }
 
   }
@@ -1167,7 +1169,6 @@ create_lca_model <- function(dataList, nclasses, item,
 
   }
 
-  # stop("AHHH")
   # Create the full transparameter structure:
   trans <- create_parameters(list_struct)
 

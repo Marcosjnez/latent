@@ -84,7 +84,7 @@ latInspect.llca <- function(fit,
 
   classes <- colSums(fit@transformed_pars$class * pattern_weights) /
     sum(pattern_weights)
-  indicators_names <- fit@modelInfo$control_optimizer$indicators_names
+  indicators_names <- fit@dataList$indicators_names
   ClassConditional <- fit@transformed_pars[indicators_names]
   if(fit@dataList$gaussian$any_gaussian) {
     gaussian_names <- intersect(fit@modelInfo$control_optimizer$indicators_names,

@@ -27,8 +27,8 @@ fit <- lca(data = gss82,
            # outcomes = "MARITAL",
            adjustment = "bk",
            # classification = "prop",
-           model = list("UNDERSTA ~~ COOPERAT
-                         PURPOSE ~~ COOPERAT"),
+           # model = list("UNDERSTA ~~ COOPERAT
+           #               PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
            do.fit = TRUE)
@@ -185,11 +185,11 @@ SE1$se
 SE2 <- se(fit2, type = "standard", digits = 4)
 SE2$se
 
-# Effects-coding parameterization:
-new_se <- effects_coding(fit2@parameters$beta, SE2$vcov)
-new_se$beta
-new_se$table_se
-new_se$se
+# # Effects-coding parameterization:
+# new_se <- effects_coding(fit2@parameters$beta, SE2$vcov)
+# new_se$beta
+# new_se$table_se
+# new_se$se
 
 # Plot model fit2 info:
 fit2
@@ -213,16 +213,16 @@ fitted(fit2)
 CI <- ci(fit2, type = "standard", confidence = 0.95, digits = 2)
 CI$table
 
-x <- plot_coeffs(fit2,
-                 type = "standard",
-                 what = "OR",
-                 effects = "coding",
-                 confidence = 0.95,
-                 show_est_ci = TRUE,
-                 est_ci_header_cex = 0.5,
-                 cex_y = 0.5,
-                 mfrow = c(2, 2),
-                 xlim = c(0, 5))
+# x <- plot_coeffs(fit2,
+#                  type = "standard",
+#                  what = "OR",
+#                  effects = "coding",
+#                  confidence = 0.95,
+#                  show_est_ci = TRUE,
+#                  est_ci_header_cex = 0.5,
+#                  cex_y = 0.5,
+#                  mfrow = c(2, 2),
+#                  xlim = c(0, 5))
 
 # new_se <- move_intercept(beta, vcov)
 # new_se$beta_new
