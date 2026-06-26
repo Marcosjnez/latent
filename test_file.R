@@ -27,8 +27,8 @@ fit <- lca(data = gss82,
            # outcomes = "MARITAL",
            adjustment = "bk",
            # classification = "prop",
-           # model = list("UNDERSTA ~~ COOPERAT
-           #               PURPOSE ~~ COOPERAT"),
+           model = list("UNDERSTA ~~ COOPERAT
+                         PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
            do.fit = TRUE)
@@ -232,7 +232,7 @@ fit3 <- lca(data = empathy,
             nclasses = 4L,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             covariates = c("pt1", "pt2", "pt3", "pt4"),
-            outcomes = list(gaussian = c("pt5")),
+            # outcomes = list(gaussian = c("pt5")),
             adjustment = "bk",
             # classification = "modal",
             penalties = TRUE,
@@ -240,6 +240,7 @@ fit3 <- lca(data = empathy,
 SE3 <- se(fit3, type = "standard", digits = 4)
 SE3$se
 latInspect(fit3$structural, what = "loglik")
+# loglik: -1747.135 # penalized_loglik: -1750.566
 # loglik: -2049.840 # penalized_loglik: -2053.322
 
 #### CFA ####
@@ -753,12 +754,6 @@ control_manifold <- fit@modelInfo$control_manifold
 control_transform <- fit@modelInfo$control_transform
 control_estimator <- fit@modelInfo$control_estimator
 control_optimizer <- fit@modelInfo$control_optimizer
-
-n <- 38
-idx1 <- control_transform[[n]]$indices_in[[1]]+1
-idx2 <- control_transform[[n]]$indices_out[[1]]+1
-cbind(fit@modelInfo$transparameters_labels[idx1],
-      fit@modelInfo$transparameters_labels[idx2])
 
 x <- grad_comp(control_manifold, control_transform,
                control_estimator, control_optimizer,

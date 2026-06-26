@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 19/06/2026
+# Modification date: 26/06/2026
 #'
 #' @title
 #' Inspect objects from fitted lca models.
@@ -86,7 +86,7 @@ latInspect.llca <- function(fit,
     sum(pattern_weights)
   indicators_names <- fit@modelInfo$control_optimizer$indicators_names
   ClassConditional <- fit@transformed_pars[indicators_names]
-  if(fit@dataList$any_gaussian) {
+  if(fit@dataList$gaussian$any_gaussian) {
     gaussian_names <- intersect(fit@modelInfo$control_optimizer$indicators_names,
                                 fit@modelInfo$control_optimizer$gaussian$gaussian_names)
     ClassConditional[gaussian_names] <- lapply(ClassConditional[gaussian_names],
@@ -120,11 +120,11 @@ latInspect.llca <- function(fit,
 
   }
 
-  if(control_optimizer$outcomes) {
-    ClassConditional_outcomes <- fit@transformed_pars[control_optimizer$outcomes_names]
-    if(fit@dataList$any_gaussian) {
-      gaussian_names <- intersect(fit@modelInfo$control_optimizer$outcomes_names,
-                                  fit@modelInfo$control_optimizer$gaussian$gaussian_names)
+  if(fit@dataList$outcomes$any_outcomes) {
+    ClassConditional_outcomes <- fit@transformed_pars[fit@dataList$outcomes$outcomes_names]
+    if(fit@dataList$gaussian$any_gaussian) {
+      gaussian_names <- intersect(fit@dataList$outcomes$outcomes_names,
+                                  fit@dataList$gaussian$gaussian_names)
       ClassConditional_outcomes[gaussian_names] <- lapply(ClassConditional_outcomes[gaussian_names],
                                                           FUN = \(x) {
                                                             x[c(1, 4), ]
