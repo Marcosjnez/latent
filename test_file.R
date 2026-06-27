@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 23/06/2026
+# Modification date: 28/06/2026
 
 #### Store a dataset ####
 
@@ -74,10 +74,13 @@ fit <- lca(data = empathy,
            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
            # covariates = c("pt1", "pt2", "pt3", "pt4"),
            # outcomes = c("pt1", "pt2"),
-           # model = list("ec2 ~~ ec3 ~~ ec6"),
+           model = list("ec2 ~~ ec3"),
            penalties = TRUE,
            control = list(rstarts = 50L, cores = 32L),
            do.fit = TRUE)
+latInspect(fit, what = "loglik")
+# loglik: -1841.336 # penalized_loglik: -1844.333
+# loglik: -1808.949 # penalized_loglik: -1812.014 ("ec2 ~~ ec3)
 
 # Plot model fit info:
 fit
@@ -88,9 +91,6 @@ getfit(fit)
 lbvr(fit) # FIX
 
 # Inspect model objects:
-latInspect(fit, what = "loglik")
-# loglik: -1841.336 # penalized_loglik: -1844.333
-# loglik: -1808.949 # penalized_loglik: -1812.014
 latInspect(fit, what = "convergence")
 latInspect(fit, what = "profile") # FIX profile for multivariate items
 latInspect(fit, what = "coefs")

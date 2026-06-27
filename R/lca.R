@@ -513,7 +513,7 @@ create_lca_dataList <- function(data = NULL,
     stop("nclasses must be a (vector of) positive integer(s)")
   }
 
-  #### Process the indicators ####
+  #### Store the indicators names ####
 
   indicators <- c(multinomial, gaussian)
   indicators_names <- intersect(indicators, colnames(data))
@@ -594,16 +594,13 @@ create_lca_dataList <- function(data = NULL,
 
   #### Process the indicators ####
 
-  # Count the number of items for each likelihood model:
-  ngaussian <- length(gaussian)
-  nmultinomial <- length(multinomial)
-
   # If at least two items are gaussian, check which of them are involved in
   # covariance structures in the model argument so they are modeled with a
   # multivariate normal distribution. Create also a target matrix where TRUE
   # means that a given covariance is estimated and FALSE means that it is fixed
   # to zero. The diagonal of target should be FALSE because variances are
   # not estimated directly but parameterized as exp(log variances):
+  ngaussian <- length(gaussian)
   mvgaussian <- NULL
   if(ngaussian > 1L) {
 
@@ -629,7 +626,7 @@ create_lca_dataList <- function(data = NULL,
 
         candidate_mvgaussian <- unique(c(error_covs$lhs, error_covs$rhs))
 
-        if (length(candidate_mvgaussian) >= 2L) {
+        if (length(candidate_mvgaussian) > 1L) {
 
           mvgaussian <- candidate_mvgaussian
           nmvgaussian <- length(mvgaussian)
@@ -657,7 +654,11 @@ create_lca_dataList <- function(data = NULL,
       }
     }
   }
+
+  # Count the number of items for each likelihood model:
+  ngaussian <- length(gaussian) # update
   nmvgaussian <- length(mvgaussian)
+  nmultinomial <- length(multinomial)
 
   # Select the subset of data with the variables that are used in the
   # measurement model (keeping the original ordering):

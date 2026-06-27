@@ -1,3 +1,7 @@
+# Author: Mauricio Garnier-Villarreal
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 27/06/2026 by Marcos Jimenez
+
 #' Classification Diagnostics for Latent Class Analysis
 #'
 #' Computes various classification diagnostics from a fitted latent class model.

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/05/2026
+# Modification date: 27/06/2026
 #'
 #' @title
 #' Fitted values for Latent Class Analysis.
@@ -27,7 +27,7 @@
 fitted.llca <- function(model) {
 
   covariates <- model@dataList$covariates
-  P0 <- predict.llca(model = model, new = X[, -1])
+  P0 <- predict.llca(model = model, new = covariates[, -1])
 
   return(P0)
 
@@ -43,7 +43,7 @@ fitted.llcalist <- function(model) {
 
     out[[i]] <- fitted.llca(model[[i]])
     names(out)[i] <- paste("nclasses=",
-                           ncol(model[[i]]@modelInfo$trans$class),
+                           ncol(model[[i]]@modelInfo$param$beta),
                            sep = "")
 
   }

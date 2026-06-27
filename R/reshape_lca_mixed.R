@@ -1,3 +1,6 @@
+# Author: Mauricio Garnier-Villarreal
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 27/06/2026 by Marcos Jimenez
 
 #' Split and reshape mixed (multinomial + Gaussian) LCA item output
 #'
@@ -6,16 +9,12 @@
 #' @return A list with components \code{multinomial} and \code{gaussian}, each a data frame.
 #' @export
 reshape_lca_mixed <- function(item_output, item_types) {
-  stopifnot(length(item_output) == length(item_types))
 
-  is_multinom <- item_types == "multinomial"
-  is_gauss    <- item_types == "gaussian"
-
-  mult_items <- item_output[is_multinom]
-  gauss_items<- item_output[is_gauss]
+  mult_items <- item_output[item_types$multinomial]
+  gauss_items <- item_output[item_types$gaussian]
 
   mult_df <- if (length(mult_items) > 0) reshape_lca_multinomial(mult_items) else data.frame()
-  gauss_df<- if (length(gauss_items) > 0) reshape_lca_continuous(gauss_items)  else data.frame()
+  gauss_df <- if (length(gauss_items) > 0) reshape_lca_continuous(gauss_items)  else data.frame()
 
   list(multinomial = mult_df, gaussian = gauss_df)
 }

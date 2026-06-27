@@ -84,7 +84,7 @@ se.llca <- function(fit, type = "standard", digits = 3) {
 
 #' @method se llcalist
 #' @export
-se.llcalist <- function(model, digits = 3) {
+se.llcalist <- function(model, type = "standard", digits = 3) {
 
   nmodels <- length(model)
   out <- vector("list", length = nmodels)
@@ -92,7 +92,7 @@ se.llcalist <- function(model, digits = 3) {
 
     out[[i]] <- se.llca(model[[i]], type = type, digits = digits)
     names(out)[i] <- paste("nclasses=",
-                           ncol(model[[i]]@modelInfo$trans$class),
+                           ncol(model[[i]]@modelInfo$param$beta),
                            sep = "")
 
   }

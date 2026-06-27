@@ -1,3 +1,7 @@
+# Author: Mauricio Garnier-Villarreal
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 27/06/2026 by Marcos Jimenez
+
 #' Plot method for latent class analysis (llca) objects
 #'
 #' @param x An object of class \code{"llca"}, typically from \code{latent}.
@@ -8,7 +12,9 @@
 plot.llca <- function(x, ...) {
 
   item_output <- latInspect(x, what = "item")
-  item_types  <- x@dataList$item
+  item_types  <- list(multinomial = x@dataList$multinomial$multinomial_names,
+                      gaussian = x@dataList$gaussian$gaussian_names
+  )
 
   item_resp   <- reshape_lca_mixed(item_output, item_types)
 
