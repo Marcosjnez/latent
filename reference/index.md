@@ -1,0 +1,77 @@
+# Package index
+
+## All functions
+
+- [`HolzingerSwineford1939`](https://marcosjnez.github.io/latent/reference/HolzingerSwineford1939.md)
+  : Example dataset: HolzingerSwineford1939
+- [`cancer`](https://marcosjnez.github.io/latent/reference/cancer.md) :
+  Example dataset: cancer
+- [`empathy`](https://marcosjnez.github.io/latent/reference/empathy.md)
+  : Example dataset: empathy
+- [`fitted()`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
+  : Fitted values for Latent Class Analysis.
+- [`getfit()`](https://marcosjnez.github.io/latent/reference/getfit.lcfa.md)
+  : Fit indices
+- [`getfit()`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
+  : Fit indices
+- [`gss82`](https://marcosjnez.github.io/latent/reference/gss82.md) :
+  Example dataset: gss82
+- [`hexaco`](https://marcosjnez.github.io/latent/reference/hexaco.md) :
+  Example dataset: hexaco
+- [`se()`](https://marcosjnez.github.io/latent/reference/latInspect.lcfa.md)
+  : Standard Errors
+- [`latInspect()`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
+  : Inspect objects from fitted lca models.
+- [`latent-package`](https://marcosjnez.github.io/latent/reference/latent-package.md)
+  [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
+  : An R package for Latent Variable Modeling
+- [`lbvr()`](https://marcosjnez.github.io/latent/reference/lbvr.md) :
+  Local Bivariate Residuals for Latent Class Analysis
+- [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md) :
+  Latent Class Analysis
+- [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
+  Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+- [`lcfa_to_lavaan()`](https://marcosjnez.github.io/latent/reference/lcfa_to_lavaan.md)
+  : Convert a fitted lcfa object (latent) to a lavaan object
+- [`lclass_diag()`](https://marcosjnez.github.io/latent/reference/lclass_diag.md)
+  : Classification Diagnostics for Latent Class Analysis
+- [`lefa()`](https://marcosjnez.github.io/latent/reference/lefa.md) :
+  Fit an Exploratory Factor Analysis (EFA) model.
+- [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
+  Maximum likelihood estimation of positive-definite polychoric
+  correlation matrices
+- [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md)
+  : Rotate the lambda matrix of an orthogonal factor model.
+- [`plot(`*`<getfit.llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/plot.getfit.llcalist.md)
+  : Plot method for LCA model fit comparisons (scree plot)
+- [`plot(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/plot.llca.md)
+  : Plot method for latent class analysis (llca) objects
+- [`plot()`](https://marcosjnez.github.io/latent/reference/plot_coeffs.md)
+  : Plot regression coefficients
+- [`plot_lca_gaussian()`](https://marcosjnez.github.io/latent/reference/plot_lca_gaussian.md)
+  : Plot mean and standard deviation profiles for Gaussian LCA
+  indicators
+- [`plot_lca_mixed()`](https://marcosjnez.github.io/latent/reference/plot_lca_mixed.md)
+  : Plot mixed LCA results (both Gaussian and multinomial indicators)
+- [`plot_lca_multinomial()`](https://marcosjnez.github.io/latent/reference/plot_lca_multinomial.md)
+  : Plot response probabilities for multinomial LCA indicators
+- [`predict()`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
+  : Predicted values for Latent Class Analysis.
+- [`print(`*`<lbvr>`*`)`](https://marcosjnez.github.io/latent/reference/print.lbvr.md)
+  : Print method for lbvr objects
+- [`print(`*`<lclassd>`*`)`](https://marcosjnez.github.io/latent/reference/print.lclassd.md)
+  : Print Method for Latent Class Diagnostics
+- [`reshape_lca_mixed()`](https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.md)
+  : Split and reshape mixed (multinomial + Gaussian) LCA item output
+- [`se()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md) :
+  Standard Errors
+- [`se()`](https://marcosjnez.github.io/latent/reference/se.llca.md) :
+  Standard Errors
+- [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
+  : Simulate factor structures with misspecification errors.
+- [`getfit()`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)
+  : Fit indices
+- [`getfit()`](https://marcosjnez.github.io/latent/reference/summary.llca.md)
+  : Fit indices
+- [`values`](https://marcosjnez.github.io/latent/reference/values.md) :
+  Example dataset: values
