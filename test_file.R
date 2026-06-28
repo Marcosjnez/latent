@@ -74,13 +74,13 @@ fit <- lca(data = empathy,
            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
            # covariates = c("pt1", "pt2", "pt3", "pt4"),
            # outcomes = c("pt1", "pt2"),
-           model = list("ec2 ~~ ec3"),
+           # model = list("ec2 ~~ ec3"),
            penalties = TRUE,
            control = list(rstarts = 50L, cores = 32L),
            do.fit = TRUE)
 latInspect(fit, what = "loglik")
 # loglik: -1841.336 # penalized_loglik: -1844.333
-# loglik: -1808.949 # penalized_loglik: -1812.014 ("ec2 ~~ ec3)
+# loglik: -1814.483 # penalized_loglik: -1817.526 ("ec2 ~~ ec3")
 
 # Plot model fit info:
 fit
@@ -113,8 +113,8 @@ penalties <- list(
   # beta  = list(alpha = 0),
   class = list(alpha = 1),
   prob  = list(alpha = 1),
-  var   = list(alpha = 1)
-  # Sigma = list(alpha = 1)
+  var   = list(alpha = 1),
+  Sigma = list(alpha = 1)
 ) # FIX defaults in penalties
 fit <- lca(data = cancer,
            nclasses = 3L,
@@ -123,6 +123,8 @@ fit <- lca(data = cancer,
            multinomial = c("PerformanceRating", "CardiovascularDiseaseHistory"),
            penalties = penalties,
            do.fit = TRUE)
+latInspect(fit, what = "loglik")
+# loglik: -5784.701 # penalized_loglik: -5795.573
 
 # Plot model fit info:
 fit
@@ -131,8 +133,6 @@ fit
 getfit(fit)
 
 # Inspect model objects:
-latInspect(fit, what = "loglik")
-# loglik: -5784.701 # penalized_loglik: -5795.573
 latInspect(fit, what = "fit.matrix")
 latInspect(fit, what = "coefs")
 latInspect(fit, what = "classes")
