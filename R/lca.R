@@ -674,6 +674,11 @@ create_lca_dataList <- function(data = NULL,
   # Number of items:
   nitems <- ncol(measurement)
 
+  # Check that item is a character vector with a string for each column of data:
+  if(!is.character(item) || length(item) != nitems) {
+    stop("item must be a character vector with as many elements as columns in data")
+  }
+
   # Transform nonnumeric variables into factors:
   measurement[!sapply(measurement, is.numeric)] <-
     lapply(measurement[!sapply(measurement, is.numeric)], factor)
@@ -683,11 +688,6 @@ create_lca_dataList <- function(data = NULL,
                                                 if (is.factor(col))
                                                   as.integer(col) - 1L else col
                                               }))
-
-  # Check that item is a character vector with a string for each column of data:
-  if(!is.character(item) || length(item) != nitems) {
-    stop("item must be a character vector with as many elements as columns in data")
-  }
 
   # Store the indicators in the control list:
 
@@ -725,38 +725,17 @@ create_lca_dataList <- function(data = NULL,
   # Append the covariates, indicators, and distal outcomes.
 
   # If any item is gaussian, then don't find the unique response patterns
-  if(any_gaussian) {
-
-    pattern_names <- paste("pattern", 1:nobs, sep = "")
-    if(!is.null(weights)) {
-      post_weights <- as.matrix(weights, ncol = 1L)
-      rownames(post_weights) <- pattern_names
-    }
-
-    all <- cbind(covariates, measurement)
-    remove <- which("(Intercept)" %in% colnames(all))
-    all_patterns <- as.data.frame(all)[, -remove]
-
-    data_patterns <- list()
-    data_patterns$patterns <- measurement_recoded
-    data_patterns$cov_patterns <- covariates
-    data_patterns$npatterns <- nobs
-    data_patterns$pattern_names <- pattern_names
-    data_patterns$pattern_weights <- rep(1, times = nobs)
-    data_patterns$full2short <- seq_len(nobs)
-    data_patterns$short2full <- seq_len(nobs)
-    data_patterns$patterns_original <- measurement
-    data_patterns$all_patterns <- all_patterns
-    data_patterns$post_weights = if(!is.null(weights)) post_weights else NULL
-
+  if(any_gaussian || any_mvgaussian) {
+    any_continuous <- TRUE
   } else {
-
-    # If no item is gaussian, then collect only the unique response patterns
-    data_patterns <- make_patterns(covariates = covariates,
-                                   measurement_recoded = measurement_recoded,
-                                   measurement = measurement, weights = weights)
-
+    any_continuous <- FALSE
   }
+
+  # If no item is gaussian, then collect only the unique response patterns
+  data_patterns <- make_patterns(covariates = covariates,
+                                 measurement_recoded = measurement_recoded,
+                                 measurement = measurement, weights = weights,
+                                 any_continuous = any_continuous)
 
   #### Store objects in dataList ####
 
@@ -1809,7 +1788,38 @@ group_connected_pairs <- function(pairs) {
   )
 }
 
-make_patterns <- function(covariates, measurement_recoded, measurement, weights = NULL) {
+make_patterns <- function(covariates, measurement_recoded, measurement,
+                          weights, any_continuous) {
+
+  if(any_continuous) {
+
+    nobs <- nrow(measurement_recoded)
+    pattern_names <- paste("pattern", 1:nobs, sep = "")
+    if(!is.null(weights)) {
+      post_weights <- as.matrix(weights, ncol = 1L)
+      rownames(post_weights) <- pattern_names
+    }
+
+    all <- cbind(covariates, measurement)
+    remove <- which("(Intercept)" %in% colnames(all))
+    all_patterns <- as.data.frame(all)[, -remove]
+
+    result <- list(
+      patterns = measurement_recoded,
+      cov_patterns = covariates,
+      npatterns = nobs,
+      pattern_names = pattern_names,
+      pattern_weights = rep(1, times = nobs),
+      full2short = seq_len(nobs),
+      short2full = seq_len(nobs),
+      patterns_original = measurement,
+      all_patterns = all_patterns,
+      post_weights = if(!is.null(weights)) post_weights else NULL
+    )
+
+    return(result)
+
+  }
 
   # Collect the unique data patterns. Later, we split again:
   all <- cbind(covariates, measurement_recoded)
