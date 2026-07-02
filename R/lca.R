@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 23/06/2026
+# Modification date: 02/07/2026
 #'
 #' Latent Class Analysis
 #'
@@ -480,6 +480,8 @@ lca <- function(data,
 
 }
 
+#### Functions to create the dataList and modelInfo ####
+
 create_lca_dataList <- function(data = NULL,
                                 nclasses = NULL,
                                 covariates = NULL,
@@ -513,12 +515,43 @@ create_lca_dataList <- function(data = NULL,
     stop("nclasses must be a (vector of) positive integer(s)")
   }
 
-  #### Store the indicators names ####
+  #### Check covariates, indicators, and outcomes names ####
 
+  # Indicators:
   indicators <- c(multinomial, gaussian)
+  missing_indicators <- setdiff(indicators, colnames(data))
+  if(length(missing_indicators) > 0) {
+    message(
+      "The following indicators are missing in `data`: ",
+      paste(missing_indicators, collapse = ", ")
+    )
+  }
+
+  # Covariates:
+  missing_covariates <- setdiff(covariates, colnames(data))
+  if(length(missing_covariates) > 0) {
+    message(
+      "The following covariates are missing in `data`: ",
+      paste(missing_covariates, collapse = ", ")
+    )
+  }
+
+  # Outcomes:
+  missing_outcomes <- setdiff(unlist(outcomes), colnames(data))
+  if(length(missing_outcomes) > 0) {
+    message(
+      "The following outcomes are missing in `data`: ",
+      paste(missing_outcomes, collapse = ", ")
+    )
+  }
+
   indicators_names <- intersect(indicators, colnames(data))
+  covariates_names <- intersect(covariates, colnames(data))
+  outcomes_names <- intersect(unlist(outcomes), colnames(data))
 
   #### Process the outcomes ####
+
+  # Add each outcome to a likelihood model: gaussian or multinomial
 
   # If outcomes is a character vector, transform it into a named likelihood list
   if (is.character(outcomes)) {
@@ -553,18 +586,17 @@ create_lca_dataList <- function(data = NULL,
 
   #### Process the covariates ####
 
-  covariates <- intersect(covariates, colnames(data))
-  covariates_names <- covariates
   # Create the matrix of predictors for latent class probabilities:
   # covariates must be a character vector with the name of the predictors in data:
-  covariates <- make_design_matrix(covariates = covariates, data = data)
-  pcovariates <- ncol(covariates) # Number of columns of the design matrix
+  design <- make_design_matrix(covariates = covariates_names,
+                               data = data)
+  pdesign <- ncol(design) # Number of columns of the design matrix
 
   # Remove participants with missing data in any covariate:
-  remove <- which(apply(covariates, MARGIN = 1, FUN = anyNA))
+  remove <- which(apply(design, MARGIN = 1, FUN = anyNA))
   if(length(remove) > 0) {
 
-    missing <- colSums(is.na(covariates))
+    missing <- colSums(is.na(design))
     missing <- missing[missing > 0]
 
     warning(
@@ -583,14 +615,21 @@ create_lca_dataList <- function(data = NULL,
       " removed."
     )
 
-    covariates <- covariates[-remove, ]
+    design <- design[-remove, ]
     data <- data[-remove, ]
     weights <- weights[-remove]
 
   }
 
-  # Number of subjects after removing rows with missingness in the covariates X:
+  # Number of subjects after removing rows with missingness in the covariates:
   nobs <- nrow(data)
+
+  #### Make patterns ####
+
+  any_continuous <- FALSE
+  if(length(gaussian) > 0L) any_continuous <- TRUE
+  variables <- c(indicators_names, covariates_names, outcomes_names)
+  patterns <- make_patterns2(data[, variables], weights, any_continuous)
 
   #### Process the indicators ####
 
@@ -600,71 +639,20 @@ create_lca_dataList <- function(data = NULL,
   # means that a given covariance is estimated and FALSE means that it is fixed
   # to zero. The diagonal of target should be FALSE because variances are
   # not estimated directly but parameterized as exp(log variances):
-  ngaussian <- length(gaussian)
-  mvgaussian <- NULL
-  if(ngaussian > 1L) {
-
-    error_covs <- NULL
-
-    if (!is.null(model)) {
-      error_covs <- extract_cov_pairs(model)
-    }
-
-    if (!is.null(error_covs)) {
-
-      error_covs$lhs <- as.character(error_covs$lhs)
-      error_covs$rhs <- as.character(error_covs$rhs)
-
-      # Keep only covariance pairs where both variables are gaussian:
-      keep <- error_covs$lhs %in% gaussian &
-        error_covs$rhs %in% gaussian &
-        error_covs$lhs != error_covs$rhs
-
-      error_covs <- error_covs[keep, , drop = FALSE]
-
-      if (nrow(error_covs) > 0L) {
-
-        candidate_mvgaussian <- unique(c(error_covs$lhs, error_covs$rhs))
-
-        if (length(candidate_mvgaussian) > 1L) {
-
-          mvgaussian <- candidate_mvgaussian
-          nmvgaussian <- length(mvgaussian)
-
-          target <- matrix(
-            FALSE,
-            nrow = nmvgaussian,
-            ncol = nmvgaussian,
-            dimnames = list(mvgaussian, mvgaussian)
-          )
-
-          idx <- cbind(
-            match(error_covs$lhs, mvgaussian),
-            match(error_covs$rhs, mvgaussian)
-          )
-
-          target[idx] <- TRUE
-          target[idx[, 2:1, drop = FALSE]] <- TRUE
-
-          # Remove the variables in error_covs from gaussian:
-          gaussian <- gaussian[!(gaussian %in% mvgaussian)]
-          # These removed variables will be only present in mvgaussian
-
-        }
-      }
-    }
-  }
+  gaussian_objects <- check_mvgaussian(gaussian, model)
+  # output gaussian, mvgaussian, and target:
+  list2env(gaussian_objects, envir = environment())
 
   # Count the number of items for each likelihood model:
-  ngaussian <- length(gaussian) # update
+  ngaussian <- length(gaussian)
   nmvgaussian <- length(mvgaussian)
   nmultinomial <- length(multinomial)
 
   # Select the subset of data with the variables that are used in the
   # measurement model (keeping the original ordering):
-  model_labels <- rep(c("gaussian", "mvgaussian", "multinomial"),
-                      times = c(ngaussian, nmvgaussian, nmultinomial))
-  model_vector <- c(gaussian, mvgaussian, multinomial)
+  model_labels <- rep(c("multinomial", "gaussian", "mvgaussian"),
+                      times = c(nmultinomial, ngaussian, nmvgaussian))
+  model_vector <- c(multinomial, gaussian, mvgaussian)
   idx <- match(colnames(data), model_vector); idx <- idx[!is.na(idx)]
   measurement <- data[, model_vector[idx], drop = FALSE]
 
@@ -673,11 +661,6 @@ create_lca_dataList <- function(data = NULL,
   item_names <- colnames(measurement)
   # Number of items:
   nitems <- ncol(measurement)
-
-  # Check that item is a character vector with a string for each column of data:
-  if(!is.character(item) || length(item) != nitems) {
-    stop("item must be a character vector with as many elements as columns in data")
-  }
 
   # Transform nonnumeric variables into factors:
   measurement[!sapply(measurement, is.numeric)] <-
@@ -701,6 +684,11 @@ create_lca_dataList <- function(data = NULL,
   list2env(gaussian, envir = environment())
   list2env(mvgaussian, envir = environment())
   list2env(multinomial, envir = environment())
+
+  design_patterns <- design[patterns$full2short, , drop = FALSE]
+  measurement_patterns <- measurement_recoded[patterns$full2short, , drop = FALSE]
+  rownames(design_patterns) <- rownames(measurement_patterns) <-
+    patterns$pattern_names
 
   #### Possible response patterns and degrees of freedom ####
 
@@ -732,161 +720,59 @@ create_lca_dataList <- function(data = NULL,
   }
 
   # If no item is gaussian, then collect only the unique response patterns
-  data_patterns <- make_patterns(covariates = covariates,
+  data_patterns <- make_patterns(design = design,
                                  measurement_recoded = measurement_recoded,
                                  measurement = measurement, weights = weights,
                                  any_continuous = any_continuous)
+
+  gaussian$patterns_gaussian <- as.matrix(
+    data_patterns$patterns[, gaussian$gaussian_names])
+  mvgaussian$patterns_mvgaussian <- as.matrix(
+    data_patterns$patterns[, mvgaussian$mvgaussian_names])
+  multinomial$patterns_multinomial <- as.matrix(
+    data_patterns$patterns[, multinomial$multinomial_names])
+  multinomial$nmultinomial <- nmultinomial
+
+  #### Check for residual dependencies in multinomial items ####
+
+  mvmultinomial <- check_mvmultinomial(multinomial, model, patterns)
 
   #### Store objects in dataList ####
 
   dataList <- vector("list")
   dataList$data <- data
   dataList$measurement <- measurement
-  dataList$covariates <- covariates
+  dataList$design <- design
   dataList$measurement_recoded <- measurement_recoded
   dataList$nitems <- nitems
   dataList$item <- item
   dataList$item_names <- item_names
   dataList$nobs <- nobs
-  dataList$patterns <- data_patterns$patterns
-  dataList$cov_patterns <- data_patterns$cov_patterns
-  dataList$npatterns <- data_patterns$npatterns
+  dataList$patterns <- measurement_patterns # data_patterns$patterns
+  dataList$cov_patterns <- design_patterns # data_patterns$cov_patterns
+  # stop("AHHHH")
+  dataList$npatterns <- patterns$npatterns # data_patterns$npatterns
   dataList$npossible_patterns <- npossible_patterns
-  dataList$pattern_names <- data_patterns$pattern_names
-  dataList$pcovariates <- pcovariates
-  dataList$pattern_weights <- data_patterns$pattern_weights
-  dataList$full2short <- data_patterns$full2short
-  dataList$short2full <- data_patterns$short2full
+  dataList$pattern_names <- patterns$pattern_names # data_patterns$pattern_names
+  dataList$pdesign <- pdesign
+  dataList$pattern_weights <- patterns$pattern_weights # data_patterns$pattern_weights
+  dataList$full2short <- patterns$full2short # data_patterns$full2short
+  dataList$short2full <- patterns$short2full # data_patterns$short2full
   dataList$patterns_original <- data_patterns$patterns_original
   dataList$all_patterns <- data_patterns$all_patterns
   dataList$gaussian <- gaussian
   dataList$mvgaussian <- mvgaussian
   dataList$multinomial <- multinomial
+  dataList$mvmultinomial <- mvmultinomial
   dataList$indicators_names <- indicators_names
   dataList$covariates_names <- covariates_names
   dataList$outcomes <- outcomes
-  if(!is.null(weights)) dataList$weights <- data_patterns$post_weights # weights[full2short, ]
+  if(!is.null(weights)) dataList$weights <- patterns$post_weights # weights[full2short, ]
 
   # Update and check control parameters:
   control$penalties <- penalties # Either a logical or a list of named penalties
   control$start <- start # Optional named list with initial values
   control <- lca_control(control) # Check and update the control inputs and create defaults
-
-  #### Check for residual dependencies in multinomial items ####
-
-  if(nmultinomial > 1L) {
-
-    # Define the joint probability parameters:
-    error_covs <- NULL
-
-    if (!is.null(model)) {
-      error_covs <- extract_cov_pairs(model)
-    }
-
-    if (!is.null(error_covs)) {
-
-      error_covs$lhs <- as.character(error_covs$lhs)
-      error_covs$rhs <- as.character(error_covs$rhs)
-
-      # Keep only pairs where both variables are multinomial:
-      keep <- error_covs$lhs %in% multinomial_names &
-        error_covs$rhs %in% multinomial_names &
-        error_covs$lhs != error_covs$rhs
-
-      error_covs <- error_covs[keep, , drop = FALSE]
-
-      if(nrow(error_covs) > 0L) {
-
-        npairs <- nrow(error_covs)
-        pairs <- vector("list", length = npairs)
-        loginter_names <- vector("list", length = npairs)
-
-        for(h in 1:npairs) {
-
-          pairs[[h]] <- c(error_covs[h, 1], error_covs[h, 2])
-          loginter_names[[h]] <- paste("log_", pairs[[h]], collapse = "x",
-                                       sep = "")
-        }
-
-        names(pairs) <- unlist(lapply(pairs, FUN = paste, collapse = "."))
-
-        removed_multinomial <- unique(unlist(pairs))
-        keep <- multinomial_names[!(multinomial_names %in% removed_multinomial)]
-
-        indep_pairs <- group_connected_pairs(error_covs)$pairs
-        indep_pairs_list <- group_connected_pairs(error_covs)$elements
-        names(indep_pairs) <- names(indep_pairs_list) <-
-          lapply(indep_pairs_list, FUN = paste, collapse = ".")
-        patterns_original <- dataList$patterns_original
-        joints <- lapply(indep_pairs_list, FUN = \(x) {
-          apply(patterns_original[, x], MARGIN = 1, FUN = paste, collapse = ".")
-        })
-        joints <- as.data.frame(joints)
-        new_probs <- unlist(c(keep, colnames(joints)))
-        new_J <- length(new_probs)
-        patterns_mvmultinomial <- data.frame(patterns_original, joints)[, new_probs]
-        joint_levels <- lapply(indep_pairs_list, FUN = \(x) {
-          apply(expand.grid(multinomial_factor_levels[x]),
-                MARGIN = 1, FUN = paste, collapse = ".")
-        })
-        new_levels <- c(multinomial_factor_levels[keep], joint_levels)
-        new_K <- unlist(lapply(new_levels, FUN = length))
-        for(j in 1:length(new_probs)) {
-          patterns_mvmultinomial[[new_probs[j]]] <-
-            factor(patterns_mvmultinomial[[new_probs[j]]], ordered = TRUE,
-                   levels = new_levels[[j]])
-        }
-        njoints <- length(joint_levels)
-        multinomial_factor_levels_numeric <- sapply(multinomial_factor_lengths,
-                                                    FUN = seq_len)
-        joint_orderings <- lapply(indep_pairs_list, FUN = \(x) {
-          expand.grid(multinomial_factor_levels_numeric[x])
-        })
-
-        patterns_mvmultinomial_recoded <- lapply(patterns_mvmultinomial,
-                    FUN = function(col) {
-                      if (is.factor(col)) as.integer(col) - 1L else col
-                    })
-        patterns_mvmultinomial_recoded <-
-          as.matrix(as.data.frame(patterns_mvmultinomial_recoded))
-
-        nremoved_multinomial <- length(removed_multinomial)
-        removed_logmultinomial <- paste("log_", removed_multinomial,
-                                        "|reference", sep = "")
-        removed_condmultinomial <- paste(removed_multinomial,
-                                         "|reference", sep = "")
-        removed_multinomial_factor_levels <- multinomial_factor_levels[removed_multinomial]
-        removed_multinomial_factor_lengths <- multinomial_factor_lengths[removed_multinomial]
-
-        dataList$mvmultinomial <- list(
-          npairs = npairs,
-          pairs = pairs,
-          joints = joints,
-          loginter_names = loginter_names,
-          removed_multinomial = removed_multinomial,
-          new_J = new_J,
-          new_K = new_K,
-          patterns_mvmultinomial = patterns_mvmultinomial,
-          patterns_mvmultinomial_recoded = patterns_mvmultinomial_recoded,
-          nremoved_multinomial = nremoved_multinomial,
-          removed_logmultinomial = removed_logmultinomial,
-          removed_condmultinomial = removed_condmultinomial,
-          removed_multinomial_factor_levels = removed_multinomial_factor_levels,
-          removed_multinomial_factor_lengths = removed_multinomial_factor_lengths,
-          indep_pairs = indep_pairs,
-          indep_pairs_list = indep_pairs_list,
-          new_levels = new_levels,
-          njoints = njoints,
-          joint_orderings = joint_orderings
-        )
-
-      }
-
-    } else {
-      dataList$mvmultinomial <- NULL
-    }
-
-  }
 
   #### Return ####
 
@@ -906,7 +792,7 @@ create_lca_model <- function(dataList, nclasses, item,
 
   #### Model for the transformed parameters ####
 
-  pred_names <- colnames(covariates) # Names of predictors
+  pred_names <- colnames(design) # Names of predictors
 
   list_struct <- vector("list")
   k <- 1L
@@ -915,7 +801,7 @@ create_lca_model <- function(dataList, nclasses, item,
 
   list_struct[[k]] <- list(name = "beta",
                            type = "matrix",
-                           dim = c(pcovariates, nclasses),
+                           dim = c(pdesign, nclasses),
                            rownames = pred_names,
                            colnames = class_names)
   k <- k+1L
@@ -1110,8 +996,8 @@ create_lca_model <- function(dataList, nclasses, item,
     init_param[[i]] <- list()
 
     # Initial values for betas:
-    init_param[[i]][["beta"]] <- matrix(rnorm(pcovariates*nclasses),
-                                        nrow = pcovariates, ncol = nclasses)
+    init_param[[i]][["beta"]] <- matrix(rnorm(pdesign*nclasses),
+                                        nrow = pdesign, ncol = nclasses)
     init_param[[i]]$beta[, 1] <- 0
     dimnames(init_param[[i]]$beta) <- dimnames(param$beta)
 
@@ -1578,6 +1464,8 @@ lca_control <- function(control) {
 
 }
 
+#### Auxiliary functions for create_lca_dataList ####
+
 make_design_matrix <- function(covariates, data) {
 
   nobs <- nrow(data)
@@ -1788,7 +1676,203 @@ group_connected_pairs <- function(pairs) {
   )
 }
 
-make_patterns <- function(covariates, measurement_recoded, measurement,
+check_mvgaussian <- function(gaussian, model) {
+
+  # If at least two items are gaussian, check which of them are involved in
+  # covariance structures in the model argument so they are modeled with a
+  # multivariate normal distribution. Create also a target matrix where TRUE
+  # means that a given covariance is estimated and FALSE means that it is fixed
+  # to zero. The diagonal of target should be FALSE because variances are
+  # not estimated directly but parameterized as exp(log variances):
+
+  ngaussian <- length(gaussian)
+  mvgaussian <- target <- NULL
+
+  if(ngaussian > 1L) {
+
+    error_covs <- NULL
+
+    if (!is.null(model)) {
+      error_covs <- extract_cov_pairs(model)
+    }
+
+    if (!is.null(error_covs)) {
+
+      error_covs$lhs <- as.character(error_covs$lhs)
+      error_covs$rhs <- as.character(error_covs$rhs)
+
+      # Keep only covariance pairs where both variables are gaussian:
+      keep <- error_covs$lhs %in% gaussian &
+        error_covs$rhs %in% gaussian &
+        error_covs$lhs != error_covs$rhs
+
+      error_covs <- error_covs[keep, , drop = FALSE]
+
+      if (nrow(error_covs) > 0L) {
+
+        candidate_mvgaussian <- unique(c(error_covs$lhs, error_covs$rhs))
+
+        if (length(candidate_mvgaussian) > 1L) {
+
+          mvgaussian <- candidate_mvgaussian
+          nmvgaussian <- length(mvgaussian)
+
+          target <- matrix(
+            FALSE,
+            nrow = nmvgaussian,
+            ncol = nmvgaussian,
+            dimnames = list(mvgaussian, mvgaussian)
+          )
+
+          idx <- cbind(
+            match(error_covs$lhs, mvgaussian),
+            match(error_covs$rhs, mvgaussian)
+          )
+
+          target[idx] <- TRUE
+          target[idx[, 2:1, drop = FALSE]] <- TRUE
+
+          # Remove the variables in error_covs from gaussian:
+          gaussian <- gaussian[!(gaussian %in% mvgaussian)]
+          # These removed variables will be only present in mvgaussian
+
+        }
+      }
+    }
+  }
+
+  result <- list(gaussian = gaussian,
+                 mvgaussian = mvgaussian,
+                 target = target)
+
+  return(result)
+
+}
+
+check_mvmultinomial <- function(multinomial, model, patterns) {
+
+  nmultinomial<- multinomial$nmultinomial
+  mvmultinomial <- NULL
+
+  if(nmultinomial > 1L) {
+
+    list2env(multinomial, envir = environment())
+
+    # Define the joint probability parameters:
+    error_covs <- NULL
+
+    if (!is.null(model)) {
+      error_covs <- extract_cov_pairs(model)
+    }
+
+    if (!is.null(error_covs)) {
+
+      error_covs$lhs <- as.character(error_covs$lhs)
+      error_covs$rhs <- as.character(error_covs$rhs)
+
+      # Keep only pairs where both variables are multinomial:
+      keep <- error_covs$lhs %in% multinomial_names &
+        error_covs$rhs %in% multinomial_names &
+        error_covs$lhs != error_covs$rhs
+
+      error_covs <- error_covs[keep, , drop = FALSE]
+
+      if(nrow(error_covs) > 0L) {
+
+        npairs <- nrow(error_covs)
+        pairs <- vector("list", length = npairs)
+        loginter_names <- vector("list", length = npairs)
+
+        for(h in 1:npairs) {
+
+          pairs[[h]] <- c(error_covs[h, 1], error_covs[h, 2])
+          loginter_names[[h]] <- paste("log_", pairs[[h]], collapse = "x",
+                                       sep = "")
+        }
+
+        names(pairs) <- unlist(lapply(pairs, FUN = paste, collapse = "."))
+
+        removed_multinomial <- unique(unlist(pairs))
+        keep <- multinomial_names[!(multinomial_names %in% removed_multinomial)]
+
+        indep_pairs <- group_connected_pairs(error_covs)$pairs
+        indep_pairs_list <- group_connected_pairs(error_covs)$elements
+        names(indep_pairs) <- names(indep_pairs_list) <-
+          lapply(indep_pairs_list, FUN = paste, collapse = ".")
+        patterns_original <- patterns$patterns # dataList$patterns_original
+        joints <- lapply(indep_pairs_list, FUN = \(x) {
+          apply(patterns_original[, x], MARGIN = 1, FUN = paste, collapse = ".")
+        })
+        joints <- as.data.frame(joints)
+        new_probs <- unlist(c(keep, colnames(joints)))
+        new_J <- length(new_probs)
+        patterns_mvmultinomial <- data.frame(patterns_original, joints)[, new_probs]
+        joint_levels <- lapply(indep_pairs_list, FUN = \(x) {
+          apply(expand.grid(multinomial_factor_levels[x]),
+                MARGIN = 1, FUN = paste, collapse = ".")
+        })
+        new_levels <- c(multinomial_factor_levels[keep], joint_levels)
+        new_K <- unlist(lapply(new_levels, FUN = length))
+        for(j in 1:length(new_probs)) {
+          patterns_mvmultinomial[[new_probs[j]]] <-
+            factor(patterns_mvmultinomial[[new_probs[j]]], ordered = TRUE,
+                   levels = new_levels[[j]])
+        }
+        njoints <- length(joint_levels)
+        multinomial_factor_levels_numeric <- sapply(multinomial_factor_lengths,
+                                                    FUN = seq_len)
+        joint_orderings <- lapply(indep_pairs_list, FUN = \(x) {
+          expand.grid(multinomial_factor_levels_numeric[x])
+        })
+
+        patterns_mvmultinomial_recoded <- lapply(patterns_mvmultinomial,
+                                                 FUN = function(col) {
+                                                   if (is.factor(col)) as.integer(col) - 1L else col
+                                                 })
+        patterns_mvmultinomial_recoded <-
+          as.matrix(as.data.frame(patterns_mvmultinomial_recoded))
+
+        nremoved_multinomial <- length(removed_multinomial)
+        removed_logmultinomial <- paste("log_", removed_multinomial,
+                                        "|reference", sep = "")
+        removed_condmultinomial <- paste(removed_multinomial,
+                                         "|reference", sep = "")
+        removed_multinomial_factor_levels <- multinomial_factor_levels[removed_multinomial]
+        removed_multinomial_factor_lengths <- multinomial_factor_lengths[removed_multinomial]
+
+        mvmultinomial <- list(
+          npairs = npairs,
+          pairs = pairs,
+          joints = joints,
+          loginter_names = loginter_names,
+          removed_multinomial = removed_multinomial,
+          new_J = new_J,
+          new_K = new_K,
+          patterns_mvmultinomial = patterns_mvmultinomial,
+          patterns_mvmultinomial_recoded = patterns_mvmultinomial_recoded,
+          nremoved_multinomial = nremoved_multinomial,
+          removed_logmultinomial = removed_logmultinomial,
+          removed_condmultinomial = removed_condmultinomial,
+          removed_multinomial_factor_levels = removed_multinomial_factor_levels,
+          removed_multinomial_factor_lengths = removed_multinomial_factor_lengths,
+          indep_pairs = indep_pairs,
+          indep_pairs_list = indep_pairs_list,
+          new_levels = new_levels,
+          njoints = njoints,
+          joint_orderings = joint_orderings
+        )
+
+      }
+
+    }
+
+  }
+
+  return(mvmultinomial)
+
+}
+
+make_patterns <- function(design, measurement_recoded, measurement,
                           weights, any_continuous) {
 
   if(any_continuous) {
@@ -1800,13 +1884,13 @@ make_patterns <- function(covariates, measurement_recoded, measurement,
       rownames(post_weights) <- pattern_names
     }
 
-    all <- cbind(covariates, measurement)
+    all <- cbind(design, measurement)
     remove <- which("(Intercept)" %in% colnames(all))
     all_patterns <- as.data.frame(all)[, -remove]
 
     result <- list(
       patterns = measurement_recoded,
-      cov_patterns = covariates,
+      cov_patterns = design,
       npatterns = nobs,
       pattern_names = pattern_names,
       pattern_weights = rep(1, times = nobs),
@@ -1822,7 +1906,7 @@ make_patterns <- function(covariates, measurement_recoded, measurement,
   }
 
   # Collect the unique data patterns. Later, we split again:
-  all <- cbind(covariates, measurement_recoded)
+  all <- cbind(design, measurement_recoded)
 
   # Add the weights if available:
   if(!is.null(weights)) all <- cbind(all, weights = weights)
@@ -1841,7 +1925,7 @@ make_patterns <- function(covariates, measurement_recoded, measurement,
   patterns <- as.matrix(counts_dt[, colnames(measurement_recoded), with = FALSE])
 
   # Covariate data with unique patterns:
-  cov_patterns <- as.matrix(counts_dt[, colnames(covariates), with = FALSE])
+  cov_patterns <- as.matrix(counts_dt[, colnames(design), with = FALSE])
 
   # Pattern names:
   if(length(patterns) > 0L) {
@@ -1870,27 +1954,19 @@ make_patterns <- function(covariates, measurement_recoded, measurement,
   )
 
   # Compute the nonrecoded patterns of items (patterns_original):
-  all <- cbind(covariates, measurement)
+  all <- cbind(design, measurement)
 
   # Add the weights if available:
   if(!is.null(weights)) all <- cbind(all, weights = weights)
-
-  # Transform to data.table:
-  dt <- data.table::as.data.table(all)
-
-  # Collect some information:
-  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
-
-  patterns_original <- as.data.frame(
-    counts_dt[, colnames(measurement_recoded), with = FALSE]
-  )
+  all <- as.data.frame(all[full2short, ])
+  patterns_original <- all[, colnames(measurement_recoded), drop = FALSE]
 
   if(length(patterns_original) > 0L) {
     rownames(patterns_original) <- pattern_names
   }
 
-  remove <- which("(Intercept)" %in% colnames(counts_dt))
-  all_patterns <- as.data.frame(counts_dt)[, -remove]
+  remove <- which("(Intercept)" %in% colnames(all))
+  all_patterns <- all[, -remove, drop = FALSE]
 
   result <- list(
     npatterns = npatterns,
@@ -1909,6 +1985,87 @@ make_patterns <- function(covariates, measurement_recoded, measurement,
 
 }
 
+make_patterns2 <- function(data, weights, any_continuous) {
+
+  if(any_continuous) {
+
+    npatterns <- nrow(data)
+    pattern_names <- paste("pattern", 1:npatterns, sep = "")
+    if(!is.null(weights)) {
+      post_weights <- as.matrix(weights, ncol = 1L)
+      rownames(post_weights) <- pattern_names
+    }
+
+    result <- list(
+      patterns = data,
+      npatterns = npatterns,
+      pattern_names = pattern_names,
+      pattern_weights = rep(1, times = npatterns),
+      full2short = seq_len(npatterns),
+      short2full = seq_len(npatterns),
+      post_weights = if(!is.null(weights)) post_weights else NULL
+    )
+
+    return(result)
+
+  }
+
+  # Collect the unique data patterns. Later, we split again:
+
+  # Add the weights if available:
+  if(!is.null(weights)) data <- cbind(data, weights = weights)
+
+  # Transform to data.table:
+  dt <- data.table::as.data.table(data)
+
+  # Collect some information:
+  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
+
+  # Number of unique response patterns:
+  npatterns <- nrow(counts_dt)
+  pattern_names <- paste("pattern", 1:npatterns, sep = "")
+
+  # Measurement data with unique response patterns:
+  patterns <- as.matrix(counts_dt[, colnames(data), with = FALSE])
+
+  # Pattern names:
+  if(length(patterns) > 0L) {
+    rownames(patterns) <- pattern_names
+  }
+
+  if(!is.null(weights)) {
+    post_weights <- as.matrix(counts_dt[, "weights", with = FALSE])
+    rownames(post_weights) <- pattern_names
+  }
+
+  # Counts of each response pattern:
+  pattern_weights <- counts_dt$count
+
+  # Indices to map the full data to the unique patterns:
+  full2short <- counts_dt$index
+
+  # Indices to map unique patterns to the full data:
+  short2full <- match(
+    do.call(paste, dt),
+    do.call(paste, counts_dt[, -c("index", "count"), with = FALSE])
+  )
+
+  result <- list(
+    patterns = patterns,
+    npatterns = npatterns,
+    pattern_names = pattern_names,
+    pattern_weights = pattern_weights,
+    full2short = full2short,
+    short2full = short2full,
+    post_weights = if(!is.null(weights)) post_weights else NULL
+  )
+
+  return(result)
+
+}
+
+#### Structural after measurement methods ####
+
 lca_bakk_kuha <- function(data,
                           nclasses = NULL,
                           gaussian = NULL,
@@ -1923,7 +2080,8 @@ lca_bakk_kuha <- function(data,
                           do.fit = TRUE,
                           verbose = TRUE) {
 
-  # This is the Bakk and Kuha method for estimating covariates
+  # This is the Bakk and Kuha method for estimating covariates:
+  # https://bpspsychub.onlinelibrary.wiley.com/doi/10.1111/bmsp.12227
 
   #### Step 1: Measurement model ####
 
@@ -2056,7 +2214,7 @@ lca_ml <- function(data,
 
 }
 
-#### Objects for item with a given conditional likelihood ####
+#### Objects for items with a given conditional likelihood ####
 
 objects_gaussian_lca <- function(measurement_recoded, item, item_names,
                                  nclasses) {
@@ -2587,7 +2745,6 @@ transformations_gaussian_lca <- function(trans, dataList) {
                             parameters_out = list(vars))
     k <- k+1L
 
-    y <- as.matrix(patterns[, gaussian_names])
     # transforms[[k]] <- list(transform = "normal",
     #                         parameters_in = list(means, stdv),
     #                         parameters_out = list(trans$loglik[, gauss, ]),
@@ -2597,8 +2754,8 @@ transformations_gaussian_lca <- function(trans, dataList) {
     transforms[[k]] <- list(transform = "normal2",
                             parameters_in = list(means, vars, trans$loglik),
                             parameters_out = list(trans$loglik),
-                            extra = list(y = y, S = npatterns, J = Jgauss,
-                                         I = nclasses))
+                            extra = list(y = patterns_gaussian, S = npatterns,
+                                         J = Jgauss, I = nclasses))
     k <- k+1L
 
     transforms[[k]] <- list(transform = "sqrt_vector",
@@ -2633,14 +2790,13 @@ transformations_mvgaussian_lca <- function(trans, dataList) {
                             parameters_out = list(vars))
     k <- k+1L
 
-    y <- as.matrix(patterns[, mvgaussian_names])
     transforms[[k]] <- list(transform = "mvnormal2",
                             parameters_in = list(unlist(trans$means),
                                                  unlist(trans[sigma_names]),
                                                  trans$loglik),
                             parameters_out = list(trans$loglik),
-                            extra = list(y = y, S = npatterns, J = Jmvgauss,
-                                         I = nclasses))
+                            extra = list(y = patterns_mvgaussian, S = npatterns,
+                                         J = Jmvgauss, I = nclasses))
     # k <- k+1L
 
   }
@@ -2792,7 +2948,6 @@ transformations_multinomial_lca <- function(trans, dataList) {
 
     } else {
 
-      y <- as.matrix(patterns[, multinomial_names])
       K <- unlist(lapply(multinomial_factor_levels, FUN = length))
 
       # transforms[[k]] <- list(transform = "multinomial",
@@ -2805,8 +2960,8 @@ transformations_multinomial_lca <- function(trans, dataList) {
                               parameters_in = list(trans[multinomial_names],
                                                    trans$loglik),
                               parameters_out = list(trans$loglik),
-                              extra = list(y = y, S = npatterns, J = Jmultinom,
-                                           I = nclasses, K = K))
+                              extra = list(y = patterns_multinomial, S = npatterns,
+                                           J = Jmultinom, I = nclasses, K = K))
 
       k <- k+1L
 
