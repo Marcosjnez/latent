@@ -726,11 +726,11 @@ create_lca_dataList <- function(data = NULL,
                                  any_continuous = any_continuous)
 
   gaussian$patterns_gaussian <- as.matrix(
-    data_patterns$patterns[, gaussian$gaussian_names])
+    measurement_recoded[patterns$full2short, gaussian$gaussian_names])
   mvgaussian$patterns_mvgaussian <- as.matrix(
-    data_patterns$patterns[, mvgaussian$mvgaussian_names])
+    measurement_recoded[patterns$full2short, mvgaussian$mvgaussian_names])
   multinomial$patterns_multinomial <- as.matrix(
-    data_patterns$patterns[, multinomial$multinomial_names])
+    measurement_recoded[patterns$full2short, multinomial$multinomial_names])
   multinomial$nmultinomial <- nmultinomial
 
   #### Check for residual dependencies in multinomial items ####
@@ -750,7 +750,6 @@ create_lca_dataList <- function(data = NULL,
   dataList$nobs <- nobs
   dataList$patterns <- measurement_patterns # data_patterns$patterns
   dataList$cov_patterns <- design_patterns # data_patterns$cov_patterns
-  # stop("AHHHH")
   dataList$npatterns <- patterns$npatterns # data_patterns$npatterns
   dataList$npossible_patterns <- npossible_patterns
   dataList$pattern_names <- patterns$pattern_names # data_patterns$pattern_names
@@ -758,8 +757,8 @@ create_lca_dataList <- function(data = NULL,
   dataList$pattern_weights <- patterns$pattern_weights # data_patterns$pattern_weights
   dataList$full2short <- patterns$full2short # data_patterns$full2short
   dataList$short2full <- patterns$short2full # data_patterns$short2full
-  dataList$patterns_original <- data_patterns$patterns_original
-  dataList$all_patterns <- data_patterns$all_patterns
+  dataList$patterns_original <- measurement[patterns$full2short, ] # data_patterns$patterns_original
+  dataList$all_patterns <- data[patterns$full2short, variables] # data_patterns$all_patterns
   dataList$gaussian <- gaussian
   dataList$mvgaussian <- mvgaussian
   dataList$multinomial <- multinomial
