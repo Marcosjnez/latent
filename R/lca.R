@@ -624,12 +624,12 @@ create_lca_dataList <- function(data = NULL,
   # Number of subjects after removing rows with missingness in the covariates:
   nobs <- nrow(data)
 
-  #### Make patterns ####
+  #### Find the unique patterns and weights ####
 
   any_continuous <- FALSE
   if(length(gaussian) > 0L) any_continuous <- TRUE
   variables <- c(indicators_names, covariates_names, outcomes_names)
-  patterns <- make_patterns2(data[, variables], weights, any_continuous)
+  patterns <- make_patterns(data[, variables], weights, any_continuous)
 
   #### Process the indicators ####
 
@@ -640,13 +640,13 @@ create_lca_dataList <- function(data = NULL,
   # to zero. The diagonal of target should be FALSE because variances are
   # not estimated directly but parameterized as exp(log variances):
   gaussian_objects <- check_mvgaussian(gaussian, model)
-  # output gaussian, mvgaussian, and target:
+  # check_mvgaussian outputs gaussian, mvgaussian, and target:
   list2env(gaussian_objects, envir = environment())
 
   # Count the number of items for each likelihood model:
+  nmultinomial <- length(multinomial)
   ngaussian <- length(gaussian)
   nmvgaussian <- length(mvgaussian)
-  nmultinomial <- length(multinomial)
 
   # Select the subset of data with the variables that are used in the
   # measurement model (keeping the original ordering):
@@ -654,41 +654,47 @@ create_lca_dataList <- function(data = NULL,
                       times = c(nmultinomial, ngaussian, nmvgaussian))
   model_vector <- c(multinomial, gaussian, mvgaussian)
   idx <- match(colnames(data), model_vector); idx <- idx[!is.na(idx)]
-  measurement <- data[, model_vector[idx], drop = FALSE]
-
   # match each item with its respective likelihood model:
   item <- model_labels[idx]
+  measurement <- data[, model_vector[idx], drop = FALSE]
+  # Transform nonnumeric variables into factors:
+  measurement[!sapply(measurement, is.numeric)] <-
+    lapply(measurement[!sapply(measurement, is.numeric)], factor)
   item_names <- colnames(measurement)
   # Number of items:
   nitems <- ncol(measurement)
 
-  # Transform nonnumeric variables into factors:
-  measurement[!sapply(measurement, is.numeric)] <-
-    lapply(measurement[!sapply(measurement, is.numeric)], factor)
-  # Transform the factor variables into integers:
-  measurement_recoded <- as.data.frame(lapply(measurement,
-                                              FUN = function(col) {
-                                                if (is.factor(col))
-                                                  as.integer(col) - 1L else col
-                                              }))
+  # measurement_recoded <- measurement
 
   # Store the indicators in the control list:
 
-  gaussian <- objects_gaussian_lca(measurement_recoded, item, item_names,
+  multinomial <- objects_multinomial_lca(data, measurement, item, item_names,
+                                         nclasses)
+  gaussian <- objects_gaussian_lca(measurement, item, item_names,
                                    nclasses)
-  mvgaussian <- objects_mvgaussian_lca(measurement_recoded, item, item_names,
+  mvgaussian <- objects_mvgaussian_lca(measurement, item, item_names,
                                        nclasses, target)
-  multinomial <- objects_multinomial_lca(data, measurement, measurement_recoded,
-                                         item, item_names, nclasses)
 
+  list2env(multinomial, envir = environment())
   list2env(gaussian, envir = environment())
   list2env(mvgaussian, envir = environment())
-  list2env(multinomial, envir = environment())
 
   design_patterns <- design[patterns$full2short, , drop = FALSE]
-  measurement_patterns <- measurement_recoded[patterns$full2short, , drop = FALSE]
+  # measurement_patterns <- measurement_recoded[patterns$full2short, , drop = FALSE]
+  measurement_patterns <- measurement[patterns$full2short, , drop = FALSE]
   rownames(design_patterns) <- rownames(measurement_patterns) <-
     patterns$pattern_names
+
+  multinomial$patterns_multinomial <- as.matrix(
+    # measurement_recoded[patterns$full2short, multinomial$multinomial_names])
+  measurement[patterns$full2short, multinomial$multinomial_names])
+  multinomial$nmultinomial <- nmultinomial
+  gaussian$patterns_gaussian <- as.matrix(
+    # measurement_recoded[patterns$full2short, gaussian$gaussian_names])
+    measurement[patterns$full2short, gaussian$gaussian_names])
+  mvgaussian$patterns_mvgaussian <- as.matrix(
+    # measurement_recoded[patterns$full2short, mvgaussian$mvgaussian_names])
+  measurement[patterns$full2short, mvgaussian$mvgaussian_names])
 
   #### Possible response patterns and degrees of freedom ####
 
@@ -708,31 +714,6 @@ create_lca_dataList <- function(data = NULL,
 
   }
 
-  #### Find unique patterns in the data ####
-
-  # Append the covariates, indicators, and distal outcomes.
-
-  # If any item is gaussian, then don't find the unique response patterns
-  if(any_gaussian || any_mvgaussian) {
-    any_continuous <- TRUE
-  } else {
-    any_continuous <- FALSE
-  }
-
-  # If no item is gaussian, then collect only the unique response patterns
-  data_patterns <- make_patterns(design = design,
-                                 measurement_recoded = measurement_recoded,
-                                 measurement = measurement, weights = weights,
-                                 any_continuous = any_continuous)
-
-  gaussian$patterns_gaussian <- as.matrix(
-    measurement_recoded[patterns$full2short, gaussian$gaussian_names])
-  mvgaussian$patterns_mvgaussian <- as.matrix(
-    measurement_recoded[patterns$full2short, mvgaussian$mvgaussian_names])
-  multinomial$patterns_multinomial <- as.matrix(
-    measurement_recoded[patterns$full2short, multinomial$multinomial_names])
-  multinomial$nmultinomial <- nmultinomial
-
   #### Check for residual dependencies in multinomial items ####
 
   mvmultinomial <- check_mvmultinomial(multinomial, model, patterns)
@@ -743,7 +724,7 @@ create_lca_dataList <- function(data = NULL,
   dataList$data <- data
   dataList$measurement <- measurement
   dataList$design <- design
-  dataList$measurement_recoded <- measurement_recoded
+  # dataList$measurement_recoded <- measurement_recoded
   dataList$nitems <- nitems
   dataList$item <- item
   dataList$item_names <- item_names
@@ -1037,7 +1018,6 @@ create_lca_model <- function(dataList, nclasses, item,
   result <- list(param = param,
                  trans = trans,
                  init_param = init_param,
-                 # pi_hat_list = pi_hat_list,
                  control = control)
 
   return(result)
@@ -1161,8 +1141,8 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
     if(dataList$gaussian$any_gaussian & alpha != 0) {
 
       list2env(dataList$gaussian, envir = environment())
-      Y <- measurement_recoded[, gaussian_names, drop = FALSE]
-      # sigma_class <- split(trans$sigma, rep(1:nclasses, each = Jgauss))
+      # Y <- measurement_recoded[, gaussian_names, drop = FALSE]
+      Y <- measurement[, gaussian_names, drop = FALSE]
       varshat <- apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs
 
       for(i in 1:nclasses) {
@@ -1188,7 +1168,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
     if(dataList$mvgaussian$any_mvgaussian & alpha != 0) {
 
       list2env(dataList$mvgaussian, envir = environment())
-      Y <- measurement_recoded[, mvgaussian_names, drop = FALSE]
+      Y <- measurement[, mvgaussian_names, drop = FALSE]
       D <- diag(apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs)
       sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
 
@@ -1871,120 +1851,7 @@ check_mvmultinomial <- function(multinomial, model, patterns) {
 
 }
 
-make_patterns <- function(design, measurement_recoded, measurement,
-                          weights, any_continuous) {
-
-  if(any_continuous) {
-
-    nobs <- nrow(measurement_recoded)
-    pattern_names <- paste("pattern", 1:nobs, sep = "")
-    if(!is.null(weights)) {
-      post_weights <- as.matrix(weights, ncol = 1L)
-      rownames(post_weights) <- pattern_names
-    }
-
-    all <- cbind(design, measurement)
-    remove <- which("(Intercept)" %in% colnames(all))
-    all_patterns <- as.data.frame(all)[, -remove]
-
-    result <- list(
-      patterns = measurement_recoded,
-      cov_patterns = design,
-      npatterns = nobs,
-      pattern_names = pattern_names,
-      pattern_weights = rep(1, times = nobs),
-      full2short = seq_len(nobs),
-      short2full = seq_len(nobs),
-      patterns_original = measurement,
-      all_patterns = all_patterns,
-      post_weights = if(!is.null(weights)) post_weights else NULL
-    )
-
-    return(result)
-
-  }
-
-  # Collect the unique data patterns. Later, we split again:
-  all <- cbind(design, measurement_recoded)
-
-  # Add the weights if available:
-  if(!is.null(weights)) all <- cbind(all, weights = weights)
-
-  # Transform to data.table:
-  dt <- data.table::as.data.table(all)
-
-  # Collect some information:
-  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
-
-  # Number of unique response patterns:
-  npatterns <- nrow(counts_dt)
-  pattern_names <- paste("pattern", 1:npatterns, sep = "")
-
-  # Measurement data with unique response patterns:
-  patterns <- as.matrix(counts_dt[, colnames(measurement_recoded), with = FALSE])
-
-  # Covariate data with unique patterns:
-  cov_patterns <- as.matrix(counts_dt[, colnames(design), with = FALSE])
-
-  # Pattern names:
-  if(length(patterns) > 0L) {
-    rownames(patterns) <- pattern_names
-  }
-
-  if(length(cov_patterns) > 0L) {
-    rownames(cov_patterns) <- pattern_names
-  }
-
-  if(!is.null(weights)) {
-    post_weights <- as.matrix(counts_dt[, "weights", with = FALSE])
-    rownames(post_weights) <- pattern_names
-  }
-
-  # Counts of each response pattern:
-  pattern_weights <- counts_dt$count
-
-  # Indices to map the full data to the unique patterns:
-  full2short <- counts_dt$index
-
-  # Indices to map unique patterns to the full data:
-  short2full <- match(
-    do.call(paste, dt),
-    do.call(paste, counts_dt[, -c("index", "count"), with = FALSE])
-  )
-
-  # Compute the nonrecoded patterns of items (patterns_original):
-  all <- cbind(design, measurement)
-
-  # Add the weights if available:
-  if(!is.null(weights)) all <- cbind(all, weights = weights)
-  all <- as.data.frame(all[full2short, ])
-  patterns_original <- all[, colnames(measurement_recoded), drop = FALSE]
-
-  if(length(patterns_original) > 0L) {
-    rownames(patterns_original) <- pattern_names
-  }
-
-  remove <- which("(Intercept)" %in% colnames(all))
-  all_patterns <- all[, -remove, drop = FALSE]
-
-  result <- list(
-    npatterns = npatterns,
-    pattern_names = pattern_names,
-    patterns = patterns,
-    cov_patterns = cov_patterns,
-    post_weights = if(!is.null(weights)) post_weights else NULL,
-    pattern_weights = pattern_weights,
-    full2short = full2short,
-    short2full = short2full,
-    patterns_original = patterns_original,
-    all_patterns = all_patterns
-  )
-
-  return(result)
-
-}
-
-make_patterns2 <- function(data, weights, any_continuous) {
+make_patterns <- function(data, weights, any_continuous) {
 
   if(any_continuous) {
 
@@ -2215,7 +2082,7 @@ lca_ml <- function(data,
 
 #### Objects for items with a given conditional likelihood ####
 
-objects_gaussian_lca <- function(measurement_recoded, item, item_names,
+objects_gaussian_lca <- function(measurement, item, item_names,
                                  nclasses) {
 
   any_gaussian <- any(item == "gaussian")
@@ -2232,9 +2099,9 @@ objects_gaussian_lca <- function(measurement_recoded, item, item_names,
     j <- 1L
     for(name in gaussian_names) {
 
-      init_mean[[j]] <- rep(mean(measurement_recoded[, name], na.rm = TRUE),
+      init_mean[[j]] <- rep(mean(measurement[, name], na.rm = TRUE),
                             times = nclasses)
-      init_var[[j]] <- rep(var(measurement_recoded[, name], na.rm = TRUE),
+      init_var[[j]] <- rep(var(measurement[, name], na.rm = TRUE),
                            times = nclasses)
       init_logvar[[j]] <- log(init_var[[j]])
       j <- j+1L
@@ -2252,7 +2119,7 @@ objects_gaussian_lca <- function(measurement_recoded, item, item_names,
 
 }
 
-objects_mvgaussian_lca <- function(measurement_recoded, item, item_names,
+objects_mvgaussian_lca <- function(measurement, item, item_names,
                                    nclasses, target) {
 
   any_mvgaussian <- any(item == "mvgaussian")
@@ -2267,10 +2134,10 @@ objects_mvgaussian_lca <- function(measurement_recoded, item, item_names,
                        target = target)
     sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
 
-    init_mvmean <- matrix(rep(colMeans(measurement_recoded[, mvgaussian_names],
+    init_mvmean <- matrix(rep(colMeans(measurement[, mvgaussian_names],
                                        na.rm = TRUE),
                               times = nclasses), nrow = Jmvgauss, ncol = nclasses)
-    init_logsigma <- matrix(rep(apply(measurement_recoded[, mvgaussian_names],
+    init_logsigma <- matrix(rep(apply(measurement[, mvgaussian_names],
                                       MARGIN = 2,
                                       FUN = var,
                                       na.rm = TRUE),
@@ -2278,7 +2145,7 @@ objects_mvgaussian_lca <- function(measurement_recoded, item, item_names,
                             ncol = nclasses)
 
     for(j in 1:nclasses) {
-      init_sigma[[j]] <- cov(measurement_recoded[, mvgaussian_names],
+      init_sigma[[j]] <- cov(measurement[, mvgaussian_names],
                              use = "pairwise.complete.obs")
     }
 
@@ -2293,8 +2160,8 @@ objects_mvgaussian_lca <- function(measurement_recoded, item, item_names,
 
 }
 
-objects_multinomial_lca <- function(data, measurement, measurement_recoded,
-                                    item, item_names, nclasses) {
+objects_multinomial_lca <- function(data, measurement, item, item_names,
+                                    nclasses) {
 
   nobs <- nrow(data)
   any_multinomial <- any(item == "multinomial")
@@ -2312,17 +2179,20 @@ objects_multinomial_lca <- function(data, measurement, measurement_recoded,
     measurement[, multinomial_names] <- lapply(measurement[, multinomial_names,
                                                            drop = FALSE],
                                                FUN = factor)
-    # Transform the factor variables into integers:
-    measurement_recoded[, multinomial_names] <- lapply(measurement[, multinomial_names,
-                                                                   drop = FALSE],
-                                                       FUN = function(col) {
-                                                         if (is.factor(col)) as.integer(col) - 1L else col
-                                                       })
 
     # Save levels of factor variables:
     multinomial_factor_levels <- lapply(measurement[, multinomial_names, drop = FALSE], levels)
     multinomial_factor_lengths <- unlist(lapply(multinomial_factor_levels, FUN = length))
     multinomial_reference <- lapply(multinomial_factor_levels, FUN = \(x) x[1])
+
+    # measurement_recoded <- measurement
+    # Transform the factor variables into integers:
+    # measurement_recoded[, multinomial_names] <- lapply(measurement[, multinomial_names,
+    measurement[, multinomial_names] <- lapply(measurement[, multinomial_names,
+                                                                   drop = FALSE],
+                                                       FUN = function(col) {
+                                                         if (is.factor(col)) as.integer(col) - 1L else col
+                                                       })
 
     multinomial <- list(multinomial_names = multinomial_names,
                         logmultinomial_names = logmultinomial_names,
@@ -2340,7 +2210,8 @@ objects_multinomial_lca <- function(data, measurement, measurement_recoded,
     j <- 1L
     for(name in multinomial_names) { # PUT THIS IN DATALIST
 
-      int_vector <- measurement_recoded[, name]
+      # int_vector <- measurement_recoded[, name]
+      int_vector <- measurement[, name]
       int_vector <- int_vector[!is.na(int_vector)] # Remove missing values
       nsize <- length(int_vector)
       props <- count(int_vector, nsize, multinomial_factor_lengths[j]) / nsize
@@ -2359,7 +2230,7 @@ objects_multinomial_lca <- function(data, measurement, measurement_recoded,
     multinomial$Ks <- length(unlist(eta_hat_list))
     multinomial$multinomial_names <- multinomial_names
     multinomial$measurement <- measurement
-    multinomial$measurement_recoded <- measurement_recoded
+    # multinomial$measurement_recoded <- measurement_recoded
 
   }
   multinomial$any_multinomial <- any_multinomial

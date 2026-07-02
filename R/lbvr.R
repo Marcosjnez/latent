@@ -58,7 +58,7 @@
 #' @export
 lbvr <- function(model, digits = 4) {
 
-  data <- model@dataList$measurement_recoded
+  data <- model@dataList$measurement
 
   types <- model@dataList$item
   posterior <- latInspect(model, "posterior")
