@@ -664,8 +664,6 @@ create_lca_dataList <- function(data = NULL,
   # Number of items:
   nitems <- ncol(measurement)
 
-  # measurement_recoded <- measurement
-
   # Store the indicators in the control list:
 
   multinomial <- objects_multinomial_lca(data, measurement, item, item_names,
@@ -680,20 +678,16 @@ create_lca_dataList <- function(data = NULL,
   list2env(mvgaussian, envir = environment())
 
   design_patterns <- design[patterns$full2short, , drop = FALSE]
-  # measurement_patterns <- measurement_recoded[patterns$full2short, , drop = FALSE]
   measurement_patterns <- measurement[patterns$full2short, , drop = FALSE]
   rownames(design_patterns) <- rownames(measurement_patterns) <-
     patterns$pattern_names
 
   multinomial$patterns_multinomial <- as.matrix(
-    # measurement_recoded[patterns$full2short, multinomial$multinomial_names])
   measurement[patterns$full2short, multinomial$multinomial_names])
   multinomial$nmultinomial <- nmultinomial
   gaussian$patterns_gaussian <- as.matrix(
-    # measurement_recoded[patterns$full2short, gaussian$gaussian_names])
     measurement[patterns$full2short, gaussian$gaussian_names])
   mvgaussian$patterns_mvgaussian <- as.matrix(
-    # measurement_recoded[patterns$full2short, mvgaussian$mvgaussian_names])
   measurement[patterns$full2short, mvgaussian$mvgaussian_names])
 
   #### Possible response patterns and degrees of freedom ####
@@ -724,22 +718,21 @@ create_lca_dataList <- function(data = NULL,
   dataList$data <- data
   dataList$measurement <- measurement
   dataList$design <- design
-  # dataList$measurement_recoded <- measurement_recoded
   dataList$nitems <- nitems
   dataList$item <- item
   dataList$item_names <- item_names
   dataList$nobs <- nobs
-  dataList$patterns <- measurement_patterns # data_patterns$patterns
-  dataList$cov_patterns <- design_patterns # data_patterns$cov_patterns
-  dataList$npatterns <- patterns$npatterns # data_patterns$npatterns
+  dataList$patterns <- measurement_patterns
+  dataList$cov_patterns <- design_patterns
+  dataList$npatterns <- patterns$npatterns
   dataList$npossible_patterns <- npossible_patterns
-  dataList$pattern_names <- patterns$pattern_names # data_patterns$pattern_names
+  dataList$pattern_names <- patterns$pattern_names
   dataList$pdesign <- pdesign
-  dataList$pattern_weights <- patterns$pattern_weights # data_patterns$pattern_weights
-  dataList$full2short <- patterns$full2short # data_patterns$full2short
-  dataList$short2full <- patterns$short2full # data_patterns$short2full
-  dataList$patterns_original <- measurement[patterns$full2short, ] # data_patterns$patterns_original
-  dataList$all_patterns <- data[patterns$full2short, variables] # data_patterns$all_patterns
+  dataList$pattern_weights <- patterns$pattern_weights
+  dataList$full2short <- patterns$full2short
+  dataList$short2full <- patterns$short2full
+  dataList$patterns_original <- measurement[patterns$full2short, ]
+  dataList$all_patterns <- data[patterns$full2short, variables]
   dataList$gaussian <- gaussian
   dataList$mvgaussian <- mvgaussian
   dataList$multinomial <- multinomial
@@ -747,7 +740,7 @@ create_lca_dataList <- function(data = NULL,
   dataList$indicators_names <- indicators_names
   dataList$covariates_names <- covariates_names
   dataList$outcomes <- outcomes
-  if(!is.null(weights)) dataList$weights <- patterns$post_weights # weights[full2short, ]
+  dataList$weights <- patterns$weights
 
   # Update and check control parameters:
   control$penalties <- penalties # Either a logical or a list of named penalties
@@ -1066,9 +1059,9 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
   # Conditional likelihoods:
   transforms <- c(transforms,
+                  transformations_multinomial_lca(trans, dataList),
                   transformations_gaussian_lca(trans, dataList),
-                  transformations_mvgaussian_lca(trans, dataList),
-                  transformations_multinomial_lca(trans, dataList))
+                  transformations_mvgaussian_lca(trans, dataList))
 
   control_transform <- create_transforms(transforms = transforms,
                                          structures = trans)
@@ -1086,181 +1079,47 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   #                                      weights = weights,
   #                                      double_names = "lca"))
 
-  if(is.null(dataList$weights)) {
-
-    estimators[[G]] <- list(estimator = "lca2",
-                            parameters = c("class", "loglik"),
-                            extra = list(S = npatterns,
-                                         I = nclasses,
-                                         weights = pattern_weights,
-                                         double_names = "lca"))
-    G <- G + 1L
-
-  } else {
-
-      estimators[[G]] <- list(estimator = "lca2",
-                              parameters = c("class", "loglik"),
-                              extra = list(S = npatterns,
-                                           I = nclasses,
-                                           weights = pattern_weights*weights,
-                                           double_names = "lca"))
-      G <- G + 1L
-
-  }
+  estimators[[G]] <- list(estimator = "lca2",
+                          parameters = c("class", "loglik"),
+                          extra = list(S = npatterns,
+                                       I = nclasses,
+                                       weights = pattern_weights*weights,
+                                       double_names = "lca"))
+  G <- G + 1L
 
   # Choose whether using Bayes constants:
   if(control$reg) {
 
     # Bayes Constant for class probabilities:
     alpha <- control$penalties$class$alpha
-    if(alpha != 0) {
-
-      # Get the indices corresponding to the unique covariate patterns:
-      dt_uniq_X <- data.table::as.data.table(cov_patterns)
-      counts_X <- dt_uniq_X[, .(index = .I[1], count = .N), by = names(dt_uniq_X)]
-      uniques <- counts_X$index
-      U <- length(uniques)
-
-      for(i in uniques) {
-
-        estimators[[G]] <- list(estimator = "bayesconst1",
-                                parameters = list(trans$class[i, ]),
-                                extra = list(K = nclasses,
-                                             alpha = alpha,
-                                             U = U,
-                                             N = nobs,
-                                             double_names = paste("P(Class|pattern",
-                                                                  i, ")", sep = "")))
-        G <- G+1L
-
-      }
-    }
+    estimators_bayes1 <- bayes1(trans, nclasses, alpha, nobs, cov_patterns)
 
     # Bayes Constant for standard deviations:
     alpha <- control$penalties$var$alpha
-    if(dataList$gaussian$any_gaussian & alpha != 0) {
-
-      list2env(dataList$gaussian, envir = environment())
-      # Y <- measurement_recoded[, gaussian_names, drop = FALSE]
-      Y <- measurement[, gaussian_names, drop = FALSE]
-      varshat <- apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs
-
-      for(i in 1:nclasses) {
-
-        vars_by_class <- unlist(lapply(trans[gaussian_names],
-                                       FUN = \(x) x[2, i]))
-        estimators[[G]] <- list(estimator = "bayesconst3",
-                                parameters = list(vars_by_class),
-                                extra = list(K = nclasses,
-                                             varshat = varshat,
-                                             alpha = alpha,
-                                             N = nobs,
-                                             double_names = paste("vars|Class",
-                                                                  i, sep = "")))
-        G <- G+1L
-
-      }
-
-    }
+    estimators_bayes3 <- bayes3(trans, gaussian, alpha, nclasses, nobs)
 
     # Bayes Constant for error covariance matrices:
     alpha <- control$penalties$Sigma$alpha
-    if(dataList$mvgaussian$any_mvgaussian & alpha != 0) {
-
-      list2env(dataList$mvgaussian, envir = environment())
-      Y <- measurement[, mvgaussian_names, drop = FALSE]
-      D <- diag(apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs)
-      sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
-
-      for(i in 1:nclasses) {
-
-        estimators[[G]] <- list(estimator = "bayesconst4",
-                                parameters = list(trans[[sigma_names[i]]]),
-                                extra = list(K = nclasses,
-                                             alpha = alpha,
-                                             D = D,
-                                             J = Jmvgauss,
-                                             double_names = paste("Sigma|Class",
-                                                                  i, sep = "")))
-        G <- G+1L
-
-      }
-
-    }
+    estimators_bayes4 <- bayes4(trans, mvgaussian, alpha, nclasses, nobs)
 
     # Bayes Constant for multinomial probabilities:
     alpha <- control$penalties$prob$alpha
-    if(dataList$multinomial$any_multinomial & alpha != 0) {
-
-      list2env(dataList$multinomial, envir = environment())
-
-      j <- 1L
-      for(name in multinomial_names) {
-        for(i in 1:nclasses) {
-
-          pihat <- pi_hat_list[[j]][, i]
-          probs_by_class <- unlist(lapply(trans[name],
-                                          FUN = \(x) x[, i]))
-
-          estimators[[G]] <- list(estimator = "bayesconst2",
-                                  parameters = list(probs_by_class),
-                                  extra = list(K = nclasses,
-                                               pihat = pihat,
-                                               alpha = alpha,
-                                               N = nobs,
-                                               double_names = paste("P(",
-                                                                    name,
-                                                                    "|Class", i, ")",
-                                                                    sep = "")))
-          G <- G+1L
-
-        }
-        j <- j+1L
-      }
-
-    }
+    estimators_bayes2 <- bayes2(trans, multinomial, nclasses, alpha, nobs)
 
     # Gaussian regularization for coefficients:
     alpha <- control$penalties$beta$alpha
-    if(alpha != 0) {
-
-      p <- nrow(trans$beta)-1L
-      q <- ncol(trans$beta)
-      means <- matrix(0, nrow = p, ncol = q)
-      sds <- apply(cov_patterns[, -1], MARGIN = 2, sd, na.rm = TRUE)
-      sds <- matrix(sds, nrow = p, ncol = q) / alpha
-
-      estimators[[G]] <- list(estimator = "gaussian_loglik",
-                              parameters = list(trans$beta[-1, ]),
-                              extra = list(means = means,
-                                           sds = sds,
-                                           alpha = alpha,
-                                           N = nobs,
-                                           double_names = "Gaussian_coeffs"))
-      G <- G+1L
-
-
-    }
+    estimators_gaussloglik <- gaussloglik(trans, alpha, nobs, cov_patterns)
 
     # Ridge regularization for coefficients:
     lambda <- control$penalties$beta$lambda
     power <- control$penalties$beta$power
-    if(!is.null(lambda) & !is.null(power)) {
+    estimators_ridge <- ridge(trans, lambda, power, nobs)
 
-      if(lambda != 0 && power != 0) {
-
-        estimators[[G]] <- list(estimator = "ridge",
-                                parameters = list(trans$beta[-1, ]),
-                                extra = list(lambda = lambda,
-                                             power = power,
-                                             N = nobs,
-                                             double_names = paste("Ridge(", power,
-                                                          ")_coeffs",
-                                                          sep = "")))
-        G <- G+1L
-
-      }
-    }
+    # add the regularizations:
+    estimators <- c(estimators,
+                    estimators_bayes1, estimators_bayes2,
+                    estimators_bayes3, estimators_bayes4,
+                    estimators_gaussloglik, estimators_ridge)
 
   }
 
@@ -1272,7 +1131,6 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   idx_transformed <- unlist(lapply(control_transform,
                                    FUN = \(x) unlist(x$indices_out)+1L))
   # if(isTRUE(control$stop)) stop("AHHHH")
-  # stop("AHHHHH")
   inits <- create_init(trans, param, init_param,
                        idx_transformed = idx_transformed, control)
 
@@ -1857,10 +1715,8 @@ make_patterns <- function(data, weights, any_continuous) {
 
     npatterns <- nrow(data)
     pattern_names <- paste("pattern", 1:npatterns, sep = "")
-    if(!is.null(weights)) {
-      post_weights <- as.matrix(weights, ncol = 1L)
-      rownames(post_weights) <- pattern_names
-    }
+    if(is.null(weights)) weights <- matrix(1, nrow = npatterns, ncol = 1L)
+    rownames(weights) <- pattern_names
 
     result <- list(
       patterns = data,
@@ -1869,7 +1725,7 @@ make_patterns <- function(data, weights, any_continuous) {
       pattern_weights = rep(1, times = npatterns),
       full2short = seq_len(npatterns),
       short2full = seq_len(npatterns),
-      post_weights = if(!is.null(weights)) post_weights else NULL
+      weights = weights
     )
 
     return(result)
@@ -1879,7 +1735,8 @@ make_patterns <- function(data, weights, any_continuous) {
   # Collect the unique data patterns. Later, we split again:
 
   # Add the weights if available:
-  if(!is.null(weights)) data <- cbind(data, weights = weights)
+  if(is.null(weights)) weights <- matrix(1, nrow = nrow(data), ncol = 1L)
+  data <- cbind(data, weights = weights)
 
   # Transform to data.table:
   dt <- data.table::as.data.table(data)
@@ -1899,10 +1756,8 @@ make_patterns <- function(data, weights, any_continuous) {
     rownames(patterns) <- pattern_names
   }
 
-  if(!is.null(weights)) {
-    post_weights <- as.matrix(counts_dt[, "weights", with = FALSE])
-    rownames(post_weights) <- pattern_names
-  }
+  weights <- as.matrix(counts_dt[, "weights", with = FALSE])
+  rownames(weights) <- pattern_names
 
   # Counts of each response pattern:
   pattern_weights <- counts_dt$count
@@ -1923,7 +1778,7 @@ make_patterns <- function(data, weights, any_continuous) {
     pattern_weights = pattern_weights,
     full2short = full2short,
     short2full = short2full,
-    post_weights = if(!is.null(weights)) post_weights else NULL
+    weights = weights
   )
 
   return(result)
@@ -2185,9 +2040,7 @@ objects_multinomial_lca <- function(data, measurement, item, item_names,
     multinomial_factor_lengths <- unlist(lapply(multinomial_factor_levels, FUN = length))
     multinomial_reference <- lapply(multinomial_factor_levels, FUN = \(x) x[1])
 
-    # measurement_recoded <- measurement
     # Transform the factor variables into integers:
-    # measurement_recoded[, multinomial_names] <- lapply(measurement[, multinomial_names,
     measurement[, multinomial_names] <- lapply(measurement[, multinomial_names,
                                                                    drop = FALSE],
                                                        FUN = function(col) {
@@ -2210,7 +2063,6 @@ objects_multinomial_lca <- function(data, measurement, item, item_names,
     j <- 1L
     for(name in multinomial_names) { # PUT THIS IN DATALIST
 
-      # int_vector <- measurement_recoded[, name]
       int_vector <- measurement[, name]
       int_vector <- int_vector[!is.na(int_vector)] # Remove missing values
       nsize <- length(int_vector)
@@ -2230,7 +2082,6 @@ objects_multinomial_lca <- function(data, measurement, item, item_names,
     multinomial$Ks <- length(unlist(eta_hat_list))
     multinomial$multinomial_names <- multinomial_names
     multinomial$measurement <- measurement
-    # multinomial$measurement_recoded <- measurement_recoded
 
   }
   multinomial$any_multinomial <- any_multinomial
@@ -2843,3 +2694,190 @@ transformations_multinomial_lca <- function(trans, dataList) {
 
 }
 
+#### Functions for regularization ####
+
+bayes1 <- function(trans, nclasses, alpha, nobs, cov_patterns) {
+
+  estimators <- list()
+
+  if(alpha != 0) {
+
+    # Get the indices corresponding to the unique covariate patterns:
+    dt_uniq_X <- data.table::as.data.table(cov_patterns)
+    counts_X <- dt_uniq_X[, .(index = .I[1], count = .N), by = names(dt_uniq_X)]
+    uniques <- counts_X$index
+    U <- length(uniques)
+    G <- 1L
+
+    for(i in uniques) {
+
+      estimators[[G]] <- list(estimator = "bayesconst1",
+                              parameters = list(trans$class[i, ]),
+                              extra = list(K = nclasses,
+                                           alpha = alpha,
+                                           U = U,
+                                           N = nobs,
+                                           double_names = paste("P(Class|pattern",
+                                                                i, ")", sep = "")))
+      G <- G+1L
+
+    }
+
+  }
+
+  return(estimators)
+
+}
+
+bayes2 <- function(trans, multinomial, nclasses, alpha, nobs) {
+
+  estimators <- list()
+
+  if(multinomial$any_multinomial & alpha != 0) {
+
+    list2env(multinomial, envir = environment())
+
+    G <- j <- 1L
+    for(name in multinomial_names) {
+      for(i in 1:nclasses) {
+
+        pihat <- pi_hat_list[[j]][, i]
+        probs_by_class <- unlist(lapply(trans[name],
+                                        FUN = \(x) x[, i]))
+
+        estimators[[G]] <- list(estimator = "bayesconst2",
+                                parameters = list(probs_by_class),
+                                extra = list(K = nclasses,
+                                             pihat = pihat,
+                                             alpha = alpha,
+                                             N = nobs,
+                                             double_names = paste("P(",
+                                                                  name,
+                                                                  "|Class", i, ")",
+                                                                  sep = "")))
+        G <- G+1L
+
+      }
+      j <- j+1L
+    }
+
+  }
+
+  return(estimators)
+
+}
+
+bayes3 <- function(trans, gaussian, alpha, nclasses, nobs) {
+
+  estimators <- list()
+
+  if(gaussian$any_gaussian & alpha != 0) {
+
+    list2env(gaussian, envir = environment())
+    Y <- patterns_gaussian[, gaussian_names, drop = FALSE]
+    varshat <- apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs
+    G <- 1L
+
+    for(i in 1:nclasses) {
+
+      vars_by_class <- unlist(lapply(trans[gaussian_names],
+                                     FUN = \(x) x[2, i]))
+      estimators[[G]] <- list(estimator = "bayesconst3",
+                              parameters = list(vars_by_class),
+                              extra = list(K = nclasses,
+                                           varshat = varshat,
+                                           alpha = alpha,
+                                           N = nobs,
+                                           double_names = paste("vars|Class",
+                                                                i, sep = "")))
+      G <- G+1L
+
+    }
+
+  }
+
+  return(estimators)
+
+}
+
+bayes4 <- function(trans, mvgaussian, alpha, nclasses, nobs) {
+
+  estimators <- list()
+
+  if(mvgaussian$any_mvgaussian & alpha != 0) {
+
+    list2env(mvgaussian, envir = environment())
+    Y <- patterns_mvgaussian[, mvgaussian_names, drop = FALSE]
+    D <- diag(apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs)
+    sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
+    G <- 1L
+
+    for(i in 1:nclasses) {
+
+      estimators[[G]] <- list(estimator = "bayesconst4",
+                              parameters = list(trans[[sigma_names[i]]]),
+                              extra = list(K = nclasses,
+                                           alpha = alpha,
+                                           D = D,
+                                           J = Jmvgauss,
+                                           double_names = paste("Sigma|Class",
+                                                                i, sep = "")))
+      G <- G+1L
+
+    }
+
+  }
+
+  return(estimators)
+
+}
+
+ridge <- function(trans, lambda, power, nobs) {
+
+  estimators <- list()
+
+  if(!is.null(lambda) & !is.null(power)) {
+
+    if(lambda != 0 && power != 0) {
+
+      estimators[[1]] <- list(estimator = "ridge",
+                              parameters = list(trans$beta[-1, ]),
+                              extra = list(lambda = lambda,
+                                           power = power,
+                                           N = nobs,
+                                           double_names = paste("Ridge(", power,
+                                                                ")_coeffs",
+                                                                sep = "")))
+
+    }
+  }
+
+  return(estimators)
+
+}
+
+gaussloglik <- function(trans, alpha, nobs, cov_patterns) {
+
+  estimators <- list()
+
+  if(alpha != 0) {
+
+    p <- nrow(trans$beta)-1L
+    q <- ncol(trans$beta)
+    means <- matrix(0, nrow = p, ncol = q)
+    sds <- apply(cov_patterns[, -1], MARGIN = 2, sd, na.rm = TRUE)
+    sds <- matrix(sds, nrow = p, ncol = q) / alpha
+
+    estimators[[1]] <- list(estimator = "gaussian_loglik",
+                            parameters = list(trans$beta[-1, ]),
+                            extra = list(means = means,
+                                         sds = sds,
+                                         alpha = alpha,
+                                         N = nobs,
+                                         double_names = "Gaussian_coeffs"))
+
+  }
+
+  return(estimators)
+
+}
