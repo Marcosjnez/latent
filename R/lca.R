@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 02/07/2026
+# Modification date: 03/07/2026
 #'
 #' Latent Class Analysis
 #'
@@ -276,18 +276,18 @@ lca <- function(data,
   there_are_outcomes <- !is.null(outcomes)
   structural <- there_are_covariates || there_are_outcomes
 
+  no_covariate_found_in_data <- !any(covariates %in% colnames(data))
+  no_outcome_found_in_data <- !any(outcomes %in% colnames(data))
+
+  if(there_are_covariates && no_covariate_found_in_data) {
+    stop("No named covariate was found in data")
+  }
+
+  if(there_are_outcomes && no_outcome_found_in_data) {
+    stop("No named outcome was found in data")
+  }
+
   if(structural && adjustment != "none") {
-
-    no_covariate_found_in_data <- !any(covariates %in% colnames(data))
-    no_outcome_found_in_data <- !any(outcomes %in% colnames(data))
-
-    if(there_are_covariates && no_covariate_found_in_data) {
-      stop("No named covariate was found in data")
-    }
-
-    if(there_are_outcomes && no_outcome_found_in_data) {
-      stop("No named outcome was found in data")
-    }
 
     adjustment <- tolower(adjustment)
 
@@ -337,8 +337,7 @@ lca <- function(data,
   #### Store original call ####
 
   mc <- match.call(expand.dots = TRUE)
-  args <- as.list(mc)[-1]
-  args <- lapply(args, eval, envir = parent.frame())
+  args <- lapply(as.list(mc)[-1], eval, envir = parent.frame())
 
   #### Create the dataList ####
 
@@ -666,11 +665,11 @@ create_lca_dataList <- function(data = NULL,
 
   # Store the indicators in the control list:
 
-  multinomial <- objects_multinomial_lca(data, measurement, item, item_names,
+  multinomial <- objects_multinomial_lca(data, patterns, item, item_names,
                                          nclasses)
-  gaussian <- objects_gaussian_lca(measurement, item, item_names,
+  gaussian <- objects_gaussian_lca(data, patterns, item, item_names,
                                    nclasses)
-  mvgaussian <- objects_mvgaussian_lca(measurement, item, item_names,
+  mvgaussian <- objects_mvgaussian_lca(data, patterns, item, item_names,
                                        nclasses, target)
 
   list2env(multinomial, envir = environment())
@@ -682,21 +681,13 @@ create_lca_dataList <- function(data = NULL,
   rownames(design_patterns) <- rownames(measurement_patterns) <-
     patterns$pattern_names
 
-  multinomial$patterns_multinomial <- as.matrix(
-  measurement[patterns$full2short, multinomial$multinomial_names])
-  multinomial$nmultinomial <- nmultinomial
-  gaussian$patterns_gaussian <- as.matrix(
-    measurement[patterns$full2short, gaussian$gaussian_names])
-  mvgaussian$patterns_mvgaussian <- as.matrix(
-  measurement[patterns$full2short, mvgaussian$mvgaussian_names])
-
   #### Possible response patterns and degrees of freedom ####
 
   # Get the number of possible response patterns:
   if(nitems > 0L & all(item == "multinomial")) { # If all the items are multinomial...
 
     # Count the number of categories:
-    Ks <- apply(measurement[, multinomial_names, drop = FALSE], MARGIN = 2,
+    Ks <- apply(measurement_patterns[, multinomial_names, drop = FALSE], MARGIN = 2,
                 FUN = \(x) length(unique(x[!is.na(x)])))
     # If all the items are multinomial, the number of possible patterns is:
     npossible_patterns <- min(prod(Ks)-1L, nobs)
@@ -716,7 +707,6 @@ create_lca_dataList <- function(data = NULL,
 
   dataList <- vector("list")
   dataList$data <- data
-  dataList$measurement <- measurement
   dataList$design <- design
   dataList$nitems <- nitems
   dataList$item <- item
@@ -731,8 +721,6 @@ create_lca_dataList <- function(data = NULL,
   dataList$pattern_weights <- patterns$pattern_weights
   dataList$full2short <- patterns$full2short
   dataList$short2full <- patterns$short2full
-  dataList$patterns_original <- measurement[patterns$full2short, ]
-  dataList$all_patterns <- data[patterns$full2short, variables]
   dataList$gaussian <- gaussian
   dataList$mvgaussian <- mvgaussian
   dataList$multinomial <- multinomial
@@ -1588,10 +1576,9 @@ check_mvgaussian <- function(gaussian, model) {
 
 check_mvmultinomial <- function(multinomial, model, patterns) {
 
-  nmultinomial<- multinomial$nmultinomial
   mvmultinomial <- NULL
 
-  if(nmultinomial > 1L) {
+  if(multinomial$nmultinomial > 1L) {
 
     list2env(multinomial, envir = environment())
 
@@ -1937,7 +1924,7 @@ lca_ml <- function(data,
 
 #### Objects for items with a given conditional likelihood ####
 
-objects_gaussian_lca <- function(measurement, item, item_names,
+objects_gaussian_lca <- function(data, patterns, item, item_names,
                                  nclasses) {
 
   any_gaussian <- any(item == "gaussian")
@@ -1954,9 +1941,9 @@ objects_gaussian_lca <- function(measurement, item, item_names,
     j <- 1L
     for(name in gaussian_names) {
 
-      init_mean[[j]] <- rep(mean(measurement[, name], na.rm = TRUE),
+      init_mean[[j]] <- rep(mean(data[, name], na.rm = TRUE),
                             times = nclasses)
-      init_var[[j]] <- rep(var(measurement[, name], na.rm = TRUE),
+      init_var[[j]] <- rep(var(data[, name], na.rm = TRUE),
                            times = nclasses)
       init_logvar[[j]] <- log(init_var[[j]])
       j <- j+1L
@@ -1966,6 +1953,8 @@ objects_gaussian_lca <- function(measurement, item, item_names,
     gaussian$init_mean <- init_mean
     gaussian$init_var <- init_var
     gaussian$init_logvar <- init_logvar
+    gaussian$patterns_gaussian <- as.matrix(
+      data[patterns$full2short, gaussian_names])
 
   }
   gaussian$any_gaussian <- any_gaussian
@@ -1974,7 +1963,7 @@ objects_gaussian_lca <- function(measurement, item, item_names,
 
 }
 
-objects_mvgaussian_lca <- function(measurement, item, item_names,
+objects_mvgaussian_lca <- function(data, patterns, item, item_names,
                                    nclasses, target) {
 
   any_mvgaussian <- any(item == "mvgaussian")
@@ -1989,10 +1978,10 @@ objects_mvgaussian_lca <- function(measurement, item, item_names,
                        target = target)
     sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
 
-    init_mvmean <- matrix(rep(colMeans(measurement[, mvgaussian_names],
+    init_mvmean <- matrix(rep(colMeans(data[, mvgaussian_names],
                                        na.rm = TRUE),
                               times = nclasses), nrow = Jmvgauss, ncol = nclasses)
-    init_logsigma <- matrix(rep(apply(measurement[, mvgaussian_names],
+    init_logsigma <- matrix(rep(apply(data[, mvgaussian_names],
                                       MARGIN = 2,
                                       FUN = var,
                                       na.rm = TRUE),
@@ -2000,13 +1989,15 @@ objects_mvgaussian_lca <- function(measurement, item, item_names,
                             ncol = nclasses)
 
     for(j in 1:nclasses) {
-      init_sigma[[j]] <- cov(measurement[, mvgaussian_names],
+      init_sigma[[j]] <- cov(data[, mvgaussian_names],
                              use = "pairwise.complete.obs")
     }
 
     mvgaussian$init_mvmean <- init_mvmean
     mvgaussian$init_logsigma <- init_logsigma
     mvgaussian$init_sigma <- init_sigma
+    mvgaussian$patterns_mvgaussian <- as.matrix(
+      data[patterns$full2short, mvgaussian_names])
 
   }
   mvgaussian$any_mvgaussian <- any_mvgaussian
@@ -2015,7 +2006,7 @@ objects_mvgaussian_lca <- function(measurement, item, item_names,
 
 }
 
-objects_multinomial_lca <- function(data, measurement, item, item_names,
+objects_multinomial_lca <- function(data, patterns, item, item_names,
                                     nclasses) {
 
   nobs <- nrow(data)
@@ -2024,6 +2015,8 @@ objects_multinomial_lca <- function(data, measurement, item, item_names,
   # Transform multinomial variables into factors:
 
   multinomial <- list()
+  multinomial$nmultinomial <- 0L
+
   if(any_multinomial) {
 
     multinomial_names <- item_names[which(item == "multinomial")]
@@ -2031,21 +2024,17 @@ objects_multinomial_lca <- function(data, measurement, item, item_names,
     Jmultinom <- length(multinomial_names) # Number of multinomial items
 
     # Transform multinomial variables into factors:
-    measurement[, multinomial_names] <- lapply(measurement[, multinomial_names,
-                                                           drop = FALSE],
-                                               FUN = factor)
+    measurement <- lapply(data[, multinomial_names, drop = FALSE], FUN = factor)
 
     # Save levels of factor variables:
-    multinomial_factor_levels <- lapply(measurement[, multinomial_names, drop = FALSE], levels)
+    multinomial_factor_levels <- lapply(measurement, levels)
     multinomial_factor_lengths <- unlist(lapply(multinomial_factor_levels, FUN = length))
     multinomial_reference <- lapply(multinomial_factor_levels, FUN = \(x) x[1])
 
     # Transform the factor variables into integers:
-    measurement[, multinomial_names] <- lapply(measurement[, multinomial_names,
-                                                                   drop = FALSE],
-                                                       FUN = function(col) {
-                                                         if (is.factor(col)) as.integer(col) - 1L else col
-                                                       })
+    measurement <- as.data.frame(lapply(measurement, FUN = function(col) {
+      if (is.factor(col)) as.integer(col) - 1L else col
+    }))
 
     multinomial <- list(multinomial_names = multinomial_names,
                         logmultinomial_names = logmultinomial_names,
@@ -2081,7 +2070,9 @@ objects_multinomial_lca <- function(data, measurement, item, item_names,
     multinomial$sds <- sqrt(multinomial$vars)
     multinomial$Ks <- length(unlist(eta_hat_list))
     multinomial$multinomial_names <- multinomial_names
-    multinomial$measurement <- measurement
+    multinomial$patterns_multinomial <- as.matrix(
+      measurement[patterns$full2short, multinomial_names])
+    multinomial$nmultinomial <- Jmultinom
 
   }
   multinomial$any_multinomial <- any_multinomial

@@ -1,6 +1,6 @@
 # Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/05/2026 by Marcos Jimenez
+# Modification date: 03/07/2026 by Marcos Jimenez
 #'
 #' Local Bivariate Residuals for Latent Class Analysis
 #'
@@ -58,8 +58,6 @@
 #' @export
 lbvr <- function(model, digits = 4) {
 
-  data <- model@dataList$measurement
-
   types <- model@dataList$item
   posterior <- latInspect(model, "posterior")
 
@@ -68,10 +66,12 @@ lbvr <- function(model, digits = 4) {
   item_names <- model@dataList$item_names
   names(types) <- item_names
   K <- ncol(posterior)
+  short2full <- fit@dataList$short2full
 
-  cont_vars <- item_names[types == "gaussian"]
-  cat_vars  <- item_names[types == "multinomial"]
-  data[, cat_vars] <- data[, cat_vars] + 1L
+  cont_vars <- fit@dataList$gaussian$gaussian_names
+  cat_vars  <- fit@dataList$multinomial$multinomial_names
+  data_gaussian <- fit@dataList$gaussian$patterns_gaussian[short2full, , drop = FALSE]
+  data_multinom <- fit@dataList$multinomial$patterns_multinomial[short2full, , drop = FALSE] + 1L
   n_cont <- length(cont_vars)
   n_cat <- length(cat_vars)
 
@@ -115,14 +115,14 @@ lbvr <- function(model, digits = 4) {
   # ----- Helper functions -----
 
   cont_cont_resid_pval <- function(v1, v2) {
-    e1 <- data[[v1]] - posterior %*% class_means[, v1, drop = FALSE]
-    e2 <- data[[v2]] - posterior %*% class_means[, v2, drop = FALSE]
+    e1 <- data_gaussian[, v1] - posterior %*% class_means[, v1, drop = FALSE]
+    e2 <- data_gaussian[, v2] - posterior %*% class_means[, v2, drop = FALSE]
     comp <- complete.cases(e1, e2)
     if (sum(comp) < 3) return(list(resid = NA, pval = NA))
     ct <- cor.test(e1[comp], e2[comp], use = "complete.obs")
     raw_resid <- cov(e1[comp], e2[comp], use = "complete.obs")
 
-    raw_resid <- latentgold_cont_cont_bvr(data, v1, v2, posterior,
+    raw_resid <- latentgold_cont_cont_bvr(data_gaussian, v1, v2, posterior,
                                           class_means, class_vars,
                                           covariance = "class_specific",
                                           weights = NULL, tol = 1e-10)$resid
@@ -133,9 +133,9 @@ lbvr <- function(model, digits = 4) {
   }
 
   cat_cat_resid_pval <- function(v1, v2) {
-    comp <- complete.cases(data[[v1]], data[[v2]])
+    comp <- complete.cases(data_multinom[, v1], data_multinom[, v2])
     if (sum(comp) == 0) return(list(resid = NA, pval = NA))
-    obs_tab <- table(data[comp, v1], data[comp, v2])
+    obs_tab <- table(data_multinom[comp, v1], data_multinom[comp, v2])
 
     N_pair <- sum(comp)
 
@@ -182,8 +182,8 @@ lbvr <- function(model, digits = 4) {
   }
 
   cont_cat_resid_pval <- function(v_cont, v_cat) {
-    e <- data[[v_cont]] - posterior %*% class_means[, v_cont, drop = FALSE]
-    cat_var <- data[[v_cat]]
+    e <- data_gaussian[, v_cont] - posterior %*% class_means[, v_cont, drop = FALSE]
+    cat_var <- data_multinom[, v_cat]
     # Keep only complete cases for both
     comp <- complete.cases(e, cat_var)
     if (sum(comp) < 3) return(list(resid = NA, pval = NA))
@@ -334,8 +334,8 @@ latentgold_cont_cont_bvr <- function(data,
                                      tol = 1e-10) {
   covariance <- match.arg(covariance)
 
-  y1 <- data[[v1]]
-  y2 <- data[[v2]]
+  y1 <- data[, v1]
+  y2 <- data[, v2]
 
   if (is.null(weights)) {
     weights <- rep(1, nrow(data))

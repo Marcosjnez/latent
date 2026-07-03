@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/06/2026
+# Modification date: 03/07/2026
 #'
 #' @title
 #' Inspect objects from fitted lca models.
@@ -58,7 +58,7 @@ latInspect.llca <- function(fit,
   # Posterior classification:
   state <- apply(posterior, MARGIN = 1, FUN = which.max)
   # Data table of response patterns:
-  summary_table <- cbind(all_patterns,
+  summary_table <- cbind(patterns,
                          Observed = pattern_weights,
                          Estimated = estimated,
                          Posterior = posterior,
@@ -80,7 +80,7 @@ latInspect.llca <- function(fit,
   posterior <- posterior[short2full, , drop = FALSE]
   state <- state[short2full]
   rownames(posterior) <- names(state) <-
-    names(loglik_case) <- rownames(measurement)
+    names(loglik_case) <- rownames(data)
 
   classes <- colSums(fit@transformed_pars$class * pattern_weights) /
     sum(pattern_weights)
@@ -224,12 +224,12 @@ latInspect.llca <- function(fit,
 
   } else if (what == "measurement") {
 
-    result <- fit@dataList$measurement
+    result <- fit@dataList$patterns[fit@dataList$short2full, , drop = FALSE]
 
   } else if (what == "pattern" ||
              what == "patterns") {
 
-    patterns <- data.frame(all_patterns, Observed = pattern_weights)
+    patterns <- data.frame(fit@dataList$patterns, Observed = pattern_weights)
     # Sort the patterns by increasing order:
     patterns <- patterns[do.call(order, patterns), ]
     rownames(patterns) <- paste("pattern", 1:nrow(patterns), sep = "")
