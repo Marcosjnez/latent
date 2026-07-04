@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 03/07/2026
+# Modification date: 04/07/2026
 
 #### Store a dataset ####
 
@@ -170,7 +170,7 @@ fit2 <- lca(data = empathy,
             nclasses = 4L,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             covariates = c("pt1", "pt2", "pt3", "pt4"),
-            outcomes = list(gaussian = "pt5"),
+            # outcomes = list(gaussian = "pt5"),
             model = fit1,
             adjustment = "none",
             penalties = TRUE,
@@ -199,7 +199,7 @@ getfit(fit2)
 
 # Inspect model objects:
 latInspect(fit2, what = "loglik")
-# loglik: -1747.135 # penalized_loglik: -1750.566
+# loglik: -2049.840 # penalized_loglik: -2053.322
 latInspect(fit2, what = "coefs")
 latInspect(fit2, what = "classes")
 latInspect(fit2, what = "profile")
@@ -241,7 +241,7 @@ SE3 <- se(fit3, type = "standard", digits = 4)
 SE3$se
 latInspect(fit3$structural, what = "loglik")
 # loglik: -1747.135 # penalized_loglik: -1750.566
-# loglik: -2049.840 # penalized_loglik: -2053.322
+# loglik: -2049.840 # penalized_loglik: -2053.322 (outcomes = list(gaussian = c("pt5")))
 
 #### CFA ####
 

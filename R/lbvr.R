@@ -1,6 +1,6 @@
 # Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 03/07/2026 by Marcos Jimenez
+# Modification date: 04/07/2026 by Marcos Jimenez
 #'
 #' Local Bivariate Residuals for Latent Class Analysis
 #'

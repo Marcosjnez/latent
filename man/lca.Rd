@@ -51,18 +51,8 @@ automatically assigns numeric outcomes to the Gaussian likelihood and
 non-numeric outcomes to the multinomial likelihood;
 \code{outcomes = list(gaussian = c("y1", "y2"))} adds Gaussian distal
 outcomes; and \code{outcomes = list(multinomial = "z")} adds a multinomial
-distal outcome. Is is possible to predict different types of outcomes at a
+distal outcome. It is possible to predict different types of outcomes at a
 time using \code{outcomes = list(gaussian = c("y1", "y2"), multinomial = "z")}}
-
-\item{penalties}{Logical value or named list controlling regularization. If
-\code{FALSE}, no penalties are used. If \code{TRUE}, default penalties are
-used. If a named list is supplied, missing penalty blocks are filled with
-their defaults. Valid penalty blocks are \code{beta}, \code{class},
-\code{prob}, \code{var}, and \code{Sigma}. The default is
-\code{list(beta = list(alpha = 0), class = list(alpha = 1),
-prob = list(alpha = 1), var = list(alpha = 1),
-Sigma = list(alpha = 1))}. The \code{beta} block may also contain
-\code{lambda} and \code{power} for ridge-type regularization.}
 
 \item{model}{Optional model specification. This can be a named list used to
 fix parameters, impose equality constraints, or provide custom parameter
@@ -78,10 +68,6 @@ while the class-membership regression coefficients are re-estimated.}
 \item{weights}{Optional numeric vector of observation weights, with one value
 per row of \code{data}.}
 
-\item{start}{Optional named list of starting values. Names should correspond
-to parameter blocks in the model. Supplied values replace the corresponding
-default initial values, allowing partial specification of starting values.}
-
 \item{adjustment}{Character string selecting the estimation strategy when
 \code{covariates} are supplied. Use \code{"none"} for one-step estimation,
 \code{"bk"} for the Bakk--Kuha two-step method, or \code{"ml"} for the
@@ -91,6 +77,20 @@ ML three-step correction based on classification error. Defaults to
 \item{classification}{Character string used when \code{adjustment = "ml"}.
 Use \code{"modal"} for modal assignment or \code{"prop"} for proportional
 assignment when estimating the classification-error matrix.}
+
+\item{penalties}{Logical value or named list controlling regularization. If
+\code{FALSE}, no penalties are used. If \code{TRUE}, default penalties are
+used. If a named list is supplied, missing penalty blocks are filled with
+their defaults. Valid penalty blocks are \code{beta}, \code{class},
+\code{prob}, \code{var}, and \code{Sigma}. The default is
+\code{list(beta = list(alpha = 0), class = list(alpha = 1),
+prob = list(alpha = 1), var = list(alpha = 1),
+Sigma = list(alpha = 1))}. The \code{beta} block may also contain
+\code{lambda} and \code{power} for ridge-type regularization.}
+
+\item{start}{Optional named list of starting values. Names should correspond
+to parameter blocks in the model. Supplied values replace the corresponding
+default initial values, allowing partial specification of starting values.}
 
 \item{control}{Optional list of optimizer and estimation controls. Common
 entries include \code{rstarts} for the number of random starts,
