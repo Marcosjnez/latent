@@ -75,20 +75,9 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
   to the Gaussian likelihood and non-numeric outcomes to the multinomial
   likelihood; `outcomes = list(gaussian = c("y1", "y2"))` adds Gaussian
   distal outcomes; and `outcomes = list(multinomial = "z")` adds a
-  multinomial distal outcome. Is is possible to predict different types
+  multinomial distal outcome. It is possible to predict different types
   of outcomes at a time using
   `outcomes = list(gaussian = c("y1", "y2"), multinomial = "z")`
-
-- penalties:
-
-  Logical value or named list controlling regularization. If `FALSE`, no
-  penalties are used. If `TRUE`, default penalties are used. If a named
-  list is supplied, missing penalty blocks are filled with their
-  defaults. Valid penalty blocks are `beta`, `class`, `prob`, `var`, and
-  `Sigma`. The default is
-  `list(beta = list(alpha = 0), class = list(alpha = 1), prob = list(alpha = 1), var = list(alpha = 1), Sigma = list(alpha = 1))`.
-  The `beta` block may also contain `lambda` and `power` for ridge-type
-  regularization.
 
 - model:
 
@@ -108,13 +97,6 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
   Optional numeric vector of observation weights, with one value per row
   of `data`.
 
-- start:
-
-  Optional named list of starting values. Names should correspond to
-  parameter blocks in the model. Supplied values replace the
-  corresponding default initial values, allowing partial specification
-  of starting values.
-
 - adjustment:
 
   Character string selecting the estimation strategy when `covariates`
@@ -127,6 +109,24 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
   Character string used when `adjustment = "ml"`. Use `"modal"` for
   modal assignment or `"prop"` for proportional assignment when
   estimating the classification-error matrix.
+
+- penalties:
+
+  Logical value or named list controlling regularization. If `FALSE`, no
+  penalties are used. If `TRUE`, default penalties are used. If a named
+  list is supplied, missing penalty blocks are filled with their
+  defaults. Valid penalty blocks are `beta`, `class`, `prob`, `var`, and
+  `Sigma`. The default is
+  `list(beta = list(alpha = 0), class = list(alpha = 1), prob = list(alpha = 1), var = list(alpha = 1), Sigma = list(alpha = 1))`.
+  The `beta` block may also contain `lambda` and `power` for ridge-type
+  regularization.
+
+- start:
+
+  Optional named list of starting values. Names should correspond to
+  parameter blocks in the model. Supplied values replace the
+  corresponding default initial values, allowing partial specification
+  of starting values.
 
 - control:
 

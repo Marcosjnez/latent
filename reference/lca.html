@@ -167,20 +167,8 @@ automatically assigns numeric outcomes to the Gaussian likelihood and
 non-numeric outcomes to the multinomial likelihood;
 <code>outcomes = list(gaussian = c("y1", "y2"))</code> adds Gaussian distal
 outcomes; and <code>outcomes = list(multinomial = "z")</code> adds a multinomial
-distal outcome. Is is possible to predict different types of outcomes at a
+distal outcome. It is possible to predict different types of outcomes at a
 time using <code>outcomes = list(gaussian = c("y1", "y2"), multinomial = "z")</code></p></dd>
-
-
-<dt id="arg-penalties">penalties<a class="anchor" aria-label="anchor" href="#arg-penalties"></a></dt>
-<dd><p>Logical value or named list controlling regularization. If
-<code>FALSE</code>, no penalties are used. If <code>TRUE</code>, default penalties are
-used. If a named list is supplied, missing penalty blocks are filled with
-their defaults. Valid penalty blocks are <code>beta</code>, <code>class</code>,
-<code>prob</code>, <code>var</code>, and <code>Sigma</code>. The default is
-<code>list(beta = list(alpha = 0), class = list(alpha = 1),
-prob = list(alpha = 1), var = list(alpha = 1),
-Sigma = list(alpha = 1))</code>. The <code>beta</code> block may also contain
-<code>lambda</code> and <code>power</code> for ridge-type regularization.</p></dd>
 
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
@@ -201,12 +189,6 @@ while the class-membership regression coefficients are re-estimated.</p></dd>
 per row of <code>data</code>.</p></dd>
 
 
-<dt id="arg-start">start<a class="anchor" aria-label="anchor" href="#arg-start"></a></dt>
-<dd><p>Optional named list of starting values. Names should correspond
-to parameter blocks in the model. Supplied values replace the corresponding
-default initial values, allowing partial specification of starting values.</p></dd>
-
-
 <dt id="arg-adjustment">adjustment<a class="anchor" aria-label="anchor" href="#arg-adjustment"></a></dt>
 <dd><p>Character string selecting the estimation strategy when
 <code>covariates</code> are supplied. Use <code>"none"</code> for one-step estimation,
@@ -219,6 +201,24 @@ ML three-step correction based on classification error. Defaults to
 <dd><p>Character string used when <code>adjustment = "ml"</code>.
 Use <code>"modal"</code> for modal assignment or <code>"prop"</code> for proportional
 assignment when estimating the classification-error matrix.</p></dd>
+
+
+<dt id="arg-penalties">penalties<a class="anchor" aria-label="anchor" href="#arg-penalties"></a></dt>
+<dd><p>Logical value or named list controlling regularization. If
+<code>FALSE</code>, no penalties are used. If <code>TRUE</code>, default penalties are
+used. If a named list is supplied, missing penalty blocks are filled with
+their defaults. Valid penalty blocks are <code>beta</code>, <code>class</code>,
+<code>prob</code>, <code>var</code>, and <code>Sigma</code>. The default is
+<code>list(beta = list(alpha = 0), class = list(alpha = 1),
+prob = list(alpha = 1), var = list(alpha = 1),
+Sigma = list(alpha = 1))</code>. The <code>beta</code> block may also contain
+<code>lambda</code> and <code>power</code> for ridge-type regularization.</p></dd>
+
+
+<dt id="arg-start">start<a class="anchor" aria-label="anchor" href="#arg-start"></a></dt>
+<dd><p>Optional named list of starting values. Names should correspond
+to parameter blocks in the model. Supplied values replace the corresponding
+default initial values, allowing partial specification of starting values.</p></dd>
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
