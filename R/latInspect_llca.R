@@ -45,7 +45,6 @@ latInspect.llca <- function(fit,
 
   # Logarithm likelihood of each response pattern:
   loglik_case <- fit@Optim$outputs$estimators$vectors[[1]][[1]]
-  pattern_weights <- fit@dataList$pattern_weights
   # Sum of logarithm likelihoods by response pattern:
   loglik_patterns <- pattern_weights * loglik_case
 
@@ -57,12 +56,13 @@ latInspect.llca <- function(fit,
   colnames(posterior) <- paste("P(", "Class", 1:nclasses, "|data)", sep = "")
   # Posterior classification:
   state <- apply(posterior, MARGIN = 1, FUN = which.max)
+  patterns <- data[full2short, variables, drop = FALSE]
   # Data table of response patterns:
   summary_table <- cbind(patterns,
                          Observed = pattern_weights,
                          Estimated = estimated,
-                         Posterior = posterior,
                          State = state,
+                         Posterior = posterior,
                          loglik_case = loglik_case,
                          loglik_patterns = loglik_patterns)
   summary_table <- as.data.frame(summary_table)
@@ -79,17 +79,15 @@ latInspect.llca <- function(fit,
   loglik_case <- loglik_case[short2full]
   posterior <- posterior[short2full, , drop = FALSE]
   state <- state[short2full]
-  rownames(posterior) <- names(state) <-
-    names(loglik_case) <- rownames(data)
+  rownames(posterior) <- names(state) <- names(loglik_case) <- rownames(data)
 
   classes <- colSums(fit@transformed_pars$class * pattern_weights) /
     sum(pattern_weights)
-  indicators_names <- fit@dataList$indicators_names
   ClassConditional <- fit@transformed_pars[indicators_names]
-  if(fit@dataList$gaussian$any_gaussian) {
-    gaussian_names <- intersect(fit@modelInfo$control_optimizer$indicators_names,
-                                fit@modelInfo$control_optimizer$gaussian$gaussian_names)
-    ClassConditional[gaussian_names] <- lapply(ClassConditional[gaussian_names],
+  if(gaussian$any_gaussian) {
+    gaussian_indicators <- intersect(indicators_names,
+                                gaussian$gaussian_names)
+    ClassConditional[gaussian_indicators] <- lapply(ClassConditional[gaussian_indicators],
                                                FUN = \(x) {
                                                  x[c(1, 4), ]
                                                })
@@ -120,12 +118,12 @@ latInspect.llca <- function(fit,
 
   }
 
-  if(fit@dataList$outcomes$any_outcomes) {
-    ClassConditional_outcomes <- fit@transformed_pars[fit@dataList$outcomes$outcomes_names]
-    if(fit@dataList$gaussian$any_gaussian) {
-      gaussian_names <- intersect(fit@dataList$outcomes$outcomes_names,
-                                  fit@dataList$gaussian$gaussian_names)
-      ClassConditional_outcomes[gaussian_names] <- lapply(ClassConditional_outcomes[gaussian_names],
+  if(outcomes$any_outcomes) {
+    ClassConditional_outcomes <- fit@transformed_pars[outcomes$outcomes_names]
+    if(gaussian$any_gaussian) {
+      gaussian_indicators <- intersect(outcomes$outcomes_names,
+                                  gaussian$gaussian_names)
+      ClassConditional_outcomes[gaussian_indicators] <- lapply(ClassConditional_outcomes[gaussian_indicators],
                                                           FUN = \(x) {
                                                             x[c(1, 4), ]
                                                           })
@@ -160,7 +158,7 @@ latInspect.llca <- function(fit,
     FUN.VALUE = numeric(9)
   )
 
-  colnames(fit_matrix) <- unlist(lapply(fit@modelInfo$control_estimator,
+  colnames(fit_matrix) <- unlist(lapply(control_estimator,
                                         FUN = \(x) x$double_names))
   fit_matrix <- cbind(fit_matrix, overall = rowSums(fit_matrix))
 
@@ -211,7 +209,7 @@ latInspect.llca <- function(fit,
 
   } else if (what == "gradient") {
 
-    gradient.info <- data.frame(name = fit@modelInfo$parameters_labels,
+    gradient.info <- data.frame(name = parameters_labels,
                                 gradient = fit@Optim$g,
                                 rgradient = fit@Optim$rg,
                                 dir = fit@Optim$dir)
@@ -220,16 +218,16 @@ latInspect.llca <- function(fit,
 
   } else if (what == "data") {
 
-    result <- fit@dataList$data
+    result <- data
 
   } else if (what == "measurement") {
 
-    result <- fit@dataList$patterns[fit@dataList$short2full, , drop = FALSE]
+    result <- patterns[short2full, , drop = FALSE]
 
   } else if (what == "pattern" ||
              what == "patterns") {
 
-    patterns <- data.frame(fit@dataList$patterns, Observed = pattern_weights)
+    patterns <- data.frame(patterns, Observed = pattern_weights)
     # Sort the patterns by increasing order:
     patterns <- patterns[do.call(order, patterns), ]
     rownames(patterns) <- paste("pattern", 1:nrow(patterns), sep = "")

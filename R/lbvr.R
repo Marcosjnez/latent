@@ -62,7 +62,7 @@ lbvr <- function(model, digits = 4) {
   posterior <- latInspect(model, "posterior")
 
   n <- model@dataList$nobs
-  J <- model@dataList$nitems
+  J <- length(types)
   item_names <- names(types)
   K <- ncol(posterior)
   short2full <- model@dataList$short2full

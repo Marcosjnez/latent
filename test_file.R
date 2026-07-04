@@ -27,8 +27,8 @@ fit <- lca(data = gss82,
            # outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
-           model = list("UNDERSTA ~~ COOPERAT
-                         PURPOSE ~~ COOPERAT"),
+           # model = list("UNDERSTA ~~ COOPERAT
+           #               PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
            do.fit = TRUE)

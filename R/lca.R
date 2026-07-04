@@ -230,12 +230,12 @@ lca <- function(data,
                 multinomial = NULL,
                 covariates = NULL,
                 outcomes = NULL,
-                penalties = TRUE,
                 model = NULL,
                 weights = NULL,
-                start = NULL,
                 adjustment = "bk",
                 classification = "modal",
+                penalties = TRUE,
+                start = NULL,
                 control = NULL,
                 do.fit = TRUE,
                 verbose = TRUE) {
@@ -381,30 +381,34 @@ lca <- function(data,
 
   #### Create the dataList ####
 
-  dataList_and_control <- create_lca_dataList(data = data,
-                                              nclasses = nclasses,
-                                              covariates = covariates,
-                                              outcomes = outcomes,
-                                              gaussian = gaussian,
-                                              multinomial = multinomial,
-                                              model = model,
-                                              penalties = penalties,
-                                              weights = weights,
-                                              control = control,
-                                              start = start)
-  list2env(dataList_and_control, envir = environment())
+  dataList <- create_lca_dataList(data = data,
+                                  nclasses = nclasses,
+                                  covariates = covariates,
+                                  outcomes = outcomes,
+                                  gaussian = gaussian,
+                                  multinomial = multinomial,
+                                  model = model,
+                                  weights = weights)
+  list2env(dataList, envir = environment())
   dataList$args <- args
+
+  #### Check control parameters ####
+
+  # Update and check control parameters:
+  control$penalties <- penalties # Either a logical or a list of named penalties
+  control$start <- start # Optional named list with initial values
+  control <- lca_control(control) # Check and update the control inputs and create defaults
 
   #### Create the model ####
 
   # Fix the measurement part of the model if a previous llca fit was provided in
-  # model. This is usually done for two-step estimation:
+  # the model argument. This is usually done for two or three-step estimation:
 
   control$model <- model
   if(class(model) == "llca") {
 
     model <- model@parameters
-    model$beta <- NULL
+    model$beta <- NULL # Free the covariate coefficients
 
   } else if(length(model) > 1) {
 
@@ -420,10 +424,12 @@ lca <- function(data,
           model[names(obj@parameters)] <- obj@parameters
         }
       }
-      model$beta <- NULL
+      model$beta <- NULL # Free the covariate coefficients
     }
 
   }
+  # Here, the covariate coefficients are always freed if any llca object is
+  # identified in the model argument
 
   # Get the model specification:
   full_model <- create_lca_model(dataList = dataList,
@@ -432,7 +438,7 @@ lca <- function(data,
                                  control = control)
   list2env(full_model, envir = environment())
 
-  #### Create the structures ####
+  #### Create the manifold, transformation, and estimator structures ####
 
   # Generate the structures for optimization:
   modelInfo <- create_lca_modelInfo(dataList = dataList,
@@ -441,8 +447,7 @@ lca <- function(data,
 
   #### Fit the model ####
 
-  # Fit the model or just get the model specification:
-  if(!do.fit) {
+  if(!do.fit) { # Just get the model specification (empty model)
 
     result <- new("llca",
                   version            = as.character(packageVersion('latent')),
@@ -527,10 +532,7 @@ create_lca_dataList <- function(data = NULL,
                                 gaussian = NULL,
                                 multinomial = NULL,
                                 model = NULL,
-                                penalties = NULL,
-                                weights = NULL,
-                                control = NULL,
-                                start = NULL) {
+                                weights = NULL) {
 
   #### Out covariates, indicators, and outcomes names ####
 
@@ -576,6 +578,7 @@ create_lca_dataList <- function(data = NULL,
   # Create the matrix of predictors for latent class probabilities:
   # covariates must be a character vector with the name of the predictors in data:
   design <- make_design_matrix(covariates = covariates_names,
+                               # data = patterns[, covariates_names, drop = FALSE])
                                data = data)
   pdesign <- ncol(design) # Number of columns of the design matrix
 
@@ -620,6 +623,8 @@ create_lca_dataList <- function(data = NULL,
                             weights = weights,
                             any_continuous = any_continuous)
 
+  design_patterns <- design[patterns$full2short, , drop = FALSE]
+
   #### Process the indicators ####
 
   # If at least two items are gaussian, check which of them are involved in
@@ -632,29 +637,6 @@ create_lca_dataList <- function(data = NULL,
   # check_mvgaussian outputs gaussian, mvgaussian, and target:
   list2env(gaussian_objects, envir = environment())
 
-  # Count the number of items for each likelihood model:
-  nmultinomial <- length(multinomial)
-  ngaussian <- length(gaussian)
-  nmvgaussian <- length(mvgaussian)
-
-  # Select the subset of data with the variables that are used in the
-  # measurement model (keeping the original ordering):
-  model_labels <- rep(c("multinomial", "gaussian", "mvgaussian"),
-                      times = c(nmultinomial, ngaussian, nmvgaussian))
-  model_vector <- c(multinomial, gaussian, mvgaussian)
-  idx <- match(colnames(data), model_vector); idx <- idx[!is.na(idx)]
-  # match each item with its respective likelihood model:
-  variable_type <- model_labels[idx]
-  names(variable_type) <- model_vector
-  measurement <- data[, model_vector[idx], drop = FALSE]
-  # Transform nonnumeric variables into factors:
-  measurement[!sapply(measurement, is.numeric)] <-
-    lapply(measurement[!sapply(measurement, is.numeric)], factor)
-  # Number of items:
-  nitems <- ncol(measurement)
-
-  # Store the indicators in the control list:
-
   multinomial <- objects_multinomial_lca(data, patterns, multinomial, nclasses)
   gaussian <- objects_gaussian_lca(data, patterns, gaussian, nclasses)
   mvgaussian <- objects_mvgaussian_lca(data, patterns, mvgaussian, nclasses,
@@ -664,21 +646,28 @@ create_lca_dataList <- function(data = NULL,
   list2env(gaussian, envir = environment())
   list2env(mvgaussian, envir = environment())
 
-  design_patterns <- design[patterns$full2short, , drop = FALSE]
-  measurement_patterns <- measurement[patterns$full2short, , drop = FALSE]
-  rownames(design_patterns) <- rownames(measurement_patterns) <-
-    patterns$pattern_names
+  # # Count the number of items for each likelihood model:
+  # nmultinomial <- multinomial$nmultinomial
+  # ngaussian <- gaussian$ngaussian
+  # nmvgaussian <- mvgaussian$nmvgaussian
+
+  # Select the subset of data with the variables that are used in the
+  # measurement model (keeping the original ordering):
+  model_labels <- rep(c("multinomial", "gaussian", "mvgaussian"),
+                      times = c(nmultinomial, ngaussian, nmvgaussian))
+  model_vector <- c(multinomial_names, gaussian_names, mvgaussian_names)
+  idx <- match(colnames(data), model_vector); idx <- idx[!is.na(idx)]
+  # match each item with its respective likelihood model:
+  variable_type <- model_labels[idx]
+  names(variable_type) <- model_vector[idx]
 
   #### Possible response patterns and degrees of freedom ####
 
   # Get the number of possible response patterns:
-  if(nitems > 0L & all(variable_type == "multinomial")) { # If all the items are multinomial...
+  if(all(variable_type == "multinomial")) { # If all the items are multinomial...
 
-    # Count the number of categories:
-    Ks <- apply(measurement_patterns[, multinomial_names, drop = FALSE], MARGIN = 2,
-                FUN = \(x) length(unique(x[!is.na(x)])))
     # If all the items are multinomial, the number of possible patterns is:
-    npossible_patterns <- min(prod(Ks)-1L, nobs)
+    npossible_patterns <- min(prod(multinomial_factor_lengths)-1L, nobs)
     # From technical manual of LatentGOLD 6.1 (p.68)
 
   } else { # If any item is not multinomial...
@@ -696,10 +685,8 @@ create_lca_dataList <- function(data = NULL,
   dataList <- vector("list")
   dataList$data <- data
   dataList$design <- design
-  dataList$nitems <- nitems
   dataList$variable_type <- variable_type
   dataList$nobs <- nobs
-  dataList$patterns <- measurement_patterns
   dataList$cov_patterns <- design_patterns
   dataList$npatterns <- patterns$npatterns
   dataList$npossible_patterns <- npossible_patterns
@@ -720,14 +707,9 @@ create_lca_dataList <- function(data = NULL,
   dataList$variable_type <- variable_type
   dataList$weights <- patterns$weights
 
-  # Update and check control parameters:
-  control$penalties <- penalties # Either a logical or a list of named penalties
-  control$start <- start # Optional named list with initial values
-  control <- lca_control(control) # Check and update the control inputs and create defaults
-
   #### Return ####
 
-  return(list(dataList = dataList, control = control))
+  return(dataList)
 
 }
 
@@ -898,11 +880,6 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   }
 
-  if(nitems < 1L) {
-    param$loglik <- matrix("0", nrow = npatterns, ncol = nclasses,
-                           dimnames = list(pattern_names, class_names))
-  }
-
   #### Fixed parameters and equality constraints ####
 
   # Replace the transformed parameter by custom values, if available:
@@ -956,11 +933,6 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
                          init_mvgauss[[i]],
                          init_multinom[[i]])
     names(init_param[[i]]) <- names(param)
-
-    # if(nitems < 1L) {
-    #   init_param[[i]]$loglik <- matrix(0, nrow = npatterns, ncol = nclasses,
-    #                                    dimnames = list(pattern_names, class_names))
-    # }
 
   }
 
