@@ -71,9 +71,9 @@ latInspect.llca <- function(fit,
   rownames(summary_table) <- paste("pattern", 1:nrow(summary_table), sep = "")
 
   # Check the existence of gaussian items:
-  gauss <- "gaussian" %in% item
+  gauss <- "gaussian" %in% variable_type
   # Check the existence of multinomial items:
-  multin <- "multinomial" %in% item
+  multin <- "multinomial" %in% variable_type
 
   # Loglik by case:
   loglik_case <- loglik_case[short2full]
@@ -97,7 +97,7 @@ latInspect.llca <- function(fit,
 
   # Additional outputs for full multinomial models:
   RespConditional <- probCat <- list() # Only for full multinomial models
-  if(all(item == "multinomial")) {
+  if(all(variable_type == "multinomial")) {
 
     classes <- colMeans(fit@transformed_pars$class)
     probCat <- lapply(ClassConditional, FUN = \(mat) {

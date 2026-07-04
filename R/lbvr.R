@@ -58,22 +58,21 @@
 #' @export
 lbvr <- function(model, digits = 4) {
 
-  types <- model@dataList$item
+  types <- model@dataList$variable_type
   posterior <- latInspect(model, "posterior")
 
   n <- model@dataList$nobs
   J <- model@dataList$nitems
-  item_names <- model@dataList$item_names
-  names(types) <- item_names
+  item_names <- names(types)
   K <- ncol(posterior)
-  short2full <- fit@dataList$short2full
+  short2full <- model@dataList$short2full
 
-  cont_vars <- fit@dataList$gaussian$gaussian_names
-  cat_vars  <- fit@dataList$multinomial$multinomial_names
-  data_gaussian <- fit@dataList$gaussian$patterns_gaussian[short2full, , drop = FALSE]
-  data_multinom <- fit@dataList$multinomial$patterns_multinomial[short2full, , drop = FALSE] + 1L
-  n_cont <- length(cont_vars)
-  n_cat <- length(cat_vars)
+  cont_vars <- model@dataList$gaussian$gaussian_names
+  cat_vars  <- model@dataList$multinomial$multinomial_names
+  data_gaussian <- model@dataList$gaussian$patterns_gaussian[short2full, , drop = FALSE]
+  data_multinom <- model@dataList$multinomial$patterns_multinomial[short2full, , drop = FALSE] + 1L
+  n_cont <- model@dataList$gaussian$ngaussian
+  n_cat <- model@dataList$multinomial$nmultinomial
 
   profile <- latInspect(model, what = "item")
   class_means <- sapply(profile[cont_vars], FUN = function(x){ x[1, ] })
