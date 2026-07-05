@@ -268,6 +268,11 @@ lca <- function(data,
     stop("nclasses must be a (vector of) positive integer(s)")
   }
 
+  # Reject empty measurement models:
+  if(length(c(gaussian, multinomial, unlist(outcomes))) == 0L) {
+    stop("At least one indicator or outcome variable must be supplied.")
+  }
+
   # Check that the named indicators, covariates, and outcomes exist in data:
   # Indicators:
   indicators <- c(multinomial, gaussian)
@@ -325,6 +330,13 @@ lca <- function(data,
       "Duplicated variable(s) found as indicator, covariate, or outcome: ",
       paste(duplicated_roles, collapse = ", ")
     )
+  }
+
+  # Check that control is either NULL or a list:
+  if(is.null(control)) {
+    control <- list()
+  } else if(!is.list(control)) {
+    stop("control must be NULL or a list.")
   }
 
   #### Class enumeration: run a model for different number of classes ####
@@ -583,11 +595,16 @@ create_lca_dataList <- function(data = NULL,
   #### Add each outcome to a likelihood model ####
 
   if(is.list(outcomes)) {
+    if(is.null(names(outcomes)) || any(names(outcomes) == "")) {
+      stop("All elements in outcomes must be named.")
+    }
     # Check for unknown likelihoods:
     unknown <- setdiff(names(outcomes), c("gaussian", "multinomial"))
     if(length(unknown) > 0L) {
-      stop("Unknown outcome likelihood(s): ",
-           paste(unknown, collapse = ", "))
+      stop(
+        "Unknown outcome likelihood(s): ",
+        paste(unknown, collapse = ", ")
+      )
     }
   }
 
@@ -627,7 +644,6 @@ create_lca_dataList <- function(data = NULL,
   # Create the matrix of predictors for latent class probabilities:
   # covariates must be a character vector with the name of the predictors in data:
   design <- make_design_matrix(covariates = covariates_names,
-                               # data = patterns[, covariates_names, drop = FALSE])
                                data = data)
   pdesign <- ncol(design) # Number of columns of the design matrix
 
@@ -1150,7 +1166,6 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
   idx_transformed <- unlist(lapply(control_transform,
                                    FUN = \(x) unlist(x$indices_out)+1L))
-  # if(isTRUE(control$stop)) stop("AHHHH")
   inits <- create_init(trans, param, init_param,
                        idx_transformed = idx_transformed, control)
 
@@ -1196,12 +1211,6 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 lca_control <- function(control) {
 
   # Auxiliary function for lca.R
-
-  if(is.null(control)) {
-    control <- list()
-  } else if(!is.list(control)) {
-    stop("control must be NULL or a list.")
-  }
 
   # Control input
 
@@ -1336,7 +1345,7 @@ make_design_matrix <- function(covariates, data) {
 
   nobs <- nrow(data)
 
-  if (is.null(covariates)) {
+  if(is.null(covariates) || length(covariates) == 0L) {
 
     X <- matrix(
       1,
@@ -1347,7 +1356,7 @@ make_design_matrix <- function(covariates, data) {
 
   } else {
 
-    if (!is.character(covariates)) {
+    if(!is.character(covariates)) {
       stop("covariates must be NULL or a character vector with variable names in data.")
     }
 
@@ -1363,7 +1372,7 @@ make_design_matrix <- function(covariates, data) {
     # Rename factor dummy columns:
     fac_cols <- names(X_df)[vapply(X_df, is.factor, logical(1L))]
 
-    for (v in fac_cols) {
+    for(v in fac_cols) {
 
       term_id <- match(v, attr(terms(~ . + 1, data = X_df), "term.labels"))
       i <- which(attr(X, "assign") == term_id)
@@ -1377,6 +1386,7 @@ make_design_matrix <- function(covariates, data) {
   }
 
   return(X)
+
 }
 
 extract_cov_pairs <- function(model) {
@@ -1498,7 +1508,7 @@ group_connected_pairs <- function(pairs) {
     }
 
     # Pairs involved in this connected component
-    pair_idx <- lhs %in% group | rhs %in% group
+    pair_idx <- lhs %in% group & rhs %in% group
 
     element_groups[[length(element_groups) + 1L]] <- group
     pair_groups[[length(pair_groups) + 1L]] <- pairs[pair_idx, , drop = FALSE]
@@ -1916,7 +1926,7 @@ lca_ml <- function(data,
   log_class_error <- log(class_error)
   log_class_error <- apply(log_class_error, MARGIN = 1L,
                            FUN = \(x) x - x[1L])
-  # t(apply(log_class_error, 2, soft, a=1)) / log_class_error
+  # t(apply(log_class_error, 2, soft, a=1)) / class_error
 
   #### Step 3: Fitting the structural part using the states ####
 
@@ -1997,7 +2007,7 @@ objects_multinomial_lca <- function(data, patterns, multinomial, nclasses) {
     pi_hat_list <- list()
     eta_hat_list <- list()
     j <- 1L
-    for(name in multinomial_names) { # PUT THIS IN DATALIST
+    for(name in multinomial_names) {
 
       int_vector <- measurement[, name]
       int_vector <- int_vector[!is.na(int_vector)] # Remove missing values
@@ -2085,11 +2095,19 @@ objects_mvgaussian_lca <- function(data, patterns, mvgaussian, nclasses, target)
                                        na.rm = TRUE),
                               times = nclasses), nrow = nmvgaussian,
                           ncol = nclasses)
-    init_logsigma <- matrix(rep(apply(data[, mvgaussian_names, drop = FALSE],
-                                      MARGIN = 2,
-                                      FUN = \(x) log(var(x, na.rm = TRUE))),
-                                times = nclasses), nrow = nmvgaussian,
-                            ncol = nclasses)
+
+    v <- apply(data[, mvgaussian_names, drop = FALSE], MARGIN = 2,
+               FUN = stats::var,
+               na.rm = TRUE)
+
+    if(any(!is.finite(v) | v <= 0)) {
+      stop("Multivariate Gaussian variable(s) have zero, undefined, or non-finite variance: ",
+           paste(names(v)[!is.finite(v) | v <= 0], collapse = ", ")
+      )
+    }
+
+    init_logsigma <- matrix(rep(log(v), times = nclasses),
+                            nrow = nmvgaussian, ncol = nclasses )
 
     for(j in 1:nclasses) {
       init_sigma[[j]] <- cov(data[, mvgaussian_names, drop = FALSE],
