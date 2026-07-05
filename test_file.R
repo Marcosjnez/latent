@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/07/2026
+# Modification date: 05/07/2026
 
 #### Store a dataset ####
 
@@ -235,14 +235,14 @@ fit3 <- lca(data = empathy,
             # outcomes = list(gaussian = c("pt5")),
             adjustment = "bk",
             # classification = "modal",
-            model = list("ec2 ~~ ec3"),
+            # model = list("ec2 ~~ ec3"),
             penalties = TRUE,
             do.fit = TRUE)
-SE3 <- se(fit3, type = "standard", digits = 4)
-SE3$se
 latInspect(fit3$structural, what = "loglik")
 # loglik: -1747.135 # penalized_loglik: -1750.566
 # loglik: -2049.840 # penalized_loglik: -2053.322 (outcomes = list(gaussian = c("pt5")))
+# SE3 <- se(fit3, type = "standard", digits = 4)
+# SE3$se
 
 #### CFA ####
 

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/07/2026
+# Modification date: 05/07/2026
 #'
 #' Latent Class Analysis
 #'
@@ -279,7 +279,11 @@ lca <- function(data,
     )
   }
 
+
   # Covariates:
+  if (!is.null(covariates) && !is.character(covariates)) {
+    stop("covariates must be NULL or a character vector with variable names in data.")
+  }
   missing_covariates <- setdiff(covariates, colnames(data))
   if(length(missing_covariates) > 0) {
     stop(
@@ -522,17 +526,6 @@ lca <- function(data,
 
   parameters <- transformed_pars[names(modelInfo$param)]
 
-  #### Process the fit information ####
-
-  loss <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-                            FUN = \(x) x[[1]])))
-  loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-                              FUN = \(x) x[[4]])))
-  penalty <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-                               FUN = \(x) x[[7]])))
-  penalized_loss <- loss + penalty
-  penalized_loglik <- loglik - penalty
-
   #### latent object ####
 
   elapsed <- Optim$elapsed
@@ -572,8 +565,31 @@ create_lca_dataList <- function(data = NULL,
   indicators_names <- intersect(c(multinomial, gaussian), colnames(data))
   covariates_names <- intersect(covariates, colnames(data))
   outcomes_names <- intersect(unlist(outcomes), colnames(data))
+  variables <- c(indicators_names, covariates_names, outcomes_names)
+
+  # Check for all missing variables:
+  all_missing <- vapply(
+    data[, variables, drop = FALSE],
+    FUN = function(x) all(is.na(x)),
+    FUN.VALUE = logical(1L)
+  )
+  if (any(all_missing)) {
+    stop(
+      "The following variable(s) have only missing values: ",
+      paste(names(all_missing)[all_missing], collapse = ", ")
+    )
+  }
 
   #### Add each outcome to a likelihood model ####
+
+  if(is.list(outcomes)) {
+    # Check for unknown likelihoods:
+    unknown <- setdiff(names(outcomes), c("gaussian", "multinomial"))
+    if(length(unknown) > 0L) {
+      stop("Unknown outcome likelihood(s): ",
+           paste(unknown, collapse = ", "))
+    }
+  }
 
   # If outcomes is a character vector, transform it into a named likelihood list
   if(is.character(outcomes)) {
@@ -638,10 +654,28 @@ create_lca_dataList <- function(data = NULL,
       " removed."
     )
 
-    design <- design[-remove, ]
-    data <- data[-remove, ]
+    design <- design[-remove, , drop = FALSE]
+    data <- data[-remove, , drop = FALSE]
     weights <- weights[-remove]
 
+  }
+
+  if(nrow(data) == 0L) {
+    stop("No observations remain after removing rows with missing covariates.")
+  }
+
+  # Check for all missing variables again:
+  all_missing <- vapply(
+    data[, variables, drop = FALSE],
+    FUN = function(x) all(is.na(x)),
+    FUN.VALUE = logical(1L)
+  )
+  if(any(all_missing)) {
+    stop(
+      "The following variable(s) have only missing values after removing rows
+      with missing covariates: ",
+      paste(names(all_missing)[all_missing], collapse = ", ")
+    )
   }
 
   # Number of subjects after removing rows with missingness in the covariates:
@@ -651,7 +685,6 @@ create_lca_dataList <- function(data = NULL,
 
   any_continuous <- FALSE # If any variable is continuous, don't find patterns
   if(length(gaussian) > 0L) any_continuous <- TRUE
-  variables <- c(indicators_names, covariates_names, outcomes_names)
   patterns <- make_patterns(data = data[, variables, drop = FALSE],
                             weights = weights,
                             any_continuous = any_continuous)
@@ -738,7 +771,6 @@ create_lca_dataList <- function(data = NULL,
   dataList$variables <- variables
   dataList$outcomes <- outcomes
   dataList$variable_type <- variable_type
-  dataList$weights <- patterns$weights
 
   #### Return ####
 
@@ -817,25 +849,6 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   param$beta <- trans$beta
   param$beta[, 1] <- "0"
 
-  # Model for gaussian items:
-  if(dataList$gaussian$any_gaussian) {
-
-    list2env(dataList$gaussian, envir = environment())
-    cl <- length(param)
-    idx_gauss <- (cl + 1L):(cl + ngaussian)
-    param[idx_gauss] <- trans[gaussian_names]
-    # Fix the standard deviations just to avoid that they are taken
-    # as parameters and not as fixed parameters:
-    param[idx_gauss] <- lapply(trans[gaussian_names],
-                               FUN = \(x) {
-                                 x[2, ] <- "1";
-                                 x[4, ] <- "1"
-                                 return(x)
-                               })
-    names(param)[idx_gauss] <- gaussian_names
-
-  }
-
   # Model for multinomial items:
   if(dataList$multinomial$any_multinomial) {
 
@@ -893,6 +906,25 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
         param[[loginter_names[[j]]]][, 1] <- "0"
       }
     }
+
+  }
+
+  # Model for gaussian items:
+  if(dataList$gaussian$any_gaussian) {
+
+    list2env(dataList$gaussian, envir = environment())
+    cl <- length(param)
+    idx_gauss <- (cl + 1L):(cl + ngaussian)
+    param[idx_gauss] <- trans[gaussian_names]
+    # Fix the standard deviations just to avoid that they are taken
+    # as parameters and not as fixed parameters:
+    param[idx_gauss] <- lapply(trans[gaussian_names],
+                               FUN = \(x) {
+                                 x[2, ] <- "1";
+                                 x[4, ] <- "1"
+                                 return(x)
+                               })
+    names(param)[idx_gauss] <- gaussian_names
 
   }
 
@@ -964,10 +996,12 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
     dimnames(init_param[[i]]$beta) <- dimnames(param$beta)
 
     init_param[[i]] <- c(init_param[[i]],
+                         init_multinom[[i]],
                          init_gauss[[i]],
-                         init_mvgauss[[i]],
-                         init_multinom[[i]])
-    names(init_param[[i]]) <- names(param)
+                         init_mvgauss[[i]])
+
+    # Preserve the same order than in param:
+    init_param[[i]] <- init_param[[i]][names(param)]
 
   }
 
@@ -1069,7 +1103,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
                           parameters = c("class", "loglik"),
                           extra = list(S = npatterns,
                                        I = nclasses,
-                                       weights = pattern_weights*weights,
+                                       weights = pattern_weights,
                                        double_names = "lca"))
   G <- G + 1L
 
@@ -1162,6 +1196,12 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 lca_control <- function(control) {
 
   # Auxiliary function for lca.R
+
+  if(is.null(control)) {
+    control <- list()
+  } else if(!is.list(control)) {
+    stop("control must be NULL or a list.")
+  }
 
   # Control input
 
@@ -1264,8 +1304,8 @@ lca_control <- function(control) {
   }
 
   if(is.null(control$cores)) {
-    control$cores <- parallel::detectCores()-1L
-  } else if(control$cores < 0L) {
+    control$cores <- max(1L, parallel::detectCores()-1L)
+  } else if(control$cores < 1L) {
     stop("cores must be a positive integer")
   }
 
@@ -1295,52 +1335,10 @@ lca_control <- function(control) {
 make_design_matrix <- function(covariates, data) {
 
   nobs <- nrow(data)
-  make_X_matrix <- function(X_df) {
-
-    # Transform characters into factors:
-    char_cols <- vapply(X_df, is.character, logical(1L))
-    X_df[char_cols] <- lapply(X_df[char_cols], factor)
-
-    # if (anyNA(X_df)) {
-    #   stop(
-    #     "Missing values were found in the covariates. ",
-    #     "Please use imputation or complete-case data."
-    #   )
-    # }
-
-    # Create the design matrix:
-    X_df <- droplevels(X_df) # Drop absent levels
-    mf <- model.frame(~ . + 1, data = X_df, na.action = na.pass)
-    X_mat  <- model.matrix(~ . + 1, data = mf)
-    # X_mat <- model.matrix(~ . + 1, X_df)
-
-    # Center the variables:
-    # X_mat[, -1] <- scale(X_mat[, -1], center = TRUE, scale = FALSE)
-
-    # Put an underscore between the variable names and their level names:
-    fac_cols <- names(X_df)[vapply(X_df, is.factor, logical(1L))]
-
-    for (v in fac_cols) {
-
-      # Use assign attribute to identify the columns created by each term.
-      # This is safer than startsWith(), because variable names may overlap.
-      term_id <- match(v, attr(terms(~ . + 1, data = X_df), "term.labels"))
-      i <- which(attr(X_mat, "assign") == term_id)
-
-      if (length(i) > 0L) {
-        old_names <- colnames(X_mat)[i]
-        level_names <- sub(paste0("^", v), "", old_names)
-        colnames(X_mat)[i] <- paste0(v, "_", level_names)
-      }
-    }
-
-    X_mat
-  }
 
   if (is.null(covariates)) {
 
-    # Create just the intercept column:
-    covariates <- matrix(
+    X <- matrix(
       1,
       nrow = nobs,
       ncol = 1L,
@@ -1349,28 +1347,36 @@ make_design_matrix <- function(covariates, data) {
 
   } else {
 
-    if (is.character(covariates)) {
-
-      covariates <- data[, covariates, drop = FALSE]
-
-    } else {
-
-      # Check that covariates is either a data.frame or a matrix:
-      if (!is.data.frame(covariates) && !is.matrix(covariates)) {
-        stop("covariates must be a character vector, matrix or data.frame")
-      }
-
-      if (nrow(covariates) != nobs) {
-        stop("Number of cases in the data and covariates does not match")
-      }
+    if (!is.character(covariates)) {
+      stop("covariates must be NULL or a character vector with variable names in data.")
     }
 
-    covariates <- make_X_matrix(as.data.frame(covariates))
+    X_df <- data[, covariates, drop = FALSE]
 
+    # Transform characters into factors:
+    char_cols <- vapply(X_df, is.character, logical(1L))
+    X_df[char_cols] <- lapply(X_df[char_cols], factor)
+
+    # Create design matrix:
+    X <- model.matrix(~ . + 1, X_df)
+
+    # Rename factor dummy columns:
+    fac_cols <- names(X_df)[vapply(X_df, is.factor, logical(1L))]
+
+    for (v in fac_cols) {
+
+      term_id <- match(v, attr(terms(~ . + 1, data = X_df), "term.labels"))
+      i <- which(attr(X, "assign") == term_id)
+
+      if (length(i) > 0L) {
+        old_names <- colnames(X)[i]
+        level_names <- sub(paste0("^", v), "", old_names)
+        colnames(X)[i] <- paste0(v, "_", level_names)
+      }
+    }
   }
 
-  return(covariates)
-
+  return(X)
 }
 
 extract_cov_pairs <- function(model) {
@@ -1426,6 +1432,11 @@ extract_cov_pairs <- function(model) {
   }
 
   pairs <- do.call(rbind, pairs_list)
+
+  # Remove duplicated/reversed pairs:
+  pairs <- t(apply(pairs, 1L, sort))
+  colnames(pairs) <- c("lhs", "rhs")
+  pairs <- unique(pairs)
 
   as.data.frame(pairs, stringsAsFactors = FALSE)
 
@@ -1700,70 +1711,74 @@ check_mvmultinomial <- function(multinomial, model, patterns) {
 
 }
 
-make_patterns <- function(data, weights, any_continuous) {
+make_patterns <- function(data, weights = NULL, any_continuous) {
 
-  if(any_continuous) {
+  nobs <- nrow(data)
 
-    npatterns <- nrow(data)
-    pattern_names <- paste("pattern", 1:npatterns, sep = "")
-    if(is.null(weights)) {
-      weights <- matrix(1, nrow = npatterns, ncol = 1L)
+  if (any_continuous) {
+
+    npatterns <- nobs
+    pattern_names <- paste("pattern", seq_len(npatterns), sep = "")
+
+    pattern_weights <- if (is.null(weights)) {
+      rep(1, nobs)
     } else {
-      weights <- as.matrix(weights)
+      weights
     }
-    rownames(weights) <- pattern_names
 
     result <- list(
       patterns = data,
       npatterns = npatterns,
       pattern_names = pattern_names,
-      pattern_weights = rep(1, times = npatterns),
+      pattern_weights = pattern_weights,
       full2short = seq_len(npatterns),
-      short2full = seq_len(npatterns),
-      weights = weights
+      short2full = seq_len(npatterns)
     )
 
     return(result)
-
   }
 
-  # Collect the unique data patterns. Later, we split again:
-
-  # Add the weights if available:
-  if(is.null(weights)) weights <- matrix(1, nrow = nrow(data), ncol = 1L)
-  data <- cbind(data, weights = weights)
-
-  # Transform to data.table:
   dt <- data.table::as.data.table(data)
+  data_names <- colnames(data)
 
-  # Collect some information:
-  counts_dt <- dt[, .(index = .I[1], count = .N), by = names(dt)]
+  if (is.null(weights)) {
 
-  # Number of unique response patterns:
-  npatterns <- nrow(counts_dt)
-  pattern_names <- paste("pattern", 1:npatterns, sep = "")
+    counts_dt <- dt[
+      ,
+      .(
+        index = .I[1],
+        pattern_weights = .N
+      ),
+      by = data_names
+    ]
 
-  # Measurement data with unique response patterns:
-  patterns <- as.matrix(counts_dt[, colnames(data), with = FALSE])
+  } else {
 
-  # Pattern names:
-  if(length(patterns) > 0L) {
-    rownames(patterns) <- pattern_names
+    dt[, ".weights" := weights]
+
+    counts_dt <- dt[
+      ,
+      .(
+        index = .I[1],
+        pattern_weights = sum(.weights)
+      ),
+      by = data_names
+    ]
   }
 
-  weights <- as.matrix(counts_dt[, "weights", with = FALSE])
-  rownames(weights) <- pattern_names
+  npatterns <- nrow(counts_dt)
+  pattern_names <- paste("pattern", seq_len(npatterns), sep = "")
 
-  # Counts of each response pattern:
-  pattern_weights <- counts_dt$count
+  patterns <- as.matrix(counts_dt[, data_names, with = FALSE])
+  rownames(patterns) <- pattern_names
 
-  # Indices to map the full data to the unique patterns:
+  pattern_weights <- counts_dt$pattern_weights
+
   full2short <- counts_dt$index
 
-  # Indices to map unique patterns to the full data:
   short2full <- match(
-    do.call(paste, dt),
-    do.call(paste, counts_dt[, -c("index", "count"), with = FALSE])
+    do.call(paste, dt[, data_names, with = FALSE]),
+    do.call(paste, counts_dt[, data_names, with = FALSE])
   )
 
   result <- list(
@@ -1772,12 +1787,10 @@ make_patterns <- function(data, weights, any_continuous) {
     pattern_names = pattern_names,
     pattern_weights = pattern_weights,
     full2short = full2short,
-    short2full = short2full,
-    weights = weights
+    short2full = short2full
   )
 
   return(result)
-
 }
 
 #### Structural after measurement methods ####
@@ -1893,7 +1906,7 @@ lca_ml <- function(data,
     data$states <- factor(rep(seq_len(nclasses), times = N),
                                    levels = seq_len(nclasses))
     posterior <- latInspect(fit1, what = "posterior")
-    weights <- as.vector(t(posterior))
+    weights <- as.vector(t(posterior)) # Original weights are overwritten
     class_error <- latInspect(fit1, what = "classification")$class_error_prop
 
   } else {
@@ -1949,8 +1962,9 @@ objects_multinomial_lca <- function(data, patterns, multinomial, nclasses) {
 
     logmultinomial_names <- paste("log", multinomial_names, sep = "_")
 
-    # Transform multinomial variables into factors:
-    measurement <- lapply(data[, multinomial_names, drop = FALSE], FUN = factor)
+    # Transform multinomial variables into factors and drop unused levels:
+    measurement <- lapply(data[, multinomial_names, drop = FALSE],
+                          FUN = function(x) droplevels(factor(x)))
 
     # Save levels of factor variables:
     multinomial_factor_levels <- lapply(measurement, levels)
@@ -2031,8 +2045,9 @@ objects_gaussian_lca <- function(data, patterns, gaussian, nclasses) {
 
       init_mean[[j]] <- rep(mean(data[, name], na.rm = TRUE), times = nclasses)
       v <- stats::var(data[, name], na.rm = TRUE)
-      if(v == 0) {
-        stop("Gaussian variable '", name, "' is constant and thus uninformative.")
+      if (!is.finite(v) || v <= 0) {
+        stop("Gaussian variable '", name,
+             "' has zero, undefined, or non-finite variance.")
       }
       init_var[[j]] <- rep(v, times = nclasses)
       init_logvar[[j]] <- log(init_var[[j]])
@@ -2072,8 +2087,7 @@ objects_mvgaussian_lca <- function(data, patterns, mvgaussian, nclasses, target)
                           ncol = nclasses)
     init_logsigma <- matrix(rep(apply(data[, mvgaussian_names, drop = FALSE],
                                       MARGIN = 2,
-                                      FUN = var,
-                                      na.rm = TRUE),
+                                      FUN = \(x) log(var(x, na.rm = TRUE))),
                                 times = nclasses), nrow = nmvgaussian,
                             ncol = nclasses)
 
@@ -2563,7 +2577,6 @@ transformations_multinomial_lca <- function(trans, dataList) {
 
             group_level <- split(pars_out_softmax, orderings2[, lprob])
             input <- do.call(Map, c(list(f = c), group_level))
-            pars_out_softmax[orderings2[, lprob]]
             transforms[[k]] <- list(transform = "sum_vectors",
                                     parameters_in = input,
                                     parameters_out = list(trans[[lprob]][, i]))
