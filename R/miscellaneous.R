@@ -278,8 +278,11 @@ fixed_values_indices <- function(x_list, y_list) {
 }
 
 create_init <- function(trans, param, init_param,
-                        idx_transformed = integer(0),
-                        control) {
+                        control_transform, control) {
+
+  idx_transformed <- unlist(lapply(control_transform,
+                                   FUN = \(x) unlist(x$indices_out)+1L))
+
   # ---------- helpers ----------
   check_named_list <- function(x, arg_name, allow_empty = TRUE) {
     if (!is.list(x)) {
@@ -469,9 +472,22 @@ create_init <- function(trans, param, init_param,
     parameters[[i]] <- param_vec
   }
 
+  parameters_labels <- names(parameters[[1]])
+  nparam <- length(parameters_labels)
+
+  transparameters_labels <- names(transparameters[[1]])
+  ntrans <- length(transparameters_labels)
+
+  trans2param <- match(parameters_labels, transparameters_labels)
+
   list(
     parameters = parameters,
-    transparameters = transparameters
+    transparameters = transparameters,
+    parameters_labels = parameters_labels,
+    transparameters_labels = transparameters_labels,
+    nparam = nparam,
+    ntrans = ntrans,
+    trans2param = trans2param
   )
 }
 

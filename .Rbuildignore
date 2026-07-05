@@ -6,3 +6,4 @@
 ^\.github$
 ^\.positai$
 ^\.claude$
+^\.posit/assistant$

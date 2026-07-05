@@ -274,7 +274,10 @@ fit <- lcfa(HolzingerSwineford1939,
             do.fit = TRUE)
 
 latInspect(fit, "est")
-latInspect(fit, "loglik")
+latInspect(fit, "loglik") # loglik           -3737.745
+                          # penalized_loglik -3737.745
+                          # loglik_base      -4211.418
+                          # loglik_sat       -3695.092
 getfit(fit)
 
 # With lavaan:
