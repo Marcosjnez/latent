@@ -235,6 +235,7 @@ fit3 <- lca(data = empathy,
             # outcomes = list(gaussian = c("pt5")),
             adjustment = "bk",
             # classification = "modal",
+            model = list("ec2 ~~ ec3"),
             penalties = TRUE,
             do.fit = TRUE)
 SE3 <- se(fit3, type = "standard", digits = 4)

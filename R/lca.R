@@ -303,9 +303,9 @@ lca <- function(data,
 
   # Check overlapping variable roles
 
-  outcome_names <- if (is.null(outcomes)) {
+  outcome_names <- if(is.null(outcomes)) {
     character(0L)
-  } else if (is.character(outcomes)) {
+  } else if(is.character(outcomes)) {
     outcomes
   } else {
     unlist(outcomes, use.names = FALSE)
@@ -316,7 +316,7 @@ lca <- function(data,
 
   duplicated_roles <- unique(all_roles[duplicated(all_roles)])
 
-  if (length(duplicated_roles) > 0L) {
+  if(length(duplicated_roles) > 0L) {
     stop(
       "Duplicated variable(s) found as indicator, covariate, or outcome: ",
       paste(duplicated_roles, collapse = ", ")
@@ -434,12 +434,13 @@ lca <- function(data,
   # the model argument. This is usually done for two or three-step estimation:
 
   control$model <- model
+
   if(inherits(model, "llca")) {
 
     model <- model@parameters
     model$beta <- NULL # Free the covariate coefficients
 
-  } else if(length(model) > 1) {
+  } else if(is.list(model)) {
 
     # Find what objects in model are llca objects:
     llca_obj <- which(vapply(model, inherits, logical(1), what = "llca"))
@@ -456,6 +457,9 @@ lca <- function(data,
       model$beta <- NULL # Free the covariate coefficients
     }
 
+  } else if(!is.null(model)) {
+    stop("model must be a llca object or a list containing parameter blocks
+         or llca objects")
   }
   # Here, the covariate coefficients are always freed if any llca object is
   # identified in the model argument
@@ -1821,7 +1825,7 @@ lca_bakk_kuha <- function(data,
               covariates = covariates,
               outcomes = outcomes,
               penalties = penalties,
-              model = fit1, # FIX: model in first fit is missing
+              model = c(model, fit1),
               weights = weights,
               start = start,
               adjustment = "none",
@@ -1908,7 +1912,7 @@ lca_ml <- function(data,
               multinomial = "states",
               covariates = covariates,
               outcomes = outcomes,
-              model = list(log_states = log_class_error), # FIX: model in first fit is missing
+              model = list(model, log_states = log_class_error),
               weights = weights,
               penalties = penalties,
               start = start,
@@ -1952,6 +1956,13 @@ objects_multinomial_lca <- function(data, patterns, multinomial, nclasses) {
     multinomial_factor_levels <- lapply(measurement, levels)
     multinomial_factor_lengths <- unlist(lapply(multinomial_factor_levels, FUN = length))
     multinomial_reference <- lapply(multinomial_factor_levels, FUN = \(x) x[1])
+
+    problem <- multinomial_factor_lengths < 2L
+    if(any(problem)) {
+      stop("Multinomial variable(s) ",
+           paste0("'", multinomial_names[problem], "'", collapse = ", "),
+           " have fewer than two observed categories.")
+    }
 
     # Transform the factor variables into integers:
     measurement <- as.data.frame(lapply(measurement, FUN = function(col) {
@@ -2018,10 +2029,12 @@ objects_gaussian_lca <- function(data, patterns, gaussian, nclasses) {
     j <- 1L
     for(name in gaussian_names) {
 
-      init_mean[[j]] <- rep(mean(data[, name], na.rm = TRUE),
-                            times = nclasses)
-      init_var[[j]] <- rep(var(data[, name], na.rm = TRUE),
-                           times = nclasses)
+      init_mean[[j]] <- rep(mean(data[, name], na.rm = TRUE), times = nclasses)
+      v <- stats::var(data[, name], na.rm = TRUE)
+      if(v == 0) {
+        stop("Gaussian variable '", name, "' is constant and thus uninformative.")
+      }
+      init_var[[j]] <- rep(v, times = nclasses)
       init_logvar[[j]] <- log(init_var[[j]])
       j <- j+1L
 
