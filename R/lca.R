@@ -947,8 +947,16 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   if(dataList$mvgaussian$any_mvgaussian) {
 
     list2env(dataList$mvgaussian, envir = environment())
-    param$means <- trans$means
-    param$logsigma <- trans$logsigma
+    # param$means <- trans$means
+    # param$logsigma <- trans$logsigma
+    param[mvgaussian_names] <- trans[mvgaussian_names]
+    param[mvgaussian_names] <- lapply(trans[mvgaussian_names],
+                                      FUN = \(x) {
+                                        x[2, ] <- "1";
+                                        x[4, ] <- "1"
+                                        return(x)
+                                      })
+
     # param[sigma_name] <- trans[sigma_names]
     sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
     ordering <- rownames(trans[[sigma_names[1]]])
@@ -2136,33 +2144,31 @@ objects_mvgaussian_lca <- function(data, patterns, mvgaussian, nclasses, target)
 
   if(any_mvgaussian) {
 
-    init_sigma <- list()
+    init_mean <- init_var <- init_logvar <- init_sigma <- list()
     sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
-    init_mvmean <- matrix(rep(colMeans(data[, mvgaussian_names, drop = FALSE],
-                                       na.rm = TRUE),
-                              times = nclasses), nrow = nmvgaussian,
-                          ncol = nclasses)
+    j <- 1L
+    for(name in mvgaussian_names) {
 
-    v <- apply(data[, mvgaussian_names, drop = FALSE], MARGIN = 2,
-               FUN = stats::var,
-               na.rm = TRUE)
+      init_mean[[j]] <- rep(mean(data[, name], na.rm = TRUE), times = nclasses)
+      v <- stats::var(data[, name], na.rm = TRUE)
+      if (!is.finite(v) || v <= 0) {
+        stop("Gaussian variable '", name,
+             "' has zero, undefined, or non-finite variance.")
+      }
+      init_var[[j]] <- rep(v, times = nclasses)
+      init_logvar[[j]] <- log(init_var[[j]])
+      j <- j+1L
 
-    if(any(!is.finite(v) | v <= 0)) {
-      stop("Multivariate Gaussian variable(s) have zero, undefined, or non-finite variance: ",
-           paste(names(v)[!is.finite(v) | v <= 0], collapse = ", ")
-      )
     }
-
-    init_logsigma <- matrix(rep(log(v), times = nclasses),
-                            nrow = nmvgaussian, ncol = nclasses )
 
     for(j in 1:nclasses) {
       init_sigma[[j]] <- cov(data[, mvgaussian_names, drop = FALSE],
                              use = "pairwise.complete.obs")
     }
 
-    mvgaussian$init_mvmean <- init_mvmean
-    mvgaussian$init_logsigma <- init_logsigma
+    mvgaussian$init_mean <- init_mean
+    mvgaussian$init_logvar <- init_logvar
+    mvgaussian$init_var <- init_var
     mvgaussian$init_sigma <- init_sigma
     mvgaussian$patterns_mvgaussian <- as.matrix(
       data[patterns$full2short, mvgaussian_names, drop = FALSE])
@@ -2332,7 +2338,7 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
   list2env(dataList, envir = environment())
 
   class_names <- paste("Class", 1:nclasses, sep = "")
-  sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
+  sigma_names <- paste("Sigma|Class", 1:nclasses, sep = "")
   list_struct <- list()
   k <- 1L
 
@@ -2340,57 +2346,50 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
   list2env(mvgaussian, envir = environment())
   if(any_mvgaussian) {
 
-    # Use the same labels that univariate Gaussian items would have.
-    # For a univariate Gaussian item, row 1 is the mean and row 3 is log(var).
-    mean_labels <- matrix(
-      paste0(
-        rep(mvgaussian_names, times = nclasses),
-        "[1,",
-        rep(seq_len(nclasses), each = nmvgaussian),
-        "]"
-      ),
-      nrow = nmvgaussian,
-      ncol = nclasses,
-      dimnames = list(mvgaussian_names, class_names)
-    )
+    for(name in mvgaussian_names) {
 
-    logsigma_labels <- matrix(
-      paste0(
-        rep(mvgaussian_names, times = nclasses),
-        "[3,",
-        rep(seq_len(nclasses), each = nmvgaussian),
-        "]"
-      ),
-      nrow = nmvgaussian,
-      ncol = nclasses,
-      dimnames = list(mvgaussian_names, class_names)
-    )
+      list_struct[[k]] <- list(name = name,
+                               type = "matrix",
+                               dim = c(4L, nclasses),
+                               rownames = c("mean",
+                                            "var",
+                                            "log(var)",
+                                            "stdv"),
+                               colnames = class_names)
+      k <- k+1L
 
-    list_struct[[k]] <- list(name = "means",
-                             type = "matrix",
-                             dim = c(nmvgaussian, nclasses),
-                             rownames = mvgaussian_names,
-                             colnames = class_names,
-                             labels = mean_labels)
-    k <- k+1L
-
-    list_struct[[k]] <- list(name = "logsigma",
-                             type = "matrix",
-                             dim = c(nmvgaussian, nclasses),
-                             rownames = mvgaussian_names,
-                             colnames = class_names,
-                             labels = logsigma_labels)
-    k <- k+1L
+    }
 
     # Sigma:
     for(j in seq_len(nclasses)) {
+
+      # Set the name of the conditional covariances:
+      sigma_labels <- matrix(
+        paste0(
+          rep(mvgaussian_names, times = nmvgaussian),
+          "[2,",
+          rep(seq_len(nmvgaussian), each = nmvgaussian),
+          "|Class",
+          j,
+          "]"
+        ),
+        nrow = nmvgaussian,
+        ncol = nmvgaussian,
+        dimnames = list(mvgaussian_names, mvgaussian_names)
+      )
+      # Fix the labels of the univariate gaussian model (variances)
+      diag(sigma_labels) <- paste(mvgaussian_names,
+                                  "[2,",
+                                  j, "]",
+                                  sep = "")
 
       list_struct[[k]] <- list(name = sigma_names[j],
                                type = "matrix",
                                dim = c(nmvgaussian, nmvgaussian),
                                rownames = mvgaussian_names,
                                colnames = mvgaussian_names,
-                               symmetric = TRUE)
+                               symmetric = TRUE,
+                               labels = sigma_labels)
       k <- k+1L
 
     }
@@ -2527,12 +2526,20 @@ start_mvgaussian_lca <- function(param, dataList, rstarts) {
     # Initial values for multivariate gaussian items:
     if(any_mvgaussian) {
 
-      # TO-DO: ALLOW RANDOM STARTING VALUES
+      for(name in mvgaussian_names) {
 
-      init_param[[i]][["means"]] <- init_mvmean
-      init_param[[i]][["logsigma"]] <- init_logsigma
-      dimnames(init_param[[i]][["means"]]) <-
-        dimnames(init_param[[i]][["logsigma"]]) <- dimnames(param[["means"]])
+        rmean <- init_mean[[j]] + rnorm(nclasses,
+                                        mean = 0,
+                                        sd = init_var[[j]]/sqrt(nobs))
+        init_param[[i]][[name]] <- rbind(rmean,
+                                         init_var[[j]],
+                                         init_logvar[[j]],
+                                         sqrt(init_var[[j]]))
+        dimnames(init_param[[i]][[name]]) <-
+          dimnames(param[[name]])
+        j <- j+1L
+
+      }
 
       for(j in 1:nclasses) {
 
@@ -2782,15 +2789,28 @@ transformations_mvgaussian_lca <- function(trans, dataList) {
   list2env(mvgaussian, envir = environment())
   if(any_mvgaussian) {
 
-    vars <- unname(do.call(c, lapply(trans[sigma_names], FUN = \(x) diag(x))))
+    means <- c(do.call(rbind, lapply(trans[mvgaussian_names],
+                                     FUN = \(x) x[1, ])))
+    vars <- c(do.call(rbind, lapply(trans[mvgaussian_names],
+                                    FUN = \(x) x[2, ])))
+    log_vars <- c(do.call(rbind, lapply(trans[mvgaussian_names],
+                                        FUN = \(x) x[3, ])))
+    stdv <- c(do.call(rbind, lapply(trans[mvgaussian_names],
+                                    FUN = \(x) x[4, ])))
 
     transforms[[k]] <- list(transform = "exponential",
-                            parameters_in = list(trans$logsigma),
+                            parameters_in = list(log_vars),
                             parameters_out = list(vars))
     k <- k+1L
 
+    transforms[[k]] <- list(transform = "sqrt_vector",
+                            parameters_in = list(vars),
+                            parameters_out = list(stdv),
+                            extra = list())
+    k <- k+1L
+
     transforms[[k]] <- list(transform = "mvnormal2",
-                            parameters_in = list(unlist(trans$means),
+                            parameters_in = list(unlist(means),
                                                  unlist(trans[sigma_names]),
                                                  trans$loglik),
                             parameters_out = list(trans$loglik),
