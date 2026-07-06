@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/07/2026
+# Modification date: 06/07/2026
 #'
 #' Latent Class Analysis
 #'
@@ -246,7 +246,7 @@ lca <- function(data,
   if(!is.null(weights)) {
 
     if(!is.numeric(weights) ||
-       any(weights < 0) ||
+       any(weights <= 0) ||
        !all(is.finite(weights))) {
       stop("weights must be a positive numeric vector.")
     }
@@ -286,7 +286,7 @@ lca <- function(data,
 
 
   # Covariates:
-  if (!is.null(covariates) && !is.character(covariates)) {
+  if(!is.null(covariates) && !is.character(covariates)) {
     stop("covariates must be NULL or a character vector with variable names in data.")
   }
   missing_covariates <- setdiff(covariates, colnames(data))
@@ -560,7 +560,7 @@ create_lca_dataList <- function(data = NULL,
     FUN = function(x) all(is.na(x)),
     FUN.VALUE = logical(1L)
   )
-  if (any(all_missing)) {
+  if(any(all_missing)) {
     stop(
       "The following variable(s) have only missing values: ",
       paste(names(all_missing)[all_missing], collapse = ", ")
@@ -947,8 +947,6 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   if(dataList$mvgaussian$any_mvgaussian) {
 
     list2env(dataList$mvgaussian, envir = environment())
-    # param$means <- trans$means
-    # param$logsigma <- trans$logsigma
     param[mvgaussian_names] <- trans[mvgaussian_names]
     param[mvgaussian_names] <- lapply(trans[mvgaussian_names],
                                       FUN = \(x) {
@@ -958,7 +956,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
                                       })
 
     # param[sigma_name] <- trans[sigma_names]
-    sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
+    sigma_names <- paste("Sigma|Class", 1:nclasses, sep = "")
     ordering <- rownames(trans[[sigma_names[1]]])
     target <- target[ordering, ordering]
     for(j in 1:nclasses) {
@@ -1278,23 +1276,23 @@ lca_control <- function(control) {
     Sigma = list(alpha = 1)
   )
 
-  if (isFALSE(control$penalties)) {
+  if(isFALSE(control$penalties)) {
 
     control$reg <- FALSE
 
-  } else if (isTRUE(control$penalties)) {
+  } else if(isTRUE(control$penalties)) {
 
     control$reg <- TRUE
     control$penalties <- penalty_defaults
 
-  } else if (is.list(control$penalties)) {
+  } else if(is.list(control$penalties)) {
 
     control$reg <- TRUE
 
     # Check that all supplied penalty names are valid
     unknown_penalties <- setdiff(names(control$penalties), names(penalty_defaults))
 
-    if (length(unknown_penalties) > 0L) {
+    if(length(unknown_penalties) > 0L) {
       stop(
         "Unknown penalty name(s): ",
         paste(unknown_penalties, collapse = ", ")
@@ -1422,7 +1420,9 @@ make_design_matrix <- function(covariates, data) {
     X_df[char_cols] <- lapply(X_df[char_cols], factor)
 
     # Create design matrix:
-    X <- model.matrix(~ . + 1, X_df)
+    X_df <- droplevels(X_df) # Drop absent levels
+    mf <- model.frame(~ . + 1, data = X_df, na.action = na.pass)
+    X  <- model.matrix(~ . + 1, data = mf)
 
     # Rename factor dummy columns:
     fac_cols <- names(X_df)[vapply(X_df, is.factor, logical(1L))]
@@ -1432,7 +1432,7 @@ make_design_matrix <- function(covariates, data) {
       term_id <- match(v, attr(terms(~ . + 1, data = X_df), "term.labels"))
       i <- which(attr(X, "assign") == term_id)
 
-      if (length(i) > 0L) {
+      if(length(i) > 0L) {
         old_names <- colnames(X)[i]
         level_names <- sub(paste0("^", v), "", old_names)
         colnames(X)[i] <- paste0(v, "_", level_names)
@@ -1447,11 +1447,11 @@ make_design_matrix <- function(covariates, data) {
 extract_cov_pairs <- function(model) {
 
   flatten_text <- function(x) {
-    if (is.null(x)) {
+    if(is.null(x)) {
       return(character(0))
     }
 
-    if (is.list(x)) {
+    if(is.list(x)) {
       return(unlist(lapply(x, flatten_text), use.names = FALSE))
     }
 
@@ -1461,14 +1461,14 @@ extract_cov_pairs <- function(model) {
 
   txt <- flatten_text(model)
 
-  if (length(txt) == 0L || !any(grepl("~~", txt, fixed = TRUE))) {
+  if(length(txt) == 0L || !any(grepl("~~", txt, fixed = TRUE))) {
     return(NULL)
   }
 
   lines <- unlist(strsplit(txt, "\n", fixed = TRUE), use.names = FALSE)
   lines <- trimws(lines[grepl("~~", lines, fixed = TRUE)])
 
-  if (length(lines) == 0L) {
+  if(length(lines) == 0L) {
     return(NULL)
   }
 
@@ -1480,7 +1480,7 @@ extract_cov_pairs <- function(model) {
     vars <- trimws(unlist(strsplit(line, "\\s*~~\\s*"), use.names = FALSE))
     vars <- vars[nzchar(vars)]
 
-    if (length(vars) < 2L) {
+    if(length(vars) < 2L) {
       return(NULL)
     }
 
@@ -1492,7 +1492,7 @@ extract_cov_pairs <- function(model) {
 
   pairs_list <- Filter(Negate(is.null), pairs_list)
 
-  if (length(pairs_list) == 0L) {
+  if(length(pairs_list) == 0L) {
     return(NULL)
   }
 
@@ -1509,14 +1509,14 @@ extract_cov_pairs <- function(model) {
 
 group_connected_pairs <- function(pairs) {
 
-  if (!is.data.frame(pairs) || ncol(pairs) < 2L) {
+  if(!is.data.frame(pairs) || ncol(pairs) < 2L) {
     stop("`pairs` must be a data.frame with at least two columns.")
   }
 
   lhs <- as.character(pairs[[1L]])
   rhs <- as.character(pairs[[2L]])
 
-  if (anyNA(lhs) || anyNA(rhs)) {
+  if(anyNA(lhs) || anyNA(rhs)) {
     stop("`pairs` cannot contain NA values.")
   }
 
@@ -1541,7 +1541,7 @@ group_connected_pairs <- function(pairs) {
 
   for (el in elements) {
 
-    if (visited[[el]]) next
+    if(visited[[el]]) next
 
     stack <- el
     group <- character()
@@ -1551,7 +1551,7 @@ group_connected_pairs <- function(pairs) {
       current <- stack[[1L]]
       stack <- stack[-1L]
 
-      if (visited[[current]]) next
+      if(visited[[current]]) next
 
       visited[[current]] <- TRUE
       group <- c(group, current)
@@ -1594,11 +1594,11 @@ check_mvgaussian <- function(gaussian, model) {
 
     error_covs <- NULL
 
-    if (!is.null(model)) {
+    if(!is.null(model)) {
       error_covs <- extract_cov_pairs(model)
     }
 
-    if (!is.null(error_covs)) {
+    if(!is.null(error_covs)) {
 
       error_covs$lhs <- as.character(error_covs$lhs)
       error_covs$rhs <- as.character(error_covs$rhs)
@@ -1610,11 +1610,11 @@ check_mvgaussian <- function(gaussian, model) {
 
       error_covs <- error_covs[keep, , drop = FALSE]
 
-      if (nrow(error_covs) > 0L) {
+      if(nrow(error_covs) > 0L) {
 
         candidate_mvgaussian <- unique(c(error_covs$lhs, error_covs$rhs))
 
-        if (length(candidate_mvgaussian) > 1L) {
+        if(length(candidate_mvgaussian) > 1L) {
 
           mvgaussian <- candidate_mvgaussian
           nmvgaussian <- length(mvgaussian)
@@ -1662,11 +1662,11 @@ check_mvmultinomial <- function(multinomial, model, patterns) {
     # Define the joint probability parameters:
     error_covs <- NULL
 
-    if (!is.null(model)) {
+    if(!is.null(model)) {
       error_covs <- extract_cov_pairs(model)
     }
 
-    if (!is.null(error_covs)) {
+    if(!is.null(error_covs)) {
 
       error_covs$lhs <- as.character(error_covs$lhs)
       error_covs$rhs <- as.character(error_covs$rhs)
@@ -1731,7 +1731,7 @@ check_mvmultinomial <- function(multinomial, model, patterns) {
 
         patterns_mvmultinomial_recoded <- lapply(patterns_mvmultinomial,
                                                  FUN = function(col) {
-                                                   if (is.factor(col)) as.integer(col) - 1L else col
+                                                   if(is.factor(col)) as.integer(col) - 1L else col
                                                  })
         patterns_mvmultinomial_recoded <-
           as.matrix(as.data.frame(patterns_mvmultinomial_recoded))
@@ -1780,12 +1780,12 @@ make_patterns <- function(data, weights = NULL, any_continuous) {
 
   nobs <- nrow(data)
 
-  if (any_continuous) {
+  if(any_continuous) {
 
     npatterns <- nobs
-    pattern_names <- paste("pattern", seq_len(npatterns), sep = "")
+    pattern_names <- rownames(data)
 
-    pattern_weights <- if (is.null(weights)) {
+    pattern_weights <- if(is.null(weights)) {
       rep(1, nobs)
     } else {
       weights
@@ -1806,7 +1806,7 @@ make_patterns <- function(data, weights = NULL, any_continuous) {
   dt <- data.table::as.data.table(data)
   data_names <- colnames(data)
 
-  if (is.null(weights)) {
+  if(is.null(weights)) {
 
     counts_dt <- dt[
       ,
@@ -2045,7 +2045,7 @@ objects_multinomial_lca <- function(data, patterns, multinomial, nclasses) {
 
     # Transform the factor variables into integers:
     measurement <- as.data.frame(lapply(measurement, FUN = function(col) {
-      if (is.factor(col)) as.integer(col) - 1L else col
+      if(is.factor(col)) as.integer(col) - 1L else col
     }))
 
     multinomial <- list(multinomial_names = multinomial_names,
@@ -2056,7 +2056,6 @@ objects_multinomial_lca <- function(data, patterns, multinomial, nclasses) {
                         multinomial_reference = multinomial_reference)
     # Check which multinomial items are ordered:
     idx <- unlist(lapply(data[, multinomial_names, drop = FALSE], FUN = is.ordered))
-    ordered_multinomial <- multinomial_names[idx]
 
     # For starting values:
     pi_hat_list <- list()
@@ -2110,7 +2109,7 @@ objects_gaussian_lca <- function(data, patterns, gaussian, nclasses) {
 
       init_mean[[j]] <- rep(mean(data[, name], na.rm = TRUE), times = nclasses)
       v <- stats::var(data[, name], na.rm = TRUE)
-      if (!is.finite(v) || v <= 0) {
+      if(!is.finite(v) || v <= 0) {
         stop("Gaussian variable '", name,
              "' has zero, undefined, or non-finite variance.")
       }
@@ -2145,13 +2144,13 @@ objects_mvgaussian_lca <- function(data, patterns, mvgaussian, nclasses, target)
   if(any_mvgaussian) {
 
     init_mean <- init_var <- init_logvar <- init_sigma <- list()
-    sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
+    sigma_names <- paste("Sigma|Class", 1:nclasses, sep = "")
     j <- 1L
     for(name in mvgaussian_names) {
 
       init_mean[[j]] <- rep(mean(data[, name], na.rm = TRUE), times = nclasses)
       v <- stats::var(data[, name], na.rm = TRUE)
-      if (!is.finite(v) || v <= 0) {
+      if(!is.finite(v) || v <= 0) {
         stop("Gaussian variable '", name,
              "' has zero, undefined, or non-finite variance.")
       }
@@ -2166,6 +2165,7 @@ objects_mvgaussian_lca <- function(data, patterns, mvgaussian, nclasses, target)
                              use = "pairwise.complete.obs")
     }
 
+    mvgaussian$sigma_names <- sigma_names
     mvgaussian$init_mean <- init_mean
     mvgaussian$init_logvar <- init_logvar
     mvgaussian$init_var <- init_var
@@ -2338,7 +2338,6 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
   list2env(dataList, envir = environment())
 
   class_names <- paste("Class", 1:nclasses, sep = "")
-  sigma_names <- paste("Sigma|Class", 1:nclasses, sep = "")
   list_struct <- list()
   k <- 1L
 
@@ -2515,7 +2514,6 @@ start_mvgaussian_lca <- function(param, dataList, rstarts) {
   list2env(mvgaussian, envir = environment())
 
   nclasses <- ncol(param$beta)
-  sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
   init_param <- vector("list", length = rstarts)
 
   for(i in 1:rstarts) {
@@ -2781,7 +2779,6 @@ transformations_mvgaussian_lca <- function(trans, dataList) {
   list2env(dataList, envir = environment())
 
   nclasses <- ncol(trans$beta)
-  sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
   transforms <- list()
   k <- 1L
 
@@ -2939,7 +2936,6 @@ bayes4 <- function(trans, mvgaussian, alpha, nclasses, nobs) {
     list2env(mvgaussian, envir = environment())
     Y <- patterns_mvgaussian[, mvgaussian_names, drop = FALSE]
     D <- diag(apply(Y, MARGIN = 2, FUN = var, na.rm = TRUE)*(nobs-1)/nobs)
-    sigma_names <- paste("sigma|Class", 1:nclasses, sep = "")
     G <- 1L
 
     for(i in 1:nclasses) {
