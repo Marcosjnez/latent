@@ -451,34 +451,9 @@ lca <- function(data,
 
   control$model <- model
 
-  if(inherits(model, "llca")) {
-
-    model <- model@parameters
-    model$beta <- NULL # Free the covariate coefficients
-
-  } else if(is.list(model)) {
-
-    # Find what objects in model are llca objects:
-    llca_obj <- which(vapply(model, inherits, logical(1), what = "llca"))
-
-    # Collect all the @parameters from the llca objects. If some of them are
-    # repeated (i.e., share the same name), then keep the last one:
-    if(length(llca_obj) > 0L) {
-      model <- model[-llca_obj]
-      for (obj in control$model[llca_obj]) {
-        if (inherits(obj, "llca")) {
-          model[names(obj@parameters)] <- obj@parameters
-        }
-      }
-      model$beta <- NULL # Free the covariate coefficients
-    }
-
-  } else if(!is.null(model)) {
-    stop("model must be a llca object or a list containing parameter blocks
-         or llca objects")
+  if(!is.null(model) && !inherits(model, "llca") && !is.list(model)) {
+    stop("model must be a llca object or a list containing parameter blocks or llca objects")
   }
-  # Here, the covariate coefficients are always freed if any llca object is
-  # identified in the model argument
 
   # Get the model specification:
   full_model <- create_lca_model(dataList = dataList,
@@ -805,6 +780,30 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   class_names <- paste("Class", 1:nclasses, sep = "")
   control$class_names <- class_names
 
+  #### Separate llca objects from ordinary model specifications ####
+
+  llca_models <- list()
+
+  if(inherits(model, "llca")) {
+
+    llca_models <- list(model)
+    model <- NULL
+
+  } else if(is.list(model)) {
+
+    llca_obj <- which(vapply(model, inherits, logical(1L), what = "llca"))
+
+    if(length(llca_obj) > 0L) {
+      llca_models <- model[llca_obj]
+      model <- model[-llca_obj]
+
+      if(length(model) == 0L) {
+        model <- NULL
+      }
+    }
+
+  }
+
   #### Model for the transformed parameters ####
 
   pred_names <- colnames(design) # Names of predictors
@@ -965,22 +964,72 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   #### Fixed parameters and equality constraints ####
 
-  # Replace the transformed parameter by custom values, if available:
+  # First, apply ordinary user-supplied parameter blocks, if any.
+  # These still work by block name, as before.
   if(!is.null(model)) {
 
-    # Replace the parameters by custom values:
-
     nm <- intersect(names(model), names(param))
-    nm <- nm[!vapply(model[nm], is.null, logical(1))]
+    nm <- nm[!vapply(model[nm], is.null, logical(1L))]
     param[nm] <- model[nm]
 
   }
 
-  # Set equality constraints in trans:
+  # Second, apply parameters fixed from llca objects by matching parameter labels.
+  # This is more general than matching block names. For example, a parameter
+  # labelled ec2[1,1] can be fixed even if it was in block ec2 in the old model
+  # and is now in block means in the new model.
+  if(length(llca_models) > 0L) {
+
+    fixed_values <- numeric(0L)
+
+    for(obj in llca_models) {
+
+      old_blocks <- intersect(names(obj@modelInfo$param),
+                              names(obj@parameters))
+
+      old_labels <- unlist(obj@modelInfo$param[old_blocks],
+                           use.names = FALSE)
+
+      old_values <- unlist(obj@parameters[old_blocks],
+                           use.names = FALSE)
+
+      keep <- grepl("[A-Za-z]", old_labels)
+      keep <- keep & !grepl("^beta\\[", old_labels)
+
+      old_labels <- old_labels[keep]
+      old_values <- old_values[keep]
+
+      names(old_values) <- old_labels
+
+      # If repeated labels are found across llca objects, keep the last one.
+      fixed_values[names(old_values)] <- old_values
+
+    }
+
+    if(length(fixed_values) > 0L) {
+
+      for(nm in names(param)) {
+
+        x <- param[[nm]]
+        idx <- match(as.character(x), names(fixed_values))
+        replace <- !is.na(idx)
+
+        if(any(replace)) {
+          x[replace] <- fixed_values[idx[replace]]
+          param[[nm]] <- x
+        }
+
+      }
+
+    }
+
+  }
+
+  # Set equality constraints in trans.
 
   # Paste to trans only the alphabetical and alphanumerical elements in param,
   # excluding the numerical elements:
-  for (nm in names(param)) {
+  for(nm in names(param)) {
 
     x <- param[[nm]]
 
@@ -1028,11 +1077,11 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   if(!is.null(control$start)) {
 
     nm <- names(control$start)
-    nm <- nm[!vapply(control$start, is.null, logical(1))]
+    nm <- nm[!vapply(control$start, is.null, logical(1L))]
 
-    for (i in seq_len(control$rstarts)) {
+    for(i in seq_len(control$rstarts)) {
       common_nm <- intersect(nm, names(init_param[[i]]))
-      for (j in common_nm) {
+      for(j in common_nm) {
         init_param[[i]][[j]] <- insert_object(init_param[[i]][[j]],
                                               control$start[[j]])
       }
@@ -2291,22 +2340,50 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
   list2env(mvgaussian, envir = environment())
   if(any_mvgaussian) {
 
+    # Use the same labels that univariate Gaussian items would have.
+    # For a univariate Gaussian item, row 1 is the mean and row 3 is log(var).
+    mean_labels <- matrix(
+      paste0(
+        rep(mvgaussian_names, times = nclasses),
+        "[1,",
+        rep(seq_len(nclasses), each = nmvgaussian),
+        "]"
+      ),
+      nrow = nmvgaussian,
+      ncol = nclasses,
+      dimnames = list(mvgaussian_names, class_names)
+    )
+
+    logsigma_labels <- matrix(
+      paste0(
+        rep(mvgaussian_names, times = nclasses),
+        "[3,",
+        rep(seq_len(nclasses), each = nmvgaussian),
+        "]"
+      ),
+      nrow = nmvgaussian,
+      ncol = nclasses,
+      dimnames = list(mvgaussian_names, class_names)
+    )
+
     list_struct[[k]] <- list(name = "means",
                              type = "matrix",
                              dim = c(nmvgaussian, nclasses),
                              rownames = mvgaussian_names,
-                             colnames = class_names)
+                             colnames = class_names,
+                             labels = mean_labels)
     k <- k+1L
 
     list_struct[[k]] <- list(name = "logsigma",
                              type = "matrix",
                              dim = c(nmvgaussian, nclasses),
                              rownames = mvgaussian_names,
-                             colnames = class_names)
+                             colnames = class_names,
+                             labels = logsigma_labels)
     k <- k+1L
 
     # Sigma:
-    for(j in 1:nclasses) {
+    for(j in seq_len(nclasses)) {
 
       list_struct[[k]] <- list(name = sigma_names[j],
                                type = "matrix",
