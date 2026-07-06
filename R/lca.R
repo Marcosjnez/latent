@@ -865,108 +865,13 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   param$beta[, 1] <- "0"
 
   # Model for multinomial items:
-  if(dataList$multinomial$any_multinomial) {
-
-    list2env(dataList$multinomial, envir = environment())
-    multinomial_param_names <- multinomial_names
-    logmultinomial_param_names <- logmultinomial_names
-
-    if(!is.null(dataList$mvmultinomial)) {
-
-      list2env(dataList$mvmultinomial, envir = environment())
-
-      multinomial_param_names <- multinomial_names[
-        !(multinomial_names %in% removed_multinomial)
-      ]
-      logmultinomial_param_names <- paste("log", multinomial_param_names,
-                                          sep = "_")
-
-    }
-
-    if(length(multinomial_param_names) > 0L) {
-
-      cl <- length(param)
-      idx_multinom <- (cl + 1L):(cl + length(logmultinomial_param_names))
-      param[idx_multinom] <- trans[logmultinomial_param_names]
-      names(param)[idx_multinom] <- logmultinomial_param_names
-
-      # Fix the first item category to zero for identification after the
-      # softmax transformation:
-      param[idx_multinom] <- lapply(param[idx_multinom],
-                                    FUN = \(x) {
-                                      x[1, ] <- "0"; return(x)
-                                    })
-
-    }
-
-    if(!is.null(dataList$mvmultinomial)) {
-
-      # Conditional logs for variables involved in residual dependencies.
-      # These generate P(u_j | reference level of the paired variable), not the
-      # marginal P(u_j). Marginal probabilities are computed later from the
-      # joint probabilities using sum_vectors transformations.
-      cl <- length(param)
-      idx_cond <- (cl + 1L):(cl + nremoved_multinomial)
-      param[idx_cond] <- trans[removed_logmultinomial]
-      names(param)[idx_cond] <- removed_logmultinomial
-
-      param[idx_cond] <- lapply(param[idx_cond],
-                                FUN = \(x) {
-                                  x[1, ] <- "0"; return(x)
-                                })
-
-      param[unlist(loginter_names)] <- trans[unlist(loginter_names)]
-      for(j in 1:npairs) {
-        param[[loginter_names[[j]]]][1, ] <- "0"
-        param[[loginter_names[[j]]]][, 1] <- "0"
-      }
-    }
-
-  }
+  param <- constraints_multinomial_lca(dataList, param, trans)
 
   # Model for gaussian items:
-  if(dataList$gaussian$any_gaussian) {
-
-    list2env(dataList$gaussian, envir = environment())
-    cl <- length(param)
-    idx_gauss <- (cl + 1L):(cl + ngaussian)
-    param[idx_gauss] <- trans[gaussian_names]
-    # Fix the standard deviations just to avoid that they are taken
-    # as parameters and not as fixed parameters:
-    param[idx_gauss] <- lapply(trans[gaussian_names],
-                               FUN = \(x) {
-                                 x[2, ] <- "1";
-                                 x[4, ] <- "1"
-                                 return(x)
-                               })
-    names(param)[idx_gauss] <- gaussian_names
-
-  }
+  param <- constraints_gaussian_lca(dataList, param, trans)
 
   # Model for multivariate gaussian items:
-  if(dataList$mvgaussian$any_mvgaussian) {
-
-    list2env(dataList$mvgaussian, envir = environment())
-    param[mvgaussian_names] <- trans[mvgaussian_names]
-    param[mvgaussian_names] <- lapply(trans[mvgaussian_names],
-                                      FUN = \(x) {
-                                        x[2, ] <- "1";
-                                        x[4, ] <- "1"
-                                        return(x)
-                                      })
-
-    # param[sigma_name] <- trans[sigma_names]
-    sigma_names <- paste("Sigma|Class", 1:nclasses, sep = "")
-    ordering <- rownames(trans[[sigma_names[1]]])
-    target <- target[ordering, ordering]
-    for(j in 1:nclasses) {
-      param[[sigma_names[j]]] <- diag(nmvgaussian)
-      param[[sigma_names[j]]][target] <- trans[[sigma_names[j]]][target]
-      # diag(param[[sigma_names[j]]]) <- diag(trans[[sigma_names[j]]])
-      dimnames(param[[sigma_names[j]]]) <- dimnames(trans[[sigma_names[j]]])
-    }
-
-  }
+  param <- constraints_mvgaussian_lca(dataList, param, trans)
 
   #### Fixed parameters and equality constraints ####
 
@@ -1653,7 +1558,7 @@ check_mvgaussian <- function(gaussian, model) {
 
 check_mvmultinomial <- function(multinomial, model, patterns) {
 
-  mvmultinomial <- NULL
+  mvmultinomial <- list(any_mvmultinomial = FALSE)
 
   if(multinomial$any_multinomial) {
 
@@ -1745,6 +1650,7 @@ check_mvmultinomial <- function(multinomial, model, patterns) {
         removed_multinomial_factor_lengths <- multinomial_factor_lengths[removed_multinomial]
 
         mvmultinomial <- list(
+          any_mvmultinomial = TRUE,
           npairs = npairs,
           pairs = pairs,
           joints = joints,
@@ -2179,30 +2085,25 @@ objects_mvgaussian_lca <- function(data, patterns, mvgaussian, nclasses, target)
 
 }
 
-#### Functions for conditional likelihood models structures ####
+#### Functions for conditional likelihood model structures ####
 
 model_multinomial_lca <- function(nclasses, dataList) {
 
-  list2env(dataList, envir = environment())
+  list2env(dataList$multinomial, envir = environment())
+  list2env(dataList$mvmultinomial, envir = environment())
 
   class_names <- paste("Class", 1:nclasses, sep = "")
   list_struct <- list()
   k <- 1L
 
   # Model for multinomial items:
-  list2env(multinomial, envir = environment())
   if(any_multinomial) {
 
     if(any(multinomial_factor_lengths > 30)) {
       stop("You cannot use a multinomial likelihood to model a variable with more than 30 unique categories")
     }
 
-    has_mvmultinomial <- !is.null(dataList$mvmultinomial)
-    removed_multinomial <- character(0L)
-
-    if(has_mvmultinomial) {
-      list2env(dataList$mvmultinomial, envir = environment())
-    }
+    if(!any_mvmultinomial) removed_multinomial <- character(0L)
 
     for(j in seq_len(nmultinomial)) {
 
@@ -2232,7 +2133,7 @@ model_multinomial_lca <- function(nclasses, dataList) {
 
     }
 
-    if(has_mvmultinomial) {
+    if(any_mvmultinomial) {
 
       # Conditional probability blocks for the multinomial variables involved
       # in residual dependencies. These are probabilities of the levels of one
@@ -2303,14 +2204,13 @@ model_multinomial_lca <- function(nclasses, dataList) {
 
 model_gaussian_lca <- function(nclasses, dataList) {
 
-  list2env(dataList, envir = environment())
+  list2env(dataList$gaussian, envir = environment())
 
   class_names <- paste("Class", 1:nclasses, sep = "")
   list_struct <- list()
   k <- 1L
 
   # Model for gaussian items:
-  list2env(gaussian, envir = environment())
   if(any_gaussian) {
 
     for(name in gaussian_names) {
@@ -2335,14 +2235,13 @@ model_gaussian_lca <- function(nclasses, dataList) {
 
 model_mvgaussian_lca <- function(nclasses, dataList) {
 
-  list2env(dataList, envir = environment())
+  list2env(dataList$mvgaussian, envir = environment())
 
   class_names <- paste("Class", 1:nclasses, sep = "")
   list_struct <- list()
   k <- 1L
 
   # Model for multivariate normal items:
-  list2env(mvgaussian, envir = environment())
   if(any_mvgaussian) {
 
     for(name in mvgaussian_names) {
@@ -2399,13 +2298,123 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
 
 }
 
-#### Functions for starting values of conditional likelihood models ####
+#### Functions for conditional likelihood model constraints ####
+
+constraints_multinomial_lca <- function(dataList, param, trans) {
+
+  list2env(dataList$multinomial, envir = environment())
+  list2env(dataList$mvmultinomial, envir = environment())
+
+  if(any_multinomial) {
+
+    multinomial_param_names <- multinomial_names
+    logmultinomial_param_names <- logmultinomial_names
+
+    if(any_mvmultinomial) {
+
+      multinomial_param_names <- multinomial_names[
+        !(multinomial_names %in% removed_multinomial)
+      ]
+      logmultinomial_param_names <- paste("log", multinomial_param_names,
+                                          sep = "_")
+
+    }
+
+    if(length(multinomial_param_names) > 0L) {
+
+      # Fix the first item category to zero for identification after the
+      # softmax transformation:
+      param[logmultinomial_param_names] <- lapply(trans[logmultinomial_param_names],
+                                                  FUN = \(x) {
+                                                    x[1, ] <- "0"; return(x)
+                                                  })
+
+    }
+
+    if(any_mvmultinomial) {
+
+      # Conditional logs for variables involved in residual dependencies.
+      # These generate P(u_j | reference level of the paired variable), not the
+      # marginal P(u_j). Marginal probabilities are computed later from the
+      # joint probabilities using sum_vectors transformations.
+
+      param[removed_logmultinomial] <- lapply(trans[removed_logmultinomial],
+                                FUN = \(x) {
+                                  x[1, ] <- "0"; return(x)
+                                })
+
+      param[unlist(loginter_names)] <- trans[unlist(loginter_names)]
+      for(j in 1:npairs) {
+        param[[loginter_names[[j]]]][1, ] <- "0"
+        param[[loginter_names[[j]]]][, 1] <- "0"
+      }
+    }
+
+  }
+
+  return(param)
+
+}
+
+constraints_gaussian_lca <- function(dataList, param, trans) {
+
+  list2env(dataList$gaussian, envir = environment())
+
+  if(any_gaussian) {
+
+    # Fix the standard deviations just to avoid that they are taken
+    # as parameters and not as fixed parameters:
+    param[gaussian_names] <- lapply(trans[gaussian_names],
+                                    FUN = \(x) {
+                                      x[2, ] <- "1";
+                                      x[4, ] <- "1"
+                                      return(x)
+                                    })
+
+  }
+
+  return(param)
+
+}
+
+constraints_mvgaussian_lca <- function(dataList, param, trans) {
+
+  list2env(dataList$mvgaussian, envir = environment())
+
+  if(any_mvgaussian) {
+
+    # param[mvgaussian_names] <- trans[mvgaussian_names]
+    param[mvgaussian_names] <- lapply(trans[mvgaussian_names],
+                                      FUN = \(x) {
+                                        x[2, ] <- "1";
+                                        x[4, ] <- "1"
+                                        return(x)
+                                      })
+
+    ordering <- rownames(trans[[sigma_names[1]]])
+    target <- target[ordering, ordering]
+    nclasses <- dataList$args$nclasses
+    for(j in 1:nclasses) {
+      param[[sigma_names[j]]] <- diag(nmvgaussian)
+      param[[sigma_names[j]]][target] <- trans[[sigma_names[j]]][target]
+      # diag(param[[sigma_names[j]]]) <- diag(trans[[sigma_names[j]]])
+      dimnames(param[[sigma_names[j]]]) <- dimnames(trans[[sigma_names[j]]])
+    }
+
+  }
+
+  return(param)
+
+}
+
+#### Functions for starting values of conditional likelihood model parameters ####
 
 start_multinomial_lca <- function(param, dataList, rstarts) {
 
-  list2env(dataList, envir = environment())
-  list2env(multinomial, envir = environment())
+  list2env(dataList$multinomial, envir = environment())
+  list2env(dataList$mvmultinomial, envir = environment())
 
+  nobs <- dataList$nobs
   init_param <- vector("list", length = rstarts)
 
   for(i in 1:rstarts) {
@@ -2415,12 +2424,12 @@ start_multinomial_lca <- function(param, dataList, rstarts) {
     # Initial values for multinomial items:
     if(any_multinomial) {
 
-      multinomial_init_names <- multinomial_names
-      if(!is.null(dataList$mvmultinomial)) {
-        list2env(mvmultinomial, envir = environment())
+      if(any_mvmultinomial) {
         multinomial_init_names <- multinomial_names[
           !(multinomial_names %in% removed_multinomial)
         ]
+      } else {
+        multinomial_init_names <- multinomial_names
       }
 
       for(name in multinomial_init_names) {
@@ -2436,7 +2445,7 @@ start_multinomial_lca <- function(param, dataList, rstarts) {
 
       }
 
-      if(!is.null(dataList$mvmultinomial)) {
+      if(any_mvmultinomial) {
 
         for(name in removed_multinomial) {
 
@@ -2471,16 +2480,15 @@ start_multinomial_lca <- function(param, dataList, rstarts) {
 
 start_gaussian_lca <- function(param, dataList, rstarts) {
 
-  list2env(dataList, envir = environment())
-  list2env(gaussian, envir = environment())
+  list2env(dataList$gaussian, envir = environment())
 
-  nclasses <- ncol(param$beta)
+  nobs <- dataList$nobs
+  nclasses <- dataList$args$nclasses
   init_param <- vector("list", length = rstarts)
 
   for(i in 1:rstarts) {
 
     init_param[[i]] <- list()
-    # Initial values for gaussian items:
     j <- 1L
 
     if(any_gaussian) {
@@ -2510,10 +2518,10 @@ start_gaussian_lca <- function(param, dataList, rstarts) {
 
 start_mvgaussian_lca <- function(param, dataList, rstarts) {
 
-  list2env(dataList, envir = environment())
-  list2env(mvgaussian, envir = environment())
+  list2env(dataList$mvgaussian, envir = environment())
 
-  nclasses <- ncol(param$beta)
+  nobs <- dataList$nobs
+  nclasses <- dataList$args$nclasses
   init_param <- vector("list", length = rstarts)
 
   for(i in 1:rstarts) {
@@ -2559,23 +2567,18 @@ start_mvgaussian_lca <- function(param, dataList, rstarts) {
 transformations_multinomial_lca <- function(trans, dataList) {
 
   list2env(dataList, envir = environment())
+  list2env(multinomial, envir = environment())
+  list2env(mvmultinomial, envir = environment())
 
-  nclasses <- ncol(trans$beta)
+  npatterns <- dataList$npatterns
+  nclasses <- dataList$args$nclasses
   transforms <- list()
   k <- 1L
 
   # Conditional item likelihoods (multinomial):
-  list2env(multinomial, envir = environment())
-  if(multinomial$any_multinomial) {
+  if(any_multinomial) {
 
-    list2env(multinomial, envir = environment())
-
-    has_mvmultinomial <- !is.null(dataList$mvmultinomial)
-    removed_multinomial <- character(0L)
-
-    if(has_mvmultinomial) {
-      list2env(dataList$mvmultinomial, envir = environment())
-    }
+    if(!any_mvmultinomial) removed_multinomial <- character(0L)
 
     multinomial_softmax_names <- multinomial_names[
       !(multinomial_names %in% removed_multinomial)
@@ -2600,7 +2603,7 @@ transformations_multinomial_lca <- function(trans, dataList) {
     }
 
     # Model for the joint probabilities:
-    if(has_mvmultinomial) {
+    if(any_mvmultinomial) {
 
       # Softmax transformations for conditional probabilities. For a pair
       # u1 ~~ u2, these objects represent P(u1 | u2 = reference) and
@@ -2725,14 +2728,14 @@ transformations_multinomial_lca <- function(trans, dataList) {
 
 transformations_gaussian_lca <- function(trans, dataList) {
 
-  list2env(dataList, envir = environment())
+  list2env(dataList$gaussian, envir = environment())
 
-  nclasses <- ncol(trans$beta)
+  nclasses <- dataList$args$nclasses
+  npatterns <- dataList$npatterns
   transforms <- list()
   k <- 1L
 
   # Conditional item likelihoods (gaussian):
-  list2env(gaussian, envir = environment())
   if(any_gaussian) {
 
     means <- c(do.call(rbind, lapply(trans[gaussian_names],
@@ -2776,14 +2779,14 @@ transformations_gaussian_lca <- function(trans, dataList) {
 
 transformations_mvgaussian_lca <- function(trans, dataList) {
 
-  list2env(dataList, envir = environment())
+  list2env(dataList$mvgaussian, envir = environment())
 
-  nclasses <- ncol(trans$beta)
+  npatterns <- dataList$npatterns
+  nclasses <- dataList$args$nclasses
   transforms <- list()
   k <- 1L
 
   # Conditional item likelihoods (multivariate gaussian):
-  list2env(mvgaussian, envir = environment())
   if(any_mvgaussian) {
 
     means <- c(do.call(rbind, lapply(trans[mvgaussian_names],
