@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/07/2026
+# Modification date: 07/07/2026
 #'
 #' Latent Class Analysis
 #'
@@ -690,7 +690,11 @@ create_lca_dataList <- function(data = NULL,
   # means that a given covariance is estimated and FALSE means that it is fixed
   # to zero. The diagonal of target should be FALSE because variances are
   # not estimated directly but parameterized as exp(log variances):
-  gaussian_objects <- check_mvgaussian(gaussian, model)
+  dependencies <- parse_lca_dependencies(model = model,
+                                         gaussian = gaussian,
+                                         multinomial = multinomial)
+
+  gaussian_objects <- check_mvgaussian(gaussian, dependencies)
   # check_mvgaussian outputs gaussian, mvgaussian, and target:
   list2env(gaussian_objects, envir = environment())
 
@@ -735,7 +739,7 @@ create_lca_dataList <- function(data = NULL,
 
   #### Check for residual dependencies in multinomial items ####
 
-  mvmultinomial <- check_mvmultinomial(multinomial, model, patterns)
+  mvmultinomial <- check_mvmultinomial(multinomial, dependencies, patterns)
 
   #### Store objects in dataList ####
 
@@ -756,6 +760,7 @@ create_lca_dataList <- function(data = NULL,
   dataList$mvgaussian <- mvgaussian
   dataList$multinomial <- multinomial
   dataList$mvmultinomial <- mvmultinomial
+  dataList$dependencies <- dependencies
   dataList$indicators_names <- indicators_names
   dataList$covariates_names <- covariates_names
   dataList$outcomes_names <- outcomes_names
@@ -1483,7 +1488,64 @@ group_connected_pairs <- function(pairs) {
   )
 }
 
-check_mvgaussian <- function(gaussian, model) {
+
+parse_lca_dependencies <- function(model, gaussian = NULL, multinomial = NULL) {
+
+  dependencies <- list(
+    all_pairs = NULL,
+    gaussian_pairs = NULL,
+    multinomial_pairs = NULL,
+    multinomial_groups = NULL
+  )
+
+  error_covs <- extract_cov_pairs(model)
+
+  if(is.null(error_covs)) {
+    return(dependencies)
+  }
+
+  error_covs$lhs <- as.character(error_covs$lhs)
+  error_covs$rhs <- as.character(error_covs$rhs)
+
+  dependencies$all_pairs <- error_covs
+
+  # Gaussian residual-dependency pairs:
+  if(length(gaussian) > 1L) {
+
+    keep <- error_covs$lhs %in% gaussian &
+      error_covs$rhs %in% gaussian &
+      error_covs$lhs != error_covs$rhs
+
+    gaussian_pairs <- error_covs[keep, , drop = FALSE]
+
+    if(nrow(gaussian_pairs) > 0L) {
+      dependencies$gaussian_pairs <- gaussian_pairs
+    }
+
+  }
+
+  # Multinomial residual-dependency pairs:
+  if(length(multinomial) > 1L) {
+
+    keep <- error_covs$lhs %in% multinomial &
+      error_covs$rhs %in% multinomial &
+      error_covs$lhs != error_covs$rhs
+
+    multinomial_pairs <- error_covs[keep, , drop = FALSE]
+
+    if(nrow(multinomial_pairs) > 0L) {
+      dependencies$multinomial_pairs <- multinomial_pairs
+      dependencies$multinomial_groups <- group_connected_pairs(multinomial_pairs)
+    }
+
+  }
+
+  return(dependencies)
+
+}
+
+
+check_mvgaussian <- function(gaussian, dependencies = NULL) {
 
   # If at least two items are gaussian, check which of them are involved in
   # covariance structures in the model argument so they are modeled with a
@@ -1495,56 +1557,36 @@ check_mvgaussian <- function(gaussian, model) {
   ngaussian <- length(gaussian)
   mvgaussian <- target <- NULL
 
-  if(ngaussian > 1L) {
+  if(ngaussian > 1L && !is.null(dependencies$gaussian_pairs)) {
 
-    error_covs <- NULL
+    error_covs <- dependencies$gaussian_pairs
 
-    if(!is.null(model)) {
-      error_covs <- extract_cov_pairs(model)
-    }
+    candidate_mvgaussian <- unique(c(error_covs$lhs, error_covs$rhs))
 
-    if(!is.null(error_covs)) {
+    if(length(candidate_mvgaussian) > 1L) {
 
-      error_covs$lhs <- as.character(error_covs$lhs)
-      error_covs$rhs <- as.character(error_covs$rhs)
+      mvgaussian <- candidate_mvgaussian
+      nmvgaussian <- length(mvgaussian)
 
-      # Keep only covariance pairs where both variables are gaussian:
-      keep <- error_covs$lhs %in% gaussian &
-        error_covs$rhs %in% gaussian &
-        error_covs$lhs != error_covs$rhs
+      target <- matrix(
+        FALSE,
+        nrow = nmvgaussian,
+        ncol = nmvgaussian,
+        dimnames = list(mvgaussian, mvgaussian)
+      )
 
-      error_covs <- error_covs[keep, , drop = FALSE]
+      idx <- cbind(
+        match(error_covs$lhs, mvgaussian),
+        match(error_covs$rhs, mvgaussian)
+      )
 
-      if(nrow(error_covs) > 0L) {
+      target[idx] <- TRUE
+      target[idx[, 2:1, drop = FALSE]] <- TRUE
 
-        candidate_mvgaussian <- unique(c(error_covs$lhs, error_covs$rhs))
+      # Remove the variables in error_covs from gaussian:
+      gaussian <- gaussian[!(gaussian %in% mvgaussian)]
+      # These removed variables will be only present in mvgaussian
 
-        if(length(candidate_mvgaussian) > 1L) {
-
-          mvgaussian <- candidate_mvgaussian
-          nmvgaussian <- length(mvgaussian)
-
-          target <- matrix(
-            FALSE,
-            nrow = nmvgaussian,
-            ncol = nmvgaussian,
-            dimnames = list(mvgaussian, mvgaussian)
-          )
-
-          idx <- cbind(
-            match(error_covs$lhs, mvgaussian),
-            match(error_covs$rhs, mvgaussian)
-          )
-
-          target[idx] <- TRUE
-          target[idx[, 2:1, drop = FALSE]] <- TRUE
-
-          # Remove the variables in error_covs from gaussian:
-          gaussian <- gaussian[!(gaussian %in% mvgaussian)]
-          # These removed variables will be only present in mvgaussian
-
-        }
-      }
     }
   }
 
@@ -1556,123 +1598,105 @@ check_mvgaussian <- function(gaussian, model) {
 
 }
 
-check_mvmultinomial <- function(multinomial, model, patterns) {
+
+check_mvmultinomial <- function(multinomial, dependencies = NULL, patterns) {
 
   mvmultinomial <- list(any_mvmultinomial = FALSE)
 
-  if(multinomial$any_multinomial) {
+  if(multinomial$any_multinomial && !is.null(dependencies$multinomial_pairs)) {
 
     list2env(multinomial, envir = environment())
 
-    # Define the joint probability parameters:
-    error_covs <- NULL
+    error_covs <- dependencies$multinomial_pairs
 
-    if(!is.null(model)) {
-      error_covs <- extract_cov_pairs(model)
-    }
+    if(nrow(error_covs) > 0L) {
 
-    if(!is.null(error_covs)) {
+      npairs <- nrow(error_covs)
+      pairs <- vector("list", length = npairs)
+      loginter_names <- vector("list", length = npairs)
 
-      error_covs$lhs <- as.character(error_covs$lhs)
-      error_covs$rhs <- as.character(error_covs$rhs)
+      for(h in seq_len(npairs)) {
 
-      # Keep only pairs where both variables are multinomial:
-      keep <- error_covs$lhs %in% multinomial_names &
-        error_covs$rhs %in% multinomial_names &
-        error_covs$lhs != error_covs$rhs
-
-      error_covs <- error_covs[keep, , drop = FALSE]
-
-      if(nrow(error_covs) > 0L) {
-
-        npairs <- nrow(error_covs)
-        pairs <- vector("list", length = npairs)
-        loginter_names <- vector("list", length = npairs)
-
-        for(h in 1:npairs) {
-
-          pairs[[h]] <- c(error_covs[h, 1], error_covs[h, 2])
-          loginter_names[[h]] <- paste("log_", pairs[[h]], collapse = "x",
-                                       sep = "")
-        }
-
-        names(pairs) <- unlist(lapply(pairs, FUN = paste, collapse = "."))
-
-        removed_multinomial <- unique(unlist(pairs))
-        keep <- multinomial_names[!(multinomial_names %in% removed_multinomial)]
-
-        groups <- group_connected_pairs(error_covs)
-        indep_pairs <- groups$pairs
-        indep_pairs_list <- groups$elements
-        joint_names <- vapply(indep_pairs_list, paste, character(1), collapse = ".")
-        names(indep_pairs) <- names(indep_pairs_list) <- joint_names
-        patterns_original <- patterns$patterns # dataList$patterns_original
-        joints <- lapply(indep_pairs_list, FUN = \(x) {
-          apply(patterns_original[, x], MARGIN = 1, FUN = paste, collapse = ".")
-        })
-        joints <- as.data.frame(joints)
-        new_probs <- unlist(c(keep, colnames(joints)))
-        new_J <- length(new_probs)
-        patterns_mvmultinomial <- data.frame(patterns_original,
-                                             joints)[, new_probs, drop = FALSE]
-        joint_levels <- lapply(indep_pairs_list, FUN = \(x) {
-          apply(expand.grid(multinomial_factor_levels[x]),
-                MARGIN = 1, FUN = paste, collapse = ".")
-        })
-        new_levels <- c(multinomial_factor_levels[keep], joint_levels)
-        new_K <- unlist(lapply(new_levels, FUN = length))
-        for(j in 1:length(new_probs)) {
-          patterns_mvmultinomial[[new_probs[j]]] <-
-            factor(patterns_mvmultinomial[[new_probs[j]]], ordered = TRUE,
-                   levels = new_levels[[j]])
-        }
-        njoints <- length(joint_levels)
-        multinomial_factor_levels_numeric <-
-          setNames(lapply(multinomial_factor_lengths, seq_len),
-                   names(multinomial_factor_lengths))
-        joint_orderings <- lapply(indep_pairs_list, FUN = \(x) {
-          expand.grid(multinomial_factor_levels_numeric[x])
-        })
-
-        patterns_mvmultinomial_recoded <- lapply(patterns_mvmultinomial,
-                                                 FUN = function(col) {
-                                                   if(is.factor(col)) as.integer(col) - 1L else col
-                                                 })
-        patterns_mvmultinomial_recoded <-
-          as.matrix(as.data.frame(patterns_mvmultinomial_recoded))
-
-        nremoved_multinomial <- length(removed_multinomial)
-        removed_logmultinomial <- paste("log_", removed_multinomial,
-                                        "|reference", sep = "")
-        removed_condmultinomial <- paste(removed_multinomial,
-                                         "|reference", sep = "")
-        removed_multinomial_factor_levels <- multinomial_factor_levels[removed_multinomial]
-        removed_multinomial_factor_lengths <- multinomial_factor_lengths[removed_multinomial]
-
-        mvmultinomial <- list(
-          any_mvmultinomial = TRUE,
-          npairs = npairs,
-          pairs = pairs,
-          joints = joints,
-          loginter_names = loginter_names,
-          removed_multinomial = removed_multinomial,
-          new_J = new_J,
-          new_K = new_K,
-          patterns_mvmultinomial = patterns_mvmultinomial,
-          patterns_mvmultinomial_recoded = patterns_mvmultinomial_recoded,
-          nremoved_multinomial = nremoved_multinomial,
-          removed_logmultinomial = removed_logmultinomial,
-          removed_condmultinomial = removed_condmultinomial,
-          removed_multinomial_factor_levels = removed_multinomial_factor_levels,
-          removed_multinomial_factor_lengths = removed_multinomial_factor_lengths,
-          indep_pairs = indep_pairs,
-          indep_pairs_list = indep_pairs_list,
-          new_levels = new_levels,
-          njoints = njoints,
-          joint_orderings = joint_orderings
-        )
-
+        pairs[[h]] <- c(error_covs[h, 1], error_covs[h, 2])
+        loginter_names[[h]] <- paste("log_", pairs[[h]], collapse = "x",
+                                     sep = "")
       }
+
+      names(pairs) <- unlist(lapply(pairs, FUN = paste, collapse = "."))
+
+      removed_multinomial <- unique(unlist(pairs))
+      keep <- multinomial_names[!(multinomial_names %in% removed_multinomial)]
+
+      groups <- dependencies$multinomial_groups
+      indep_pairs <- groups$pairs
+      indep_pairs_list <- groups$elements
+      joint_names <- vapply(indep_pairs_list, paste, character(1), collapse = ".")
+      names(indep_pairs) <- names(indep_pairs_list) <- joint_names
+      patterns_original <- patterns$patterns # dataList$patterns_original
+      joints <- lapply(indep_pairs_list, FUN = \(x) {
+        apply(patterns_original[, x], MARGIN = 1, FUN = paste, collapse = ".")
+      })
+      joints <- as.data.frame(joints)
+      new_probs <- unlist(c(keep, colnames(joints)))
+      new_J <- length(new_probs)
+      patterns_mvmultinomial <- data.frame(patterns_original,
+                                           joints)[, new_probs, drop = FALSE]
+      joint_levels <- lapply(indep_pairs_list, FUN = \(x) {
+        apply(expand.grid(multinomial_factor_levels[x]),
+              MARGIN = 1, FUN = paste, collapse = ".")
+      })
+      new_levels <- c(multinomial_factor_levels[keep], joint_levels)
+      new_K <- unlist(lapply(new_levels, FUN = length))
+      for(j in seq_len(length(new_probs))) {
+        patterns_mvmultinomial[[new_probs[j]]] <-
+          factor(patterns_mvmultinomial[[new_probs[j]]], ordered = TRUE,
+                 levels = new_levels[[j]])
+      }
+      njoints <- length(joint_levels)
+      multinomial_factor_levels_numeric <-
+        setNames(lapply(multinomial_factor_lengths, seq_len),
+                 names(multinomial_factor_lengths))
+      joint_orderings <- lapply(indep_pairs_list, FUN = \(x) {
+        expand.grid(multinomial_factor_levels_numeric[x])
+      })
+
+      patterns_mvmultinomial_recoded <- lapply(patterns_mvmultinomial,
+                                               FUN = function(col) {
+                                                 if(is.factor(col)) as.integer(col) - 1L else col
+                                               })
+      patterns_mvmultinomial_recoded <-
+        as.matrix(as.data.frame(patterns_mvmultinomial_recoded))
+
+      nremoved_multinomial <- length(removed_multinomial)
+      removed_logmultinomial <- paste("log_", removed_multinomial,
+                                      "|reference", sep = "")
+      removed_condmultinomial <- paste(removed_multinomial,
+                                       "|reference", sep = "")
+      removed_multinomial_factor_levels <- multinomial_factor_levels[removed_multinomial]
+      removed_multinomial_factor_lengths <- multinomial_factor_lengths[removed_multinomial]
+
+      mvmultinomial <- list(
+        any_mvmultinomial = TRUE,
+        npairs = npairs,
+        pairs = pairs,
+        joints = joints,
+        loginter_names = loginter_names,
+        removed_multinomial = removed_multinomial,
+        new_J = new_J,
+        new_K = new_K,
+        patterns_mvmultinomial = patterns_mvmultinomial,
+        patterns_mvmultinomial_recoded = patterns_mvmultinomial_recoded,
+        nremoved_multinomial = nremoved_multinomial,
+        removed_logmultinomial = removed_logmultinomial,
+        removed_condmultinomial = removed_condmultinomial,
+        removed_multinomial_factor_levels = removed_multinomial_factor_levels,
+        removed_multinomial_factor_lengths = removed_multinomial_factor_lengths,
+        indep_pairs = indep_pairs,
+        indep_pairs_list = indep_pairs_list,
+        new_levels = new_levels,
+        njoints = njoints,
+        joint_orderings = joint_orderings
+      )
 
     }
 
