@@ -1,5 +1,5 @@
 pandoc: 3.8.3
-pkgdown: 2.2.0
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   cfa_article: cfa_article.html
@@ -11,7 +11,7 @@ articles:
   lca_article: lca_article.html
   lca_tutorial: lca_tutorial.html
   transformations_factor_model: transformations_factor_model.html
-last_built: 2026-07-07T09:32Z
+last_built: 2026-07-08T16:17Z
 urls:
   reference: https://marcosjnez.github.io/latent/reference
   article: https://marcosjnez.github.io/latent/articles
