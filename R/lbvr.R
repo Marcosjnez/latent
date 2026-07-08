@@ -1,6 +1,6 @@
 # Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/07/2026 by Marcos Jimenez
+# Modification date: 08/07/2026 by Marcos Jimenez
 #'
 #' Local Bivariate Residuals for Latent Class Analysis
 #'
@@ -121,11 +121,7 @@ lbvr <- function(model, digits = 4) {
     ct <- cor.test(e1[comp], e2[comp], use = "complete.obs")
     raw_resid <- cov(e1[comp], e2[comp], use = "complete.obs")
 
-    raw_resid <- latentgold_cont_cont_bvr(data_gaussian, v1, v2, posterior,
-                                          class_means, class_vars,
-                                          covariance = "class_specific",
-                                          weights = NULL, tol = 1e-10)$resid
-
+    raw_resid <- latentgold_cont_cont_bvr(model, v1, v2)$resid
 
     list(resid = ct$estimate, pval = ct$p.value, rlike = ct$estimate,
          raw_resid = raw_resid)
@@ -321,189 +317,38 @@ print.lbvr <- function(x, ...) {
   invisible(x)
 }
 
-# Bivariate residuals in LatentGold's style (created with GPT):
-latentgold_cont_cont_bvr <- function(data,
-                                     v1,
-                                     v2,
-                                     posterior,
-                                     class_means,
-                                     class_vars,
-                                     weights = NULL,
-                                     covariance = c("class_specific"),
-                                     tol = 1e-10) {
-  covariance <- match.arg(covariance)
+latentgold_cont_cont_bvr <- function(fit1, v1, v2) {
 
-  y1 <- data[, v1]
-  y2 <- data[, v2]
+  # Bivariate residuals in LatentGold's style
 
-  if (is.null(weights)) {
-    weights <- rep(1, nrow(data))
-  }
+  args <- fit1@dataList$args
+  args$model <- list(paste(v1, v2, sep = "~~"), fit1)
+  args$do.fit <- FALSE
+  args$adjustment <- "none"
+  args$control <- list(rstarts = 1L, cores = 1L, free_beta = FALSE)
+  fit2 <- do.call(lca, args)
 
-  get_class_param <- function(x, v, K) {
-    if (is.matrix(x) || is.data.frame(x)) {
-      out <- as.numeric(x[, v])
-    } else if (is.list(x)) {
-      out <- as.numeric(x[[v]])
-    } else {
-      stop("class_means and class_vars should be matrices/data.frames with named columns, or lists.")
-    }
+  fit2@modelInfo$control_optimizer$parameters[[1]][] <- 0
+  control_manifold <- fit2@modelInfo$control_manifold
+  control_transform <- fit2@modelInfo$control_transform
+  control_estimator <- fit2@modelInfo$control_estimator
+  control_optimizer <- fit2@modelInfo$control_optimizer
 
-    if (length(out) != K) {
-      stop("Class-specific parameter length does not match number of classes.")
-    }
+  U <- get_grad(control_manifold, control_transform,
+                control_estimator, control_optimizer)$g
+  I <- get_hess(control_manifold, control_transform,
+                control_estimator, control_optimizer)$h
+  K <- length(U)
 
-    out
-  }
+  score_stat <- as.numeric(t(U) %*% solve(I) %*% U)
+  resid <- score_stat / K
+  pval <- 1-pchisq(resid, df = K)
 
-  K <- ncol(posterior)
+  result <- list(resid = resid,
+                 pval = pval,
+                 score_stat = score_stat,
+                 df = K)
 
-  mu1 <- get_class_param(class_means, v1, K)
-  mu2 <- get_class_param(class_means, v2, K)
+  return(result)
 
-  var1 <- get_class_param(class_vars, v1, K)
-  var2 <- get_class_param(class_vars, v2, K)
-
-  if (any(!is.finite(var1)) || any(!is.finite(var2)) ||
-      any(var1 <= 0) || any(var2 <= 0)) {
-    stop("All class-specific variances must be positive and finite.")
-  }
-
-  comp <- complete.cases(y1, y2, posterior, weights)
-
-  if (sum(comp) < 3) {
-    return(list(resid = NA_real_, bvr = NA_real_, pval = NA_real_))
-  }
-
-  y1 <- y1[comp]
-  y2 <- y2[comp]
-  tau <- posterior[comp, , drop = FALSE]
-  w <- weights[comp]
-
-  rs <- rowSums(tau)
-  good <- is.finite(rs) & rs > 0 & is.finite(w) & w > 0
-
-  y1 <- y1[good]
-  y2 <- y2[good]
-  tau <- tau[good, , drop = FALSE]
-  w <- w[good]
-
-  if (length(y1) < 3) {
-    return(list(resid = NA_real_, bvr = NA_real_, pval = NA_real_))
-  }
-
-  # Normalize posterior probabilities just in case of tiny numerical deviations.
-  tau <- tau / rowSums(tau)
-
-  # n x K residual matrices
-  e1 <- outer(y1, mu1, "-")
-  e2 <- outer(y2, mu2, "-")
-
-  v12 <- var1 * var2
-
-  # First derivative of log class density wrt covariance sigma_12 at sigma_12 = 0
-  u <- e1 * e2 / matrix(v12, nrow = length(y1), ncol = K, byrow = TRUE)
-
-  # Second derivative of log class density wrt covariance sigma_12 at sigma_12 = 0
-  h <- matrix(1 / v12, nrow = length(y1), ncol = K, byrow = TRUE) -
-    e1^2 / matrix(var1^2 * var2, nrow = length(y1), ncol = K, byrow = TRUE) -
-    e2^2 / matrix(var1 * var2^2, nrow = length(y1), ncol = K, byrow = TRUE)
-
-  safe_solve <- function(A, b) {
-    out <- tryCatch(
-      solve(A, b),
-      error = function(e) NULL
-    )
-
-    if (!is.null(out)) return(out)
-
-    A <- (A + t(A)) / 2
-    ee <- eigen(A, symmetric = TRUE)
-    keep <- ee$values > tol * max(abs(ee$values))
-
-    if (!any(keep)) {
-      return(rep(NA_real_, length(b)))
-    }
-
-    ee$vectors[, keep, drop = FALSE] %*%
-      ((t(ee$vectors[, keep, drop = FALSE]) %*% b) / ee$values[keep])
-  }
-
-  if (covariance == "common") {
-    # One covariance parameter shared across classes.
-    ui <- rowSums(tau * u)
-
-    # Observed second derivative of the mixture log-likelihood.
-    hi <- rowSums(tau * (h + u^2)) - ui^2
-
-    score <- sum(w * ui)
-    info <- -sum(w * hi)
-
-    if (!is.finite(info) || info <= tol) {
-      return(list(
-        resid = NA_real_,
-        bvr = NA_real_,
-        pval = NA_real_,
-        score = score,
-        information = info,
-        df = 1L
-      ))
-    }
-
-    stat <- score^2 / info
-    bvr <- stat
-    pval <- pchisq(stat, df = 1, lower.tail = FALSE)
-
-    return(list(
-      resid = bvr,
-      bvr = bvr,
-      pval = pval,
-      score_stat = stat,
-      score = score,
-      information = info,
-      df = 1L
-    ))
-  }
-
-  if (covariance == "class_specific") {
-    # One covariance parameter per class.
-    U <- colSums((tau * u) * w)
-
-    A <- tau * u
-    H <- diag(colSums((tau * (h + u^2)) * w), nrow = K) -
-      t(A) %*% (A * w)
-
-    info <- -H
-    sol <- safe_solve(info, U)
-
-    if (anyNA(sol)) {
-      return(list(
-        resid = NA_real_,
-        bvr = NA_real_,
-        pval = NA_real_,
-        score = U,
-        information = info,
-        df = K
-      ))
-    }
-
-    score_stat <- as.numeric(t(U) %*% sol)
-
-    # LatentGOLD reports BVR as improvement per added parameter.
-    bvr <- score_stat / K
-
-    # Approximate only. LatentGOLD itself recommends/bootstrap-reports p-values
-    # because the asymptotic distribution of BVRs is not generally known.
-    pval <- pchisq(score_stat, df = K, lower.tail = FALSE)
-
-    return(list(
-      resid = bvr,
-      bvr = bvr,
-      pval = pval,
-      score_stat = score_stat,
-      score = U,
-      information = info,
-      df = K
-    ))
-  }
 }

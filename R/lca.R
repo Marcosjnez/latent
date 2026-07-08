@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/07/2026
+# Modification date: 08/07/2026
 #'
 #' Latent Class Analysis
 #'
@@ -536,7 +536,7 @@ lca <- function(data,
 
 }
 
-#### Function to create the dataList and modelInfo ####
+#### Function to create the dataList ####
 
 create_lca_dataList <- function(data = NULL,
                                 nclasses = NULL,
@@ -707,11 +707,6 @@ create_lca_dataList <- function(data = NULL,
   list2env(gaussian, envir = environment())
   list2env(mvgaussian, envir = environment())
 
-  # # Count the number of items for each likelihood model:
-  # nmultinomial <- multinomial$nmultinomial
-  # ngaussian <- gaussian$ngaussian
-  # nmvgaussian <- mvgaussian$nmvgaussian
-
   # Select the subset of data with the variables that are used in the
   # measurement model (keeping the original ordering):
   model_labels <- rep(c("multinomial", "gaussian", "mvgaussian"),
@@ -767,6 +762,7 @@ create_lca_dataList <- function(data = NULL,
   dataList$variables <- variables
   dataList$outcomes <- outcomes
   dataList$variable_type <- variable_type
+  dataList$class_names <- paste("Class", 1:nclasses, sep = "")
 
   #### Return ####
 
@@ -782,7 +778,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   list2env(dataList, envir = environment())
 
-  class_names <- paste("Class", 1:nclasses, sep = "")
+  class_names <- dataList$class_names
   control$class_names <- class_names
 
   #### Separate llca objects from ordinary model specifications ####
@@ -811,7 +807,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   #### Model for the transformed parameters ####
 
-  pred_names <- colnames(design) # Names of predictors
+  pred_names <- colnames(design) # Names of intercept + predictors
 
   list_struct <- vector("list")
   k <- 1L
@@ -866,8 +862,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   param <- list()
 
   # Model for the betas:
-  param$beta <- trans$beta
-  param$beta[, 1] <- "0"
+  param <- constraints_beta_lca(dataList, param, trans)
 
   # Model for multinomial items:
   param <- constraints_multinomial_lca(dataList, param, trans)
@@ -910,7 +905,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
                            use.names = FALSE)
 
       keep <- grepl("[A-Za-z]", old_labels)
-      keep <- keep & !grepl("^beta\\[", old_labels)
+      if(isTRUE(control$free_beta)) keep <- keep & !grepl("^beta\\[", old_labels)
 
       old_labels <- old_labels[keep]
       old_values <- old_values[keep]
@@ -962,21 +957,14 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   # betas are sampled from a normal distribution:
   init_param <- vector("list", length = control$rstarts)
 
+  init_beta <- start_beta_lca(param, dataList, control$rstarts)
+  init_multinom <- start_multinomial_lca(param, dataList, control$rstarts)
   init_gauss <- start_gaussian_lca(param, dataList, control$rstarts)
   init_mvgauss <- start_mvgaussian_lca(param, dataList, control$rstarts)
-  init_multinom <- start_multinomial_lca(param, dataList, control$rstarts)
 
   for(i in 1:control$rstarts) {
 
-    init_param[[i]] <- list()
-
-    # Initial values for betas:
-    init_param[[i]][["beta"]] <- matrix(rnorm(pdesign*nclasses),
-                                        nrow = pdesign, ncol = nclasses)
-    init_param[[i]]$beta[, 1] <- 0
-    dimnames(init_param[[i]]$beta) <- dimnames(param$beta)
-
-    init_param[[i]] <- c(init_param[[i]],
+    init_param[[i]] <- c(init_beta[[i]],
                          init_multinom[[i]],
                          init_gauss[[i]],
                          init_mvgauss[[i]])
@@ -1131,16 +1119,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
   inits <- create_init(trans, param, init_param,
                        control_transform = control_transform, control)
-
-  parameters <- inits$parameters
-  parameters_labels <- inits$parameters_labels
-  nparam <- inits$nparam
-
-  transparameters <- inits$transparameters
-  transparameters_labels <- inits$transparameters_labels
-  ntrans <- inits$ntrans
-
-  trans2param <- inits$trans2param
+  list2env(inits, envir = environment())
 
   #### Set up the optimizer ####
 
@@ -1219,6 +1198,12 @@ lca_control <- function(control) {
 
     stop("penalties should be TRUE, FALSE, or a named list")
 
+  }
+
+  if(is.null(control$free_beta)) {
+    control$free_beta <- TRUE
+  } else {
+    control$free_beta <- FALSE
   }
 
   if(is.null(control$step_maxit)) {
@@ -1936,6 +1921,18 @@ lca_ml <- function(data,
 
   return(result)
 
+  # NO VALID STANDARD ERRORS BECAUSE VAR(log_class_error_modal) IS NOT CALCULATED IN fit1
+  # Solution for classification = "modal":
+  # (1) Calculate log_class_error_modal as transformed parameters in fit1
+  # (2) Provide the full fit1 with log_class_error_modal in model
+  # (3) Automatically propagate SE estimation for transformed parameters
+
+  # NO VALID STANDARD ERRORS BECAUSE VAR(log_class_error_prop) IS NOT CALCULATED IN fit1
+  # Solution for classification = "proportional":
+  # (1) Calculate log_class_error_prop as transformed parameters in fit1
+  # (2) Provide the full fit1 with log_class_error_prop in model
+  # (3) Automatically propagate SE estimation for transformed parameters
+
 }
 
 #### Objects for items with a given conditional likelihood ####
@@ -2116,7 +2113,7 @@ model_multinomial_lca <- function(nclasses, dataList) {
   list2env(dataList$multinomial, envir = environment())
   list2env(dataList$mvmultinomial, envir = environment())
 
-  class_names <- paste("Class", 1:nclasses, sep = "")
+  class_names <- dataList$class_names
   list_struct <- list()
   k <- 1L
 
@@ -2230,7 +2227,7 @@ model_gaussian_lca <- function(nclasses, dataList) {
 
   list2env(dataList$gaussian, envir = environment())
 
-  class_names <- paste("Class", 1:nclasses, sep = "")
+  class_names <- dataList$class_names
   list_struct <- list()
   k <- 1L
 
@@ -2261,7 +2258,7 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
 
   list2env(dataList$mvgaussian, envir = environment())
 
-  class_names <- paste("Class", 1:nclasses, sep = "")
+  class_names <- dataList$class_names
   list_struct <- list()
   k <- 1L
 
@@ -2323,6 +2320,16 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
 }
 
 #### Functions for conditional likelihood model constraints ####
+
+constraints_beta_lca <- function(dataList, param, trans) {
+
+  # Fix the first column for identification:
+  param$beta <- trans$beta
+  param$beta[, 1] <- "0"
+
+  return(param)
+
+}
 
 constraints_multinomial_lca <- function(dataList, param, trans) {
 
@@ -2432,6 +2439,26 @@ constraints_mvgaussian_lca <- function(dataList, param, trans) {
 }
 
 #### Functions for starting values of conditional likelihood model parameters ####
+
+start_beta_lca <- function(param, dataList, rstarts) {
+
+  pdesign <- dataList$pdesign
+  nclasses <- dataList$args$nclasses
+
+  # Initial values for betas:
+  init_param <- vector("list", length = rstarts)
+  for(i in 1:rstarts) {
+
+    init_param[[i]]$beta <- matrix(rnorm(pdesign*nclasses),
+                                   nrow = pdesign, ncol = nclasses)
+    init_param[[i]]$beta[, 1] <- 0
+    dimnames(init_param[[i]]$beta) <- dimnames(param$beta)
+
+  }
+
+  return(init_param)
+
+}
 
 start_multinomial_lca <- function(param, dataList, rstarts) {
 

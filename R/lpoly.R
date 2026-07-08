@@ -480,20 +480,9 @@ create_lpoly_modelInfo <- function(data_list, full_model, control) {
 
   #### Pass the initial values to vectors ####
 
-  idx_transformed <- unlist(lapply(control_transform,
-                                   FUN = \(x) unlist(x$indices_out)+1L))
   inits <- create_init(trans, param, init_param,
-                       idx_transformed = idx_transformed, control)
-
-  parameters <- inits$parameters
-  parameters_labels <- names(parameters[[1]])
-  nparam <- length(parameters_labels)
-
-  transparameters <- inits$transparameters
-  transparameters_labels <- names(transparameters[[1]])
-  ntrans <- length(transparameters_labels)
-
-  trans2param <- match(parameters_labels, transparameters_labels)
+                       control_transform = control_transform, control)
+  list2env(inits, envir = environment())
 
   #### Set up the optimizer ####
 

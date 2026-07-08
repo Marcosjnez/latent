@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/07/2026
+# Modification date: 08/07/2026
 
 #### Store a dataset ####
 
@@ -295,8 +295,6 @@ fit2@loglik$loglik # -3737.745
 latInspect(fit, "loss")
 latInspect(fit, "loglik")
 
-fit@Optim$SE$se
-fit2@ParTable$se
 inspect(fit2, "est")
 fit@parameters
 
@@ -338,14 +336,13 @@ fit <- lcfa(HolzingerSwineford1939,
             control = NULL,
             do.fit = TRUE)
 
-fit@loss             # 0.3848882
-fit@loglik           # -3682.198
-fit@penalized_loglik # -3682.198
-fit@Optim$iterations
-fit@Optim$convergence
-fit@timing
+latInspect(fit, "est")
+latInspect(fit, "loglik") # loglik           -3682.198
+                          # penalized_loglik -3682.198
+                          # loglik_base      -4150.500
+                          # loglik_sat       -3624.272
 
-latInspect(fit, what = "loglik")
+latInspect(fit, what = "loss")
 
 # With lavaan:
 fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
@@ -358,12 +355,8 @@ fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
                     likelihood = likelihood,
                     do.fit = TRUE)
 fit2@loglik$loglik # -3682.198
-fit@loglik         # -3682.198
 fit2@Fit@fx*2      # 0.3848882
-fit@loss           # 0.3848882
-
-fit@Optim$SE$se
-fit2@ParTable$se
+fitMeasures(fit2, "unrestricted.logl")
 
 #### CFA (nonpositive definite) ####
 
@@ -394,20 +387,14 @@ fit <- lcfa(data = HolzingerSwineford1939, model = model,
             likelihood = "normal",
             do.fit = TRUE, control = NULL)
 
-fit@loglik # -3732.196 (ML; w = 0.001)
-fit@penalized_loglik # -3732.198 (ML; w = 0.001)
-fit@loss # 0.2451833 (ML; w = 0.001)
-fit@penalized_loss # 0.2438276 (ML; w = 0.001)
-fit@Optim$iterations
-fit@Optim$convergence
-fit@Optim$ng
-fit@timing
+latInspect(fit, "loglik") # loglik           -3732.196
+                          # penalized_loglik -3732.198
+                          # loglik_base      -
+                          # loglik_sat       -
+
 # fit@Optim$SE$se
-det(fit@transformed_pars$theta.group)
-det(fit@transformed_pars$psi.group)
-fit@parameters$lambda.group
-fit@transformed_pars$psi.group
-diag(fit@transformed_pars$theta.group)
+det(fit@transformed_pars$theta)
+det(fit@transformed_pars$psi)
 
 # With lavaan:
 fit2 <- cfa(model, data = HolzingerSwineford1939,
@@ -733,7 +720,7 @@ fit <- lpearson(data = data, std.ov = FALSE,
                 do.fit = TRUE)
 fit@parameters
 
-#### Polychorics ####
+#### Yule correlations ####
 
 library(latent)
 
