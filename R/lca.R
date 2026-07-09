@@ -2284,11 +2284,10 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
       sigma_labels <- matrix(
         paste0(
           rep(mvgaussian_names, times = nmvgaussian),
-          "[2,",
-          rep(seq_len(nmvgaussian), each = nmvgaussian),
+          "~~",
+          rep(mvgaussian_names, each = nmvgaussian),
           "|Class",
-          j,
-          "]"
+          j
         ),
         nrow = nmvgaussian,
         ncol = nmvgaussian,

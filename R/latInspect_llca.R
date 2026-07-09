@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/07/2026
+# Modification date: 09/07/2026
 #'
 #' @title
 #' Inspect objects from fitted lca models.
@@ -84,13 +84,13 @@ latInspect.llca <- function(fit,
   classes <- colSums(fit@transformed_pars$class * pattern_weights) /
     sum(pattern_weights)
   ClassConditional <- fit@transformed_pars[indicators_names]
-  if(gaussian$any_gaussian) {
+  if(gaussian$any_gaussian || mvgaussian$any_mvgaussian) {
     gaussian_indicators <- intersect(indicators_names,
-                                gaussian$gaussian_names)
+                                     c(gaussian$gaussian_names, mvgaussian$mvgaussian_names))
     ClassConditional[gaussian_indicators] <- lapply(ClassConditional[gaussian_indicators],
-                                               FUN = \(x) {
-                                                 x[c(1, 4), ]
-                                               })
+                                                    FUN = \(x) {
+                                                      x[c(1, 4), ]
+                                                    })
   }
 
   # Additional outputs for full multinomial models:

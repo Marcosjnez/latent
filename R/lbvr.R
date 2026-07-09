@@ -1,6 +1,6 @@
 # Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 08/07/2026 by Marcos Jimenez
+# Modification date: 09/07/2026 by Marcos Jimenez
 #'
 #' Local Bivariate Residuals for Latent Class Analysis
 #'
@@ -67,11 +67,15 @@ lbvr <- function(model, digits = 4) {
   K <- ncol(posterior)
   short2full <- model@dataList$short2full
 
-  cont_vars <- model@dataList$gaussian$gaussian_names
+  cont_vars <- intersect(model@dataList$indicators_names,
+                         c(model@dataList$gaussian$gaussian_names,
+                           model@dataList$mvgaussian$mvgaussian_names))
   cat_vars  <- model@dataList$multinomial$multinomial_names
-  data_gaussian <- model@dataList$gaussian$patterns_gaussian[short2full, , drop = FALSE]
+  data_cont <- cbind(model@dataList$gaussian$patterns_gaussian,
+                     model@dataList$mvgaussian$patterns_mvgaussian)[short2full,
+                                                                    cont_vars, drop = FALSE]
   data_multinom <- model@dataList$multinomial$patterns_multinomial[short2full, , drop = FALSE] + 1L
-  n_cont <- model@dataList$gaussian$ngaussian
+  n_cont <- model@dataList$gaussian$ngaussian + model@dataList$mvgaussian$nmvgaussian
   n_cat <- model@dataList$multinomial$nmultinomial
 
   profile <- latInspect(model, what = "item")
@@ -114,8 +118,20 @@ lbvr <- function(model, digits = 4) {
   # ----- Helper functions -----
 
   cont_cont_resid_pval <- function(v1, v2) {
-    e1 <- data_gaussian[, v1] - posterior %*% class_means[, v1, drop = FALSE]
-    e2 <- data_gaussian[, v2] - posterior %*% class_means[, v2, drop = FALSE]
+
+    if(!is.null(model@dataList$dependencies$gaussian_pairs)) {
+
+      modeled <- any(apply(model@dataList$dependencies$gaussian_pairs,
+                           MARGIN = 1, FUN = \(x) v1 %in% x && v2 %in% x))
+      if(modeled) {
+        result <- list(resid = 0, pval = 1, rlike = 0, raw_resid = 0)
+        return(result)
+      }
+
+    }
+
+    e1 <- data_cont[, v1] - posterior %*% class_means[, v1, drop = FALSE]
+    e2 <- data_cont[, v2] - posterior %*% class_means[, v2, drop = FALSE]
     comp <- complete.cases(e1, e2)
     if (sum(comp) < 3) return(list(resid = NA, pval = NA))
     ct <- cor.test(e1[comp], e2[comp], use = "complete.obs")
@@ -123,11 +139,26 @@ lbvr <- function(model, digits = 4) {
 
     raw_resid <- latentgold_cont_cont_bvr(model, v1, v2)$resid
 
-    list(resid = ct$estimate, pval = ct$p.value, rlike = ct$estimate,
-         raw_resid = raw_resid)
+    result <- list(resid = ct$estimate, pval = ct$p.value, rlike = ct$estimate,
+                   raw_resid = raw_resid)
+
+    return(result)
+
   }
 
   cat_cat_resid_pval <- function(v1, v2) {
+
+    if(!is.null(model@dataList$dependencies$multinomial_pairs)) {
+
+      modeled <- any(apply(model@dataList$dependencies$multinomial_pairs,
+                           MARGIN = 1, FUN = \(x) v1 %in% x && v2 %in% x))
+      if(modeled) {
+        result <- list(resid = 0, pval = 1, rlike = 0, raw_resid = 0)
+        return(result)
+      }
+
+    }
+
     comp <- complete.cases(data_multinom[, v1], data_multinom[, v2])
     if (sum(comp) == 0) return(list(resid = NA, pval = NA))
     obs_tab <- table(data_multinom[comp, v1], data_multinom[comp, v2])
@@ -172,12 +203,15 @@ lbvr <- function(model, digits = 4) {
     P <- (L1-1L) * (L2-1L)
     raw_resid <- sum((obs_tab - exp_tab_aligned)^2 / (exp_tab_aligned))/P
 
-    list(resid = resid_val, pval = pval, rlike = resid_cv,
-         raw_resid = raw_resid)
+    result <- list(resid = resid_val, pval = pval, rlike = resid_cv,
+                   raw_resid = raw_resid)
+
+    return(result)
+
   }
 
   cont_cat_resid_pval <- function(v_cont, v_cat) {
-    e <- data_gaussian[, v_cont] - posterior %*% class_means[, v_cont, drop = FALSE]
+    e <- data_cont[, v_cont] - posterior %*% class_means[, v_cont, drop = FALSE]
     cat_var <- data_multinom[, v_cat]
     # Keep only complete cases for both
     comp <- complete.cases(e, cat_var)
@@ -231,13 +265,17 @@ lbvr <- function(model, digits = 4) {
 
       res <- list(resid = NA, pval = NA)
 
-      if (t1 == "gaussian" && t2 == "gaussian") {
+      if ((t1 == "gaussian" || t1 == "mvgaussian") &&
+          (t2 == "gaussian" || t2 == "mvgaussian")) {
         res <- cont_cont_resid_pval(v1, v2)
-      } else if (t1 == "multinomial" && t2 == "multinomial") {
+      } else if (t1 == "multinomial" &&
+                 t2 == "multinomial") {
         res <- cat_cat_resid_pval(v1, v2)
-      } else if (t1 == "gaussian" && t2 == "multinomial") {
+      } else if ((t1 == "gaussian" || t1 == "mvgaussian") &&
+                 t2 == "multinomial") {
         res <- cont_cat_resid_pval(v1, v2)
-      } else if (t1 == "multinomial" && t2 == "gaussian") {
+      } else if (t1 == "multinomial" &&
+                 (t2 == "gaussian" || t2 == "mvgaussian")) {
         res <- cont_cat_resid_pval(v2, v1)
       }
 
@@ -323,9 +361,12 @@ latentgold_cont_cont_bvr <- function(fit, v1, v2) {
 
   # Copy the fit object and create the same LCA model (fit2) but with a residual
   # dependency between v1 and v2:
+  initial_model <- fit@dataList$args$model
   args <- fit@dataList$args
   # In the new model, we fix all the parameters but the dependency parameters:
-  args$model <- list(paste(v1, v2, sep = "~~"), fit1)
+  model_dependencies <- apply(fit@dataList$dependencies$gaussian_pairs, MARGIN = 1L,
+                              FUN = paste, collapse = "~~")
+  args$model <- c(paste(c(v1, v2), collapse = "~~"), model_dependencies, fit)
   args$do.fit <- FALSE # Don't fit the model, just create it
   args$adjustment <- "none"
   args$control <- list(rstarts = 1L, cores = 1L, free_beta = FALSE)
