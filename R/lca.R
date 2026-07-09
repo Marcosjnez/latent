@@ -873,6 +873,13 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   # Model for multivariate gaussian items:
   param <- constraints_mvgaussian_lca(dataList, param, trans)
 
+  # Reorder the parameter list to match the ordering of the indicator variables:
+  pos <- match(indicators_names, names(param))
+  pos <- pos[!is.na(pos)]
+  idx <- seq_along(param)
+  idx[sort(pos)] <- pos
+  param <- param[idx]
+
   #### Fixed parameters and equality constraints ####
 
   # First, apply ordinary user-supplied parameter blocks, if any.

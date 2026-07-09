@@ -74,7 +74,7 @@ fit <- lca(data = empathy,
            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
            # covariates = c("pt1", "pt2", "pt3", "pt4"),
            # outcomes = c("pt1", "pt2"),
-           model = list("ec2 ~~ ec3"),
+           # model = list("ec2 ~~ ec3"),
            penalties = TRUE,
            control = list(rstarts = 50L, cores = 32L),
            do.fit = TRUE)

@@ -364,9 +364,14 @@ latentgold_cont_cont_bvr <- function(fit, v1, v2) {
   initial_model <- fit@dataList$args$model
   args <- fit@dataList$args
   # In the new model, we fix all the parameters but the dependency parameters:
-  model_dependencies <- apply(fit@dataList$dependencies$gaussian_pairs, MARGIN = 1L,
+  if(!is.null(fit@dataList$dependencies$gaussian_pairs)) {
+    model_dependencies <- apply(fit@dataList$dependencies$gaussian_pairs, MARGIN = 1L,
                               FUN = paste, collapse = "~~")
-  args$model <- c(paste(c(v1, v2), collapse = "~~"), model_dependencies, fit)
+    args$model <- c(paste(c(v1, v2), collapse = "~~"), model_dependencies, fit)
+  } else {
+    args$model <- c(paste(c(v1, v2), collapse = "~~"), fit)
+  }
+  # args$model <- c(paste(c(v1, v2), collapse = "~~"), model_dependencies, fit)
   args$do.fit <- FALSE # Don't fit the model, just create it
   args$adjustment <- "none"
   args$control <- list(rstarts = 1L, cores = 1L, free_beta = FALSE)
