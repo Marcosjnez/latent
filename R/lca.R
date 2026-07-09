@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 08/07/2026
+# Modification date: 09/07/2026
 #'
 #' Latent Class Analysis
 #'
@@ -1202,8 +1202,6 @@ lca_control <- function(control) {
 
   if(is.null(control$free_beta)) {
     control$free_beta <- TRUE
-  } else {
-    control$free_beta <- FALSE
   }
 
   if(is.null(control$step_maxit)) {

@@ -317,17 +317,21 @@ print.lbvr <- function(x, ...) {
   invisible(x)
 }
 
-latentgold_cont_cont_bvr <- function(fit1, v1, v2) {
+latentgold_cont_cont_bvr <- function(fit, v1, v2) {
 
   # Bivariate residuals in LatentGold's style
 
-  args <- fit1@dataList$args
+  # Copy the fit object and create the same LCA model (fit2) but with a residual
+  # dependency between v1 and v2:
+  args <- fit@dataList$args
+  # In the new model, we fix all the parameters but the dependency parameters:
   args$model <- list(paste(v1, v2, sep = "~~"), fit1)
-  args$do.fit <- FALSE
+  args$do.fit <- FALSE # Don't fit the model, just create it
   args$adjustment <- "none"
   args$control <- list(rstarts = 1L, cores = 1L, free_beta = FALSE)
   fit2 <- do.call(lca, args)
 
+  # Set to 0 the initial values of the dependency parameters:
   fit2@modelInfo$control_optimizer$parameters[[1]][] <- 0
   control_manifold <- fit2@modelInfo$control_manifold
   control_transform <- fit2@modelInfo$control_transform
