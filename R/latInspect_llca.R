@@ -86,7 +86,7 @@ latInspect.llca <- function(fit,
                                      c(gaussian$gaussian_names, mvgaussian$mvgaussian_names))
     ClassConditional[gaussian_indicators] <- lapply(ClassConditional[gaussian_indicators],
                                                     FUN = \(x) {
-                                                      x[c(1, 4), ]
+                                                      x[c("mean", "stdv"), ]
                                                     })
   }
 
@@ -131,6 +131,8 @@ latInspect.llca <- function(fit,
 
   profile <- list(class_size = colMeans(posterior),
                   indicators = ClassConditional)
+  # The profile should have another slot named outcomes with the profile of
+  # the outcome variables
 
   #### Extract the fit ####
 

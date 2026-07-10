@@ -2270,9 +2270,9 @@ model_gaussian_lca <- function(nclasses, dataList) {
                                type = "matrix",
                                dim = c(4L, nclasses),
                                rownames = c("mean",
+                                            "stdv",
                                             "var",
-                                            "log(var)",
-                                            "stdv"),
+                                            "log(var)"),
                                colnames = class_names)
       k <- k+1L
 
@@ -2301,9 +2301,9 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
                                type = "matrix",
                                dim = c(4L, nclasses),
                                rownames = c("mean",
+                                            "stdv",
                                             "var",
-                                            "log(var)",
-                                            "stdv"),
+                                            "log(var)"),
                                colnames = class_names)
       k <- k+1L
 
@@ -2327,7 +2327,7 @@ model_mvgaussian_lca <- function(nclasses, dataList) {
       )
       # Fix the labels of the univariate gaussian model (variances)
       diag(sigma_labels) <- paste(mvgaussian_names,
-                                  "[2,",
+                                  "[3,",
                                   j, "]",
                                   sep = "")
 
@@ -2407,8 +2407,7 @@ constraints_gaussian_lca <- function(dataList, param, trans) {
     # as parameters and not as fixed parameters:
     param[gaussian_names] <- lapply(trans[gaussian_names],
                                     FUN = \(x) {
-                                      x[2, ] <- "1";
-                                      x[4, ] <- "1"
+                                      x[c("stdv", "var"), ] <- "1";
                                       return(x)
                                     })
 
@@ -2427,8 +2426,7 @@ constraints_mvgaussian_lca <- function(dataList, param, trans) {
     # param[mvgaussian_names] <- trans[mvgaussian_names]
     param[mvgaussian_names] <- lapply(trans[mvgaussian_names],
                                       FUN = \(x) {
-                                        x[2, ] <- "1";
-                                        x[4, ] <- "1"
+                                        x[c("stdv", "var"), ] <- "1";
                                         return(x)
                                       })
 
@@ -2544,9 +2542,9 @@ start_gaussian_lca <- function(param, dataList, rstarts) {
                                         mean = 0,
                                         sd = sqrt(init_var[[j]]/nobs))
         init_param[[i]][[name]] <- rbind(rmean,
+                                         sqrt(init_var[[j]]),
                                          init_var[[j]],
-                                         init_logvar[[j]],
-                                         sqrt(init_var[[j]]))
+                                         init_logvar[[j]])
         dimnames(init_param[[i]][[name]]) <-
           dimnames(param[[name]])
         j <- j+1L
@@ -2581,11 +2579,11 @@ start_mvgaussian_lca <- function(param, dataList, rstarts) {
 
         rmean <- init_mean[[j]] + rnorm(nclasses,
                                         mean = 0,
-                                        sd = init_var[[j]]/sqrt(nobs))
+                                        sd = sqrt(init_var[[j]]/sqrt(nobs)))
         init_param[[i]][[name]] <- rbind(rmean,
+                                         sqrt(init_var[[j]]),
                                          init_var[[j]],
-                                         init_logvar[[j]],
-                                         sqrt(init_var[[j]]))
+                                         init_logvar[[j]])
         dimnames(init_param[[i]][[name]]) <-
           dimnames(param[[name]])
         j <- j+1L
@@ -2785,13 +2783,13 @@ transformations_gaussian_lca <- function(trans, dataList) {
   if(any_gaussian) {
 
     means <- c(do.call(rbind, lapply(trans[gaussian_names],
-                                     FUN = \(x) x[1, ])))
-    vars <- c(do.call(rbind, lapply(trans[gaussian_names],
-                                    FUN = \(x) x[2, ])))
-    log_vars <- c(do.call(rbind, lapply(trans[gaussian_names],
-                                        FUN = \(x) x[3, ])))
+                                     FUN = \(x) x["mean", ])))
     stdv <- c(do.call(rbind, lapply(trans[gaussian_names],
-                                    FUN = \(x) x[4, ])))
+                                    FUN = \(x) x["stdv", ])))
+    vars <- c(do.call(rbind, lapply(trans[gaussian_names],
+                                    FUN = \(x) x["var", ])))
+    log_vars <- c(do.call(rbind, lapply(trans[gaussian_names],
+                                        FUN = \(x) x["log(var)", ])))
 
     transforms[[k]] <- list(transform = "exponential",
                             parameters_in = list(log_vars),
@@ -2836,13 +2834,13 @@ transformations_mvgaussian_lca <- function(trans, dataList) {
   if(any_mvgaussian) {
 
     means <- c(do.call(rbind, lapply(trans[mvgaussian_names],
-                                     FUN = \(x) x[1, ])))
-    vars <- c(do.call(rbind, lapply(trans[mvgaussian_names],
-                                    FUN = \(x) x[2, ])))
-    log_vars <- c(do.call(rbind, lapply(trans[mvgaussian_names],
-                                        FUN = \(x) x[3, ])))
+                                     FUN = \(x) x["mean", ])))
     stdv <- c(do.call(rbind, lapply(trans[mvgaussian_names],
-                                    FUN = \(x) x[4, ])))
+                                    FUN = \(x) x["stdv", ])))
+    vars <- c(do.call(rbind, lapply(trans[mvgaussian_names],
+                                    FUN = \(x) x["var", ])))
+    log_vars <- c(do.call(rbind, lapply(trans[mvgaussian_names],
+                                        FUN = \(x) x["log(var)", ])))
 
     transforms[[k]] <- list(transform = "exponential",
                             parameters_in = list(log_vars),
@@ -2956,7 +2954,7 @@ bayes3 <- function(trans, gaussian, alpha, nclasses, nobs) {
     for(i in 1:nclasses) {
 
       vars_by_class <- unlist(lapply(trans[gaussian_names],
-                                     FUN = \(x) x[2, i]))
+                                     FUN = \(x) x["var", i]))
       estimators[[G]] <- list(estimator = "bayesconst3",
                               parameters = list(vars_by_class),
                               extra = list(K = nclasses,
