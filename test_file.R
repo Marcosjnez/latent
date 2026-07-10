@@ -94,7 +94,7 @@ lbvr(fit)
 
 # Inspect model objects:
 latInspect(fit, what = "convergence")
-latInspect(fit, what = "profile") # FIX profile for multivariate items
+latInspect(fit, what = "profile") # Include residual dependencies for multivariate items?
 latInspect(fit, what = "coefs")
 latInspect(fit, what = "posterior")
 

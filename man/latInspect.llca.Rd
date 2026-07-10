@@ -2,26 +2,89 @@
 % Please edit documentation in R/latInspect_llca.R
 \name{latInspect.llca}
 \alias{latInspect.llca}
-\title{Inspect objects from fitted lca models.}
+\alias{latInspect.llcalist}
+\title{Inspect fitted latent class models}
 \usage{
-latInspect(fit)
+\method{latInspect}{llca}(fit, what = "profile", digits = 4L)
+
+\method{latInspect}{llcalist}(model, what = "profile", digits = 4L)
 }
 \arguments{
-\item{fit}{model fitted with lca.}
+\item{fit}{An object of class \code{"llca"} returned by \code{\link{lca}}.}
 
-\item{digits}{Number of digits to print.}
+\item{what}{Character string indicating the object to extract. Available
+values and aliases include:
+\describe{
+  \item{\code{"profile"}}{Posterior class sizes and class-conditional
+    indicator profiles. If distal outcomes are present, their
+    class-conditional profiles are included in an \code{outcomes} element.}
+  \item{\code{"classconditional"}, \code{"item"}, \code{"items"}}{
+    Class-conditional indicator parameters. Gaussian indicators contain
+    means and standard deviations; multinomial indicators contain
+    probabilities only.}
+  \item{\code{"outcome"}, \code{"outcomes"}}{Class-conditional distal
+    outcome parameters.}
+  \item{\code{"class"}, \code{"classes"}}{Average model-implied prior class
+    probabilities, weighted by response-pattern weights.}
+  \item{\code{"fullclasses"}}{Pattern-specific prior class probabilities.}
+  \item{\code{"beta"}, \code{"coef"}, \code{"coefs"}}{Class-membership
+    regression coefficients.}
+  \item{\code{"posterior"}}{Case-specific posterior class probabilities.}
+  \item{\code{"state"}, \code{"states"}}{Modal posterior class assignments.}
+  \item{\code{"respconditional"}}{For fully multinomial measurement models,
+    probabilities of latent-class membership conditional on each response
+    category.}
+  \item{\code{"probcat"}}{For fully multinomial measurement models,
+    marginal response-category probabilities.}
+  \item{\code{"data"}}{Processed data stored in the fitted object.}
+  \item{\code{"measurement"}}{Processed indicator data.}
+  \item{\code{"pattern"}, \code{"patterns"}}{Unique model-variable patterns
+    and their observed weights.}
+  \item{\code{"table"}, \code{"summary"}}{Response-pattern summary table.}
+  \item{\code{"loglik_case"}}{Case-specific log-likelihood contributions.}
+  \item{\code{"loglik_pattern"}}{Pattern-specific weighted
+    log-likelihood contributions.}
+  \item{\code{"loss"}, \code{"loglik"}, \code{"fit_matrix"}}{Optimizer loss,
+    log-likelihood, or the complete matrix of fit components.}
+  \item{\code{"classification"}}{Modal and proportional
+    classification-error matrices. Rows represent latent classes and
+    columns represent assigned classes.}
+  \item{\code{"convergence"}}{Optimizer convergence information.}
+  \item{\code{"gradient"}}{Gradient diagnostics.}
+  \item{\code{"timing"}, \code{"elapsed"}}{Elapsed optimization time.}
+}
+Matching is case-insensitive.}
+
+\item{digits}{Non-negative integer retained for compatibility with other
+inspection methods. Numeric results are returned without rounding so they
+can safely be used in subsequent computations.}
+
+\item{model}{An object of class \code{"llcalist"} containing fitted
+\code{"llca"} objects.}
 }
 \value{
-List with one of the following objects:
-\item{class}{.}
-\item{posterior}{.}
-\item{profile}{.}
+The object requested through \code{what}. See the description of
+  \code{what} for the possible return types.
 }
 \description{
-Inspect objects.
+Extract model-implied class probabilities, posterior probabilities,
+class-conditional response profiles, fit statistics, response-pattern
+summaries, classification-error matrices, and optimization diagnostics from
+fitted \code{"llca"} objects.
 }
 \details{
-Extract objects from fitted lca object.
+Posterior probabilities and log-likelihood contributions are stored
+internally by unique model-variable pattern and expanded back to the retained
+observations when case-level results are requested.
+
+Pattern weights are used when calculating average class probabilities,
+posterior class sizes, and classification-error matrices. Consequently,
+frequency-weighted models produce weighted inspection results.
+
+Gaussian item matrices are read by row name, using \code{"mean"} and
+\code{"stdv"}. Multinomial item matrices are assumed to contain probabilities
+in their first rows and log-probability parameters in their following rows;
+only the probability rows are returned in response profiles.
 }
 \references{
 None yet.

@@ -57,8 +57,8 @@ time using \code{outcomes = list(gaussian = c("y1", "y2"), multinomial = "z")}}
 \item{model}{Optional model specification. This can be a named list used to
 fix parameters, impose equality constraints, or provide custom parameter
 labels. Names should match internal parameter blocks, for example
-\code{beta}, Gaussian item names, \code{log_<item>} for multinomial logs,
-\code{means}, \code{logsigma}, or \code{sigma|Class<i>} for multivariate
+\code{beta}, Gaussian or multinomial item names, or
+\code{Sigma|Class<i>} for multivariate
 Gaussian blocks. Character strings containing residual-dependency syntax
 such as \code{"y1 ~~ y2"} or \code{"u1 ~~ u2 ~~ u3"} are also used to
 identify residual covariances or residual associations. If an object of
@@ -167,8 +167,10 @@ variances. Variances are parameterized through log-variances and transformed
 to the positive scale during optimization.
 
 For multinomial indicators, the model estimates class-specific category
-probabilities through a softmax parameterization. The first category is fixed
-to zero on the log scale for identification.
+probabilities through a softmax parameterization. Each item is stored in one
+matrix: the first rows contain probabilities and the following rows contain
+their log parameters. The first log parameter is fixed to zero for
+identification.
 
 When \code{covariates} are supplied and \code{adjustment = "none"}, class
 probabilities are modeled in one step through multinomial-log coefficients

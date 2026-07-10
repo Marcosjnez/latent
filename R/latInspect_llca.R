@@ -1,30 +1,80 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/07/2026
+# Modification date: 11/07/2026
 #'
-#' @title
-#' Inspect objects from fitted lca models.
-#' @description
+#' Inspect fitted latent class models
 #'
-#' Inspect objects.
+#' Extract model-implied class probabilities, posterior probabilities,
+#' class-conditional response profiles, fit statistics, response-pattern
+#' summaries, classification-error matrices, and optimization diagnostics from
+#' fitted \code{"llca"} objects.
 #'
-#' @usage
+#' @param fit An object of class \code{"llca"} returned by \code{\link{lca}}.
+#' @param what Character string indicating the object to extract. Available
+#'   values and aliases include:
+#'   \describe{
+#'     \item{\code{"profile"}}{Posterior class sizes and class-conditional
+#'       indicator profiles. If distal outcomes are present, their
+#'       class-conditional profiles are included in an \code{outcomes} element.}
+#'     \item{\code{"classconditional"}, \code{"item"}, \code{"items"}}{
+#'       Class-conditional indicator parameters. Gaussian indicators contain
+#'       means and standard deviations; multinomial indicators contain
+#'       probabilities only.}
+#'     \item{\code{"outcome"}, \code{"outcomes"}}{Class-conditional distal
+#'       outcome parameters.}
+#'     \item{\code{"class"}, \code{"classes"}}{Average model-implied prior class
+#'       probabilities, weighted by response-pattern weights.}
+#'     \item{\code{"fullclasses"}}{Pattern-specific prior class probabilities.}
+#'     \item{\code{"beta"}, \code{"coef"}, \code{"coefs"}}{Class-membership
+#'       regression coefficients.}
+#'     \item{\code{"posterior"}}{Case-specific posterior class probabilities.}
+#'     \item{\code{"state"}, \code{"states"}}{Modal posterior class assignments.}
+#'     \item{\code{"respconditional"}}{For fully multinomial measurement models,
+#'       probabilities of latent-class membership conditional on each response
+#'       category.}
+#'     \item{\code{"probcat"}}{For fully multinomial measurement models,
+#'       marginal response-category probabilities.}
+#'     \item{\code{"data"}}{Processed data stored in the fitted object.}
+#'     \item{\code{"measurement"}}{Processed indicator data.}
+#'     \item{\code{"pattern"}, \code{"patterns"}}{Unique model-variable patterns
+#'       and their observed weights.}
+#'     \item{\code{"table"}, \code{"summary"}}{Response-pattern summary table.}
+#'     \item{\code{"loglik_case"}}{Case-specific log-likelihood contributions.}
+#'     \item{\code{"loglik_pattern"}}{Pattern-specific weighted
+#'       log-likelihood contributions.}
+#'     \item{\code{"loss"}, \code{"loglik"}, \code{"fit_matrix"}}{Optimizer loss,
+#'       log-likelihood, or the complete matrix of fit components.}
+#'     \item{\code{"classification"}}{Modal and proportional
+#'       classification-error matrices. Rows represent latent classes and
+#'       columns represent assigned classes.}
+#'     \item{\code{"convergence"}}{Optimizer convergence information.}
+#'     \item{\code{"gradient"}}{Gradient diagnostics.}
+#'     \item{\code{"timing"}, \code{"elapsed"}}{Elapsed optimization time.}
+#'   }
+#'   Matching is case-insensitive.
+#' @param digits Non-negative integer retained for compatibility with other
+#'   inspection methods. Numeric results are returned without rounding so they
+#'   can safely be used in subsequent computations.
 #'
-#' latInspect(fit)
+#' @details
+#' Posterior probabilities and log-likelihood contributions are stored
+#' internally by unique model-variable pattern and expanded back to the retained
+#' observations when case-level results are requested.
 #'
-#' @param fit model fitted with lca.
-#' @param digits Number of digits to print.
+#' Pattern weights are used when calculating average class probabilities,
+#' posterior class sizes, and classification-error matrices. Consequently,
+#' frequency-weighted models produce weighted inspection results.
 #'
-#' @details Extract objects from fitted lca object.
+#' Gaussian item matrices are read by row name, using \code{"mean"} and
+#' \code{"stdv"}. Multinomial item matrices are assumed to contain probabilities
+#' in their first rows and log-probability parameters in their following rows;
+#' only the probability rows are returned in response profiles.
 #'
-#' @return List with one of the following objects:
-#' \item{class}{.}
-#' \item{posterior}{.}
-#' \item{profile}{.}
+#' @return The object requested through \code{what}. See the description of
+#'   \code{what} for the possible return types.
 #'
 #' @references
-#'
 #' None yet.
 #'
 #' @method latInspect llca
@@ -33,116 +83,197 @@ latInspect.llca <- function(fit,
                             what = "profile",
                             digits = 4L) {
 
-  # fit must inherit from class llca
-  stopifnot(inherits(fit, "llca"))
+  #### Check inputs ####
 
-  # be case insensitive
+  if(!inherits(fit, "llca")) {
+    stop("fit must inherit from class 'llca'.")
+  }
+
+  if(!is.character(what) || length(what) != 1L || is.na(what)) {
+    stop("what must be a single character string.")
+  }
+
+  if(length(digits) != 1L ||
+     is.na(digits) ||
+     digits < 0L ||
+     digits != as.integer(digits)) {
+    stop("digits must be a non-negative integer.")
+  }
+
+  if(length(fit@Optim) == 0L ||
+     is.null(fit@Optim$outputs) ||
+     is.null(fit@Optim$outputs$estimators)) {
+    stop("The llca object does not contain fitted optimization results.")
+  }
+
   what <- tolower(what)
 
   list2env(fit@dataList, envir = environment())
   list2env(fit@modelInfo, envir = environment())
+
+  # Older and outcome-free llca objects may not contain outcomes_names.
+  # Always create it explicitly before extracting conditional parameters.
+  outcomes_names <- fit@dataList$outcomes_names
+  if(is.null(outcomes_names)) outcomes_names <- character(0L)
+
   nclasses <- ncol(trans$class)
+  total_weight <- sum(pattern_weights)
 
-  # Logarithm likelihood of each response pattern:
-  loglik_case <- fit@Optim$outputs$estimators$vectors[[1]][[1]]
-  # Sum of logarithm likelihoods by response pattern:
-  loglik_patterns <- pattern_weights * loglik_case
+  #### Pattern-level likelihood and posterior quantities ####
 
-  # Estimated "counts" for each response pattern:
-  estimated <- exp(loglik_case) * nobs
-  # Posterior:
-  posterior <- exp(matrix(fit@Optim$outputs$estimators$matrices[[1]][[1]],
-                          nrow = npatterns, ncol = nclasses))
-  colnames(posterior) <- paste("P(", "Class", 1:nclasses, "|data)", sep = "")
-  # Posterior classification:
-  state <- apply(posterior, MARGIN = 1, FUN = which.max)
+  # Log-likelihood contribution of each response pattern:
+  loglik_case_patterns <- fit@Optim$outputs$estimators$vectors[[1]][[1]]
+  names(loglik_case_patterns) <- pattern_names
+
+  # Weighted log-likelihood contribution of each response pattern:
+  loglik_patterns <- pattern_weights * loglik_case_patterns
+  names(loglik_patterns) <- pattern_names
+
+  # Model-implied frequency on the total-weight scale:
+  estimated <- exp(loglik_case_patterns) * total_weight
+
+  # Posterior class probabilities by response pattern:
+  posterior_patterns <- exp(matrix(fit@Optim$outputs$estimators$matrices[[1]][[1]],
+                                   nrow = npatterns, ncol = nclasses))
+  rownames(posterior_patterns) <- pattern_names
+  colnames(posterior_patterns) <- paste0("P(Class", seq_len(nclasses), "|data)")
+
+  # Modal posterior class by response pattern:
+  state_patterns <- max.col(posterior_patterns, ties.method = "first")
+  names(state_patterns) <- pattern_names
+
+  #### Response-pattern summary ####
+
   patterns <- data[full2short, variables, drop = FALSE]
-  # Data table of response patterns:
-  summary_table <- cbind(patterns,
-                         Observed = pattern_weights,
-                         Estimated = estimated,
-                         State = state,
-                         Posterior = posterior,
-                         loglik_case = loglik_case,
+
+  summary_table <- cbind(patterns, Observed = pattern_weights,
+                         Estimated = estimated, State = state_patterns,
+                         Posterior = posterior_patterns,
+                         loglik_case = loglik_case_patterns,
                          loglik_patterns = loglik_patterns)
   summary_table <- as.data.frame(summary_table)
-  # Sort the patterns by increasing order:
-  summary_table <- summary_table[do.call(order, summary_table), ]
-  rownames(summary_table) <- paste("pattern", 1:nrow(summary_table), sep = "")
 
-  # Loglik by case:
-  loglik_case <- loglik_case[short2full]
-  posterior <- posterior[short2full, , drop = FALSE]
-  state <- state[short2full]
-  rownames(posterior) <- names(state) <- names(loglik_case) <- rownames(data)
-
-  classes <- colSums(fit@transformed_pars$class * pattern_weights) /
-    sum(pattern_weights)
-  ClassConditional <- fit@transformed_pars[indicators_names]
-
-  # Select only means and standard deviations of gaussian items:
-  if(gaussian$any_gaussian || mvgaussian$any_mvgaussian) {
-    gaussian_indicators <- intersect(indicators_names,
-                                     c(gaussian$gaussian_names, mvgaussian$mvgaussian_names))
-    ClassConditional[gaussian_indicators] <- lapply(ClassConditional[gaussian_indicators],
-                                                    FUN = \(x) {
-                                                      x[c("mean", "stdv"), ]
-                                                    })
+  if(ncol(patterns) > 0L) {
+    pattern_order <- do.call(order, patterns)
+    summary_table <- summary_table[pattern_order, , drop = FALSE]
   }
 
-  # Select only probabilities of gaussian items:
-  if(multinomial$any_multinomial) {
+  rownames(summary_table) <- paste0("pattern", seq_len(nrow(summary_table)))
 
-    multinomial_indicators <- multinomial$multinomial_names
-    ClassConditional[multinomial_indicators] <- lapply(ClassConditional[multinomial_indicators],
-                                                    FUN = \(x) {
-                                                      x[seq_len(nrow(x)/2), ]
-                                                    })
+  #### Expand pattern-level quantities to retained observations ####
+
+  loglik_case <- loglik_case_patterns[short2full]
+  posterior <- posterior_patterns[short2full, , drop = FALSE]
+  state <- state_patterns[short2full]
+
+  rownames(posterior) <- rownames(data)
+  names(state) <- rownames(data)
+  names(loglik_case) <- rownames(data)
+
+  #### Average class probabilities ####
+
+  weighted_classes <- sweep(fit@transformed_pars$class, MARGIN = 1L,
+                            STATS = pattern_weights, FUN = "*")
+  classes <- colSums(weighted_classes) / total_weight
+
+  weighted_posterior <- sweep(posterior_patterns, MARGIN = 1L,
+                              STATS = pattern_weights, FUN = "*")
+  posterior_classes <- colSums(weighted_posterior) / total_weight
+
+  #### Class-conditional parameters ####
+
+  extract_conditional <- function(variable_names) {
+
+    variable_names <- intersect(variable_names, names(fit@transformed_pars))
+    result <- fit@transformed_pars[variable_names]
+
+    gaussian_names_all <- c(gaussian$gaussian_names, mvgaussian$mvgaussian_names)
+
+    for(name in names(result)) {
+
+      x <- result[[name]]
+
+      if(name %in% gaussian_names_all) {
+
+        required_rows <- c("mean", "stdv")
+
+        if(is.null(rownames(x)) ||
+           !all(required_rows %in% rownames(x))) {
+          stop(
+            "Gaussian parameter matrix '", name,
+            "' does not contain rows named 'mean' and 'stdv'."
+          )
+        }
+
+        result[[name]] <- x[required_rows, , drop = FALSE]
+
+      } else if(name %in% multinomial$multinomial_names) {
+
+        j <- match(name, multinomial$multinomial_names)
+
+        if(!is.null(multinomial$multinomial_prob_rows)) {
+          prob_rows <- multinomial$multinomial_prob_rows[[j]]
+        } else {
+          prob_rows <- seq_len(nrow(x) / 2L)
+        }
+
+        result[[name]] <- x[prob_rows, , drop = FALSE]
+
+      }
+
+    }
+
+    return(result)
 
   }
 
-  # Additional outputs for full multinomial models:
-  RespConditional <- probCat <- list() # Only for full multinomial models
-  if(all(variable_type == "multinomial")) {
+  ClassConditional <- extract_conditional(indicators_names)
+  OutcomeConditional <- extract_conditional(outcomes_names)
 
-    # Marginal probability of choosing an item level:
-    classes <- colMeans(fit@transformed_pars$class)
-    # Should use the posterior instead of the classes?
-    probCat <- lapply(ClassConditional, FUN = \(mat) {
-      # Calculate P(y|X)*P(X), the joint probability:
-      jointp <- t(mat) * classes
-      # Calculate P(y), the denominator of the posterior:
-      probCat <- colSums(jointp)
-      return(probCat)
+  #### Additional outputs for fully multinomial measurement models ####
+
+  RespConditional <- list()
+  probCat <- list()
+
+  if(length(variable_type) > 0L &&
+     all(variable_type == "multinomial")) {
+
+    # Marginal response-category probabilities:
+    probCat <- lapply(ClassConditional, FUN = function(mat) {
+
+      jointp <- sweep(t(mat), MARGIN = 1L, STATS = classes, FUN = "*")
+      colSums(jointp)
+
     })
 
-    # Probability of belonging to a class given a chosen item level:
-    RespConditional <- lapply(ClassConditional, FUN = \(mat) {
-      # Calculate P(y|X)*P(X), the joint probability:
-      jointp <- t(mat) * classes
-      # Calculate P(y), the denominator of the posterior:
-      probCat <- colSums(jointp)
-      # Calculate P(X|y) = P(y|X)*P(X)/P(y), the posterior:
-      posterior <- t(jointp) / probCat
-      return(posterior)
+    # Class probabilities conditional on each response category:
+    RespConditional <- lapply(ClassConditional, FUN = function(mat) {
+
+      jointp <- sweep(t(mat), MARGIN = 1L, STATS = classes, FUN = "*")
+      category_prob <- colSums(jointp)
+
+      result <- sweep(t(jointp), MARGIN = 1L, STATS = category_prob, FUN = "/")
+      result[!is.finite(result)] <- NA_real_
+
+      return(result)
+
     })
 
   }
 
-  profile <- list(class_size = colMeans(posterior),
+  profile <- list(class_size = posterior_classes,
                   indicators = ClassConditional)
-  # The profile should have another slot named outcomes with the profile of
-  # the outcome variables
 
-  #### Extract the fit ####
+  if(length(OutcomeConditional) > 0L) profile$outcomes <- OutcomeConditional
+
+  #### Fit components ####
 
   doubles <- fit@Optim$outputs$estimators$doubles
 
   fit_matrix <- vapply(
     doubles,
     FUN = function(x) {
-      c(
-        loss             = x[[1]],
+      c(loss             = x[[1]],
         loss_base        = x[[2]],
         loss_sat         = x[[3]],
         loglik           = x[[4]],
@@ -150,169 +281,183 @@ latInspect.llca <- function(fit,
         loglik_sat       = x[[6]],
         penalty          = x[[7]],
         penalized_loss   = x[[1]] + x[[7]],
-        penalized_loglik = x[[4]] - x[[7]]
-      )
-    },
-    FUN.VALUE = numeric(9)
-  )
+        penalized_loglik = x[[4]] - x[[7]])
+    }, FUN.VALUE = numeric(9L))
 
-  colnames(fit_matrix) <- unlist(lapply(control_estimator,
-                                        FUN = \(x) x$double_names))
+  estimator_names <- unlist(lapply(control_estimator, FUN = \(x) x$double_names),
+                            use.names = FALSE)
+
+  if(length(estimator_names) != ncol(fit_matrix)) {
+    estimator_names <- paste0("estimator", seq_len(ncol(fit_matrix)))
+  }
+
+  colnames(fit_matrix) <- estimator_names
   fit_matrix <- cbind(fit_matrix, overall = rowSums(fit_matrix))
 
-  #### Result ####
+  #### Select requested result ####
 
-  if (what == "profile") {
+  if(what == "profile") {
 
     result <- profile
 
-  } else if (what == "classconditional" ||
-             what == "items" ||
-             what == "item") {
+  } else if(what %in% c("classconditional", "items", "item")) {
 
     result <- ClassConditional
 
-  } else if (what == "class" ||
-             what == "classes" ||
-             what == "cluster" ||
-             what == "clusters") {
+  } else if(what %in% c("outcome", "outcomes")) {
+
+    result <- OutcomeConditional
+
+  } else if(what %in% c("class", "classes", "cluster", "clusters")) {
 
     result <- classes
 
-  } else if (what == "fullclasses") {
+  } else if(what == "fullclasses") {
 
     result <- fit@transformed_pars$class
 
-  } else if (what == "beta"  ||
-             what == "betas" ||
-             what == "coef"  ||
-             what == "coefs" ||
-             what == "coef"  ||
-             what == "coefficient" ||
-             what == "coefficients") {
+  } else if(what %in% c("beta", "betas", "coef", "coefs",
+                        "coefficient", "coefficients")) {
 
     result <- fit@transformed_pars$beta
 
-  } else if (what == "respconditional") {
+  } else if(what == "respconditional") {
 
     result <- RespConditional
 
-  } else if (what == "convergence") {
+  } else if(what == "convergence") {
 
-    conv <- data.frame(Iterations = fit@Optim$iterations,
-                       convergence = fit@Optim$convergence,
-                       grad.norm = fit@Optim$ng)
+    result <- data.frame(Iterations = fit@Optim$iterations,
+                         convergence = fit@Optim$convergence,
+                         grad.norm = fit@Optim$ng)
 
-    return(conv)
+  } else if(what == "gradient") {
 
-  } else if (what == "gradient") {
-
-    gradient.info <- data.frame(name = parameters_labels,
+    gradient_info <- data.frame(name = parameters_labels,
                                 gradient = fit@Optim$g,
                                 rgradient = fit@Optim$rg,
                                 dir = fit@Optim$dir)
 
-    return(list(grad.norm = fit@Optim$ng, gradient.info = gradient.info))
+    result <- list(grad.norm = fit@Optim$ng, gradient.info = gradient_info)
 
-  } else if (what == "data") {
+  } else if(what == "data") {
 
     result <- data
 
-  } else if (what == "measurement") {
+  } else if(what == "measurement") {
 
-    result <- patterns[short2full, , drop = FALSE]
+    result <- data[, indicators_names, drop = FALSE]
 
-  } else if (what == "pattern" ||
-             what == "patterns") {
+  } else if(what %in% c("pattern", "patterns")) {
 
-    patterns <- data.frame(patterns, Observed = pattern_weights)
-    # Sort the patterns by increasing order:
-    patterns <- patterns[do.call(order, patterns), ]
-    rownames(patterns) <- paste("pattern", 1:nrow(patterns), sep = "")
+    result <- data.frame(patterns, Observed = pattern_weights)
 
-    result <- patterns
+    if(ncol(patterns) > 0L) {
+      pattern_order <- do.call(order, patterns)
+      result <- result[pattern_order, , drop = FALSE]
+    }
 
-  } else if (what == "table" ||
-             what == "summary") {
+    rownames(result) <- paste0("pattern", seq_len(nrow(result)))
+
+  } else if(what %in% c("table", "summary")) {
 
     result <- summary_table
 
-  } else if (what == "posterior") {
+  } else if(what == "posterior") {
 
     result <- posterior
 
-  } else if (what == "state" ||
-             what == "states") {
+  } else if(what %in% c("state", "states")) {
 
-    return(state)
+    result <- state
 
-  } else if (what == "loglik_case" ||
-             what == "loglik.case" ||
-             what == "case") {
+  } else if(what %in% c("loglik_case", "loglik.case", "case")) {
 
     result <- loglik_case
 
-  } else if (what == "loglik_pattern" ||
-             what == "loglik.pattern" ||
-             what == "pattern") {
+  } else if(what %in% c("loglik_pattern", "loglik.pattern")) {
 
     result <- loglik_patterns
 
-  } else if (what == "loss" ||
-             what == "losses") {
+  } else if(what %in% c("loss", "losses")) {
 
     result <- fit_matrix[c("loss", "penalized_loss"), "overall", drop = FALSE]
 
-  } else if (what == "loglik" ||
-             what == "ll" ||
-             what == "LL") {
+  } else if(what %in% c("loglik", "ll")) {
 
     result <- fit_matrix[c("loglik", "penalized_loglik"), "overall", drop = FALSE]
 
-  } else if (what == "fit_matrix" ||
-             what == "fit.matrix") {
+  } else if(what %in% c("fit_matrix", "fit.matrix")) {
 
     result <- fit_matrix
 
-  } else if (what == "probcat") {
+  } else if(what == "probcat") {
 
     result <- probCat
 
   } else if(what == "classification") {
 
-    # Proportional classification-error matrix:
-    # rows = true latent class C
-    # columns = assigned/pseudo class W
-    class_error_prop <- crossprod(posterior, posterior)
-    class_error_prop <- sweep(class_error_prop, 1L, colSums(posterior), "/")
-    rownames(class_error_prop) <- paste0("assigned.", 1:nclasses)
-    colnames(class_error_prop) <- paste0("avgprob.", 1:nclasses)
+    denominator <- colSums(weighted_posterior)
 
-    A_modal <- diag(nclasses)[state, , drop = FALSE]
-    class_error_modal <- crossprod(posterior, A_modal)
-    class_error_modal <- sweep(class_error_modal, 1L, colSums(posterior), "/")
-    rownames(class_error_modal) <- paste0("assigned.", 1:nclasses)
-    colnames(class_error_modal) <- paste0("avgprob.", 1:nclasses)
+    class_error_prop <- crossprod(posterior_patterns, weighted_posterior)
+    class_error_prop <- sweep(class_error_prop, MARGIN = 1L,
+                              STATS = denominator, FUN = "/")
+
+    assigned_modal <- diag(nclasses)[state_patterns, , drop = FALSE]
+    weighted_modal <- sweep(assigned_modal, MARGIN = 1L,
+                            STATS = pattern_weights, FUN = "*")
+
+    class_error_modal <- crossprod(posterior_patterns, weighted_modal)
+    class_error_modal <- sweep(class_error_modal, MARGIN = 1L,
+                               STATS = denominator, FUN = "/")
+
+    class_error_prop[!is.finite(class_error_prop)] <- NA_real_
+    class_error_modal[!is.finite(class_error_modal)] <- NA_real_
+
+    class_names <- paste0("Class", seq_len(nclasses))
+    assigned_names <- paste0("Assigned", seq_len(nclasses))
+
+    rownames(class_error_prop) <- class_names
+    colnames(class_error_prop) <- assigned_names
+    rownames(class_error_modal) <- class_names
+    colnames(class_error_modal) <- assigned_names
 
     result <- list(class_error_modal = class_error_modal,
                    class_error_prop = class_error_prop)
 
-  } else if (what == "timing" ||
-             what == "elapsed") {
+  } else if(what %in% c("timing", "elapsed")) {
 
-    return(fit@Optim$elapsed)
+    result <- fit@Optim$elapsed
+
+  } else {
+
+    stop(
+      "Unknown value of what: '", what,
+      "'. See ?latInspect.llca for the supported values."
+    )
 
   }
+
+  #### Return ####
 
   return(result)
 
 }
 
+#' @rdname latInspect.llca
+#' @param model An object of class \code{"llcalist"} containing fitted
+#'   \code{"llca"} objects.
 #' @method latInspect llcalist
 #' @export
-latInspect.llcalist <- function(model, what = "profile") {
+latInspect.llcalist <- function(model,
+                                what = "profile",
+                                digits = 4L) {
 
-  result <- lapply(model, FUN = latInspect, what = what)
+  if(!inherits(model, "llcalist")) {
+    stop("model must inherit from class 'llcalist'.")
+  }
+
+  result <- lapply(model, FUN = latInspect, what = what, digits = digits)
 
   class(result) <- "latInspect.llcalist"
 
