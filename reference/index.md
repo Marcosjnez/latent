@@ -20,8 +20,9 @@
   Example dataset: hexaco
 - [`se()`](https://marcosjnez.github.io/latent/reference/latInspect.lcfa.md)
   : Standard Errors
-- [`latInspect()`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
-  : Inspect objects from fitted lca models.
+- [`latInspect(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
+  [`latInspect(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
+  : Inspect fitted latent class models
 - [`latent-package`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   : An R package for Latent Variable Modeling

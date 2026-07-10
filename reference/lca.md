@@ -84,13 +84,13 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
   Optional model specification. This can be a named list used to fix
   parameters, impose equality constraints, or provide custom parameter
   labels. Names should match internal parameter blocks, for example
-  `beta`, Gaussian item names, `log_<item>` for multinomial logs,
-  `means`, `logsigma`, or `sigma|Class<i>` for multivariate Gaussian
-  blocks. Character strings containing residual-dependency syntax such
-  as `"y1 ~~ y2"` or `"u1 ~~ u2 ~~ u3"` are also used to identify
-  residual covariances or residual associations. If an object of class
-  `"llca"` is supplied, its measurement parameters are reused while the
-  class-membership regression coefficients are re-estimated.
+  `beta`, Gaussian or multinomial item names, or `Sigma|Class<i>` for
+  multivariate Gaussian blocks. Character strings containing
+  residual-dependency syntax such as `"y1 ~~ y2"` or `"u1 ~~ u2 ~~ u3"`
+  are also used to identify residual covariances or residual
+  associations. If an object of class `"llca"` is supplied, its
+  measurement parameters are reused while the class-membership
+  regression coefficients are re-estimated.
 
 - weights:
 
@@ -226,8 +226,10 @@ variances. Variances are parameterized through log-variances and
 transformed to the positive scale during optimization.
 
 For multinomial indicators, the model estimates class-specific category
-probabilities through a softmax parameterization. The first category is
-fixed to zero on the log scale for identification.
+probabilities through a softmax parameterization. Each item is stored in
+one matrix: the first rows contain probabilities and the following rows
+contain their log parameters. The first log parameter is fixed to zero
+for identification.
 
 When `covariates` are supplied and `adjustment = "none"`, class
 probabilities are modeled in one step through multinomial-log
