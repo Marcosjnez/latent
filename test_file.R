@@ -53,6 +53,7 @@ lbvr(fit)
 latInspect(fit, what = "convergence")
 latInspect(fit, what = "profile")
 latInspect(fit, what = "coefs")
+latInspect(fit, what = "classification")
 latInspect(fit, what = "pattern")
 latInspect(fit, what = "table")
 

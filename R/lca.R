@@ -73,8 +73,8 @@
 #' @param model Optional model specification. This can be a named list used to
 #'   fix parameters, impose equality constraints, or provide custom parameter
 #'   labels. Names should match internal parameter blocks, for example
-#'   \code{beta}, Gaussian item names, \code{log_<item>} for multinomial logs,
-#'   or \code{Sigma|Class<i>} for multivariate
+#'   \code{beta}, Gaussian or multinomial item names, or
+#'   \code{Sigma|Class<i>} for multivariate
 #'   Gaussian blocks. Character strings containing residual-dependency syntax
 #'   such as \code{"y1 ~~ y2"} or \code{"u1 ~~ u2 ~~ u3"} are also used to
 #'   identify residual covariances or residual associations. If an object of
@@ -117,8 +117,10 @@
 #' to the positive scale during optimization.
 #'
 #' For multinomial indicators, the model estimates class-specific category
-#' probabilities through a softmax parameterization. The first category is fixed
-#' to zero on the log scale for identification.
+#' probabilities through a softmax parameterization. Each item is stored in one
+#' matrix: the first rows contain probabilities and the following rows contain
+#' their log parameters. The first log parameter is fixed to zero for
+#' identification.
 #'
 #' When \code{covariates} are supplied and \code{adjustment = "none"}, class
 #' probabilities are modeled in one step through multinomial-log coefficients
@@ -1697,12 +1699,11 @@ check_mvmultinomial <- function(multinomial, dependencies = NULL, patterns) {
         as.matrix(as.data.frame(patterns_mvmultinomial_recoded))
 
       nremoved_multinomial <- length(removed_multinomial)
-      removed_logmultinomial <- paste("log_", removed_multinomial,
-                                      "|reference", sep = "")
-      removed_condmultinomial <- paste(removed_multinomial,
-                                       "|reference", sep = "")
-      removed_multinomial_factor_levels <- multinomial_factor_levels[removed_multinomial]
-      removed_multinomial_factor_lengths <- multinomial_factor_lengths[removed_multinomial]
+      removed_logmultinomial <- removed_multinomial
+      removed_multinomial_factor_levels <-
+        multinomial_factor_levels[removed_multinomial]
+      removed_multinomial_factor_lengths <-
+        multinomial_factor_lengths[removed_multinomial]
 
       mvmultinomial <- list(
         any_mvmultinomial = TRUE,
@@ -1717,9 +1718,10 @@ check_mvmultinomial <- function(multinomial, dependencies = NULL, patterns) {
         patterns_mvmultinomial_recoded = patterns_mvmultinomial_recoded,
         nremoved_multinomial = nremoved_multinomial,
         removed_logmultinomial = removed_logmultinomial,
-        removed_condmultinomial = removed_condmultinomial,
-        removed_multinomial_factor_levels = removed_multinomial_factor_levels,
-        removed_multinomial_factor_lengths = removed_multinomial_factor_lengths,
+        removed_multinomial_factor_levels =
+          removed_multinomial_factor_levels,
+        removed_multinomial_factor_lengths =
+          removed_multinomial_factor_lengths,
         indep_pairs = indep_pairs,
         indep_pairs_list = indep_pairs_list,
         new_levels = new_levels,
@@ -1940,7 +1942,17 @@ lca_ml <- function(data,
   log_class_error <- log(class_error)
   log_class_error <- apply(log_class_error, MARGIN = 1L,
                            FUN = \(x) x - x[1L])
-  # t(apply(log_class_error, 2, soft, a=1)) / class_error
+
+  # Probabilities and log-probability parameters coexist in the states matrix:
+  states_probs <- exp(log_class_error)
+  states_probs <- sweep(states_probs, MARGIN = 2L,
+                        STATS = colSums(states_probs), FUN = "/")
+  states_model <- rbind(states_probs, log_class_error)
+  rownames(states_model) <- c(
+    paste0("prob(", seq_len(nclasses), ")"),
+    paste0("logprob(", seq_len(nclasses), ")")
+  )
+  colnames(states_model) <- paste("Class", seq_len(nclasses), sep = "")
 
   #### Step 3: Fitting the structural part using the states ####
 
@@ -1949,7 +1961,7 @@ lca_ml <- function(data,
               multinomial = "states",
               covariates = covariates,
               outcomes = outcomes,
-              model = list(model, log_states = log_class_error),
+              model = list(model, states = states_model),
               weights = weights,
               penalties = penalties,
               start = start,
@@ -1968,13 +1980,13 @@ lca_ml <- function(data,
   # NO VALID STANDARD ERRORS BECAUSE VAR(log_class_error_modal) IS NOT CALCULATED IN fit1
   # Solution for classification = "modal":
   # (1) Calculate log_class_error_modal as transformed parameters in fit1
-  # (2) Provide the full fit1 with log_class_error_modal in model
+  # (2) Provide the full fit1 with the states matrix in model
   # (3) Automatically propagate SE estimation for transformed parameters
 
   # NO VALID STANDARD ERRORS BECAUSE VAR(log_class_error_prop) IS NOT CALCULATED IN fit1
   # Solution for classification = "proportional":
   # (1) Calculate log_class_error_prop as transformed parameters in fit1
-  # (2) Provide the full fit1 with log_class_error_prop in model
+  # (2) Provide the full fit1 with the states matrix in model
   # (3) Automatically propagate SE estimation for transformed parameters
 
 }
@@ -1996,16 +2008,24 @@ objects_multinomial_lca <- function(data, patterns, multinomial, nclasses) {
 
   if(any_multinomial) {
 
-    logmultinomial_names <- paste("log", multinomial_names, sep = "_")
-
     # Transform multinomial variables into factors and drop unused levels:
     measurement <- lapply(data[, multinomial_names, drop = FALSE],
                           FUN = function(x) droplevels(factor(x)))
 
     # Save levels of factor variables:
     multinomial_factor_levels <- lapply(measurement, levels)
-    multinomial_factor_lengths <- unlist(lapply(multinomial_factor_levels, FUN = length))
-    multinomial_reference <- lapply(multinomial_factor_levels, FUN = \(x) x[1])
+    multinomial_factor_lengths <- unlist(lapply(multinomial_factor_levels,
+                                                 FUN = length))
+    multinomial_reference <- lapply(multinomial_factor_levels,
+                                    FUN = \(x) x[1])
+
+    multinomial_prob_rows <- lapply(multinomial_factor_lengths,
+                                    FUN = seq_len)
+    multinomial_log_rows <- lapply(multinomial_factor_lengths,
+                                   FUN = \(x) x + seq_len(x))
+    multinomial_rownames <- lapply(multinomial_factor_levels,
+                                   FUN = \(x) c(paste0("prob(", x, ")"),
+                                                paste0("logprob(", x, ")")))
 
     problem <- multinomial_factor_lengths < 2L
     if(any(problem)) {
@@ -2019,14 +2039,17 @@ objects_multinomial_lca <- function(data, patterns, multinomial, nclasses) {
       if(is.factor(col)) as.integer(col) - 1L else col
     }))
 
-    multinomial <- list(multinomial_names = multinomial_names,
-                        logmultinomial_names = logmultinomial_names,
-                        nmultinomial = nmultinomial,
-                        multinomial_factor_levels = multinomial_factor_levels,
-                        multinomial_factor_lengths = multinomial_factor_lengths,
-                        multinomial_reference = multinomial_reference)
-    # # Check which multinomial items are ordered:
-    # idx <- unlist(lapply(data[, multinomial_names, drop = FALSE], FUN = is.ordered))
+    multinomial <- list(
+      multinomial_names = multinomial_names,
+      logmultinomial_names = multinomial_names,
+      nmultinomial = nmultinomial,
+      multinomial_factor_levels = multinomial_factor_levels,
+      multinomial_factor_lengths = multinomial_factor_lengths,
+      multinomial_reference = multinomial_reference,
+      multinomial_prob_rows = multinomial_prob_rows,
+      multinomial_log_rows = multinomial_log_rows,
+      multinomial_rownames = multinomial_rownames
+    )
 
     # For starting values:
     pi_hat_list <- list()
@@ -2040,7 +2063,8 @@ objects_multinomial_lca <- function(data, patterns, multinomial, nclasses) {
       props <- count(int_vector, nsize, multinomial_factor_lengths[j]) / nsize
       pi_hat_list[[j]] <- props %*% t(rep(1, nclasses))
       log_props <- log(props)
-      eta_hat_list[[j]] <- (log_props-log_props[1]) %*% t(rep(1, nclasses))
+      eta_hat_list[[j]] <- (log_props-log_props[1]) %*%
+        t(rep(1, nclasses))
       j <- j+1L
 
     }
@@ -2168,61 +2192,25 @@ model_multinomial_lca <- function(nclasses, dataList) {
       stop("You cannot use a multinomial likelihood to model a variable with more than 30 unique categories")
     }
 
-    if(!any_mvmultinomial) removed_multinomial <- character(0L)
-
+    # Probabilities and log-probability parameters coexist in the same item
+    # matrix. The first K rows contain probabilities and the following K rows
+    # contain the log parameters. For items in a residual-dependency block,
+    # the probabilities are marginal and the log parameters are conditional
+    # on the other variables being at their reference levels.
     for(j in seq_len(nmultinomial)) {
 
-      # For ordinary multinomial items, the item probability matrix is obtained
-      # directly from the item logs with a softmax transformation. For items
-      # involved in residual dependencies, the original item probability matrix
-      # is kept in the transformed object, but it is later computed as the
-      # marginal probability obtained by summing over the corresponding joint
-      # probability matrix.
-      if(!(multinomial_names[j] %in% removed_multinomial)) {
-
-        list_struct[[k]] <- list(name = logmultinomial_names[j],
-                                 type = "matrix",
-                                 dim = c(multinomial_factor_lengths[j], nclasses),
-                                 rownames = multinomial_factor_levels[[j]],
-                                 colnames = class_names)
-        k <- k+1L
-
-      }
-
-      list_struct[[k]] <- list(name = multinomial_names[j],
-                               type = "matrix",
-                               dim = c(multinomial_factor_lengths[j], nclasses),
-                               rownames = multinomial_factor_levels[[j]],
-                               colnames = class_names)
+      list_struct[[k]] <- list(
+        name = multinomial_names[j],
+        type = "matrix",
+        dim = c(2L*multinomial_factor_lengths[j], nclasses),
+        rownames = multinomial_rownames[[j]],
+        colnames = class_names
+      )
       k <- k+1L
 
     }
 
     if(any_mvmultinomial) {
-
-      # Conditional probability blocks for the multinomial variables involved
-      # in residual dependencies. These are probabilities of the levels of one
-      # variable conditional on the other variable being at its reference level.
-      # They are not used as marginal item probabilities in the likelihood.
-      for(j in seq_len(nremoved_multinomial)) {
-
-        list_struct[[k]] <- list(name = removed_logmultinomial[j],
-                                 type = "matrix",
-                                 dim = c(removed_multinomial_factor_lengths[j],
-                                         nclasses),
-                                 rownames = removed_multinomial_factor_levels[[j]],
-                                 colnames = class_names)
-        k <- k+1L
-
-        list_struct[[k]] <- list(name = removed_condmultinomial[j],
-                                 type = "matrix",
-                                 dim = c(removed_multinomial_factor_lengths[j],
-                                         nclasses),
-                                 rownames = removed_multinomial_factor_levels[[j]],
-                                 colnames = class_names)
-        k <- k+1L
-
-      }
 
       for(h in seq_len(npairs)) {
 
@@ -2238,23 +2226,21 @@ model_multinomial_lca <- function(nclasses, dataList) {
 
       }
 
-      for(h in 1:njoints) {
+      # Joint multinomial variables follow the same structure: probabilities
+      # first and joint log probabilities afterwards.
+      for(h in seq_len(njoints)) {
 
         joint_name <- paste(indep_pairs_list[[h]], collapse = ".")
-        logjoint_name <- paste("log_", joint_name, sep = "")
+        joint_levels_h <- new_levels[[joint_name]]
 
-        list_struct[[k]] <- list(name = logjoint_name,
-                                 type = "matrix",
-                                 dim = c(new_K[joint_name], nclasses),
-                                 rownames = new_levels[[joint_name]],
-                                 colnames = class_names)
-        k <- k+1L
-
-        list_struct[[k]] <- list(name = joint_name,
-                                 type = "matrix",
-                                 dim = c(new_K[joint_name], nclasses),
-                                 rownames = new_levels[[joint_name]],
-                                 colnames = class_names)
+        list_struct[[k]] <- list(
+          name = joint_name,
+          type = "matrix",
+          dim = c(2L*new_K[joint_name], nclasses),
+          rownames = c(paste0("prob(", joint_levels_h, ")"),
+                       paste0("logprob(", joint_levels_h, ")")),
+          colnames = class_names
+        )
         k <- k+1L
 
       }
@@ -2381,47 +2367,28 @@ constraints_multinomial_lca <- function(dataList, param, trans) {
 
   if(any_multinomial) {
 
-    multinomial_param_names <- multinomial_names
-    logmultinomial_param_names <- logmultinomial_names
+    # The probability rows are transformed quantities and therefore fixed in
+    # param. The first log-probability row is fixed to zero for identification.
+    for(j in seq_len(nmultinomial)) {
 
-    if(any_mvmultinomial) {
+      name <- multinomial_names[j]
+      prob_rows <- multinomial_prob_rows[[j]]
+      log_rows <- multinomial_log_rows[[j]]
 
-      multinomial_param_names <- multinomial_names[
-        !(multinomial_names %in% removed_multinomial)
-      ]
-      logmultinomial_param_names <- paste("log", multinomial_param_names,
-                                          sep = "_")
-
-    }
-
-    if(length(multinomial_param_names) > 0L) {
-
-      # Fix the first item category to zero for identification after the
-      # softmax transformation:
-      param[logmultinomial_param_names] <- lapply(trans[logmultinomial_param_names],
-                                                  FUN = \(x) {
-                                                    x[1, ] <- "0"; return(x)
-                                                  })
+      param[[name]] <- trans[[name]]
+      param[[name]][prob_rows, ] <- "1"
+      param[[name]][log_rows[1L], ] <- "0"
 
     }
 
     if(any_mvmultinomial) {
-
-      # Conditional logs for variables involved in residual dependencies.
-      # These generate P(u_j | reference level of the paired variable), not the
-      # marginal P(u_j). Marginal probabilities are computed later from the
-      # joint probabilities using sum_vectors transformations.
-
-      param[removed_logmultinomial] <- lapply(trans[removed_logmultinomial],
-                                FUN = \(x) {
-                                  x[1, ] <- "0"; return(x)
-                                })
 
       param[unlist(loginter_names)] <- trans[unlist(loginter_names)]
-      for(j in 1:npairs) {
+      for(j in seq_len(npairs)) {
         param[[loginter_names[[j]]]][1, ] <- "0"
         param[[loginter_names[[j]]]][, 1] <- "0"
       }
+
     }
 
   }
@@ -2511,53 +2478,37 @@ start_multinomial_lca <- function(param, dataList, rstarts) {
   nobs <- dataList$nobs
   init_param <- vector("list", length = rstarts)
 
-  for(i in 1:rstarts) {
+  for(i in seq_len(rstarts)) {
 
     init_param[[i]] <- list()
 
     # Initial values for multinomial items:
     if(any_multinomial) {
 
-      if(any_mvmultinomial) {
-        multinomial_init_names <- multinomial_names[
-          !(multinomial_names %in% removed_multinomial)
-        ]
-      } else {
-        multinomial_init_names <- multinomial_names
-      }
+      for(j in seq_len(nmultinomial)) {
 
-      for(name in multinomial_init_names) {
-
-        j <- match(name, multinomial_names)
-        log_name <- logmultinomial_names[j]
+        name <- multinomial_names[j]
         sds <- sqrt((1-pi_hat_list[[j]])/(nobs*pi_hat_list[[j]]))
 
-        init_param[[i]][[log_name]] <- eta_hat_list[[j]] +
+        init_logs <- eta_hat_list[[j]] +
           rnorm(length(eta_hat_list[[j]]), 0, sds)
-        init_param[[i]][[log_name]][1, ] <- 0
-        dimnames(init_param[[i]][[log_name]]) <- dimnames(param[[log_name]])
+        init_logs[1, ] <- 0
+
+        init_param[[i]][[name]] <- rbind(pi_hat_list[[j]],
+                                         init_logs)
+        dimnames(init_param[[i]][[name]]) <- dimnames(param[[name]])
 
       }
 
       if(any_mvmultinomial) {
 
-        for(name in removed_multinomial) {
-
-          j <- match(name, multinomial_names)
-          log_name <- paste("log_", name, "|reference", sep = "")
-          sds <- (1-pi_hat_list[[j]])/(nobs*pi_hat_list[[j]])
-
-          init_param[[i]][[log_name]] <- eta_hat_list[[j]] +
-            rnorm(length(eta_hat_list[[j]]), 0, sds)
-          init_param[[i]][[log_name]][1, ] <- 0
-          dimnames(init_param[[i]][[log_name]]) <- dimnames(param[[log_name]])
-
-        }
-
-        for(j in 1:npairs) {
+        for(j in seq_len(npairs)) {
           dims <- dim(param[[loginter_names[[j]]]])
-          init_param[[i]][[loginter_names[[j]]]] <- matrix(0, nrow = dims[1],
-                                                           ncol = dims[2])
+          init_param[[i]][[loginter_names[[j]]]] <- matrix(
+            0,
+            nrow = dims[1],
+            ncol = dims[2]
+          )
           dimnames(init_param[[i]][[loginter_names[[j]]]]) <-
             dimnames(param[[loginter_names[[j]]]])
         }
@@ -2678,18 +2629,21 @@ transformations_multinomial_lca <- function(trans, dataList) {
       !(multinomial_names %in% removed_multinomial)
     ]
 
-    # Softmax transformations for ordinary multinomial items. These directly
-    # define marginal item probabilities.
+    # Softmax transformations for ordinary multinomial items. Probabilities
+    # occupy the first K rows and log parameters the following K rows.
     for(name in multinomial_softmax_names) {
 
       j <- match(name, multinomial_names)
-      log_name <- logmultinomial_names[j]
+      prob_rows <- multinomial_prob_rows[[j]]
+      log_rows <- multinomial_log_rows[[j]]
 
-      for(i in 1:nclasses) {
+      for(i in seq_len(nclasses)) {
 
-        transforms[[k]] <- list(transform = "softmax",
-                                parameters_in = list(trans[[log_name]][, i]),
-                                parameters_out = list(trans[[name]][, i]))
+        transforms[[k]] <- list(
+          transform = "softmax",
+          parameters_in = list(trans[[name]][log_rows, i]),
+          parameters_out = list(trans[[name]][prob_rows, i])
+        )
         k <- k+1L
 
       }
@@ -2699,44 +2653,29 @@ transformations_multinomial_lca <- function(trans, dataList) {
     # Model for the joint probabilities:
     if(any_mvmultinomial) {
 
-      # Softmax transformations for conditional probabilities. For a pair
-      # u1 ~~ u2, these objects represent P(u1 | u2 = reference) and
-      # P(u2 | u1 = reference). The original trans$u1 and trans$u2 objects are
-      # reserved for the marginal probabilities computed from the joint table.
-      for(j in seq_len(nremoved_multinomial)) {
-
-        for(i in 1:nclasses) {
-
-          transforms[[k]] <- list(transform = "softmax",
-                                  parameters_in = list(trans[[removed_logmultinomial[j]]][, i]),
-                                  parameters_out = list(trans[[removed_condmultinomial[j]]][, i]))
-          k <- k+1L
-
-        }
-
-      }
-
-      for(j in 1:njoints) {
+      for(j in seq_len(njoints)) {
 
         joint_name <- paste(indep_pairs_list[[j]], collapse = ".")
-        logjoint_name <- paste("log_", joint_name, sep = "")
+        joint_K <- new_K[joint_name]
+        joint_prob_rows <- seq_len(joint_K)
+        joint_log_rows <- joint_K + seq_len(joint_K)
 
-        mains_names <- sapply(indep_pairs_list[[j]],
-                              FUN = \(x) paste("log_", x, "|reference",
-                                               sep = ""))
-        mains <- trans[mains_names]
+        mains_names <- indep_pairs_list[[j]]
+        mains <- lapply(mains_names, FUN = function(name) {
+          item_j <- match(name, multinomial_names)
+          trans[[name]][multinomial_log_rows[[item_j]], , drop = FALSE]
+        })
+        names(mains) <- mains_names
 
         inters_lognames <- apply(indep_pairs[[j]], MARGIN = 1,
                                  FUN = \(x) paste("log_", x, sep = "",
                                                   collapse = "x"))
         inters <- trans[inters_lognames]
 
-        orderings <- joint_orderings[[j]][, indep_pairs_list[[j]]]
-        colnames(orderings) <- mains_names
-        orderings2 <- orderings
-        colnames(orderings2) <- indep_pairs_list[[j]]
+        orderings <- joint_orderings[[j]][, indep_pairs_list[[j]],
+                                           drop = FALSE]
 
-        for(i in 1:nclasses) {
+        for(i in seq_len(nclasses)) {
 
           mains_effects <- lapply(mains, FUN = \(x) x[, i])
           for(l in mains_names) {
@@ -2744,37 +2683,42 @@ transformations_multinomial_lca <- function(trans, dataList) {
           }
 
           inters_effects <- vector("list", length = length(inters_lognames))
-          for(l in 1:nrow(indep_pairs[[j]])) {
-            rows <- orderings2[, indep_pairs[[j]][l, 1]]
-            cols <- orderings2[, indep_pairs[[j]][l, 2]]
+          for(l in seq_len(nrow(indep_pairs[[j]]))) {
+            rows <- orderings[, indep_pairs[[j]][l, 1]]
+            cols <- orderings[, indep_pairs[[j]][l, 2]]
             inters_effects[[l]] <- inters[[l]][cbind(rows, cols)]
           }
 
-
-          pars_out <- trans[[logjoint_name]][, i]
-          transforms[[k]] <- list(transform = "sum_vectors",
-                                  parameters_in = c(mains_effects,
-                                                    inters_effects),
-                                  parameters_out = list(pars_out))
-
+          pars_out <- trans[[joint_name]][joint_log_rows, i]
+          transforms[[k]] <- list(
+            transform = "sum_vectors",
+            parameters_in = c(mains_effects, inters_effects),
+            parameters_out = list(pars_out)
+          )
           k <- k+1L
 
-          pars_in_softmax <- trans[[logjoint_name]][, i]
-          pars_out_softmax <- trans[[joint_name]][, i]
-          transforms[[k]] <- list(transform = "softmax",
-                                  parameters_in = list(pars_in_softmax),
-                                  parameters_out = list(pars_out_softmax))
-
+          pars_in_softmax <- trans[[joint_name]][joint_log_rows, i]
+          pars_out_softmax <- trans[[joint_name]][joint_prob_rows, i]
+          transforms[[k]] <- list(
+            transform = "softmax",
+            parameters_in = list(pars_in_softmax),
+            parameters_out = list(pars_out_softmax)
+          )
           k <- k+1L
 
           # Marginal probabilities for the variables involved in the joint:
           for(lprob in indep_pairs_list[[j]]) {
 
-            group_level <- split(pars_out_softmax, orderings2[, lprob])
+            item_j <- match(lprob, multinomial_names)
+            prob_rows <- multinomial_prob_rows[[item_j]]
+            group_level <- split(pars_out_softmax, orderings[, lprob])
             input <- do.call(Map, c(list(f = c), group_level))
-            transforms[[k]] <- list(transform = "sum_vectors",
-                                    parameters_in = input,
-                                    parameters_out = list(trans[[lprob]][, i]))
+
+            transforms[[k]] <- list(
+              transform = "sum_vectors",
+              parameters_in = input,
+              parameters_out = list(trans[[lprob]][prob_rows, i])
+            )
             k <- k+1L
 
           }
@@ -2783,33 +2727,41 @@ transformations_multinomial_lca <- function(trans, dataList) {
 
       }
 
-      transforms[[k]] <- list(transform = "multinomial2",
-                              parameters_in = list(trans[colnames(patterns_mvmultinomial_recoded)],
-                                                   trans$loglik),
-                              parameters_out = list(trans$loglik),
-                              extra = list(y = patterns_mvmultinomial_recoded,
-                                           S = npatterns, J = new_J,
-                                           I = nclasses, K = new_K))
+      likelihood_names <- colnames(patterns_mvmultinomial_recoded)
+      likelihood_probs <- lapply(likelihood_names, FUN = function(name) {
 
+        K_name <- new_K[name]
+        trans[[name]][seq_len(K_name), , drop = FALSE]
+
+      })
+      names(likelihood_probs) <- likelihood_names
+
+      transforms[[k]] <- list(
+        transform = "multinomial2",
+        parameters_in = list(likelihood_probs, trans$loglik),
+        parameters_out = list(trans$loglik),
+        extra = list(y = patterns_mvmultinomial_recoded,
+                     S = npatterns, J = new_J,
+                     I = nclasses, K = new_K)
+      )
       k <- k+1L
 
     } else {
 
       K <- unlist(lapply(multinomial_factor_levels, FUN = length))
+      item_probs <- lapply(seq_len(nmultinomial), FUN = function(j) {
+        trans[[multinomial_names[j]]][multinomial_prob_rows[[j]], ,
+                                      drop = FALSE]
+      })
+      names(item_probs) <- multinomial_names
 
-      # transforms[[k]] <- list(transform = "multinomial",
-      #                         parameters_in = list(trans[multinomial_names]),
-      #                         parameters_out = list(trans$loglik[, multinom, ]),
-      #                         extra = list(y = y, S = npatterns, J = Jmulti,
-      #                                      I = nclasses, K = K))
-
-      transforms[[k]] <- list(transform = "multinomial2",
-                              parameters_in = list(trans[multinomial_names],
-                                                   trans$loglik),
-                              parameters_out = list(trans$loglik),
-                              extra = list(y = patterns_multinomial, S = npatterns,
-                                           J = nmultinomial, I = nclasses, K = K))
-
+      transforms[[k]] <- list(
+        transform = "multinomial2",
+        parameters_in = list(item_probs, trans$loglik),
+        parameters_out = list(trans$loglik),
+        extra = list(y = patterns_multinomial, S = npatterns,
+                     J = nmultinomial, I = nclasses, K = K)
+      )
       k <- k+1L
 
     }
@@ -2963,11 +2915,10 @@ bayes2 <- function(trans, multinomial, nclasses, alpha, nobs) {
 
     G <- j <- 1L
     for(name in multinomial_names) {
-      for(i in 1:nclasses) {
+      for(i in seq_len(nclasses)) {
 
         pihat <- pi_hat_list[[j]][, i]
-        probs_by_class <- unlist(lapply(trans[name],
-                                        FUN = \(x) x[, i]))
+        probs_by_class <- trans[[name]][multinomial_prob_rows[[j]], i]
 
         estimators[[G]] <- list(estimator = "bayesconst2",
                                 parameters = list(probs_by_class),

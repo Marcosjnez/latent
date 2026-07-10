@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/07/2026
+# Modification date: 10/07/2026
 #'
 #' @title
 #' Inspect objects from fitted lca models.
@@ -70,11 +70,6 @@ latInspect.llca <- function(fit,
   summary_table <- summary_table[do.call(order, summary_table), ]
   rownames(summary_table) <- paste("pattern", 1:nrow(summary_table), sep = "")
 
-  # Check the existence of gaussian items:
-  gauss <- "gaussian" %in% variable_type
-  # Check the existence of multinomial items:
-  multin <- "multinomial" %in% variable_type
-
   # Loglik by case:
   loglik_case <- loglik_case[short2full]
   posterior <- posterior[short2full, , drop = FALSE]
@@ -84,6 +79,8 @@ latInspect.llca <- function(fit,
   classes <- colSums(fit@transformed_pars$class * pattern_weights) /
     sum(pattern_weights)
   ClassConditional <- fit@transformed_pars[indicators_names]
+
+  # Select only means and standard deviations of gaussian items:
   if(gaussian$any_gaussian || mvgaussian$any_mvgaussian) {
     gaussian_indicators <- intersect(indicators_names,
                                      c(gaussian$gaussian_names, mvgaussian$mvgaussian_names))
@@ -93,11 +90,24 @@ latInspect.llca <- function(fit,
                                                     })
   }
 
+  # Select only probabilities of gaussian items:
+  if(multinomial$any_multinomial) {
+
+    multinomial_indicators <- multinomial$multinomial_names
+    ClassConditional[multinomial_indicators] <- lapply(ClassConditional[multinomial_indicators],
+                                                    FUN = \(x) {
+                                                      x[seq_len(nrow(x)/2), ]
+                                                    })
+
+  }
+
   # Additional outputs for full multinomial models:
   RespConditional <- probCat <- list() # Only for full multinomial models
   if(all(variable_type == "multinomial")) {
 
+    # Marginal probability of choosing an item level:
     classes <- colMeans(fit@transformed_pars$class)
+    # Should use the posterior instead of the classes?
     probCat <- lapply(ClassConditional, FUN = \(mat) {
       # Calculate P(y|X)*P(X), the joint probability:
       jointp <- t(mat) * classes
@@ -106,6 +116,7 @@ latInspect.llca <- function(fit,
       return(probCat)
     })
 
+    # Probability of belonging to a class given a chosen item level:
     RespConditional <- lapply(ClassConditional, FUN = \(mat) {
       # Calculate P(y|X)*P(X), the joint probability:
       jointp <- t(mat) * classes
@@ -118,23 +129,8 @@ latInspect.llca <- function(fit,
 
   }
 
-  if(outcomes$any_outcomes) {
-    ClassConditional_outcomes <- fit@transformed_pars[outcomes$outcomes_names]
-    if(gaussian$any_gaussian) {
-      gaussian_indicators <- intersect(outcomes$outcomes_names,
-                                  gaussian$gaussian_names)
-      ClassConditional_outcomes[gaussian_indicators] <- lapply(ClassConditional_outcomes[gaussian_indicators],
-                                                          FUN = \(x) {
-                                                            x[c(1, 4), ]
-                                                          })
-    }
-  } else {
-    ClassConditional_outcomes <- NULL
-  }
-
   profile <- list(class_size = colMeans(posterior),
-                  indicators = ClassConditional,
-                  outcomes = ClassConditional_outcomes)
+                  indicators = ClassConditional)
 
   #### Extract the fit ####
 
