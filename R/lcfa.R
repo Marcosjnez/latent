@@ -1222,16 +1222,7 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
 
   inits <- create_init(trans, param, init_param,
                        control_transform = control_transform, control)
-
-  parameters <- inits$parameters
-  parameters_labels <- inits$parameters_labels
-  nparam <- inits$nparam
-
-  transparameters <- inits$transparameters
-  transparameters_labels <- inits$transparameters_labels
-  ntrans <- inits$ntrans
-
-  trans2param <- inits$trans2param
+  list2env(inits, envir = environment())
 
   #### Set up the optimizer ####
 

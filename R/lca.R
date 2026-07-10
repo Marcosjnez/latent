@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/07/2026
+# Modification date: 10/07/2026
 #'
 #' Latent Class Analysis
 #'
@@ -74,7 +74,7 @@
 #'   fix parameters, impose equality constraints, or provide custom parameter
 #'   labels. Names should match internal parameter blocks, for example
 #'   \code{beta}, Gaussian item names, \code{log_<item>} for multinomial logs,
-#'   \code{means}, \code{logsigma}, or \code{sigma|Class<i>} for multivariate
+#'   or \code{Sigma|Class<i>} for multivariate
 #'   Gaussian blocks. Character strings containing residual-dependency syntax
 #'   such as \code{"y1 ~~ y2"} or \code{"u1 ~~ u2 ~~ u3"} are also used to
 #'   identify residual covariances or residual associations. If an object of
@@ -306,8 +306,8 @@ lca <- function(data,
     )
   }
 
-  there_are_covariates <- !is.null(covariates)
-  there_are_outcomes <- !is.null(outcomes)
+  there_are_covariates <- length(covariates) > 0L
+  there_are_outcomes <- length(unlist(outcomes)) > 0L
   structural <- there_are_covariates || there_are_outcomes
 
   # Check overlapping variable roles
@@ -616,18 +616,17 @@ create_lca_dataList <- function(data = NULL,
 
   #### Create the design matrix from the covariates ####
 
-  # Create the matrix of predictors for latent class probabilities:
-  # covariates must be a character vector with the name of the predictors in data:
-  design <- make_design_matrix(covariates = covariates_names,
-                               data = data)
-  pdesign <- ncol(design) # Number of columns of the design matrix
-
   # Remove participants with missing data in any covariate:
-  remove <- which(apply(design, MARGIN = 1, FUN = anyNA))
-  if(length(remove) > 0) {
+  if(length(covariates_names) > 0L) {
+    remove <- which(!complete.cases(data[, covariates_names, drop = FALSE]))
+  } else {
+    remove <- integer(0L)
+  }
 
-    missing <- colSums(is.na(design))
-    missing <- missing[missing > 0]
+  if(length(remove) > 0L) {
+
+    missing <- colSums(is.na(data[, covariates_names, drop = FALSE]))
+    missing <- missing[missing > 0L]
 
     warning(
       "Missing data detected in covariates:\n",
@@ -645,11 +644,18 @@ create_lca_dataList <- function(data = NULL,
       " removed."
     )
 
-    design <- design[-remove, , drop = FALSE]
     data <- data[-remove, , drop = FALSE]
-    weights <- weights[-remove]
+
+    if(!is.null(weights)) {
+      weights <- weights[-remove]
+    }
 
   }
+
+  # Create the matrix of predictors for latent class probabilities:
+  # covariates must be a character vector with the name of the predictors in data:
+  design <- make_design_matrix(covariates = covariates_names, data = data)
+  pdesign <- ncol(design) # Number of columns of the design matrix
 
   if(nrow(data) == 0L) {
     stop("No observations remain after removing rows with missing covariates.")
@@ -740,6 +746,7 @@ create_lca_dataList <- function(data = NULL,
 
   dataList <- vector("list")
   dataList$data <- data
+  dataList$nclasses <- nclasses
   dataList$design <- design
   dataList$variable_type <- variable_type
   dataList$nobs <- nobs
@@ -761,7 +768,6 @@ create_lca_dataList <- function(data = NULL,
   dataList$outcomes_names <- outcomes_names
   dataList$variables <- variables
   dataList$outcomes <- outcomes
-  dataList$variable_type <- variable_type
   dataList$class_names <- paste("Class", 1:nclasses, sep = "")
 
   #### Return ####
@@ -1478,7 +1484,6 @@ group_connected_pairs <- function(pairs) {
   )
 }
 
-
 parse_lca_dependencies <- function(model, gaussian = NULL, multinomial = NULL) {
 
   dependencies <- list(
@@ -1499,7 +1504,40 @@ parse_lca_dependencies <- function(model, gaussian = NULL, multinomial = NULL) {
 
   dependencies$all_pairs <- error_covs
 
-  # Gaussian residual-dependency pairs:
+  #### Check unsupported dependency statements ####
+
+  # Variables belonging to different likelihoods cannot be modeled jointly
+
+  supported <- (
+    error_covs$lhs %in% gaussian &
+      error_covs$rhs %in% gaussian
+  ) | (
+    error_covs$lhs %in% multinomial &
+      error_covs$rhs %in% multinomial
+  )
+
+  supported <- supported & error_covs$lhs != error_covs$rhs
+
+  unsupported <- error_covs[!supported, , drop = FALSE]
+
+  if(nrow(unsupported) > 0L) {
+
+    unsupported_names <- paste(
+      unsupported$lhs,
+      unsupported$rhs,
+      sep = " ~~ "
+    )
+
+    stop(
+      "Unsupported residual dependency/dependencies: ",
+      paste(unsupported_names, collapse = ", "),
+      ". Variables belonging to different likelihoods cannot be modeled jointly."
+    )
+
+  }
+
+  #### Gaussian residual-dependency pairs ####
+
   if(length(gaussian) > 1L) {
 
     keep <- error_covs$lhs %in% gaussian &
@@ -1514,7 +1552,8 @@ parse_lca_dependencies <- function(model, gaussian = NULL, multinomial = NULL) {
 
   }
 
-  # Multinomial residual-dependency pairs:
+  #### Multinomial residual-dependency pairs ####
+
   if(length(multinomial) > 1L) {
 
     keep <- error_covs$lhs %in% multinomial &
@@ -1530,10 +1569,11 @@ parse_lca_dependencies <- function(model, gaussian = NULL, multinomial = NULL) {
 
   }
 
+  #### Return ####
+
   return(dependencies)
 
 }
-
 
 check_mvgaussian <- function(gaussian, dependencies = NULL) {
 
@@ -1587,7 +1627,6 @@ check_mvgaussian <- function(gaussian, dependencies = NULL) {
   return(result)
 
 }
-
 
 check_mvmultinomial <- function(multinomial, dependencies = NULL, patterns) {
 
@@ -1986,8 +2025,8 @@ objects_multinomial_lca <- function(data, patterns, multinomial, nclasses) {
                         multinomial_factor_levels = multinomial_factor_levels,
                         multinomial_factor_lengths = multinomial_factor_lengths,
                         multinomial_reference = multinomial_reference)
-    # Check which multinomial items are ordered:
-    idx <- unlist(lapply(data[, multinomial_names, drop = FALSE], FUN = is.ordered))
+    # # Check which multinomial items are ordered:
+    # idx <- unlist(lapply(data[, multinomial_names, drop = FALSE], FUN = is.ordered))
 
     # For starting values:
     pi_hat_list <- list()
@@ -2428,7 +2467,7 @@ constraints_mvgaussian_lca <- function(dataList, param, trans) {
 
     ordering <- rownames(trans[[sigma_names[1]]])
     target <- target[ordering, ordering]
-    nclasses <- dataList$args$nclasses
+    nclasses <- dataList$nclasses
     for(j in 1:nclasses) {
       param[[sigma_names[j]]] <- diag(nmvgaussian)
       param[[sigma_names[j]]][target] <- trans[[sigma_names[j]]][target]
@@ -2447,7 +2486,7 @@ constraints_mvgaussian_lca <- function(dataList, param, trans) {
 start_beta_lca <- function(param, dataList, rstarts) {
 
   pdesign <- dataList$pdesign
-  nclasses <- dataList$args$nclasses
+  nclasses <- dataList$nclasses
 
   # Initial values for betas:
   init_param <- vector("list", length = rstarts)
@@ -2491,7 +2530,7 @@ start_multinomial_lca <- function(param, dataList, rstarts) {
 
         j <- match(name, multinomial_names)
         log_name <- logmultinomial_names[j]
-        sds <- (1-pi_hat_list[[j]])/(nobs*pi_hat_list[[j]])
+        sds <- sqrt((1-pi_hat_list[[j]])/(nobs*pi_hat_list[[j]]))
 
         init_param[[i]][[log_name]] <- eta_hat_list[[j]] +
           rnorm(length(eta_hat_list[[j]]), 0, sds)
@@ -2538,7 +2577,7 @@ start_gaussian_lca <- function(param, dataList, rstarts) {
   list2env(dataList$gaussian, envir = environment())
 
   nobs <- dataList$nobs
-  nclasses <- dataList$args$nclasses
+  nclasses <- dataList$nclasses
   init_param <- vector("list", length = rstarts)
 
   for(i in 1:rstarts) {
@@ -2552,7 +2591,7 @@ start_gaussian_lca <- function(param, dataList, rstarts) {
 
         rmean <- init_mean[[j]] + rnorm(nclasses,
                                         mean = 0,
-                                        sd = init_var[[j]]/sqrt(nobs))
+                                        sd = sqrt(init_var[[j]]/nobs))
         init_param[[i]][[name]] <- rbind(rmean,
                                          init_var[[j]],
                                          init_logvar[[j]],
@@ -2576,7 +2615,7 @@ start_mvgaussian_lca <- function(param, dataList, rstarts) {
   list2env(dataList$mvgaussian, envir = environment())
 
   nobs <- dataList$nobs
-  nclasses <- dataList$args$nclasses
+  nclasses <- dataList$nclasses
   init_param <- vector("list", length = rstarts)
 
   for(i in 1:rstarts) {
@@ -2626,7 +2665,7 @@ transformations_multinomial_lca <- function(trans, dataList) {
   list2env(mvmultinomial, envir = environment())
 
   npatterns <- dataList$npatterns
-  nclasses <- dataList$args$nclasses
+  nclasses <- dataList$nclasses
   transforms <- list()
   k <- 1L
 
@@ -2785,7 +2824,7 @@ transformations_gaussian_lca <- function(trans, dataList) {
 
   list2env(dataList$gaussian, envir = environment())
 
-  nclasses <- dataList$args$nclasses
+  nclasses <- dataList$nclasses
   npatterns <- dataList$npatterns
   transforms <- list()
   k <- 1L
@@ -2837,7 +2876,7 @@ transformations_mvgaussian_lca <- function(trans, dataList) {
   list2env(dataList$mvgaussian, envir = environment())
 
   npatterns <- dataList$npatterns
-  nclasses <- dataList$args$nclasses
+  nclasses <- dataList$nclasses
   transforms <- list()
   k <- 1L
 

@@ -357,7 +357,8 @@ print.lbvr <- function(x, ...) {
 
 latentgold_cont_cont_bvr <- function(fit, v1, v2) {
 
-  # Bivariate residuals in LatentGold's style
+  # Bivariate residuals in LatentGold's style for continuous indicators
+  # Numbers don't match exactly but are close
 
   # Copy the fit object and create the same LCA model (fit2) but with a residual
   # dependency between v1 and v2:
