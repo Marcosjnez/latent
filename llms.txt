@@ -67,12 +67,15 @@ The package development is supported by two projects:
   Example dataset: cancer
 - [`empathy`](https://marcosjnez.github.io/latent/reference/empathy.md)
   : Example dataset: empathy
-- [`fitted()`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
-  : Fitted values for Latent Class Analysis.
+- [`fitted(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
+  : Fitted Latent Class Membership Probabilities
+- [`fitted(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llcalist.md)
+  : Fitted Probabilities for Lists of Latent Class Models
 - [`getfit()`](https://marcosjnez.github.io/latent/reference/getfit.lcfa.md)
   : Fit indices
-- [`getfit()`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
-  : Fit indices
+- [`getfit(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
+  [`getfit(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
+  : Fit indices for latent class models
 - [`gss82`](https://marcosjnez.github.io/latent/reference/gss82.md) :
   Example dataset: gss82
 - [`hexaco`](https://marcosjnez.github.io/latent/reference/hexaco.md) :
@@ -86,7 +89,7 @@ The package development is supported by two projects:
   [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   : An R package for Latent Variable Modeling
 - [`lbvr()`](https://marcosjnez.github.io/latent/reference/lbvr.md) :
-  Local Bivariate Residuals for Latent Class Analysis
+  Local bivariate residuals for latent class analysis
 - [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md) :
   Latent Class Analysis
 - [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
@@ -115,10 +118,11 @@ The package development is supported by two projects:
   : Plot mixed LCA results (both Gaussian and multinomial indicators)
 - [`plot_lca_multinomial()`](https://marcosjnez.github.io/latent/reference/plot_lca_multinomial.md)
   : Plot response probabilities for multinomial LCA indicators
-- [`predict()`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
-  : Predicted values for Latent Class Analysis.
+- [`predict(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
+  [`predict(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
+  : Predict latent class membership probabilities
 - [`print(`*`<lbvr>`*`)`](https://marcosjnez.github.io/latent/reference/print.lbvr.md)
-  : Print method for lbvr objects
+  : Print local bivariate residual diagnostics
 - [`print(`*`<lclassd>`*`)`](https://marcosjnez.github.io/latent/reference/print.lclassd.md)
   : Print Method for Latent Class Diagnostics
 - [`reshape_lca_mixed()`](https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.md)

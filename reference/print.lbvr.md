@@ -1,6 +1,8 @@
-# Print method for lbvr objects
+# Print local bivariate residual diagnostics
 
-Print method for lbvr objects
+Prints the root mean square residual and the pairwise residual summary
+table stored in an object returned by
+[`lbvr()`](https://marcosjnez.github.io/latent/reference/lbvr.md).
 
 ## Usage
 
@@ -17,4 +19,10 @@ print(x, ...)
 
 - ...:
 
-  Additional arguments passed to `print.data.frame`.
+  Additional arguments passed to
+  [`print.data.frame()`](https://rdrr.io/r/base/print.dataframe.html)
+  when printing the residual summary table.
+
+## Value
+
+The input object `x`, returned invisibly.
