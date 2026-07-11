@@ -2,61 +2,72 @@
 % Please edit documentation in R/lbvr.R
 \name{lbvr}
 \alias{lbvr}
-\title{Local Bivariate Residuals for Latent Class Analysis}
+\title{Local bivariate residuals for latent class analysis}
 \usage{
-lbvr(model, digits = 4)
+lbvr(model, digits = 4L)
 }
 \arguments{
-\item{model}{An object of class `"lca"` from the \pkg{latent} package.}
+\item{model}{A fitted object of class \code{"llca"}.}
 
-\item{digits}{Integer; number of decimal places to use in rounding the output
-matrices and the summary table. Default is 4.}
+\item{digits}{A non-negative integer indicating the number of decimal places
+used to round the returned matrices and summary table. The default is
+\code{4L}.}
 }
 \value{
-A list of class `"lbvr"` with components:
-  \item{residual_matrix}{A symmetric matrix of residual measures:
-    \itemize{
-      \item For continuous–continuous pairs: Pearson correlation of residuals.
-      \item For categorical–categorical pairs: maximum absolute standardized residual.
-      \item For continuous–categorical pairs: maximum absolute Z‑score of mean residuals per category.
-    }}
-  \item{pvalue_matrix}{Symmetric matrix of p-values corresponding to the
-    residual measures (using correlation test, chi‑square test, or ANOVA F‑test).}
-  \item{r_mat}{Symmetric matrix of effect sizes comparable to a correlation:
-    \itemize{
-      \item Continuous–continuous: Pearson \eqn{r}.
-      \item Categorical–categorical: difference of Cramér's V (\eqn{V_{obs} - V_{exp}}).
-      \item Continuous–categorical: \eqn{\eta} (square root of eta‑squared from ANOVA).
-    }}
-  \item{rmsr}{Root mean square of the upper triangle of `r_mat`; a global fit index.}
-  \item{res_tab}{A data frame with one row per variable pair, containing:
-    \code{pair}, \code{statistic} (the residual measure), \code{p_value},
-    \code{r} (the correlation‑like effect size), \code{var_types}, and
-    \code{test} (a descriptive label). The table is sorted by absolute \code{r}.}
+An object of class \code{"lbvr"}, consisting of a list with the
+  following components:
+  \item{residual_matrix}{A symmetric matrix containing the standardized
+    pairwise diagnostic.}
+  \item{raw_residual_matrix}{A symmetric matrix containing the raw residual
+    score. Mixed Gaussian-multinomial pairs contain \code{NA_real_}.}
+  \item{pvalue_matrix}{A symmetric matrix containing the corresponding
+    p-values.}
+  \item{r_mat}{A symmetric matrix containing the correlation-like effect
+    sizes.}
+  \item{rmsr}{The root mean square of the upper-triangular values of
+    \code{r_mat}.}
+  \item{res_tab}{A data frame with one row per indicator pair and columns
+    \code{pair}, \code{residual}, \code{statistic}, \code{p_value},
+    \code{r}, \code{var_types}, and \code{test}. Rows are ordered by the
+    absolute value of \code{r}.}
 }
 \description{
-Computes bivariate residuals (BVR) and related diagnostics for a fitted latent
-class model with mixed indicators (continuous and categorical). The function
-returns a matrix of residuals, p-values, a correlation-like effect size, and a
-summary table. The root mean square residual (RMSR) provides a global fit measure.
+Computes pairwise residual diagnostics for the indicators of a fitted latent
+class model. Different diagnostics are used for pairs of Gaussian indicators,
+pairs of multinomial indicators, and mixed Gaussian-multinomial pairs.
 }
 \details{
-The function extracts data, variable types, posterior probabilities, class‑specific
-means, and response probabilities from a fitted \pkg{latent} model. It then computes
-residuals for each pair of indicators using only pairwise complete observations.
-Missing data are handled by scaling expected frequencies to the number of complete
-cases for the pair.
+The function evaluates every pair of measurement indicators. Covariates and
+distal outcomes are not included. Pairwise complete observations are used for
+each diagnostic.
 
-For categorical variables, the original data (which may be zero‑based) are
-incremented by 1 to ensure proper table construction.
+For two Gaussian indicators, the standardized diagnostic is the Pearson
+correlation between their posterior-weighted residuals. The raw residual is
+obtained with the LatentGold-style score calculation implemented in
+\code{latentgold_cont_cont_bvr()}.
+
+For two multinomial indicators, the function compares the observed
+cross-classification table with the model-implied table. It reports the
+maximum absolute standardized residual, its chi-squared p-value, the
+difference between the observed and expected Cramer's V values, and the raw
+residual score used by the package.
+
+For a Gaussian and a multinomial indicator, the function reports the maximum
+absolute category-specific Z-score of the Gaussian residuals, the p-value
+from the ANOVA calculation, and eta as a correlation-like effect size. A raw
+residual is not defined for these mixed pairs and is returned as
+\code{NA_real_}.
+
+Indicator pairs already included as residual dependencies in the fitted model
+are assigned a residual of zero, a p-value of one, and an effect size of zero.
 }
 \examples{
 \dontrun{
-library(latent)
-# Fit a 3‑class model with multinomial indicators
-fit <- lca(data = gss82, nclasses = 3,item = rep("multinomial", ncol(gss82)))
-# Compute bivariate residuals
-lbvr(fit)
+fit <- lca(data = gss82, nclasses = 3L,
+           multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"))
+
+residuals <- lbvr(fit)
+residuals$res_tab
 }
 
 }

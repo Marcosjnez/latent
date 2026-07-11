@@ -2,24 +2,92 @@
 % Please edit documentation in R/getfit_llca.R
 \name{getfit.llca}
 \alias{getfit.llca}
-\title{Fit indices}
+\alias{getfit.llcalist}
+\title{Fit indices for latent class models}
 \usage{
-getfit(model)
+\method{getfit}{llca}(model, digits = 4)
+
+\method{getfit}{llcalist}(model, digits = 4)
+
+\method{getfit}{llcalist}(model, digits = 4L)
 }
 \arguments{
-\item{model}{data.frame or matrix of response.}
+\item{model}{An object of class \code{"llca"} fitted with \code{lca()}, or an
+object of class \code{"llcalist"} containing several fitted
+\code{"llca"} models.}
+
+\item{digits}{Integer giving the number of decimal places used to round the
+output. Use \code{NULL} to return the unrounded values.}
 }
 \value{
-List with the following fit indices:
-\item{AIC}{.}
-\item{BIC}{.}
+For an object of class \code{"llca"}, a named numeric vector of class
+\code{"getfit.llca"} containing:
+\describe{
+  \item{nclasses}{Number of latent classes.}
+  \item{npar}{Number of freely estimated model parameters.}
+  \item{nobs}{Number of observations used in estimation.}
+  \item{loglik}{Model log-likelihood.}
+  \item{penalized_loglik}{Penalized log-likelihood, when penalization is active.}
+  \item{L2}{Likelihood-ratio statistic for a fully multinomial model.}
+  \item{dof}{Degrees of freedom associated with \code{L2}.}
+  \item{pvalue}{P-value associated with \code{L2}.}
+  \item{AIC}{Akaike information criterion.}
+  \item{BIC}{Bayesian information criterion.}
+  \item{AIC3}{AIC using a penalty of three per parameter.}
+  \item{CAIC}{Consistent Akaike information criterion.}
+  \item{KIC}{Kullback information criterion.}
+  \item{SABIC}{Sample-size-adjusted BIC.}
+  \item{ICL}{Integrated classification likelihood.}
+  \item{AICp, BICp, AIC3p, CAICp, KICp, SABICp, ICLp}{Penalized versions of
+    the corresponding indices, returned only when penalization is active.}
+  \item{R2_entropy}{Entropy-based pseudo-\eqn{R^2}.}
+}
+
+For an object of class \code{"llcalist"}, a numeric matrix of class
+\code{"getfit.llcalist"} with one row per model and one column per available
+fit index.
 }
 \description{
-Compute fit indices from any model.
+Computes likelihood-based fit indices, classification measures, and entropy
+for a fitted latent class model or for a list of fitted latent class models.
 }
 \details{
-\code{getfit} computes all the fit indices related to a specific model.
+For a single \code{"llca"} model, \code{getfit()} returns the number of
+classes, model parameters, and observations; the log-likelihood; information
+criteria; the integrated classification likelihood; and entropy-based
+pseudo-\eqn{R^2}.
+
+The likelihood-ratio statistic \eqn{L^2}, its degrees of freedom, and its
+p-value are returned only when all modeled variables use a multinomial
+likelihood. They are returned as \code{NA} for models containing Gaussian
+variables.
+
+When penalization is active, the output also contains the penalized
+log-likelihood and the corresponding penalized information criteria. The
+attribute \code{"penalized"} indicates whether these additional indices are
+present.
+
+For an \code{"llcalist"} object, the indices are collected into a matrix
+with one row per fitted model.
+}
+\examples{
+\dontrun{
+fit <- lca(data = gss82, nclasses = 3L,
+           multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"))
+
+getfit(fit)
+getfit(fit, digits = NULL)
+
+fits <- lca(data = gss82, nclasses = 1:4,
+            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"))
+
+getfit(fits)
+}
+
 }
 \references{
-None yet.
+Akaike, H. (1974). A New Look at the Statistical Model Identification.
+\emph{In: Parzen, E., Tanabe, K., Kitagawa, G. (eds) Selected Papers of Hirotugu Akaike.
+Springer Series in Statistics. Springer, New York, NY.}
+https://doi.org/10.1007/978-1-4612-1694-0_16
 }

@@ -2,15 +2,20 @@
 % Please edit documentation in R/lbvr.R
 \name{print.lbvr}
 \alias{print.lbvr}
-\title{Print method for lbvr objects}
+\title{Print local bivariate residual diagnostics}
 \usage{
 \method{print}{lbvr}(x, ...)
 }
 \arguments{
 \item{x}{An object of class \code{"lbvr"}.}
 
-\item{...}{Additional arguments passed to \code{print.data.frame}.}
+\item{...}{Additional arguments passed to \code{print.data.frame()} when
+printing the residual summary table.}
+}
+\value{
+The input object \code{x}, returned invisibly.
 }
 \description{
-Print method for lbvr objects
+Prints the root mean square residual and the pairwise residual summary table
+stored in an object returned by \code{lbvr()}.
 }

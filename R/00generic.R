@@ -1,17 +1,17 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/05/2026
+# Modification date: 11/07/2026
 
 setMethod("show", "llca", function(object) {
 
   conv <- object@Optim$convergence
   # Print header with model name and version
-  if(conv){
+  if(conv) {
     cat(sprintf("%s %s converged after %d iterations\n\n",
                 "latent", as.character(packageVersion('latent')),
                 object@Optim$iterations))
-  }else{
+  } else{
     cat(sprintf("%s %s did not converged after %d iterations\n\n",
                 "latent", as.character(packageVersion('latent')),
                 object@Optim$iterations))
@@ -19,9 +19,9 @@ setMethod("show", "llca", function(object) {
 
 
   # Print Estimator, Optimization, and Parameters section
-  if(isFALSE(object@modelInfo$control$penalties)){
+  if(isFALSE(object@modelInfo$control$penalties)) {
     est <- "ML"
-  }else{
+  } else {
     est <- "Penalized-ML"}
 
   cat(sprintf("  %-45s %s\n", "Estimator", est))
@@ -46,7 +46,9 @@ setMethod("show", "llca", function(object) {
   cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
   cat(sprintf("  %-45s %.3f\n", "P-value (L2)", pv))
 
-  invisible()
+  #### Result ####
+
+  return(invisible(object))
 
 })
 
@@ -114,7 +116,9 @@ setMethod("show", "lcfa", function(object) {
   cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
   cat(pval_message)
 
-  invisible()
+  #### Result ####
+
+  return(invisible(object))
 
 })
 

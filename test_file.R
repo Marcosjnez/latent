@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/07/2026
+# Modification date: 11/07/2026
 
 #### Store a dataset ####
 
@@ -48,6 +48,13 @@ summary(fit)
 
 # Bivariate residuals:
 lbvr(fit)
+
+# Predictions:
+df <- data.frame(RACE = c("BLACK", "WHITE"),
+                 SEX = c("MALE", "MALE"),
+                 EDUCR = c(3, 3),
+                 AGE = c(35, 35))
+predict(fit, new = df)
 
 # Inspect model objects:
 latInspect(fit, what = "convergence")
