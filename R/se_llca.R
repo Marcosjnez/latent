@@ -1,121 +1,222 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 19/06/2026
+# Modification date: 12/07/2026
 #'
-#' @title
-#' Standard Errors
-#' @description
+#' Standard errors for latent class models
 #'
-#' Compute standard errors.
+#' Computes standard errors and variance-covariance matrices for fitted latent
+#' class models.
 #'
-#' @usage
+#' @param fit A fitted object of class \code{"llca"}.
+#' @param type Character string indicating the standard-error estimator. Available
+#'   options are \code{"standard"} for Hessian-based standard errors and
+#'   \code{"robust"} for the LatentGold-style sandwich estimator.
+#' @param digits Non-negative integer indicating the number of decimal places used
+#'   in the formatted table. If \code{NULL}, the table is returned without
+#'   rounding.
+#' @param ... Additional arguments passed to other methods.
+#'
+#' @details
+#' For a regular one-step model, \code{type = "standard"} obtains the covariance
+#' matrix from the inverse Hessian. With \code{type = "robust"}, the covariance
+#' matrix is computed from a sandwich estimator using the score contribution of
+#' each observed response pattern.
+#'
+#' When the fitted model contains a previous \code{"llca"} object in
+#' \code{fit@modelInfo$control_optimizer$model}, the standard errors are adjusted
+#' for two-step estimation through \code{se_twostep()}.
+#'
+#' The \code{digits} argument affects only the formatted \code{table}. The numeric
+#' standard errors and covariance matrices are returned without rounding.
+#'
+#' @return A list with the following components:
+#' \describe{
+#'   \item{\code{table}}{A list of formatted parameter tables containing estimates
+#'   and standard errors.}
+#'   \item{\code{table_se}}{A list containing the standard errors arranged in the
+#'   same parameter structure as the fitted model.}
+#'   \item{\code{se}}{A named numeric vector of standard errors.}
+#'   \item{\code{vcov}}{The variance-covariance matrix of the model parameters.}
+#'   \item{\code{B}}{The empirical score covariance matrix. It is an empty matrix
+#'   for ordinary Hessian-based standard errors and may be \code{NULL} when it is
+#'   not applicable.}
+#'   \item{\code{H}}{The Hessian matrix, when available.}
+#'   \item{\code{newH}}{The adjusted Hessian used by the robust estimator, when
+#'   available.}
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' fit <- lca(data = empathy, nclasses = 3L,
+#'            gaussian = c("ec1", "ec2", "ec3"))
 #'
 #' se(fit)
+#' se(fit, type = "robust", digits = 4L)
+#' }
 #'
-#' @param fit model fitted with lca.
-#' @param confidence Coverage of the confidence interval.
-#'
-#' @details Compute standard errors.
-#'
-#' @return List with the following objects:
-#' \item{vcov}{Variance-covariance matrix between the parameters.}
-#' \item{se}{Standard errors.}
-#' \item{SE}{Standard errors in the model list.}
-#'
-#' @references
-#'
-#' None yet.
+#' @seealso \code{ci()}, \code{vcov()}
 #'
 #' @method se llca
 #' @export
-se.llca <- function(fit, type = "standard", digits = 3) {
+se.llca <- function(fit, type = "standard", digits = 3L, ...) {
 
-  # Select the parameters to display according to model type:
+  if(!inherits(fit, "llca")) {
+    stop("fit must inherit from class 'llca'.")
+  }
+
+  if(length(fit@Optim$parameters) == 0L) {
+    stop("The llca object has not been fitted.")
+  }
+
+  type <- match.arg(tolower(type), c("standard", "robust"))
+
+  if(!is.null(digits) &&
+     (!is.numeric(digits) || length(digits) != 1L || !is.finite(digits) ||
+      digits < 0L || digits != as.integer(digits))) {
+    stop("digits must be NULL or a non-negative integer.")
+  }
 
   fit@modelInfo$control_optimizer$minimal_se <- TRUE
+  original_model <- fit@modelInfo$control_optimizer$model
 
-  if(class(fit@modelInfo$control_optimizer$model) == "llca") {
+  if(inherits(original_model, "llca")) {
 
     SE <- se_twostep(fit2 = fit, type = type)
 
+  } else if(type == "standard") {
+
+    SE <- standard_se(fit = fit)
+    SE$B <- matrix(numeric(0L), nrow = 0L, ncol = 0L)
+
   } else {
 
-    if(type == "standard") {
-
-      SE <- standard_se(fit = fit)
-      SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
-
-    } else if(type == "robust") {
-
-      # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-      SE <- robust_se_LG(fit = fit)
-
-    } else {
-      stop("Unknown type")
-    }
+    SE <- robust_se_LG(fit = fit)
 
   }
 
   est <- fill_in(fit@modelInfo$trans[names(fit@modelInfo$param)],
-                 c(fit@Optim$parameters, fit@Optim$transparameters),
-                 miss = NA)
+                 c(fit@Optim$parameters, fit@Optim$transparameters), miss = NA)
   table_se <- fill_in(fit@modelInfo$trans[names(fit@modelInfo$param)],
                       SE$se, miss = NA)
-
   table <- combine_est_se(est, table_se, digits = digits)
 
-  # Return:
-  result <- list()
-  result$table <- table
-  result$table_se <- table_se
-  result$se <- c(SE$se)
-  result$vcov <- SE$vcov
-  result$B <- SE$B
-  result$H <- SE$H
-  result$newH <- SE$newH
+  result <- list(table = table, table_se = table_se, se = c(SE$se),
+                 vcov = SE$vcov, B = SE$B, H = SE$H, newH = SE$newH)
+
+  #### Result ####
 
   return(result)
 
 }
 
+#' Standard errors for a collection of latent class models
+#'
+#' Applies \code{se()} to every fitted model in an \code{"llcalist"} object.
+#'
+#' @param model An object of class \code{"llcalist"} containing fitted
+#'   \code{"llca"} objects.
+#' @param type Character string indicating the standard-error estimator. See
+#'   \code{se.llca()}.
+#' @param digits Non-negative integer indicating the number of decimal places used
+#'   in the formatted tables, or \code{NULL} to avoid rounding.
+#' @param ... Additional arguments passed to \code{se.llca()}.
+#'
+#' @details
+#' Existing names are preserved. Consequently, class-enumeration results retain
+#' names such as \code{"nclasses=2"}, whereas multiple-step models retain names
+#' such as \code{"measurement"} and \code{"structural"}. Unnamed elements are
+#' labelled according to their number of latent classes.
+#'
+#' @return A named list with one standard-error result per fitted model and class
+#'   \code{"se.llcalist"}.
+#'
+#' @examples
+#' \dontrun{
+#' fits <- lca(data = empathy, nclasses = 2:4,
+#'             gaussian = c("ec1", "ec2", "ec3"))
+#' se(fits)
+#' }
+#'
 #' @method se llcalist
 #' @export
-se.llcalist <- function(model, type = "standard", digits = 3) {
+se.llcalist <- function(model, type = "standard", digits = 3L, ...) {
 
-  nmodels <- length(model)
-  out <- vector("list", length = nmodels)
-  for(i in 1:nmodels) {
-
-    out[[i]] <- se.llca(model[[i]], type = type, digits = digits)
-    names(out)[i] <- paste("nclasses=",
-                           ncol(model[[i]]@modelInfo$param$beta),
-                           sep = "")
-
+  if(!inherits(model, "llcalist")) {
+    stop("model must inherit from class 'llcalist'.")
   }
 
-  class(out) <- "se.llcalist"
+  if(length(model) == 0L) {
+    stop("model must contain at least one fitted llca object.")
+  }
 
-  return(out)
+  if(!all(vapply(model, inherits, logical(1L), what = "llca"))) {
+    stop("All elements of model must inherit from class 'llca'.")
+  }
+
+  nmodels <- length(model)
+  result <- vector("list", length = nmodels)
+
+  for(i in seq_len(nmodels)) {
+    result[[i]] <- se(model[[i]], type = type, digits = digits, ...)
+  }
+
+  result_names <- names(model)
+  if(is.null(result_names)) {
+    result_names <- rep("", nmodels)
+  }
+
+  unnamed <- is.na(result_names) | result_names == ""
+  if(any(unnamed)) {
+    nclasses <- vapply(model[unnamed], FUN = function(x) {
+      ncol(x@modelInfo$trans$class)
+    }, FUN.VALUE = integer(1L))
+    result_names[unnamed] <- paste0("nclasses=", nclasses)
+  }
+
+  names(result) <- make.unique(result_names)
+  class(result) <- "se.llcalist"
+
+  #### Result ####
+
+  return(result)
 
 }
 
+#' LatentGold-style robust standard errors
+#'
+#' Computes a sandwich covariance estimator from the Hessian and the score
+#' contribution of each observed response pattern.
+#'
+#' @param fit A fitted object of class \code{"llca"}.
+#'
+#' @return A list containing the standard errors, covariance matrix, empirical
+#'   score covariance matrix \code{B}, Hessian \code{H}, and adjusted Hessian
+#'   \code{newH}.
+#'
+#' @keywords internal
 robust_se_LG <- function(fit) {
 
-  # Robust standard errors in LatentGold's style
-  # Rearrange control_estimator to get the gradient per response pattern:
+  if(fit@dataList$nobs <= 1L) {
+    stop("Robust standard errors require more than one observation.")
+  }
 
   control_manifold <- fit@modelInfo$control_manifold
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
   control_optimizer <- fit@modelInfo$control_optimizer
-  control_optimizer$parameters[[1]] <- fit@Optim$parameters
-  control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
+  control_optimizer$parameters[[1L]] <- fit@Optim$parameters
+  control_optimizer$transparameters[[1L]] <- fit@Optim$transparameters
+
+  cores <- control_optimizer$cores
+  if(is.null(cores) || !is.finite(cores) || cores < 1L) {
+    cores <- 1L
+  }
 
   H <- get_hess(control_manifold = control_manifold,
                 control_transform = control_transform,
                 control_estimator = control_estimator,
                 control_optimizer = control_optimizer,
-                cores = parallel::detectCores())$h
+                cores = as.integer(cores))$h
 
   #### Collect the gradient by response pattern ####
 
@@ -128,143 +229,82 @@ robust_se_LG <- function(fit) {
   nparam <- fit@modelInfo$nparam
   nobs <- fit@dataList$nobs
 
-  control_estimator <- control_estimator[-1]
+  control_estimator <- control_estimator[-1L]
   nclasses <- ncol(fit@modelInfo$trans$class)
   K <- length(control_estimator)
 
-  for(s in 1:npatterns) {
-
+  for(s in seq_len(npatterns)) {
     indices <- list(match(trans$class[s, ], transparameters_labels)-1L,
-                    match(full_loglik[s,,], transparameters_labels)-1L)
+                    match(full_loglik[s, , ], transparameters_labels)-1L)
 
-    control_estimator[[K+s]] <- list(estimator = "lca",
-                                     # labels = labels,
-                                     indices = indices,
-                                     S = 1L,
-                                     J = nitems,
-                                     I = nclasses,
+    control_estimator[[K+s]] <- list(estimator = "lca", indices = indices,
+                                     S = 1L, J = nitems, I = nclasses,
                                      pattern_weights = pattern_weights[s])
-
   }
 
-  nest <- npatterns
-  f <- vector(length = nest)
-  g <- matrix(NA, nrow = nest, ncol = nparam)
   B <- matrix(0, nrow = nparam, ncol = nparam)
-  for(s in 1:nest) {
+  pattern_estimators <- control_estimator[K+seq_len(npatterns)]
 
+  for(s in seq_len(npatterns)) {
     computations <- get_grad(control_manifold = control_manifold,
                              control_transform = control_transform,
-                             control_estimator = control_estimator[-(1:K)][s],
+                             control_estimator = pattern_estimators[s],
                              control_optimizer = control_optimizer)
-    f[s] <- computations$f
-    g[s, ] <- computations$g
-    B <- B + pattern_weights[s]*(g[s, ]/pattern_weights[s]) %*% t(g[s, ]/pattern_weights[s])
-
+    gradient <- computations$g/pattern_weights[s]
+    B <- B + pattern_weights[s] * gradient %*% t(gradient)
   }
 
-  # Update the hessian:
-  B <- B*nobs/(nobs-1)
+  B <- B*nobs/(nobs-1L)
   newH <- H %*% solve(B) %*% H
 
-  # Recompute the variance-covariance matrix with this new hessian:
-  # Get the variance-covariance matrix between the parameters:
   result <- get_vcov(control_manifold = control_manifold,
                      control_transform = control_transform,
                      control_estimator = control_estimator,
-                     control_optimizer = control_optimizer,
-                     H = newH)
+                     control_optimizer = control_optimizer, H = newH)
 
-  # Add B to the results:
   result$B <- B
 
-  # Name the parameters:
   names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
     fit@modelInfo$control_optimizer$se_names
 
-  colnames(newH) <- rownames(newH) <-
-    colnames(result$B) <- rownames(result$B) <-
+  colnames(newH) <- rownames(newH) <- colnames(result$B) <- rownames(result$B) <-
     fit@modelInfo$parameters_labels
 
   result$H <- H
   result$newH <- newH
 
-  return(result)
-
-}
-
-ci <- function(fit, type = "standard", confidence = 0.95, digits = 3) {
-
-  # Select the parameters to display according to model type:
-
-  fit@modelInfo$control_optimizer$minimal_se <- TRUE
-
-  if(class(fit@modelInfo$original_model) == "llca") {
-
-    SE <- se_twostep(fit2 = fit, type = type)
-
-  } else {
-
-    if(type == "standard") {
-
-      SE <- standard_se(fit = fit)
-      SE$B <- matrix(, nrow = 0, ncol = 0) # Empty matrix
-
-    } else if(type == "robust") {
-
-      # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-      SE <- robust_se_LG(fit = fit)
-
-    } else {
-      stop("Unknown type")
-    }
-
-  }
-
-  x <- c(fit@Optim$parameters)
-  ps <- rep(1L, fit@modelInfo$nparam)
-
-  # Compute confidence intervals for each transformed parameter:
-  lower <- x - sqrt(qchisq(confidence, df = ps)) * SE$se
-  upper <- x + sqrt(qchisq(confidence, df = ps)) * SE$se
-  names(lower) <- names(upper) <- fit@modelInfo$parameters_labels
-
-  # Get confidence limits for the user model or raw model parameters:
-  est <- fill_in(fit@modelInfo$trans[names(fit@modelInfo$param)],
-                 c(fit@Optim$parameters, fit@Optim$transparameters),
-                 miss = NA)
-
-  # Tables:
-  lower_ci <- fill_in(fit@modelInfo$param, lower)
-  upper_ci <- fill_in(fit@modelInfo$param, upper)
-
-  table <- combine_est_ci(lower_ci, est, upper_ci, digits = digits)
-
-  # Return:
-  result <- list()
-  result$table <- table
-  result$lower_table <- lower_ci
-  result$upper_table <- upper_ci
-  result$lower <- lower
-  result$upper <- upper
-  result$se <- c(SE$se)
-  result$vcov <- SE$vcov
-  result$B <- SE$B
-  result$H <- SE$H
+  #### Result ####
 
   return(result)
 
 }
 
+#' Two-step standard-error adjustment
+#'
+#' Adjusts the covariance matrix of a structural model for uncertainty in the
+#' measurement-model parameters estimated in a previous step.
+#'
+#' @param fit2 A fitted structural \code{"llca"} object whose optimizer control
+#'   stores the fitted measurement model.
+#' @param type Character string indicating whether standard or robust covariance
+#'   matrices are used in the two steps.
+#'
+#' @return A list containing the combined covariance matrix, standard errors, and
+#'   the correction matrix \code{B}.
+#'
+#' @keywords internal
 se_twostep <- function(fit2, type = "standard") {
 
   fit1 <- fit2@modelInfo$control_optimizer$model
 
-  # Variance covariance of step 1:
-  VCOV1 <- se(fit1, type = type)
-  # Variance covariance of step 2:
-  fit2@modelInfo$control_optimizer$model <- NULL # Avoid infinite recursion
-  VCOV2 <- se(fit2, type = type)
+  if(!inherits(fit1, "llca")) {
+    stop("The stored first-step model must inherit from class 'llca'.")
+  }
+
+  VCOV1 <- se.llca(fit1, type = type, digits = NULL)
+
+  fit2@modelInfo$control_optimizer$model <- NULL
+  VCOV2 <- se.llca(fit2, type = type, digits = NULL)
 
   args <- fit2@dataList$args
   args$model <- NULL
@@ -272,7 +312,6 @@ se_twostep <- function(fit2, type = "standard") {
   args$adjustment <- "none"
   fit <- do.call(lca, args)
 
-  # Get the hessian matrix:
   control_manifold <- fit@modelInfo$control_manifold
   control_transform <- fit@modelInfo$control_transform
   control_estimator <- fit@modelInfo$control_estimator
@@ -280,38 +319,38 @@ se_twostep <- function(fit2, type = "standard") {
 
   parameters <- fit2@Optim$transparameters[fit@modelInfo$parameters_labels]
   transparameters <- fit2@Optim$transparameters[fit@modelInfo$transparameters_labels]
-  control_optimizer$parameters[[1]] <- parameters
-  control_optimizer$transparameters[[1]] <- transparameters
+  control_optimizer$parameters[[1L]] <- parameters
+  control_optimizer$transparameters[[1L]] <- transparameters
+
   x <- get_hess(control_manifold, control_transform,
                 control_estimator, control_optimizer)
   colnames(x$h) <- rownames(x$h) <- fit@modelInfo$parameters_labels
 
-  # Get the second-order devarivates between fixed and estimated parameters:
-  model_pars <- fit@modelInfo$parameters_labels %in% fit2@modelInfo$parameters_labels
+  model_pars <- fit@modelInfo$parameters_labels %in%
+    fit2@modelInfo$parameters_labels
   nuisance_pars <- !model_pars
-  df2_dparamdR <- x$h[nuisance_pars, model_pars]
 
-  # Pick the right coefficients from the VCOV of the first step:
-  ACOV <- VCOV1$vcov[fit@modelInfo$parameters_labels[nuisance_pars],
-                     fit@modelInfo$parameters_labels[nuisance_pars]]
-  # Ham of sandwich estimator:
+  if(!any(model_pars) || !any(nuisance_pars)) {
+    stop("The two-step model does not contain both estimated and fixed parameters.")
+  }
+
+  df2_dparamdR <- x$h[nuisance_pars, model_pars, drop = FALSE]
+  nuisance_names <- fit@modelInfo$parameters_labels[nuisance_pars]
+  ACOV <- VCOV1$vcov[nuisance_names, nuisance_names, drop = FALSE]
   B <- t(df2_dparamdR) %*% ACOV %*% df2_dparamdR
-  VCOV2$B <- B
 
-  # Get the hessian matrix of second-step model:
   H_inv <- solve(VCOV2$H)
   VCOV2$vcov <- H_inv %*% B %*% H_inv
-
-  # Update the standard errors of the model parameters in the VCOV2 object:
   VCOV2$se <- sqrt(diag(VCOV2$vcov))
   names(VCOV2$se) <- fit2@modelInfo$parameters_labels
 
-  VCOV <- list()
-  name_nuisance_pars <- fit@modelInfo$parameters_labels[nuisance_pars]
-  VCOV$vcov <- block_diag(list(VCOV1$vcov[name_nuisance_pars, name_nuisance_pars],
-                               VCOV2$vcov))
-  VCOV$se <- sqrt(diag(VCOV$vcov))
+  combined_vcov <- block_diag(list(VCOV1$vcov[nuisance_names, nuisance_names,
+                                               drop = FALSE], VCOV2$vcov))
+  result <- list(vcov = combined_vcov, se = sqrt(diag(combined_vcov)),
+                 B = B, H = NULL, newH = NULL)
 
-  return(VCOV)
+  #### Result ####
+
+  return(result)
 
 }
