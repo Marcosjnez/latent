@@ -48,17 +48,13 @@ se.llca <- function(fit, type = "standard", digits = 3) {
     } else if(type == "robust") {
 
       # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-      SE <- robust_se(fit = fit)
+      SE <- robust_se_LG(fit = fit)
 
     } else {
       stop("Unknown type")
     }
 
   }
-
-  # Tables:
-  # est <- fill_in(fit@modelInfo$param, fit@Optim$transparameters, miss = 0)
-  # table_se <- fill_in(fit@modelInfo$param, SE$se, miss = NA)
 
   est <- fill_in(fit@modelInfo$trans[names(fit@modelInfo$param)],
                  c(fit@Optim$parameters, fit@Optim$transparameters),
@@ -103,8 +99,9 @@ se.llcalist <- function(model, type = "standard", digits = 3) {
 
 }
 
-robust_se <- function(fit) {
+robust_se_LG <- function(fit) {
 
+  # Robust standard errors in LatentGold's style
   # Rearrange control_estimator to get the gradient per response pattern:
 
   control_manifold <- fit@modelInfo$control_manifold
@@ -216,7 +213,7 @@ ci <- function(fit, type = "standard", confidence = 0.95, digits = 3) {
     } else if(type == "robust") {
 
       # Use H to compute vcov = solve(H) %*% B %*% solve(H):
-      SE <- robust_se(fit = fit)
+      SE <- robust_se_LG(fit = fit)
 
     } else {
       stop("Unknown type")
@@ -233,9 +230,6 @@ ci <- function(fit, type = "standard", confidence = 0.95, digits = 3) {
   names(lower) <- names(upper) <- fit@modelInfo$parameters_labels
 
   # Get confidence limits for the user model or raw model parameters:
-
-  # est <- fill_in(fit@modelInfo$param,
-  #                fit@Optim$transparameters, miss = NA)
   est <- fill_in(fit@modelInfo$trans[names(fit@modelInfo$param)],
                  c(fit@Optim$parameters, fit@Optim$transparameters),
                  miss = NA)

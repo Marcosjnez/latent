@@ -54,11 +54,11 @@ plot(fit)
 plot(fit, type = "coefficients", what = "OR")
 
 # Predictions if there are covariates:
-# df <- data.frame(RACE = c("BLACK", "WHITE"),
-#                  SEX = c("MALE", "MALE"),
-#                  EDUCR = c(3, 3),
-#                  AGE = c(35, 35))
-# predict(fit, new = df)
+df <- data.frame(RACE = c("BLACK", "WHITE"),
+                 SEX = c("MALE", "MALE"),
+                 EDUCR = c(3, 3),
+                 AGE = c(35, 35))
+predict(fit, new = df)
 
 # Inspect model objects:
 latInspect(fit, what = "convergence")
