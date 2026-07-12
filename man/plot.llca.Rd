@@ -2,18 +2,70 @@
 % Please edit documentation in R/plot_llca.R
 \name{plot.llca}
 \alias{plot.llca}
-\title{Plot method for latent class analysis (llca) objects}
+\title{Plot results from an LCA model}
 \usage{
-\method{plot}{llca}(x, ...)
+\method{plot}{llca}(
+  x,
+  type = c("all", "gaussian", "multinomial", "coefficients"),
+  variables = NULL,
+  ...
+)
 }
 \arguments{
-\item{x}{An object of class \code{"llca"}, typically from \code{latent}.}
+\item{x}{A fitted object of class \code{"llca"}.}
 
-\item{...}{Additional arguments passed to \code{plot_lca_mixed}.}
+\item{type}{Character string specifying the result to plot. Available values
+are \code{"all"}, \code{"gaussian"}, \code{"multinomial"}, and
+\code{"coefficients"}. Partial matching is supported.}
+
+\item{variables}{Optional character vector selecting measurement indicators
+for profile plots. This argument is ignored when
+\code{type = "coefficients"}; use \code{predictors} through \code{...}
+instead.}
+
+\item{...}{Additional arguments passed to \code{plot_lca_mixed()} for
+profile plots or to the coefficient-plotting routine for
+\code{type = "coefficients"}. Coefficient options include
+\code{se_type}, \code{what}, \code{effects}, \code{confidence},
+\code{predictors}, \code{intercept}, and the graphical arguments of
+\code{forestplot()}.}
 }
 \value{
-A list of ggplot objects (as from \code{plot_lca_mixed}).
+For profile plots, an object of class \code{"llca_plots"},
+  invisibly. For coefficient plots, a list containing the displayed
+  coefficient estimates, standard errors, variance-covariance matrix, and
+  confidence limits, invisibly.
 }
 \description{
-Plot method for latent class analysis (llca) objects
+Displays class-conditional measurement profiles or latent-class regression
+coefficients from a fitted latent class model using base R graphics.
+}
+\details{
+Gaussian and multivariate-Gaussian indicators are displayed using their
+class-specific means and standard deviations. Multinomial indicators are
+displayed using their class-specific response probabilities. Response colors
+are reused across indicators according to category position, while each
+indicator has its own legend containing its actual response levels. Outcomes
+and covariates are not included in the measurement-profile plots.
+
+For mixed models with \code{type = "all"}, the Gaussian and multinomial
+plots are drawn sequentially as separate pages on the active graphics device.
+With \code{type = "coefficients"}, the latent-class regression coefficients
+are displayed in forest-plot form. Use \code{what = "OR"} for odds ratios or
+\code{what = "log"} for log odds ratios.
+}
+\examples{
+\dontrun{
+fit <- lca(data = gss82, nclasses = 3,
+           multinomial = c("PURPOSE", "ACCURACY"))
+plot(fit)
+plot(fit, type = "multinomial", bw = TRUE)
+
+structural_fit <- lca(data = gss82, nclasses = 3,
+                      multinomial = c("PURPOSE", "ACCURACY"),
+                      covariates = c("RACE", "SEX"))[["structural"]]
+plot(structural_fit, type = "coefficients", what = "OR",
+     effects = "coding", predictors = "RACE")
+}
+
 }

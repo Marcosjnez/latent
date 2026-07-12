@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/07/2026
+# Modification date: 12/07/2026
 
 #### Store a dataset ####
 
@@ -37,7 +37,7 @@ latInspect(fit, what = "loglik")
 # loglik: -3879.167 # penalized_loglik: -3880.371 ("UNDERSTA ~~ COOPERAT
 #                                                   PURPOSE ~~ COOPERAT")
 
-# Plot model fit info:
+# Print model fit info:
 fit
 
 # Get fit indices:
@@ -49,12 +49,15 @@ summary(fit)
 # Bivariate residuals:
 lbvr(fit)
 
-# Predictions:
-df <- data.frame(RACE = c("BLACK", "WHITE"),
-                 SEX = c("MALE", "MALE"),
-                 EDUCR = c(3, 3),
-                 AGE = c(35, 35))
-predict(fit, new = df)
+# Plot:
+plot(fit)
+
+# Predictions if there are covariates:
+# df <- data.frame(RACE = c("BLACK", "WHITE"),
+#                  SEX = c("MALE", "MALE"),
+#                  EDUCR = c(3, 3),
+#                  AGE = c(35, 35))
+# predict(fit, new = df)
 
 # Inspect model objects:
 latInspect(fit, what = "convergence")
@@ -90,7 +93,7 @@ latInspect(fit, what = "loglik")
 # loglik: -1841.336 # penalized_loglik: -1844.333
 # loglik: -1814.483 # penalized_loglik: -1817.526 ("ec2 ~~ ec3")
 
-# Plot model fit info:
+# Print model fit info:
 fit
 
 # Get fit indices:
@@ -101,9 +104,12 @@ lbvr(fit)
 
 # Inspect model objects:
 latInspect(fit, what = "convergence")
-latInspect(fit, what = "profile") # Include residual dependencies for multivariate items?
+latInspect(fit, what = "profile")
 latInspect(fit, what = "coefs")
 latInspect(fit, what = "posterior")
+
+# Plot:
+plot(fit)
 
 # Get standard errors:
 SE <- se(fit, type = "standard", digits = 4)
@@ -135,7 +141,7 @@ fit <- lca(data = cancer,
 latInspect(fit, what = "loglik")
 # loglik: -5784.701 # penalized_loglik: -5795.573
 
-# Plot model fit info:
+# Print model fit info:
 fit
 
 # Get fit indices:
@@ -162,82 +168,7 @@ plot(fit)
 
 #### LCA with covariates (gaussian) ####
 
-library(latent)
-
-set.seed(2026)
-fit1 <- lca(data = empathy,
-            nclasses = 4L,
-            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-            penalties = TRUE,
-            do.fit = TRUE)
-latInspect(fit1, what = "loglik")
-# loglik: -1841.336 # penalized_loglik: -1844.333
-# loglik: -1808.949 # penalized_loglik: -1812.014
-
-set.seed(2026)
-fit2 <- lca(data = empathy,
-            nclasses = 4L,
-            gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
-            covariates = c("pt1", "pt2", "pt3", "pt4"),
-            # outcomes = list(gaussian = "pt5"),
-            model = fit1,
-            adjustment = "none",
-            penalties = TRUE,
-            do.fit = TRUE)
-
-# check that the measurement model was fixed:
-all.equal(fit1@parameters[-1], fit2@parameters[-1])
-
-# Standard errors:
-SE1 <- se(fit1, type = "standard", digits = 4)
-SE1$se
-SE2 <- se(fit2, type = "standard", digits = 4)
-SE2$se
-
-# # Effects-coding parameterization:
-# new_se <- effects_coding(fit2@parameters$beta, SE2$vcov)
-# new_se$beta
-# new_se$table_se
-# new_se$se
-
-# Plot model fit2 info:
-fit2
-
-# Get fit2 indices:
-getfit(fit2)
-
-# Inspect model objects:
-latInspect(fit2, what = "loglik")
-# loglik: -2049.840 # penalized_loglik: -2053.322
-latInspect(fit2, what = "coefs")
-latInspect(fit2, what = "classes")
-latInspect(fit2, what = "profile")
-latInspect(fit2, what = "posterior")
-
-predict(fit2, new = rbind(c(2, 2, 2.428571, 2.142857),
-                          c(1, 2, 3, 4)))
-fitted(fit2)
-
-# Get confidence intervals:
-CI <- ci(fit2, type = "standard", confidence = 0.95, digits = 2)
-CI$table
-
-# x <- plot_coeffs(fit2,
-#                  type = "standard",
-#                  what = "OR",
-#                  effects = "coding",
-#                  confidence = 0.95,
-#                  show_est_ci = TRUE,
-#                  est_ci_header_cex = 0.5,
-#                  cex_y = 0.5,
-#                  mfrow = c(2, 2),
-#                  xlim = c(0, 5))
-
-# new_se <- move_intercept(beta, vcov)
-# new_se$beta_new
-# matrix(new_se$se_new, 3, 3)
-
-fit3 <- lca(data = empathy,
+fit <- lca(data = empathy,
             nclasses = 4L,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             covariates = c("pt1", "pt2", "pt3", "pt4"),
@@ -247,11 +178,46 @@ fit3 <- lca(data = empathy,
             # model = list("ec2 ~~ ec3"),
             penalties = TRUE,
             do.fit = TRUE)
-latInspect(fit3$structural, what = "loglik")
+latInspect(fit$structural, what = "loglik")
 # loglik: -1747.135 # penalized_loglik: -1750.566
 # loglik: -2049.840 # penalized_loglik: -2053.322 (outcomes = list(gaussian = c("pt5")))
-# SE3 <- se(fit3, type = "standard", digits = 4)
-# SE3$se
+# SE <- se(fit, type = "standard", digits = 4)
+# SE$se
+
+# # Effects-coding parameterization:
+# new_se <- effects_coding(fit$structural@parameters$beta, SE$vcov)
+# new_se$beta
+# new_se$table_se
+# new_se$se
+
+# new_se <- move_intercept(beta, vcov)
+# new_se$beta_new
+# matrix(new_se$se_new, 3, 3)
+
+# Print model fit:
+fit
+
+# Get fit indices:
+getfit(fit)
+
+plot.llcalist(fit)
+plot.llcalist(fit, type = "coefficients", what = "OR")
+
+# Inspect model objects:
+latInspect(fit, what = "loglik")
+# loglik: -2049.840 # penalized_loglik: -2053.322
+latInspect(fit, what = "coefs")
+latInspect(fit, what = "classes")
+latInspect(fit, what = "profile")
+latInspect(fit, what = "posterior")
+
+predict(fit, new = rbind(c(2, 2, 2.428571, 2.142857),
+                         c(1, 2, 3, 4)))
+fitted(fit)
+
+# Get confidence intervals:
+CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
+CI$table
 
 #### CFA ####
 
