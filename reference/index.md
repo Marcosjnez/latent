@@ -6,6 +6,8 @@
   : Example dataset: HolzingerSwineford1939
 - [`cancer`](https://marcosjnez.github.io/latent/reference/cancer.md) :
   Example dataset: cancer
+- [`ci()`](https://marcosjnez.github.io/latent/reference/ci.llca.md) :
+  Confidence intervals
 - [`empathy`](https://marcosjnez.github.io/latent/reference/empathy.md)
   : Example dataset: empathy
 - [`fitted(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
