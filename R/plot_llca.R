@@ -957,8 +957,8 @@ plot_lca_coefficients <- function(fit, se_type = "standard",
   lower <- parameters - critical_value*standard_errors
   upper <- parameters + critical_value*standard_errors
 
-  confidence_label <- paste0(formatC(100*confidence, digits = 4, format = "fg",
-                                     width = 0), "% CI")
+  confidence_label <- paste0(format(100*confidence, trim = TRUE,
+                                    scientific = FALSE), "% CI")
   if(what == "log") {
     xlab <- paste0("log(odds ratio) (", confidence_label, ")")
     est_ci_header <- xlab

@@ -23,7 +23,7 @@ gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
            # outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
@@ -51,6 +51,7 @@ lbvr(fit)
 
 # Plot:
 plot(fit)
+plot(fit, type = "coefficients", what = "OR")
 
 # Predictions if there are covariates:
 # df <- data.frame(RACE = c("BLACK", "WHITE"),
