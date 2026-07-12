@@ -1,6 +1,8 @@
-# Split and reshape mixed (multinomial + Gaussian) LCA item output
+# Reshape class-conditional indicator profiles
 
-Split and reshape mixed (multinomial + Gaussian) LCA item output
+Divides class-conditional indicator profiles into multinomial and
+Gaussian components and converts them into long data frames suitable for
+plotting.
 
 ## Usage
 
@@ -12,12 +14,24 @@ reshape_lca_mixed(item_output, item_types)
 
 - item_output:
 
-  Result of `latInspect(fit, "item")`.
+  Named list of class-conditional indicator matrices, normally returned
+  by `latInspect(model, what = "item")`.
 
 - item_types:
 
-  Character vector of indicator types (e.g., `fit@dataList$item`).
+  Named list containing the character vectors `multinomial` and
+  `gaussian`. An optional `mvgaussian` component is combined with
+  `gaussian`.
 
 ## Value
 
-A list with components `multinomial` and `gaussian`, each a data frame.
+A list with the following components:
+
+- multinomial:
+
+  A data frame with columns `variable`, `response`, `class`, and
+  `probability`.
+
+- gaussian:
+
+  A data frame with columns `variable`, `class`, `mean`, and `sd`.

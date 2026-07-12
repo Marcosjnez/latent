@@ -1,24 +1,39 @@
-# Plot mixed LCA results (both Gaussian and multinomial indicators)
+# Plot mixed indicator profiles
 
-Plot mixed LCA results (both Gaussian and multinomial indicators)
+Draws the appropriate base R profile plot for each available indicator
+family.
 
 ## Usage
 
 ``` r
-plot_lca_mixed(mixed_data, ...)
+plot_lca_mixed(mixed_data, variables = NULL, ...)
 ```
 
 ## Arguments
 
 - mixed_data:
 
-  Output from `reshape_lca_mixed`.
+  List produced by
+  [`reshape_lca_mixed()`](https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.md).
+
+- variables:
+
+  Optional character vector selecting indicators to plot.
 
 - ...:
 
-  Extra arguments passed to `plot_lca_gaussian` and
-  `plot_lca_multinomial`.
+  Additional arguments passed to
+  [`plot_lca_gaussian()`](https://marcosjnez.github.io/latent/reference/plot_lca_gaussian.md)
+  and
+  [`plot_lca_multinomial()`](https://marcosjnez.github.io/latent/reference/plot_lca_multinomial.md).
 
 ## Value
 
-A list of ggplot objects, named `gaussian` and `multinomial`.
+An object of class `"llca_plots"`, invisibly. The object stores the data
+and plotting arguments and can be printed to redraw the plots.
+
+## Details
+
+If only one indicator family is available, one plot is drawn. For mixed
+models, the Gaussian and multinomial plots are drawn sequentially as two
+pages on the active graphics device.

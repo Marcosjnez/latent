@@ -1,21 +1,24 @@
-# Plot mean and standard deviation profiles for Gaussian LCA indicators
+# Plot Gaussian indicator profiles
 
-Plot mean and standard deviation profiles for Gaussian LCA indicators
+Displays the class-specific means and standard deviations of Gaussian or
+multivariate-Gaussian indicators using base R graphics.
 
 ## Usage
 
 ``` r
 plot_lca_gaussian(
   data,
+  variables = NULL,
   title = NULL,
   ylab = "Mean score (±1 SD)",
   caption = "Error bars indicate ±1 standard deviation",
   nrow = NULL,
   ncol = NULL,
-  point_size = 2.5,
-  err_width = 0.2,
+  point_size = 1.2,
+  err_width = 0.12,
   base_size = 12,
   angle = 45,
+  color = "steelblue",
   ...
 )
 ```
@@ -24,44 +27,58 @@ plot_lca_gaussian(
 
 - data:
 
-  Data frame from `reshape_lca_continuous`.
+  Data frame produced by `reshape_lca_continuous()`.
+
+- variables:
+
+  Optional character vector selecting the indicators to plot.
 
 - title:
 
-  Plot title (default `NULL`).
+  Optional character string with the plot title.
 
 - ylab:
 
-  y-axis label.
+  Character string with the vertical-axis label.
 
 - caption:
 
-  Plot caption.
+  Optional character string with the plot caption.
 
 - nrow, ncol:
 
-  Number of rows/columns in facet wrap.
+  Optional numbers of rows and columns in the panel layout.
 
 - point_size:
 
-  Size of the mean points.
+  Numeric expansion factor for the points representing means.
 
 - err_width:
 
-  Width of error bars.
+  Numeric half-width of the horizontal caps on the standard- deviation
+  bars.
 
 - base_size:
 
-  Base font size.
+  Numeric value controlling the overall text size.
 
 - angle:
 
-  Angle for x-axis labels.
+  Numeric angle of the horizontal-axis labels.
+
+- color:
+
+  Color used for class-profile lines and points.
 
 - ...:
 
-  Other arguments (currently ignored).
+  Additional arguments. Currently unused.
 
 ## Value
 
-A ggplot object.
+The plotted profile data, invisibly.
+
+## Details
+
+A separate panel is drawn for every latent class. Error bars represent
+one class-specific standard deviation below and above each mean.

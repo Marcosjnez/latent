@@ -1,6 +1,7 @@
-# Plot response probabilities for multinomial LCA indicators
+# Plot multinomial response probabilities
 
-Plot response probabilities for multinomial LCA indicators
+Displays class-specific response probabilities for multinomial
+indicators as stacked bar charts using base R graphics.
 
 ## Usage
 
@@ -11,7 +12,15 @@ plot_lca_multinomial(
   bars = "variable",
   facet = "class",
   bw = FALSE,
+  title = NULL,
+  ylab = "Probability",
+  base_size = 12,
   angle = 45,
+  nrow = NULL,
+  ncol = NULL,
+  legend_ncol = NULL,
+  legend_width = 0.8,
+  border = "white",
   ...
 )
 ```
@@ -20,28 +29,71 @@ plot_lca_multinomial(
 
 - data:
 
-  Data frame from `reshape_lca_multinomial`.
+  Data frame produced by `reshape_lca_multinomial()`.
 
 - variables:
 
-  Optional character vector of variables to include.
+  Optional character vector selecting the indicators to plot.
 
 - bars:
 
-  Variable to map on x-axis (default `"variable"`).
+  Character string naming the variable mapped to the horizontal axis.
+  The default is `"variable"`.
 
 - facet:
 
-  Faceting variable (default `"class"`).
+  Character string naming the variable defining the plot panels. The
+  default is `"class"`.
 
 - bw:
 
-  Logical; if `TRUE`, use greyscale instead of colour.
+  Logical value indicating whether a greyscale palette should be used.
+
+- title:
+
+  Optional character string with the plot title.
+
+- ylab:
+
+  Character string with the vertical-axis label.
+
+- base_size:
+
+  Numeric value controlling the overall text size.
+
+- angle:
+
+  Numeric angle of the horizontal-axis labels.
+
+- nrow, ncol:
+
+  Optional numbers of rows and columns in the panel layout.
+
+- legend_ncol:
+
+  Optional number of columns used in the legend area. When `NULL`, it is
+  selected from the number of indicators.
+
+- legend_width:
+
+  Relative width assigned to the legend area.
+
+- border:
+
+  Color of the borders separating stacked response categories.
 
 - ...:
 
-  Other arguments (currently ignored).
+  Additional arguments. Currently unused.
 
 ## Value
 
-A ggplot object.
+The plotted probability data, invisibly.
+
+## Details
+
+A separate legend is drawn for every indicator. Each legend displays the
+actual response levels of that indicator. Colors are assigned according
+to response-category position, so the first category uses the same color
+for every indicator, the second category uses the same color for every
+indicator, and so forth. No package other than base R is required.

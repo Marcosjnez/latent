@@ -18,6 +18,7 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/empathy.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/fitted.llca.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/fitted.llcalist.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/forestplot.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/getfit.lcfa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/getfit.llca.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/gss82.html</loc></url>
@@ -37,13 +38,14 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/lrotate.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/plot.getfit.llcalist.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/plot.llca.html</loc></url>
-<url><loc>https://marcosjnez.github.io/latent/reference/plot_coeffs.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/plot.llcalist.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/plot_lca_gaussian.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/plot_lca_mixed.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/plot_lca_multinomial.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/predict.llca.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/print.lbvr.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/print.lclassd.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/print.llca_plots.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/se.lcfa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/se.llca.html</loc></url>

@@ -71,6 +71,8 @@ The package development is supported by two projects:
   : Fitted Latent Class Membership Probabilities
 - [`fitted(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llcalist.md)
   : Fitted Probabilities for Lists of Latent Class Models
+- [`forestplot()`](https://marcosjnez.github.io/latent/reference/forestplot.md)
+  : Forest plot for grouped parameter estimates
 - [`getfit()`](https://marcosjnez.github.io/latent/reference/getfit.lcfa.md)
   : Fit indices
 - [`getfit(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
@@ -106,18 +108,17 @@ The package development is supported by two projects:
 - [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md)
   : Rotate the lambda matrix of an orthogonal factor model.
 - [`plot(`*`<getfit.llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/plot.getfit.llcalist.md)
-  : Plot method for LCA model fit comparisons (scree plot)
+  : Plot fit indices across latent class solutions
 - [`plot(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/plot.llca.md)
-  : Plot method for latent class analysis (llca) objects
-- [`plot()`](https://marcosjnez.github.io/latent/reference/plot_coeffs.md)
-  : Plot regression coefficients
+  : Plot results from an LCA model
+- [`plot(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/plot.llcalist.md)
+  : Plot results from a collection of LCA models
 - [`plot_lca_gaussian()`](https://marcosjnez.github.io/latent/reference/plot_lca_gaussian.md)
-  : Plot mean and standard deviation profiles for Gaussian LCA
-  indicators
+  : Plot Gaussian indicator profiles
 - [`plot_lca_mixed()`](https://marcosjnez.github.io/latent/reference/plot_lca_mixed.md)
-  : Plot mixed LCA results (both Gaussian and multinomial indicators)
+  : Plot mixed indicator profiles
 - [`plot_lca_multinomial()`](https://marcosjnez.github.io/latent/reference/plot_lca_multinomial.md)
-  : Plot response probabilities for multinomial LCA indicators
+  : Plot multinomial response probabilities
 - [`predict(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   [`predict(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   : Predict latent class membership probabilities
@@ -125,8 +126,10 @@ The package development is supported by two projects:
   : Print local bivariate residual diagnostics
 - [`print(`*`<lclassd>`*`)`](https://marcosjnez.github.io/latent/reference/print.lclassd.md)
   : Print Method for Latent Class Diagnostics
+- [`print(`*`<llca_plots>`*`)`](https://marcosjnez.github.io/latent/reference/print.llca_plots.md)
+  : Print mixed latent class profile plots
 - [`reshape_lca_mixed()`](https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.md)
-  : Split and reshape mixed (multinomial + Gaussian) LCA item output
+  : Reshape class-conditional indicator profiles
 - [`se()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md) :
   Standard Errors
 - [`se()`](https://marcosjnez.github.io/latent/reference/se.llca.md) :
