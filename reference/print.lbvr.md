@@ -1,8 +1,7 @@
 # Print local bivariate residual diagnostics
 
 Prints the root mean square residual and the pairwise residual summary
-table stored in an object returned by
-[`lbvr()`](https://marcosjnez.github.io/latent/reference/lbvr.md).
+table stored in an object returned by `lbvr()`.
 
 ## Usage
 

@@ -1,7 +1,6 @@
 # LatentGold-style residual for two continuous indicators
 
-Computes the score-based raw bivariate residual used by
-[`lbvr()`](https://marcosjnez.github.io/latent/reference/lbvr.md) for a
+Computes the score-based raw bivariate residual used by `lbvr()` for a
 pair of continuous indicators. The fitted model is recreated with the
 selected residual dependency while all previously estimated parameters
 remain fixed.

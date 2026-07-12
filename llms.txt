@@ -90,8 +90,10 @@ The package development is supported by two projects:
 - [`latent-package`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   : An R package for Latent Variable Modeling
-- [`lbvr()`](https://marcosjnez.github.io/latent/reference/lbvr.md) :
-  Local bivariate residuals for latent class analysis
+- [`lbvr(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llca.md)
+  : Local bivariate residuals for latent class analysis
+- [`lbvr(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llcalist.md)
+  : Local bivariate residuals for a collection of latent class models
 - [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md) :
   Latent Class Analysis
 - [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
