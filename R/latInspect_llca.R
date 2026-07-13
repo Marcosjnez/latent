@@ -301,19 +301,16 @@ latInspect.llca <- function(fit,
       loglik_base <- get_zero(x, "loglik_baseline")
       loglik_sat  <- get_zero(x, "loglik_saturated")
 
-      result <- c(
-        loss             = loss,
-        loss_base        = loss_base,
-        loss_sat         = loss_sat,
-        loglik           = loglik,
-        loglik_base      = loglik_base,
-        loglik_sat       = loglik_sat,
-        penalty          = penalty,
-        penalized_loss   = loss + penalty,
-        penalized_loglik = loglik - penalty
-      )
+      result <- c(loss             = loss,
+                  loss_base        = loss_base,
+                  loss_sat         = loss_sat,
+                  loglik           = loglik,
+                  loglik_base      = loglik_base,
+                  loglik_sat       = loglik_sat,
+                  penalty          = penalty,
+                  penalized_loss   = loss + penalty,
+                  penalized_loglik = loglik - penalty)
 
-      #### Result ####
       return(result)
     },
     FUN.VALUE = numeric(9L)

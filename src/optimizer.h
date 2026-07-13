@@ -205,8 +205,6 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   outputsEst["names_list_vectors"] = std::get<10>(args[index_minimum].outputs_estimator);
   outputsEst["names_list_matrices"] = std::get<11>(args[index_minimum].outputs_estimator);
 
-  // STORE THE DIMENSIONS AND LABELS OF ARRAYS TO OUTPUT EVERYTHING AUTOMATICALLY
-
   // Store all the outputs in a list:
   Rcpp::List outputs;
   outputs["manifolds"] = outputsMani;

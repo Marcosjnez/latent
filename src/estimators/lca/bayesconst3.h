@@ -5,7 +5,7 @@
  */
 
 /*
- * Constant prior 3 (for the variance of the items that belongs to
+ * Constant prior 3 (for the variance of the gaussian items that belong to
  * the same class membership)
  */
 

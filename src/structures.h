@@ -66,12 +66,6 @@ struct arguments_optim{
   std::vector<int> nobs, p, q;
   // Rcpp::CharacterVector cor, estimator, projection;
 
-  // Outcomes:
-  // std::vector<std::vector<double>> doubles;
-  // std::vector<std::vector<arma::vec>> vectors;
-  // std::vector<std::vector<arma::mat>> matrices;
-  // std::vector<std::vector<std::vector<arma::mat>>> list_matrices;
-
   // Manifolds:
   std::tuple<
     std::vector<std::vector<double>>,
