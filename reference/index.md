@@ -6,8 +6,10 @@
   : Example dataset: HolzingerSwineford1939
 - [`cancer`](https://marcosjnez.github.io/latent/reference/cancer.md) :
   Example dataset: cancer
-- [`ci()`](https://marcosjnez.github.io/latent/reference/ci.llca.md) :
-  Confidence intervals
+- [`ci(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/ci.llca.md)
+  : Confidence intervals for latent class models
+- [`ci(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/ci.llcalist.md)
+  : Confidence intervals for a collection of latent class models
 - [`empathy`](https://marcosjnez.github.io/latent/reference/empathy.md)
   : Example dataset: empathy
 - [`fitted(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
@@ -77,8 +79,10 @@
   : Reshape class-conditional indicator profiles
 - [`se()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md) :
   Standard Errors
-- [`se()`](https://marcosjnez.github.io/latent/reference/se.llca.md) :
-  Standard Errors
+- [`se(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/se.llca.md)
+  : Standard errors for latent class models
+- [`se(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/se.llcalist.md)
+  : Standard errors for a collection of latent class models
 - [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
   : Simulate factor structures with misspecification errors.
 - [`getfit()`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)

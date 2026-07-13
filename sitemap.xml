@@ -16,6 +16,7 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/HolzingerSwineford1939.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/cancer.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/ci.llca.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/ci.llcalist.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/empathy.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/fitted.llca.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/fitted.llcalist.html</loc></url>
@@ -49,8 +50,11 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/print.lclassd.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/print.llca_plots.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/robust_se_LG.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/se.lcfa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/se.llca.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/se.llcalist.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/se_twostep.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/simfactor.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/summary.lcfa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/summary.llca.html</loc></url>
