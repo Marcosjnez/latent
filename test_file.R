@@ -202,7 +202,7 @@ fit
 getfit(fit)
 
 plot.llcalist(fit)
-plot.llcalist(fit, type = "coefficients", what = "OR")
+plot.llcalist(fit, type = "coefficients", what = "OR", xlim = c(0, 7))
 
 # Inspect model objects:
 latInspect(fit, what = "loglik")

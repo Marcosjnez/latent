@@ -1075,15 +1075,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   estimators <- list()
   G <- 1L
 
-  # estimators[[G]] <- list(estimator = "lca",
-  #                         parameters = c("class", "loglik"),
-  #                         extra = list(S = npatterns,
-  #                                      J = nitems,
-  #                                      I = nclasses,
-  #                                      weights = weights,
-  #                                      double_names = "lca"))
-
-  estimators[[G]] <- list(estimator = "lca2",
+  estimators[[G]] <- list(estimator = "lca",
                           parameters = c("class", "loglik"),
                           extra = list(S = npatterns,
                                        I = nclasses,

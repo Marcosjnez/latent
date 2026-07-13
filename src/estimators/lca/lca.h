@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 08/05/2026
+ * Modification date: 13/07/2026
  */
 
 /*
@@ -12,44 +12,44 @@ class lca: public estimators {
 
 public:
 
-  int S; // rows of Y (number of response patterns)
-  int J; // cols of Y (number of items)
-  int I; // Number of latent classes
-  arma::vec weights; // Number of repetitions of each response pattern
+  int S;
+  int I;
+  arma::vec weights;
   arma::vec logweights;
-  arma::uvec indices_classes, indices_cubeloglik;
-  arma::cube cubeloglik; // items loglik conditional on classes
-  arma::mat classes;     // probabilities of classes
+  arma::uvec indices_classes, indices_classloglik;
+  arma::mat classes;
   arma::mat logclasses;
   arma::mat classloglik;
   arma::mat joint_classloglik;
-  arma::vec loglik_case; // loglik of each response pattern
-  arma::vec logliks; // accumulated loglik contribution of each response pattern
+  arma::vec loglik_case;
+  arma::vec logliks;
   arma::mat posterior, logposterior;
   double loss, N;
 
   void param(arguments_optim& x) {
 
-    // Load the parameters:
     classes = arma::reshape(x.transparameters.elem(indices_classes), S, I);
-    arma::vec fill = x.transparameters.elem(indices_cubeloglik);
-    std::memcpy(cubeloglik.memptr(), fill.memptr(), sizeof(double)*fill.n_elem);
+    classloglik = arma::reshape(x.transparameters.elem(indices_classloglik), S, I);
 
-    // Find the logarithm likelihood by case:
     logclasses = arma::trunc_log(classes);
-    classloglik.zeros();
-    for(int s=0; s < S; ++s) { // response patterns
-      for(int i=0; i < I; ++i) { // classes
-        for(int j=0; j < J; ++j) { // items
-          classloglik(s, i) += cubeloglik(s, j, i);
-        }
-      }
+
+    for (int s = 0; s < S; ++s) {
+
       joint_classloglik.row(s) = classloglik.row(s) + logclasses.row(s);
+
       double max_vector = joint_classloglik.row(s).max();
+
       loglik_case(s) = max_vector +
-        arma::trunc_log(arma::accu(arma::trunc_exp(joint_classloglik.row(s) - max_vector)));
+        arma::trunc_log(
+          arma::accu(
+            arma::trunc_exp(joint_classloglik.row(s) - max_vector)
+          )
+        );
+
       logposterior.row(s) = joint_classloglik.row(s) - loglik_case(s);
+      posterior.row(s) = arma::trunc_exp(logposterior.row(s));
       logliks(s) = weights(s) * loglik_case(s);
+
     }
 
   }
@@ -63,116 +63,90 @@ public:
 
   void G(arguments_optim& x) {
 
-    // Initialize derivative structures:
     arma::mat df_dclasses(S, I, arma::fill::zeros);
     arma::mat df_dclassloglik(S, I, arma::fill::zeros);
-    arma::cube df_dcubeloglik(S, J, I, arma::fill::zeros);
 
-    for(int s=0; s < S; ++s) { // response patterns
-      for(int i=0; i < I; ++i) { // classes
-        df_dclasses(s, i) -= arma::trunc_exp(logweights[s] + classloglik(s, i) - loglik_case(s));
-        df_dclassloglik(s, i) -= arma::trunc_exp(logweights[s] + logposterior(s, i));
+    for (int s = 0; s < S; ++s) {
+      for (int i = 0; i < I; ++i) {
+
+        df_dclasses(s, i) -=
+          arma::trunc_exp(logweights(s) + classloglik(s, i) - loglik_case(s));
+
+        df_dclassloglik(s, i) -=
+          arma::trunc_exp(logweights(s) + logposterior(s, i));
+
       }
     }
 
-    // Replicate df_dclassloglik across items belonging to the same class:
-    for (arma::uword k = 0; k < I; ++k) {
-      df_dcubeloglik.slice(k).each_col() = df_dclassloglik.col(k);
-    }
-
     x.grad.elem(indices_classes) += arma::vectorise(df_dclasses);
-    x.grad.elem(indices_cubeloglik) += arma::vectorise(df_dcubeloglik);
+    x.grad.elem(indices_classloglik) += arma::vectorise(df_dclassloglik);
 
   }
 
   void dG(arguments_optim& x) {
 
-    // Load the directions:
-    arma::mat dclasses = arma::reshape(x.dtransparameters(indices_classes), S, I);
-    arma::vec fill = x.dtransparameters(indices_cubeloglik);
-    arma::cube dcubeloglik(S, J, I, arma::fill::zeros);
-    std::memcpy(dcubeloglik.memptr(), fill.memptr(), sizeof(double)*fill.n_elem);
+    arma::mat dclasses = arma::reshape(x.dtransparameters.elem(indices_classes), S, I);
+    arma::mat dclassloglik = arma::reshape(x.dtransparameters.elem(indices_classloglik), S, I);
 
-    // Initialize the differential structures for the gradient:
     arma::mat ddf_dclasses(S, I, arma::fill::zeros);
     arma::mat ddf_dclassloglik(S, I, arma::fill::zeros);
-    arma::cube ddf_dcubeloglik(S, J, I, arma::fill::zeros);
 
-    // Differentials of intermediate quantities:
-    arma::mat dclassloglik(S, I, arma::fill::zeros);
     arma::mat dlogclasses(S, I, arma::fill::zeros);
     arma::mat djoint_classloglik(S, I, arma::fill::zeros);
     arma::vec dloglik_case(S, arma::fill::zeros);
     arma::mat dlogposterior(S, I, arma::fill::zeros);
 
-    // Differential of dclassloglik(s,i) = sum_j dcubeloglik(s,j,i)
     for (int s = 0; s < S; ++s) {
       for (int i = 0; i < I; ++i) {
-        for (int j = 0; j < J; ++j) {
-          dclassloglik(s, i) += dcubeloglik(s, j, i);
-        }
-      }
-    }
-
-    // Differentials of dlogclasses and djoint_classloglik:
-    for (int s = 0; s < S; ++s) {
-      for (int i = 0; i < I; ++i) {
-        double C_si  = classes(s, i);
-        double dC_si = dclasses(s, i);
-        dlogclasses(s, i) = dC_si / C_si;
+        dlogclasses(s, i) = dclasses(s, i) / classes(s, i);
         djoint_classloglik(s, i) = dclassloglik(s, i) + dlogclasses(s, i);
       }
     }
 
-    // Differential of dloglik_case(s) = sum_i posterior(s,i) * djoint_classloglik(s,i)
     for (int s = 0; s < S; ++s) {
       double acc = 0.0;
       for (int i = 0; i < I; ++i) {
-        double post_si = arma::trunc_exp(logposterior(s, i));
-        acc += post_si * djoint_classloglik(s, i);
+        acc += posterior(s, i) * djoint_classloglik(s, i);
       }
       dloglik_case(s) = acc;
     }
 
-    // Differential of logposterior:
     for (int s = 0; s < S; ++s) {
       for (int i = 0; i < I; ++i) {
+
         dlogposterior(s, i) = djoint_classloglik(s, i) - dloglik_case(s);
+
+        double term_classes =
+          arma::trunc_exp(logweights(s) + classloglik(s, i) - loglik_case(s));
+
+        double term_classloglik =
+          arma::trunc_exp(logweights(s) + logposterior(s, i));
+
+        ddf_dclasses(s, i) -=
+          term_classes * (dclassloglik(s, i) - dloglik_case(s));
+
+        ddf_dclassloglik(s, i) -=
+          term_classloglik * dlogposterior(s, i);
+
       }
     }
 
-    // Final differentials:
-    for (int s = 0; s < S; ++s) {
-      for (int i = 0; i < I; ++i) {
-
-        double term1 = arma::trunc_exp(logweights[s] + classloglik(s, i) - loglik_case(s));
-        ddf_dclasses(s, i) -= term1 * (dclassloglik(s, i) - dloglik_case(s));
-
-        double term2 = arma::trunc_exp(logweights[s] + logposterior(s, i));
-        ddf_dclassloglik(s, i) -= term2 * dlogposterior(s, i);
-      }
-    }
-
-    // Replicate ddf_dclassloglik across items belonging to the same class:
-    for (arma::uword k = 0; k < (arma::uword) I; ++k) {
-      ddf_dcubeloglik.slice(k).each_col() = ddf_dclassloglik.col(k);
-    }
-
-    x.dgrad.elem(indices_classes)     += arma::vectorise(ddf_dclasses);
-    x.dgrad.elem(indices_cubeloglik)  += arma::vectorise(ddf_dcubeloglik);
+    x.dgrad.elem(indices_classes) += arma::vectorise(ddf_dclasses);
+    x.dgrad.elem(indices_classloglik) += arma::vectorise(ddf_dclassloglik);
 
   }
 
   void outcomes(arguments_optim& x) {
 
     doubles.resize(7);
-    doubles[0] =  loss;        // loss actual model
-    doubles[1] =  0.00;        // loss independence model
-    doubles[2] =  0.00;        // loss saturated model
-    doubles[3] = -loss;        // loglik actual model
-    doubles[4] =  0.00;        // loglik independence model
-    doubles[5] =  0.00;        // loglik saturated model
-    doubles[6] =  0.00;        // penalty
+    double loglik = -loss;
+    doubles[0] =  loss;
+    doubles[1] =  0.00;
+    doubles[2] =  0.00;
+    doubles[3] =  loglik;
+    doubles[4] =  0.00;
+    doubles[5] =  0.00;
+    doubles[6] =  0.00;
 
     vectors.resize(1);
     vectors[0] = loglik_case;
@@ -190,39 +164,37 @@ lca* choose_lca(const Rcpp::List& estimator_setup) {
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   int S = estimator_setup["S"];
-  int J = estimator_setup["J"];
   int I = estimator_setup["I"];
   arma::vec weights = estimator_setup["weights"];
 
   double N = arma::accu(weights);
 
-  arma::mat classes(S, I);
-  arma::vec logliks(S, arma::fill::zeros);
-  arma::vec loglik_case(S, arma::fill::zeros);
-  arma::cube cubeloglik(S, J, I, arma::fill::zeros);
+  arma::mat classes(S, I, arma::fill::zeros);
   arma::mat classloglik(S, I, arma::fill::zeros);
+  arma::mat logclasses(S, I, arma::fill::zeros);
   arma::mat joint_classloglik(S, I, arma::fill::zeros);
   arma::mat posterior(S, I, arma::fill::zeros);
   arma::mat logposterior(S, I, arma::fill::zeros);
+  arma::vec logliks(S, arma::fill::zeros);
+  arma::vec loglik_case(S, arma::fill::zeros);
   arma::vec logweights = arma::trunc_log(weights);
 
   myestimator->S = S;
-  myestimator->J = J;
   myestimator->I = I;
   myestimator->weights = weights;
   myestimator->logweights = logweights;
   myestimator->indices_classes = indices[0];
-  myestimator->indices_cubeloglik = indices[1];
-
+  myestimator->indices_classloglik = indices[1];
   myestimator->classes = classes;
-  myestimator->logliks = logliks;
-  myestimator->loglik_case = loglik_case;
-  myestimator->cubeloglik = cubeloglik;
   myestimator->classloglik = classloglik;
+  myestimator->logclasses = logclasses;
   myestimator->joint_classloglik = joint_classloglik;
   myestimator->posterior = posterior;
   myestimator->logposterior = logposterior;
+  myestimator->logliks = logliks;
+  myestimator->loglik_case = loglik_case;
   myestimator->N = N;
+  myestimator->loss = 0.0;
 
   return myestimator;
 

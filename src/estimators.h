@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/06/2026
+ * Modification date: 13/07/2026
  */
 
 class estimators {
@@ -31,6 +31,9 @@ public:
   std::vector<std::vector<arma::vec>> list_vectors;
   std::vector<std::vector<arma::mat>> list_matrices;
 
+  std::vector<std::string> names_doubles, names_vectors, names_matrices,
+  names_cubes, names_list_vectors, names_list_matrices;
+
   virtual void param(arguments_optim& x) = 0;
 
   virtual void F(arguments_optim& x) = 0;
@@ -53,7 +56,6 @@ public:
 #include "estimators/rotation/lclf.h"
 
 #include "estimators/lca/lca.h"
-#include "estimators/lca/lca2.h"
 #include "estimators/lca/bayesconst1.h"
 #include "estimators/lca/bayesconst2.h"
 #include "estimators/lca/bayesconst3.h"
@@ -92,7 +94,6 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "xtarget",                     choose_xtarget                   },
   { "lclf",                        choose_lclf                      },
   { "lca",                         choose_lca                       },
-  { "lca2",                        choose_lca2                      },
   { "bayesconst1",                 choose_bayesconst1               },
   { "bayesconst2",                 choose_bayesconst2               },
   { "bayesconst3",                 choose_bayesconst3               },

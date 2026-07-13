@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/06/2026
+# Modification date: 13/07/2026
 
 create_estimators <- function(estimators, structures) {
 
@@ -52,8 +52,7 @@ create_estimators <- function(estimators, structures) {
                           ridge              = c("lambda", "power", "N"),
                           lreg               = c("y", "X"),
                           polycor            = c("p", "n", "N"),
-                          lca                = c("S", "J", "I", "weights"),
-                          lca2               = c("S", "I", "weights"),
+                          lca                = c("S", "I", "weights"),
                           bayesconst1        = c("K", "alpha", "N", "U"),
                           bayesconst2        = c("K", "alpha", "N", "pihat"),
                           bayesconst3        = c("K", "alpha", "N", "varshat"),

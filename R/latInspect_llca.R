@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/07/2026
+# Modification date: 13/07/2026
 #'
 #' Inspect fitted latent class models
 #'
@@ -424,6 +424,10 @@ latInspect.llca <- function(fit,
 
     result <- list(class_error_modal = class_error_modal,
                    class_error_prop = class_error_prop)
+
+  } else if(what == "diagnosis") {
+
+    result <- lclass_diag(fit, type = "all", digits = digits)
 
   } else if(what %in% c("timing", "elapsed")) {
 

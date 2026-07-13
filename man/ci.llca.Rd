@@ -2,24 +2,69 @@
 % Please edit documentation in R/ci_llca.R
 \name{ci.llca}
 \alias{ci.llca}
-\title{Confidence intervals}
+\title{Confidence intervals for latent class models}
 \usage{
-ci(fit)
+\method{ci}{llca}(fit, type = "standard", confidence = 0.95, digits = 3L, ...)
 }
 \arguments{
-\item{fit}{model fitted with lca.}
+\item{fit}{A fitted object of class \code{"llca"}.}
 
-\item{confidence}{Coverage of the confidence interval.}
+\item{type}{Character string indicating the standard-error estimator used to
+construct the intervals. Available options are \code{"standard"} and
+\code{"robust"}. See \code{se.llca()}.}
+
+\item{confidence}{Numeric scalar strictly between zero and one specifying the
+confidence level.}
+
+\item{digits}{Non-negative integer indicating the number of decimal places used
+in the formatted confidence-interval table.}
+
+\item{...}{Additional arguments passed to other methods.}
 }
 \value{
-List with the following objects:
+A list with the following components:
+\describe{
+  \item{\code{table}}{A list of formatted parameter tables showing the estimate
+  and its confidence interval.}
+  \item{\code{lower_table}}{The lower confidence limits arranged in the model
+  parameter structure.}
+  \item{\code{upper_table}}{The upper confidence limits arranged in the model
+  parameter structure.}
+  \item{\code{lower}}{A named numeric vector of lower confidence limits.}
+  \item{\code{upper}}{A named numeric vector of upper confidence limits.}
+  \item{\code{se}}{A named numeric vector of standard errors.}
+  \item{\code{vcov}}{The variance-covariance matrix used to construct the
+  intervals.}
+  \item{\code{B}}{The empirical or two-step correction matrix, when available.}
+  \item{\code{H}}{The Hessian matrix, when available.}
+  \item{\code{newH}}{The adjusted Hessian used by the robust estimator, when
+  available.}
+}
 }
 \description{
-Compute confidence intervals
+Computes confidence intervals for the parameters of a fitted latent class
+model.
 }
 \details{
-Compute confidence intervals.
+Confidence limits are computed using the asymptotic normal approximation. The
+critical value is obtained as the square root of the corresponding one-degree-
+of-freedom chi-squared quantile. Standard errors are obtained through
+\code{se()}, so two-step and robust adjustments are used when requested.
+
+The \code{digits} argument affects only the formatted \code{table}. The numeric
+confidence limits, standard errors, and covariance matrices are returned
+without rounding.
 }
-\references{
-None yet.
+\examples{
+\dontrun{
+fit <- lca(data = empathy, nclasses = 3L,
+           gaussian = c("ec1", "ec2", "ec3"))
+
+ci(fit)
+ci(fit, type = "robust", confidence = 0.90, digits = 4L)
+}
+
+}
+\seealso{
+\code{se()}
 }

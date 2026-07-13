@@ -2,27 +2,67 @@
 % Please edit documentation in R/se_llca.R
 \name{se.llca}
 \alias{se.llca}
-\title{Standard Errors}
+\title{Standard errors for latent class models}
 \usage{
-se(fit)
+\method{se}{llca}(fit, type = "standard", digits = 3L, ...)
 }
 \arguments{
-\item{fit}{model fitted with lca.}
+\item{fit}{A fitted object of class \code{"llca"}.}
 
-\item{confidence}{Coverage of the confidence interval.}
+\item{type}{Character string indicating the standard-error estimator. Available
+options are \code{"standard"} for Hessian-based standard errors and
+\code{"robust"} for the LatentGold-style sandwich estimator.}
+
+\item{digits}{Non-negative integer indicating the number of decimal places used
+in the formatted table. If \code{NULL}, the table is returned without
+rounding.}
+
+\item{...}{Additional arguments passed to other methods.}
 }
 \value{
-List with the following objects:
-\item{vcov}{Variance-covariance matrix between the parameters.}
-\item{se}{Standard errors.}
-\item{SE}{Standard errors in the model list.}
+A list with the following components:
+\describe{
+  \item{\code{table}}{A list of formatted parameter tables containing estimates
+  and standard errors.}
+  \item{\code{table_se}}{A list containing the standard errors arranged in the
+  same parameter structure as the fitted model.}
+  \item{\code{se}}{A named numeric vector of standard errors.}
+  \item{\code{vcov}}{The variance-covariance matrix of the model parameters.}
+  \item{\code{B}}{The empirical score covariance matrix. It is an empty matrix
+  for ordinary Hessian-based standard errors and may be \code{NULL} when it is
+  not applicable.}
+  \item{\code{H}}{The Hessian matrix, when available.}
+  \item{\code{newH}}{The adjusted Hessian used by the robust estimator, when
+  available.}
+}
 }
 \description{
-Compute standard errors.
+Computes standard errors and variance-covariance matrices for fitted latent
+class models.
 }
 \details{
-Compute standard errors.
+For a regular one-step model, \code{type = "standard"} obtains the covariance
+matrix from the inverse Hessian. With \code{type = "robust"}, the covariance
+matrix is computed from a sandwich estimator using the score contribution of
+each observed response pattern.
+
+When the fitted model contains a previous \code{"llca"} object in
+\code{fit@modelInfo$control_optimizer$model}, the standard errors are adjusted
+for two-step estimation through \code{se_twostep()}.
+
+The \code{digits} argument affects only the formatted \code{table}. The numeric
+standard errors and covariance matrices are returned without rounding.
 }
-\references{
-None yet.
+\examples{
+\dontrun{
+fit <- lca(data = empathy, nclasses = 3L,
+           gaussian = c("ec1", "ec2", "ec3"))
+
+se(fit)
+se(fit, type = "robust", digits = 4L)
+}
+
+}
+\seealso{
+\code{ci()}, \code{vcov()}
 }
