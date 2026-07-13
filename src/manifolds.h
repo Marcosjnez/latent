@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/10/2025
+ * Modification date: 13/07/2026
  */
 
 // Manifolds
@@ -10,24 +10,15 @@ class manifolds {
 
 public:
 
-  // Objects that will be exported from manifolds:
-
-  // Random: Provide these in product_manifold:
-  // arma::vec parameters, dparameters;
-  arma::vec dparameters;
-  arma::mat dH;
-
-  // Fixed: Provide these in choose_manifold:
-  std::vector<arma::uvec> indices; // Which parameters are projected onto the manifold (used in product_manifold)
-  std::size_t q;
-  arma::mat PhiTarget;
-
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
   std::vector<arma::mat> matrices;
   std::vector<arma::cube> cubes;
   std::vector<std::vector<arma::vec>> list_vectors;
   std::vector<std::vector<arma::mat>> list_matrices;
+
+  std::vector<std::string> names_doubles, names_vectors, names_matrices,
+  names_cubes, names_list_vectors, names_list_matrices;
 
   virtual void param(arguments_optim& x) = 0;
 
@@ -144,6 +135,13 @@ public:
     std::get<4>(x.outputs_manifold).resize(x.nmanifolds);
     std::get<5>(x.outputs_manifold).resize(x.nmanifolds);
 
+    std::get<6>(x.outputs_manifold).resize(x.nmanifolds);
+    std::get<7>(x.outputs_manifold).resize(x.nmanifolds);
+    std::get<8>(x.outputs_manifold).resize(x.nmanifolds);
+    std::get<9>(x.outputs_manifold).resize(x.nmanifolds);
+    std::get<10>(x.outputs_manifold).resize(x.nmanifolds);
+    std::get<11>(x.outputs_manifold).resize(x.nmanifolds);
+
     for(int i=0; i < x.nmanifolds; ++i) {
 
       xmanifolds[i]->outcomes(x);
@@ -154,6 +152,13 @@ public:
       std::get<3>(x.outputs_manifold)[i] = xmanifolds[i]->cubes;
       std::get<4>(x.outputs_manifold)[i] = xmanifolds[i]->list_vectors;
       std::get<5>(x.outputs_manifold)[i] = xmanifolds[i]->list_matrices;
+
+      std::get<6>(x.outputs_manifold)[i] = xmanifolds[i]->names_doubles;
+      std::get<7>(x.outputs_manifold)[i] = xmanifolds[i]->names_vectors;
+      std::get<8>(x.outputs_manifold)[i] = xmanifolds[i]->names_matrices;
+      std::get<9>(x.outputs_manifold)[i] = xmanifolds[i]->names_cubes;
+      std::get<10>(x.outputs_manifold)[i] = xmanifolds[i]->names_list_vectors;
+      std::get<11>(x.outputs_manifold)[i] = xmanifolds[i]->names_list_matrices;
 
     }
 

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 30/10/2025
+ * Modification date: 13/07/2026
  */
 
 // Transformations
@@ -23,6 +23,9 @@ public:
   std::vector<arma::cube> cubes;
   std::vector<std::vector<arma::vec>> list_vectors;
   std::vector<std::vector<arma::mat>> list_matrices;
+
+  std::vector<std::string> names_doubles, names_vectors, names_matrices,
+  names_cubes, names_list_vectors, names_list_matrices;
 
   virtual void transform(arguments_optim& x) = 0;
 
@@ -263,6 +266,13 @@ public:
     std::get<4>(x.outputs_transform).resize(x.ntransforms);
     std::get<5>(x.outputs_transform).resize(x.ntransforms);
 
+    std::get<6>(x.outputs_transform).resize(x.ntransforms);
+    std::get<7>(x.outputs_transform).resize(x.ntransforms);
+    std::get<8>(x.outputs_transform).resize(x.ntransforms);
+    std::get<9>(x.outputs_transform).resize(x.ntransforms);
+    std::get<10>(x.outputs_transform).resize(x.ntransforms);
+    std::get<11>(x.outputs_transform).resize(x.ntransforms);
+
     for(int i=0; i < x.ntransforms; ++i) {
 
       xtransformations[i]->outcomes(x);
@@ -273,6 +283,13 @@ public:
       std::get<3>(x.outputs_transform)[i] = xtransformations[i]->cubes;
       std::get<4>(x.outputs_transform)[i] = xtransformations[i]->list_vectors;
       std::get<5>(x.outputs_transform)[i] = xtransformations[i]->list_matrices;
+
+      std::get<6>(x.outputs_transform)[i] = xtransformations[i]->names_doubles;
+      std::get<7>(x.outputs_transform)[i] = xtransformations[i]->names_vectors;
+      std::get<8>(x.outputs_transform)[i] = xtransformations[i]->names_matrices;
+      std::get<9>(x.outputs_transform)[i] = xtransformations[i]->names_cubes;
+      std::get<10>(x.outputs_transform)[i] = xtransformations[i]->names_list_vectors;
+      std::get<11>(x.outputs_transform)[i] = xtransformations[i]->names_list_matrices;
 
     }
 

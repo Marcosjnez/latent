@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/05/2026
+ * Modification date: 13/07/2026
  */
 
 /*
@@ -67,14 +67,11 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(7);
-    doubles[0] =  0.00;
-    doubles[1] =  0.00;
-    doubles[2] =  0.00;
-    doubles[3] =  0.00;
-    doubles[4] =  0.00;
-    doubles[5] =  0.00;
-    doubles[6] =  loss;
+    doubles.resize(1);
+    doubles[0] = loss;
+
+    names_doubles.resize(1);
+    names_doubles[0] = "penalty";
 
   }
 

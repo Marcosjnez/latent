@@ -138,21 +138,22 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(7);
-    double loglik = -loss;
+    doubles.resize(2);
     doubles[0] =  loss;
-    doubles[1] =  0.00;
-    doubles[2] =  0.00;
-    doubles[3] =  loglik;
-    doubles[4] =  0.00;
-    doubles[5] =  0.00;
-    doubles[6] =  0.00;
+    doubles[1] = -loss;
+    names_doubles.resize(2);
+    names_doubles[0] = "loss";
+    names_doubles[1] = "loglik";
 
     vectors.resize(1);
     vectors[0] = loglik_case;
+    names_vectors.resize(1);
+    names_vectors[0] = "loglik_case";
 
     matrices.resize(1);
     matrices[0] = logposterior;
+    names_matrices.resize(1);
+    names_matrices[0] = "logposterior";
 
   }
 

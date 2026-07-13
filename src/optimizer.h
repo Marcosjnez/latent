@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/12/2025
+ * Modification date: 13/07/2026
  */
 
 // By default, this optimizer performs minimization of a loss function
@@ -166,6 +166,13 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   outputsMani["list_vectors"] = std::get<4>(args[index_minimum].outputs_manifold);
   outputsMani["list_matrices"] = std::get<5>(args[index_minimum].outputs_manifold);
 
+  outputsMani["names_doubles"] = std::get<6>(args[index_minimum].outputs_manifold);
+  outputsMani["names_vectors"] = std::get<7>(args[index_minimum].outputs_manifold);
+  outputsMani["names_matrices"] = std::get<8>(args[index_minimum].outputs_manifold);
+  outputsMani["names_cubes"] = std::get<9>(args[index_minimum].outputs_manifold);
+  outputsMani["names_list_vectors"] = std::get<10>(args[index_minimum].outputs_manifold);
+  outputsMani["names_list_matrices"] = std::get<11>(args[index_minimum].outputs_manifold);
+
   // Store all the outputs of each transformation class:
   Rcpp::List outputsTrans;
   outputsTrans["doubles"] = std::get<0>(args[index_minimum].outputs_transform);
@@ -175,6 +182,13 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   outputsTrans["list_vectors"] = std::get<4>(args[index_minimum].outputs_transform);
   outputsTrans["list_matrices"] = std::get<5>(args[index_minimum].outputs_transform);
 
+  outputsTrans["names_doubles"] = std::get<6>(args[index_minimum].outputs_transform);
+  outputsTrans["names_vectors"] = std::get<7>(args[index_minimum].outputs_transform);
+  outputsTrans["names_matrices"] = std::get<8>(args[index_minimum].outputs_transform);
+  outputsTrans["names_cubes"] = std::get<9>(args[index_minimum].outputs_transform);
+  outputsTrans["names_list_vectors"] = std::get<10>(args[index_minimum].outputs_transform);
+  outputsTrans["names_list_matrices"] = std::get<11>(args[index_minimum].outputs_transform);
+
   // Store all the outputs of each estimator class:
   Rcpp::List outputsEst;
   outputsEst["doubles"] = std::get<0>(args[index_minimum].outputs_estimator);
@@ -183,6 +197,13 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   outputsEst["cubes"] = std::get<3>(args[index_minimum].outputs_estimator);
   outputsEst["list_vectors"] = std::get<4>(args[index_minimum].outputs_estimator);
   outputsEst["list_matrices"] = std::get<5>(args[index_minimum].outputs_estimator);
+
+  outputsEst["names_doubles"] = std::get<6>(args[index_minimum].outputs_estimator);
+  outputsEst["names_vectors"] = std::get<7>(args[index_minimum].outputs_estimator);
+  outputsEst["names_matrices"] = std::get<8>(args[index_minimum].outputs_estimator);
+  outputsEst["names_cubes"] = std::get<9>(args[index_minimum].outputs_estimator);
+  outputsEst["names_list_vectors"] = std::get<10>(args[index_minimum].outputs_estimator);
+  outputsEst["names_list_matrices"] = std::get<11>(args[index_minimum].outputs_estimator);
 
   // STORE THE DIMENSIONS AND LABELS OF ARRAYS TO OUTPUT EVERYTHING AUTOMATICALLY
 

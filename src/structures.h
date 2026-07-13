@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 24/03/2026
+ * Modification date: 13/07/2026
  */
 
 #include <tuple>
@@ -79,7 +79,13 @@ struct arguments_optim{
     std::vector<std::vector<arma::mat>>,
     std::vector<std::vector<arma::cube>>,
     std::vector<std::vector<std::vector<arma::vec>>>,
-    std::vector<std::vector<std::vector<arma::mat>>>
+    std::vector<std::vector<std::vector<arma::mat>>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>
   > outputs_manifold;
 
   // Transformations:
@@ -89,7 +95,13 @@ struct arguments_optim{
     std::vector<std::vector<arma::mat>>,
     std::vector<std::vector<arma::cube>>,
     std::vector<std::vector<std::vector<arma::vec>>>,
-    std::vector<std::vector<std::vector<arma::mat>>>
+    std::vector<std::vector<std::vector<arma::mat>>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>
   > outputs_transform;
 
   // Estimators:
@@ -99,7 +111,13 @@ struct arguments_optim{
     std::vector<std::vector<arma::mat>>,
     std::vector<std::vector<arma::cube>>,
     std::vector<std::vector<std::vector<arma::vec>>>,
-    std::vector<std::vector<std::vector<arma::mat>>>
+    std::vector<std::vector<std::vector<arma::mat>>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>,
+    std::vector<std::vector<std::string>>
   > outputs_estimator;
 
   int pick = 0L;

@@ -9,20 +9,6 @@ class estimators {
 public:
 
   double f, loglik;
-  arma::vec parameters, transparameters, dparameters;
-  arma::mat g, dg;
-  arma::mat grad, dgrad;
-  arma::mat hess;
-  arma::mat dparam_dS, modhessian;
-  arma::mat posterior, latentloglik;
-  arma::vec uniquenesses;
-  // arma::mat lambda, phi, psi, model, residuals;
-  int nhessian, nS, p, q;
-  arma::vec weights, latentpars, loglatentpars; // P(X = c) // classes_hat
-  std::vector<arma::mat> conditionals; // conditionals_hat
-
-  std::vector<arma::uvec> indices;
-  arma::mat freqs;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
@@ -181,6 +167,13 @@ public:
     std::get<4>(x.outputs_estimator).resize(x.nestimators);
     std::get<5>(x.outputs_estimator).resize(x.nestimators);
 
+    std::get<6>(x.outputs_estimator).resize(x.nestimators);
+    std::get<7>(x.outputs_estimator).resize(x.nestimators);
+    std::get<8>(x.outputs_estimator).resize(x.nestimators);
+    std::get<9>(x.outputs_estimator).resize(x.nestimators);
+    std::get<10>(x.outputs_estimator).resize(x.nestimators);
+    std::get<11>(x.outputs_estimator).resize(x.nestimators);
+
     for(int i=0; i < x.nestimators; ++i) {
 
       xestimators[i]->outcomes(x);
@@ -191,6 +184,13 @@ public:
       std::get<3>(x.outputs_estimator)[i] = xestimators[i]->cubes;
       std::get<4>(x.outputs_estimator)[i] = xestimators[i]->list_vectors;
       std::get<5>(x.outputs_estimator)[i] = xestimators[i]->list_matrices;
+
+      std::get<6>(x.outputs_estimator)[i] = xestimators[i]->names_doubles;
+      std::get<7>(x.outputs_estimator)[i] = xestimators[i]->names_vectors;
+      std::get<8>(x.outputs_estimator)[i] = xestimators[i]->names_matrices;
+      std::get<9>(x.outputs_estimator)[i] = xestimators[i]->names_cubes;
+      std::get<10>(x.outputs_estimator)[i] = xestimators[i]->names_list_vectors;
+      std::get<11>(x.outputs_estimator)[i] = xestimators[i]->names_list_matrices;
 
     }
 

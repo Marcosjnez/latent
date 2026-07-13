@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 15/02/2026
+ * Modification date: 13/07/2026
  */
 
 /*
@@ -56,14 +56,11 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    doubles.resize(7);
-    doubles[0] =  0.00;        // loss actual model
-    doubles[1] =  0.00;        // loss independence model
-    doubles[2] =  0.00;        // loss saturated model
-    doubles[3] =  0.00;        // loglik actual model
-    doubles[4] =  0.00;        // loglik independence model
-    doubles[5] =  0.00;        // loglik saturated model
-    doubles[6] =  loss;        // penalty
+    doubles.resize(1);
+    doubles[0] = loss;
+
+    names_doubles.resize(1);
+    names_doubles[0] = "penalty";
 
   }
 

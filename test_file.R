@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/07/2026
+# Modification date: 13/07/2026
 
 #### Store a dataset ####
 
@@ -23,7 +23,7 @@ gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
            # outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",

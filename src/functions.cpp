@@ -25,6 +25,7 @@
   #define omp_set_num_threads() 1
 #endif
 
+#include <string>
 #include <unordered_map>
 #include <functional>
 #include <RcppArmadillo.h>

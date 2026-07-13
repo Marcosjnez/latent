@@ -269,20 +269,55 @@ latInspect.llca <- function(fit,
   #### Fit components ####
 
   doubles <- fit@Optim$outputs$estimators$doubles
+  names(doubles) <- sapply(fit@modelInfo$control_estimator, FUN = \(x) x$estimator)
+  names_doubles <- fit@Optim$outputs$estimators$names_doubles
+  doubles <- Map(setNames, doubles, names_doubles)
 
+  # Get fit information form the estimator structures. When doing so, set to
+  # zero any fit measure that is missing in the estimators:
+
+  get_zero <- function(x, name) {
+    # Function to set to zero missing fit measures
+
+    if(is.null(names(x)) || !name %in% names(x)) {
+      value <- 0
+    } else {
+      value <- x[[name]]
+    }
+
+    return(value)
+
+  }
+
+  # Get all the fits:
   fit_matrix <- vapply(
     doubles,
     FUN = function(x) {
-      c(loss             = x[[1]],
-        loss_base        = x[[2]],
-        loss_sat         = x[[3]],
-        loglik           = x[[4]],
-        loglik_base      = x[[5]],
-        loglik_sat       = x[[6]],
-        penalty          = x[[7]],
-        penalized_loss   = x[[1]] + x[[7]],
-        penalized_loglik = x[[4]] - x[[7]])
-    }, FUN.VALUE = numeric(9L))
+      loss        <- get_zero(x, "loss")
+      loglik      <- get_zero(x, "loglik")
+      penalty     <- get_zero(x, "penalty")
+      loss_base   <- get_zero(x, "loss_baseline")
+      loss_sat    <- get_zero(x, "loss_saturated")
+      loglik_base <- get_zero(x, "loglik_baseline")
+      loglik_sat  <- get_zero(x, "loglik_saturated")
+
+      result <- c(
+        loss             = loss,
+        loss_base        = loss_base,
+        loss_sat         = loss_sat,
+        loglik           = loglik,
+        loglik_base      = loglik_base,
+        loglik_sat       = loglik_sat,
+        penalty          = penalty,
+        penalized_loss   = loss + penalty,
+        penalized_loglik = loglik - penalty
+      )
+
+      #### Result ####
+      return(result)
+    },
+    FUN.VALUE = numeric(9L)
+  )
 
   estimator_names <- unlist(lapply(control_estimator, FUN = \(x) x$double_names),
                             use.names = FALSE)
