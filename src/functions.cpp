@@ -39,7 +39,7 @@
 #include "polychorics.h"
 #include "polyfast.h"
 #include "asymptotic_cov.h"
-#include "optim.h"
+#include "optimization/optim.h"
 #include "optimizer.h"
 #include "grad_comp.h"
 #include "get_grad.h"
