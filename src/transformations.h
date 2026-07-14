@@ -49,18 +49,16 @@ public:
 #include "transformations/softmax.h"
 #include "transformations/exponential.h"
 #include "transformations/logarithm.h"
-#include "transformations/normal.h"
 #include "transformations/crossprod.h"
-#include "transformations/multinomial.h"
 #include "transformations/column_space.h"
 #include "transformations/factor_cor.h"
 #include "transformations/matrix_inverse.h"
 #include "transformations/XY.h"
 #include "transformations/XYt.h"
 #include "transformations/deltaparam.h"
-#include "transformations/mvnormal2.h"
-#include "transformations/normal2.h"
-#include "transformations/multinomial2.h"
+#include "transformations/mvnormal.h"
+#include "transformations/normal.h"
+#include "transformations/multinomial.h"
 #include "transformations/sum_vectors.h"
 #include "transformations/sqrt_vector.h"
 #include "transformations/pos_incrsng.h"
@@ -76,15 +74,13 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "normal",   choose_normal   },
   { "crossprod", choose_crossprod },
   { "multinomial", choose_multinomial },
-  { "multinomial2", choose_multinomial2 },
   { "column_space", choose_column_space },
   { "factor_cor", choose_factor_cor },
   { "matrix_inverse", choose_matrix_inverse },
   { "XY", choose_XY },
   { "XYt", choose_XYt },
   { "deltaparam", choose_deltaparam },
-  { "mvnormal2",   choose_mvnormal2   },
-  { "normal2",   choose_normal2   },
+  { "mvnormal",   choose_mvnormal   },
   { "sum_vectors",   choose_sum_vectors   },
   { "sqrt_vector",   choose_sqrt_vector   },
   { "pos_incrsng",   choose_pos_incrsng   }
@@ -208,16 +204,8 @@ public:
       x.vcov(x.transparam2param, x.transparam2param) = x.inv_h;
 
       for (int i=0; i < x.ntransforms; ++i) {
-        // for (int i=0; i < x.ncov_transform; ++i) {
-
-        // // Rprintf("%d \n", i);
-        // const arma::uvec& indices_in  = xtransformations[i]->indices_in[0];
-        // const arma::uvec& indices_out = xtransformations[i]->indices_out[0];
         xtransformations[i]->jacobian(x);
         xtransformations[i]->update_vcov(x);
-
-        // const arma::mat& J = xtransformations[i]->jacob;
-        // x.vcov(indices_out, indices_out) = J * x.vcov(indices_in, indices_in) * J.t();
 
       }
 

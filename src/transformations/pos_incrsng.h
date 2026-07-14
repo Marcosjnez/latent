@@ -69,24 +69,16 @@ public:
 
   void dconstraints(arguments_optim& x) {
 
-    constraints = true;
-    dconstr.set_size(indices_out.n_elem);
-    dconstr.ones();
+    constraints = false;
 
   }
 
   void outcomes(arguments_optim& x) {
 
-    dconstraints(x);
-    int p = indices_out.n_elem;
-    arma::vec chisq_p(p, arma::fill::value(p));
-
-    vectors.resize(2);
-    vectors[0] = dconstr;
-    vectors[1] = chisq_p;
-
     matrices.resize(1);
     matrices[0] = jacob;
+    names_matrices.resize(1);
+    names_matrices[0] = "jacobian";
 
   }
 

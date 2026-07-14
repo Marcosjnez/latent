@@ -1,10 +1,10 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 10/05/2026
+ * Modification date: 14/07/2026
  */
 
-class mvnormal2: public transformations {
+class mvnormal: public transformations {
 
 public:
 
@@ -272,23 +272,18 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    int p = indices_out.n_elem;
-    arma::vec chisq_p(p, arma::fill::value(2.00));
-
-    vectors.resize(2);
-    vectors[0] = dconstr;
-    vectors[1] = chisq_p;
-
     matrices.resize(1);
     matrices[0] = jacob;
+    names_matrices.resize(1);
+    names_matrices[0] = "jacobian";
 
   }
 
 };
 
-mvnormal2* choose_mvnormal2(const Rcpp::List& trans_setup) {
+mvnormal* choose_mvnormal(const Rcpp::List& trans_setup) {
 
-  mvnormal2* mytrans = new mvnormal2();
+  mvnormal* mytrans = new mvnormal();
 
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];

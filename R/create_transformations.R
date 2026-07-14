@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/03/2026
+# Modification date: 14/07/2026
 
 create_transforms <- function(transforms, structures) {
 
@@ -37,9 +37,6 @@ create_transforms <- function(transforms, structures) {
                                 XYt = c("p", "q"),
                                 XY      = c("p", "q"),
                                 softmax   = character(0),
-                                normal      = c("y", "S", "J", "I"),
-                                multinomial = c("y", "K", "S", "J", "I"),
-                                multinomial2 = c("y", "K", "S", "J", "I"),
                                 matrix_inverse = c("p"),
                                 logarithm   = character(0),
                                 identity   = character(0),
@@ -48,8 +45,9 @@ create_transforms <- function(transforms, structures) {
                                 crossprod   = c("p"),
                                 column_space   = c("X"),
                                 deltaparam   = c("p", "q"),
-                                mvnormal2   = c("y", "S", "J", "I"),
-                                normal2   = c("y", "S", "J", "I"),
+                                multinomial = c("y", "K", "S", "J", "I"),
+                                normal   = c("y", "S", "J", "I"),
+                                mvnormal   = c("y", "S", "J", "I"),
                                 sum_vectors   = character(0),
                                 sqrt_vector = character(0),
                                 pos_incrsng = character(0),

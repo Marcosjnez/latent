@@ -77,14 +77,17 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    arma::vec dconst(indices_out.n_elem);
-    dconst.ones();
+    arma::vec dconst(indices_out.n_elem); dconst.ones();
 
     vectors.resize(1);
     vectors[0] = dconst;
+    names_vectors.resize(1);
+    names_vectors[0] = "constraints_deriv";
 
     matrices.resize(1);
     matrices[0] = jacob;
+    names_matrices.resize(1);
+    names_matrices[0] = "jacobian";
 
   }
 

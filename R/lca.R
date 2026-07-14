@@ -2727,7 +2727,7 @@ transformations_multinomial_lca <- function(trans, dataList) {
       names(likelihood_probs) <- likelihood_names
 
       transforms[[k]] <- list(
-        transform = "multinomial2",
+        transform = "multinomial",
         parameters_in = list(likelihood_probs, trans$loglik),
         parameters_out = list(trans$loglik),
         extra = list(y = patterns_mvmultinomial_recoded,
@@ -2746,7 +2746,7 @@ transformations_multinomial_lca <- function(trans, dataList) {
       names(item_probs) <- multinomial_names
 
       transforms[[k]] <- list(
-        transform = "multinomial2",
+        transform = "multinomial",
         parameters_in = list(item_probs, trans$loglik),
         parameters_out = list(trans$loglik),
         extra = list(y = patterns_multinomial, S = npatterns,
@@ -2794,7 +2794,7 @@ transformations_gaussian_lca <- function(trans, dataList) {
     #                         extra = list(y = y, S = npatterns, J = Jgauss,
     #                                      I = nclasses))
 
-    transforms[[k]] <- list(transform = "normal2",
+    transforms[[k]] <- list(transform = "normal",
                             parameters_in = list(means, vars, trans$loglik),
                             parameters_out = list(trans$loglik),
                             extra = list(y = patterns_gaussian, S = npatterns,
@@ -2845,7 +2845,7 @@ transformations_mvgaussian_lca <- function(trans, dataList) {
                             extra = list())
     k <- k+1L
 
-    transforms[[k]] <- list(transform = "mvnormal2",
+    transforms[[k]] <- list(transform = "mvnormal",
                             parameters_in = list(unlist(means),
                                                  unlist(trans[sigma_names]),
                                                  trans$loglik),

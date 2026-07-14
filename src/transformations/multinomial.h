@@ -1,45 +1,47 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/03/2026
+ * Modification date: 14/07/2026
  */
 
 // Logarithm multinomial probability transformation:
 
-class multinomial:public transformations {
+class multinomial: public transformations {
 
 public:
 
   int S, J, I, n_in, n_out;
-  arma::uvec indices_in, indices_out, K;
-  arma::vec trans, logtrans, df_dloglik;
+  arma::uvec indices_peta, indices_loglik, indices_in, indices_out, K;
+  arma::vec trans, logtrans;
   std::vector<arma::mat> peta, eta, df_dpeta, indices;
   std::vector<arma::mat> dpeta, deta;
-  arma::mat y, jacob;
+  arma::mat y, loglik, jacob;
 
   void transform(arguments_optim& x) {
 
-    trans = x.transparameters(indices_in);
+    trans = x.transparameters.elem(indices_peta);
     logtrans = arma::trunc_log(trans);
+    loglik = arma::reshape(x.transparameters.elem(indices_loglik), S, I);
 
-    int l=0;
-    for(int j=0; j < J; ++j) {
-      for(int i=0; i < I; ++i) {
-        for(int k=0; k < K[j]; ++k, ++l) {
+    int l = 0;
+    for (int j = 0; j < J; ++j) {
+      for (int i = 0; i < I; ++i) {
+        for (int k = 0; k < K[j]; ++k, ++l) {
           peta[j](k,i) = trans(l);
           eta[j](k,i) = logtrans(l);
         }
       }
     }
 
-    arma::cube loglik(S, J, I, arma::fill::zeros);
-    for(int i=0; i < I; ++i) { // classes
-      for(int j=0; j < J; ++j) { // items
-        for(int s=0; s < S; ++s) { // response patterns
+    for (int i = 0; i < I; ++i) {
+      for (int s = 0; s < S; ++s) {
+        double ll = 0.0;
+        for (int j = 0; j < J; ++j) {
           if (std::isnan(y(s,j))) continue;
           int value = y(s,j);
-          loglik(s,j,i) = eta[j](value,i);
+          ll += eta[j](value,i);
         }
+        loglik(s,i) += ll;
       }
     }
 
@@ -49,54 +51,64 @@ public:
 
   void update_grad(arguments_optim& x) {
 
-    df_dloglik = x.grad(indices_out);
+    // arma::vec grad_out = x.grad_init(indices_out);
+    arma::vec grad_out = x.grad(indices_out);
 
-    for(int j=0; j < J; ++j) {
+    for (int j = 0; j < J; ++j) {
       df_dpeta[j].zeros();
     }
 
-    int l=0L;
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s, ++l) {
+    int l = 0L;
+    for (int i = 0; i < I; ++i) {
+      for (int s = 0; s < S; ++s, ++l) {
+        double gk = grad_out(l);
+        for (int j = 0; j < J; ++j) {
           if (std::isnan(y(s,j))) continue;
           int value = y(s,j);
-          df_dpeta[j](value,i) += df_dloglik(l)/peta[j](value,i);
+          df_dpeta[j](value,i) += gk / peta[j](value,i);
         }
       }
     }
 
-    arma::vec v = arma::vec();  // initialize empty vector
+    // arma::mat df_dloglik(S, I, arma::fill::zeros);
+    arma::vec v;
     for (int j = 0; j < J; ++j) {
       v = arma::join_cols(v, arma::vectorise(df_dpeta[j]));
+      // arma::vec(df_dloglik.memptr(), df_dloglik.n_elem, false, true) += grad_out;
+      // df_dloglik += grad_out;
     }
 
-    x.grad(indices_in) += v;
+    x.grad.elem(indices_peta) += v;
+    // x.grad.elem(indices_loglik) += grad_out;
+    // x.grad.elem(indices_loglik) += arma::vectorise(df_dloglik);
 
   }
 
   void dtransform(arguments_optim& x) {
 
-    arma::vec dtrans_in = x.dtransparameters(indices_in);
+    arma::vec dtrans_in = x.dtransparameters.elem(indices_peta);
 
-    int l=0;
-    for(int j=0; j < J; ++j) {
-      for(int i=0; i < I; ++i) {
-        for(int k=0; k < K[j]; ++k, ++l) {
+    int l = 0;
+    for (int j = 0; j < J; ++j) {
+      for (int i = 0; i < I; ++i) {
+        for (int k = 0; k < K[j]; ++k, ++l) {
           dpeta[j](k,i) = dtrans_in(l);
-          deta[j](k,i) = dtrans_in(l)/trans(l);
+          deta[j](k,i) = dtrans_in(l) / trans(l);
         }
       }
     }
 
-    arma::cube dloglik(S, J, I, arma::fill::zeros);
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s) {
+    arma::mat dloglik = arma::reshape(x.dtransparameters.elem(indices_loglik), S, I);
+
+    for (int i = 0; i < I; ++i) {
+      for (int s = 0; s < S; ++s) {
+        double dll = 0.0;
+        for (int j = 0; j < J; ++j) {
           if (std::isnan(y(s,j))) continue;
           int value = y(s,j);
-          dloglik(s,j,i) = deta[j](value,i);
+          dll += deta[j](value,i);
         }
+        dloglik(s,i) += dll;
       }
     }
 
@@ -106,32 +118,38 @@ public:
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::vec ddf_dloglik = x.dgrad(indices_out);
+    arma::vec grad_out = x.grad.elem(indices_out);
+    arma::vec dgrad_out = x.dgrad.elem(indices_out);
 
     std::vector<arma::mat> dgrad_in = df_dpeta;
-    for(int j=0; j < J; ++j) {
+    for (int j = 0; j < J; ++j) {
       dgrad_in[j].zeros();
     }
 
-    int l=0L;
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s, ++l) {
+    int l = 0L;
+    for (int i = 0; i < I; ++i) {
+      for (int s = 0; s < S; ++s, ++l) {
+        double gk = grad_out(l);
+        double dgk = dgrad_out(l);
+
+        for (int j = 0; j < J; ++j) {
           if (std::isnan(y(s,j))) continue;
           int value = y(s,j);
-          // dgrad_in[j](value,i) += df_dloglik(l)/peta[j](value,i);
-          dgrad_in[j](value,i) += (peta[j](value,i)*ddf_dloglik(l) -
-            df_dloglik(l)*dpeta[j](value,i))/(peta[j](value,i)*peta[j](value,i));
+          double p = peta[j](value,i);
+          double dp = dpeta[j](value,i);
+
+          dgrad_in[j](value,i) += (p * dgk - gk * dp) / (p * p);
         }
       }
     }
 
-    arma::vec v = arma::vec();  // initialize empty vector
+    arma::vec v;
     for (int j = 0; j < J; ++j) {
       v = arma::join_cols(v, arma::vectorise(dgrad_in[j]));
     }
 
-    x.dgrad(indices_in) += v;
+    x.dgrad.elem(indices_peta) += v;
+    // x.dgrad.elem(indices_loglik) += dgrad_out;
 
   }
 
@@ -140,14 +158,20 @@ public:
     jacob.set_size(n_out, n_in);
     jacob.zeros();
 
+    const int offset_peta = 0;
+    const int offset_loglik = indices_peta.n_elem;
+
     int l = 0L;
-    for(int i=0; i < I; ++i) {
-      for(int j=0; j < J; ++j) {
-        for(int s=0; s < S; ++s, ++l) {
+    for (int i = 0; i < I; ++i) {
+      for (int s = 0; s < S; ++s, ++l) {
+
+        jacob(l, offset_loglik + l) = 1.0;
+
+        for (int j = 0; j < J; ++j) {
           if (std::isnan(y(s,j))) continue;
           int value = y(s,j);
           int index = indices[j](value,i);
-          jacob(l, index) = 1/peta[j](value,i);
+          jacob(l, offset_peta + index) = 1.0 / peta[j](value,i);
         }
       }
     }
@@ -156,7 +180,9 @@ public:
 
   void update_vcov(arguments_optim& x) {
 
-    x.vcov(indices_out, indices_out) = jacob * x.vcov(indices_in, indices_in) * jacob.t();
+    indices_in = arma::join_cols(indices_peta, indices_loglik);
+    x.vcov(indices_out, indices_out) =
+      jacob * x.vcov(indices_in, indices_in) * jacob.t();
 
   }
 
@@ -168,15 +194,10 @@ public:
 
   void outcomes(arguments_optim& x) {
 
-    int p = indices_out.n_elem;
-    arma::vec chisq_p(p, arma::fill::value(1.00));
-
-    vectors.resize(2);
-    vectors[0] = dconstr;
-    vectors[1] = chisq_p;
-
     matrices.resize(1);
     matrices[0] = jacob;
+    names_matrices.resize(1);
+    names_matrices[0] = "jacobian";
 
   }
 
@@ -194,24 +215,31 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
   int J = trans_setup["J"];
   int I = trans_setup["I"];
 
-  int n_in  = indices_in[0].n_elem;
+  arma::uvec indices_peta = indices_in[0];
+  arma::uvec indices_loglik = indices_in[1];
+
+  int n_in = indices_peta.n_elem + indices_loglik.n_elem;
   int n_out = indices_out[0].n_elem;
+
   std::vector<arma::mat> peta(J);
-  for(int j=0; j < J; ++j) {
+  for (int j = 0; j < J; ++j) {
     peta[j].resize(K(j), I);
     peta[j].zeros();
   }
+
   std::vector<arma::mat> indices = peta;
-  int l=0;
-  for(int j=0; j < J; ++j) {
-    for(int i=0; i < I; ++i) {
-      for(int k=0; k < K[j]; ++k, ++l) {
+
+  int l = 0;
+  for (int j = 0; j < J; ++j) {
+    for (int i = 0; i < I; ++i) {
+      for (int k = 0; k < K[j]; ++k, ++l) {
         indices[j](k,i) = l;
       }
     }
   }
 
-  mytrans->indices_in = indices_in[0];
+  mytrans->indices_peta = indices_peta;
+  mytrans->indices_loglik = indices_loglik;
   mytrans->indices_out = indices_out[0];
   mytrans->n_in = n_in;
   mytrans->n_out = n_out;

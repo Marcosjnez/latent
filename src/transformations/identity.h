@@ -60,6 +60,8 @@ public:
 
     matrices.resize(1);
     matrices[0] = jacob;
+    names_matrices.resize(1);
+    names_matrices[0] = "jacobian";
 
   }
 
