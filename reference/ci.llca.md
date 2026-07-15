@@ -7,7 +7,14 @@ class model.
 
 ``` r
 # S3 method for class 'llca'
-ci(fit, type = "standard", confidence = 0.95, digits = 3L, ...)
+ci(
+  fit,
+  type = "standard",
+  confidence = 0.95,
+  parameters = NULL,
+  digits = 3L,
+  ...
+)
 ```
 
 ## Arguments

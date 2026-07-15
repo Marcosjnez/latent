@@ -6,7 +6,7 @@ the measurement-model parameters estimated in a previous step.
 ## Usage
 
 ``` r
-se_twostep(fit2, type = "standard")
+se_twostep(fit2, type = "standard", parameters = NULL)
 ```
 
 ## Arguments

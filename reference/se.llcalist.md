@@ -6,7 +6,7 @@ Applies `se()` to every fitted model in an `"llcalist"` object.
 
 ``` r
 # S3 method for class 'llcalist'
-se(model, type = "standard", digits = 3L, ...)
+se(model, type = "standard", parameters = NULL, digits = 4L, ...)
 ```
 
 ## Arguments

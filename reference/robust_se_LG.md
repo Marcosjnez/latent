@@ -6,7 +6,7 @@ contribution of each observed response pattern.
 ## Usage
 
 ``` r
-robust_se_LG(fit)
+robust_se_LG(fit, parameters = NULL)
 ```
 
 ## Arguments

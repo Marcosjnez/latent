@@ -7,7 +7,7 @@ latent class models.
 
 ``` r
 # S3 method for class 'llca'
-se(fit, type = "standard", digits = 3L, ...)
+se(fit, type = "standard", parameters = NULL, digits = 4L, ...)
 ```
 
 ## Arguments
