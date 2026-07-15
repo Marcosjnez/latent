@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2026
+ * Modification date: 14/07/2026
  */
 
 // Transformations
@@ -191,28 +191,25 @@ public:
     // Approximate the inverse if the hessian is not positive-definite:
     x.inv_h = arma::inv_sympd(x.h, arma::inv_opts::allow_approx);
 
-    if(x.minimal_se) {
+    // Get the variance-covariance matrix of selected parameters:
+    x.vcov.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
 
-    x.vcov = x.inv_h;
-
-    } else {
-
-      // This assumes that the jacobians are already computed
-      // Get the variance-covariance matrix of everything:
-      x.vcov.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
-      x.vcov.zeros();
-      x.vcov(x.transparam2param, x.transparam2param) = x.inv_h;
-
-      for (int i=0; i < x.ntransforms; ++i) {
-        xtransformations[i]->jacobian(x);
-        xtransformations[i]->update_vcov(x);
-
+    // x.transparam2param may not contain contiguous indices so fill x.vcov
+    // element-wise:
+    for(arma::uword j = 0L; j < x.transparam2param.n_elem; ++j) {
+      for(arma::uword i = 0L; i < x.transparam2param.n_elem; ++i) {
+        x.vcov(x.transparam2param[i], x.transparam2param[j]) = x.inv_h(i, j);
       }
+    }
 
+    // Delta method:
+    for(arma::uword i : x.idx_transforms) {
+      xtransformations[i]->jacobian(x);
+      xtransformations[i]->update_vcov(x);
     }
 
     // Finally, get the standard errors:
-    x.se = arma::sqrt(x.vcov.diag());
+    x.se = arma::sqrt(arma::vec(x.vcov.diag()));
 
   }
 

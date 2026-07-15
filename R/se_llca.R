@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/07/2026
+# Modification date: 14/07/2026
 #'
 #' Standard errors for latent class models
 #'
@@ -76,7 +76,6 @@ se.llca <- function(fit, type = "standard", digits = 3L, ...) {
     stop("digits must be NULL or a non-negative integer.")
   }
 
-  fit@modelInfo$control_optimizer$minimal_se <- TRUE
   original_model <- fit@modelInfo$control_optimizer$model
 
   if(inherits(original_model, "llca")) {

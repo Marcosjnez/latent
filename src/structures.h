@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2026
+ * Modification date: 14/07/2026
  */
 
 #include <tuple>
@@ -12,7 +12,6 @@ struct arguments_optim{
   int nmanifolds, nestimators, ntransforms;
   int ncov_transform = 1L, ncov_params;
   arma::uvec vector_nparams;
-  bool minimal_se = true;
 
   // Estimators stuff:
   std::vector<arma::uvec> indexes, target_indexes;
@@ -36,7 +35,8 @@ struct arguments_optim{
   arma::vec parameters, dparameters, g, dg, rg, drg, dH;
   arma::vec transparameters, transparameters_init, dtransparameters, grad,
   dgrad, grad_init, dgrad_init;
-  arma::mat jacob, h, B, inv_h, inv_hess, vcov;
+  arma::mat jacob, h, B, inv_h, inv_hess;
+  arma::sp_mat vcov;
   arma::mat hess; // Returned as dgCMatrix class type from Matrix package
   arma::mat posterior;
   arma::mat freqs;
@@ -118,5 +118,6 @@ struct arguments_optim{
 
   int nparam, ntransparam, nrow_post, ncol_post;
   arma::uvec transparam2param;
+  arma::uvec idx_transforms;
 
 };

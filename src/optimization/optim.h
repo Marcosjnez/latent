@@ -179,27 +179,12 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
     int pick = control_optimizer["pick"];
     x.pick = pick; // Pick the "pick" number of rstarts with minimum objective
   }
-  if(control_optimizer.containsElementNamed("minimal_se")) {
-    // Compute the vcov of model parameters or full transformed parameters
-    bool minimal_se = control_optimizer["minimal_se"];
-    x.minimal_se = minimal_se;
+  if(control_optimizer.containsElementNamed("idx_transforms")) {
+    // Compute the jacobians and update the vcov of the parameters that are in
+    // the control_transform structures indexed by idx_transforms:
+    arma::uvec idx_transforms = control_optimizer["idx_transforms"];
+    x.idx_transforms = idx_transforms;
   }
-  // if(control_optimizer.containsElementNamed("ncov_transform")) {
-  //   // Compute up to ncov_transform transformation jacobians:
-  //   int ncov_transform = control_optimizer["ncov_transform"];
-  //   x.ncov_transform = ncov_transform;
-  // }
-  // if(control_optimizer.containsElementNamed("vector_nparams")) {
-  //   // Cumulative vector of parameters and transformed parameters for SE
-  //   arma::uvec vector_nparams = control_optimizer["vector_nparams"];
-  //   x.vector_nparams = vector_nparams;
-  //   // Number of parameters and transformed parameters up to the transformation
-  //   // of interest:
-  //   x.ncov_params = vector_nparams(x.ncov_transform);
-  // } else {
-  //   x.vector_nparams = arma::uvec(1, arma::fill::value(x.nparam));
-  //   x.ncov_params = x.nparam;
-  // }
 
   // Select the optimization algorithm and set defaults:
 
