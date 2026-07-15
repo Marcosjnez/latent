@@ -4,7 +4,7 @@
 \alias{se_twostep}
 \title{Two-step standard-error adjustment}
 \usage{
-se_twostep(fit2, type = "standard")
+se_twostep(fit2, type = "standard", parameters = NULL)
 }
 \arguments{
 \item{fit2}{A fitted structural \code{"llca"} object whose optimizer control

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/07/2026
+# Modification date: 15/07/2026
 
 # Miscellaneous functions used in latent
 
@@ -502,15 +502,23 @@ group_lists_by_sublists <- function(...) {
   )
 }
 
-combine_est_se <- function(est, se, digits = 2) {
+combine_est_se <- function(est, se, digits = 2, merge = TRUE) {
 
   est_suffix <- " (est)"
   se_suffix <- " (se)"
 
   format_matrix <- function(mat) {
-    if (is.null(digits)) return(mat)
-    fmt <- function(x) round(x, digits = digits)
-    apply(mat, c(1, 2), fmt)
+
+    if(is.null(digits)) {
+      result <- mat
+    } else {
+      result <- round(mat, digits = digits)
+    }
+
+    #### Result ####
+
+    return(result)
+
   }
 
   # Combine item parameters
@@ -521,44 +529,69 @@ combine_est_se <- function(est, se, digits = 2) {
     out <- vector("list", length(item_names))
     names(out) <- item_names
 
-    for (nm in item_names) {
-      E <- est_items[[nm]]
-      S <- se_items[[nm]]
+    for(nm in item_names) {
 
-      E <- as.matrix(unclass(E))
-      S <- as.matrix(unclass(S))
+      E <- as.matrix(unclass(est_items[[nm]]))
+      S <- as.matrix(unclass(se_items[[nm]]))
 
       nr <- nrow(E)
       nc <- ncol(E)
 
-      if (!identical(dim(S), dim(E))) {
-        if (ncol(S) == 1 && ncol(E) > 1) {
-          S <- matrix(rep(S, ncol(E)), nrow = nr, ncol = nc)
-        } else if (ncol(S) == ncol(E) && nrow(S) == 1) {
-          S <- matrix(rep(S, each = nr), nrow = nr, ncol = nc)
-        } else if (all(dim(S) == rev(dim(E)))) {
-          S <- t(S)
-        } else {
-          stop(sprintf("Dimension mismatch for item '%s': est = %s, se = %s",
-                       nm, paste(dim(E), collapse = "x"), paste(dim(S), collapse = "x")))
-        }
-      }
+      if(!identical(dim(S), dim(E))) {
 
-      M <- matrix(NA, nrow = nr, ncol = 2 * nc,
-                  dimnames = list(rownames(E), NULL))
+        if(ncol(S) == 1L && ncol(E) > 1L) {
+
+          S <- matrix(rep(S, ncol(E)), nrow = nr, ncol = nc)
+
+        } else if(ncol(S) == ncol(E) && nrow(S) == 1L) {
+
+          S <- matrix(rep(S, each = nr), nrow = nr, ncol = nc)
+
+        } else if(all(dim(S) == rev(dim(E)))) {
+
+          S <- t(S)
+
+        } else {
+
+          stop(sprintf("Dimension mismatch for item '%s': est = %s, se = %s",
+                       nm, paste(dim(E), collapse = "x"),
+                       paste(dim(S), collapse = "x")))
+
+        }
+
+      }
 
       E_fmt <- format_matrix(E)
       S_fmt <- format_matrix(S)
 
-      M[, seq(1, 2 * nc, by = 2)] <- E_fmt
-      M[, seq(2, 2 * nc, by = 2)] <- S_fmt
+      if(merge) {
 
-      cls <- colnames(E); if (is.null(cls)) cls <- paste0("col", seq_len(nc))
-      colnames(M) <- as.vector(rbind(paste0(cls, est_suffix),
-                                     paste0(cls, se_suffix)))
+        M <- matrix(paste0(E_fmt, " (", S_fmt, ")"),
+                    nrow = nr, ncol = nc, dimnames = dimnames(E))
+
+      } else {
+
+        M <- matrix(NA, nrow = nr, ncol = 2L*nc,
+                    dimnames = list(rownames(E), NULL))
+
+        M[, seq(1L, 2L*nc, by = 2L)] <- E_fmt
+        M[, seq(2L, 2L*nc, by = 2L)] <- S_fmt
+
+        cls <- colnames(E)
+        if(is.null(cls)) {
+          cls <- paste0("col", seq_len(nc))
+        }
+
+        colnames(M) <- as.vector(rbind(paste0(cls, est_suffix),
+                                       paste0(cls, se_suffix)))
+
+      }
+
       out[[nm]] <- M
 
     }
+
+    #### Result ####
 
     return(out)
 
@@ -566,24 +599,49 @@ combine_est_se <- function(est, se, digits = 2) {
 
   result <- combine_item_est_se(est, se)
 
+  #### Result ####
+
   return(result)
 
 }
 
-combine_est_ci <- function(lower, est, upper, digits = 2) {
+combine_est_ci <- function(lower, est, upper, digits = 2, merge = TRUE) {
 
-  fmt <- function(x) formatC(round(x, digits = digits),
-                             format = "f", digits = digits)
+  fmt <- function(x) {
 
-  LEU <- function(E, L, U) {
-    matrix(paste0(
-      fmt(E), " [", fmt(L), ", ", fmt(U), "]"
-    ), nrow = nrow(E), ncol = ncol(E),
-    dimnames = dimnames(E))
+    result <- formatC(round(x, digits = digits),
+                      format = "f", digits = digits)
+
+    return(result)
+
+  }
+
+  combine_ci <- function(E, L, U) {
+
+    if(merge) {
+
+      result <- matrix(paste0(fmt(E), " (", fmt(L), "|", fmt(U), ")"),
+                       nrow = nrow(E), ncol = ncol(E),
+                       dimnames = dimnames(E))
+
+    } else {
+
+      result <- matrix(paste0(fmt(E), " [", fmt(L), ", ", fmt(U), "]"),
+                       nrow = nrow(E), ncol = ncol(E),
+                       dimnames = dimnames(E))
+
+    }
+
+    #### Result ####
+
+    return(result)
+
   }
 
   # Combine item-level estimates
-  result <- mapply(LEU, est, lower, upper, SIMPLIFY = FALSE)
+  result <- mapply(combine_ci, est, lower, upper, SIMPLIFY = FALSE)
+
+  #### Result ####
 
   return(result)
 

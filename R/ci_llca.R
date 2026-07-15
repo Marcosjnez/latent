@@ -60,7 +60,7 @@
 #' @method ci llca
 #' @export
 ci.llca <- function(fit, type = "standard", confidence = 0.95,
-                    digits = 3L, ...) {
+                    parameters = NULL, digits = 3L, ...) {
 
   if(!inherits(fit, "llca")) {
     stop("fit must inherit from class 'llca'.")
@@ -82,39 +82,26 @@ ci.llca <- function(fit, type = "standard", confidence = 0.95,
     stop("digits must be a non-negative integer.")
   }
 
-  SE <- se(fit, type = type, digits = NULL, ...)
+  SE <- se(fit, type = type, parameters = parameters, digits = NULL, ...)
 
-  parameter_names <- fit@modelInfo$parameters_labels
-  x <- c(fit@Optim$parameters)
-  if(is.null(names(x))) {
-    names(x) <- parameter_names
+  # Assuming the parameter estimates are iid normally distributed variables:
+  critical <- stats::qnorm(0.5+confidence/2, mean = 0, sd = 1)
+  lower <- fit@Optim$transparameters - critical*SE$se
+  upper <- fit@Optim$transparameters + critical*SE$se
+  names(lower) <- names(upper) <- fit@modelInfo$transparameters_labels
+
+  if(is.null(parameters)) {
+    parameters <- fit@modelInfo$trans[names(fit@parameters)]
   }
-  x <- x[parameter_names]
-
-  se_values <- c(SE$se)
-  if(is.null(names(se_values))) {
-    names(se_values) <- parameter_names
-  }
-  se_values <- se_values[parameter_names]
-
-  if(anyNA(x) || anyNA(se_values)) {
-    stop("The parameter estimates and standard errors could not be aligned by name.")
-  }
-
-  critical <- sqrt(stats::qchisq(confidence, df = 1L))
-  lower <- x - critical*se_values
-  upper <- x + critical*se_values
-  names(lower) <- names(upper) <- parameter_names
-
-  est <- fill_in(fit@modelInfo$trans[names(fit@modelInfo$param)],
-                 c(fit@Optim$parameters, fit@Optim$transparameters), miss = NA)
-  lower_ci <- fill_in(fit@modelInfo$param, lower)
-  upper_ci <- fill_in(fit@modelInfo$param, upper)
-  table <- combine_est_ci(lower_ci, est, upper_ci, digits = digits)
+  est <- fill_in(parameters, fit@Optim$transparameters, miss = NA)
+  lower_ci <- fill_in(parameters, lower)
+  upper_ci <- fill_in(parameters, upper)
+  table <- combine_est_ci(lower = lower_ci, est = est, upper = upper_ci,
+                          digits = digits)
 
   result <- list(table = table, lower_table = lower_ci,
                  upper_table = upper_ci, lower = lower, upper = upper,
-                 se = se_values, vcov = SE$vcov, B = SE$B,
+                 se = SE$se, vcov = SE$vcov, B = SE$B,
                  H = SE$H, newH = SE$newH)
 
   #### Result ####

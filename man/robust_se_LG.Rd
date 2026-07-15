@@ -4,7 +4,7 @@
 \alias{robust_se_LG}
 \title{LatentGold-style robust standard errors}
 \usage{
-robust_se_LG(fit)
+robust_se_LG(fit, parameters = NULL)
 }
 \arguments{
 \item{fit}{A fitted object of class \code{"llca"}.}

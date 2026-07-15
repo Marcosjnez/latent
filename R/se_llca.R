@@ -94,10 +94,13 @@ se.llca <- function(fit, type = "standard", parameters = NULL, digits = 4L,
 
   }
 
-  x <- fit@modelInfo$trans[names(fit@modelInfo$param)]
-  est <- fill_in(x, fit@Optim$transparameters,
+  if(is.null(parameters)) {
+    parameters <- fit@modelInfo$trans[names(fit@parameters)]
+  }
+
+  est <- fill_in(parameters, fit@Optim$transparameters,
                  miss = NA)
-  table_se <- fill_in(x, SE$se, miss = NA)
+  table_se <- fill_in(parameters, SE$se, miss = NA)
   table <- combine_est_se(est, table_se, digits = digits)
 
   result <- list(table = table, table_se = table_se, se = c(SE$se),
@@ -139,7 +142,8 @@ se.llca <- function(fit, type = "standard", parameters = NULL, digits = 4L,
 #'
 #' @method se llcalist
 #' @export
-se.llcalist <- function(model, type = "standard", digits = 4L, ...) {
+se.llcalist <- function(model, type = "standard", parameters = NULL,
+                        digits = 4L, ...) {
 
   if(!inherits(model, "llcalist")) {
     stop("model must inherit from class 'llcalist'.")
@@ -157,7 +161,8 @@ se.llcalist <- function(model, type = "standard", digits = 4L, ...) {
   result <- vector("list", length = nmodels)
 
   for(i in seq_len(nmodels)) {
-    result[[i]] <- se(model[[i]], type = type, digits = digits, ...)
+    result[[i]] <- se(model[[i]], type = type, parameters = parameters,
+                      digits = digits, ...)
   }
 
   result_names <- names(model)

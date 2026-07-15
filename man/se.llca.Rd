@@ -4,7 +4,7 @@
 \alias{se.llca}
 \title{Standard errors for latent class models}
 \usage{
-\method{se}{llca}(fit, type = "standard", digits = 3L, ...)
+\method{se}{llca}(fit, type = "standard", parameters = NULL, digits = 4L, ...)
 }
 \arguments{
 \item{fit}{A fitted object of class \code{"llca"}.}

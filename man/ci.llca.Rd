@@ -4,7 +4,14 @@
 \alias{ci.llca}
 \title{Confidence intervals for latent class models}
 \usage{
-\method{ci}{llca}(fit, type = "standard", confidence = 0.95, digits = 3L, ...)
+\method{ci}{llca}(
+  fit,
+  type = "standard",
+  confidence = 0.95,
+  parameters = NULL,
+  digits = 3L,
+  ...
+)
 }
 \arguments{
 \item{fit}{A fitted object of class \code{"llca"}.}

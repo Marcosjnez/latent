@@ -4,7 +4,7 @@
 \alias{se.llcalist}
 \title{Standard errors for a collection of latent class models}
 \usage{
-\method{se}{llcalist}(model, type = "standard", digits = 3L, ...)
+\method{se}{llcalist}(model, type = "standard", parameters = NULL, digits = 4L, ...)
 }
 \arguments{
 \item{model}{An object of class \code{"llcalist"} containing fitted

@@ -51,7 +51,7 @@ lbvr(fit)
 
 # Plot:
 plot(fit)
-plot(fit, type = "coefficients", what = "OR")
+# plot(fit, type = "coefficients", what = "OR")
 
 # Predictions if there are covariates:
 df <- data.frame(RACE = c("BLACK", "WHITE"),
@@ -70,7 +70,7 @@ latInspect(fit, what = "table")
 
 # Get standard errors:
 SE <- se(fit, type = "standard", digits = 4)
-SE$table_se
+SE$table
 
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
@@ -202,7 +202,7 @@ fit
 getfit(fit)
 
 plot.llcalist(fit)
-plot.llcalist(fit, type = "coefficients", what = "OR", xlim = c(0, 7))
+# plot.llcalist(fit, type = "coefficients", what = "OR", xlim = c(0, 7))
 
 # Inspect model objects:
 latInspect(fit, what = "loglik")

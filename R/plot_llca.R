@@ -901,25 +901,14 @@ plot_lca_coefficients <- function(fit, se_type = "standard",
   effects <- match.arg(effects)
 
   SE <- se(fit = fit, type = se_type, digits = 9)
-  if(!is.list(SE) || is.null(SE$vcov) || !is.matrix(SE$vcov)) {
-    stop("se() did not return a variance-covariance matrix")
-  }
-  if(is.null(colnames(SE$vcov))) {
-    stop("The variance-covariance matrix returned by se() has no parameter names")
-  }
 
   beta_labels <- as.vector(fit@modelInfo$trans$beta)
-  select_betas <- match(beta_labels, colnames(SE$vcov))
-  select_betas <- select_betas[!is.na(select_betas)]
-  if(length(select_betas) == 0L) {
-    stop("No latent-class regression coefficients were found in the variance-covariance matrix")
-  }
 
   #### log(odds ratio) ####
 
   if(effects == "coding") {
     EF <- effects_coding(fit@transformed_pars$beta,
-                         SE$vcov[select_betas, select_betas, drop = FALSE])
+                         as.matrix(SE$vcov[beta_labels, beta_labels, drop = FALSE]))
     betas <- as.matrix(EF$beta)
     vcov <- as.matrix(EF$vcov)
     colnames(betas) <- colnames(fit@transformed_pars$beta)
