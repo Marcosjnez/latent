@@ -2,7 +2,7 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 15/07/2026
 
-standard_se <- function(fit) {
+standard_se <- function(fit, parameters = NULL) {
 
   # Compute the variance-covariance matrix of the parameters:
 
@@ -19,8 +19,10 @@ standard_se <- function(fit) {
                 control_optimizer = control_optimizer)$h
 
   # Get the variance-covariance matrix between the parameters of interest:
-  trans_subset <- fit@modelInfo$trans[names(fit@parameters)]
-  control_optimizer$idx_transforms <- trans_depends(fit, trans_subset)
+  if(is.null(parameters)) {
+    parameters <- fit@modelInfo$trans[names(fit@parameters)]
+  }
+  control_optimizer$idx_transforms <- trans_depends(fit, parameters)
   result <- get_vcov(control_manifold = control_manifold,
                      control_transform = control_transform,
                      control_estimator = control_estimator,
@@ -30,7 +32,11 @@ standard_se <- function(fit) {
   # Name the parameters in the Hessian matrix:
   colnames(H) <- rownames(H) <- fit@modelInfo$parameters_labels
   result$H <- H
+  # The Hessian only contains the untransformed parameters: the parameters
+  # tha are directly optimized.
 
+  # vcov and se contains all the parameters but their values are mostly 0 if
+  # you don't request a custom parameters.
   result$se <- as.vector(result$se)
   rownames(result$vcov) <- colnames(result$vcov) <- names(result$se) <-
     fit@modelInfo$transparameters_labels

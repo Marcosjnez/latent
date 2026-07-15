@@ -70,7 +70,7 @@ latInspect(fit, what = "table")
 
 # Get standard errors:
 SE <- se(fit, type = "standard", digits = 4)
-SE$table
+SE$table_se
 
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
@@ -156,7 +156,7 @@ latInspect(fit, what = "profile")
 latInspect(fit, what = "posterior")
 
 # Get standard errors:
-SE <- se(fit, type = "standard", digits = 4) # FIX stdv
+SE <- se(fit, type = "standard", digits = 4)
 SE$table
 
 # Get confidence intervals:
