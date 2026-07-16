@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/07/2026
+# Modification date: 16/07/2026
 
 standard_se <- function(fit, parameters = NULL) {
 
@@ -21,7 +21,10 @@ standard_se <- function(fit, parameters = NULL) {
   # Get the variance-covariance matrix between the parameters of interest:
   if(is.null(parameters)) {
     parameters <- fit@modelInfo$trans[names(fit@parameters)]
+  } else if(!any(unlist(parameters) %in% fit@modelInfo$transparameters_labels)) {
+    stop("Unknown parameters.")
   }
+
   control_optimizer$idx_transforms <- trans_depends(fit, parameters)
   result <- get_vcov(control_manifold = control_manifold,
                      control_transform = control_transform,
@@ -37,9 +40,12 @@ standard_se <- function(fit, parameters = NULL) {
 
   # vcov and se contains all the parameters but their values are mostly 0 if
   # you don't request a custom parameters.
-  result$se <- as.vector(result$se)
+  selected_parameters <- unique(unlist(parameters))
+  idx <- match(selected_parameters, fit@modelInfo$transparameters_labels)
+  result$se <- as.vector(result$se[idx])
+  result$vcov <- result$vcov[idx, idx, drop = FALSE]
   rownames(result$vcov) <- colnames(result$vcov) <- names(result$se) <-
-    fit@modelInfo$transparameters_labels
+    selected_parameters
 
   # Return:
   return(result)

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/07/2026
+# Modification date: 16/07/2026
 
 # Miscellaneous functions used in latent
 
@@ -507,12 +507,12 @@ combine_est_se <- function(est, se, digits = 2, merge = TRUE) {
   est_suffix <- " (est)"
   se_suffix <- " (se)"
 
-  format_matrix <- function(mat) {
+  format_object <- function(x) {
 
     if(is.null(digits)) {
-      result <- mat
+      result <- x
     } else {
-      result <- round(mat, digits = digits)
+      result <- round(x, digits = digits)
     }
 
     #### Result ####
@@ -521,83 +521,162 @@ combine_est_se <- function(est, se, digits = 2, merge = TRUE) {
 
   }
 
-  # Combine item parameters
-  combine_item_est_se <- function(est_items, se_items) {
+  as_parameter_matrix <- function(x) {
 
-    stopifnot(is.list(est_items), is.list(se_items))
-    item_names <- intersect(names(est_items), names(se_items))
-    out <- vector("list", length(item_names))
-    names(out) <- item_names
+    if(is.null(dim(x))) {
 
-    for(nm in item_names) {
+      result <- matrix(unclass(x), ncol = 1L,
+                       dimnames = list(names(x), NULL))
 
-      E <- as.matrix(unclass(est_items[[nm]]))
-      S <- as.matrix(unclass(se_items[[nm]]))
+    } else {
 
-      nr <- nrow(E)
-      nc <- ncol(E)
-
-      if(!identical(dim(S), dim(E))) {
-
-        if(ncol(S) == 1L && ncol(E) > 1L) {
-
-          S <- matrix(rep(S, ncol(E)), nrow = nr, ncol = nc)
-
-        } else if(ncol(S) == ncol(E) && nrow(S) == 1L) {
-
-          S <- matrix(rep(S, each = nr), nrow = nr, ncol = nc)
-
-        } else if(all(dim(S) == rev(dim(E)))) {
-
-          S <- t(S)
-
-        } else {
-
-          stop(sprintf("Dimension mismatch for item '%s': est = %s, se = %s",
-                       nm, paste(dim(E), collapse = "x"),
-                       paste(dim(S), collapse = "x")))
-
-        }
-
-      }
-
-      E_fmt <- format_matrix(E)
-      S_fmt <- format_matrix(S)
-
-      if(merge) {
-
-        M <- matrix(paste0(E_fmt, " (", S_fmt, ")"),
-                    nrow = nr, ncol = nc, dimnames = dimnames(E))
-
-      } else {
-
-        M <- matrix(NA, nrow = nr, ncol = 2L*nc,
-                    dimnames = list(rownames(E), NULL))
-
-        M[, seq(1L, 2L*nc, by = 2L)] <- E_fmt
-        M[, seq(2L, 2L*nc, by = 2L)] <- S_fmt
-
-        cls <- colnames(E)
-        if(is.null(cls)) {
-          cls <- paste0("col", seq_len(nc))
-        }
-
-        colnames(M) <- as.vector(rbind(paste0(cls, est_suffix),
-                                       paste0(cls, se_suffix)))
-
-      }
-
-      out[[nm]] <- M
+      result <- as.matrix(unclass(x))
 
     }
 
     #### Result ####
 
-    return(out)
+    return(result)
 
   }
 
-  result <- combine_item_est_se(est, se)
+  align_se <- function(E, S, object_name = NULL) {
+
+    if(!identical(dim(S), dim(E))) {
+
+      if(length(S) == length(E)) {
+
+        S <- matrix(S, nrow = nrow(E), ncol = ncol(E),
+                    dimnames = dimnames(E))
+
+      } else if(ncol(S) == 1L && nrow(S) == nrow(E) &&
+                ncol(E) > 1L) {
+
+        S <- matrix(rep(S, ncol(E)), nrow = nrow(E), ncol = ncol(E))
+
+      } else if(nrow(S) == 1L && ncol(S) == ncol(E) &&
+                nrow(E) > 1L) {
+
+        S <- matrix(rep(S, each = nrow(E)),
+                    nrow = nrow(E), ncol = ncol(E))
+
+      } else if(all(dim(S) == rev(dim(E)))) {
+
+        S <- t(S)
+
+      } else {
+
+        object_label <- if(is.null(object_name)) "" else
+          paste0(" for object '", object_name, "'")
+
+        stop(sprintf("Dimension mismatch%s: est = %s, se = %s",
+                     object_label, paste(dim(E), collapse = "x"),
+                     paste(dim(S), collapse = "x")))
+
+      }
+
+    }
+
+    #### Result ####
+
+    return(S)
+
+  }
+
+  combine_single_est_se <- function(E_object, S_object,
+                                    object_name = NULL) {
+
+    est_is_vector <- is.null(dim(E_object))
+
+    E <- as_parameter_matrix(E_object)
+    S <- as_parameter_matrix(S_object)
+    S <- align_se(E, S, object_name = object_name)
+
+    E_fmt <- format_object(E)
+    S_fmt <- format_object(S)
+
+    if(merge) {
+
+      M <- matrix(paste0(E_fmt, " (", S_fmt, ")"),
+                  nrow = nrow(E), ncol = ncol(E),
+                  dimnames = dimnames(E))
+
+      if(est_is_vector) {
+        result <- as.vector(M)
+        names(result) <- names(E_object)
+      } else {
+        result <- M
+      }
+
+    } else if(est_is_vector) {
+
+      result <- cbind(est = as.vector(E_fmt), se = as.vector(S_fmt))
+      rownames(result) <- names(E_object)
+
+    } else {
+
+      nr <- nrow(E)
+      nc <- ncol(E)
+
+      result <- matrix(NA, nrow = nr, ncol = 2L*nc,
+                       dimnames = list(rownames(E), NULL))
+
+      result[, seq(1L, 2L*nc, by = 2L)] <- E_fmt
+      result[, seq(2L, 2L*nc, by = 2L)] <- S_fmt
+
+      cls <- colnames(E)
+      if(is.null(cls)) {
+        cls <- paste0("col", seq_len(nc))
+      }
+
+      colnames(result) <- as.vector(rbind(paste0(cls, est_suffix),
+                                          paste0(cls, se_suffix)))
+
+    }
+
+    #### Result ####
+
+    return(result)
+
+  }
+
+  if(is.list(est) || is.list(se)) {
+
+    stopifnot(is.list(est), is.list(se))
+
+    if(is.null(names(est)) || is.null(names(se))) {
+
+      if(length(est) != length(se)) {
+        stop("Unnamed lists 'est' and 'se' must have the same length.")
+      }
+
+      item_names <- seq_along(est)
+      result <- vector("list", length(est))
+
+      for(i in item_names) {
+        result[[i]] <- combine_single_est_se(est[[i]], se[[i]])
+      }
+
+      names(result) <- names(est)
+
+    } else {
+
+      item_names <- intersect(names(est), names(se))
+      result <- vector("list", length(item_names))
+      names(result) <- item_names
+
+      for(nm in item_names) {
+        result[[nm]] <- combine_single_est_se(est[[nm]], se[[nm]],
+                                              object_name = nm)
+      }
+
+    }
+
+  } else {
+
+    result <- combine_single_est_se(est, se)
+
+  }
 
   #### Result ####
 
@@ -609,14 +688,92 @@ combine_est_ci <- function(lower, est, upper, digits = 2, merge = TRUE) {
 
   fmt <- function(x) {
 
-    result <- formatC(round(x, digits = digits),
-                      format = "f", digits = digits)
+    if(is.null(digits)) {
+      result <- as.character(x)
+    } else {
+      result <- formatC(round(x, digits = digits),
+                        format = "f", digits = digits)
+    }
+
+    #### Result ####
 
     return(result)
 
   }
 
-  combine_ci <- function(E, L, U) {
+  as_parameter_matrix <- function(x) {
+
+    if(is.null(dim(x))) {
+
+      result <- matrix(unclass(x), ncol = 1L,
+                       dimnames = list(names(x), NULL))
+
+    } else {
+
+      result <- as.matrix(unclass(x))
+
+    }
+
+    #### Result ####
+
+    return(result)
+
+  }
+
+  align_bound <- function(E, B, object_name = NULL) {
+
+    if(!identical(dim(B), dim(E))) {
+
+      if(length(B) == length(E)) {
+
+        B <- matrix(B, nrow = nrow(E), ncol = ncol(E),
+                    dimnames = dimnames(E))
+
+      } else if(ncol(B) == 1L && nrow(B) == nrow(E) &&
+                ncol(E) > 1L) {
+
+        B <- matrix(rep(B, ncol(E)), nrow = nrow(E), ncol = ncol(E))
+
+      } else if(nrow(B) == 1L && ncol(B) == ncol(E) &&
+                nrow(E) > 1L) {
+
+        B <- matrix(rep(B, each = nrow(E)),
+                    nrow = nrow(E), ncol = ncol(E))
+
+      } else if(all(dim(B) == rev(dim(E)))) {
+
+        B <- t(B)
+
+      } else {
+
+        object_label <- if(is.null(object_name)) "" else
+          paste0(" for object '", object_name, "'")
+
+        stop(sprintf("Dimension mismatch%s: est = %s, bound = %s",
+                     object_label, paste(dim(E), collapse = "x"),
+                     paste(dim(B), collapse = "x")))
+
+      }
+
+    }
+
+    #### Result ####
+
+    return(B)
+
+  }
+
+  combine_single_ci <- function(L_object, E_object, U_object,
+                                object_name = NULL) {
+
+    est_is_vector <- is.null(dim(E_object))
+
+    E <- as_parameter_matrix(E_object)
+    L <- as_parameter_matrix(L_object)
+    U <- as_parameter_matrix(U_object)
+
+    L <- align_bound(E, L, object_name = object_name)
+    U <- align_bound(E, U, object_name = object_name)
 
     if(merge) {
 
@@ -632,14 +789,56 @@ combine_est_ci <- function(lower, est, upper, digits = 2, merge = TRUE) {
 
     }
 
+    if(est_is_vector) {
+      result <- as.vector(result)
+      names(result) <- names(E_object)
+    }
+
     #### Result ####
 
     return(result)
 
   }
 
-  # Combine item-level estimates
-  result <- mapply(combine_ci, est, lower, upper, SIMPLIFY = FALSE)
+  if(is.list(est) || is.list(lower) || is.list(upper)) {
+
+    stopifnot(is.list(est), is.list(lower), is.list(upper))
+
+    if(is.null(names(est)) || is.null(names(lower)) ||
+       is.null(names(upper))) {
+
+      if(length(est) != length(lower) || length(est) != length(upper)) {
+        stop("Unnamed lists 'lower', 'est', and 'upper' must have the same length.")
+      }
+
+      result <- vector("list", length(est))
+
+      for(i in seq_along(est)) {
+        result[[i]] <- combine_single_ci(lower[[i]], est[[i]], upper[[i]])
+      }
+
+      names(result) <- names(est)
+
+    } else {
+
+      item_names <- Reduce(intersect,
+                           list(names(est), names(lower), names(upper)))
+
+      result <- vector("list", length(item_names))
+      names(result) <- item_names
+
+      for(nm in item_names) {
+        result[[nm]] <- combine_single_ci(lower[[nm]], est[[nm]],
+                                          upper[[nm]], object_name = nm)
+      }
+
+    }
+
+  } else {
+
+    result <- combine_single_ci(lower, est, upper)
+
+  }
 
   #### Result ####
 

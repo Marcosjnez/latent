@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/07/2026
+# Modification date: 16/07/2026
 #'
 #' Confidence intervals for latent class models
 #'
@@ -86,9 +86,11 @@ ci.llca <- function(fit, type = "standard", confidence = 0.95,
 
   # Assuming the parameter estimates are iid normally distributed variables:
   critical <- stats::qnorm(0.5+confidence/2, mean = 0, sd = 1)
-  lower <- fit@Optim$transparameters - critical*SE$se
-  upper <- fit@Optim$transparameters + critical*SE$se
-  names(lower) <- names(upper) <- fit@modelInfo$transparameters_labels
+  selected_parameters <- names(SE$se)
+  x <- fit@Optim$transparameters[selected_parameters]
+  lower <- x - critical*SE$se
+  upper <- x + critical*SE$se
+  names(lower) <- names(upper) <- selected_parameters
 
   if(is.null(parameters)) {
     parameters <- fit@modelInfo$trans[names(fit@parameters)]

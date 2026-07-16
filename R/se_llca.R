@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/07/2026
+# Modification date: 16/07/2026
 #'
 #' Standard errors for latent class models
 #'
@@ -279,6 +279,8 @@ robust_se_LG <- function(fit, parameters = NULL) {
 
   if(is.null(parameters)) {
     parameters <- fit@modelInfo$trans[names(fit@parameters)]
+  } else if(!any(unlist(parameters) %in% fit@modelInfo$transparameters_labels)) {
+    stop("Unknown parameters.")
   }
   control_optimizer$idx_transforms <- trans_depends(fit, parameters)
   control_estimator <- fit@modelInfo$control_estimator
@@ -290,8 +292,12 @@ robust_se_LG <- function(fit, parameters = NULL) {
 
   result$B <- B
 
-  names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
-    fit@modelInfo$transparameters_labels
+  selected_parameters <- unique(unlist(parameters))
+  idx <- match(selected_parameters, fit@modelInfo$transparameters_labels)
+  result$se <- as.vector(result$se[idx])
+  result$vcov <- result$vcov[idx, idx, drop = FALSE]
+  rownames(result$vcov) <- colnames(result$vcov) <- names(result$se) <-
+    selected_parameters
 
   colnames(newH) <- rownames(newH) <- colnames(result$B) <- rownames(result$B) <-
     fit@modelInfo$parameters_labels
@@ -385,6 +391,8 @@ se_twostep <- function(fit2, type = "standard", parameters = NULL) {
 
   if(is.null(parameters)) {
     parameters <- fit@modelInfo$trans[names(fit@parameters)]
+  } else if(!any(unlist(parameters) %in% fit@modelInfo$transparameters_labels)) {
+    stop("Unknown parameters.")
   }
   control_optimizer$idx_transforms <- trans_depends(fit, parameters)
   control_estimator <- fit@modelInfo$control_estimator
@@ -398,8 +406,12 @@ se_twostep <- function(fit2, type = "standard", parameters = NULL) {
   colnames(result$B) <- rownames(result$B) <-
     fit@modelInfo$parameters_labels[model_pars]
 
-  names(result$se) <- colnames(result$vcov) <- rownames(result$vcov) <-
-    fit@modelInfo$transparameters_labels
+  selected_parameters <- unique(unlist(parameters))
+  idx <- match(selected_parameters, fit@modelInfo$transparameters_labels)
+  result$se <- as.vector(result$se[idx])
+  result$vcov <- result$vcov[idx, idx, drop = FALSE]
+  rownames(result$vcov) <- colnames(result$vcov) <- names(result$se) <-
+    selected_parameters
 
   colnames(newH) <- rownames(newH) <- fit@modelInfo$parameters_labels
 
