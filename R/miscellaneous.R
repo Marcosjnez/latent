@@ -845,3 +845,76 @@ combine_est_ci <- function(lower, est, upper, digits = 2, merge = TRUE) {
   return(result)
 
 }
+
+effects_coding <- function(coeffs, vcov) {
+
+  # Transform from zero constraints to effects-coding constraints
+
+  p <- nrow(coeffs)
+  q <- ncol(coeffs)
+
+  # Centering matrix:
+  C <- diag(q)-matrix(1/q, q, q)
+
+  # Effects-coding parameterization:
+  beta_new <- coeffs %*% C
+
+  # Jacobian of coeffs %*% C:
+  J <- kronecker(t(C), diag(p))
+
+  # Variance-covariance matrix under effects coding:
+  vcov_new <- J %*% vcov %*% t(J)
+  se_new <- sqrt(diag(vcov_new))
+
+  table_se <- matrix(se_new, nrow = p, ncol = q,
+                     dimnames = dimnames(coeffs))
+
+  #### Result ####
+
+  result <- list(beta = beta_new, se = se_new,
+                 vcov = vcov_new, table_se = table_se)
+
+  return(result)
+
+}
+
+move_intercept <- function(coeffs, vcov, column = 1L) {
+
+  # Change the reference column of a zero-constrained parameterization
+
+  p <- nrow(coeffs)
+  q <- ncol(coeffs)
+
+  # Current and new free columns:
+  current_reference <- which(apply(coeffs, MARGIN = 2,
+                                   FUN = \(x) all(x == 0)))[1L]
+  old_free <- setdiff(seq_len(q), current_reference)
+  new_free <- setdiff(seq_len(q), column)
+
+  # Subtract the coefficient of the new reference class:
+  beta_new <- sweep(coeffs, MARGIN = 1,
+                    STATS = coeffs[, column], FUN = "-")
+
+  # Transformation from the old free coefficients to the new free coefficients:
+  M <- diag(q)
+  M[column, ] <- M[column, ]-1
+
+  T <- M[old_free, new_free, drop = FALSE]
+  J <- kronecker(t(T), diag(p))
+
+  vcov_new <- J %*% vcov %*% t(J)
+  se_new <- sqrt(diag(vcov_new))
+
+  table_se <- matrix(0, nrow = p, ncol = q,
+                     dimnames = dimnames(coeffs))
+  table_se[, new_free] <- matrix(se_new, nrow = p,
+                                 ncol = q-1L)
+
+  #### Result ####
+
+  result <- list(beta = beta_new, se = se_new,
+                 vcov = vcov_new, table_se = table_se)
+
+  return(result)
+
+}

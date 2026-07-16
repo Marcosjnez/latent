@@ -51,7 +51,7 @@ lbvr(fit)
 
 # Plot:
 plot(fit)
-# plot(fit, type = "coefficients", what = "OR")
+plot(fit, type = "coefficients", what = "OR")
 
 # Predictions if there are covariates:
 df <- data.frame(RACE = c("BLACK", "WHITE"),
@@ -62,11 +62,9 @@ predict(fit, new = df)
 
 # Inspect model objects:
 latInspect(fit, what = "convergence")
-latInspect(fit, what = "profile")
 latInspect(fit, what = "coefs")
+latInspect(fit, what = "profile")
 latInspect(fit, what = "classification")
-latInspect(fit, what = "pattern")
-latInspect(fit, what = "table")
 
 # Get standard errors:
 SE <- se(fit, type = "standard", digits = 4)
@@ -107,10 +105,10 @@ lbvr(fit)
 latInspect(fit, what = "convergence")
 latInspect(fit, what = "profile")
 latInspect(fit, what = "coefs")
-latInspect(fit, what = "posterior")
 
 # Plot:
 plot(fit)
+plot(fit, type = "coefficients", what = "OR")
 
 # Get standard errors:
 SE <- se(fit, type = "standard", digits = 4)
@@ -148,12 +146,14 @@ fit
 # Get fit indices:
 getfit(fit)
 
+# Plot:
+plot(fit)
+plot(fit, type = "coefficients", what = "OR")
+
 # Inspect model objects:
-latInspect(fit, what = "fit.matrix")
 latInspect(fit, what = "coefs")
-latInspect(fit, what = "classes")
 latInspect(fit, what = "profile")
-latInspect(fit, what = "posterior")
+latInspect(fit, what = "fit.matrix")
 
 # Get standard errors:
 SE <- se(fit, type = "standard", digits = 4)
@@ -165,8 +165,6 @@ CI$table
 
 # hypothesis(fit, "b1|2 - b1|3 = 0")
 
-plot(fit)
-
 #### LCA with covariates (gaussian) ####
 
 fit <- lca(data = empathy,
@@ -174,7 +172,7 @@ fit <- lca(data = empathy,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             covariates = c("pt1", "pt2", "pt3", "pt4"),
             # outcomes = list(gaussian = c("pt5")),
-            adjustment = "bk",
+            # adjustment = "bk",
             # classification = "modal",
             # model = list("ec2 ~~ ec3"),
             penalties = TRUE,
@@ -182,18 +180,10 @@ fit <- lca(data = empathy,
 latInspect(fit$structural, what = "loglik")
 # loglik: -1747.135 # penalized_loglik: -1750.566
 # loglik: -2049.840 # penalized_loglik: -2053.322 (outcomes = list(gaussian = c("pt5")))
-# SE <- se(fit, type = "standard", digits = 4)
-# SE$se
 
-# # Effects-coding parameterization:
-# new_se <- effects_coding(fit$structural@parameters$beta, SE$vcov)
-# new_se$beta
-# new_se$table_se
-# new_se$se
-
-# new_se <- move_intercept(beta, vcov)
-# new_se$beta_new
-# matrix(new_se$se_new, 3, 3)
+# Inspect model objects:
+latInspect(fit, what = "coefs")
+latInspect(fit, what = "profile")
 
 # Print model fit:
 fit
@@ -201,24 +191,30 @@ fit
 # Get fit indices:
 getfit(fit)
 
-plot.llcalist(fit)
-# plot.llcalist(fit, type = "coefficients", what = "OR", xlim = c(0, 7))
+# Get a summary:
+summary(fit)
 
-# Inspect model objects:
-latInspect(fit, what = "loglik")
-# loglik: -2049.840 # penalized_loglik: -2053.322
-latInspect(fit, what = "coefs")
-latInspect(fit, what = "classes")
-latInspect(fit, what = "profile")
-latInspect(fit, what = "posterior")
+# Bivariate residuals:
+lbvr(fit)
 
+# Plot:
+plot(fit)
+plot(fit, type = "coefficients", what = "OR", xlim = c(0, 7))
+
+# Predictions if there are covariates:
 predict(fit, new = rbind(c(2, 2, 2.428571, 2.142857),
                          c(1, 2, 3, 4)))
 fitted(fit)
 
+# Get standard errors:
+SE <- se(fit, type = "standard", digits = 4)
+SE$measurement$table
+SE$structural$table
+
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
-CI$table
+CI$measurement$table
+CI$structural$table
 
 #### CFA ####
 
