@@ -10,12 +10,13 @@ class transformations {
 
 public:
 
-  arma::vec parameters, dparameters, transparameters, dconstr;
-  arma::vec grad_in, grad_out, g;
-  arma::mat jacob, sum_djacob, hess_in, hess_out, h;
+  // arma::vec parameters, dparameters, transparameters;
+  // arma::vec grad_in, grad_out, g;
+  // arma::mat jacob, sum_djacob, hess_in, hess_out, h;
   std::vector<arma::uvec> indices_in, indices_out;
   bool constraints;
-  arma::mat freqs;
+  arma::vec dconstr;
+  // arma::mat freqs;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
@@ -121,12 +122,8 @@ public:
     // Update the gradient after each parameter transformation:
     // Use the gradient of the transformed parameters (grad) to get the final gradient (g):
     // x.g = x.jacob.t() * x.grad;
+
     // The following sequence avoids this multiplication to reduce computing cost
-
-    // Restore the gradient from the estimator:
-    // x.grad_init = x.grad;
-    // x.grad = x.grad_init;
-
     // Iterate top-down:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 
@@ -154,10 +151,6 @@ public:
 
   void update_dgrad(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
-    // Restore the dgrad from the estimator:
-    // x.dgrad_init = x.dgrad;
-    // x.dgrad = x.dgrad_init;
-
     // Iterate top-down:
     for(int i=x.ntransforms-1L; i > -1L ; --i) {
 
@@ -174,15 +167,11 @@ public:
 
     x.transparameters(x.transparam2param) = x.parameters;
 
-    // if(!x.minimal_se) {
-
       for(int i=0; i < x.ntransforms; ++i) {
 
         xtransformations[i]->jacobian(x);
 
       }
-
-    // }
 
   }
 
@@ -202,9 +191,10 @@ public:
       }
     }
 
-    // Delta method:
+    // Update vcov using the delta method:
     for(arma::uword i : x.idx_transforms) {
       xtransformations[i]->jacobian(x);
+      // vcov(out, out) = jacobian * vcov(in, in) * jacobian.t():
       xtransformations[i]->update_vcov(x);
     }
 

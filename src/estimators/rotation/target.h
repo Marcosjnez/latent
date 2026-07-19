@@ -13,6 +13,7 @@ class target: public estimators {
 public:
 
   int p, q;
+  double loss;
   arma::uvec indices_lambda;
   arma::mat lambda, dlambda, target, weight, f1, weight2;
 
@@ -27,8 +28,8 @@ public:
   void F(arguments_optim& x) {
 
     // Compute loss
-    f = 0.5*arma::accu(f1 % f1);
-    x.f += f;
+    loss = 0.5*arma::accu(f1 % f1);
+    x.f += loss;
 
   }
 
@@ -53,7 +54,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(2);
-    doubles[0] =  f;
+    doubles[0] =  loss;
     doubles[1] =  0.00;
 
   }

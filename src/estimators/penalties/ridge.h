@@ -12,7 +12,7 @@ class ridge: public estimators {
 
 public:
 
-  double lambda, power, N;
+  double lambda, power, N, loss;
   arma::uvec indices;
   arma::vec beta;
 
@@ -25,8 +25,8 @@ public:
   void F(arguments_optim& x) {
 
     arma::vec beta_power = arma::pow(arma::abs(beta), power);
-    f = -(lambda / power) * arma::accu(beta_power);
-    x.f += f/N;
+    loss = -(lambda / power) * arma::accu(beta_power);
+    x.f += loss/N;
 
   }
 
@@ -50,7 +50,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(1);
-    doubles[0] = f;
+    doubles[0] = loss;
 
   }
 

@@ -77,7 +77,7 @@ CI$table
 #### LCA (gaussian) ####
 
 library(latent)
-set.seed(2026)
+set.seed(2026) # 188
 
 fit <- lca(data = empathy,
            nclasses = 4L,

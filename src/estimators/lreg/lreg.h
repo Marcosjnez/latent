@@ -12,6 +12,7 @@ class lreg: public estimators {
 
 public:
 
+  double loss;
   arma::uvec indices;
   arma::vec y, beta;
   arma::mat X, res;
@@ -25,8 +26,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = arma::accu(res % res);
-    x.f += f;
+    loss = arma::accu(res % res);
+    x.f += loss;
 
   }
 
@@ -46,7 +47,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(1);
-    doubles[0] =  f;
+    doubles[0] = loss;
 
   }
 

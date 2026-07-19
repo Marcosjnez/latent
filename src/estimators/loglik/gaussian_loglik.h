@@ -30,7 +30,7 @@ class gaussian_loglik: public estimators {
 public:
 
   int p, q;
-  double alpha, N;
+  double alpha, N, loss;
   arma::uvec indices;
   arma::mat X, means, sds, Z, log_dnorms, df_DZ;
 
@@ -49,8 +49,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = arma::accu(log_dnorms);
-    x.f += -f/N;
+    loss = arma::accu(log_dnorms);
+    x.f += loss/N;
 
   }
 
@@ -85,7 +85,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(1);
-    doubles[0] =  f;
+    doubles[0] = loss;
 
   };
 

@@ -13,6 +13,7 @@ class oblimin: public estimators {
 public:
 
   int p, q;
+  double loss;
   arma::uvec indices_lambda;
   arma::mat lambda, I_gamma_C, N, dlambda, L2, IgCL2N;
 
@@ -27,9 +28,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = arma::accu(L2 % IgCL2N) / 4;
-    x.f += f;
-    // Rprintf("f = %.6f\n", f);
+    loss = arma::accu(L2 % IgCL2N) / 4;
+    x.f += loss;
 
   }
 
@@ -53,7 +53,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(2);
-    doubles[0] =  f;
+    doubles[0] =  loss;
     doubles[0] =  0.00;
 
   }

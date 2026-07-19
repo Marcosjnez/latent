@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 12/03/2026
+ * Modification date: 16/07/2026
  */
 
 // #define ARMA_NO_DEBUG
@@ -128,7 +128,8 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
                     Rcpp::List control_transform,
                     Rcpp::List control_estimator,
                     Rcpp::List control_optimizer,
-                    arma::mat H);
+                    arma::mat H,
+                    int cores = 1L);
 
 // [[Rcpp::export]]
 Rcpp::List get_jacob(Rcpp::List control_manifold,

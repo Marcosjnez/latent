@@ -13,6 +13,7 @@ class varimax: public estimators {
 public:
 
   int p, q;
+  double loss;
   arma::uvec indices_lambda;
   arma::mat lambda, dlambda, L2, HL2, Hh, hL;
 
@@ -27,8 +28,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = -arma::accu(HL2 % HL2) / 4;
-    x.f += f;
+    loss = -arma::accu(HL2 % HL2) / 4;
+    x.f += loss;
 
   }
 
@@ -52,7 +53,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(2);
-    doubles[0] =  f;
+    doubles[0] =  loss;
     doubles[0] =  0.00;
 
   }

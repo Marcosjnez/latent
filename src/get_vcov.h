@@ -8,7 +8,8 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
                     Rcpp::List control_transform,
                     Rcpp::List control_estimator,
                     Rcpp::List control_optimizer,
-                    arma::mat H) {
+                    arma::mat H,
+                    int cores) {
 
   Rcpp::List result;
   arguments_optim x;
@@ -53,7 +54,7 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
   final_estimator->G(x, xestimators);
-  // final_transform->update_grad(x, xtransforms);
+  final_transform->update_grad(x, xtransforms);
   // final_transform->jacobian(x, xtransforms);
 
   x.h = H;
@@ -75,6 +76,42 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
     }
 
   }
+
+  x.h = H;
+
+//   if(x.h.is_empty()) {
+//
+//     int npar = x.parameters.n_elem;
+//
+//     arma::mat h(npar, npar, arma::fill::none);
+//
+// #pragma omp parallel num_threads(cores)
+// {
+//   // x.h is still empty here, so the thread-local copy does not
+//   // duplicate the npar × npar Hessian matrix
+//   arguments_optim x_local = x;
+//
+// #pragma omp for schedule(static)
+//   for(int i=0; i < npar; ++i) {
+//
+//     x_local.dparameters.zeros();
+//     x_local.dparameters(i) = 1.00;
+//
+//     final_transform->dtransform(x_local, xtransforms);
+//     final_estimator->dG(x_local, xestimators);
+//     final_transform->update_dgrad(x_local, xtransforms);
+//
+//     // Each iteration writes to a different column
+//     std::copy_n(x_local.dg.memptr(), x_local.dg.n_elem,
+//                 h.colptr(i));
+//
+//   }
+// }
+//
+// x.h = std::move(h);
+//
+//   }
+
 
   final_transform->update_vcov(x, xtransforms);
 

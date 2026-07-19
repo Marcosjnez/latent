@@ -26,6 +26,7 @@ class poisson_loglik: public estimators {
 public:
 
   int p, q;
+  double loss;
   arma::uvec indices;
   arma::mat X, lambdas, log_dpois;
 
@@ -39,8 +40,8 @@ public:
   }
 
   void F(arguments_optim& x) {
-    f = arma::accu(log_dpois);
-    x.f += -f;
+    loss = arma::accu(log_dpois);
+    x.f += loss;
   }
 
   void G(arguments_optim& x) {
@@ -67,7 +68,7 @@ public:
 
   void outcomes(arguments_optim& x) {
     doubles.resize(1);
-    doubles[0] = f;
+    doubles[0] = loss;
   };
 };
 

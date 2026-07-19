@@ -13,7 +13,7 @@ class geomin: public estimators {
 public:
 
   int p, q;
-  double q2, epsilon;
+  double q2, epsilon, loss;
   arma::uvec indices_lambda;
   arma::vec term;
   arma::mat lambda, dlambda, L2, LoL2;
@@ -30,8 +30,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = arma::accu(term);
-    x.f += f;
+    loss = arma::accu(term);
+    x.f += loss;
 
   }
 
@@ -64,7 +64,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(2);
-    doubles[0] =  f;
+    doubles[0] =  loss;
     doubles[0] =  0.00;
 
   }

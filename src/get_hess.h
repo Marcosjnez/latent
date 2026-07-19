@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/04/2026
+ * Modification date: 16/07/2026
  */
 
 Rcpp::List get_hess(Rcpp::List control_manifold,
@@ -57,23 +57,6 @@ Rcpp::List get_hess(Rcpp::List control_manifold,
   int npar = x.parameters.n_elem;
   arma::mat h(npar, npar, arma::fill::zeros);
 
-  //   std::vector<arguments_optim> xi(npar, x);
-  // #ifdef _OPENMP
-  //   omp_set_num_threads(cores);
-  // #pragma omp parallel for
-  // #endif
-  //   for(int i=0; i < npar; ++i) {
-  //
-  //     xi[i].dparameters.zeros();
-  //     xi[i].dparameters(i) = 1.00;
-  //
-  //     final_transform->dtransform(xi[i], xtransforms);
-  //     final_estimator->dG(xi[i], xestimators);
-  //     final_transform->update_dgrad(xi[i], xtransforms);
-  //     h.col(i) = xi[i].dg;
-  //
-  //   }
-
   for(int i=0; i < npar; ++i) {
 
     x.dparameters.zeros();
@@ -85,6 +68,26 @@ Rcpp::List get_hess(Rcpp::List control_manifold,
     h.col(i) = x.dg;
 
   }
+
+// #pragma omp parallel num_threads(cores)
+// {
+//   arguments_optim x_local = x;
+//
+// #pragma omp for schedule(static)
+//   for(int i = 0; i < npar; ++i) {
+//
+//     x_local.dparameters.zeros();
+//     x_local.dparameters(i) = 1.0;
+//
+//     final_transform->dtransform(x_local, xtransforms);
+//     final_estimator->dG(x_local, xestimators);
+//     final_transform->update_dgrad(x_local, xtransforms);
+//
+//     std::copy_n(x_local.dg.memptr(),
+//                 x_local.dg.n_elem,
+//                 h.colptr(i));
+//   }
+// }
 
   result["h"] = h;
 

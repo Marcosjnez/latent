@@ -85,8 +85,8 @@ get_hess <- function(control_manifold, control_transform, control_estimator, con
     .Call(`_latent_get_hess`, control_manifold, control_transform, control_estimator, control_optimizer, cores)
 }
 
-get_vcov <- function(control_manifold, control_transform, control_estimator, control_optimizer, H) {
-    .Call(`_latent_get_vcov`, control_manifold, control_transform, control_estimator, control_optimizer, H)
+get_vcov <- function(control_manifold, control_transform, control_estimator, control_optimizer, H, cores = 1L) {
+    .Call(`_latent_get_vcov`, control_manifold, control_transform, control_estimator, control_optimizer, H, cores)
 }
 
 get_jacob <- function(control_manifold, control_transform, control_estimator, control_optimizer) {

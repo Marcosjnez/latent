@@ -13,7 +13,7 @@ class cf: public estimators {
 public:
 
   int p, q;
-  double k, ff1, ff2;
+  double k, ff1, ff2, loss;
   arma::uvec indices_lambda;
   arma::mat lambda, dlambda, L2, N, Mm, L2N, ML2, hL;
 
@@ -31,8 +31,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = ff1 + ff2;
-    x.f += f;
+    loss = ff1 + ff2;
+    x.f += loss;
 
   }
 
@@ -62,7 +62,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(2);
-    doubles[0] =  f;
+    doubles[0] =  loss;
     doubles[0] =  0.00;
 
   }

@@ -8,8 +8,6 @@ class estimators {
 
 public:
 
-  double f, loglik;
-
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
   std::vector<arma::mat> matrices;

@@ -13,7 +13,7 @@ class xtarget: public estimators {
 public:
 
   int p, q;
-  double w;
+  double w, loss;
   arma::uvec indices_lambda, indices_psi, lower_psi;
   arma::mat lambda, dlambda, target, weight, psi, dpsi, psitarget, psiweight,
   weight2, psiweight2, f1, f2;
@@ -30,8 +30,8 @@ public:
 
   void F(arguments_optim& x) {
 
-    f = 0.5*arma::accu(f1 % f1) + 0.5*w*arma::accu(f2 % f2);
-    x.f += f;
+    loss = 0.5*arma::accu(f1 % f1) + 0.5*w*arma::accu(f2 % f2);
+    x.f += loss;
 
   }
 
@@ -61,7 +61,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     doubles.resize(2);
-    doubles[0] =  f;
+    doubles[0] =  loss;
     doubles[0] =  0.00;
 
   }
