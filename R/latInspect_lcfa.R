@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/05/2026
+# Modification date: 24/07/2026
 #'
 #' @title
 #' Standard Errors
@@ -61,7 +61,8 @@ latInspect.lcfa <- function(fit, what = "est") {
     FUN.VALUE = numeric(9)
   )
 
-  colnames(fit_matrix) <- unlist(fit@dataList$data_param$S_group)
+  colnames(fit_matrix) <-
+    unlist(lapply(fit@modelInfo$control_estimator, FUN = \(x) x$estimator))
 
   # group_by_fit <- matrix(rowSums(fit_matrix), ncol = 1L,
   #                        dimnames = list(rownames(fit_matrix), "value"))

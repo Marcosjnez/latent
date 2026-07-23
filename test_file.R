@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 16/07/2026
+# Modification date: 24/07/2026
 
 #### Store a dataset ####
 
@@ -23,7 +23,7 @@ gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
            # outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
@@ -62,9 +62,11 @@ predict(fit, new = df)
 
 # Inspect model objects:
 latInspect(fit, what = "convergence")
-latInspect(fit, what = "coefs")
 latInspect(fit, what = "profile")
+latInspect(fit, what = "coefs")
 latInspect(fit, what = "classification")
+latInspect(fit, what = "pattern")
+latInspect(fit, what = "table")
 
 # Get standard errors:
 SE <- se(fit, type = "standard", digits = 4)
@@ -77,7 +79,7 @@ CI$table
 #### LCA (gaussian) ####
 
 library(latent)
-set.seed(2026) # 188
+set.seed(2026)
 
 fit <- lca(data = empathy,
            nclasses = 4L,
@@ -105,10 +107,10 @@ lbvr(fit)
 latInspect(fit, what = "convergence")
 latInspect(fit, what = "profile")
 latInspect(fit, what = "coefs")
+latInspect(fit, what = "posterior")
 
 # Plot:
 plot(fit)
-plot(fit, type = "coefficients", what = "OR")
 
 # Get standard errors:
 SE <- se(fit, type = "standard", digits = 4)
@@ -146,17 +148,15 @@ fit
 # Get fit indices:
 getfit(fit)
 
-# Plot:
-plot(fit)
-plot(fit, type = "coefficients", what = "OR")
-
 # Inspect model objects:
-latInspect(fit, what = "coefs")
-latInspect(fit, what = "profile")
 latInspect(fit, what = "fit.matrix")
+latInspect(fit, what = "coefs")
+latInspect(fit, what = "classes")
+latInspect(fit, what = "profile")
+latInspect(fit, what = "posterior")
 
 # Get standard errors:
-SE <- se(fit, type = "standard", digits = 4)
+SE <- se(fit, type = "standard", digits = 4) # FIX stdv
 SE$table
 
 # Get confidence intervals:
@@ -165,6 +165,8 @@ CI$table
 
 # hypothesis(fit, "b1|2 - b1|3 = 0")
 
+plot(fit)
+
 #### LCA with covariates (gaussian) ####
 
 fit <- lca(data = empathy,
@@ -172,7 +174,7 @@ fit <- lca(data = empathy,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
             covariates = c("pt1", "pt2", "pt3", "pt4"),
             # outcomes = list(gaussian = c("pt5")),
-            # adjustment = "bk",
+            adjustment = "bk",
             # classification = "modal",
             # model = list("ec2 ~~ ec3"),
             penalties = TRUE,
@@ -180,10 +182,18 @@ fit <- lca(data = empathy,
 latInspect(fit$structural, what = "loglik")
 # loglik: -1747.135 # penalized_loglik: -1750.566
 # loglik: -2049.840 # penalized_loglik: -2053.322 (outcomes = list(gaussian = c("pt5")))
+# SE <- se(fit, type = "standard", digits = 4)
+# SE$se
 
-# Inspect model objects:
-latInspect(fit, what = "coefs")
-latInspect(fit, what = "profile")
+# # Effects-coding parameterization:
+# new_se <- effects_coding(fit$structural@parameters$beta, SE$vcov)
+# new_se$beta
+# new_se$table_se
+# new_se$se
+
+# new_se <- move_intercept(beta, vcov)
+# new_se$beta_new
+# matrix(new_se$se_new, 3, 3)
 
 # Print model fit:
 fit
@@ -191,30 +201,24 @@ fit
 # Get fit indices:
 getfit(fit)
 
-# Get a summary:
-summary(fit)
+plot.llcalist(fit)
+plot.llcalist(fit, type = "coefficients", what = "OR")
 
-# Bivariate residuals:
-lbvr(fit)
+# Inspect model objects:
+latInspect(fit, what = "loglik")
+# loglik: -2049.840 # penalized_loglik: -2053.322
+latInspect(fit, what = "coefs")
+latInspect(fit, what = "classes")
+latInspect(fit, what = "profile")
+latInspect(fit, what = "posterior")
 
-# Plot:
-plot(fit)
-plot(fit, type = "coefficients", what = "OR", xlim = c(0, 7))
-
-# Predictions if there are covariates:
 predict(fit, new = rbind(c(2, 2, 2.428571, 2.142857),
                          c(1, 2, 3, 4)))
 fitted(fit)
 
-# Get standard errors:
-SE <- se(fit, type = "standard", digits = 4)
-SE$measurement$table
-SE$structural$table
-
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
-CI$measurement$table
-CI$structural$table
+CI$table
 
 #### CFA ####
 
@@ -351,18 +355,20 @@ meanstructure <- TRUE
 likelihood <- "normal"
 acov <- "standard"
 fit <- lcfa(data = HolzingerSwineford1939, model = model,
-            estimator = "ml", ordered = FALSE,
+            estimator = estimator, ordered = FALSE,
             positive = TRUE,
             # penalties = TRUE,
             penalties = list(logdet = list(w = 0.001)),
-            std.lv = FALSE, std.ov = FALSE,
-            likelihood = "normal",
+            std.lv = std.lv, std.ov = std.ov,
+            likelihood = likelihood,
             do.fit = TRUE, control = NULL)
 
 latInspect(fit, "loglik") # loglik           -3732.196
                           # penalized_loglik -3732.198
-                          # loglik_base      -
-                          # loglik_sat       -
+                          # loglik_base      -4211.418
+                          # loglik_sat       -3695.092
+
+latInspect(fit, what = "est")
 
 # fit@Optim$SE$se
 det(fit@transformed_pars$theta)
@@ -371,9 +377,14 @@ det(fit@transformed_pars$psi)
 # With lavaan:
 fit2 <- cfa(model, data = HolzingerSwineford1939,
             estimator = "ml", std.lv = FALSE, std.ov = FALSE)
+fitMeasures(fit2, "logl")
+fitMeasures(fit2, "unrestricted.logl")
+fitMeasures(fit2, "baseline.chisq")
+
 inspect(fit2, what = "est") # NEGATIVE VARIANCE
 det(inspect(fit2, what = "est")$theta)
 fit2@Fit@fx*2
+fit@Optim$f
 
 #### Multigroup CFA (nonpositive definite) ####
 

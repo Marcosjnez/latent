@@ -1,0 +1,587 @@
+---
+title: "A solution to the long-standing problem of non-positive definite latent covariance matrices"
+date: "2026-07-24"
+author: "Marcos Jimenez, Mauricio Garnier-Villarreal, & Vithor Rosa Franco"
+subtitle: "IMPS 2026"
+
+format:
+  revealjs:
+    embed-resources: true
+    slide-level: 1         # use level 1 headings (#) as individual slides
+    number-sections: false
+    toc: false
+    theme: simple          # change if you prefer another revealjs theme
+    code-fold: false        # folds code blocks (click to expand)
+    code-overflow: scroll
+    output: true
+    slide-number: true    # show slide numbers
+    css: styles.css
+    width: 1400      # wider slides
+    height: 800      # 16:9 aspect
+    margin: 0.02     # less empty border around the slide
+fontsize: 18pt
+bibliography: references.bib
+header-includes: |
+  <style>
+  .matrix-output {
+    display: flex;
+    justify-content: center;
+    margin: 0.35em auto 0.15em;
+    max-width: 100%;
+  }
+  
+  .matrix-bracket {
+    position: relative;
+    display: inline-block;
+    padding: 0.15em 0.85em;
+  }
+  
+  .matrix-bracket::before,
+  .matrix-bracket::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0.45em;
+    content: "";
+  }
+  
+  .matrix-bracket::before {
+    left: 0;
+    border-top: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    border-left: 2px solid currentColor;
+  }
+  
+  .matrix-bracket::after {
+    right: 0;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+  }
+  
+  .matrix-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.54em;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  
+  .matrix-table th,
+  .matrix-table td {
+    border: 0 !important;
+    padding: 0.18em 0.45em;
+  }
+  
+  .matrix-table thead th,
+  .matrix-table tbody th {
+    color: #555;
+    font-weight: 600;
+    text-align: center;
+  }
+  
+  .matrix-table td {
+    min-width: 3.4em;
+    text-align: right;
+  }
+  
+  .matrix-table td.matrix-diagonal {
+    background: rgba(80, 120, 180, 0.14);
+    font-weight: 700;
+  }
+  
+  .matrix-table td.matrix-zero {
+    color: #aaa;
+  }
+  
+  .scalar-output {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 0.55em;
+    margin-top: 0.2em;
+    font-size: 0.75em;
+  }
+  
+  .scalar-output strong {
+    padding: 0.08em 0.45em;
+    border-radius: 0.25em;
+    background: rgba(80, 120, 180, 0.14);
+    font-variant-numeric: tabular-nums;
+  }
+  </style>
+---
+
+
+
+
+
+
+# The latent R package
+
+```{r matrix-display-helpers, include=FALSE}
+escape_html <- function(text) {
+  text <- gsub("&", "&amp;", text, fixed = TRUE)
+  text <- gsub("<", "&lt;", text, fixed = TRUE)
+  text <- gsub(">", "&gt;", text, fixed = TRUE)
+  text <- gsub('"', "&quot;", text, fixed = TRUE)
+
+  #### Result ####
+  return(text)
+}
+
+matrix_html <- function(x, digits = 2) {
+  x <- as.matrix(x)
+  row_labels <- rownames(x)
+  col_labels <- colnames(x)
+
+  if(is.null(row_labels)) row_labels <- seq_len(nrow(x))
+  if(is.null(col_labels)) col_labels <- seq_len(ncol(x))
+
+  values <- formatC(x, format = "f", digits = digits)
+  threshold <- 0.5 * 10^(-digits)
+
+  header_cells <- paste0("<th>", escape_html(col_labels), "</th>", collapse = "")
+  header <- paste0("<thead><tr><th></th>", header_cells, "</tr></thead>")
+
+  rows <- character(nrow(x))
+  for(i in seq_len(nrow(x))) {
+    cells <- character(ncol(x))
+    for(j in seq_len(ncol(x))) {
+      classes <- character(0)
+      if(i == j) classes <- c(classes, "matrix-diagonal")
+      if(is.finite(x[i, j]) && abs(x[i, j]) < threshold) {
+        classes <- c(classes, "matrix-zero")
+      }
+      class_attribute <- if(length(classes)) {
+        paste0(' class="', paste(classes, collapse = " "), '"')
+      } else {
+        ""
+      }
+      cells[j] <- paste0("<td", class_attribute, ">", values[i, j], "</td>")
+    }
+    rows[i] <- paste0(
+      "<tr><th>", escape_html(row_labels[i]), "</th>",
+      paste0(cells, collapse = ""), "</tr>"
+    )
+  }
+
+  html <- paste0(
+    '<div class="matrix-output"><div class="matrix-bracket">',
+    '<table class="matrix-table">', header,
+    "<tbody>", paste0(rows, collapse = ""), "</tbody></table>",
+    "</div></div>"
+  )
+
+  #### Result ####
+  return(html)
+}
+
+scalar_html <- function(label, value, digits = 4) {
+  formatted_value <- formatC(value, format = "f", digits = digits)
+  html <- paste0(
+    '<div class="scalar-output"><span>', escape_html(label), "</span>",
+    "<strong>", formatted_value, "</strong></div>"
+  )
+
+  #### Result ####
+  return(html)
+}
+```
+
+```{r eval=TRUE, echo=FALSE}
+library(latent)
+```
+
+::: {.columns}
+::: {.column width="60%"}
+
+- Core functions written in C++
+- Highly customizable models
+- lavaan syntax for Structural Equation Models
+
+![](figures/load.jpg){width=300%}
+
+:::
+::: {.column width="40%"}
+![](figures/standard.jpg){width=300%}
+:::
+:::
+
+# Example: Confirmatory Factor Analysis Example
+
+<div style="font-size: 125%;">
+
+::: {.columns}
+::: {.column width="70%"}
+
+Model fitting:
+```{r eval=FALSE, echo=TRUE}
+HS.model <- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
+```
+
+Extract model information:
+```{r eval=FALSE, echo=TRUE}
+# Get fit indices:
+lavaan::fitMeasures(fit)
+
+# Inspect model objects:
+lavaan::inspect(fit, what = "est", digits = 3) # Estimates
+lavaan::inspect(fit, what = "se", digits = 3)  # Standard errors
+```
+
+:::
+::: {.column width="30%"}
+![](figures/fixing.jpg){width=300%}
+:::
+:::
+
+</div>
+
+# Problem: Positive-definite constraints
+
+<div style="font-size: 150%;">
+In the factor model equation,
+$$
+S = \Lambda \color{red}{\Psi} \Lambda^\top + \color{red}{\Theta},
+$$
+Latent correlations $\color{red}{\Psi}$ and covariances $\color{red}{\Theta}$ should be positive-definite but...
+
+</div>
+
+![](figures/nonpositive.jpg){width=200px}
+
+# Positive-definite constraints (`lavaan` fails)
+
+::: {.columns}
+::: {.column width="70%"}
+
+Let's force lavaan to fail for convergence:
+
+```{r lavaan-fit, eval=TRUE, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+library(lavaan)
+model <- 'visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9
+          x1 ~~ x5
+          x1 ~~ x4
+          x4 ~~ x5
+          x4 ~~ x6'
+fit <- cfa(data = HolzingerSwineford1939, model = model, estimator = "ml")
+theta <- inspect(fit, what = "est")$theta
+theta_determinant <- det(theta)
+```
+
+```{r lavaan-matrix-output, echo=FALSE, results='asis'}
+cat(matrix_html(theta, digits = 2),
+    scalar_html("det(theta) =", theta_determinant, 4), sep = "\n")
+```
+
+:::
+::: {.column width="30%"}
+![](figures/diagram_holzinger_errors.jpg){height=650px fig-align="center"}
+:::
+:::
+
+# Positive-definite constraints (`latent` converges)
+
+<div style="font-size: 110%;">
+
+::: {.columns}
+::: {.column width="30%"}
+
+![](figures/magician.jpg){height=400px}
+
+:::
+::: {.column width="70%"}
+
+```{r latent-fit, eval=TRUE, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+fit <- lcfa(data = HolzingerSwineford1939, model = model,
+            estimator = "ml", positive = TRUE)
+theta <- latInspect(fit, what = "est")$theta
+theta_determinant <- det(theta)
+```
+
+```{r latent-matrix-output, echo=FALSE, results='asis'}
+cat(matrix_html(theta, digits = 2),
+    scalar_html("det(theta) =", theta_determinant, 4), sep = "\n")
+```
+
+:::
+:::
+
+</div>
+
+# Positive-semidefinite latent covariances
+
+<div style="font-size: 110%;">
+
+::: {.columns}
+::: {.column width="30%"}
+
+![](figures/magic_trick.jpg){height=400px}
+
+:::
+::: {.column width="45%"}
+
+- Parameterize latent covariances as crossproducts:
+
+$$
+\Psi = Y^\top Y \\
+\Theta = U^\top U
+$$
+
+- Constraint **Y** and **U** to be **orthoblique**:
+$$
+X \in \mathbb{R}^{p\times p}: X^\top X = \text{sparse matrix}
+$$
+:::
+::: {.column width="25%"}
+
+\phantom{![](figures/sphere.png){height=300px}}
+
+:::
+:::
+
+</div>
+
+$$
+\begin{bmatrix}
+\color{red}{0.08} & \color{blue}{1.76} & \color{green}{0.04} \\
+\color{red}{-1.95} & \color{blue}{-0.12} & \color{green}{-0.69} \\
+\color{red}{-0.67} & \color{blue}{-0.08} & \color{green}{2.02}
+\end{bmatrix}^\top \begin{bmatrix}
+\color{red}{0.08} & \color{blue}{1.76} & \color{green}{0.04} \\
+\color{red}{-1.95} & \color{blue}{-0.12} & \color{green}{-0.69} \\
+\color{red}{-0.67} & \color{blue}{-0.08} & \color{green}{2.02}
+\end{bmatrix} = \begin{bmatrix}
+4.24 & 0.42 & 0.00 \\
+0.42 & 3.11 & 0.00 \\
+0.00 & 0.00 & 4.56
+\end{bmatrix}
+$$
+
+# Positive-semidefinite latent correlations
+
+<div style="font-size: 110%;">
+
+::: {.columns}
+::: {.column width="30%"}
+
+![](figures/magic_trick.jpg){height=400px}
+
+:::
+::: {.column width="45%"}
+
+- Parameterize latent covariances as crossproducts:
+
+$$
+\Psi = Y^\top Y \\
+\Theta = U^\top U
+$$
+
+- Constraint **Y** and **U** to be **orthoblique**:
+$$
+X \in \mathbb{R}^{p\times p}: X^\top X = \text{sparse matrix}
+$$
+:::
+::: {.column width="25%"}
+
+![](figures/sphere.png){height=300px}
+
+:::
+:::
+
+</div>
+
+$$
+\begin{bmatrix}
+\color{red}{0.04} & \color{blue}{1.00} & \color{green}{0.02} \\
+\color{red}{-0.95} & \color{blue}{-0.07} & \color{green}{-0.32} \\
+\color{red}{-0.32} & \color{blue}{-0.05} & \color{green}{0.95}
+\end{bmatrix}^\top \begin{bmatrix}
+\color{red}{0.04} & \color{blue}{1.00} & \color{green}{0.02} \\
+\color{red}{-0.95} & \color{blue}{-0.07} & \color{green}{-0.32} \\
+\color{red}{-0.32} & \color{blue}{-0.05} & \color{green}{0.95}
+\end{bmatrix} = \begin{bmatrix}
+1.00 & 0.12 & 0.00 \\
+0.12 & 1.00 & 0.00 \\
+0.00 & 0.00 & 1.00
+\end{bmatrix}
+$$
+
+# This is like factor rotation in EFA
+
+::: {.columns}
+::: {.column width="60%"}
+
+$$
+\begin{aligned}
+S
+&=
+\underbrace{\color{blue}{\Lambda X^{-\top}}}_{\color{blue}{\Lambda^\ast}}
+\,
+\underbrace{\color{red}{(X^\top X)}}_{\color{red}{\Psi}}
+\,
+\underbrace{\color{blue}{(\Lambda X^{-\top})^\top}}_{\color{blue}{\Lambda^{\ast\top}}} + \Theta
+\\[1.2em]
+&=
+\Lambda^\ast \Psi \Lambda^{\ast\top} + \Theta.
+\end{aligned}
+$$
+
+<div style="font-size: 140%;">
+
+::: {.callout-important icon=false title="Type of constraint"}
+- **Orthogonal rotation**:  
+  $X \in \mathbb{R}^{p\times p}$ such that $X^\top X = I$.
+
+- **Oblique rotation**:  
+  $X \in \mathbb{R}^{p\times p}$ such that $X^\top X = \text{dense matrix (with unit diagonal)}$.
+
+- **Orthoblique rotation**:  
+  $X \in \mathbb{R}^{p\times p}$ such that $X^\top X = \text{sparse matrix (with unit diagonal)}$.
+:::
+
+</div>
+
+:::
+::: {.column width="40%"}
+
+\phantom{![](figures/local_maxima.png){height=300px}}
+
+:::
+:::
+
+# This is like factor rotation in EFA
+
+::: {.columns}
+::: {.column width="60%"}
+
+$$
+\begin{aligned}
+S
+&=
+\underbrace{\color{blue}{\Lambda X^{-\top}}}_{\color{blue}{\Lambda^\ast}}
+\,
+\underbrace{\color{red}{(X^\top X)}}_{\color{red}{\Psi}}
+\,
+\underbrace{\color{blue}{(\Lambda X^{-\top})^\top}}_{\color{blue}{\Lambda^{\ast\top}}} + \Theta
+\\[1.2em]
+&=
+\Lambda^\ast \Psi \Lambda^{\ast\top} + \Theta.
+\end{aligned}
+$$
+
+<div style="font-size: 140%;">
+
+::: {.callout-important icon=false title="Type of constraint"}
+- **Orthogonal rotation**:  
+  $X \in \mathbb{R}^{p\times p}$ such that $X^\top X = I$.
+
+- **Oblique rotation**:  
+  $X \in \mathbb{R}^{p\times p}$ such that $X^\top X = \text{dense matrix (with unit diagonal)}$.
+
+- **Orthoblique rotation**:  
+  $X \in \mathbb{R}^{p\times p}$ such that $X^\top X = \text{sparse matrix (with unit diagonal)}$.
+:::
+
+</div>
+
+:::
+::: {.column width="40%"}
+
+![](figures/local_maxima.png){width=100%}
+
+:::
+:::
+
+# New factor rotation in EFA
+
+::: {.columns}
+::: {.column width="50%"}
+![](figures/jennrich_orth.png){width=300%}
+:::
+::: {.column width="50%"}
+![](figures/jennrich_oblq.png){width=300%}
+:::
+:::
+![](figures/jimenez_poblq.png){width=75% fig-align="center"}
+
+# From positive-semidefinite to positive-definite
+
+<div style="font-size: 110%;">
+
+::: {.columns}
+::: {.column width="70%"}
+
+We may maximize the log likelihood subject to a weighted penalty
+$$
+\operatorname*{argmax}_{\theta}\; \ell(\theta) + w \cdot \mathrm{penalty}
+$$
+Suppose the penalty only involves $\Psi$.
+
+* The parameterization $\Psi = Y^\top Y$ is an square, so $\det \Psi \geq 0$.
+
+* Notice that $0 \leq \det (D^{-1/2} \Psi D^{-1/2}) \geq 1$, where $D = \mathrm{diag} (\Psi)$.
+
+Therefore, a good penalty term for $\Psi$ becomes
+$$
+\log\det (D^{-1/2} \Psi D^{-1/2}).
+$$
+
+:::
+::: {.column width="30%"}
+![](figures/surprised2.jpg){height=400px fig-align="center"}
+:::
+:::
+
+</div>
+
+# Summary
+
+<div style="font-size: 140%;">
+
+In the factor model $S = \Lambda \Psi \Lambda^\top + \Theta$, 
+
+(1) the following parameterization will ensure, at least, positive-semidefinite matrices:
+$$
+\scriptsize \Psi = Y^\top Y \\
+\scriptsize \Theta = U^\top U,
+$$
+where $Y$ and $U$ are **orthoblique** matrices (i.e., $X \in \mathbb{R}^{p\times p}: X^\top X = \text{sparse matrix}$).
+
+(2) Then, adding the $\color{red}{\log \det}$ of the standardized $\Psi$ and $\Theta$ as a penalty to the log likelihood will encourage their positive-definiteness.
+
+</div>
+
+# Cooking new stuff
+
+::: {.columns}
+::: {.column width="60%"}
+
+- (Exploratory) Structural Equation Modeling
+
+- Hidden Markov Models
+
+- (Multidimensional) Item Response Theory
+
+Release date? We don't know
+
+Download the **beta version** at https://github.com/Marcosjnez/latent
+
+**Contact:** m.j.jimenezhenriquez@vu.nl
+
+![](figures/qr_repository.jpg){width=300px style="vertical-align:middle; margin-right:0.5em;"}
+
+:::
+::: {.column width="40%"}
+
+![](figures/chef.jpg){width=1000px style="vertical-align:middle; margin-right:0.5em;"}
+
+:::
+:::
