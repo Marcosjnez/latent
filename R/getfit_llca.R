@@ -291,18 +291,6 @@ getfit.llcalist <- function(model, digits = 4L) {
                   FUN.VALUE = getfit.llca(model[[1]], digits = digits),
                   digits = digits))
 
-  nclasses <- vapply(model, FUN = function(x) {
-
-    result <- ncol(x@modelInfo$trans$class)
-
-    #### Result ####
-
-    return(result)
-
-  }, FUN.VALUE = integer(1L))
-
-  rownames(out) <- paste0("nclasses=", nclasses)
-
   class(out) <- "getfit.llcalist"
   attr(out, "penalized") <- model[[1]]@modelInfo$control_optimizer$reg
 

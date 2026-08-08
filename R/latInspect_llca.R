@@ -266,6 +266,17 @@ latInspect.llca <- function(fit,
 
   if(length(OutcomeConditional) > 0L) profile$outcomes <- OutcomeConditional
 
+  # Dependencies:
+  profile$dependencies <- list()
+
+  # Gaussian dependencies:
+  idx <- grepl("Sigma", names(fit@parameters))
+  profile$dependencies$gaussian <- fit@parameters[idx]
+
+  # Multinomial dependencies:
+  idx <- grepl("log_", names(fit@parameters))
+  profile$dependencies$multinomial <- fit@parameters[idx]
+
   #### Fit components ####
 
   doubles <- fit@Optim$outputs$estimators$doubles
