@@ -1,7 +1,7 @@
 /*
- * Author: Marcos Jiménez
+ * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2026
+ * Modification date: 09/08/2026
  */
 
 #include <tuple>
@@ -119,5 +119,8 @@ struct arguments_optim{
   int nparam, ntransparam, nrow_post, ncol_post;
   arma::uvec transparam2param;
   arma::uvec idx_transforms;
+  int mstep_maxit = 100L;
+  double mstep_eps = 1e-06;
+  std::string mopt = "lbfgs";
 
 };

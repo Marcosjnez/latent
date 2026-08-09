@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2026
+ * Modification date: 09/08/2026
  */
 
 #include "step_update/armijo.h"
@@ -25,6 +25,9 @@ public:
                                 std::vector<estimators*>& xestimators) = 0;
 
 };
+
+// Define EM after optim because EM uses optim in the M step:
+#include "algorithm/EM.h"
 
 // Riemannian Gradient Descent:
 
@@ -72,6 +75,23 @@ public:
                         std::vector<estimators*>& xestimators) {
 
     return ntr(x, xtransforms, xmanifolds, xestimators);
+
+  }
+
+};
+
+// Expectation-Maximization:
+
+class EM: public optim {
+
+public:
+
+  optim_result optimize(arguments_optim x,
+                        std::vector<transformations*>& xtransforms,
+                        std::vector<manifolds*>& xmanifolds,
+                        std::vector<estimators*>& xestimators) {
+
+    return em(x, xtransforms, xmanifolds, xestimators);
 
   }
 
@@ -185,6 +205,18 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
     arma::uvec idx_transforms = control_optimizer["idx_transforms"];
     x.idx_transforms = idx_transforms;
   }
+  if(control_optimizer.containsElementNamed("mstep_maxit")) {
+    double mstep_maxit = control_optimizer["mstep_maxit"];
+    x.mstep_maxit = mstep_maxit;
+  }
+  if(control_optimizer.containsElementNamed("mstep_eps")) {
+    double mstep_eps = control_optimizer["mstep_eps"];
+    x.mstep_eps = mstep_eps;
+  }
+  if(control_optimizer.containsElementNamed("mopt")) {
+    std::string mopt = control_optimizer["mopt"];
+    x.mopt = mopt;
+  }
 
   // Select the optimization algorithm and set defaults:
 
@@ -232,9 +264,13 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   //
   //   algorithm = new EM();
 
+  } else if(x.optimizer == "em") {
+
+    algorithm = new EM();
+
   } else {
 
-    Rcpp::stop("Available optimization routines: \n grad, lbfgs, newton");
+    Rf_error("Available optimization routines: \n grad, lbfgs, newton, em");
 
   }
 

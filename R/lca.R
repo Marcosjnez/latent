@@ -1075,7 +1075,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   estimators <- list()
   G <- 1L
 
-  estimators[[G]] <- list(estimator = "lca",
+  estimators[[G]] <- list(estimator = control$estimator,
                           parameters = c("class", "loglik"),
                           extra = list(S = npatterns,
                                        I = nclasses,
@@ -1286,6 +1286,30 @@ lca_control <- function(control) {
   } else if(control$rstarts < 1L ||
             !all(control$rstarts == as.integer(control$rstarts))) {
     stop("rstarts must be a positive integer")
+  }
+
+  if(control$opt == "em") {
+
+    control$estimator <- "lcaEM"
+
+    if(is.null(control$mstep_maxit)) {
+      control$mstep_maxit <- 30L
+    } else if(control$mstep_maxit < 1L) {
+      stop("mstep_maxit must be an integer greater than 0")
+    }
+
+    if(is.null(control$mstep_eps)) {
+      control$mstep_eps <- 1e-05
+    } else if(control$mstep_eps < 0) {
+      stop("mstep_eps must be a positive number, preferable close to 0")
+    }
+
+    if(is.null(control$mopt)) {
+      control$mopt <- "grad"
+    }
+
+  } else {
+    control$estimator <- "lca"
   }
 
   return(control)

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/07/2026
+# Modification date: 09/08/2026
 
 #### Store a dataset ####
 
@@ -20,10 +20,11 @@ library(latent)
 set.seed(2026)
 
 gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
+set.seed(20216)
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
            # outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
@@ -31,8 +32,13 @@ fit <- lca(data = gss82,
            #               PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
+           # control = list(opt = "em", rstarts = 30, cores = 30,
+           #                maxit = 50L, eps = 1e-05, step_maxit = 30L,
+           #                mopt = "grad", mstep_maxit = 20L, mstep_eps = 1e-05),
            do.fit = TRUE)
 latInspect(fit, what = "loglik")
+latInspect(fit, what = "convergence")
+fit@Optim$elapsed
 # loglik: -3891.252 # penalized_loglik: -3892.478
 # loglik: -3879.167 # penalized_loglik: -3880.371 ("UNDERSTA ~~ COOPERAT
 #                                                   PURPOSE ~~ COOPERAT")
@@ -138,9 +144,14 @@ fit <- lca(data = cancer,
                         "DiastolicBloodPressure"),
            multinomial = c("PerformanceRating", "CardiovascularDiseaseHistory"),
            penalties = penalties,
+           control = list(opt = "em", rstarts = 30, cores = 30,
+                          maxit = 50L, eps = 1e-05, step_maxit = 30L,
+                          mopt = "grad", mstep_maxit = 20L, mstep_eps = 1e-05),
            do.fit = TRUE)
 latInspect(fit, what = "loglik")
 # loglik: -5784.701 # penalized_loglik: -5795.573
+latInspect(fit, what = "convergence")
+fit@Optim$elapsed
 
 # Print model fit info:
 fit

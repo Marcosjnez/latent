@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2026
+ * Modification date: 09/08/2026
  */
 
 class estimators {
@@ -26,6 +26,20 @@ public:
 
   virtual void dG(arguments_optim& x) = 0;
 
+  virtual void E(arguments_optim& x) {}
+
+  virtual void observed_F(arguments_optim& x) {
+
+    F(x);
+
+  }
+
+  virtual void observed_G(arguments_optim& x) {
+
+    G(x);
+
+  }
+
   virtual void outcomes(arguments_optim& x) = 0;
 
 };
@@ -40,6 +54,7 @@ public:
 #include "estimators/rotation/lclf.h"
 
 #include "estimators/lca/lca.h"
+#include "estimators/lca/lcaEM.h"
 #include "estimators/lca/bayesconst1.h"
 #include "estimators/lca/bayesconst2.h"
 #include "estimators/lca/bayesconst3.h"
@@ -78,6 +93,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "xtarget",                     choose_xtarget                   },
   { "lclf",                        choose_lclf                      },
   { "lca",                         choose_lca                       },
+  { "lcaEM",                       choose_lcaEM                     },
   { "bayesconst1",                 choose_bayesconst1               },
   { "bayesconst2",                 choose_bayesconst2               },
   { "bayesconst3",                 choose_bayesconst3               },
@@ -153,6 +169,40 @@ public:
     }
 
     // x.dgrad_init = x.dgrad;
+
+  }
+
+  void E(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    for(int i = 0; i < x.nestimators; ++i) {
+
+      xestimators[i]->E(x);
+
+    }
+
+  }
+
+  void observed_F(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    x.f = 0.0;
+
+    for(int i = 0; i < x.nestimators; ++i) {
+
+      xestimators[i]->observed_F(x);
+
+    }
+
+  }
+
+  void observed_G(arguments_optim& x, std::vector<estimators*>& xestimators) {
+
+    x.grad.zeros();
+
+    for(int i = 0; i < x.nestimators; ++i) {
+
+      xestimators[i]->observed_G(x);
+
+    }
 
   }
 
