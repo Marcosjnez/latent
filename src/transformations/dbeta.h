@@ -85,12 +85,6 @@ public:
 
   }
 
-  void dconstraints(arguments_optim& x) {
-
-    constraints = false;
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     int p = indices_out[0].n_elem;

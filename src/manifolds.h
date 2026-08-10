@@ -120,9 +120,10 @@ public:
 
   void dconstraints(arguments_optim& x, std::vector<manifolds*>& xmanifolds) {
 
-    // for(int i=0; i < x.nmanifolds; ++i) {
-    //
-    // }
+    // Fill-in the constraints:
+    for(int i=0L; i < x.nmanifolds ; ++i) {
+      xmanifolds[i]->dconstraints(x);
+    }
 
   }
 

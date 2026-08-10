@@ -314,6 +314,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// get_dconstr
+Rcpp::List get_dconstr(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
+RcppExport SEXP _latent_get_dconstr(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_dconstr(control_manifold, control_transform, control_estimator, control_optimizer));
+    return rcpp_result_gen;
+END_RCPP
+}
 // yule_cor_full_rcpp
 Rcpp::List yule_cor_full_rcpp(const Rcpp::DataFrame& X_df, int ipfp_maxit, double ipfp_tol, double pinv_tol);
 RcppExport SEXP _latent_yule_cor_full_rcpp(SEXP X_dfSEXP, SEXP ipfp_maxitSEXP, SEXP ipfp_tolSEXP, SEXP pinv_tolSEXP) {
@@ -438,6 +452,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 5},
     {"_latent_get_vcov", (DL_FUNC) &_latent_get_vcov, 6},
     {"_latent_get_jacob", (DL_FUNC) &_latent_get_jacob, 4},
+    {"_latent_get_dconstr", (DL_FUNC) &_latent_get_dconstr, 4},
     {"_latent_yule_cor_full_rcpp", (DL_FUNC) &_latent_yule_cor_full_rcpp, 4},
     {"_latent_real_sqrtmat", (DL_FUNC) &_latent_real_sqrtmat, 1},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},

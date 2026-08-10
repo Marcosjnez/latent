@@ -507,6 +507,9 @@ lca <- function(data,
   names(Optim$rg) <- modelInfo$parameters_labels
   names(Optim$dir) <- modelInfo$parameters_labels
 
+  # If control$opt == "em", ensure "lca" estimator post fitting:
+  modelInfo$control_estimator[[1]]$estimator <- "lca"
+
   #### Process the outputs ####
 
   # Create the transformed parameters:

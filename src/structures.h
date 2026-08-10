@@ -36,7 +36,7 @@ struct arguments_optim{
   arma::vec transparameters, transparameters_init, dtransparameters, grad,
   dgrad, grad_init, dgrad_init;
   arma::mat jacob, h, B, inv_h, inv_hess;
-  arma::sp_mat vcov;
+  arma::sp_mat vcov, dconstr;
   arma::mat hess; // Returned as dgCMatrix class type from Matrix package
   arma::mat posterior;
   arma::mat freqs;
@@ -47,8 +47,6 @@ struct arguments_optim{
   std::vector<arma::mat> modhessian, dparam_dS;
   std::vector<arma::vec> classes; // P(X = c) // classes_hat
   std::vector<std::vector<arma::mat>> conditionals; // conditionals_hat
-
-  arma::mat mat_dconstraints;
 
   // Checks:
   // Rcpp::Nullable<Rcpp::List> nullable_control = R_NilValue;

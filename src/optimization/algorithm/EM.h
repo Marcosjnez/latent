@@ -85,12 +85,9 @@ optim_result em(arguments_optim x,
 
     x_mstep.iterations = 0L;
     x_mstep.convergence = false;
-    // Avoid printing the inner L-BFGS iterations:
+    // Avoid printing the inner iterations:
     x_mstep.print = false;
 
-    // lcaEM::F() and lcaEM::G() contain the Q-function and its
-    // gradient, so the ordinary L-BFGS optimizer can be reused
-    // without modification:
     // optim_result mstep = lbfgs(x_mstep, xtransforms, xmanifolds, xestimators);
     optim_result mstep = moptim(x_mstep, xtransforms, xmanifolds, xestimators);
 

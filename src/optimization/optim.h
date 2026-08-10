@@ -206,7 +206,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
     x.idx_transforms = idx_transforms;
   }
   if(control_optimizer.containsElementNamed("mstep_maxit")) {
-    double mstep_maxit = control_optimizer["mstep_maxit"];
+    int mstep_maxit = control_optimizer["mstep_maxit"];
     x.mstep_maxit = mstep_maxit;
   }
   if(control_optimizer.containsElementNamed("mstep_eps")) {

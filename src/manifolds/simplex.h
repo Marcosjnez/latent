@@ -77,6 +77,15 @@ public:
 
   void dconstraints(arguments_optim& x) {
 
+    // Expand the matrix of constraints derivatives to put in a new column
+    // the constraint derivatives of this transformation:
+    // arma::uword ndconstr = x.dconstr.n_cols;
+    // x.dconstr.resize(x.transparameters.n_elem, ndconstr + 1L);
+    //
+    // for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
+    //   x.dconstr(indices_out[i], ndconstr) = 1.00;
+    // }
+
   }
 
   void outcomes(arguments_optim& x) {

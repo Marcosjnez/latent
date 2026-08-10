@@ -10,13 +10,7 @@ class transformations {
 
 public:
 
-  // arma::vec parameters, dparameters, transparameters;
-  // arma::vec grad_in, grad_out, g;
-  // arma::mat jacob, sum_djacob, hess_in, hess_out, h;
   std::vector<arma::uvec> indices_in, indices_out;
-  bool constraints;
-  arma::vec dconstr;
-  // arma::mat freqs;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
@@ -40,7 +34,7 @@ public:
 
   virtual void update_vcov(arguments_optim& x) = 0;
 
-  virtual void dconstraints(arguments_optim& x) = 0;
+  virtual void dconstraints(arguments_optim& x) {}
 
   virtual void outcomes(arguments_optim& x) = 0;
 
@@ -205,29 +199,9 @@ public:
 
   void dconstraints(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
-    int nconstr = 0L;
-
-    // Count the number of sets of constrained parameters:
-    for(int i=x.ntransforms-1L; i > -1L ; --i) {
-
+    // Fill-in the constraints:
+    for(int i=0L; i < x.ntransforms ; ++i) {
       xtransformations[i]->dconstraints(x);
-      if(xtransformations[i]->constraints) ++ nconstr;
-
-    }
-
-    // Compute the derivative of the constraints of each transformation:
-    x.mat_dconstraints.set_size(x.transparameters.n_elem, nconstr);
-    x.mat_dconstraints.zeros();
-    int k=0L;
-    for(int i=x.ntransforms-1L; i > -1L ; --i) {
-
-      arma::uvec indices_out = xtransformations[i]->indices_out[0];
-      xtransformations[i]->dconstraints(x);
-      if(xtransformations[i]->constraints) {
-        x.mat_dconstraints.submat(indices_out, arma::uvec{ static_cast<arma::uword>(k) }) = xtransformations[i]->dconstr;
-        ++k;
-      };
-
     }
 
   }

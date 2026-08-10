@@ -95,12 +95,6 @@ public:
 
   }
 
-  void dconstraints(arguments_optim& x) {
-
-    constraints = false;
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     matrices.resize(1);
