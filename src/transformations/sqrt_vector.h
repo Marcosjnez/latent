@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 25/05/2026
+ * Modification date: 11/08/2026
  */
 
 // Square root transformation:
@@ -11,9 +11,7 @@ class sqrt_vector: public transformations {
 public:
 
   int n_in, n_out;
-  arma::uvec indices_in, indices_out;
   arma::vec input, output, dinput, doutput, grad_out, dgrad_out;
-  arma::mat jacob;
 
   void transform(arguments_optim& x) {
 
@@ -59,29 +57,6 @@ public:
 
     for (int i = 0; i < n_out; ++i) {
       jacob(i, i) = 1.0 / (2.0 * output(i));
-    }
-
-  }
-
-  void update_vcov(arguments_optim& x) {
-
-    // x.vcov(indices_out, indices_out) =
-    //   jacob * x.vcov(indices_in, indices_in) * jacob.t();
-
-    arma::mat vcov_in(indices_in.n_elem, indices_in.n_elem);
-
-    for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_in.n_elem; ++i) {
-        vcov_in(i, j) = x.vcov(indices_in[i], indices_in[j]);
-      }
-    }
-
-    arma::mat vcov_out = jacob * vcov_in * jacob.t();
-
-    for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
-        x.vcov(indices_out[i], indices_out[j]) = vcov_out(i, j);
-      }
     }
 
   }

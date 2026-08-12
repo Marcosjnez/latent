@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/12/2025
+ * Modification date: 11/08/2026
  */
 
 Rcpp::List get_jacob(Rcpp::List control_manifold,
@@ -52,14 +52,11 @@ Rcpp::List get_jacob(Rcpp::List control_manifold,
   final_estimator->F(x, xestimators);
   final_estimator->G(x, xestimators);
   final_transform->update_grad(x, xtransforms);
-  final_transform->jacobian(x, xtransforms);
-  final_transform->outcomes(x, xtransforms);
 
-  Rcpp::List result(x.ntransforms);
-  for (int i = 0; i < x.ntransforms; ++i) {
-    arma::mat jacob = std::get<2>(x.outputs_transform)[i][0];
-    result[i] = jacob;
-  }
+  final_transform->jacobian(x, xtransforms);
+
+  Rcpp::List result;
+  result["jacob"] = x.jacob;
 
   return result;
 

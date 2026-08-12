@@ -1893,9 +1893,9 @@ lca_bakk_kuha <- function(data,
 
   #### Return ####
 
+  # fit2@modelInfo$control_optimizer$model[[1]] <- NULL
   result <- list(measurement = fit1, structural = fit2)
-  class(result) <- "llcalist"
-
+  class(result) <- "llca_sam"
   return(result)
 
 }
@@ -1991,9 +1991,9 @@ lca_ml <- function(data,
 
   #### Return ####
 
+  # fit2@modelInfo$control_optimizer <- model[[1]] <- NULL
   result <- list(measurement = fit1, structural = fit2)
-  class(result) <- "llcalist"
-
+  class(result) <- "llca_sam"
   return(result)
 
   # NO VALID STANDARD ERRORS BECAUSE VAR(log_class_error_modal) IS NOT CALCULATED IN fit1

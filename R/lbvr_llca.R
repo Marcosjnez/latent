@@ -505,10 +505,10 @@ lbvr.llcalist <- function(x, digits = 4L, ...) {
   if(length(x) == 0L) {
     stop("x must contain at least one fitted 'llca' model")
   }
-  valid_models <- vapply(x, FUN = inherits, FUN.VALUE = logical(1L), what = "llca")
-  if(!all(valid_models)) {
-    stop("Every element of x must be a fitted object of class 'llca'")
-  }
+  # valid_models <- vapply(x, FUN = inherits, FUN.VALUE = logical(1L), what = "llca")
+  # if(!all(valid_models)) {
+  #   stop("Every element of x must be a fitted object of class 'llca'")
+  # }
 
   result <- lapply(x, FUN = lbvr, digits = digits, ...)
   model_names <- names(x)
@@ -528,6 +528,17 @@ lbvr.llcalist <- function(x, digits = 4L, ...) {
   #### Result ####
 
   return(result)
+
+}
+
+#' @rdname lbvr.llca
+#' @param model An object of class \code{"llca_sam"} containing two lbvr
+#'   \code{"llca"} objects named measurement and structural.
+#' @method lbvr llca_sam
+#' @export
+lbvr.llca_sam <- function(object, ...) {
+
+  return(lbvr(object$structural, ...))
 
 }
 

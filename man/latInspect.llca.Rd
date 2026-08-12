@@ -3,11 +3,14 @@
 \name{latInspect.llca}
 \alias{latInspect.llca}
 \alias{latInspect.llcalist}
+\alias{latInspect.llca_sam}
 \title{Inspect fitted latent class models}
 \usage{
 \method{latInspect}{llca}(fit, what = "profile", digits = 4L)
 
 \method{latInspect}{llcalist}(model, what = "profile", digits = 4L)
+
+\method{latInspect}{llca_sam}(model, what = "profile", digits = 4L)
 }
 \arguments{
 \item{fit}{An object of class \code{"llca"} returned by \code{\link{lca}}.}
@@ -59,8 +62,8 @@ Matching is case-insensitive.}
 inspection methods. Numeric results are returned without rounding so they
 can safely be used in subsequent computations.}
 
-\item{model}{An object of class \code{"llcalist"} containing fitted
-\code{"llca"} objects.}
+\item{model}{An object of class \code{"llca_sam"} containing two fitted
+\code{"llca"} objects named measurement and structural.}
 }
 \value{
 The object requested through \code{what}. See the description of

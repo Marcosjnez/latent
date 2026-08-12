@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/03/2026
+ * Modification date: 11/08/2026
  */
 
 // factor_cor transformation:
@@ -12,10 +12,10 @@ public:
 
   bool constraints;
   int p, q;
-  arma::uvec indices_lambda, indices_psi, indices_theta, indices_in,
-  indices_out, diag_psi, diag_theta, lower_psi, lower_theta, lower_diag;
+  arma::uvec indices_lambda, indices_psi, indices_theta,
+  diag_psi, diag_theta, lower_psi, lower_theta, lower_diag;
   arma::mat R, Rhat, lambda, psi, theta, lambda_psi, glambda, gpsi, gtheta,
-  dlambda, dglambda, dpsi, dRhat, dgpsi, dtheta, dgtheta, grad_out, jacob;
+  dlambda, dglambda, dpsi, dRhat, dgpsi, dtheta, dgtheta, grad_out;
 
   void transform(arguments_optim& x) {
 
@@ -116,30 +116,6 @@ public:
 
   }
 
-  void update_vcov(arguments_optim& x) {
-
-    indices_in = arma::join_cols(indices_lambda, indices_psi, indices_theta);
-    // x.vcov(indices_out, indices_out).zeros();
-    // x.vcov(indices_out, indices_out) += jacob * x.vcov(indices_in, indices_in) * jacob.t();
-
-    arma::mat vcov_in(indices_in.n_elem, indices_in.n_elem);
-
-    for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_in.n_elem; ++i) {
-        vcov_in(i, j) = x.vcov(indices_in[i], indices_in[j]);
-      }
-    }
-
-    arma::mat vcov_out = jacob * vcov_in * jacob.t();
-
-    for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
-        x.vcov(indices_out[i], indices_out[j]) = vcov_out(i, j);
-      }
-    }
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     matrices.resize(1);
@@ -178,9 +154,11 @@ factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
   arma::uvec diag_theta = arma::regspace<arma::uvec>(0, p - 1) * p
   + arma::regspace<arma::uvec>(0, p - 1);
 
+
   mytrans->indices_lambda = indices_lambda;
   mytrans->indices_psi = indices_psi;
   mytrans->indices_theta = indices_theta;
+  mytrans->indices_in = arma::join_cols(indices_lambda, indices_psi, indices_theta);
   mytrans->indices_out = indices_out[0];
   mytrans->p = p;
   mytrans->q = q;

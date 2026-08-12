@@ -89,20 +89,21 @@ summary.llca <- function(fit) {
 
 }
 
+#' @method summary llca_sam
+#' @param model An object of class \code{"llca_sam"} containing two fitted
+#'   \code{"llca"} objects named measurement and structural.
+#' @export
+summary.llca_sam <- function(model) {
+
+  result <- summary(model$structural)
+
+}
+
 #' @method summary llcalist
 #' @export
 summary.llcalist <- function(model) {
 
-  nmodels <- length(model)
-  out <- vector("list", length = nmodels)
-  for(i in 1:nmodels) {
-
-    out[[i]] <- summary.llca(model[[i]])
-    names(out)[i] <- paste("nclasses=",
-                           ncol(model[[i]]@modelInfo$trans$class),
-                           sep = "")
-
-  }
+  out <- lapply(model, FUN = summary)
 
   class(out) <- "summary.llcalist"
 

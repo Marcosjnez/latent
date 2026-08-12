@@ -3,6 +3,7 @@
 \name{getfit.llca}
 \alias{getfit.llca}
 \alias{getfit.llcalist}
+\alias{getfit.llca_sam}
 \title{Fit indices for latent class models}
 \usage{
 \method{getfit}{llca}(model, digits = 4)
@@ -10,11 +11,12 @@
 \method{getfit}{llcalist}(model, digits = 4)
 
 \method{getfit}{llcalist}(model, digits = 4L)
+
+\method{getfit}{llca_sam}(model, digits = 4L)
 }
 \arguments{
-\item{model}{An object of class \code{"llca"} fitted with \code{lca()}, or an
-object of class \code{"llcalist"} containing several fitted
-\code{"llca"} models.}
+\item{model}{An object of class \code{"llca_sam"} containing two fitted
+\code{"llca"} objects named measurement and structural.}
 
 \item{digits}{Integer giving the number of decimal places used to round the
 output. Use \code{NULL} to return the unrounded values.}

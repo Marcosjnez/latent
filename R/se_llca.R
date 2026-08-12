@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 16/07/2026
+# Modification date: 12/08/2026
 #'
 #' Standard errors for latent class models
 #'
@@ -61,6 +61,13 @@
 se.llca <- function(fit, type = "standard", parameters = NULL, digits = 4L,
                     ...) {
 
+  if(is.null(parameters)) {
+    parameters <- fit@modelInfo$trans[names(fit@modelInfo$param)]
+  } else if(!any(unlist(parameters) %in%
+                 fit@modelInfo$transparameters_labels)) {
+    stop("Unknown parameters.")
+  }
+
   if(!inherits(fit, "llca")) {
     stop("fit must inherit from class 'llca'.")
   }
@@ -77,38 +84,51 @@ se.llca <- function(fit, type = "standard", parameters = NULL, digits = 4L,
     stop("digits must be NULL or a non-negative integer.")
   }
 
-  original_model <- fit@modelInfo$control_optimizer$model
-
-  if(inherits(original_model, "llca")) {
-
-    SE <- se_twostep(fit2 = fit, type = type, parameters = parameters)
-
-  } else if(type == "standard") {
-
-    SE <- standard_se(fit = fit, parameters = parameters)
-    SE$B <- matrix(numeric(0L), nrow = 0L, ncol = 0L)
-
+  if(type == "standard") {
+    H <- NULL
+  } else if(type == "robust") {
+    H <- robust_LG(fit = fit)
   } else {
-
-    SE <- robust_se_LG(fit = fit, parameters = parameters)
-
+    stop("Unknown type method. Available types: 'standard' and 'robust' ")
   }
 
-  if(is.null(parameters)) {
-    parameters <- fit@modelInfo$trans[names(fit@parameters)]
-  }
+  SE <- vcov(fit, parameters = parameters, H = H)
 
-  est <- fill_in(parameters, fit@Optim$transparameters,
-                 miss = NA)
+  est <- fill_in(parameters, fit@Optim$transparameters, miss = NA)
   table_se <- fill_in(parameters, SE$se, miss = NA)
   table <- combine_est_se(est, table_se, digits = digits)
 
   result <- list(table = table, table_se = table_se, se = c(SE$se),
-                 vcov = SE$vcov, B = SE$B, H = SE$H, newH = SE$newH)
+                 vcov = SE$vcov, B = SE$B, H = SE$H, newH = SE$newH,
+                 jacob = SE$jacob)
 
   #### Result ####
 
   return(result)
+
+}
+
+#' Two-step standard-error adjustment
+#'
+#' Adjusts the covariance matrix of a structural model for uncertainty in the
+#' measurement-model parameters estimated in a previous step.
+#'
+#' @param fit2 A fitted structural \code{"llca"} object whose optimizer control
+#'   stores the fitted measurement model.
+#' @param type Character string indicating whether standard or robust covariance
+#'   matrices are used in the two steps.
+#'
+#' @return A list containing the combined covariance matrix, standard errors, and
+#'   the correction matrix \code{B}.
+#'
+#' @method se llca_sam
+#' @keywords internal
+#' @export
+se.llca_sam <- function(fit, type = "standard", parameters = NULL, digits = 4L,
+                        ...) {
+
+  return(se.llca(fit$structural, type = type, parameters = parameters,
+                 digits = digits, ...))
 
 }
 
@@ -153,10 +173,6 @@ se.llcalist <- function(model, type = "standard", parameters = NULL,
     stop("model must contain at least one fitted llca object.")
   }
 
-  if(!all(vapply(model, inherits, logical(1L), what = "llca"))) {
-    stop("All elements of model must inherit from class 'llca'.")
-  }
-
   nmodels <- length(model)
   result <- vector("list", length = nmodels)
 
@@ -199,7 +215,7 @@ se.llcalist <- function(model, type = "standard", parameters = NULL,
 #'   \code{newH}.
 #'
 #' @keywords internal
-robust_se_LG <- function(fit, parameters = NULL) {
+robust_LG <- function(fit) {
 
   if(fit@dataList$nobs <= 1L) {
     stop("Robust standard errors require more than one observation.")
@@ -207,23 +223,13 @@ robust_se_LG <- function(fit, parameters = NULL) {
 
   #### Compute the Hessian ####
 
-  control_manifold <- fit@modelInfo$control_manifold
-  control_transform <- fit@modelInfo$control_transform
-  control_estimator <- fit@modelInfo$control_estimator
-  control_optimizer <- fit@modelInfo$control_optimizer
-  control_optimizer$parameters[[1L]] <- fit@Optim$parameters
-  control_optimizer$transparameters[[1L]] <- fit@Optim$transparameters
+  fit@modelInfo$control_optimizer$parameters[[1]] <-
+    fit@Optim$parameters
 
-  cores <- control_optimizer$cores
-  if(is.null(cores) || !is.finite(cores) || cores < 1L) {
-    cores <- 1L
-  }
+  fit@modelInfo$control_optimizer$transparameters[[1]] <-
+    fit@Optim$transparameters
 
-  H <- get_hess(control_manifold = control_manifold,
-                control_transform = control_transform,
-                control_estimator = control_estimator,
-                control_optimizer = control_optimizer,
-                cores = as.integer(cores))$h
+  H <- hessian(fit)
 
   #### Collect the gradient by response pattern ####
 
@@ -255,6 +261,9 @@ robust_se_LG <- function(fit, parameters = NULL) {
 
   #### Compute the B matrix ####
 
+  control_manifold <- fit@modelInfo$control_manifold
+  control_transform <- fit@modelInfo$control_transform
+  control_optimizer <- fit@modelInfo$control_optimizer
   B <- matrix(0, nrow = nparam, ncol = nparam)
   for(s in seq_len(npatterns)) {
     idx <- c(seq_len(K), K+s)
@@ -267,158 +276,14 @@ robust_se_LG <- function(fit, parameters = NULL) {
   }
 
   B <- B*nobs/(nobs-1L)
-  eig <- eigen(B, symmetric = TRUE)
-  if(min(eig$values) <= 0) {
-    eig$values <- pmax(eig$values, 1e-8)
-    B <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
-    warning("The B matrix was smoothed to become positive-definite")
-  }
+
+  #### Update the Hessian ####
+
   newH <- H %*% solve(B) %*% H
-
-  #### Get the variance-covariance matrix between the parameters of interest ####
-
-  if(is.null(parameters)) {
-    parameters <- fit@modelInfo$trans[names(fit@parameters)]
-  } else if(!any(unlist(parameters) %in% fit@modelInfo$transparameters_labels)) {
-    stop("Unknown parameters.")
-  }
-  control_optimizer$idx_transforms <- trans_depends(fit, parameters)
-  control_estimator <- fit@modelInfo$control_estimator
-  result <- get_vcov(control_manifold = control_manifold,
-                     control_transform = control_transform,
-                     control_estimator = control_estimator,
-                     control_optimizer = control_optimizer,
-                     H = newH)
-
-  result$B <- B
-
-  selected_parameters <- unique(unlist(parameters))
-  idx <- match(selected_parameters, fit@modelInfo$transparameters_labels)
-  result$se <- as.vector(result$se[idx])
-  result$vcov <- result$vcov[idx, idx, drop = FALSE]
-  rownames(result$vcov) <- colnames(result$vcov) <- names(result$se) <-
-    selected_parameters
-
-  colnames(newH) <- rownames(newH) <- colnames(result$B) <- rownames(result$B) <-
-    fit@modelInfo$parameters_labels
-
-  result$H <- H
-  result$newH <- newH
+  newH <- (newH + t(newH))/2
 
   #### Return ####
 
-  return(result)
-
-}
-
-#' Two-step standard-error adjustment
-#'
-#' Adjusts the covariance matrix of a structural model for uncertainty in the
-#' measurement-model parameters estimated in a previous step.
-#'
-#' @param fit2 A fitted structural \code{"llca"} object whose optimizer control
-#'   stores the fitted measurement model.
-#' @param type Character string indicating whether standard or robust covariance
-#'   matrices are used in the two steps.
-#'
-#' @return A list containing the combined covariance matrix, standard errors, and
-#'   the correction matrix \code{B}.
-#'
-#' @keywords internal
-se_twostep <- function(fit2, type = "standard", parameters = NULL) {
-
-  fit1 <- fit2@modelInfo$control_optimizer$model[[1]]
-
-  if(!inherits(fit1, "llca")) {
-    stop("The stored first-step model must inherit from class 'llca'.")
-  }
-
-  VCOV1 <- se.llca(fit1, type = type,
-                   parameters = fit1@modelInfo$parameters_labels, digits = NULL)
-
-  fit2@modelInfo$control_optimizer$model <- NULL
-  VCOV2 <- se.llca(fit2, type = type,
-                   parameters = fit2@modelInfo$parameters_labels, digits = NULL)
-
-  args <- fit2@dataList$args
-  args$model <- NULL
-  args$do.fit <- FALSE
-  args$adjustment <- "none"
-  fit <- do.call(lca, args)
-
-  control_manifold <- fit@modelInfo$control_manifold
-  control_transform <- fit@modelInfo$control_transform
-  control_estimator <- fit@modelInfo$control_estimator
-  control_optimizer <- fit@modelInfo$control_optimizer
-
-  control_optimizer$parameters[[1L]] <-
-    fit2@Optim$transparameters[fit@modelInfo$parameters_labels]
-  control_optimizer$transparameters[[1L]] <-
-    fit2@Optim$transparameters[fit@modelInfo$transparameters_labels]
-
-  x <- get_hess(control_manifold, control_transform,
-                control_estimator, control_optimizer)
-  colnames(x$h) <- rownames(x$h) <- fit@modelInfo$parameters_labels
-
-  model_pars <- fit@modelInfo$parameters_labels %in%
-    fit2@modelInfo$parameters_labels
-  nuisance_pars <- !model_pars
-
-  if(!any(model_pars) || !any(nuisance_pars)) {
-    stop("The two-step model does not contain both estimated and fixed parameters.")
-  }
-
-  df2_dparamdR <- x$h[nuisance_pars, model_pars, drop = FALSE]
-  nuisance_names <- fit@modelInfo$parameters_labels[nuisance_pars]
-  ACOV <- VCOV1$vcov[nuisance_names, nuisance_names, drop = FALSE]
-  B <- t(df2_dparamdR) %*% ACOV %*% df2_dparamdR
-  B <- as.matrix(B)
-
-  eig <- eigen(B, symmetric = TRUE)
-  if(min(eig$values) <= 0) {
-    eig$values <- pmax(eig$values, 1e-8)
-    B <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
-    warning("The B matrix was smoothed to become positive-definite")
-  }
-
-  newH1 <- x$h[nuisance_names, nuisance_names, drop = FALSE]
-  newH2 <- VCOV2$H %*% solve(B) %*% VCOV2$H
-  newH <- block_diag(list(newH1, newH2))
-  newH <- newH[fit@modelInfo$parameters_labels,
-               fit@modelInfo$parameters_labels]
-
-  #### Get the variance-covariance matrix between the parameters of interest ####
-
-  if(is.null(parameters)) {
-    parameters <- fit@modelInfo$trans[names(fit@parameters)]
-  } else if(!any(unlist(parameters) %in% fit@modelInfo$transparameters_labels)) {
-    stop("Unknown parameters.")
-  }
-  control_optimizer$idx_transforms <- trans_depends(fit, parameters)
-  control_estimator <- fit@modelInfo$control_estimator
-  result <- get_vcov(control_manifold = control_manifold,
-                     control_transform = control_transform,
-                     control_estimator = control_estimator,
-                     control_optimizer = control_optimizer,
-                     H = newH)
-
-  result$B <- B
-  colnames(result$B) <- rownames(result$B) <-
-    fit@modelInfo$parameters_labels[model_pars]
-
-  selected_parameters <- unique(unlist(parameters))
-  idx <- match(selected_parameters, fit@modelInfo$transparameters_labels)
-  result$se <- as.vector(result$se[idx])
-  result$vcov <- result$vcov[idx, idx, drop = FALSE]
-  rownames(result$vcov) <- colnames(result$vcov) <- names(result$se) <-
-    selected_parameters
-
-  colnames(newH) <- rownames(newH) <- fit@modelInfo$parameters_labels
-
-  result$newH <- newH
-
-  #### Result ####
-
-  return(result)
+  return(newH)
 
 }

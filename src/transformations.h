@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2026
+ * Modification date: 11/08/2026
  */
 
 // Transformations
@@ -10,7 +10,7 @@ class transformations {
 
 public:
 
-  std::vector<arma::uvec> indices_in, indices_out;
+  arma::uvec indices_in, indices_out;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;
@@ -22,6 +22,8 @@ public:
   std::vector<std::string> names_doubles, names_vectors, names_matrices,
   names_cubes, names_list_vectors, names_list_matrices;
 
+  arma::mat jacob;
+
   virtual void transform(arguments_optim& x) = 0;
 
   virtual void update_grad(arguments_optim& x) = 0;
@@ -32,7 +34,7 @@ public:
 
   virtual void jacobian(arguments_optim& x) = 0;
 
-  virtual void update_vcov(arguments_optim& x) = 0;
+  virtual void update_vcov(arguments_optim& x) {}
 
   virtual void dconstraints(arguments_optim& x) {}
 
@@ -160,10 +162,20 @@ public:
   void jacobian(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
     x.transparameters(x.transparam2param) = x.parameters;
+    x.jacob.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
 
-      for(int i=0; i < x.ntransforms; ++i) {
+    for(arma::uword i : x.idx_transforms) {
+      // for(int i=0; i < x.ntransforms; ++i) {
 
+        arma::uvec indices_in = xtransformations[i]->indices_in;
+        arma::uvec indices_out = xtransformations[i]->indices_out;
         xtransformations[i]->jacobian(x);
+
+        for(arma::uword k = 0L; k < indices_in.n_elem; ++k) {
+          for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
+            x.jacob(indices_out[j], indices_in[k]) = xtransformations[i]->jacob(j, k);
+          }
+        }
 
       }
 
@@ -176,6 +188,7 @@ public:
 
     // Get the variance-covariance matrix of selected parameters:
     x.vcov.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
+    x.jacob.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
 
     // x.transparam2param may not contain contiguous indices so fill x.vcov
     // element-wise:
@@ -187,9 +200,34 @@ public:
 
     // Update vcov using the delta method:
     for(arma::uword i : x.idx_transforms) {
+
+      arma::uvec indices_in = xtransformations[i]->indices_in;
+      arma::uvec indices_out = xtransformations[i]->indices_out;
+      arma::mat vcov_in(indices_in.n_elem, indices_in.n_elem);
+
       xtransformations[i]->jacobian(x);
+      for(arma::uword k = 0L; k < indices_in.n_elem; ++k) {
+        for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
+          x.jacob(indices_out[j], indices_in[k]) = xtransformations[i]->jacob(j, k);
+        }
+      }
+
+      for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
+        for(arma::uword k = 0L; k < indices_in.n_elem; ++k) {
+          vcov_in(k, j) = x.vcov(indices_in[k], indices_in[j]);
+        }
+      }
+
       // vcov(out, out) = jacobian * vcov(in, in) * jacobian.t():
-      xtransformations[i]->update_vcov(x);
+      arma::mat vcov_out = xtransformations[i]->jacob * vcov_in *
+        xtransformations[i]->jacob.t();
+
+      for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
+        for(arma::uword k = 0L; k < indices_out.n_elem; ++k) {
+          x.vcov(indices_out[k], indices_out[j]) = vcov_out(k, j);
+        }
+      }
+
     }
 
     // Finally, get the standard errors:
@@ -200,7 +238,8 @@ public:
   void dconstraints(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
     // Fill-in the constraints:
-    for(int i=0L; i < x.ntransforms ; ++i) {
+    for(arma::uword i : x.idx_transforms) {
+      // for(int i=0L; i < x.ntransforms ; ++i) {
       xtransformations[i]->dconstraints(x);
     }
 

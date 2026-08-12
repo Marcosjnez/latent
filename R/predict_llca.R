@@ -294,3 +294,14 @@ predict.llcalist <- function(model, new = NULL, ...) {
   return(result)
 
 }
+
+#' @rdname predict.llca
+#' @param model An object of class \code{"llca_sam"} containing two fitted
+#'   \code{"llca"} objects named measurement and structural.
+#' @method predict llca_sam
+#' @export
+predict.llca_sam <- function(model, new = NULL, ...) {
+
+  return(predict(model$structural, new = NULL, ...))
+
+}

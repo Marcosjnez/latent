@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 20/04/2026
+ * Modification date: 11/08/2026
  */
 
 // vars - diag(X * Y * X.t()) transformation:
@@ -15,8 +15,8 @@ class deltaparam: public transformations {
 public:
 
   int p, q;
-  arma::uvec indices_vars, indices_X, indices_Y, indices_xyxt, indices_in, indices_out;
-  arma::mat X, Y, dX, dY, grad_in_X, grad_in_Y, jacob;
+  arma::uvec indices_vars, indices_X, indices_Y, indices_xyxt;
+  arma::mat X, Y, dX, dY, grad_in_X, grad_in_Y;
   arma::vec vars, dvars, xyxt, dxyxt, grad_out, grad_in_vars;
 
   void transform(arguments_optim& x) {
@@ -107,31 +107,6 @@ public:
 
   }
 
-  void update_vcov(arguments_optim& x) {
-
-    indices_in = arma::join_cols(indices_vars, arma::join_cols(indices_X, indices_Y));
-    indices_out = indices_xyxt;
-    // x.vcov(indices_out, indices_out) =
-    //   jacob * x.vcov(indices_in, indices_in) * jacob.t();
-
-    arma::mat vcov_in(indices_in.n_elem, indices_in.n_elem);
-
-    for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_in.n_elem; ++i) {
-        vcov_in(i, j) = x.vcov(indices_in[i], indices_in[j]);
-      }
-    }
-
-    arma::mat vcov_out = jacob * vcov_in * jacob.t();
-
-    for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
-        x.vcov(indices_out[i], indices_out[j]) = vcov_out(i, j);
-      }
-    }
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     matrices.resize(1);
@@ -157,6 +132,9 @@ deltaparam* choose_deltaparam(const Rcpp::List& trans_setup) {
   arma::uvec indices_Y = indices_in[2];
   arma::uvec indices_xyxt = indices_out[0];
 
+  mytrans->indices_in = arma::join_cols(indices_vars, arma::join_cols(indices_X,
+                                                                      indices_Y));;
+  mytrans->indices_out = indices_xyxt;
   mytrans->indices_vars = indices_vars;
   mytrans->indices_X = indices_X;
   mytrans->indices_Y = indices_Y;

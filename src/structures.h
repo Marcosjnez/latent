@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 09/08/2026
+ * Modification date: 11/08/2026
  */
 
 #include <tuple>
@@ -35,8 +35,8 @@ struct arguments_optim{
   arma::vec parameters, dparameters, g, dg, rg, drg, dH;
   arma::vec transparameters, transparameters_init, dtransparameters, grad,
   dgrad, grad_init, dgrad_init;
-  arma::mat jacob, h, B, inv_h, inv_hess;
-  arma::sp_mat vcov, dconstr;
+  arma::mat h, B, inv_h, inv_hess;
+  arma::sp_mat jacob, vcov, dconstr;
   arma::mat hess; // Returned as dgCMatrix class type from Matrix package
   arma::mat posterior;
   arma::mat freqs;

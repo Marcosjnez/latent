@@ -173,7 +173,7 @@ general_se <- function(fit, type = "standard") {
   B <- t(df2_dparamdR) %*% ACOV %*% df2_dparamdR
 
   # Get the hessian matrix of second-step model:
-  SE <- standard_se(fit = fit)
+  SE <- vcov(fit, parameters = parameters)
   H_inv <- solve(SE$H)
   SE$vcov <- H_inv %*% B %*% H_inv
 

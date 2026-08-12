@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/07/2026
+ * Modification date: 11/08/2026
  */
 
 const double LOG2M_PI05 = 0.5*std::log(2 * M_PI);
@@ -13,8 +13,8 @@ class normal: public transformations {
 public:
 
   int S, J, I, n_in, n_out;
-  arma::uvec indices_mu, indices_sigma, indices_loglik, indices_in, indices_out;
-  arma::mat y, mu, sigma2, loglik, sigma4, sigma6, dmu, dsigma2, jacob;
+  arma::uvec indices_mu, indices_sigma, indices_loglik;
+  arma::mat y, mu, sigma2, loglik, sigma4, sigma6, dmu, dsigma2;
 
   void transform(arguments_optim& x) {
 
@@ -166,34 +166,6 @@ public:
 
   }
 
-  void update_vcov(arguments_optim& x) {
-
-    indices_in = arma::join_cols(
-      indices_mu,
-      arma::join_cols(indices_sigma, indices_loglik)
-    );
-
-    // x.vcov(indices_out, indices_out) =
-    //   jacob * x.vcov(indices_in, indices_in) * jacob.t();
-
-    arma::mat vcov_in(indices_in.n_elem, indices_in.n_elem);
-
-    for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_in.n_elem; ++i) {
-        vcov_in(i, j) = x.vcov(indices_in[i], indices_in[j]);
-      }
-    }
-
-    arma::mat vcov_out = jacob * vcov_in * jacob.t();
-
-    for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
-        x.vcov(indices_out[i], indices_out[j]) = vcov_out(i, j);
-      }
-    }
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     matrices.resize(1);
@@ -226,6 +198,8 @@ normal* choose_normal(const Rcpp::List& trans_setup) {
   mytrans->indices_mu = indices_mu;
   mytrans->indices_sigma = indices_sigma;
   mytrans->indices_loglik = indices_loglik;
+  mytrans->indices_in = arma::join_cols(indices_mu,
+                               arma::join_cols(indices_sigma, indices_loglik));
   mytrans->indices_out = indices_out[0];
   mytrans->n_in = n_in;
   mytrans->n_out = n_out;

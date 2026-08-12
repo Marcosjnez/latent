@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 23/06/2026
+ * Modification date: 11/08/2026
  */
 
 // Positive increasing transformation (lower_triangular_matrix_of_1s * exp(x)):
@@ -11,11 +11,10 @@ class pos_incrsng: public transformations {
 public:
 
   int n_in, n_out;
-  arma::uvec indices_in, indices_out;
   arma::vec pos_values, pos_incrsng_values;
   arma::vec dpos_values, dpos_incrsng_values;
   arma::vec grad_out, dgrad_out;
-  arma::mat lower_trng, jacob;
+  arma::mat lower_trng;
 
   void transform(arguments_optim& x) {
 
@@ -57,29 +56,6 @@ public:
   void jacobian(arguments_optim& x) {
 
     jacob = lower_trng * arma::diagmat(pos_values);
-
-  }
-
-  void update_vcov(arguments_optim& x) {
-
-    // x.vcov(indices_out, indices_out) =
-    //   jacob * x.vcov(indices_in, indices_in) * jacob.t();
-
-    arma::mat vcov_in(indices_in.n_elem, indices_in.n_elem);
-
-    for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_in.n_elem; ++i) {
-        vcov_in(i, j) = x.vcov(indices_in[i], indices_in[j]);
-      }
-    }
-
-    arma::mat vcov_out = jacob * vcov_in * jacob.t();
-
-    for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
-        x.vcov(indices_out[i], indices_out[j]) = vcov_out(i, j);
-      }
-    }
 
   }
 

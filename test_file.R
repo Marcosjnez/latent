@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/08/2026
+# Modification date: 12/08/2026
 
 #### Store a dataset ####
 
@@ -31,28 +31,28 @@ fit <- lca(data = gss82,
            # model = list("UNDERSTA ~~ COOPERAT
            #               PURPOSE ~~ COOPERAT"),
            penalties = list(class = list(alpha=1),
-                            prob  = list(alpha=0)),
+                            prob  = list(alpha=1)),
            # control = list(opt = "em", rstarts = 30, cores = 30,
            #                maxit = 50L, eps = 1e-05, step_maxit = 30L,
            #                mopt = "grad", mstep_maxit = 20L, mstep_eps = 1e-05),
            do.fit = TRUE)
 latInspect(fit, what = "loglik")
 latInspect(fit, what = "convergence")
-fit@Optim$elapsed
+latInspect(fit, what = "elapsed")
 # loglik: -3891.252 # penalized_loglik: -3892.478
 # loglik: -3879.167 # penalized_loglik: -3880.371 ("UNDERSTA ~~ COOPERAT
 #                                                   PURPOSE ~~ COOPERAT")
 
-# dconstraints <- get_dconstr(fit@modelInfo$control_manifold,
-#                             fit@modelInfo$control_transform,
-#                             fit@modelInfo$control_estimator,
-#                             fit@modelInfo$control_optimizer)
-# rownames(dconstraints$dconstr) <- fit@modelInfo$transparameters_labels
-# labs <- c(fit@modelInfo$trans$PURPOSE)
-# dconstraints$dconstr[labs, ]
-# sum(sapply(fit@modelInfo$control_transform,
-#            FUN = \(x) identical(x$transform, "softmax")))
-# dim(dconstraints$dconstr)
+dconstraints <- constraints_derivs(fit)
+labs <- c(fit@modelInfo$trans$PURPOSE)
+dconstraints[labs, ]
+colnames(dconstraints)
+dim(dconstraints)
+
+jacob <- jacobian(fit)
+labs1 <- c(fit@modelInfo$trans$PURPOSE[1, ])
+labs2 <- c(fit@modelInfo$trans$PURPOSE[4, ])
+jacob[labs1, labs2]
 
 # Print model fit info:
 fit

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/03/2026
+ * Modification date: 11/08/2026
  */
 
 // Identity (no transformation):
@@ -9,9 +9,6 @@
 class identity:public transformations {
 
 public:
-
-  arma::uvec indices_in, indices_out;
-  arma::mat jacob;
 
   void transform(arguments_optim& x) {
 
@@ -43,10 +40,6 @@ public:
     int p = v.n_elem;
     arma::mat I(p, p, arma::fill::eye);
     jacob = I;
-
-  }
-
-  void update_vcov(arguments_optim& x) {
 
   }
 

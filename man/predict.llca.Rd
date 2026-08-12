@@ -3,6 +3,7 @@
 \name{predict.llca}
 \alias{predict.llca}
 \alias{predict.llcalist}
+\alias{predict.llca_sam}
 \title{Predict latent class membership probabilities}
 \usage{
 \method{predict}{llca}(model, new = NULL, ...)
@@ -10,9 +11,12 @@
 \method{predict}{llcalist}(model, new = NULL, ...)
 
 \method{predict}{llcalist}(model, new = NULL, ...)
+
+\method{predict}{llca_sam}(model, new = NULL, ...)
 }
 \arguments{
-\item{model}{A fitted object of class `"llca"` or `"llcalist"`.}
+\item{model}{An object of class \code{"llca_sam"} containing two fitted
+\code{"llca"} objects named measurement and structural.}
 
 \item{new}{Optional `data.frame` or matrix containing new values for all
 covariates used in the fitted model. Column names must match the original

@@ -265,6 +265,8 @@ getfit.llca <- function(model, digits = 4L) {
 }
 
 #' @rdname getfit.llca
+#' @param model An object of class \code{"llcalist"} containing fitted
+#'   \code{"llca"} or \code{"llca_sam"} objects.
 #' @method getfit llcalist
 #' @export
 getfit.llcalist <- function(model, digits = 4L) {
@@ -287,15 +289,49 @@ getfit.llcalist <- function(model, digits = 4L) {
 
   #### Extract fit indices ####
 
-  out <- t(vapply(model, FUN = getfit.llca,
-                  FUN.VALUE = getfit.llca(model[[1]], digits = digits),
-                  digits = digits))
+  result <- lapply(model, FUN = getfit, digits = digits)
 
-  class(out) <- "getfit.llcalist"
-  attr(out, "penalized") <- model[[1]]@modelInfo$control_optimizer$reg
+  class(result) <- "getfit.llcalist"
 
   #### Result ####
 
-  return(out)
+  return(result)
 
 }
+
+#' @rdname getfit.llca
+#' @param model An object of class \code{"llca_sam"} containing two fitted
+#'   \code{"llca"} objects named measurement and structural.
+#' @method getfit llca_sam
+#' @export
+getfit.llca_sam <- function(model, digits = 4L) {
+
+  #### Check inputs ####
+
+  if(!inherits(model, "llca_sam")) {
+    stop("model must inherit from class 'llca_sam'.")
+  }
+
+  if(length(model) == 0L) {
+    stop("model must contain at least one llca object.")
+  }
+
+  if(!is.null(digits) &&
+     (!is.numeric(digits) || length(digits) != 1L || is.na(digits) ||
+      digits < 0L || digits != as.integer(digits))) {
+    stop("digits must be NULL or a non-negative integer.")
+  }
+
+  #### Extract fit indices ####
+
+  result <- lapply(model, FUN = getfit, digits = digits)
+
+  class(result) <- "getfit.llca_sam"
+  attr(result, "penalized") <- model[[1]]@modelInfo$control_optimizer$reg
+
+  #### Result ####
+
+  return(result)
+
+}
+

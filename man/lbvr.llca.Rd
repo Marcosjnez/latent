@@ -2,9 +2,12 @@
 % Please edit documentation in R/lbvr_llca.R
 \name{lbvr.llca}
 \alias{lbvr.llca}
+\alias{lbvr.llca_sam}
 \title{Local bivariate residuals for latent class analysis}
 \usage{
 \method{lbvr}{llca}(x, digits = 4L, ...)
+
+\method{lbvr}{llca_sam}(object, ...)
 }
 \arguments{
 \item{x}{A fitted object of class \code{"llca"}.}
@@ -14,6 +17,9 @@ used to round the returned matrices and summary table. The default is
 \code{4L}.}
 
 \item{...}{Additional arguments reserved for other methods.}
+
+\item{model}{An object of class \code{"llca_sam"} containing two lbvr
+\code{"llca"} objects named measurement and structural.}
 }
 \value{
 An object of class \code{"lbvr"}, consisting of a list with the

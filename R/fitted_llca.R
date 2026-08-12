@@ -158,3 +158,14 @@ fitted.llcalist <- function(object, ...) {
   return(result)
 
 }
+
+#' @rdname fitted.llca
+#' @param model An object of class \code{"llca_sam"} containing two fitted
+#'   \code{"llca"} objects named measurement and structural.
+#' @method fitted llca_sam
+#' @export
+fitted.llca_sam <- function(object, ...) {
+
+  return(fitted(object$structural, ...))
+
+}

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/03/2026
+ * Modification date: 11/08/2026
  */
 
 // Logarithm beta density transformation:
@@ -13,9 +13,7 @@ public:
   arma::uvec mu_indices;
   arma::uvec sigma_indices;
   arma::mat y, mu, sigma, sigma2, sigma3, sigma4;
-  int S, J, I;
-  int n_out;
-  int n_in;
+  int S, J, I, n_out, n_in;
 
   void transform(arguments_optim& x) {
 
@@ -78,10 +76,6 @@ public:
   }
 
   void jacobian(arguments_optim& x) {
-
-  }
-
-  void update_vcov(arguments_optim& x) {
 
   }
 

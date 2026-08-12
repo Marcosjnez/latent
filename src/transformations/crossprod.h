@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/03/2026
+ * Modification date: 11/08/2026
  */
 
 // Crossproduct transformation:
@@ -11,8 +11,8 @@ class crossprod:public transformations {
 public:
 
   int p;
-  arma::uvec indices_in, indices_out, unique_indices_out, lower_diag;
-  arma::mat X, grad_out, dX, dXtX, jacob;
+  arma::uvec unique_indices_out, lower_diag;
+  arma::mat X, grad_out, dX, dXtX;
 
   void transform(arguments_optim& x) {
 
@@ -62,29 +62,6 @@ public:
     // arma::mat Dp = duplication(p, true, true); // If lower diagonal entries only
     arma::mat Dp = duplication(p, true, false);
     jacob = 2*Dp.t() * arma::kron(I, X.t());
-
-  }
-
-  void update_vcov(arguments_optim& x) {
-
-    // x.vcov(indices_out, indices_out).zeros();
-    // x.vcov(indices_out, indices_out) += jacob * x.vcov(indices_in, indices_in) * jacob.t();
-
-    arma::mat vcov_in(indices_in.n_elem, indices_in.n_elem);
-
-    for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_in.n_elem; ++i) {
-        vcov_in(i, j) = x.vcov(indices_in[i], indices_in[j]);
-      }
-    }
-
-    arma::mat vcov_out = jacob * vcov_in * jacob.t();
-
-    for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
-      for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
-        x.vcov(indices_out[i], indices_out[j]) = vcov_out(i, j);
-      }
-    }
 
   }
 

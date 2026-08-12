@@ -493,7 +493,7 @@ latInspect.llca <- function(fit,
 
 #' @rdname latInspect.llca
 #' @param model An object of class \code{"llcalist"} containing fitted
-#'   \code{"llca"} objects.
+#'   \code{"llca"} or \code{"llca_sam"} objects.
 #' @method latInspect llcalist
 #' @export
 latInspect.llcalist <- function(model,
@@ -511,3 +511,25 @@ latInspect.llcalist <- function(model,
   return(result)
 
 }
+
+#' @rdname latInspect.llca
+#' @param model An object of class \code{"llca_sam"} containing two fitted
+#'   \code{"llca"} objects named measurement and structural.
+#' @method latInspect llca_sam
+#' @export
+latInspect.llca_sam <- function(model,
+                                what = "profile",
+                                digits = 4L) {
+
+  if(!inherits(model, "llca_sam")) {
+    stop("model must inherit from class 'llca_sam'.")
+  }
+
+  result <- lapply(model, FUN = latInspect, what = what, digits = digits)
+
+  class(result) <- "latInspect.llca_sam"
+
+  return(result)
+
+}
+
