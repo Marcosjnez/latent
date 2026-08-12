@@ -77,8 +77,7 @@ contribution of each observed response pattern.
 
 When the fitted model contains a previous `"llca"` object in
 `fit@modelInfo$control_optimizer$model`, the standard errors are
-adjusted for two-step estimation through
-[`se_twostep()`](https://marcosjnez.github.io/latent/reference/se_twostep.md).
+adjusted for two-step estimation through `se_twostep()`.
 
 The `digits` argument affects only the formatted `table`. The numeric
 standard errors and covariance matrices are returned without rounding.

@@ -10,6 +10,9 @@ Gaussian-multinomial pairs.
 ``` r
 # S3 method for class 'llca'
 lbvr(x, digits = 4L, ...)
+
+# S3 method for class 'llca_sam'
+lbvr(object, ...)
 ```
 
 ## Arguments
@@ -26,6 +29,11 @@ lbvr(x, digits = 4L, ...)
 - ...:
 
   Additional arguments reserved for other methods.
+
+- model:
+
+  An object of class `"llca_sam"` containing two lbvr `"llca"` objects
+  named measurement and structural.
 
 ## Value
 

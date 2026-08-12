@@ -13,6 +13,9 @@ latInspect(fit, what = "profile", digits = 4L)
 
 # S3 method for class 'llcalist'
 latInspect(model, what = "profile", digits = 4L)
+
+# S3 method for class 'llca_sam'
+latInspect(model, what = "profile", digits = 4L)
 ```
 
 ## Arguments
@@ -130,7 +133,8 @@ latInspect(model, what = "profile", digits = 4L)
 
 - model:
 
-  An object of class `"llcalist"` containing fitted `"llca"` objects.
+  An object of class `"llca_sam"` containing two fitted `"llca"` objects
+  named measurement and structural.
 
 ## Value
 

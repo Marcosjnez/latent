@@ -13,6 +13,7 @@
 - [`empathy`](https://marcosjnez.github.io/latent/reference/empathy.md)
   : Example dataset: empathy
 - [`fitted(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
+  [`fitted(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
   : Fitted Latent Class Membership Probabilities
 - [`fitted(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llcalist.md)
   : Fitted Probabilities for Lists of Latent Class Models
@@ -22,6 +23,7 @@
   : Fit indices
 - [`getfit(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
   [`getfit(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
+  [`getfit(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
   : Fit indices for latent class models
 - [`gss82`](https://marcosjnez.github.io/latent/reference/gss82.md) :
   Example dataset: gss82
@@ -31,11 +33,13 @@
   : Standard Errors
 - [`latInspect(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
   [`latInspect(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
+  [`latInspect(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
   : Inspect fitted latent class models
 - [`latent-package`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   : An R package for Latent Variable Modeling
 - [`lbvr(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llca.md)
+  [`lbvr(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llca.md)
   : Local bivariate residuals for latent class analysis
 - [`lbvr(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llcalist.md)
   : Local bivariate residuals for a collection of latent class models
@@ -68,6 +72,7 @@
   : Plot multinomial response probabilities
 - [`predict(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   [`predict(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
+  [`predict(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   : Predict latent class membership probabilities
 - [`print(`*`<lbvr>`*`)`](https://marcosjnez.github.io/latent/reference/print.lbvr.md)
   : Print local bivariate residual diagnostics

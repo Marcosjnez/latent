@@ -20,13 +20,17 @@ predict(model, new = NULL, ...)
 
 # S3 method for class 'llcalist'
 predict(model, new = NULL, ...)
+
+# S3 method for class 'llca_sam'
+predict(model, new = NULL, ...)
 ```
 
 ## Arguments
 
 - model:
 
-  A fitted object of class \`"llca"\` or \`"llcalist"\`.
+  An object of class `"llca_sam"` containing two fitted `"llca"` objects
+  named measurement and structural.
 
 - new:
 
