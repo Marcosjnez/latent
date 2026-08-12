@@ -1,3 +1,97 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 12/08/2026
+#'
+#' Variance-Covariance Matrix for Latent Models
+#'
+#' Compute covariance matrices and standard errors for fitted latent variable
+#' models, including uncertainty propagated across sequential estimation steps.
+#'
+#' @description
+#' \code{vcov.latent()} computes the variance-covariance matrix of freely
+#' estimated or transformed parameters of a fitted object inheriting from
+#' class \code{"latent"}.
+#'
+#' For ordinary one-step models, covariance matrices are obtained from the
+#' inverse Hessian and transformed to the requested parameterization using the
+#' delta method.
+#'
+#' When the fitted model contains a previous \code{"latent"} object among the
+#' model specifications stored in
+#' \code{fit@modelInfo$control_optimizer$model}, uncertainty from the previous
+#' estimation step is propagated to the current parameter estimates. Nested
+#' fitted models are handled recursively.
+#'
+#' @param fit A fitted object inheriting from class \code{"latent"}.
+#' @param parameters Optional parameter specification identifying the parameters
+#'   for which the covariance matrix should be returned. Labels must occur in
+#'   \code{fit@modelInfo$transparameters_labels}. If \code{NULL}, the parameter
+#'   blocks corresponding to the fitted model parameters are used.
+#' @param H Optional Hessian or equivalent information matrix for the freely
+#'   estimated parameters. If \code{NULL}, the Hessian is computed from
+#'   \code{fit}. Supplying \code{H} allows alternative covariance estimators,
+#'   such as sandwich estimators, to use the same transformation and sequential
+#'   uncertainty machinery.
+#'
+#' @details
+#' For a one-step model, let \eqn{H} denote the Hessian of the objective
+#' function. The covariance matrix of the freely estimated parameters is based
+#' on \eqn{H^{-1}}. Covariances of transformed parameters are subsequently
+#' obtained with the delta method.
+#'
+#' For a sequential model, suppose that measurement or nuisance parameters
+#' \eqn{\theta_M} are estimated in an earlier step and subsequently treated as
+#' fixed while structural parameters \eqn{\theta_S} are estimated. Let
+#' \eqn{A} denote the covariance matrix of the earlier parameter estimates,
+#' \eqn{H_2} the Hessian for the structural parameters, and \eqn{C} the
+#' measurement-structural cross-derivative matrix.
+#'
+#' The propagated structural uncertainty contains the additional term
+#' \deqn{H_2^{-1} C^\top A C H_2^{-1}.}
+#'
+#' The method constructs the corresponding joint precision matrix
+#' \deqn{
+#' \begin{pmatrix}
+#' A^{-1} + C H_2^{-1} C^\top & C \\
+#' C^\top & H_2
+#' \end{pmatrix}
+#' }
+#' so that covariance between parameters estimated in different stages is
+#' retained.
+#'
+#' If the earlier fitted model itself contains a previous \code{"latent"}
+#' object, \code{vcov()} is called recursively before uncertainty is propagated
+#' to the current stage. Consequently, chains of sequential plug-in estimation
+#' steps can be handled recursively.
+#'
+#' At most one nested \code{"latent"} object is currently supported at each
+#' estimation level.
+#'
+#' @return
+#' A list containing:
+#' \describe{
+#'   \item{\code{vcov}}{Variance-covariance matrix for the selected parameters.}
+#'   \item{\code{se}}{Standard errors for the selected parameters.}
+#'   \item{\code{jacob}}{Jacobian matrix used to propagate covariance through
+#'     parameter transformations.}
+#'   \item{\code{H}}{Hessian or information matrix used in the covariance
+#'     calculation.}
+#'   \item{\code{B}}{For sequential models, the additional structural
+#'     uncertainty component \eqn{C^\top A C}. For ordinary one-step models,
+#'     an empty matrix.}
+#'   \item{\code{newH}}{For sequential models, the joint corrected precision
+#'     matrix used to obtain the final covariance matrix.}
+#' }
+#'
+#' @seealso
+#' \code{\link{hessian.latent}}, \code{\link{jacobian.latent}},
+#' \code{\link{constraints_derivs.latent}}, \code{\link{se.llca}}
+#'
+#' @references
+#' Bakk, Z., and Kuha, J. Two-step estimation of models between latent classes
+#' and external variables.
+#'
+#' @method vcov latent
 #' @export
 vcov.latent <- function(fit, parameters = NULL, H = NULL) {
 
@@ -99,12 +193,18 @@ vcov.latent <- function(fit, parameters = NULL, H = NULL) {
   #
   # If fit0 itself contains another latent object, vcov.latent()
   # automatically applies the same correction to fit0 first.
-  VCOV0 <- vcov(fit0, parameters = fit0@modelInfo$parameters_labels, H = NULL)
+  VCOV0 <- vcov(fit0, parameters = fit0@modelInfo$parameters_labels, H = H)
 
   #### Structural-model covariance ####
 
   # Hessian of the structural model:
-  H2 <- hessian(fit)
+  # H2 <- hessian(fit)
+  # I would use:
+  if(is.null(H)) {
+    H2 <- hessian(fit)
+  } else {
+    H2 <- H
+  }
 
   #### Full unrestricted model ####
 

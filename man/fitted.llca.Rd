@@ -2,20 +2,14 @@
 % Please edit documentation in R/fitted_llca.R
 \name{fitted.llca}
 \alias{fitted.llca}
-\alias{fitted.llca_sam}
 \title{Fitted Latent Class Membership Probabilities}
 \usage{
 \method{fitted}{llca}(object, ...)
-
-\method{fitted}{llca_sam}(object, ...)
 }
 \arguments{
 \item{object}{A fitted object of class \code{"llca"}.}
 
 \item{...}{Additional arguments. They are currently ignored.}
-
-\item{model}{An object of class \code{"llca_sam"} containing two fitted
-\code{"llca"} objects named measurement and structural.}
 }
 \value{
 A numeric matrix with one row per retained subject and one column per latent

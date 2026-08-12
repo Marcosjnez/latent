@@ -230,6 +230,21 @@ predict.llca <- function(model, new = NULL, ...) {
 }
 
 #' @rdname predict.llca
+#' @param model For the \code{"llca_sam"} method, an object containing fitted
+#'   \code{measurement} and \code{structural} components.
+#' @details
+#' For an \code{"llca_sam"} object, predictions are obtained from the structural
+#' model because it contains the final class-membership regression coefficients.
+#' The \code{new} data argument is passed unchanged to that model.
+#' @method predict llca_sam
+#' @export
+predict.llca_sam <- function(model, new = NULL, ...) {
+
+  return(predict(model$structural, new = new, ...))
+
+}
+
+#' @rdname predict.llca
 #' @method predict llcalist
 #' @export
 predict.llcalist <- function(model, new = NULL, ...) {
@@ -292,16 +307,5 @@ predict.llcalist <- function(model, new = NULL, ...) {
   #### Result ####
 
   return(result)
-
-}
-
-#' @rdname predict.llca
-#' @param model An object of class \code{"llca_sam"} containing two fitted
-#'   \code{"llca"} objects named measurement and structural.
-#' @method predict llca_sam
-#' @export
-predict.llca_sam <- function(model, new = NULL, ...) {
-
-  return(predict(model$structural, new = NULL, ...))
 
 }

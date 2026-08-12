@@ -2,15 +2,15 @@
 % Please edit documentation in R/latInspect_llca.R
 \name{latInspect.llca}
 \alias{latInspect.llca}
-\alias{latInspect.llcalist}
 \alias{latInspect.llca_sam}
+\alias{latInspect.llcalist}
 \title{Inspect fitted latent class models}
 \usage{
 \method{latInspect}{llca}(fit, what = "profile", digits = 4L)
 
-\method{latInspect}{llcalist}(model, what = "profile", digits = 4L)
-
 \method{latInspect}{llca_sam}(model, what = "profile", digits = 4L)
+
+\method{latInspect}{llcalist}(model, what = "profile", digits = 4L)
 }
 \arguments{
 \item{fit}{An object of class \code{"llca"} returned by \code{\link{lca}}.}
@@ -62,8 +62,8 @@ Matching is case-insensitive.}
 inspection methods. Numeric results are returned without rounding so they
 can safely be used in subsequent computations.}
 
-\item{model}{An object of class \code{"llca_sam"} containing two fitted
-\code{"llca"} objects named measurement and structural.}
+\item{model}{For the \code{"llcalist"} method, a collection containing
+\code{"llca"} and/or \code{"llca_sam"} model fits.}
 }
 \value{
 The object requested through \code{what}. See the description of
@@ -88,6 +88,10 @@ Gaussian item matrices are read by row name, using \code{"mean"} and
 \code{"stdv"}. Multinomial item matrices are assumed to contain probabilities
 in their first rows and log-probability parameters in their following rows;
 only the probability rows are returned in response profiles.
+
+For an \code{"llca_sam"} object, the requested quantity is extracted
+separately from the measurement and structural models and returned as a
+two-element list.
 }
 \references{
 None yet.

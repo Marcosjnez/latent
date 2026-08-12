@@ -532,8 +532,11 @@ lbvr.llcalist <- function(x, digits = 4L, ...) {
 }
 
 #' @rdname lbvr.llca
-#' @param model An object of class \code{"llca_sam"} containing two lbvr
-#'   \code{"llca"} objects named measurement and structural.
+#' @param object For the \code{"llca_sam"} method, an object containing fitted
+#'   \code{measurement} and \code{structural} components.
+#' @details
+#' For an \code{"llca_sam"} object, local bivariate residual diagnostics are
+#' computed for the structural model.
 #' @method lbvr llca_sam
 #' @export
 lbvr.llca_sam <- function(object, ...) {

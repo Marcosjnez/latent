@@ -2,23 +2,38 @@
 % Please edit documentation in R/se_llca.R
 \name{se.llca_sam}
 \alias{se.llca_sam}
-\title{Two-step standard-error adjustment}
+\title{Standard Errors for Structural-After-Measurement Models}
 \usage{
 \method{se}{llca_sam}(fit, type = "standard", parameters = NULL, digits = 4L, ...)
 }
 \arguments{
-\item{type}{Character string indicating whether standard or robust covariance
-matrices are used in the two steps.}
+\item{fit}{An object of class \code{"llca_sam"} containing fitted
+\code{measurement} and \code{structural} components.}
 
-\item{fit2}{A fitted structural \code{"llca"} object whose optimizer control
-stores the fitted measurement model.}
+\item{type}{Character string specifying the covariance estimator. See
+\code{\link{se.llca}}.}
+
+\item{parameters}{Optional parameter specification passed to
+\code{\link{se.llca}}.}
+
+\item{digits}{Non-negative integer specifying the number of decimal places
+used in formatted parameter tables. Use \code{NULL} to avoid rounding.}
+
+\item{...}{Additional arguments passed to \code{\link{se.llca}}.}
 }
 \value{
-A list containing the combined covariance matrix, standard errors, and
-  the correction matrix \code{B}.
+The result of \code{se(fit$structural, ...)}.
 }
 \description{
-Adjusts the covariance matrix of a structural model for uncertainty in the
-measurement-model parameters estimated in a previous step.
+Compute standard errors for the structural component of a multi-step latent
+class model.
 }
-\keyword{internal}
+\details{
+The method delegates inference to the structural \code{"llca"} model.
+When that structural model stores the fitted measurement model among its
+model specifications, \code{\link{vcov.latent}} automatically propagates
+measurement-model uncertainty to the structural estimates.
+}
+\seealso{
+\code{\link{se.llca}}, \code{\link{vcov.latent}}, \code{\link{lca}}
+}

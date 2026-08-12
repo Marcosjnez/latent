@@ -1,3 +1,42 @@
+# Author: Marcos Jimenez
+# email: m.j.jimenezhenriquez@vu.nl
+# Modification date: 12/08/2026
+#'
+#' Jacobian Matrix for Latent Models
+#'
+#' Compute the Jacobian matrix associated with parameter transformations in a
+#' fitted latent variable model.
+#'
+#' @description
+#' \code{jacobian.latent()} evaluates the derivatives of transformed parameters
+#' at the fitted parameter estimates. The Jacobian is used by \pkg{latent} to
+#' propagate covariance matrices through parameter transformations using the
+#' delta method.
+#'
+#' @param fit A fitted object inheriting from class \code{"latent"}.
+#' @param parameters Optional parameter specification identifying the transformed
+#'   parameters for which derivatives should be returned. Parameter labels must
+#'   occur in \code{fit@modelInfo$transparameters_labels}. If \code{NULL}, the
+#'   parameter blocks corresponding to the fitted model parameters are used.
+#'
+#' @return
+#' A numeric matrix containing the Jacobian for the selected parameters. Row and
+#' column names correspond to transformed-parameter labels.
+#'
+#' @details
+#' Only transformations required to obtain the selected parameters are
+#' evaluated. Dependencies between transformations are identified recursively,
+#' so parameters obtained through several successive transformations are
+#' supported.
+#'
+#' The same Jacobian machinery is used by \code{\link{vcov.latent}} to apply
+#' the delta method to transformed parameters.
+#'
+#' @seealso
+#' \code{\link{jacobian}}, \code{\link{hessian.latent}},
+#' \code{\link{vcov.latent}}, \code{\link{constraints_derivs.latent}}
+#'
+#' @method jacobian latent
 #' @export
 jacobian.latent <- function(fit, parameters = NULL) {
 
@@ -19,7 +58,7 @@ jacobian.latent <- function(fit, parameters = NULL) {
 
   selected_parameters <- unique(unlist(parameters))
   selected_idx <- match(selected_parameters, fit@modelInfo$transparameters_labels)
-  jacob <- jacob[selected_idx, selected_idx]
+  jacob <- jacob[selected_idx, selected_idx, drop = FALSE]
 
   return(jacob)
 

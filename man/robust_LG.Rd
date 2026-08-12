@@ -2,7 +2,7 @@
 % Please edit documentation in R/se_llca.R
 \name{robust_LG}
 \alias{robust_LG}
-\title{LatentGold-style robust standard errors}
+\title{LatentGold-Style Robust Information Matrix}
 \usage{
 robust_LG(fit)
 }
@@ -10,12 +10,19 @@ robust_LG(fit)
 \item{fit}{A fitted object of class \code{"llca"}.}
 }
 \value{
-A list containing the standard errors, covariance matrix, empirical
-  score covariance matrix \code{B}, Hessian \code{H}, and adjusted Hessian
-  \code{newH}.
+A symmetric numeric matrix representing the robust information matrix.
 }
 \description{
-Computes a sandwich covariance estimator from the Hessian and the score
-contribution of each observed response pattern.
+Construct an information matrix corresponding to a LatentGold-style
+sandwich covariance estimator for a fitted latent class model.
+}
+\details{
+Let \eqn{H} denote the Hessian and \eqn{B} the empirical covariance matrix
+of score contributions. The robust covariance matrix is
+\deqn{H^{-1} B H^{-1}.}
+
+Because \code{\link{vcov.latent}} expects an information matrix that is
+subsequently inverted, this function returns the equivalent matrix
+\deqn{H B^{-1} H.}
 }
 \keyword{internal}

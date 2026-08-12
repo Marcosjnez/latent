@@ -2,24 +2,49 @@
 % Please edit documentation in R/summary_llca.R
 \name{summary.llca}
 \alias{summary.llca}
-\title{Fit indices}
+\alias{summary.llca_sam}
+\alias{summary.llcalist}
+\title{Summary of a Latent Class Model}
 \usage{
-getfit(model)
+\method{summary}{llca}(fit)
+
+\method{summary}{llca_sam}(model)
+
+\method{summary}{llcalist}(model)
 }
 \arguments{
-\item{model}{data.frame or matrix of response.}
+\item{fit}{A fitted object of class \code{"llca"}.}
+
+\item{model}{For the \code{"llcalist"} method, a collection of fitted
+\code{"llca"} and/or \code{"llca_sam"} models.}
 }
 \value{
-List with the following fit indices:
-\item{AIC}{.}
-\item{BIC}{.}
+The latent class profile returned by
+\code{latInspect(fit, what = "profile")}, invisibly.
 }
 \description{
-Compute fit indices from any model.
+\code{summary.llca()} displays optimization information, the estimation
+method, the number of parameters and observations, available model-fit
+statistics, and the estimated latent class profile.
 }
 \details{
-\code{getfit} computes all the fit indices related to a specific model.
+Print a summary of a fitted latent class model.
+
+
+The printed output reports whether optimization converged, the optimization
+method, the number of freely estimated parameters, and information about the
+observed response patterns.
+
+For fully multinomial models, the likelihood-ratio statistic, degrees of
+freedom, and corresponding p-value are also displayed.
+
+For an \code{"llca_sam"} object, the summary of the final structural model is
+displayed.
+
+For an \code{"llcalist"}, \code{summary()} is applied to each model in the
+collection.
 }
-\references{
-None yet.
+\seealso{
+\code{\link{getfit.llca}}, \code{\link{latInspect.llca}},
+\code{\link{se.llca}}
 }

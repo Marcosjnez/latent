@@ -2,47 +2,63 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 12/08/2026
 #'
-#' Standard errors for latent class models
+#' Standard Errors for Latent Class Models
 #'
-#' Computes standard errors and variance-covariance matrices for fitted latent
-#' class models.
+#' Compute standard errors, covariance matrices, Hessians, and transformation
+#' Jacobians for fitted latent class models.
+#'
+#' @description
+#' \code{se.llca()} computes standard or robust standard errors for selected
+#' parameters of a fitted latent class model.
+#'
+#' Covariance matrices are obtained through \code{\link{vcov.latent}}, which
+#' also propagates uncertainty from earlier estimation stages when the fitted
+#' model contains a nested \code{"latent"} object.
 #'
 #' @param fit A fitted object of class \code{"llca"}.
-#' @param type Character string indicating the standard-error estimator. Available
+#' @param type Character string specifying the covariance estimator. Available
 #'   options are \code{"standard"} for Hessian-based standard errors and
-#'   \code{"robust"} for the LatentGold-style sandwich estimator.
-#' @param digits Non-negative integer indicating the number of decimal places used
-#'   in the formatted table. If \code{NULL}, the table is returned without
-#'   rounding.
+#'   \code{"robust"} for a LatentGold-style sandwich estimator.
+#' @param parameters Optional parameter specification identifying the parameters
+#'   for which standard errors should be returned. Labels must occur in
+#'   \code{fit@modelInfo$transparameters_labels}. If \code{NULL}, the parameter
+#'   blocks corresponding to the fitted model parameters are used.
+#' @param digits Non-negative integer specifying the number of decimal places
+#'   used in the formatted parameter tables. If \code{NULL}, values are not
+#'   rounded.
 #' @param ... Additional arguments passed to other methods.
 #'
 #' @details
-#' For a regular one-step model, \code{type = "standard"} obtains the covariance
-#' matrix from the inverse Hessian. With \code{type = "robust"}, the covariance
-#' matrix is computed from a sandwich estimator using the score contribution of
-#' each observed response pattern.
+#' With \code{type = "standard"}, covariance matrices are based on the inverse
+#' Hessian of the fitted objective function.
 #'
-#' When the fitted model contains a previous \code{"llca"} object in
-#' \code{fit@modelInfo$control_optimizer$model}, the standard errors are adjusted
-#' for two-step estimation through \code{se_twostep()}.
+#' With \code{type = "robust"}, the empirical covariance of case or
+#' response-pattern score contributions is combined with the Hessian to produce
+#' a sandwich covariance estimator.
 #'
-#' The \code{digits} argument affects only the formatted \code{table}. The numeric
-#' standard errors and covariance matrices are returned without rounding.
+#' When a previous fitted \code{"latent"} object is stored in the model
+#' specification of \code{fit}, \code{\link{vcov.latent}} propagates uncertainty
+#' from that earlier estimation step. Nested sequential models are processed
+#' recursively.
 #'
-#' @return A list with the following components:
+#' Standard errors for transformed parameters are obtained using the delta
+#' method and the Jacobians of the corresponding parameter transformations.
+#'
+#' @return
+#' A list containing:
 #' \describe{
-#'   \item{\code{table}}{A list of formatted parameter tables containing estimates
-#'   and standard errors.}
-#'   \item{\code{table_se}}{A list containing the standard errors arranged in the
-#'   same parameter structure as the fitted model.}
-#'   \item{\code{se}}{A named numeric vector of standard errors.}
-#'   \item{\code{vcov}}{The variance-covariance matrix of the model parameters.}
-#'   \item{\code{B}}{The empirical score covariance matrix. It is an empty matrix
-#'   for ordinary Hessian-based standard errors and may be \code{NULL} when it is
-#'   not applicable.}
-#'   \item{\code{H}}{The Hessian matrix, when available.}
-#'   \item{\code{newH}}{The adjusted Hessian used by the robust estimator, when
-#'   available.}
+#'   \item{\code{table}}{Parameter estimates and standard errors arranged
+#'     according to the model parameter blocks.}
+#'   \item{\code{table_se}}{Standard errors in the same parameter structure as
+#'     the fitted model.}
+#'   \item{\code{se}}{Named numeric vector of standard errors.}
+#'   \item{\code{vcov}}{Variance-covariance matrix of the selected parameters.}
+#'   \item{\code{B}}{Additional uncertainty component for sequential models, or
+#'     an empty matrix for ordinary one-step models.}
+#'   \item{\code{H}}{Hessian or information matrix used in the calculation.}
+#'   \item{\code{newH}}{Corrected joint precision matrix when applicable.}
+#'   \item{\code{jacob}}{Jacobian matrix used for covariance propagation to
+#'     transformed parameters.}
 #' }
 #'
 #' @examples
@@ -51,10 +67,15 @@
 #'            gaussian = c("ec1", "ec2", "ec3"))
 #'
 #' se(fit)
-#' se(fit, type = "robust", digits = 4L)
+#' se(fit, type = "robust")
+#'
+#' # Standard errors for selected transformed parameters
+#' se(fit, parameters = fit@modelInfo$trans[c("class", "beta")])
 #' }
 #'
-#' @seealso \code{ci()}, \code{vcov()}
+#' @seealso
+#' \code{\link{vcov.latent}}, \code{\link{hessian.latent}},
+#' \code{\link{jacobian.latent}}, \code{\link{ci}}
 #'
 #' @method se llca
 #' @export
@@ -108,21 +129,34 @@ se.llca <- function(fit, type = "standard", parameters = NULL, digits = 4L,
 
 }
 
-#' Two-step standard-error adjustment
+#' Standard Errors for Structural-After-Measurement Models
 #'
-#' Adjusts the covariance matrix of a structural model for uncertainty in the
-#' measurement-model parameters estimated in a previous step.
+#' Compute standard errors for the structural component of a multi-step latent
+#' class model.
 #'
-#' @param fit2 A fitted structural \code{"llca"} object whose optimizer control
-#'   stores the fitted measurement model.
-#' @param type Character string indicating whether standard or robust covariance
-#'   matrices are used in the two steps.
+#' @param fit An object of class \code{"llca_sam"} containing fitted
+#'   \code{measurement} and \code{structural} components.
+#' @param type Character string specifying the covariance estimator. See
+#'   \code{\link{se.llca}}.
+#' @param parameters Optional parameter specification passed to
+#'   \code{\link{se.llca}}.
+#' @param digits Non-negative integer specifying the number of decimal places
+#'   used in formatted parameter tables. Use \code{NULL} to avoid rounding.
+#' @param ... Additional arguments passed to \code{\link{se.llca}}.
 #'
-#' @return A list containing the combined covariance matrix, standard errors, and
-#'   the correction matrix \code{B}.
+#' @details
+#' The method delegates inference to the structural \code{"llca"} model.
+#' When that structural model stores the fitted measurement model among its
+#' model specifications, \code{\link{vcov.latent}} automatically propagates
+#' measurement-model uncertainty to the structural estimates.
+#'
+#' @return
+#' The result of \code{se(fit$structural, ...)}.
+#'
+#' @seealso
+#' \code{\link{se.llca}}, \code{\link{vcov.latent}}, \code{\link{lca}}
 #'
 #' @method se llca_sam
-#' @keywords internal
 #' @export
 se.llca_sam <- function(fit, type = "standard", parameters = NULL, digits = 4L,
                         ...) {
@@ -203,16 +237,24 @@ se.llcalist <- function(model, type = "standard", parameters = NULL,
 
 }
 
-#' LatentGold-style robust standard errors
+#' LatentGold-Style Robust Information Matrix
 #'
-#' Computes a sandwich covariance estimator from the Hessian and the score
-#' contribution of each observed response pattern.
+#' Construct an information matrix corresponding to a LatentGold-style
+#' sandwich covariance estimator for a fitted latent class model.
 #'
 #' @param fit A fitted object of class \code{"llca"}.
 #'
-#' @return A list containing the standard errors, covariance matrix, empirical
-#'   score covariance matrix \code{B}, Hessian \code{H}, and adjusted Hessian
-#'   \code{newH}.
+#' @details
+#' Let \eqn{H} denote the Hessian and \eqn{B} the empirical covariance matrix
+#' of score contributions. The robust covariance matrix is
+#' \deqn{H^{-1} B H^{-1}.}
+#'
+#' Because \code{\link{vcov.latent}} expects an information matrix that is
+#' subsequently inverted, this function returns the equivalent matrix
+#' \deqn{H B^{-1} H.}
+#'
+#' @return
+#' A symmetric numeric matrix representing the robust information matrix.
 #'
 #' @keywords internal
 robust_LG <- function(fit) {

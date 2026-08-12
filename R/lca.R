@@ -93,12 +93,19 @@
 #' @param classification Character string used when \code{adjustment = "ml"}.
 #'   Use \code{"modal"} for modal assignment or \code{"prop"} for proportional
 #'   assignment when estimating the classification-error matrix.
-#' @param control Optional list of optimizer and estimation controls. Common
-#'   entries include \code{rstarts} for the number of random starts,
+#' @param control Optional list of optimization and estimation controls.
+#'   Common entries include \code{rstarts} for the number of random starts,
 #'   \code{cores} for parallel computation, \code{maxit} for the maximum number
-#'   of optimizer iterations, \code{opt} for the optimizer type, and convergence
-#'   tolerances such as \code{eps}, \code{df_eps}, and \code{step_eps}. Missing
-#'   entries are replaced by internal defaults.
+#'   of optimizer iterations, and \code{opt} for the optimization algorithm.
+#'   Available optimization methods include \code{"grad"}, \code{"lbfgs"},
+#'   \code{"newton"}, and \code{"em"}. Convergence controls include
+#'   \code{eps}, \code{df_eps}, and \code{step_eps}.
+#'   When \code{opt = "em"}, \code{maxit} controls the maximum number of outer
+#'   EM iterations. The numerical optimizer used in the M step is selected with
+#'   \code{mopt}; available options are \code{"grad"}, \code{"lbfgs"}, and
+#'   \code{"newton"}. \code{mstep_maxit} controls the maximum number of
+#'   iterations within each M step and \code{mstep_eps} its convergence
+#'   tolerance. Missing entries are replaced by internal defaults.
 #' @param do.fit Logical. If \code{TRUE}, the model is estimated. If
 #'   \code{FALSE}, the function returns an \code{"llca"} object containing the
 #'   processed data, model structure, and optimization setup, but without running
@@ -149,6 +156,13 @@
 #' interaction parameters are used to build the joint log-probabilities, and the
 #' marginal item probabilities are recovered from the joint probabilities by
 #' summing over the relevant joint levels.
+#'
+#' When \code{control$opt = "em"}, posterior class-membership probabilities are
+#' updated in the E step and held fixed while the expected complete-data
+#' objective is numerically minimized in the M step. The M step can use gradient
+#' descent, L-BFGS, or the Newton trust-region optimizer. After convergence,
+#' model fit and post-estimation derivatives are evaluated using the observed-data
+#' latent class likelihood.
 #'
 #' @return
 #' If \code{length(nclasses) == 1} and \code{adjustment = "none"}, an S4 object

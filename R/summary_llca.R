@@ -3,27 +3,32 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 04/05/2026
 #'
-#' @title
-#' Fit indices
+#' Summary of a Latent Class Model
+#'
+#' Print a summary of a fitted latent class model.
+#'
 #' @description
+#' \code{summary.llca()} displays optimization information, the estimation
+#' method, the number of parameters and observations, available model-fit
+#' statistics, and the estimated latent class profile.
 #'
-#' Compute fit indices from any model.
+#' @param fit A fitted object of class \code{"llca"}.
 #'
-#' @usage
+#' @return
+#' The latent class profile returned by
+#' \code{latInspect(fit, what = "profile")}, invisibly.
 #'
-#' getfit(model)
+#' @details
+#' The printed output reports whether optimization converged, the optimization
+#' method, the number of freely estimated parameters, and information about the
+#' observed response patterns.
 #'
-#' @param model data.frame or matrix of response.
+#' For fully multinomial models, the likelihood-ratio statistic, degrees of
+#' freedom, and corresponding p-value are also displayed.
 #'
-#' @details \code{getfit} computes all the fit indices related to a specific model.
-#'
-#' @return List with the following fit indices:
-#' \item{AIC}{.}
-#' \item{BIC}{.}
-#'
-#' @references
-#'
-#' None yet.
+#' @seealso
+#' \code{\link{getfit.llca}}, \code{\link{latInspect.llca}},
+#' \code{\link{se.llca}}
 #'
 #' @method summary llca
 #' @export
@@ -89,9 +94,13 @@ summary.llca <- function(fit) {
 
 }
 
+#' @rdname summary.llca
+#' @param model For the \code{"llca_sam"} method, an object containing fitted
+#'   \code{measurement} and \code{structural} components.
+#' @details
+#' For an \code{"llca_sam"} object, the summary of the final structural model is
+#' displayed.
 #' @method summary llca_sam
-#' @param model An object of class \code{"llca_sam"} containing two fitted
-#'   \code{"llca"} objects named measurement and structural.
 #' @export
 summary.llca_sam <- function(model) {
 
@@ -99,6 +108,12 @@ summary.llca_sam <- function(model) {
 
 }
 
+#' @rdname summary.llca
+#' @param model For the \code{"llcalist"} method, a collection of fitted
+#'   \code{"llca"} and/or \code{"llca_sam"} models.
+#' @details
+#' For an \code{"llcalist"}, \code{summary()} is applied to each model in the
+#' collection.
 #' @method summary llcalist
 #' @export
 summary.llcalist <- function(model) {

@@ -84,6 +84,17 @@ fitted.llca <- function(object, ...) {
 
 }
 
+#' @rdname getfit.llca
+#' @param model For the \code{"llca_sam"} method, an object containing fitted
+#'   \code{measurement} and \code{structural} components.
+#' @method getfit llca_sam
+#' @export
+fitted.llca_sam <- function(object, ...) {
+
+  return(fitted(object$structural, ...))
+
+}
+
 #' Fitted Probabilities for Lists of Latent Class Models
 #'
 #' Extract fitted prior class-membership probabilities from an
@@ -103,10 +114,13 @@ fitted.llca <- function(object, ...) {
 #' @param ... Additional arguments passed to \code{fitted.llca()}.
 #'
 #' @return
-#' For an adjusted model with a named \code{structural} component, a numeric
-#' matrix containing the fitted class-membership probabilities from that model.
-#' Otherwise, a list containing one such matrix for each fitted \code{"llca"}
-#' model. The latter result has class \code{"fitted.llcalist"}.
+#' For an object of class \code{"llcalist"}, a named list with one
+#' \code{getfit()} result per fitted model is returned. The result has class
+#' \code{"getfit.llcalist"}.
+#'
+#' For an object of class \code{"llca_sam"}, a list containing the fit indices
+#' for the \code{measurement} and \code{structural} models is returned. The
+#' result has class \code{"getfit.llca_sam"}.
 #'
 #' @seealso
 #' \code{\link{fitted.llca}}, \code{\link{predict.llcalist}}
@@ -114,7 +128,10 @@ fitted.llca <- function(object, ...) {
 #' @references
 #' None yet.
 #'
-#' @method fitted llcalist
+#' @rdname getfit.llca
+#' @param model For the \code{"llcalist"} method, a collection containing
+#'   \code{"llca"} and/or \code{"llca_sam"} model fits.
+#' @method getfit llcalist
 #' @export
 fitted.llcalist <- function(object, ...) {
 
@@ -156,16 +173,5 @@ fitted.llcalist <- function(object, ...) {
   #### Result ####
 
   return(result)
-
-}
-
-#' @rdname fitted.llca
-#' @param model An object of class \code{"llca_sam"} containing two fitted
-#'   \code{"llca"} objects named measurement and structural.
-#' @method fitted llca_sam
-#' @export
-fitted.llca_sam <- function(object, ...) {
-
-  return(fitted(object$structural, ...))
 
 }

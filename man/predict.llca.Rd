@@ -2,21 +2,21 @@
 % Please edit documentation in R/predict_llca.R
 \name{predict.llca}
 \alias{predict.llca}
-\alias{predict.llcalist}
 \alias{predict.llca_sam}
+\alias{predict.llcalist}
 \title{Predict latent class membership probabilities}
 \usage{
 \method{predict}{llca}(model, new = NULL, ...)
 
 \method{predict}{llcalist}(model, new = NULL, ...)
 
-\method{predict}{llcalist}(model, new = NULL, ...)
-
 \method{predict}{llca_sam}(model, new = NULL, ...)
+
+\method{predict}{llcalist}(model, new = NULL, ...)
 }
 \arguments{
-\item{model}{An object of class \code{"llca_sam"} containing two fitted
-\code{"llca"} objects named measurement and structural.}
+\item{model}{For the \code{"llca_sam"} method, an object containing fitted
+\code{measurement} and \code{structural} components.}
 
 \item{new}{Optional `data.frame` or matrix containing new values for all
 covariates used in the fitted model. Column names must match the original
@@ -71,6 +71,10 @@ measurement fit is skipped. For other collections containing both models with
 and without covariates, only models with covariates are retained. For
 class-enumeration objects, predictions are returned for every relevant fitted
 model.
+
+For an \code{"llca_sam"} object, predictions are obtained from the structural
+model because it contains the final class-membership regression coefficients.
+The \code{new} data argument is passed unchanged to that model.
 }
 \examples{
 \dontrun{

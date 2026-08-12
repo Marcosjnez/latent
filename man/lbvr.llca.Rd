@@ -18,8 +18,8 @@ used to round the returned matrices and summary table. The default is
 
 \item{...}{Additional arguments reserved for other methods.}
 
-\item{model}{An object of class \code{"llca_sam"} containing two lbvr
-\code{"llca"} objects named measurement and structural.}
+\item{object}{For the \code{"llca_sam"} method, an object containing fitted
+\code{measurement} and \code{structural} components.}
 }
 \value{
 An object of class \code{"lbvr"}, consisting of a list with the
@@ -68,6 +68,9 @@ residual is not defined for these mixed pairs and is returned as
 
 Indicator pairs already included as residual dependencies in the fitted model
 are assigned a residual of zero, a p-value of one, and an effect size of zero.
+
+For an \code{"llca_sam"} object, local bivariate residual diagnostics are
+computed for the structural model.
 }
 \examples{
 \dontrun{
