@@ -193,7 +193,7 @@ vcov.latent <- function(fit, parameters = NULL, H = NULL) {
   #
   # If fit0 itself contains another latent object, vcov.latent()
   # automatically applies the same correction to fit0 first.
-  VCOV0 <- vcov(fit0, parameters = fit0@modelInfo$parameters_labels, H = H)
+  VCOV0 <- vcov(fit0, parameters = fit0@modelInfo$parameters_labels, H = NULL)
 
   #### Structural-model covariance ####
 

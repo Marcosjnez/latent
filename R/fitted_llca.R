@@ -84,10 +84,13 @@ fitted.llca <- function(object, ...) {
 
 }
 
-#' @rdname getfit.llca
-#' @param model For the \code{"llca_sam"} method, an object containing fitted
+#' @rdname fitted.llca
+#' @param object For the \code{"llca_sam"} method, an object containing fitted
 #'   \code{measurement} and \code{structural} components.
-#' @method getfit llca_sam
+#' @details
+#' For an \code{"llca_sam"} object, \code{fitted()} returns prior latent class
+#' membership probabilities from the structural model.
+#' @method fitted llca_sam
 #' @export
 fitted.llca_sam <- function(object, ...) {
 
@@ -97,41 +100,23 @@ fitted.llca_sam <- function(object, ...) {
 
 #' Fitted Probabilities for Lists of Latent Class Models
 #'
-#' Extract fitted prior class-membership probabilities from an
+#' Extract fitted prior latent class membership probabilities from an
 #' \code{"llcalist"} object.
 #'
-#' @description
-#' \code{fitted.llcalist()} applies \code{fitted()} to latent class models stored
-#' in an \code{"llcalist"}. For Bakk--Kuha or ML adjustment results containing
-#' elements named \code{measurement} and \code{structural}, only the structural
-#' model is returned because it contains the class-membership regression.
-#'
-#' @usage
-#' \method{fitted}{llcalist}(object, ...)
-#'
 #' @param object An object of class \code{"llcalist"} containing fitted
-#'   \code{"llca"} objects.
-#' @param ... Additional arguments passed to \code{fitted.llca()}.
+#'   \code{"llca"} and/or \code{"llca_sam"} objects.
+#' @param ... Additional arguments passed to the corresponding
+#'   \code{fitted()} methods.
 #'
 #' @return
-#' For an object of class \code{"llcalist"}, a named list with one
-#' \code{getfit()} result per fitted model is returned. The result has class
-#' \code{"getfit.llcalist"}.
-#'
-#' For an object of class \code{"llca_sam"}, a list containing the fit indices
-#' for the \code{measurement} and \code{structural} models is returned. The
-#' result has class \code{"getfit.llca_sam"}.
+#' A named list containing fitted latent class membership probabilities for
+#' each model in \code{object}. The result has class
+#' \code{"fitted.llcalist"}.
 #'
 #' @seealso
-#' \code{\link{fitted.llca}}, \code{\link{predict.llcalist}}
+#' \code{\link{fitted.llca}}, \code{\link{predict.llca}}
 #'
-#' @references
-#' None yet.
-#'
-#' @rdname getfit.llca
-#' @param model For the \code{"llcalist"} method, a collection containing
-#'   \code{"llca"} and/or \code{"llca_sam"} model fits.
-#' @method getfit llcalist
+#' @method fitted llcalist
 #' @export
 fitted.llcalist <- function(object, ...) {
 

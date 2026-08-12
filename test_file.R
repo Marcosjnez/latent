@@ -238,6 +238,10 @@ predict(fit, new = rbind(c(2, 2, 2.428571, 2.142857),
                          c(1, 2, 3, 4)))
 fitted(fit)
 
+# Get standard errors:
+SE <- se(fit, type = "standard", digits = 4)
+SE$table
+
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
 CI$table
