@@ -222,12 +222,19 @@ default initial values, allowing partial specification of starting values.</p></
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
-<dd><p>Optional list of optimizer and estimation controls. Common
-entries include <code>rstarts</code> for the number of random starts,
+<dd><p>Optional list of optimization and estimation controls.
+Common entries include <code>rstarts</code> for the number of random starts,
 <code>cores</code> for parallel computation, <code>maxit</code> for the maximum number
-of optimizer iterations, <code>opt</code> for the optimizer type, and convergence
-tolerances such as <code>eps</code>, <code>df_eps</code>, and <code>step_eps</code>. Missing
-entries are replaced by internal defaults.</p></dd>
+of optimizer iterations, and <code>opt</code> for the optimization algorithm.
+Available optimization methods include <code>"grad"</code>, <code>"lbfgs"</code>,
+<code>"newton"</code>, and <code>"em"</code>. Convergence controls include
+<code>eps</code>, <code>df_eps</code>, and <code>step_eps</code>.
+When <code>opt = "em"</code>, <code>maxit</code> controls the maximum number of outer
+EM iterations. The numerical optimizer used in the M step is selected with
+<code>mopt</code>; available options are <code>"grad"</code>, <code>"lbfgs"</code>, and
+<code>"newton"</code>. <code>mstep_maxit</code> controls the maximum number of
+iterations within each M step and <code>mstep_eps</code> its convergence
+tolerance. Missing entries are replaced by internal defaults.</p></dd>
 
 
 <dt id="arg-do-fit">do.fit<a class="anchor" aria-label="anchor" href="#arg-do-fit"></a></dt>
@@ -335,6 +342,12 @@ for <code>u1.u2</code>. Similarly, a connected dependency such as
 interaction parameters are used to build the joint log-probabilities, and the
 marginal item probabilities are recovered from the joint probabilities by
 summing over the relevant joint levels.</p>
+<p>When <code>control$opt = "em"</code>, posterior class-membership probabilities are
+updated in the E step and held fixed while the expected complete-data
+objective is numerically minimized in the M step. The M step can use gradient
+descent, L-BFGS, or the Newton trust-region optimizer. After convergence,
+model fit and post-estimation derivatives are evaluated using the observed-data
+latent class likelihood.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

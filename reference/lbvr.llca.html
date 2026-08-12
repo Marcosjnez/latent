@@ -115,9 +115,9 @@ used to round the returned matrices and summary table. The default is
 <dd><p>Additional arguments reserved for other methods.</p></dd>
 
 
-<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
-<dd><p>An object of class <code>"llca_sam"</code> containing two lbvr
-<code>"llca"</code> objects named measurement and structural.</p></dd>
+<dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
+<dd><p>For the <code>"llca_sam"</code> method, an object containing fitted
+<code>measurement</code> and <code>structural</code> components.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -172,6 +172,8 @@ residual is not defined for these mixed pairs and is returned as
 <code>NA_real_</code>.</p>
 <p>Indicator pairs already included as residual dependencies in the fitted model
 are assigned a residual of zero, a p-value of one, and an effect size of zero.</p>
+<p>For an <code>"llca_sam"</code> object, local bivariate residual diagnostics are
+computed for the structural model.</p>
     </div>
 
     <div class="section level2">

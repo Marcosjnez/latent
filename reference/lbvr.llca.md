@@ -30,10 +30,10 @@ lbvr(object, ...)
 
   Additional arguments reserved for other methods.
 
-- model:
+- object:
 
-  An object of class `"llca_sam"` containing two lbvr `"llca"` objects
-  named measurement and structural.
+  For the `"llca_sam"` method, an object containing fitted `measurement`
+  and `structural` components.
 
 ## Value
 
@@ -93,6 +93,9 @@ returned as `NA_real_`.
 Indicator pairs already included as residual dependencies in the fitted
 model are assigned a residual of zero, a p-value of one, and an effect
 size of zero.
+
+For an `"llca_sam"` object, local bivariate residual diagnostics are
+computed for the structural model.
 
 ## Examples
 

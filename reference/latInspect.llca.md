@@ -11,10 +11,10 @@ from fitted `"llca"` objects.
 # S3 method for class 'llca'
 latInspect(fit, what = "profile", digits = 4L)
 
-# S3 method for class 'llcalist'
+# S3 method for class 'llca_sam'
 latInspect(model, what = "profile", digits = 4L)
 
-# S3 method for class 'llca_sam'
+# S3 method for class 'llcalist'
 latInspect(model, what = "profile", digits = 4L)
 ```
 
@@ -133,8 +133,8 @@ latInspect(model, what = "profile", digits = 4L)
 
 - model:
 
-  An object of class `"llca_sam"` containing two fitted `"llca"` objects
-  named measurement and structural.
+  For the `"llcalist"` method, a collection containing `"llca"` and/or
+  `"llca_sam"` model fits.
 
 ## Value
 
@@ -155,6 +155,10 @@ Gaussian item matrices are read by row name, using `"mean"` and
 `"stdv"`. Multinomial item matrices are assumed to contain probabilities
 in their first rows and log-probability parameters in their following
 rows; only the probability rows are returned in response profiles.
+
+For an `"llca_sam"` object, the requested quantity is extracted
+separately from the measurement and structural models and returned as a
+two-element list.
 
 ## References
 

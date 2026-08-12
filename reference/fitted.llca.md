@@ -10,9 +10,6 @@ not on the observed indicator responses.
 ``` r
 # S3 method for class 'llca'
 fitted(object, ...)
-
-# S3 method for class 'llca_sam'
-fitted(object, ...)
 ```
 
 ## Arguments
@@ -24,11 +21,6 @@ fitted(object, ...)
 - ...:
 
   Additional arguments. They are currently ignored.
-
-- model:
-
-  An object of class `"llca_sam"` containing two fitted `"llca"` objects
-  named measurement and structural.
 
 ## Value
 

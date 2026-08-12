@@ -1,7 +1,7 @@
-# LatentGold-style robust standard errors
+# LatentGold-Style Robust Information Matrix
 
-Computes a sandwich covariance estimator from the Hessian and the score
-contribution of each observed response pattern.
+Construct an information matrix corresponding to a LatentGold-style
+sandwich covariance estimator for a fitted latent class model.
 
 ## Usage
 
@@ -17,5 +17,15 @@ robust_LG(fit)
 
 ## Value
 
-A list containing the standard errors, covariance matrix, empirical
-score covariance matrix `B`, Hessian `H`, and adjusted Hessian `newH`.
+A symmetric numeric matrix representing the robust information matrix.
+
+## Details
+
+Let \\H\\ denote the Hessian and \\B\\ the empirical covariance matrix
+of score contributions. The robust covariance matrix is \$\$H^{-1} B
+H^{-1}.\$\$
+
+Because
+[`vcov.latent`](https://marcosjnez.github.io/latent/reference/vcov.latent.md)
+expects an information matrix that is subsequently inverted, this
+function returns the equivalent matrix \$\$H B^{-1} H.\$\$

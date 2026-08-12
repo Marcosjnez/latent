@@ -130,12 +130,18 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
 
 - control:
 
-  Optional list of optimizer and estimation controls. Common entries
+  Optional list of optimization and estimation controls. Common entries
   include `rstarts` for the number of random starts, `cores` for
   parallel computation, `maxit` for the maximum number of optimizer
-  iterations, `opt` for the optimizer type, and convergence tolerances
-  such as `eps`, `df_eps`, and `step_eps`. Missing entries are replaced
-  by internal defaults.
+  iterations, and `opt` for the optimization algorithm. Available
+  optimization methods include `"grad"`, `"lbfgs"`, `"newton"`, and
+  `"em"`. Convergence controls include `eps`, `df_eps`, and `step_eps`.
+  When `opt = "em"`, `maxit` controls the maximum number of outer EM
+  iterations. The numerical optimizer used in the M step is selected
+  with `mopt`; available options are `"grad"`, `"lbfgs"`, and
+  `"newton"`. `mstep_maxit` controls the maximum number of iterations
+  within each M step and `mstep_eps` its convergence tolerance. Missing
+  entries are replaced by internal defaults.
 
 - do.fit:
 
@@ -259,6 +265,13 @@ defines one joint variable `u1.u2.u3`. Pairwise interaction parameters
 are used to build the joint log-probabilities, and the marginal item
 probabilities are recovered from the joint probabilities by summing over
 the relevant joint levels.
+
+When `control$opt = "em"`, posterior class-membership probabilities are
+updated in the E step and held fixed while the expected complete-data
+objective is numerically minimized in the M step. The M step can use
+gradient descent, L-BFGS, or the Newton trust-region optimizer. After
+convergence, model fit and post-estimation derivatives are evaluated
+using the observed-data latent class likelihood.
 
 ## References
 
