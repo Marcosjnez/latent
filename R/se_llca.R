@@ -108,7 +108,7 @@ se.llca <- function(fit, type = "standard", parameters = NULL, digits = 4L,
   if(type == "standard") {
     H <- NULL
   } else if(type == "robust") {
-    H <- robust_LG(fit = fit)
+    H <- robust_LG
   } else {
     stop("Unknown type method. Available types: 'standard' and 'robust' ")
   }

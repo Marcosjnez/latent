@@ -62,6 +62,13 @@
 ci.llca <- function(fit, type = "standard", confidence = 0.95,
                     parameters = NULL, digits = 3L, ...) {
 
+  if(is.null(parameters)) {
+    parameters <- fit@modelInfo$trans[names(fit@modelInfo$param)]
+  } else if(!any(unlist(parameters) %in%
+                 fit@modelInfo$transparameters_labels)) {
+    stop("Unknown parameters.")
+  }
+
   if(!inherits(fit, "llca")) {
     stop("fit must inherit from class 'llca'.")
   }
@@ -82,19 +89,16 @@ ci.llca <- function(fit, type = "standard", confidence = 0.95,
     stop("digits must be a non-negative integer.")
   }
 
-  SE <- se(fit, type = type, parameters = parameters, digits = NULL, ...)
+  VCOV <- se(fit, type = type, parameters = parameters, digits = NULL, ...)
 
   # Assuming the parameter estimates are iid normally distributed variables:
   critical <- stats::qnorm(0.5+confidence/2, mean = 0, sd = 1)
-  selected_parameters <- names(SE$se)
+  selected_parameters <- names(VCOV$se)
   x <- fit@Optim$transparameters[selected_parameters]
-  lower <- x - critical*SE$se
-  upper <- x + critical*SE$se
+  lower <- x - critical*VCOV$se
+  upper <- x + critical*VCOV$se
   names(lower) <- names(upper) <- selected_parameters
 
-  if(is.null(parameters)) {
-    parameters <- fit@modelInfo$trans[names(fit@parameters)]
-  }
   est <- fill_in(parameters, fit@Optim$transparameters, miss = NA)
   lower_ci <- fill_in(parameters, lower)
   upper_ci <- fill_in(parameters, upper)
@@ -103,8 +107,7 @@ ci.llca <- function(fit, type = "standard", confidence = 0.95,
 
   result <- list(table = table, lower_table = lower_ci,
                  upper_table = upper_ci, lower = lower, upper = upper,
-                 se = SE$se, vcov = SE$vcov, B = SE$B,
-                 H = SE$H, newH = SE$newH)
+                 VCOV = VCOV)
 
   #### Result ####
 

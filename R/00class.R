@@ -66,10 +66,7 @@ setClass("lcfa",
            Optim            = "list",
            parameters       = "list",
            transformed_pars = "list",
-           loglik           = "numeric",
-           penalized_loglik = "numeric",
-           loss             = "numeric",
-           penalized_loss   = "numeric",
            extra            = "list"
-         )
+         ),
+         contains = "latent"
 )

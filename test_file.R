@@ -87,9 +87,8 @@ latInspect(fit, what = "pattern")
 latInspect(fit, what = "table")
 
 # Get standard errors:
-SE <- se(fit, type = "robust", digits = 4)
+SE <- se(fit, type = "standard", digits = 4)
 SE$table
-# FIX: for llc_sam, the robust se are not happening at the measurement level
 
 # Get confidence intervals:
 CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
