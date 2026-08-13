@@ -112,6 +112,20 @@ ci.llca <- function(fit, type = "standard", confidence = 0.95,
 
 }
 
+#' @rdname ci.llca
+#' @param object For the \code{"llca_sam"} method, an object containing fitted
+#'   \code{measurement} and \code{structural} components.
+#' @details
+#' For an \code{"llca_sam"} object, \code{ci()} returns confidence intervals
+#' for the measurement and structural parameters.
+#' @method fitted llca_sam
+#' @export
+ci.llca_sam <- function(object, ...) {
+
+  return(ci(object$structural, ...))
+
+}
+
 #' Confidence intervals for a collection of latent class models
 #'
 #' Applies \code{ci()} to every fitted model in an \code{"llcalist"} object.

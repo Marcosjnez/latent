@@ -2,6 +2,7 @@
 % Please edit documentation in R/ci_llca.R
 \name{ci.llca}
 \alias{ci.llca}
+\alias{ci.llca_sam}
 \title{Confidence intervals for latent class models}
 \usage{
 \method{ci}{llca}(
@@ -12,6 +13,8 @@
   digits = 3L,
   ...
 )
+
+\method{fitted}{llca_sam}(object, ...)
 }
 \arguments{
 \item{fit}{A fitted object of class \code{"llca"}.}
@@ -27,6 +30,9 @@ confidence level.}
 in the formatted confidence-interval table.}
 
 \item{...}{Additional arguments passed to other methods.}
+
+\item{object}{For the \code{"llca_sam"} method, an object containing fitted
+\code{measurement} and \code{structural} components.}
 }
 \value{
 A list with the following components:
@@ -61,6 +67,9 @@ of-freedom chi-squared quantile. Standard errors are obtained through
 The \code{digits} argument affects only the formatted \code{table}. The numeric
 confidence limits, standard errors, and covariance matrices are returned
 without rounding.
+
+For an \code{"llca_sam"} object, \code{ci()} returns confidence intervals
+for the measurement and structural parameters.
 }
 \examples{
 \dontrun{

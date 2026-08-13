@@ -907,81 +907,14 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   #### Fixed parameters and equality constraints ####
 
-  # First, apply ordinary user-supplied parameter blocks, if any.
-  # These still work by block name, as before.
-  if(!is.null(model)) {
+  model_constraints <- apply_model_lca(model = model,
+                                       llca_models = llca_models,
+                                       param = param,
+                                       trans = trans,
+                                       control = control)
 
-    nm <- intersect(names(model), names(param))
-    nm <- nm[!vapply(model[nm], is.null, logical(1L))]
-    param[nm] <- model[nm]
-
-  }
-
-  # Second, apply parameters fixed from llca objects by matching parameter labels.
-  # This is more general than matching block names. For example, a parameter
-  # labelled ec2[1,1] can be fixed even if it was in block ec2 in the old model
-  # and is now in block means in the new model.
-  if(length(llca_models) > 0L) {
-
-    fixed_values <- numeric(0L)
-
-    for(obj in llca_models) {
-
-      old_blocks <- intersect(names(obj@modelInfo$param),
-                              names(obj@parameters))
-
-      old_labels <- unlist(obj@modelInfo$param[old_blocks],
-                           use.names = FALSE)
-
-      old_values <- unlist(obj@parameters[old_blocks],
-                           use.names = FALSE)
-
-      keep <- grepl("[A-Za-z]", old_labels)
-      if(isTRUE(control$free_beta)) keep <- keep & !grepl("^beta\\[", old_labels)
-
-      old_labels <- old_labels[keep]
-      old_values <- old_values[keep]
-
-      names(old_values) <- old_labels
-
-      # If repeated labels are found across llca objects, keep the last one.
-      fixed_values[names(old_values)] <- old_values
-
-    }
-
-    if(length(fixed_values) > 0L) {
-
-      for(nm in names(param)) {
-
-        x <- param[[nm]]
-        idx <- match(as.character(x), names(fixed_values))
-        replace <- !is.na(idx)
-
-        if(any(replace)) {
-          x[replace] <- fixed_values[idx[replace]]
-          param[[nm]] <- x
-        }
-
-      }
-
-    }
-
-  }
-
-  # Set equality constraints in trans.
-
-  # Paste to trans only the alphabetical and alphanumerical elements in param,
-  # excluding the numerical elements:
-  for(nm in names(param)) {
-
-    x <- param[[nm]]
-
-    # TRUE if contains at least one alphabetic character
-    keep <- grepl("[A-Za-z]", x)
-
-    trans[[nm]][keep] <- x[keep]
-
-  }
+  param <- model_constraints$param
+  trans <- model_constraints$trans
 
   #### Create the initial values for the parameters ####
 
@@ -1008,22 +941,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   #### Custom initial values ####
 
-  # Replace initial starting values by custom starting values:
-
-  if(!is.null(control$start)) {
-
-    nm <- names(control$start)
-    nm <- nm[!vapply(control$start, is.null, logical(1L))]
-
-    for(i in seq_len(control$rstarts)) {
-      common_nm <- intersect(nm, names(init_param[[i]]))
-      for(j in common_nm) {
-        init_param[[i]][[j]] <- insert_object(init_param[[i]][[j]],
-                                              control$start[[j]])
-      }
-    }
-
-  }
+  init_param <- custom_init_param(control$start, init_param)
 
   #### Return ####
 
@@ -2479,6 +2397,101 @@ constraints_mvgaussian_lca <- function(dataList, param, trans) {
 
 }
 
+#### Function for fixed parameters and equality constraints ####
+
+apply_model_lca <- function(model, llca_models, param, trans, control) {
+
+  #### User-specified parameter blocks ####
+
+  if(!is.null(model)) {
+
+    nm <- intersect(names(model), names(param))
+    nm <- nm[!vapply(model[nm], is.null, logical(1L))]
+
+    for(j in nm) {
+      param[[j]] <- insert_partial_object(param[[j]], model[[j]],
+                                          object_name = j)
+    }
+
+  }
+
+  #### Parameters fixed from previous llca models ####
+
+  if(length(llca_models) > 0L) {
+
+    fixed_values <- numeric(0L)
+
+    for(obj in llca_models) {
+
+      old_blocks <- intersect(names(obj@modelInfo$param),
+                              names(obj@parameters))
+
+      old_labels <- unlist(obj@modelInfo$param[old_blocks],
+                           use.names = FALSE)
+
+      old_values <- unlist(obj@parameters[old_blocks],
+                           use.names = FALSE)
+
+      keep <- grepl("[A-Za-z]", old_labels)
+
+      if(isTRUE(control$free_beta)) {
+        keep <- keep & !grepl("^beta\\[", old_labels)
+      }
+
+      old_labels <- old_labels[keep]
+      old_values <- old_values[keep]
+
+      names(old_values) <- old_labels
+
+      # If repeated labels occur across llca objects, the last value is used:
+      fixed_values[names(old_values)] <- old_values
+
+    }
+
+    if(length(fixed_values) > 0L) {
+
+      for(nm in names(param)) {
+
+        x <- param[[nm]]
+
+        idx <- match(as.character(x), names(fixed_values))
+        replace <- !is.na(idx)
+
+        if(any(replace)) {
+          x[replace] <- fixed_values[idx[replace]]
+          param[[nm]] <- x
+        }
+
+      }
+
+    }
+
+  }
+
+  #### Equality constraints ####
+
+  # Copy parameter labels into the transformed-parameter structure.
+  # Numerical values represent fixed parameters and are not copied here.
+  for(nm in names(param)) {
+
+    x <- param[[nm]]
+
+    keep <- !is.na(x) & grepl("[A-Za-z]", x)
+
+    if(any(keep)) {
+      trans[[nm]][keep] <- x[keep]
+    }
+
+  }
+
+  #### Result ####
+
+  result <- list(param = param, trans = trans)
+
+  return(result)
+
+}
+
 #### Functions for starting values of conditional likelihood model parameters ####
 
 start_beta_lca <- function(param, dataList, rstarts) {
@@ -2633,6 +2646,77 @@ start_mvgaussian_lca <- function(param, dataList, rstarts) {
     }
 
   }
+
+  return(init_param)
+
+}
+
+#### Function to replace starting values with custom values ####
+
+custom_init_param <- function(start, init_param) {
+
+  #### Check inputs ####
+
+  if(is.null(start)) {
+
+    #### Result ####
+
+    return(init_param)
+
+  }
+
+  if(!is.list(start)) {
+    stop("start must be NULL or a named list.")
+  }
+
+  if(is.null(names(start)) ||
+     any(names(start) == "") ||
+     anyDuplicated(names(start))) {
+    stop("start must have unique, non-empty names.")
+  }
+
+  start_names <- names(start)
+  start_names <- start_names[!vapply(start, is.null, logical(1L))]
+
+  if(length(start_names) == 0L) {
+
+    #### Result ####
+
+    return(init_param)
+
+  }
+
+  if(length(init_param) == 0L) {
+    stop("init_param does not contain initial parameter values.")
+  }
+
+  unknown <- setdiff(start_names, names(init_param[[1L]]))
+
+  if(length(unknown) > 0L) {
+    stop("Unknown starting-value object(s): ",
+         paste(unknown, collapse = ", "))
+  }
+
+  #### Custom initial values ####
+
+  for(nm in start_names) {
+
+    if(!is.numeric(start[[nm]])) {
+      stop("Starting values for '", nm, "' must be numeric.")
+    }
+
+    for(i in seq_along(init_param)) {
+
+      init_param[[i]][[nm]] <-
+        insert_partial_object(init_param[[i]][[nm]],
+                              start[[nm]],
+                              object_name = nm)
+
+    }
+
+  }
+
+  #### Result ####
 
   return(init_param)
 

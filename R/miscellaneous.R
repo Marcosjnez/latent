@@ -980,3 +980,173 @@ trans_depends <- function(fit, trans_subset) {
   return(idx_transforms)
 
 }
+
+insert_partial_object <- function(X, Y, object_name = NULL) {
+
+  # Insert in Y the objects in X that match by name and dimnames
+  # NA values in X leave those unchanged in Y
+  # This helper is used for fixing parameters and equality constraints and for
+  # replacing starting values by custom values
+
+  #### Checks ####
+
+  if(is.null(Y)) {
+
+    #### Result ####
+
+    return(X)
+
+  }
+
+  object_label <- if(is.null(object_name)) "" else
+    paste0(" '", object_name, "'")
+
+  if(is.data.frame(Y)) {
+    Y <- as.matrix(Y)
+  }
+
+  #### Vectors ####
+
+  if(is.null(dim(X))) {
+
+    if(!is.null(dim(Y))) {
+      stop("Object", object_label, " must be supplied as a vector.")
+    }
+
+    X_names <- names(X)
+    Y_names <- names(Y)
+
+    if(!is.null(Y_names)) {
+
+      if(anyDuplicated(Y_names)) {
+        stop("Duplicated parameter names in", object_label, ".")
+      }
+
+      if(is.null(X_names)) {
+        stop("The target vector", object_label, " does not have names.")
+      }
+
+      idx <- match(Y_names, X_names)
+
+      if(anyNA(idx)) {
+        unknown <- Y_names[is.na(idx)]
+        stop("Unknown parameter name(s) in", object_label, ": ",
+             paste(unknown, collapse = ", "))
+      }
+
+    } else {
+
+      if(length(Y) != length(X)) {
+        stop("Partial values for vector", object_label,
+             " must have names.")
+      }
+
+      idx <- seq_along(X)
+
+    }
+
+    replace <- !is.na(Y)
+
+    if(any(replace)) {
+      X[idx[replace]] <- Y[replace]
+    }
+
+    #### Result ####
+
+    return(X)
+
+  }
+
+  #### Matrices ####
+
+  if(length(dim(X)) != 2L) {
+    stop("Only vectors and matrices are currently supported.")
+  }
+
+  if(is.null(dim(Y)) || length(dim(Y)) != 2L) {
+    stop("Object", object_label, " must be supplied as a matrix.")
+  }
+
+  X_rows <- rownames(X)
+  X_cols <- colnames(X)
+  Y_rows <- rownames(Y)
+  Y_cols <- colnames(Y)
+
+  # Match rows:
+  if(!is.null(Y_rows)) {
+
+    if(anyDuplicated(Y_rows)) {
+      stop("Duplicated row names in", object_label, ".")
+    }
+
+    if(is.null(X_rows)) {
+      stop("The target matrix", object_label,
+           " does not have row names.")
+    }
+
+    row_idx <- match(Y_rows, X_rows)
+
+    if(anyNA(row_idx)) {
+      unknown <- Y_rows[is.na(row_idx)]
+      stop("Unknown row name(s) in", object_label, ": ",
+           paste(unknown, collapse = ", "))
+    }
+
+  } else {
+
+    if(nrow(Y) != nrow(X)) {
+      stop("Partial rows for matrix", object_label,
+           " must have row names.")
+    }
+
+    row_idx <- seq_len(nrow(X))
+
+  }
+
+  # Match columns:
+  if(!is.null(Y_cols)) {
+
+    if(anyDuplicated(Y_cols)) {
+      stop("Duplicated column names in", object_label, ".")
+    }
+
+    if(is.null(X_cols)) {
+      stop("The target matrix", object_label,
+           " does not have column names.")
+    }
+
+    col_idx <- match(Y_cols, X_cols)
+
+    if(anyNA(col_idx)) {
+      unknown <- Y_cols[is.na(col_idx)]
+      stop("Unknown column name(s) in", object_label, ": ",
+           paste(unknown, collapse = ", "))
+    }
+
+  } else {
+
+    if(ncol(Y) != ncol(X)) {
+      stop("Partial columns for matrix", object_label,
+           " must have column names.")
+    }
+
+    col_idx <- seq_len(ncol(X))
+
+  }
+
+  #### Insert values ####
+
+  X_subset <- X[row_idx, col_idx, drop = FALSE]
+  replace <- !is.na(Y)
+
+  if(any(replace)) {
+    X_subset[replace] <- Y[replace]
+  }
+
+  X[row_idx, col_idx] <- X_subset
+
+  #### Result ####
+
+  return(X)
+
+}

@@ -2,12 +2,16 @@
 % Please edit documentation in R/fitted_llca.R
 \name{fitted.llca}
 \alias{fitted.llca}
+\alias{fitted.llca_sam}
 \title{Fitted Latent Class Membership Probabilities}
 \usage{
 \method{fitted}{llca}(object, ...)
+
+\method{fitted}{llca_sam}(object, ...)
 }
 \arguments{
-\item{object}{A fitted object of class \code{"llca"}.}
+\item{object}{For the \code{"llca_sam"} method, an object containing fitted
+\code{measurement} and \code{structural} components.}
 
 \item{...}{Additional arguments. They are currently ignored.}
 }
@@ -42,6 +46,9 @@ included.
 
 If the model has no covariates, every subject receives the same vector of
 estimated class proportions.
+
+For an \code{"llca_sam"} object, \code{fitted()} returns prior latent class
+membership probabilities from the structural model.
 }
 \references{
 None yet.
