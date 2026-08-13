@@ -1,11 +1,4 @@
-# Fitted Probabilities for Lists of Latent Class Models
-
-`fitted.llcalist()` applies
-[`fitted()`](https://rdrr.io/r/stats/fitted.values.html) to latent class
-models stored in an `"llcalist"`. For Bakk–Kuha or ML adjustment results
-containing elements named `measurement` and `structural`, only the
-structural model is returned because it contains the class-membership
-regression.
+# Fit indices for latent class models
 
 Computes likelihood-based fit indices, classification measures, and
 entropy for a fitted latent class model or for a list of fitted latent
@@ -14,12 +7,6 @@ class models.
 ## Usage
 
 ``` r
-# S3 method for class 'llca_sam'
-getfit(object, ...)
-
-# S3 method for class 'llcalist'
-fitted(object, ...)
-
 # S3 method for class 'llca'
 getfit(model, digits = 4)
 
@@ -35,15 +22,6 @@ getfit(model, digits = 4L)
 
 ## Arguments
 
-- object:
-
-  An object of class `"llcalist"` containing fitted `"llca"` objects.
-
-- ...:
-
-  Additional arguments passed to
-  [`fitted.llca()`](https://marcosjnez.github.io/latent/reference/fitted.llca.md).
-
 - model:
 
   An object of class `"llca_sam"` containing two fitted `"llca"` objects
@@ -55,14 +33,6 @@ getfit(model, digits = 4L)
   Use `NULL` to return the unrounded values.
 
 ## Value
-
-For an object of class `"llcalist"`, a named list with one `getfit()`
-result per fitted model is returned. The result has class
-`"getfit.llcalist"`.
-
-For an object of class `"llca_sam"`, a list containing the fit indices
-for the `measurement` and `structural` models is returned. The result
-has class `"getfit.llca_sam"`.
 
 For an object of class `"llca"`, a named numeric vector of class
 `"getfit.llca"` containing:
@@ -142,9 +112,6 @@ fit index.
 
 ## Details
 
-Extract fitted prior class-membership probabilities from an `"llcalist"`
-object.
-
 For a single `"llca"` model, `getfit()` returns the number of classes,
 model parameters, and observations; the log-likelihood; information
 criteria; the integrated classification likelihood; and entropy-based
@@ -165,17 +132,10 @@ one row per fitted model.
 
 ## References
 
-None yet.
-
 Akaike, H. (1974). A New Look at the Statistical Model Identification.
 *In: Parzen, E., Tanabe, K., Kitagawa, G. (eds) Selected Papers of
 Hirotugu Akaike. Springer Series in Statistics. Springer, New York, NY.*
 https://doi.org/10.1007/978-1-4612-1694-0_16
-
-## See also
-
-[`fitted.llca`](https://marcosjnez.github.io/latent/reference/fitted.llca.md),
-[`predict.llcalist`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
 
 ## Examples
 

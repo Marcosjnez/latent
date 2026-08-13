@@ -95,7 +95,10 @@ model.</p>
 <span>  parameters <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  digits <span class="op">=</span> <span class="fl">3L</span>,</span>
 <span>  <span class="va">...</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'llca_sam'</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -124,6 +127,11 @@ in the formatted confidence-interval table.</p></dd>
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed to other methods.</p></dd>
+
+
+<dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
+<dd><p>For the <code>"llca_sam"</code> method, an object containing fitted
+<code>measurement</code> and <code>structural</code> components.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -174,6 +182,8 @@ of-freedom chi-squared quantile. Standard errors are obtained through
 <p>The <code>digits</code> argument affects only the formatted <code>table</code>. The numeric
 confidence limits, standard errors, and covariance matrices are returned
 without rounding.</p>
+<p>For an <code>"llca_sam"</code> object, <code>ci()</code> returns confidence intervals
+for the measurement and structural parameters.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

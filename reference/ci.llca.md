@@ -15,6 +15,9 @@ ci(
   digits = 3L,
   ...
 )
+
+# S3 method for class 'llca_sam'
+fitted(object, ...)
 ```
 
 ## Arguments
@@ -43,6 +46,11 @@ ci(
 - ...:
 
   Additional arguments passed to other methods.
+
+- object:
+
+  For the `"llca_sam"` method, an object containing fitted `measurement`
+  and `structural` components.
 
 ## Value
 
@@ -100,6 +108,9 @@ are used when requested.
 The `digits` argument affects only the formatted `table`. The numeric
 confidence limits, standard errors, and covariance matrices are returned
 without rounding.
+
+For an `"llca_sam"` object, `ci()` returns confidence intervals for the
+measurement and structural parameters.
 
 ## See also
 
