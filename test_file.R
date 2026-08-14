@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/08/2026
+# Modification date: 15/08/2026
 
 #### Store a dataset ####
 
@@ -256,7 +256,7 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 S <- cov(HolzingerSwineford1939[, paste("x", 1:9, sep = "")])
-means <- colMeans(cov(HolzingerSwineford1939[, paste("x", 1:9, sep = "")]))
+means <- colMeans(HolzingerSwineford1939[, paste("x", 1:9, sep = "")])
 
 set.seed(2026)
 estimator <- "ml"
@@ -703,22 +703,41 @@ lavInspect(fit2, "se")
 fit2@ParTable$se
 fit@Optim$SE$se
 
+#### lmean ####
+
+# Estimate means of variables
+library(latent)
+
+df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
+set.seed(2026)
+std.ov <- FALSE
+
+fit <- lmean(data = df, model = NULL, std.ov = std.ov)
+fit@parameters$means
+fit@Optim$SE$se
+# colMeans(df)
+# sqrt(apply(df, MARGIN = 2, var)/nrow(df))
+
 #### lpearson ####
+
+# Pearson correlations
 
 library(latent)
 
-data <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
+df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
 std.ov <- FALSE
 likelihood <- "normal"
 acov <- "standard"
-fit <- lpearson(data = data, std.ov = std.ov,
+fit <- lpearson(data = df, std.ov = std.ov,
                 acov = acov, likelihood = likelihood,
                 missing = "pairwise.complete.obs",
                 do.fit = TRUE)
 fit@parameters
 fit@Optim$SE$se
 
-#### Polychorics ####
+#### lpoly ####
+
+# Polychoric correlations
 
 library(latent)
 samples <- unique(hexaco$sample) # industry mooc fire student dutch
@@ -745,7 +764,7 @@ mooc <- full[hexaco$sample == samples[2], ]
 set.seed(2026)
 fit <- lpoly(data = mooc,
              method = "one-step",
-             positive = TRUE,
+             positive = FALSE,
              penalties = FALSE,
              # model = fit@parameters[-7],
              # start = fit@parameters,
@@ -770,9 +789,15 @@ fit@timing
 fit@modelInfo$param
 fit@modelInfo$parameters_labels
 
+fit@parameters
+fit@Optim$SE$se
+# FIX: get standard errors for taus
+
 # Tur <- Turbofuns:::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)
 
-#### Yule correlations ####
+#### lyule ####
+
+# Yule correlations
 
 library(latent)
 
@@ -801,7 +826,9 @@ fit <- lpoly(data = mooc,
 fit@parameters$S
 fit@Optim$SE$se
 
-#### Factor rotation ####
+#### lrotate ####
+
+# Factor rotation
 
 library(latent)
 
@@ -850,7 +877,9 @@ fit@Optim$convergence
 fit@Optim$ng
 fit@Optim$elapsed
 
-#### EFA ####
+#### lefa ####
+
+# Exploratory factor analysis
 
 library(latent)
 

@@ -484,6 +484,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
       sample.cov[[i]] <- S
 
+      # Use always asymptotic_normal when the full data is not available:
       ACOV[[i]] <- asymptotic_normal(S,
                                      cov = !std.ov,
                                      diag = FALSE)

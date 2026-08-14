@@ -1,7 +1,62 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/08/2026
-
+# Modification date: 15/08/2026
+#'
+#' Sample Means
+#'
+#' Estimate the sample means of a set of observed variables and their
+#' asymptotic covariance matrix.
+#'
+#' @usage
+#' lmean(data, model = NULL, std.ov = FALSE,
+#'       do.fit = TRUE, message = FALSE,
+#'       control = NULL, ...)
+#'
+#' @param data A data frame or matrix containing numeric observed variables.
+#'   Column names are required and are used as the observed-variable labels.
+#' @param model Optional model specification reserved for internal model setup.
+#' @param std.ov Logical. If \code{TRUE}, the observed variables are treated as
+#'   standardized and all mean parameters are fixed to zero. Their asymptotic
+#'   covariance matrix and standard errors are consequently also zero.
+#' @param do.fit Logical. If \code{TRUE}, compute the sample means. If
+#'   \code{FALSE}, return the prepared but unfitted \code{"latent"} object.
+#' @param message Logical. Print progress messages during estimation.
+#' @param control Optional list of internal control parameters. Custom starting
+#'   values can be supplied through \code{control$start}.
+#' @param ... Additional arguments reserved for future extensions.
+#'
+#' @details
+#' \code{lmean()} computes the arithmetic mean of each observed variable using
+#' all available non-missing observations for that variable. When
+#' \code{std.ov = FALSE}, the asymptotic covariance matrix of the sample means
+#' is represented by the diagonal matrix of observed-variable variances, and
+#' the reported standard errors are obtained by dividing this matrix by the
+#' sample size.
+#'
+#' When \code{std.ov = TRUE}, the mean parameters are fixed to zero rather than
+#' estimated. This is the appropriate mean structure for standardized observed
+#' variables. Because these values are fixed, their asymptotic covariance
+#' matrix and standard errors are set to zero.
+#'
+#' The function uses the same parameter/model infrastructure as the other
+#' estimators in \pkg{latent}, even though the sample means themselves are
+#' obtained directly rather than through numerical optimization.
+#'
+#' @return An S4 object of class \code{"latent"}. The object contains the
+#'   processed data in \code{dataList}, the parameter and model structures in
+#'   \code{modelInfo}, the estimated means and standard-error information in
+#'   \code{Optim}, and the parameter-shaped results in \code{parameters} and
+#'   \code{transformed_pars}.
+#'
+#' @examples
+#' \dontrun{
+#' fit <- lmean(data = HolzingerSwineford1939[, paste0("x", 1:9)])
+#'
+#' fit_std <- lmean(data = HolzingerSwineford1939[, paste0("x", 1:9)],
+#'                  std.ov = TRUE)
+#' }
+#'
+#' @export
 lmean <- function(data,
                   model = NULL,
                   std.ov = FALSE,
@@ -106,7 +161,8 @@ lmean <- function(data,
 
   Optim$SE <- compute_se_lmean(dataList = dataList,
                                modelInfo = modelInfo,
-                               Optim = Optim)
+                               Optim = Optim,
+                               control = control)
 
   #### Process the outputs ####
 
@@ -425,9 +481,9 @@ fit_lmean <- function(dataList, modelInfo, control) {
 
 #### Function to compute standard errors ####
 
-compute_se_lmean <- function(dataList, modelInfo, Optim) {
+compute_se_lmean <- function(dataList, modelInfo, Optim, control) {
 
-  if(dataList$nobs < 2L) {
+  if(dataList$nobs < 2L || control$std.ov) {
 
     ACOV <- matrix(0,
                    nrow = dataList$nitems,
