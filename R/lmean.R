@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/04/2026
+# Modification date: 13/08/2026
 
 lmean <- function(data,
                   model = NULL,
@@ -10,29 +10,66 @@ lmean <- function(data,
                   control = NULL,
                   ...) {
 
+  #### Check input arguments ####
+
+  if(!is.data.frame(data) && !is.matrix(data)) {
+    stop("data must be a data.frame or matrix")
+  }
+
+  if(nrow(data) < 1L || ncol(data) < 1L) {
+    stop("data must contain at least one observation and one variable")
+  }
+
+  if(is.data.frame(data)) {
+    numeric_columns <- vapply(data, is.numeric, logical(1L))
+    if(!all(numeric_columns)) {
+      stop("All variables in data must be numeric")
+    }
+  } else if(!is.numeric(data)) {
+    stop("data must be numeric")
+  }
+
+  if(is.null(colnames(data)) ||
+     any(colnames(data) == "") ||
+     anyDuplicated(colnames(data))) {
+    stop("data must have unique, non-empty column names")
+  }
+
+  if(length(std.ov) != 1L || !is.logical(std.ov) || is.na(std.ov)) {
+    stop("std.ov must be TRUE or FALSE")
+  }
+
+  if(length(do.fit) != 1L || !is.logical(do.fit) || is.na(do.fit)) {
+    stop("do.fit must be TRUE or FALSE")
+  }
+
+  if(length(message) != 1L || !is.logical(message) || is.na(message)) {
+    stop("message must be TRUE or FALSE")
+  }
+
+  #### Store original call ####
+
+  mc <- match.call()
+
+  #### Check control parameters ####
+
   control$std.ov <- std.ov
-
-  ## store original call
-  mc  <- match.call()
-
-  # Check the arguments to control_optimizer and create defaults:
   control <- lmean_control(control)
 
-  #### Create the data_list ####
+  #### Create the dataList ####
 
-  data_list <- create_lmean_datalist(data, control)
-  list2env(data_list, envir = environment())
+  dataList <- create_lmean_dataList(data = data,
+                                    control = control)
 
   #### Create the model ####
 
-  full_model <- create_lmean_model(data_list = data_list,
+  full_model <- create_lmean_model(dataList = dataList,
                                    model = model,
                                    control = control)
-  list2env(full_model, envir = environment())
 
-  #### Create the modelInfo ####
+  #### Create the manifold, transformation, and estimator structures ####
 
-  modelInfo <- create_lmean_modelInfo(data_list = data_list,
+  modelInfo <- create_lmean_modelInfo(dataList = dataList,
                                       full_model = full_model,
                                       control = control)
 
@@ -40,214 +77,239 @@ lmean <- function(data,
 
   if(!do.fit) {
 
-    lcfa_list <- new("lcfa",
-                     version            = as.character(packageVersion('latent')),
-                     call               = mc,
-                     timing             = numeric(),
-                     data_list          = data_list,
-                     modelInfo          = modelInfo,
-                     Optim              = list(),
-                     parameters         = list(),
-                     transformed_pars   = list(),
-                     extra              = list()
-    )
+    result <- new("latent",
+                  version          = as.character(packageVersion("latent")),
+                  call             = mc,
+                  timing           = numeric(),
+                  dataList         = dataList,
+                  modelInfo        = modelInfo,
+                  Optim            = list(),
+                  parameters       = list(),
+                  transformed_pars = list(),
+                  extra            = list())
 
-    return(lcfa_list)
+    #### Result ####
+
+    return(result)
 
   }
 
   if(message) {
-    msg <- "Fitting the model"
-    w <- nchar(msg) + 4
-    cat("\n", "+", strrep("-", w), "+\n",
-        "|  ", msg, "  |\n",
-        "+", strrep("-", w), "+\n\n", sep = "")
+    print_lmean_message("Fitting the model")
   }
 
-  if(std.ov) {
-    means <- matrix(0, nrow = nitems, ncol = 1L)
-  } else {
-    means <- colMeans(data, na.rm = TRUE)
-  }
-
-  Optim <- list()
-  Optim$f <- 0
-
-  Optim$parameters <- means
-  Optim$transparameters <- means
-  names(Optim$parameters) <- modelInfo$parameters_labels
-  names(Optim$transparameters) <- modelInfo$transparameters_labels
+  Optim <- fit_lmean(dataList = dataList,
+                     modelInfo = modelInfo,
+                     control = control)
 
   #### Standard errors ####
 
-  if(data_list$nobs < 2) {
-    Optim$SE$ACOV <- matrix(0, nrow = nitems, ncol = nitems)
-  } else {
-    Optim$SE$ACOV <- diag(apply(data, MARGIN = 2, FUN = var, na.rm = TRUE))
-  }
+  Optim$SE <- compute_se_lmean(dataList = dataList,
+                               modelInfo = modelInfo,
+                               Optim = Optim)
 
-  rownames(Optim$SE$ACOV) <- colnames(Optim$SE$ACOV) <-
-    modelInfo$parameters_labels
-  Optim$SE$se <- sqrt(diag(Optim$SE$ACOV) / data_list$nobs)
+  #### Process the outputs ####
 
-  # Collect all the information about the optimization:
+  transformed_pars <- fill_in(modelInfo$trans,
+                              Optim$transparameters)
 
-  elapsed <- 0
-
-  #### Estimated model structures ####
-
-  # Create the structures of transformed parameters:
-  transformed_pars <- fill_in(modelInfo$trans, Optim$transparameters)
-
-  # Create the structures of untransformed parameters:
   parameters <- transformed_pars[names(modelInfo$param)]
-
-  #### Process the fit information ####
-
-  loss <- Optim$f
-  penalized_loss <- loss
-  loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-                              FUN = \(x) x[[2]])))
-  penalized_loglik <- loglik
 
   #### latent object ####
 
   result <- new("latent",
-                version            = as.character(packageVersion('latent')),
-                call               = mc,
-                timing             = elapsed,
-                dataList           = data_list,
-                modelInfo          = modelInfo,
-                Optim              = Optim,
-                parameters         = parameters,
-                transformed_pars   = transformed_pars,
-                extra              = list()
-  )
+                version          = as.character(packageVersion("latent")),
+                call             = mc,
+                timing           = Optim$elapsed,
+                dataList         = dataList,
+                modelInfo        = modelInfo,
+                Optim            = Optim,
+                parameters       = parameters,
+                transformed_pars = transformed_pars,
+                extra            = list())
 
-  #### Return ####
+  #### Result ####
 
   return(result)
 
 }
 
-create_lmean_datalist <- function(data, control) {
+#### Function to create the dataList ####
 
-  data_list <- vector("list")
-  data_list$data <- data
-  data_list$nobs <- nrow(data)
-  data_list$nitems <- ncol(data)
-  data_list$npatterns <- nrow(data)
-  data_list$item_names <- colnames(data)
+create_lmean_dataList <- function(data, control) {
 
-  return(data_list)
+  #### Data information ####
+
+  dataList <- list(
+    data = data,
+    nobs = nrow(data),
+    nitems = ncol(data),
+    npatterns = nrow(data),
+    item_names = colnames(data)
+  )
+
+  #### Result ####
+
+  return(dataList)
 
 }
 
-create_lmean_model <- function(data_list, model, control) {
+#### Function to create the model ####
 
-  # Generate the model syntax and initial parameter values
+create_lmean_model <- function(dataList, model, control) {
 
-  list2env(data_list, envir = environment())
-  list2env(control, envir = environment())
-
-  # Initialize the objects to store the initial parameters:
-  param <- trans <- vector("list")
+  data_param <- create_lmean_data_param(dataList = dataList,
+                                        control = control)
 
   #### Model for the transformed parameters ####
 
-  means_vector <- paste("means", control$subfix, sep = "")
-
-  # Transformed parameters:
-  list_struct <- vector("list")
-  k <- 1L
-
-  # Covariance matrix:
-  list_struct[[k]] <- list(name = means_vector,
-                           type = "matrix",
-                           dim = c(nitems, 1L),
-                           rownames = item_names,
-                           colnames = "intrcpt",
-                           symmetric = TRUE)
-  k <- k+1L
-
-  trans <- create_parameters(list_struct)
+  trans <- model_lmean(dataList = dataList,
+                       data_param = data_param,
+                       control = control)
 
   #### Model for the parameters ####
 
-  param <- trans
+  param <- constraints_lmean(trans = trans,
+                             dataList = dataList,
+                             data_param = data_param,
+                             control = control)
 
   #### Create the initial values for the parameters ####
 
-  init_param <- vector("list", length = control$rstarts)
-  for(rs in 1:control$rstarts) {
-
-    init_param[[rs]] <- vector("list")
-    init_param[[rs]][[means_vector]] <- matrix(colMeans(data, na.rm = TRUE),
-                                               nrow = nitems, ncol = 1L,
-                                               dimnames = dimnames(trans[[means_vector]]))
-
-  }
-
+  init_param <- start_lmean(param = param,
+                            trans = trans,
+                            dataList = dataList,
+                            data_param = data_param,
+                            control = control)
 
   #### Custom initial values ####
 
-  # # Replace initial starting values by custom starting values:
-  #
-  # if(!is.null(control$start)) {
-  #
-  #   nm <- names(control$start)
-  #   nm <- nm[!vapply(control$start, is.null, logical(1))]
-  #
-  #   for (i in seq_len(control$rstarts)) {
-  #     common_nm <- intersect(nm, names(init_param[[i]]))
-  #     for (j in common_nm) {
-  #       init_param[[i]][[j]] <- insert_object(init_param[[i]][[j]],
-  #                                             control$start[[j]])
-  #     }
-  #   }
-  #
-  # }
+  init_param <- custom_init_param(control$start, init_param)
 
-  #### Return ####
+  #### Result ####
 
   result <- list(param = param,
                  trans = trans,
-                 init_param = init_param)
+                 init_param = init_param,
+                 data_param = data_param)
 
   return(result)
 
 }
 
-create_lmean_modelInfo <- function(data_list, full_model, control) {
+#### Function to create the data parameter names ####
 
-  # Generate control_manifold, control_transform, and control_estimator
-
-  list2env(data_list, envir = environment())
-  list2env(full_model, envir = environment())
-  list2env(control, envir = environment())
+create_lmean_data_param <- function(dataList, control) {
 
   means_vector <- paste("means", control$subfix, sep = "")
 
+  #### Result ####
+
+  result <- list(means_vector = means_vector)
+
+  return(result)
+
+}
+
+#### Function to create the transformed-parameter model ####
+
+model_lmean <- function(dataList, data_param, control) {
+
+  means_vector <- data_param$means_vector
+
+  list_struct <- list(
+    list(name = means_vector,
+         type = "matrix",
+         dim = c(dataList$nitems, 1L),
+         rownames = dataList$item_names,
+         colnames = "intrcpt")
+  )
+
+  trans <- create_parameters(list_struct)
+
+  #### Result ####
+
+  return(trans)
+
+}
+
+#### Function to create the parameter constraints ####
+
+constraints_lmean <- function(trans, dataList, data_param, control) {
+
+  param <- trans
+
+  #### Result ####
+
+  return(param)
+
+}
+
+#### Function to create starting values ####
+
+start_lmean <- function(param, trans, dataList, data_param, control) {
+
+  means_vector <- data_param$means_vector
+
+  if(control$std.ov) {
+    means <- rep(0, dataList$nitems)
+  } else {
+    means <- colMeans(dataList$data, na.rm = TRUE)
+  }
+
+  init_param <- vector("list", length = control$rstarts)
+
+  for(rs in seq_len(control$rstarts)) {
+
+    init_param[[rs]] <- list()
+
+    init_param[[rs]][[means_vector]] <-
+      matrix(means,
+             nrow = dataList$nitems,
+             ncol = 1L,
+             dimnames = dimnames(trans[[means_vector]]))
+
+  }
+
+  #### Result ####
+
+  return(init_param)
+
+}
+
+#### Function to create the modelInfo ####
+
+create_lmean_modelInfo <- function(dataList, full_model, control) {
+
+  list2env(full_model, envir = environment())
+  list2env(data_param, envir = environment())
+
   #### Manifolds ####
 
-  manifolds <- list(
-    list(manifold = "euclidean",
-         parameters = means_vector)
-  )
+  manifolds <- manifolds_lmean(param = param,
+                               dataList = dataList,
+                               data_param = data_param,
+                               control = control)
 
   control_manifold <- create_manifolds(manifolds = manifolds,
                                        structures = param)
 
   #### Transformations ####
 
-  transforms <- list()
+  transforms <- transformations_lmean(trans = trans,
+                                      dataList = dataList,
+                                      data_param = data_param,
+                                      control = control)
 
   control_transform <- create_transforms(transforms = transforms,
                                          structures = trans)
 
   #### Estimators ####
 
-  estimators <- list()
+  estimators <- estimators_lmean(trans = trans,
+                                 dataList = dataList,
+                                 data_param = data_param,
+                                 control = control)
 
   control_estimator <- create_estimators(estimators = estimators,
                                          structures = trans)
@@ -257,26 +319,17 @@ create_lmean_modelInfo <- function(data_list, full_model, control) {
   inits <- create_init(trans, param, init_param,
                        control_transform = control_transform, control)
 
-  parameters <- inits$parameters
-  parameters_labels <- inits$parameters_labels
-  nparam <- inits$nparam
-
-  transparameters <- inits$transparameters
-  transparameters_labels <- inits$transparameters_labels
-  ntrans <- inits$ntrans
-
-  trans2param <- inits$trans2param
+  list2env(inits, envir = environment())
 
   #### Set up the optimizer ####
 
-  # Create defaults for the control of the optimizer:
   control_optimizer <- control
   control_optimizer$parameters <- parameters
   control_optimizer$transparameters <- transparameters
   control_optimizer$init_param <- init_param
   control_optimizer$transparam2param <- trans2param-1L
 
-  #### Collect all the model information ####
+  #### Result ####
 
   modelInfo <- list(param = param,
                     trans = trans,
@@ -284,19 +337,133 @@ create_lmean_modelInfo <- function(data_list, full_model, control) {
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,
-                    dof = npatterns - nparam,
+                    dof = dataList$npatterns - nparam,
                     control_manifold = control_manifold,
                     control_transform = control_transform,
                     control_estimator = control_estimator,
                     control_optimizer = control_optimizer)
 
-  #### Return ####
-
   return(modelInfo)
 
 }
 
+#### Function to create the manifolds ####
+
+manifolds_lmean <- function(param, dataList, data_param, control) {
+
+  manifolds <- list(
+    list(manifold = "euclidean",
+         parameters = data_param$means_vector)
+  )
+
+  #### Result ####
+
+  return(manifolds)
+
+}
+
+#### Function to create the transformations ####
+
+transformations_lmean <- function(trans, dataList, data_param, control) {
+
+  transforms <- list()
+
+  #### Result ####
+
+  return(transforms)
+
+}
+
+#### Function to create the estimators ####
+
+estimators_lmean <- function(trans, dataList, data_param, control) {
+
+  estimators <- list()
+
+  #### Result ####
+
+  return(estimators)
+
+}
+
+#### Function to fit the model ####
+
+fit_lmean <- function(dataList, modelInfo, control) {
+
+  means_vector <- paste("means", control$subfix, sep = "")
+
+  if(control$std.ov) {
+    means <- rep(0, dataList$nitems)
+  } else {
+    means <- colMeans(dataList$data, na.rm = TRUE)
+  }
+
+  means <- matrix(means,
+                  nrow = dataList$nitems,
+                  ncol = 1L,
+                  dimnames = dimnames(modelInfo$trans[[means_vector]]))
+
+  values <- c(means)
+  names(values) <- c(modelInfo$trans[[means_vector]])
+
+  Optim <- list()
+  Optim$f <- 0
+
+  Optim$parameters <- values[modelInfo$parameters_labels]
+  Optim$transparameters <- values[modelInfo$transparameters_labels]
+
+  names(Optim$parameters) <- modelInfo$parameters_labels
+  names(Optim$transparameters) <- modelInfo$transparameters_labels
+
+  Optim$elapsed <- 0
+
+  #### Result ####
+
+  return(Optim)
+
+}
+
+#### Function to compute standard errors ####
+
+compute_se_lmean <- function(dataList, modelInfo, Optim) {
+
+  if(dataList$nobs < 2L) {
+
+    ACOV <- matrix(0,
+                   nrow = dataList$nitems,
+                   ncol = dataList$nitems)
+
+  } else {
+
+    variances <- apply(dataList$data, MARGIN = 2L,
+                       FUN = var, na.rm = TRUE)
+
+    ACOV <- diag(variances,
+                 nrow = dataList$nitems,
+                 ncol = dataList$nitems)
+
+  }
+
+  rownames(ACOV) <- colnames(ACOV) <- modelInfo$parameters_labels
+
+  SE <- list(
+    ACOV = ACOV,
+    se = sqrt(diag(ACOV) / dataList$nobs)
+  )
+
+  names(SE$se) <- modelInfo$parameters_labels
+
+  #### Result ####
+
+  return(SE)
+
+}
+
+#### Function to create the control list ####
+
 lmean_control <- function(control) {
+
+  #### Optimizer defaults ####
 
   if(is.null(control$step_maxit)) {
     control$step_maxit <- 30L
@@ -347,14 +514,40 @@ lmean_control <- function(control) {
   }
 
   if(is.null(control$ss)) {
-    # Step sizes should be small so taus are not far from sensible bounds
     control$ss <- 0.001
   }
 
-  # Fixed rstarts and cores:
+  if(is.null(control$start)) {
+    control$start <- NULL
+  }
+
+  if(is.null(control$subfix)) {
+    control$subfix <- ""
+  }
+
+  #### Fixed rstarts and cores ####
+
   control$rstarts <- 1L
   control$cores <- 1L
 
+  #### Result ####
+
   return(control)
+
+}
+
+#### Function to print progress messages ####
+
+print_lmean_message <- function(msg) {
+
+  w <- nchar(msg)+4L
+
+  cat("\n", "+", strrep("-", w), "+\n",
+      "|  ", msg, "  |\n",
+      "+", strrep("-", w), "+\n\n", sep = "")
+
+  #### Result ####
+
+  return(invisible(NULL))
 
 }

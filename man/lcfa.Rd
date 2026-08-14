@@ -2,82 +2,86 @@
 % Please edit documentation in R/lcfa.R
 \name{lcfa}
 \alias{lcfa}
-\title{Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.}
+\title{Confirmatory Factor Analysis}
 \usage{
 lcfa(data, model = NULL, estimator = "ml",
-ordered = FALSE, group = NULL,
-sample.cov = NULL, nobs = NULL,
-positive = FALSE, penalties = TRUE,
-missing = "pairwise.complete.obs",
-std.lv = FALSE, do.fit = TRUE,
-message = FALSE, mimic = 'latent',
-control = NULL, ...)
+     ordered = FALSE, group = NULL,
+     sample.cov = NULL, nobs = NULL,
+     positive = FALSE, penalties = FALSE,
+     missing = "pairwise.complete.obs",
+     std.lv = FALSE, std.ov = FALSE,
+     acov = "standard", meanstructure = TRUE,
+     parameterization = NULL,
+     likelihood = NULL, se = TRUE,
+     control = NULL, message = FALSE,
+     do.fit = TRUE, ...)
 }
 \arguments{
-\item{data}{data frame or matrix.}
+\item{data}{A data frame or matrix containing the observed variables.}
 
-\item{model}{lavaan's model syntax.}
+\item{model}{Confirmatory factor model specified using lavaan syntax.}
 
-\item{estimator}{Available estimators: "ml", "uls", and "dwls". Defaults to "ml".}
+\item{estimator}{Estimation method. Available options include \code{"ml"},
+\code{"uls"}, and \code{"dwls"}.}
 
-\item{ordered}{Logical. Defaults to TRUE.}
+\item{ordered}{Logical value indicating whether indicators are ordinal. The
+character value \code{"yule"} requests Yule correlations.}
 
-\item{group}{String. Name of the variable that splits the data in different groups.}
+\item{group}{Optional character string identifying the grouping variable.}
 
-\item{sample.cov}{Covariance matrix between the items. Defaults to NULL.}
+\item{sample.cov}{Optional sample covariance matrix or list of covariance
+matrices.}
 
-\item{nobs}{Number of observations. Defaults to NULL.}
+\item{nobs}{Optional number of observations.}
 
-\item{positive}{Force a positive-definite solution. Defaults to FALSE.}
+\item{positive}{Logical. If \code{TRUE}, positive-definite covariance
+structures are imposed through the corresponding manifold parameterization.}
 
-\item{penalties}{list of penalty terms for the parameters.}
+\item{penalties}{Logical value or list controlling regularization.}
 
-\item{missing}{Method to handle missing data.}
+\item{missing}{Missing-data method.}
 
-\item{std.lv}{Logical. Provide the parameters of the standardized model. Default is TRUE.}
+\item{std.lv}{Logical. Standardize latent variables.}
 
-\item{std.ov}{Logical. Standardize the observed variables before fitting. Default is FALSE.}
+\item{std.ov}{Logical. Standardize observed variables.}
 
-\item{acov}{String. "standard" or "robust". Default is "standard".}
+\item{acov}{Method used to estimate the asymptotic covariance matrix of the
+sample statistics.}
 
-\item{meanstructure}{Logical. Estimate the means of the variables. Default is FALSE.}
+\item{meanstructure}{Logical. Estimate the observed-variable mean structure.}
 
-\item{likelihood}{String. Use N (normal) or N-1 (wishart) in the denominator. Defaults to "normal" for ML and "wishart" otherwise.}
+\item{parameterization}{Optional parameterization specification.}
 
-\item{se}{Logical. Compute standard errors. Defaults to TRUE.}
+\item{likelihood}{Character string controlling the normal/Wishart likelihood
+convention.}
 
-\item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+\item{se}{Logical. Compute standard errors before returning the fitted object.}
 
-\item{message}{Logical. Defaults to FALSE.}
+\item{control}{Optional list of optimization controls.}
 
-\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+\item{message}{Logical. Print progress messages.}
 
-\item{...}{Additional lavaan arguments. See ?lavaan for more information.}
+\item{do.fit}{Logical. If \code{FALSE}, return the prepared but unfitted
+\code{"lcfa"} object.}
+
+\item{...}{Additional arguments passed to lavaan and the sample-statistic
+estimators where applicable.}
 }
 \value{
-List with the following objects:
-\item{version}{Version number of 'latent' when the model was estimated.}
-\item{call}{Code used to estimate the model.}
-\item{ModelInfo}{Model information.}
-\item{Optim}{Output of the optimizer.}
-\item{parameters}{Structure with all model parameters.}
-\item{transparameters}{Structure with all transformed model parameters.}
-\item{loglik}{Logarithm likelihood of the model.}
-\item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
+An S4 object of class \code{"lcfa"}, which inherits from
+  \code{"latent"}.
 }
 \description{
-Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
-}
-\details{
-\code{lcfa} estimates confirmatory factor models.
+Fit confirmatory factor analysis models using lavaan model syntax and the
+optimization infrastructure of \pkg{latent}.
 }
 \examples{
-
 \dontrun{
-# The famous Holzinger and Swineford (1939) example
-HS.model <- ' visual  =~ x1 + x2 + x3
-              textual =~ x4 + x5 + x6
-              speed   =~ x7 + x8 + x9 '
+HS.model <- '
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+'
 
 fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
 summary(fit, digits = 3L)

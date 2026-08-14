@@ -2,76 +2,82 @@
 % Please edit documentation in R/lefa.R
 \name{lefa}
 \alias{lefa}
-\title{Fit an Exploratory Factor Analysis (EFA) model.}
+\title{Exploratory Factor Analysis}
 \usage{
-lefa(data, nfactors = 1L, model = NULL,
-estimator = "ml", rotation = "oblimin",
-ordered = FALSE, group = NULL,
-sample.cov = NULL, nobs = NULL,
-positive = FALSE, penalties = TRUE,
-missing = "pairwise.complete.obs",
-std.lv = FALSE, do.fit = TRUE, mimic = 'latent',
-control = NULL, ...)
+lefa(data, nfactors = 1L, estimator = "ml",
+     projection = "oblq", rotation = "oblimin",
+     model = NULL, ordered = FALSE, group = NULL,
+     sample.cov = NULL, nobs = NULL,
+     positive = FALSE, penalties = TRUE,
+     missing = "pairwise.complete.obs",
+     std.lv = TRUE, do.fit = TRUE,
+     mimic = "latent", control = NULL,
+     ...)
 }
 \arguments{
-\item{data}{data frame or matrix.}
+\item{data}{A data frame or matrix containing the observed variables.}
 
-\item{nfactors}{integer. Number of latent variables.}
+\item{nfactors}{Integer. Number of factors used when \code{model = NULL}.}
 
-\item{estimator}{Available estimators: "ml", "uls", and "dwls". Defaults to "ml".}
+\item{estimator}{Estimation method passed to \code{lcfa()}.}
 
-\item{rotation}{Available rotations: "oblimin", "geomin", and "target". Defaults to "oblimin".}
+\item{projection}{Rotation projection passed to \code{lrotate()}. Available
+options are \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
 
-\item{model}{lavaan's model syntax.}
+\item{rotation}{Rotation criterion passed to \code{lrotate()}.}
 
-\item{ordered}{Logical. Defaults to TRUE.}
+\item{model}{Optional lavaan model syntax. If \code{NULL}, an exploratory
+lower-diagonal loading model is generated automatically.}
 
-\item{group}{String. Name of the variable that splits the data in different groups.}
+\item{ordered}{Logical value indicating whether indicators are ordinal. The
+character value \code{"yule"} requests Yule correlations.}
 
-\item{sample.cov}{Covariance matrix between the items. Defaults to NULL.}
+\item{group}{Optional character string identifying the grouping variable.}
 
-\item{nobs}{Number of observations. Defaults to NULL.}
+\item{sample.cov}{Optional sample covariance matrix or list of covariance
+matrices passed to \code{lcfa()}.}
 
-\item{positive}{Force a positive-definite solution. Defaults to FALSE.}
+\item{nobs}{Optional number of observations passed to \code{lcfa()}.}
 
-\item{penalties}{list of penalty terms for the parameters.}
+\item{positive}{Logical. Request the positive-definite parameterization used
+by \code{lcfa()}.}
 
-\item{missing}{Method to handle missing data.}
+\item{penalties}{Logical value or list controlling regularization.}
 
-\item{std.lv}{Provide the parameters of the standardized model.}
+\item{missing}{Missing-data method passed to \code{lcfa()}.}
 
-\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+\item{std.lv}{Logical. Standardize latent variables in the unrotated model.}
 
-\item{mimic}{String. Choose the output you want to obtain. Defaults to 'latent'.}
+\item{do.fit}{Logical. If \code{FALSE}, return the unrotated \code{lcfa}
+model specification without fitting or rotation.}
 
-\item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+\item{mimic}{Retained for backward compatibility. Only \code{"latent"} is
+currently supported.}
 
-\item{...}{Additional lavaan arguments. See ?lavaan for more information.}
+\item{control}{Optional list of optimization controls passed to the
+unrotated \code{lcfa()} model.}
+
+\item{...}{Additional arguments. CFA/lavaan arguments are passed to
+\code{lcfa()}; arguments required by the selected rotation criterion or
+projection are passed only to \code{lrotate()}.}
 }
 \value{
-List with the following objects:
-\item{version}{Version number of 'latent' when the model was estimated.}
-\item{call}{Code used to estimate the model.}
-\item{ModelInfo}{Model information.}
-\item{Optim}{Output of the optimizer.}
-\item{parameters}{Structure with all model parameters.}
-\item{transparameters}{Structure with all transformed model parameters.}
-\item{loglik}{Logarithm likelihood of the model.}
-\item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
+If the fitted model contains more than one factor, a list with
+  components \code{efa} (the unrotated \code{lcfa} fit) and
+  \code{rotation} (the rotated \code{latent} fit). For a one-factor model,
+  the unrotated \code{lcfa} fit is returned directly. If
+  \code{do.fit = FALSE}, the unfitted \code{lcfa} specification is returned.
 }
 \description{
-Fit an Exploratory Factor Analysis (EFA) model.
-}
-\details{
-\code{lefa} estimates confirmatory factor models.
+Fit an exploratory factor analysis model by first estimating an orthogonal
+factor model with \code{lcfa()} and subsequently rotating the estimated
+loading matrices with \code{lrotate()}.
 }
 \examples{
-
 \dontrun{
-# The famous Holzinger and Swineford (1939) example
-
-fit <- lefa(data = HolzingerSwineford1939, nfactors = 3L)
-summary(fit, digits = 3L)
+fit <- lefa(data = HolzingerSwineford1939,
+            nfactors = 3L,
+            rotation = "oblimin")
 }
 
 }

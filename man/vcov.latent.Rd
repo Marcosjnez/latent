@@ -14,11 +14,13 @@ for which the covariance matrix should be returned. Labels must occur in
 \code{fit@modelInfo$transparameters_labels}. If \code{NULL}, the parameter
 blocks corresponding to the fitted model parameters are used.}
 
-\item{H}{Optional Hessian or equivalent information matrix for the freely
-estimated parameters. If \code{NULL}, the Hessian is computed from
-\code{fit}. Supplying \code{H} allows alternative covariance estimators,
-such as sandwich estimators, to use the same transformation and sequential
-uncertainty machinery.}
+\item{H}{Optional information specification for the freely estimated
+parameters. If \code{NULL}, the ordinary Hessian is used. A numeric matrix
+can be supplied as the information matrix for the current model. A function
+can also be supplied; it must take a fitted model as its first argument and
+return an information matrix. Function-valued specifications are propagated
+recursively so that the information matrix is recomputed separately for
+each nested model.}
 }
 \value{
 A list containing:
@@ -27,7 +29,7 @@ A list containing:
   \item{\code{se}}{Standard errors for the selected parameters.}
   \item{\code{jacob}}{Jacobian matrix used to propagate covariance through
     parameter transformations.}
-  \item{\code{H}}{Hessian or information matrix used in the covariance
+  \item{\code{H}}{Information matrix used in the final covariance
     calculation.}
   \item{\code{B}}{For sequential models, the additional structural
     uncertainty component \eqn{C^\top A C}. For ordinary one-step models,
@@ -42,8 +44,9 @@ estimated or transformed parameters of a fitted object inheriting from
 class \code{"latent"}.
 
 For ordinary one-step models, covariance matrices are obtained from the
-inverse Hessian and transformed to the requested parameterization using the
-delta method.
+inverse Hessian, or from an alternative information matrix supplied through
+\code{H}, and transformed to the requested parameterization using the delta
+method.
 
 When the fitted model contains a previous \code{"latent"} object among the
 model specifications stored in
@@ -56,35 +59,42 @@ Compute covariance matrices and standard errors for fitted latent variable
 models, including uncertainty propagated across sequential estimation steps.
 
 
-For a one-step model, let \eqn{H} denote the Hessian of the objective
-function. The covariance matrix of the freely estimated parameters is based
-on \eqn{H^{-1}}. Covariances of transformed parameters are subsequently
-obtained with the delta method.
+For a one-step model, let \eqn{P} denote the information matrix used for
+inference. With ordinary Hessian-based inference, \eqn{P = H}, where \eqn{H}
+is the Hessian of the objective function. The covariance matrix of the freely
+estimated parameters is based on \eqn{P^{-1}}. Covariances of transformed
+parameters are subsequently obtained with the delta method.
 
 For a sequential model, suppose that measurement or nuisance parameters
 \eqn{\theta_M} are estimated in an earlier step and subsequently treated as
 fixed while structural parameters \eqn{\theta_S} are estimated. Let
 \eqn{A} denote the covariance matrix of the earlier parameter estimates,
-\eqn{H_2} the Hessian for the structural parameters, and \eqn{C} the
+\eqn{H_2} the ordinary Hessian for the structural parameters, \eqn{P_2} the
+information matrix whose inverse gives the structural covariance when the
+earlier parameters are treated as known, and \eqn{C} the
 measurement-structural cross-derivative matrix.
 
 The propagated structural uncertainty contains the additional term
 \deqn{H_2^{-1} C^\top A C H_2^{-1}.}
 
-The method constructs the corresponding joint precision matrix
+The corresponding joint covariance matrix is
 \deqn{
 \begin{pmatrix}
-A^{-1} + C H_2^{-1} C^\top & C \\
-C^\top & H_2
-\end{pmatrix}
+A & -A C H_2^{-1} \\
+-H_2^{-1} C^\top A &
+P_2^{-1} + H_2^{-1} C^\top A C H_2^{-1}
+\end{pmatrix}.
 }
-so that covariance between parameters estimated in different stages is
-retained.
 
-If the earlier fitted model itself contains a previous \code{"latent"}
-object, \code{vcov()} is called recursively before uncertainty is propagated
-to the current stage. Consequently, chains of sequential plug-in estimation
-steps can be handled recursively.
+Rather than constructing and inverting this covariance matrix directly, the
+method constructs its inverse and passes it through the ordinary covariance
+machinery. When \eqn{P_2 = H_2}, this reduces to the standard sequential
+pseudo-likelihood correction.
+
+If \code{H} is supplied as a function and the earlier fitted model itself
+contains a previous \code{"latent"} object, the same function is passed
+recursively and evaluated independently for each nested fit. This allows, for
+example, robust information matrices to be used at every estimation stage.
 
 At most one nested \code{"latent"} object is currently supported at each
 estimation level.

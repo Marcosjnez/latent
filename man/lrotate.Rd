@@ -2,54 +2,48 @@
 % Please edit documentation in R/lrotate.R
 \name{lrotate}
 \alias{lrotate}
-\title{Rotate the lambda matrix of an orthogonal factor model.}
+\title{Rotate a factor loading matrix}
 \usage{
 lrotate(lambda, projection = "oblq", rotation = "oblimin",
-group = NULL, positive = FALSE, penalties = TRUE,
-do.fit = TRUE, control = NULL, ...)
+        group = NULL, positive = FALSE, penalties = TRUE,
+        do.fit = TRUE, control = NULL, ...)
 }
 \arguments{
-\item{lambda}{List, loading matrices for each group.}
+\item{lambda}{A matrix or a list of loading matrices, one for each group.}
 
-\item{projection}{String. Can be "orth", "oblq", or "poblq".}
+\item{projection}{Character string. Available projections are
+\code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
 
-\item{rotation}{String. Name of the variable that splits the data in different groups.}
+\item{rotation}{Character string identifying the rotation criterion.}
 
-\item{group}{String. Name of the variable that splits the data in different groups.}
+\item{group}{Optional grouping information retained in the fitted object.}
 
-\item{positive}{Force a positive-definite solution. Defaults to FALSE.}
+\item{positive}{Logical. Retained for compatibility with the factor-analysis
+interface.}
 
-\item{penalties}{list of penalty terms for the parameters.}
+\item{penalties}{Logical or list of penalty settings retained in the
+optimization control.}
 
-\item{do.fit}{TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.}
+\item{do.fit}{Logical. If \code{TRUE}, fit the rotation. If \code{FALSE},
+return only the model specification.}
 
-\item{control}{List of control parameters for the optimization algorithm. See 'details' for more information.}
+\item{control}{List of optimization-control arguments.}
 
-\item{...}{Additional arguments.}
+\item{...}{Additional arguments required by the selected projection or
+rotation criterion.}
 }
 \value{
-List with the following objects:
-\item{version}{Version number of 'latent' when the model was estimated.}
-\item{call}{Code used to estimate the model.}
-\item{ModelInfo}{Model information.}
-\item{Optim}{Output of the optimizer.}
-\item{parameters}{Structure with all model parameters.}
-\item{transparameters}{Structure with all transformed model parameters.}
-\item{loglik}{Logarithm likelihood of the model.}
-\item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
+An object of class \code{"latent"}.
 }
 \description{
-Rotate the lambda matrix of an orthogonal factor model.
-}
-\details{
-\code{lrotate} estimates confirmatory factor models.
+\code{lrotate} rotates one or more factor loading matrices using an
+orthogonal or oblique projection and a selected rotation criterion.
 }
 \examples{
-
 \dontrun{
-
-fit <- lrotate(lambda = , projection = "oblq", rotation = "oblimin")
-summary(fit, digits = 3L)
+fit <- lrotate(lambda = list(lambda),
+               projection = "oblq",
+               rotation = "oblimin")
 }
 
 }

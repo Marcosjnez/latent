@@ -2,98 +2,74 @@
 % Please edit documentation in R/lpoly.R
 \name{lpoly}
 \alias{lpoly}
-\title{Maximum likelihood estimation of positive-definite polychoric correlation matrices}
+\title{Polychoric Correlation Matrix}
 \usage{
-lpoly(data,
-      method = "two-step",
-      model = NULL,
-      positive = FALSE,
-      penalties = FALSE,
-      do.fit = TRUE,
-      message = FALSE,
-      control = NULL,
-      ...)
+lpoly(data, method = "two-step", model = NULL,
+      positive = FALSE, penalties = FALSE,
+      start = NULL, do.fit = TRUE, message = FALSE,
+      control = NULL, ...)
 }
 \arguments{
-\item{data}{A data frame or matrix containing the raw ordinal data.}
+\item{data}{A data frame or matrix containing ordinal variables coded
+numerically.}
 
-\item{method}{Character string indicating the estimation method. Possible
-values are \code{"one-step"} and \code{"two-step"}. Default is
-\code{"two-step"}.}
+\item{method}{Character string indicating the estimation method. Available
+options are \code{"one-step"} and \code{"two-step"}.}
 
-\item{model}{Optional model object used internally for initialization or
-custom model setup. Default is \code{NULL}.}
+\item{model}{Optional named list used with \code{method = "one-step"} to
+fix parameters or impose equality constraints. Names should correspond to
+parameter blocks such as \code{S} or the threshold blocks. Numeric values
+fix parameters, repeated character labels impose equality constraints, and
+\code{NA} leaves the corresponding parameter unchanged.}
 
-\item{positive}{Logical. If \code{TRUE}, the estimated polychoric correlation
-matrix is forced to be positive semidefinite. Default is \code{FALSE}.}
+\item{positive}{Logical. If \code{TRUE}, the correlation matrix is
+parameterized through an oblique manifold so that the resulting matrix is
+positive semidefinite. This option is available for one-step estimation.}
 
-\item{penalties}{Logical. If \code{TRUE}, penalties are added to the
-objective function to encourage a positive-definite solution. Default is
-\code{FALSE}.}
+\item{penalties}{Logical value or named list controlling regularization. If
+\code{TRUE}, the default log-determinant penalty is used. Two-step
+estimation does not use penalties.}
 
-\item{do.fit}{Logical. If \code{TRUE}, the model is fitted. If \code{FALSE},
-only the model setup is returned. Default is \code{TRUE}.}
+\item{start}{Optional named list of starting values used with
+\code{method = "one-step"}. Names should correspond to parameter blocks in
+the model. Partial matrices/vectors and \code{NA} values are handled in the
+same way as in \code{lca()}.}
 
-\item{message}{Logical. If \code{TRUE}, progress messages are printed during
-estimation. Default is \code{FALSE}.}
+\item{do.fit}{Logical. If \code{FALSE}, return the prepared but unfitted
+\code{"latent"} object.}
 
-\item{control}{A list of control parameters for the optimization algorithm.
-This may include starting values, convergence tolerances, maximum number of
-iterations, and other optimizer-specific options.}
+\item{message}{Logical. Print progress messages during estimation.}
 
-\item{...}{Additional arguments passed to internal optimization and model
-setup routines.}
+\item{control}{Optional list of optimization controls.}
+
+\item{...}{Additional arguments reserved for future extensions.}
 }
 \value{
-A list containing the fitted model and related information. Typical elements
-include:
-\itemize{
-  \item \code{version}: Version number of \pkg{latent} used when the model
-  was estimated.
-  \item \code{call}: Matched call used to estimate the model.
-  \item \code{ModelInfo}: Information about the model specification and data.
-  \item \code{Optim}: Output of the optimization routine.
-  \item \code{parameters}: Structure containing the model parameters.
-  \item \code{transparameters}: Structure containing transformed model
-  parameters.
-  \item \code{loglik}: Log-likelihood of the fitted model.
-  \item \code{penalized_loglik}: Penalized log-likelihood of the fitted model.
-}
+An S4 object of class \code{"latent"}. The object contains the
+  processed data in \code{dataList}, the model and optimization structures in
+  \code{modelInfo}, optimizer output in \code{Optim}, and the estimated
+  parameter structures in \code{parameters} and \code{transformed_pars}.
 }
 \description{
-\code{lpoly} estimates a polychoric correlation matrix from ordinal data using
-maximum likelihood. The function can use either a one-step or a two-step
-estimation approach and optionally enforce positive-semidefiniteness or
-positive-definiteness through constrained estimation or penalties.
+Estimate a polychoric correlation matrix from ordinal data using one-step or
+two-step estimation.
 }
 \details{
-\code{lpoly} estimates positive-definite or positive-semidefinite
-polychoric correlation matrices from ordinal data. The function is designed
-for situations in which the unrestricted polychoric matrix is not
-guaranteed to be admissible, for example because of sampling variability or
-sparse response patterns.
+With \code{method = "two-step"}, thresholds are obtained from the marginal
+distributions and the polychoric correlations are then estimated pairwise.
+With \code{method = "one-step"}, thresholds and correlations are optimized
+jointly using the general optimization infrastructure of \pkg{latent}.
 
-Two estimation strategies are available:
-\itemize{
-  \item \code{"two-step"}: thresholds are estimated first and the correlation
-  matrix is estimated in a second step.
-  \item \code{"one-step"}: thresholds and correlations are estimated jointly.
-}
-
-If \code{positive = TRUE}, the estimated matrix is constrained to be
-positive semidefinite. If \code{penalties = TRUE}, penalty terms are added
-to the objective function to encourage positive-definiteness.
-
-If \code{do.fit = FALSE}, the function returns the model setup without
-running the optimizer.
+The two-step method always uses the unconstrained pairwise estimator and
+therefore does not support \code{model}, \code{start}, \code{positive}, or
+\code{penalties}. Model constraints and custom starts are available for
+\code{method = "one-step"}.
 }
 \examples{
 \dontrun{
 fit <- lpoly(data = values)
-
-fit_psd <- lpoly(data = values, positive = TRUE)
-
-setup_only <- lpoly(data = values, do.fit = FALSE)
+fit_one_step <- lpoly(data = values, method = "one-step")
+fit_positive <- lpoly(data = values, method = "one-step", positive = TRUE)
 }
 
 }

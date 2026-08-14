@@ -1,65 +1,69 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/05/2026
+# Modification date: 13/08/2026
 #'
-#' @title
-#' Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+#' Confirmatory Factor Analysis
+#'
+#' Fit confirmatory factor analysis models using lavaan model syntax and the
+#' optimization infrastructure of \pkg{latent}.
 #'
 #' @usage
-#'
 #' lcfa(data, model = NULL, estimator = "ml",
-#' ordered = FALSE, group = NULL,
-#' sample.cov = NULL, nobs = NULL,
-#' positive = FALSE, penalties = TRUE,
-#' missing = "pairwise.complete.obs",
-#' std.lv = FALSE, do.fit = TRUE,
-#' message = FALSE, mimic = 'latent',
-#' control = NULL, ...)
+#'      ordered = FALSE, group = NULL,
+#'      sample.cov = NULL, nobs = NULL,
+#'      positive = FALSE, penalties = FALSE,
+#'      missing = "pairwise.complete.obs",
+#'      std.lv = FALSE, std.ov = FALSE,
+#'      acov = "standard", meanstructure = TRUE,
+#'      parameterization = NULL,
+#'      likelihood = NULL, se = TRUE,
+#'      control = NULL, message = FALSE,
+#'      do.fit = TRUE, ...)
 #'
-#' @param data data frame or matrix.
-#' @param model lavaan's model syntax.
-#' @param estimator Available estimators: "ml", "uls", and "dwls". Defaults to "ml".
-#' @param ordered Logical. Defaults to TRUE.
-#' @param group String. Name of the variable that splits the data in different groups.
-#' @param sample.cov Covariance matrix between the items. Defaults to NULL.
-#' @param nobs Number of observations. Defaults to NULL.
-#' @param positive Force a positive-definite solution. Defaults to FALSE.
-#' @param penalties list of penalty terms for the parameters.
-#' @param missing Method to handle missing data.
-#' @param std.lv Logical. Provide the parameters of the standardized model. Default is TRUE.
-#' @param std.ov Logical. Standardize the observed variables before fitting. Default is FALSE.
-#' @param acov String. "standard" or "robust". Default is "standard".
-#' @param meanstructure Logical. Estimate the means of the variables. Default is FALSE.
-#' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
-#' @param message Logical. Defaults to FALSE.
-#' @param se Logical. Compute standard errors. Defaults to TRUE.
-#' @param likelihood String. Use N (normal) or N-1 (wishart) in the denominator. Defaults to "normal" for ML and "wishart" otherwise.
-#' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
-#' @param ... Additional lavaan arguments. See ?lavaan for more information.
+#' @param data A data frame or matrix containing the observed variables.
+#' @param model Confirmatory factor model specified using lavaan syntax.
+#' @param estimator Estimation method. Available options include \code{"ml"},
+#'   \code{"uls"}, and \code{"dwls"}.
+#' @param ordered Logical value indicating whether indicators are ordinal. The
+#'   character value \code{"yule"} requests Yule correlations.
+#' @param group Optional character string identifying the grouping variable.
+#' @param sample.cov Optional sample covariance matrix or list of covariance
+#'   matrices.
+#' @param nobs Optional number of observations.
+#' @param positive Logical. If \code{TRUE}, positive-definite covariance
+#'   structures are imposed through the corresponding manifold parameterization.
+#' @param penalties Logical value or list controlling regularization.
+#' @param missing Missing-data method.
+#' @param std.lv Logical. Standardize latent variables.
+#' @param std.ov Logical. Standardize observed variables.
+#' @param acov Method used to estimate the asymptotic covariance matrix of the
+#'   sample statistics.
+#' @param meanstructure Logical. Estimate the observed-variable mean structure.
+#' @param parameterization Optional parameterization specification.
+#' @param likelihood Character string controlling the normal/Wishart likelihood
+#'   convention.
+#' @param se Logical. Compute standard errors before returning the fitted object.
+#' @param control Optional list of optimization controls.
+#' @param message Logical. Print progress messages.
+#' @param do.fit Logical. If \code{FALSE}, return the prepared but unfitted
+#'   \code{"lcfa"} object.
+#' @param ... Additional arguments passed to lavaan and the sample-statistic
+#'   estimators where applicable.
 #'
-#' @details \code{lcfa} estimates confirmatory factor models.
-#'
-#' @return List with the following objects:
-#' \item{version}{Version number of 'latent' when the model was estimated.}
-#' \item{call}{Code used to estimate the model.}
-#' \item{ModelInfo}{Model information.}
-#' \item{Optim}{Output of the optimizer.}
-#' \item{parameters}{Structure with all model parameters.}
-#' \item{transparameters}{Structure with all transformed model parameters.}
-#' \item{loglik}{Logarithm likelihood of the model.}
-#' \item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
+#' @return An S4 object of class \code{"lcfa"}, which inherits from
+#'   \code{"latent"}.
 #'
 #' @examples
-#'
 #' \dontrun{
-#' # The famous Holzinger and Swineford (1939) example
-#' HS.model <- ' visual  =~ x1 + x2 + x3
-#'               textual =~ x4 + x5 + x6
-#'               speed   =~ x7 + x8 + x9 '
+#' HS.model <- '
+#'   visual  =~ x1 + x2 + x3
+#'   textual =~ x4 + x5 + x6
+#'   speed   =~ x7 + x8 + x9
+#' '
 #'
 #' fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
 #' summary(fit, digits = 3L)
-#'}
+#' }
 #'
 #' @export
 lcfa <- function(data, model = NULL, estimator = "ml",
@@ -75,22 +79,36 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                  do.fit = TRUE,
                  ...) {
 
-  ## store original call
-  mc  <- match.call()
+  #### Check input arguments ####
+
+  if(!is.data.frame(data) && !is.matrix(data)) {
+    stop("data must be a data.frame or matrix")
+  }
+
+  if(is.matrix(data)) {
+    data <- as.data.frame(data)
+  }
+
+  if(is.null(model)) {
+    stop("model must contain a confirmatory factor model specified with lavaan syntax")
+  }
+
+  if(!is.null(control) && !is.list(control)) {
+    stop("control must be NULL or a list")
+  }
+
+  if(is.null(control)) {
+    control <- list()
+  }
 
   estimator <- tolower(estimator)
   missing <- tolower(missing)
+  acov <- tolower(acov)
 
   if(isTRUE(ordered)) {
 
     cor <- "poly"
     std.ov <- TRUE
-
-    # if(parameterization == "theta") {
-    #   control$deltaparam <- FALSE
-    # } else if(parameterization == "delta") {
-    #   control$deltaparam <- TRUE
-    # }
 
     if(positive) {
       control$deltaparam <- FALSE
@@ -99,18 +117,30 @@ lcfa <- function(data, model = NULL, estimator = "ml",
       control$deltaparam <- TRUE
     }
 
-  } else if(ordered == "yule") {
+  } else if(is.character(ordered) &&
+            length(ordered) == 1L &&
+            tolower(ordered) == "yule") {
+
     cor <- "yule"
     std.ov <- TRUE
     control$deltaparam <- TRUE
-  } else {
+
+  } else if(isFALSE(ordered)) {
+
     cor <- "pearson"
+
+  } else {
+
+    stop("ordered must be FALSE, TRUE, or 'yule'")
+
   }
 
-  if(estimator == "ml" || is.null(likelihood)) {
+  # Preserve the likelihood convention currently used by lcfa.
+  # if(estimator == "ml" || is.null(likelihood)) {
+  if(is.null(likelihood)) {
     likelihood <- "normal"
-  } else {
-    likelihood <- "wishart"
+    # if estimator == "ml", then likelihood should always be "normal" because
+    # it would use the right log-likelihood equation, but let the user choose
   }
 
   if(missing == "fiml") {
@@ -119,278 +149,217 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   }
 
   if(meanstructure) {
-    if(estimator == "ml" || estimator == "fml") estimator <- "means_fml"
+    if(estimator %in% c("ml", "fml")) estimator <- "means_fml"
     if(estimator == "uls") estimator <- "means_uls"
     if(estimator == "dwls") estimator <- "means_dwls"
   }
+
+  #### Store original call ####
+
+  mc <- match.call(expand.dots = TRUE)
+  args <- lapply(as.list(mc)[-1L], eval, envir = parent.frame())
+
+  #### Check control parameters ####
 
   control$ordered <- ordered
   control$std.lv <- std.lv
   control$std.ov <- std.ov
   control$positive <- positive
   control$penalties <- penalties
-  control$estimator <- tolower(estimator)
+  control$estimator <- estimator
   control$meanstructure <- meanstructure
   control$missing <- missing
   control <- lcfa_control(control)
 
-  #### Store original call ####
+  #### Create the dataList ####
 
-  mc <- match.call(expand.dots = TRUE)
-  args <- lapply(as.list(mc)[-1], eval, envir = parent.frame())
-  # args <- as.list(match.call(expand.dots = TRUE))[-1]
-
-  #### Create the datalist ####
-
-  dataList <- create_cfa_datalist(
-    data = data,
-    model = model,
-    cor = cor,
-    estimator = estimator,
-    ordered = ordered,
-    group = group,
-    sample.cov = sample.cov,
-    nobs = nobs,
-    positive = positive,
-    penalties = penalties,
-    missing = missing,
-    std.lv = std.lv,
-    std.ov = std.ov,
-    acov = acov,
-    message = message,
-    likelihood = likelihood,
-    meanstructure = meanstructure,
-    args = args,
-    control = control,
-    ...
-  )
+  dataList <- create_lcfa_dataList(data = data,
+                                   model = model,
+                                   cor = cor,
+                                   estimator = estimator,
+                                   ordered = ordered,
+                                   group = group,
+                                   sample.cov = sample.cov,
+                                   nobs = nobs,
+                                   positive = positive,
+                                   penalties = penalties,
+                                   missing = missing,
+                                   std.lv = std.lv,
+                                   std.ov = std.ov,
+                                   acov = acov,
+                                   message = message,
+                                   likelihood = likelihood,
+                                   meanstructure = meanstructure,
+                                   args = args,
+                                   control = control,
+                                   ...)
 
   #### Create the model ####
 
-  full_model <- create_cfa_model(dataList = dataList,
-                                 model = model,
-                                 control = control)
+  full_model <- create_lcfa_model(dataList = dataList,
+                                  model = model,
+                                  control = control)
   list2env(full_model, envir = environment())
-  dataList$data_param <- full_model$data_param
+  dataList$data_param <- data_param
 
-  #### Create the modelInfo ####
+  #### Create the manifold, transformation, and estimator structures ####
 
-  modelInfo <- create_cfa_modelInfo(dataList = dataList,
-                                    full_model = full_model,
-                                    control = control)
+  modelInfo <- create_lcfa_modelInfo(dataList = dataList,
+                                     full_model = full_model,
+                                     control = control)
 
   #### Fit the model ####
 
   if(!do.fit) {
 
-    lcfa_list <- new("latent",
-                     version            = as.character( packageVersion('latent') ),
-                     call               = mc,
-                     timing             = numeric(),
-                     dataList           = dataList,
-                     modelInfo          = modelInfo,
-                     Optim              = list(),
-                     parameters         = list(),
-                     transformed_pars   = list(),
-                     extra              = list()
-    )
+    result <- new("lcfa",
+                  version          = as.character(packageVersion("latent")),
+                  call             = mc,
+                  timing           = numeric(),
+                  dataList         = dataList,
+                  modelInfo        = modelInfo,
+                  Optim            = list(),
+                  parameters       = list(),
+                  transformed_pars = list(),
+                  extra            = list())
 
-    return(lcfa_list)
+    #### Result ####
+
+    return(result)
 
   }
 
   if(message) {
-    msg <- "Fitting the model"
-    w <- nchar(msg) + 4
-    cat("\n", "+", strrep("-", w), "+\n",
-        "|  ", msg, "  |\n",
-        "+", strrep("-", w), "+\n\n", sep = "")
+    print_lcfa_message("Fitting the model")
   }
 
-  modelInfo$control_optimizer$cores <- min(modelInfo$control_optimizer$rstarts,
-                                           modelInfo$control_optimizer$cores)
-  # Fit the model:
+  modelInfo$control_optimizer$cores <-
+    min(modelInfo$control_optimizer$rstarts,
+        modelInfo$control_optimizer$cores)
+
   Optim <- optimizer(control_manifold = modelInfo$control_manifold,
                      control_transform = modelInfo$control_transform,
                      control_estimator = modelInfo$control_estimator,
                      control_optimizer = modelInfo$control_optimizer)
+
   names(Optim$parameters) <- modelInfo$parameters_labels
   names(Optim$transparameters) <- modelInfo$transparameters_labels
 
-  # Collect all the information about the optimization:
+  if(!is.null(Optim$g)) names(Optim$g) <- modelInfo$parameters_labels
+  if(!is.null(Optim$rg)) names(Optim$rg) <- modelInfo$parameters_labels
+  if(!is.null(Optim$dir)) names(Optim$dir) <- modelInfo$parameters_labels
 
-  elapsed <- Optim$elapsed
+  #### Process the outputs ####
 
-  #### Estimated model structures ####
+  transformed_pars <- fill_in(modelInfo$trans,
+                              Optim$transparameters)
 
-  # Create the structures of transformed parameters:
-  transformed_pars <- fill_in(modelInfo$trans, Optim$transparameters)
-
-  # Create the structures of untransformed parameters:
   parameters <- transformed_pars[names(modelInfo$param)]
-
-  #### Process the fit information ####
-
-  loss <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-                            FUN = \(x) x[[1]])))
-  loglik <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-                              FUN = \(x) x[[4]])))
-  penalty <- sum(unlist(lapply(Optim$outputs$estimators$doubles,
-                               FUN = \(x) x[[7]])))
-  penalized_loss <- loss + penalty
-  penalized_loglik <- loglik - penalty
-
-  #### latent object ####
-
-  result <- new("lcfa",
-                version            = as.character( packageVersion('latent') ),
-                call               = mc,
-                timing             = elapsed,
-                dataList           = dataList,
-                modelInfo          = modelInfo,
-                Optim              = Optim,
-                parameters         = parameters,
-                transformed_pars   = transformed_pars,
-                extra              = list()
-  )
-
-  if(message) {
-    msg <- "Computing standard errors"
-    w <- nchar(msg) + 4
-    cat("\n", "+", strrep("-", w), "+\n",
-        "|  ", msg, "  |\n",
-        "+", strrep("-", w), "+\n\n", sep = "")
-  }
 
   #### Standard errors ####
 
   if(isTRUE(se)) {
-    Optim$SE <- se(result, type = "standard", digits = 9)
+
+    if(message) {
+      print_lcfa_message("Computing standard errors")
+    }
+
+    Optim$SE <- compute_se_lcfa(dataList = dataList,
+                                modelInfo = modelInfo,
+                                Optim = Optim)
+
   }
 
-  result@Optim <- Optim
+  #### latent object ####
 
-  #### Return ####
+  result <- new("lcfa",
+                version          = as.character(packageVersion("latent")),
+                call             = mc,
+                timing           = Optim$elapsed,
+                dataList         = dataList,
+                modelInfo        = modelInfo,
+                Optim            = Optim,
+                parameters       = parameters,
+                transformed_pars = transformed_pars,
+                extra            = list())
+
+  #### Result ####
 
   return(result)
 
 }
 
-split_by_missing_pattern <- function(data) {
-  if (!is.data.frame(data) && !is.matrix(data)) {
-    stop("`data` must be a data.frame or matrix.")
-  }
+#### Function to create the dataList ####
 
-  if (nrow(data) == 0L) {
-    return(list())
-  }
-
-  miss <- is.na(data)
-
-  # One key per row, based on its missing-data pattern
-  pattern_key <- apply(miss, 1L, function(x) paste(as.integer(x), collapse = ""))
-
-  # Unique patterns in first-appearance order
-  pattern_levels <- unique(pattern_key)
-
-  # Number of rows per pattern
-  counts <- tabulate(match(pattern_key, pattern_levels), nbins = length(pattern_levels))
-
-  # Order by decreasing number of rows; ties keep first appearance order
-  ord <- order(-counts, seq_along(pattern_levels))
-  pattern_levels <- pattern_levels[ord]
-  counts <- counts[ord]
-
-  out <- vector("list", length(pattern_levels))
-
-  for (k in seq_along(pattern_levels)) {
-    idx_rows <- which(pattern_key == pattern_levels[k])
-    idx_vars <- !miss[idx_rows[1L], ]  # TRUE = observed in this pattern
-
-    out[[k]] <- list(
-      data = data[idx_rows, idx_vars, drop = FALSE],
-      vars = idx_vars,
-      nobs = length(idx_rows)
-    )
-  }
-
-  names(out) <- NULL
-  out
-}
-
-create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
-                                estimator = "ml", ordered = FALSE,
-                                group = NULL, sample.cov = NULL, nobs = NULL,
-                                positive = FALSE, penalties = TRUE,
-                                missing = "pairwise.complete.obs",
-                                std.lv = TRUE, std.ov = FALSE,
-                                acov = "standard", message = FALSE,
-                                likelihood = NULL, meanstructure = TRUE,
-                                args = NULL, control = NULL,
-                                ...) {
+create_lcfa_dataList <- function(data, model = NULL, cor = "pearson",
+                                 estimator = "ml", ordered = FALSE,
+                                 group = NULL, sample.cov = NULL, nobs = NULL,
+                                 positive = FALSE, penalties = TRUE,
+                                 missing = "pairwise.complete.obs",
+                                 std.lv = TRUE, std.ov = FALSE,
+                                 acov = "standard", message = FALSE,
+                                 likelihood = NULL, meanstructure = TRUE,
+                                 args = NULL, control = NULL,
+                                 ...) {
 
   cor <- tolower(cor)
   estimator <- tolower(estimator)
   acov <- tolower(acov)
   missing <- tolower(missing)
 
+  #### Groups ####
+
   if(is.null(group)) {
+
     ngroups <- 1L
     group <- "group"
     group_label <- ""
     data$group <- group_label
+
   } else {
+
+    if(!group %in% colnames(data)) {
+      stop("The grouping variable is not present in data")
+    }
+
     group_label <- unique(data[[group]])
     ngroups <- length(group_label)
+
   }
 
   item_names <- extract_item_names_lavaan(model, ngroups = ngroups)
 
-  # Remove group cases with all missing data for given item_names:
+  #### Remove cases with no observed model variables ####
+
   keep <- rep(FALSE, nrow(data))
+
   for(i in seq_len(ngroups)) {
+
     group_i <- data[[group]] == group_label[i]
     items_i <- item_names[[i]]
-    not_all_na_i <- !apply(is.na(data[group_i, items_i, drop = FALSE]), 1, all)
+
+    if(length(items_i) == 0L) {
+      stop("No observed variables were identified for group ", i)
+    }
+
+    not_all_na_i <- !apply(is.na(data[group_i, items_i, drop = FALSE]),
+                           MARGIN = 1L, FUN = all)
     keep[group_i] <- not_all_na_i
+
   }
+
   data <- data[keep, , drop = FALSE]
 
-  get_group_data <- function(i) {
-    if (ngroups > 1L) {
-      data[data[[group]] == group_label[i], item_names[[i]], drop = FALSE]
-    } else {
-      data[, item_names[[i]], drop = FALSE]
-    }
+  if(nrow(data) == 0L) {
+    stop("No observations remain after removing cases with all model variables missing")
   }
 
-  unwrap_single <- function(x) {
-    if (length(x) == 0L || all(vapply(x, is.null, logical(1)))) {
-      return(NULL)
-    }
-    if (ngroups == 1L) x[[1L]] else x
-  }
+  #### Sample statistics ####
 
-  normalize_to_list <- function(x, ngroups) {
-    if (is.null(x)) {
-      return(vector("list", ngroups))
-    }
-    if (ngroups == 1L && !is.list(x)) {
-      return(list(x))
-    }
-    x
-  }
+  sample.cov <- normalize_lcfa_group_input(sample.cov, ngroups)
 
-  sample.cov <- normalize_to_list(sample.cov, ngroups)
-
-  if (!is.null(nobs) && ngroups == 1L && !is.list(nobs)) {
-    nobs_in <- list(nobs)
-  } else {
-    nobs_in <- nobs
-  }
-
-  nobs_list <- vector("list", length = ngroups)
   X <- vector("list", length = ngroups)
+  nobs_list <- vector("list", length = ngroups)
   NACOV <- vector("list", length = ngroups)
   ACOV <- vector("list", length = ngroups)
   WLS.V <- vector("list", length = ngroups)
@@ -398,161 +367,613 @@ create_cfa_datalist <- function(data, model = NULL, cor = "pearson",
   fit_cov <- vector("list", length = ngroups)
   fit_means <- vector("list", length = ngroups)
 
-  for (i in seq_len(ngroups)) {
+  for(i in seq_len(ngroups)) {
 
-    X[[i]] <- get_group_data(i)
-    if(ngroups < 2) {
-      control$subfix <- ""
+    X[[i]] <- extract_lcfa_group_data(data = data,
+                                      group = group,
+                                      group_label = group_label,
+                                      item_names = item_names,
+                                      i = i,
+                                      ngroups = ngroups)
+
+    control_i <- control
+
+    if(ngroups < 2L) {
+      control_i$subfix <- ""
     } else {
-      control$subfix <- paste(".", group_label[i], sep = "")
+      control_i$subfix <- paste0(".", group_label[i])
     }
 
-    # Item means estimation:
-    fit_means[[i]] <- lmean(data = X[[i]],
-                            std.ov = std.ov,
-                            control = control,
-                            do.fit = TRUE)
+    sample_stats <- estimate_lcfa_sample_statistics(data = X[[i]],
+                                                    model = model,
+                                                    cor = cor,
+                                                    std.ov = std.ov,
+                                                    acov = acov,
+                                                    likelihood = likelihood,
+                                                    missing = missing,
+                                                    control = control_i,
+                                                    ...)
 
-    # Covariance matrix estimation:
-    if(cor == "pearson") {
-      fit_cov[[i]] <- lpearson(data = X[[i]],
-                               std.ov = std.ov,
-                               acov = acov,
-                               likelihood = likelihood,
-                               missing = missing,
-                               control = control,
-                               do.fit = TRUE)
-      if(missing == "fiml") {
-        patterns <- split_by_missing_pattern(X[[i]])
-        npatterns <- length(patterns)
-        fit_means[[i]]@extra <- vector("list", length = npatterns)
-        fit_cov[[i]]@extra <- vector("list", length = npatterns)
-        subfix <- control$subfix
-        for(j in seq_len(npatterns)) { # Run by missing data pattern
-          control$subfix <- paste(subfix, ".pattern", j, sep = "")
-          fit_means[[i]]@extra[[j]] <- lmean(data = patterns[[j]]$data,
-                                             std.ov = std.ov,
-                                             do.fit = TRUE,
-                                             control = control,
-                                             ...)
-          fit_cov[[i]]@extra[[j]] <- lpearson(data = patterns[[j]]$data,
-                                              model = model,
-                                              std.ov = std.ov,
-                                              acov = acov,
-                                              likelihood = likelihood,
-                                              missing = "pairwise.complete.obs",
-                                              do.fit = TRUE,
-                                              control = control,
-                                              ...)
-        }
-      }
-    } else if(cor == "poly") {
-      fit_cov[[i]] <- lpoly(data = X[[i]],
-                            method = "two-step",
-                            control = control,
-                            do.fit = TRUE)
-    } else if(cor == "yule") {
-      fit_cov[[i]] <- lyule(data = X[[i]],
-                            control = control,
-                            do.fit = TRUE)
-    } else {
-      stop("Unknown correlation type")
-    }
+    fit_means[[i]] <- sample_stats$fit_means
+    fit_cov[[i]] <- sample_stats$fit_cov
 
     nobs_list[[i]] <- fit_cov[[i]]@dataList$nobs
     sample.cov[[i]] <- fit_cov[[i]]@transformed_pars$S
     NACOV[[i]] <- fit_cov[[i]]@Optim$SE$ACOV * fit_cov[[i]]@dataList$nobs
     ACOV[[i]] <- fit_cov[[i]]@Optim$SE$ACOV
     WLS.V[[i]] <- diag(ACOV[[i]])
+
     idx_taus <- startsWith(names(fit_cov[[i]]@transformed_pars), "taus")
     thresholds[[i]] <- fit_cov[[i]]@transformed_pars[idx_taus]
 
   }
 
-  LAV <- lavaan::cfa(
-    model = model,
-    sample.cov = unwrap_single(sample.cov),
-    sample.nobs = unwrap_single(nobs_list),
-    group = group,
-    NACOV = unwrap_single(NACOV),
-    WLS.V = unwrap_single(WLS.V),
-    ordered = ordered,
-    std.lv = std.lv,
-    std.ov = std.ov,
-    meanstructure = meanstructure,
-    do.fit = FALSE,
-    warn = FALSE,
-    ...
-  )
+  #### Lavaan model structure ####
+
+  LAV <- lavaan::cfa(model = model,
+                     sample.cov = unwrap_lcfa_group_input(sample.cov, ngroups),
+                     sample.nobs = unwrap_lcfa_group_input(nobs_list, ngroups),
+                     group = group,
+                     NACOV = unwrap_lcfa_group_input(NACOV, ngroups),
+                     WLS.V = unwrap_lcfa_group_input(WLS.V, ngroups),
+                     ordered = ordered,
+                     std.lv = std.lv,
+                     std.ov = std.ov,
+                     meanstructure = meanstructure,
+                     do.fit = FALSE,
+                     warn = FALSE,
+                     ...)
 
   LAV@Options$positive <- positive
 
   lavmodel <- LAV@Model
   item_label <- LAV@Data@ov.names
   nobs_list <- LAV@Data@nobs
-  factor_label <- replicate(ngroups, list(LAV@Model@dimNames[[1]][[2]]))
+  factor_label <- replicate(ngroups,
+                            list(LAV@Model@dimNames[[1L]][[2L]]))
 
   model_out <- getmodel_fromlavaan(LAV)
-  if (ngroups == 1L) {
+
+  if(ngroups == 1L) {
     model_out <- list(model_out)
   }
 
   nitems <- as.list(lavmodel@nvar)
+
   if(meanstructure) {
-    npatterns <- lapply(nitems, function(p) 0.5 * p * (p + 1) + p)
+    npatterns <- lapply(nitems, FUN = \(p) 0.5*p*(p+1)+p)
   } else {
-    npatterns <- lapply(nitems, function(p) 0.5 * p * (p + 1))
-  }
-  nfactors <- lapply(model_out, function(x) ncol(x$lambda))
-
-  if (is.null(args)) {
-    args <- as.list(match.call(expand.dots = TRUE))[-1]
+    npatterns <- lapply(nitems, FUN = \(p) 0.5*p*(p+1))
   }
 
-  dataList <- list()
-  dataList$ngroups <- ngroups
-  dataList$data <- data
-  dataList$data_per_group <- X
-  dataList$nobs <- nobs_list
-  dataList$nitems <- nitems
-  dataList$npatterns <- npatterns
-  dataList$nfactors <- nfactors
-  dataList$positive <- positive
-  dataList$estimator <- estimator
-  dataList$cor <- cor
-  dataList$group_label <- group_label
-  dataList$item_label <- item_label
-  dataList$factor_label <- factor_label
-  dataList$LAV <- LAV
-  dataList$args <- args
-  dataList$model <- model_out
-  dataList$sample.cov <- sample.cov
-  dataList$NACOV <- NACOV
-  dataList$WLS.V <- WLS.V
-  dataList$thresholds <- thresholds
-  dataList$fit_means <- fit_means
-  dataList$fit_cov <- fit_cov
+  nfactors <- lapply(model_out, FUN = \(x) ncol(x$lambda))
+
+  if(is.null(args)) {
+    args <- as.list(match.call(expand.dots = TRUE))[-1L]
+  }
+
+  #### Store objects in dataList ####
+
+  dataList <- list(ngroups = ngroups,
+                   data = data,
+                   data_per_group = X,
+                   nobs = nobs_list,
+                   nitems = nitems,
+                   npatterns = npatterns,
+                   nfactors = nfactors,
+                   positive = positive,
+                   estimator = estimator,
+                   cor = cor,
+                   acov = acov,
+                   group = group,
+                   group_label = group_label,
+                   item_label = item_label,
+                   factor_label = factor_label,
+                   LAV = LAV,
+                   args = args,
+                   model = model_out,
+                   sample.cov = sample.cov,
+                   NACOV = NACOV,
+                   ACOV = ACOV,
+                   WLS.V = WLS.V,
+                   thresholds = thresholds,
+                   fit_means = fit_means,
+                   fit_cov = fit_cov)
+
+  #### Result ####
 
   return(dataList)
 
 }
 
-create_cfa_model <- function(dataList, model, control) {
+#### Function to create the model ####
 
-  # Generate the model syntax and initial parameter values
+create_lcfa_model <- function(dataList, model = NULL, control) {
 
-  list2env(dataList, envir = environment())
+  #### Parameters from the sample statistics ####
 
-  # Initialize the objects to store the initial parameters:
-  trans <- vector("list")
-  fixed <- nonfixed <- fixed_values_list <- vector("list")
+  data_param <- create_lcfa_data_param(dataList = dataList,
+                                       control = control)
 
   #### Model for the transformed parameters ####
 
-  # Initialize the target matrices for positive-definite constraints:
-  target_psi <- target_theta <- targets <- vector("list", length = ngroups)
+  trans <- model_lcfa(dataList = dataList,
+                      data_param = data_param,
+                      control = control)
 
-  if(dataList$ngroups < 2) {
+  #### Model for the parameters ####
+
+  constraints <- constraints_lcfa(dataList = dataList,
+                                  data_param = data_param,
+                                  trans = trans,
+                                  control = control)
+
+  param <- constraints$param
+  trans <- constraints$trans
+
+  #### Create the initial values for the parameters ####
+
+  init_param <- start_lcfa(dataList = dataList,
+                           data_param = data_param,
+                           param = param,
+                           trans = trans,
+                           fixed = constraints$fixed,
+                           fixed_values_list = constraints$fixed_values_list,
+                           control = control)
+
+  #### Custom initial values ####
+
+  init_param <- custom_init_param(control$start, init_param)
+
+  #### Result ####
+
+  result <- list(param = param,
+                 trans = trans,
+                 init_param = init_param,
+                 target_psi = constraints$target_psi,
+                 target_theta = constraints$target_theta,
+                 data_param = data_param,
+                 control = control)
+
+  return(result)
+
+}
+
+#### Function to create the modelInfo ####
+
+create_lcfa_modelInfo <- function(dataList, full_model, control) {
+
+  list2env(full_model, envir = environment())
+
+  #### Manifolds ####
+
+  control_manifold <- manifolds_lcfa(dataList = dataList,
+                                     data_param = data_param,
+                                     param = param,
+                                     target_psi = target_psi,
+                                     target_theta = target_theta,
+                                     control = control)
+
+  #### Transformations ####
+
+  control_transform <- transformations_lcfa(dataList = dataList,
+                                             data_param = data_param,
+                                             trans = trans,
+                                             control = control)
+
+  #### Estimators ####
+
+  control_estimator <- estimators_lcfa(dataList = dataList,
+                                       data_param = data_param,
+                                       trans = trans,
+                                       control = control)
+
+  #### Pass the initial values to vectors ####
+
+  inits <- create_init(trans, param, init_param,
+                       control_transform = control_transform, control)
+  list2env(inits, envir = environment())
+
+  #### Set up the optimizer ####
+
+  control_optimizer <- control
+  control_optimizer$parameters <- parameters
+  control_optimizer$transparameters <- transparameters
+  control_optimizer$init_param <- init_param
+  control_optimizer$transparam2param <- trans2param-1L
+
+  #### Collect all the model information ####
+
+  modelInfo <- list(param = param,
+                    trans = trans,
+                    nparam = nparam,
+                    ntrans = ntrans,
+                    parameters_labels = parameters_labels,
+                    transparameters_labels = transparameters_labels,
+                    dof = sum(unlist(dataList$npatterns))-nparam,
+                    control_manifold = control_manifold,
+                    control_transform = control_transform,
+                    control_estimator = control_estimator,
+                    control_optimizer = control_optimizer)
+
+  #### Result ####
+
+  return(modelInfo)
+
+}
+
+#### Function to create the control list of optimization parameters ####
+
+lcfa_control <- function(control) {
+
+  # Auxiliary function for lcfa.R
+
+  #### Penalties ####
+
+  penalty_defaults <- list(
+    logdet = list(w = 1e-03)
+  )
+
+  if(!control$positive) {
+    control$penalties <- FALSE
+  }
+
+  if(isFALSE(control$penalties)) {
+
+    control$reg <- FALSE
+
+  } else if(isTRUE(control$penalties)) {
+
+    control$reg <- TRUE
+    control$penalties <- penalty_defaults
+
+  } else if(is.list(control$penalties)) {
+
+    unknown_penalties <- setdiff(names(control$penalties),
+                                 names(penalty_defaults))
+
+    if(length(unknown_penalties) > 0L) {
+      stop("Unknown penalty name(s): ",
+           paste(unknown_penalties, collapse = ", "))
+    }
+
+    control$penalties <- utils::modifyList(penalty_defaults,
+                                           control$penalties)
+
+    if(!is.numeric(control$penalties$logdet$w) ||
+       length(control$penalties$logdet$w) != 1L ||
+       !is.finite(control$penalties$logdet$w) ||
+       control$penalties$logdet$w <= 0) {
+      stop("The logdet penalty w must be a positive number")
+    }
+
+    control$reg <- TRUE
+
+  } else {
+
+    stop("penalties should be TRUE, FALSE, or a named list")
+
+  }
+
+  #### Model controls ####
+
+  if(is.null(control$free_S)) control$free_S <- FALSE
+  if(is.null(control$free_taus)) control$free_taus <- FALSE
+  if(is.null(control$free_M)) control$free_M <- FALSE
+  if(is.null(control$deltaparam)) control$deltaparam <- FALSE
+  if(is.null(control$start)) control$start <- NULL
+
+  #### Optimizer ####
+
+  if(is.null(control$opt)) {
+
+    if(control$positive) {
+      control$opt <- "grad"
+    } else {
+      control$opt <- "lbfgs"
+    }
+
+  }
+
+  if(is.null(control$rstarts)) {
+
+    if(control$positive) {
+      control$rstarts <- 10L
+    } else {
+      control$rstarts <- 1L
+    }
+
+  } else if(control$rstarts < 1L ||
+            !all(control$rstarts == as.integer(control$rstarts))) {
+    stop("rstarts must be a positive integer")
+  }
+
+  if(is.null(control$step_maxit)) {
+    control$step_maxit <- 30L
+  } else if(control$step_maxit < 1L) {
+    stop("step_maxit must be a positive integer")
+  }
+
+  if(is.null(control$c1)) {
+    control$c1 <- 0.5
+  } else if(control$c1 < 0) {
+    stop("c1 must be a positive number")
+  }
+
+  if(is.null(control$c2)) {
+    control$c2 <- 0.5
+  } else if(control$c2 < 0) {
+    stop("c2 must be a positive number")
+  }
+
+  if(is.null(control$step_eps)) {
+    control$step_eps <- 1e-09
+  } else if(control$step_eps < 0) {
+    stop("step_eps must be a positive number")
+  }
+
+  if(is.null(control$df_eps)) {
+    control$df_eps <- 1e-09
+  } else if(control$df_eps < 0) {
+    stop("df_eps must be a positive number")
+  }
+
+  if(is.null(control$M)) {
+    control$M <- 100L
+  } else if(control$M < 0L) {
+    stop("M must be a positive integer")
+  }
+
+  if(is.null(control$eps)) {
+    control$eps <- 1e-06
+  } else if(control$eps < 0) {
+    stop("eps must be a positive number")
+  }
+
+  if(is.null(control$ss_fac)) {
+    control$ss_fac <- 2
+  } else if(control$ss_fac <= 1) {
+    stop("ss_fac must be larger than 1")
+  }
+
+  if(is.null(control$maxit)) {
+    control$maxit <- 1000L
+  } else if(control$maxit < 0L) {
+    stop("maxit must be a positive integer")
+  }
+
+  if(is.null(control$cores)) {
+    control$cores <- 1L
+  } else if(control$cores < 1L) {
+    stop("cores must be a positive integer")
+  }
+
+  if(is.null(control$tcg_maxit)) {
+    control$tcg_maxit <- 10L
+  } else if(control$tcg_maxit < 1L) {
+    stop("tcg_maxit must be a positive integer")
+  }
+
+  #### Result ####
+
+  return(control)
+
+}
+
+#### Auxiliary functions for create_lcfa_dataList ####
+
+print_lcfa_message <- function(msg) {
+
+  w <- nchar(msg)+4L
+  cat("\n", "+", strrep("-", w), "+\n",
+      "|  ", msg, "  |\n",
+      "+", strrep("-", w), "+\n\n", sep = "")
+
+  #### Result ####
+
+  return(invisible(NULL))
+
+}
+
+normalize_lcfa_group_input <- function(x, ngroups) {
+
+  if(is.null(x)) {
+
+    result <- vector("list", ngroups)
+
+  } else if(ngroups == 1L && !is.list(x)) {
+
+    result <- list(x)
+
+  } else {
+
+    result <- x
+
+  }
+
+  #### Result ####
+
+  return(result)
+
+}
+
+unwrap_lcfa_group_input <- function(x, ngroups) {
+
+  if(length(x) == 0L || all(vapply(x, is.null, logical(1L)))) {
+
+    result <- NULL
+
+  } else if(ngroups == 1L) {
+
+    result <- x[[1L]]
+
+  } else {
+
+    result <- x
+
+  }
+
+  #### Result ####
+
+  return(result)
+
+}
+
+extract_lcfa_group_data <- function(data, group, group_label,
+                                    item_names, i, ngroups) {
+
+  if(ngroups > 1L) {
+    result <- data[data[[group]] == group_label[i],
+                   item_names[[i]], drop = FALSE]
+  } else {
+    result <- data[, item_names[[i]], drop = FALSE]
+  }
+
+  #### Result ####
+
+  return(result)
+
+}
+
+estimate_lcfa_sample_statistics <- function(data, model, cor,
+                                            std.ov, acov, likelihood,
+                                            missing, control, ...) {
+
+  #### Means ####
+
+  fit_means <- lmean(data = data,
+                     std.ov = std.ov,
+                     control = control,
+                     do.fit = TRUE)
+
+  #### Covariances ####
+
+  if(cor == "pearson") {
+
+    fit_cov <- lpearson(data = data,
+                        std.ov = std.ov,
+                        acov = acov,
+                        likelihood = likelihood,
+                        missing = missing,
+                        control = control,
+                        do.fit = TRUE)
+
+    if(missing == "fiml") {
+
+      patterns <- split_by_missing_pattern(data)
+      npatterns <- length(patterns)
+
+      fit_means@extra <- vector("list", length = npatterns)
+      fit_cov@extra <- vector("list", length = npatterns)
+
+      subfix <- control$subfix
+
+      for(j in seq_len(npatterns)) {
+
+        control_j <- control
+        control_j$subfix <- paste0(subfix, ".pattern", j)
+
+        fit_means@extra[[j]] <- lmean(data = patterns[[j]]$data,
+                                      std.ov = std.ov,
+                                      do.fit = TRUE,
+                                      control = control_j,
+                                      ...)
+
+        fit_cov@extra[[j]] <- lpearson(data = patterns[[j]]$data,
+                                       model = model,
+                                       std.ov = std.ov,
+                                       acov = acov,
+                                       likelihood = likelihood,
+                                       missing = "pairwise.complete.obs",
+                                       do.fit = TRUE,
+                                       control = control_j,
+                                       ...)
+
+      }
+
+    }
+
+  } else if(cor == "poly") {
+
+    fit_cov <- lpoly(data = data,
+                     method = "two-step",
+                     control = control,
+                     do.fit = TRUE)
+
+  } else if(cor == "yule") {
+
+    fit_cov <- lyule(data = data,
+                     control = control,
+                     do.fit = TRUE)
+
+  } else {
+
+    stop("Unknown correlation type")
+
+  }
+
+  #### Result ####
+
+  result <- list(fit_means = fit_means,
+                 fit_cov = fit_cov)
+
+  return(result)
+
+}
+
+split_by_missing_pattern <- function(data) {
+
+  if(!is.data.frame(data) && !is.matrix(data)) {
+    stop("data must be a data.frame or matrix.")
+  }
+
+  if(nrow(data) == 0L) {
+
+    #### Result ####
+
+    return(list())
+
+  }
+
+  miss <- is.na(data)
+  pattern_key <- apply(miss, MARGIN = 1L,
+                       FUN = \(x) paste(as.integer(x), collapse = ""))
+  pattern_levels <- unique(pattern_key)
+  counts <- tabulate(match(pattern_key, pattern_levels),
+                     nbins = length(pattern_levels))
+  ord <- order(-counts, seq_along(pattern_levels))
+  pattern_levels <- pattern_levels[ord]
+
+  result <- vector("list", length(pattern_levels))
+
+  for(k in seq_along(pattern_levels)) {
+
+    idx_rows <- which(pattern_key == pattern_levels[k])
+    idx_vars <- !miss[idx_rows[1L], ]
+
+    result[[k]] <- list(data = data[idx_rows, idx_vars, drop = FALSE],
+                        vars = idx_vars,
+                        nobs = length(idx_rows))
+
+  }
+
+  names(result) <- NULL
+
+  #### Result ####
+
+  return(result)
+
+}
+
+#### Auxiliary functions for create_lcfa_model ####
+
+create_lcfa_data_param <- function(dataList, control) {
+
+  ngroups <- dataList$ngroups
+
+  #### Parameter-block names ####
+
+  if(ngroups < 2L) {
     sep <- ""
   } else {
     sep <- "."
@@ -567,187 +988,249 @@ create_cfa_model <- function(dataList, model, control) {
   nu_group <- paste("nu", dataList$group_label, sep = sep)
   delta_group <- paste("delta", dataList$group_label, sep = sep)
   tau_group <- paste("tau", dataList$group_label, sep = sep)
-  S_group <- taus_group <- M_group <- vector("list", length = ngroups)
-  means_params <- means_params_labels <- vector("list", length = ngroups)
-  cov_params <- cov_params_labels <- vector("list", length = ngroups)
+
+  #### Sample-statistic parameters ####
+
+  S_group <- vector("list", length = ngroups)
+  taus_group <- vector("list", length = ngroups)
+  M_group <- vector("list", length = ngroups)
+  means_params <- vector("list", length = ngroups)
+  means_params_labels <- vector("list", length = ngroups)
+  cov_params <- vector("list", length = ngroups)
+  cov_params_labels <- vector("list", length = ngroups)
   acov_means <- vector("list", length = ngroups)
   acov_cov <- vector("list", length = ngroups)
   nobs_ij <- vector("list", length = ngroups)
 
-  for(i in 1:ngroups) {
+  for(i in seq_len(ngroups)) {
 
     if(control$missing == "fiml") {
-      means_params[[i]] <- unlist(lapply(fit_means[[i]]@extra,
+
+      means_params[[i]] <- unlist(lapply(dataList$fit_means[[i]]@extra,
                                          FUN = \(x) x@parameters),
                                   recursive = FALSE)
-      means_params_labels[[i]] <- unlist(lapply(fit_means[[i]]@extra,
-                                                FUN = \(x) x@modelInfo$trans),
-                                         recursive = FALSE)
-      acov_means[[i]] <- lapply(fit_means[[i]]@extra,
-                                  FUN = \(x) x@Optim$SE$ACOV)
-      cov_params[[i]] <- unlist(lapply(fit_cov[[i]]@extra,
+      means_params_labels[[i]] <-
+        unlist(lapply(dataList$fit_means[[i]]@extra,
+                      FUN = \(x) x@modelInfo$trans),
+               recursive = FALSE)
+      acov_means[[i]] <- lapply(dataList$fit_means[[i]]@extra,
+                                FUN = \(x) x@Optim$SE$ACOV)
+
+      cov_params[[i]] <- unlist(lapply(dataList$fit_cov[[i]]@extra,
                                        FUN = \(x) x@parameters),
                                 recursive = FALSE)
-      cov_params_labels[[i]] <- unlist(lapply(fit_cov[[i]]@extra,
-                                              FUN = \(x) x@modelInfo$trans),
-                                       recursive = FALSE)
-      acov_cov[[i]] <- lapply(fit_cov[[i]]@extra,
-                                FUN = \(x) x@Optim$SE$ACOV)
-      nobs_ij[[i]] <- lapply(fit_cov[[i]]@extra,
-                                    FUN = \(x) x@dataList$nobs)
+      cov_params_labels[[i]] <-
+        unlist(lapply(dataList$fit_cov[[i]]@extra,
+                      FUN = \(x) x@modelInfo$trans),
+               recursive = FALSE)
+      acov_cov[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
+                              FUN = \(x) x@Optim$SE$ACOV)
+      nobs_ij[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
+                             FUN = \(x) x@dataList$nobs)
+
     } else {
-      means_params[[i]] <- fit_means[[i]]@parameters
-      means_params_labels[[i]] <- fit_means[[i]]@modelInfo$trans
-      acov_means[[i]] <- list(fit_means[[i]]@Optim$SE$ACOV)
-      cov_params[[i]] <- fit_cov[[i]]@parameters
-      cov_params_labels[[i]] <- fit_cov[[i]]@modelInfo$trans
-      acov_cov[[i]] <- list(fit_cov[[i]]@Optim$SE$ACOV)
-      nobs_ij[[i]] <- fit_cov[[i]]@dataList$nobs
+
+      means_params[[i]] <- dataList$fit_means[[i]]@parameters
+      means_params_labels[[i]] <- dataList$fit_means[[i]]@modelInfo$trans
+      acov_means[[i]] <- list(dataList$fit_means[[i]]@Optim$SE$ACOV)
+
+      cov_params[[i]] <- dataList$fit_cov[[i]]@parameters
+      cov_params_labels[[i]] <- dataList$fit_cov[[i]]@modelInfo$trans
+      acov_cov[[i]] <- list(dataList$fit_cov[[i]]@Optim$SE$ACOV)
+      nobs_ij[[i]] <- dataList$fit_cov[[i]]@dataList$nobs
+
     }
 
-    means_params_names <- names(means_params[[i]])
-    M_group[[i]] <- means_params_names[startsWith(means_params_names, "means")]
-    cov_params_names <- names(cov_params[[i]])
-    S_group[[i]] <- cov_params_names[startsWith(cov_params_names, "S")]
-    taus_group[[i]] <- cov_params_names[startsWith(cov_params_names, "taus")]
+    means_names <- names(means_params[[i]])
+    cov_names <- names(cov_params[[i]])
+
+    M_group[[i]] <- means_names[startsWith(means_names, "means")]
+    S_group[[i]] <- cov_names[startsWith(cov_names, "S")]
+    taus_group[[i]] <- cov_names[startsWith(cov_names, "taus")]
 
   }
 
-  data_param <- list(lambda_group = lambda_group,
-                     theta_group = theta_group,
-                     psi_group = psi_group,
-                     xtheta_group = xtheta_group,
-                     xpsi_group = xpsi_group,
-                     model_group = model_group,
-                     nu_group = nu_group,
-                     delta_group = delta_group,
-                     tau_group = tau_group,
-                     M_group = M_group,
-                     S_group = S_group,
-                     taus_group = taus_group,
-                     means_params = means_params,
-                     cov_params = cov_params,
-                     acov_means = acov_means,
-                     acov_cov = acov_cov,
-                     nobs_ij = nobs_ij)
+  #### Result ####
 
-  # Transformed parameters:
-  list_struct <- vector("list")
+  result <- list(lambda_group = lambda_group,
+                 theta_group = theta_group,
+                 psi_group = psi_group,
+                 xtheta_group = xtheta_group,
+                 xpsi_group = xpsi_group,
+                 model_group = model_group,
+                 nu_group = nu_group,
+                 delta_group = delta_group,
+                 tau_group = tau_group,
+                 M_group = M_group,
+                 S_group = S_group,
+                 taus_group = taus_group,
+                 means_params = means_params,
+                 means_params_labels = means_params_labels,
+                 cov_params = cov_params,
+                 cov_params_labels = cov_params_labels,
+                 acov_means = acov_means,
+                 acov_cov = acov_cov,
+                 nobs_ij = nobs_ij)
+
+  return(result)
+
+}
+
+model_lcfa <- function(dataList, data_param, control) {
+
+  list2env(data_param, envir = environment())
+
+  ngroups <- dataList$ngroups
+  list_struct <- list()
   k <- 1L
-  for(i in 1:ngroups) {
 
-    # Lambda:
+  #### Group-specific CFA parameters ####
+
+  for(i in seq_len(ngroups)) {
+
     list_struct[[k]] <- list(name = lambda_group[i],
                              type = "matrix",
-                             dim = c(nitems[[i]], nfactors[[i]]),
-                             rownames = item_label[[i]],
-                             colnames = factor_label[[i]])
+                             dim = c(dataList$nitems[[i]],
+                                     dataList$nfactors[[i]]),
+                             rownames = dataList$item_label[[i]],
+                             colnames = dataList$factor_label[[i]])
     k <- k+1L
 
-    # Create additional parameters if there are positive-definite constraints:
-    if(positive) {
+    if(dataList$positive) {
 
-      # Theta:
       list_struct[[k]] <- list(name = xtheta_group[i],
                                type = "matrix",
-                               dim = c(nitems[[i]], nitems[[i]]),
-                               rownames = item_label[[i]],
-                               colnames = item_label[[i]])
+                               dim = c(dataList$nitems[[i]],
+                                       dataList$nitems[[i]]),
+                               rownames = dataList$item_label[[i]],
+                               colnames = dataList$item_label[[i]])
       k <- k+1L
 
-      # Psi:
       list_struct[[k]] <- list(name = xpsi_group[i],
                                type = "matrix",
-                               dim = c(nfactors[[i]], nfactors[[i]]),
-                               rownames = factor_label[[i]],
-                               colnames = factor_label[[i]])
+                               dim = c(dataList$nfactors[[i]],
+                                       dataList$nfactors[[i]]),
+                               rownames = dataList$factor_label[[i]],
+                               colnames = dataList$factor_label[[i]])
       k <- k+1L
 
     }
 
-    # Theta:
     list_struct[[k]] <- list(name = theta_group[i],
                              type = "matrix",
-                             dim = c(nitems[[i]], nitems[[i]]),
-                             rownames = item_label[[i]],
-                             colnames = item_label[[i]],
+                             dim = c(dataList$nitems[[i]],
+                                     dataList$nitems[[i]]),
+                             rownames = dataList$item_label[[i]],
+                             colnames = dataList$item_label[[i]],
                              symmetric = TRUE)
     k <- k+1L
 
-    # Psi:
     list_struct[[k]] <- list(name = psi_group[i],
                              type = "matrix",
-                             dim = c(nfactors[[i]], nfactors[[i]]),
-                             rownames = factor_label[[i]],
-                             colnames = factor_label[[i]],
+                             dim = c(dataList$nfactors[[i]],
+                                     dataList$nfactors[[i]]),
+                             rownames = dataList$factor_label[[i]],
+                             colnames = dataList$factor_label[[i]],
                              symmetric = TRUE)
     k <- k+1L
 
-    # Model matrix:
     list_struct[[k]] <- list(name = model_group[i],
                              type = "matrix",
-                             dim = c(nitems[[i]], nitems[[i]]),
-                             rownames = item_label[[i]],
-                             colnames = item_label[[i]],
+                             dim = c(dataList$nitems[[i]],
+                                     dataList$nitems[[i]]),
+                             rownames = dataList$item_label[[i]],
+                             colnames = dataList$item_label[[i]],
                              symmetric = TRUE)
     k <- k+1L
 
-    # Model means vector:
     if(control$meanstructure) {
+
       list_struct[[k]] <- list(name = nu_group[i],
                                type = "matrix",
-                               dim = c(nitems[[i]], 1),
-                               rownames = item_label[[i]],
+                               dim = c(dataList$nitems[[i]], 1L),
+                               rownames = dataList$item_label[[i]],
                                colnames = "intrcp")
       k <- k+1L
+
     }
 
-    # latent variances:
     if(control$deltaparam) {
+
       list_struct[[k]] <- list(name = delta_group[i],
                                type = "matrix",
-                               dim = c(nitems[[i]], 1L),
-                               rownames = item_label[[i]],
+                               dim = c(dataList$nitems[[i]], 1L),
+                               rownames = dataList$item_label[[i]],
                                colnames = "latent.var")
       k <- k+1L
+
     }
 
   }
 
   trans <- create_parameters(list_struct)
+
   if(control$meanstructure) {
     trans <- c(trans, unlist(means_params_labels, recursive = FALSE))
   }
+
   trans <- c(trans, unlist(cov_params_labels, recursive = FALSE))
+
+  #### Result ####
+
+  return(trans)
+
+}
+
+constraints_lcfa <- function(dataList, data_param, trans, control) {
+
+  list2env(data_param, envir = environment())
+
+  ngroups <- dataList$ngroups
+  lavaan_model <- dataList$model
+
+  fixed <- vector("list")
+  nonfixed <- vector("list")
+  fixed_values_list <- vector("list")
+  target_psi <- vector("list", length = ngroups)
+  target_theta <- vector("list", length = ngroups)
 
   #### Replace latent labels by lavaan labels ####
 
-  for(i in 1:ngroups) {
+  for(i in seq_len(ngroups)) {
 
-    # Get the positions of parameters and fixed values:
+    group_names <- c(lambda_group[i], theta_group[i],
+                     psi_group[i], nu_group[i])
 
-    # Ensure the same label ordering than in model:
-    group_i <- c(lambda_group[i], theta_group[i], psi_group[i], nu_group[i])
+    model_blocks <- list(lavaan_model[[i]]$lambda,
+                         lavaan_model[[i]]$theta,
+                         lavaan_model[[i]]$psi,
+                         lavaan_model[[i]]$nu)
+    names(model_blocks) <- group_names
 
-    nonfixed[group_i] <- lapply(model[[i]][1:4], FUN = \(x) {
+    nonfixed[group_names] <- lapply(model_blocks, FUN = \(x) {
       which(is.na(suppressWarnings(as.numeric(x))))
     })
 
-    fixed[group_i] <- lapply(model[[i]][1:4], FUN = \(x) {
+    fixed[group_names] <- lapply(model_blocks, FUN = \(x) {
       which(!is.na(suppressWarnings(as.numeric(x))))
     })
 
-    fixed_values_list[group_i] <- lapply(model[[i]][1:4], FUN = \(x) {
+    fixed_values_list[group_names] <- lapply(model_blocks, FUN = \(x) {
       numerals <- suppressWarnings(as.numeric(x))
-      inds <- which(!is.na(numerals))
-      return(numerals[inds])
+      idx <- which(!is.na(numerals))
+      return(numerals[idx])
     })
 
-    trans[[lambda_group[i]]][nonfixed[[lambda_group[i]]]] <- model[[i]]$lambda[nonfixed[[lambda_group[i]]]]
-    trans[[theta_group[i]]][nonfixed[[theta_group[i]]]] <- model[[i]]$theta[nonfixed[[theta_group[i]]]]
-    trans[[psi_group[i]]][nonfixed[[psi_group[i]]]] <- model[[i]]$psi[nonfixed[[psi_group[i]]]]
+    trans[[lambda_group[i]]][nonfixed[[lambda_group[i]]]] <-
+      lavaan_model[[i]]$lambda[nonfixed[[lambda_group[i]]]]
+    trans[[theta_group[i]]][nonfixed[[theta_group[i]]]] <-
+      lavaan_model[[i]]$theta[nonfixed[[theta_group[i]]]]
+    trans[[psi_group[i]]][nonfixed[[psi_group[i]]]] <-
+      lavaan_model[[i]]$psi[nonfixed[[psi_group[i]]]]
+
     if(control$meanstructure) {
-      trans[[nu_group[i]]][nonfixed[[nu_group[i]]]] <- model[[i]]$nu[nonfixed[[nu_group[i]]]]
+      trans[[nu_group[i]]][nonfixed[[nu_group[i]]]] <-
+        lavaan_model[[i]]$nu[nonfixed[[nu_group[i]]]]
     }
 
   }
@@ -755,70 +1238,59 @@ create_cfa_model <- function(dataList, model, control) {
   #### Model for the parameters ####
 
   param <- list()
-  item_label <- dataList$item_label
 
-  for(i in 1:ngroups) {
+  for(i in seq_len(ngroups)) {
 
+    # Factor loadings:
     param[[lambda_group[i]]] <- trans[[lambda_group[i]]]
-    # Insert fixed values in the model:
     param[[lambda_group[i]]][fixed[[lambda_group[i]]]] <-
-      model[[i]]$lambda[fixed[[lambda_group[i]]]]
+      fixed_values_list[[lambda_group[i]]]
 
-    if(positive) {
+    # Residual and latent covariance matrices:
+    if(dataList$positive) {
 
-      # Theta:
       param[[xtheta_group[i]]] <- trans[[xtheta_group[i]]]
-      # Psi:
       param[[xpsi_group[i]]] <- trans[[xpsi_group[i]]]
 
     } else {
 
-      # Theta:
       param[[theta_group[i]]] <- trans[[theta_group[i]]]
-      # Insert fixed values in the model:
       param[[theta_group[i]]][fixed[[theta_group[i]]]] <-
-        model[[i]]$theta[fixed[[theta_group[i]]]]
+        fixed_values_list[[theta_group[i]]]
 
       if(control$deltaparam) {
         diag(param[[theta_group[i]]]) <- "1"
       }
 
-      # Psi:
       param[[psi_group[i]]] <- trans[[psi_group[i]]]
-      # Insert fixed values in the model:
       param[[psi_group[i]]][fixed[[psi_group[i]]]] <-
-        model[[i]]$psi[fixed[[psi_group[i]]]]
+        fixed_values_list[[psi_group[i]]]
 
     }
 
-    # Fix the sample covariance matrix:
+    # Sample covariance matrices:
     if(control$free_S) {
-      param[unlist(S_group[[i]])] <- trans[unlist(S_group[[i]])]
+      param[S_group[[i]]] <- trans[S_group[[i]]]
     } else {
       param[S_group[[i]]] <- cov_params[[i]][S_group[[i]]]
     }
 
-    # Fix the sample thresholds:
+    # Sample thresholds:
     if(control$free_taus) {
-      param[unlist(taus_group[[i]])] <- trans[unlist(taus_group[[i]])]
+      param[taus_group[[i]]] <- trans[taus_group[[i]]]
     } else {
       param[taus_group[[i]]] <- cov_params[[i]][taus_group[[i]]]
     }
 
-    if(cor %in% c("poly", "polys", "polychoric", "polychorics")) {
-      fix_diag <- TRUE
-    } else {
-      fix_diag <- FALSE
+    # Polychoric correlations have unit diagonal:
+    if(dataList$cor %in% c("poly", "polys", "polychoric", "polychorics")) {
+      param[S_group[[i]]] <- lapply(param[S_group[[i]]], FUN = \(x) {
+        diag(x) <- 1
+        return(x)
+      })
     }
 
-    # Fix the diagonal of the sample covariance matrix:
-    if(fix_diag) {
-      param[S_group[[i]]] <- lapply(param[S_group[[i]]],
-                                    FUN = \(x) {
-                                      diag(x) <- 1; return(x)
-                                    })
-    }
-
+    # Mean structure:
     if(control$meanstructure) {
 
       if(control$free_M) {
@@ -828,221 +1300,232 @@ create_cfa_model <- function(dataList, model, control) {
       }
 
       if(control$std.ov) {
-        param[[nu_group[[i]]]] <- matrix(rep(0, nitems[[i]]), ncol = 1L,
-                                         dimnames = list(item_label[[i]],
-                                                         "intrcp"))
+
+        param[[nu_group[i]]] <- matrix(0,
+                                       nrow = dataList$nitems[[i]],
+                                       ncol = 1L,
+                                       dimnames = list(dataList$item_label[[i]],
+                                                       "intrcp"))
+
       } else {
+
         param[[nu_group[i]]] <- trans[[nu_group[i]]]
+        param[[nu_group[i]]][fixed[[nu_group[i]]]] <-
+          fixed_values_list[[nu_group[i]]]
+
       }
 
     }
 
-    # # Insert fixed values in the model:
-    # param[[nu_group[i]]][fixed[[nu_group[i]]]] <- model[[i]]$nu[fixed[[nu_group[i]]]]
-
+    # Delta parameterization:
     if(control$deltaparam) {
 
       if(control$std.lv) {
+
         param[[delta_group[i]]] <- trans[[delta_group[i]]]
+
       } else {
-        param[[delta_group[i]]] <- matrix(rep(1, nitems[[i]]), ncol = 1L,
-                                          dimnames = list(item_label[[i]],
-                                                          "latent.vars"))
+
+        param[[delta_group[i]]] <- matrix(1,
+                                          nrow = dataList$nitems[[i]],
+                                          ncol = 1L,
+                                          dimnames = list(dataList$item_label[[i]],
+                                                          "latent.var"))
+
       }
 
     }
 
-    # Create the target matrices for positive-definite constraints:
-    if(positive) {
+    #### Positive-definite constraint targets ####
 
-      target_theta[[i]] <- matrix(0, nrow = nitems[[i]], ncol = nitems[[i]])
+    if(dataList$positive) {
+
+      target_theta[[i]] <- matrix(0,
+                                  nrow = dataList$nitems[[i]],
+                                  ncol = dataList$nitems[[i]],
+                                  dimnames = dimnames(trans[[theta_group[i]]]))
       target_theta[[i]][nonfixed[[theta_group[i]]]] <- 1
 
-      target_psi[[i]] <- matrix(0, nrow = nfactors[[i]], ncol = nfactors[[i]])
+      target_psi[[i]] <- matrix(0,
+                                nrow = dataList$nfactors[[i]],
+                                ncol = dataList$nfactors[[i]],
+                                dimnames = dimnames(trans[[psi_group[i]]]))
       target_psi[[i]][nonfixed[[psi_group[i]]]] <- 1
 
-      # UGLY FIX THIS TO COUNT THE DEGREES OF FREEDOM AUTOMATICALLY
-      q <- nfactors[[i]]
-      p <- nitems[[i]]
-      lower_theta <- lower.tri(diag(p), diag = TRUE)
-      lower_psi <- lower.tri(diag(q), diag = TRUE)
-      nconstraints <- sum(unlist(c(target_theta[[i]][lower_theta],
-                                   target_psi[[i]][lower_psi])) == 0)
-
     }
 
   }
 
-  # param <- param[names(trans) %in% names(param)]
-
-  #### Fixed parameters ####
-
-  # # Replace the parameters by custom values, if available:
-  # if(!is.null(model)) {
-  #
-  #   # Replace the parameters by custom values:
-  #
-  #   nm <- intersect(names(model), names(param))
-  #   nm <- nm[!vapply(model[nm], is.null, logical(1))]
-  #   param[nm] <- model[nm]
-  #
-  # }
-
-  #### Create the initial values for the parameters ####
-
-  # Collect the unique nontransformed parameters and the unique transformed parameters:
-
-  init_param <- vector("list", length = control$rstarts)
-
-  for(rs in 1:control$rstarts) {
-
-    init_param[[rs]] <- vector("list")
-
-    for(i in 1:ngroups) {
-
-      init_param[[rs]][[lambda_group[i]]] <- rorth(nitems[[i]], nfactors[[i]])
-      init_param[[rs]][[lambda_group[i]]][fixed[[lambda_group[i]]]] <- fixed_values_list[[lambda_group[i]]]
-
-      if(positive) {
-
-        # init_param[[rs]][[xtheta_group[i]]] <- rpoblq(nitems[[i]], nitems[[i]], constraints = target_theta[[i]])
-        # init_param[[rs]][[xpsi_group[i]]] <- rpoblq(nfactors[[i]], nfactors[[i]], constraints = target_psi[[i]])
-        init_param[[rs]][[xtheta_group[i]]] <- rorth(nitems[[i]], nitems[[i]])
-        init_param[[rs]][[xpsi_group[i]]] <- rorth(nfactors[[i]], nfactors[[i]])
-
-        init_param[[rs]][[theta_group[i]]] <- crossprod(init_param[[rs]][[xtheta_group[i]]])
-        init_param[[rs]][[psi_group[i]]] <- crossprod(init_param[[rs]][[xpsi_group[i]]])
-
-      } else {
-
-        init_param[[rs]][[theta_group[i]]] <- diag(runif(nitems[[i]]))
-        init_param[[rs]][[theta_group[i]]][fixed[[theta_group[i]]]] <- fixed_values_list[[theta_group[i]]]
-
-        init_param[[rs]][[psi_group[i]]] <- diag(nfactors[[i]])
-        init_param[[rs]][[psi_group[i]]][fixed[[psi_group[i]]]] <- fixed_values_list[[psi_group[i]]]
-
-      }
-
-      Lambda <- init_param[[rs]][[lambda_group[i]]]
-      Theta <- init_param[[rs]][[theta_group[i]]]
-      Psi <- init_param[[rs]][[psi_group[i]]]
-      # init_param[[rs]][[model_group[i]]] <- Lambda %*% Psi %*% t(Lambda) + Theta
-
-      if(control$meanstructure) {
-        init_param[[rs]][[nu_group[i]]] <- matrix(colMeans(dataList$data_per_group[[i]],
-                                                           na.rm = TRUE), ncol = 1L)
-      }
-
-      # init_param[[rs]][S_group[[i]]] <- cov_params[[i]][S_group[[i]]]
-      # if(control$meanstructure) {
-      #   init_param[[rs]][M_group[[i]]] <- means_params[[i]][M_group[[i]]]
-      # }
-
-      if(control$deltaparam) {
-
-        init_param[[rs]][[delta_group[i]]] <- matrix(1, nitems[[i]], ncol = 1L)
-        rownames(init_param[[rs]][[delta_group[i]]]) <- item_label[[i]]
-
-      }
-
-    }
-
-  }
-
-  #### Custom initial values ####
-
-  # Replace initial starting values by custom starting values:
-
-  if(!is.null(control$start)) {
-
-    nm <- names(control$start)
-    nm <- nm[!vapply(control$start, is.null, logical(1))]
-
-    for (i in seq_len(control$rstarts)) {
-      common_nm <- intersect(nm, names(init_param[[i]]))
-      for (j in common_nm) {
-        init_param[[i]][[j]] <- insert_object(init_param[[i]][[j]],
-                                              control$start[[j]])
-      }
-    }
-
-  }
-
-  #### Return ####
+  #### Result ####
 
   result <- list(param = param,
                  trans = trans,
-                 init_param = init_param,
+                 fixed = fixed,
+                 nonfixed = nonfixed,
+                 fixed_values_list = fixed_values_list,
                  target_psi = target_psi,
-                 target_theta = target_theta,
-                 data_param = data_param)
+                 target_theta = target_theta)
 
   return(result)
 
 }
 
-create_cfa_modelInfo <- function(dataList, full_model, control) {
+start_lcfa <- function(dataList, data_param, param, trans,
+                       fixed, fixed_values_list, control) {
 
-  # Generate control_manifold, control_transform, and control_estimator
-
-  list2env(dataList, envir = environment())
-  list2env(full_model, envir = environment())
   list2env(data_param, envir = environment())
 
-  #### Manifolds ####
+  ngroups <- dataList$ngroups
+  init_param <- vector("list", length = control$rstarts)
+
+  for(rs in seq_len(control$rstarts)) {
+
+    init_param[[rs]] <- list()
+
+    for(i in seq_len(ngroups)) {
+
+      #### Factor loadings ####
+
+      init_param[[rs]][[lambda_group[i]]] <-
+        rorth(dataList$nitems[[i]], dataList$nfactors[[i]])
+      dimnames(init_param[[rs]][[lambda_group[i]]]) <-
+        dimnames(trans[[lambda_group[i]]])
+      init_param[[rs]][[lambda_group[i]]][fixed[[lambda_group[i]]]] <-
+        fixed_values_list[[lambda_group[i]]]
+
+      #### Covariance matrices ####
+
+      if(dataList$positive) {
+
+        init_param[[rs]][[xtheta_group[i]]] <-
+          rorth(dataList$nitems[[i]], dataList$nitems[[i]])
+        dimnames(init_param[[rs]][[xtheta_group[i]]]) <-
+          dimnames(trans[[xtheta_group[i]]])
+
+        init_param[[rs]][[xpsi_group[i]]] <-
+          rorth(dataList$nfactors[[i]], dataList$nfactors[[i]])
+        dimnames(init_param[[rs]][[xpsi_group[i]]]) <-
+          dimnames(trans[[xpsi_group[i]]])
+
+        init_param[[rs]][[theta_group[i]]] <-
+          crossprod(init_param[[rs]][[xtheta_group[i]]])
+        dimnames(init_param[[rs]][[theta_group[i]]]) <-
+          dimnames(trans[[theta_group[i]]])
+
+        init_param[[rs]][[psi_group[i]]] <-
+          crossprod(init_param[[rs]][[xpsi_group[i]]])
+        dimnames(init_param[[rs]][[psi_group[i]]]) <-
+          dimnames(trans[[psi_group[i]]])
+
+      } else {
+
+        init_param[[rs]][[theta_group[i]]] <-
+          diag(runif(dataList$nitems[[i]]))
+        dimnames(init_param[[rs]][[theta_group[i]]]) <-
+          dimnames(trans[[theta_group[i]]])
+        init_param[[rs]][[theta_group[i]]][fixed[[theta_group[i]]]] <-
+          fixed_values_list[[theta_group[i]]]
+
+        init_param[[rs]][[psi_group[i]]] <-
+          diag(dataList$nfactors[[i]])
+        dimnames(init_param[[rs]][[psi_group[i]]]) <-
+          dimnames(trans[[psi_group[i]]])
+        init_param[[rs]][[psi_group[i]]][fixed[[psi_group[i]]]] <-
+          fixed_values_list[[psi_group[i]]]
+
+      }
+
+      #### Mean structure ####
+
+      if(control$meanstructure) {
+
+        init_param[[rs]][[nu_group[i]]] <-
+          matrix(colMeans(dataList$data_per_group[[i]], na.rm = TRUE),
+                 ncol = 1L,
+                 dimnames = dimnames(trans[[nu_group[i]]]))
+
+      }
+
+      #### Delta parameterization ####
+
+      if(control$deltaparam) {
+
+        init_param[[rs]][[delta_group[i]]] <-
+          matrix(1,
+                 nrow = dataList$nitems[[i]],
+                 ncol = 1L,
+                 dimnames = dimnames(trans[[delta_group[i]]]))
+
+      }
+
+    }
+
+  }
+
+  #### Result ####
+
+  return(init_param)
+
+}
+
+#### Auxiliary functions for create_lcfa_modelInfo ####
+
+manifolds_lcfa <- function(dataList, data_param, param,
+                           target_psi, target_theta, control) {
+
+  list2env(data_param, envir = environment())
 
   manifolds <- list()
   k <- 1L
 
-  for(i in 1:ngroups) {
+  add_euclidean <- function(parameters) {
 
-    manifolds[[k]] <- list(manifold = "euclidean",
-                           parameters = lambda_group[i])
-    k <- k+1L
+    parameters <- intersect(parameters, names(param))
 
-    manifolds[[k]] <- list(manifold = "euclidean",
-                           parameters = nu_group[i])
-    k <- k+1L
+    if(length(parameters) > 0L) {
+      manifolds[[k]] <<- list(manifold = "euclidean",
+                              parameters = parameters)
+      k <<- k+1L
+    }
 
-    manifolds[[k]] <- list(manifold = "euclidean",
-                           parameters = delta_group[i])
-    k <- k+1L
+    #### Result ####
 
-    manifolds[[k]] <- list(manifold = "euclidean",
-                           parameters = M_group[[i]])
-    k <- k+1L
+    return(invisible(NULL))
 
-    manifolds[[k]] <- list(manifold = "euclidean",
-                           parameters = S_group[[i]])
-    k <- k+1L
+  }
 
-    if(positive) {
+  for(i in seq_len(dataList$ngroups)) {
 
-      manifolds[[k]] <- list(manifold = "poblq",
-                             parameters = xpsi_group[i],
-                             extra = list(
-                               p = nfactors[[i]],
-                               q = nfactors[[i]],
-                               constraints = target_psi[[i]]))
-      k <- k+1L
+    add_euclidean(lambda_group[i])
+    add_euclidean(nu_group[i])
+    add_euclidean(delta_group[i])
+    add_euclidean(M_group[[i]])
+    add_euclidean(S_group[[i]])
 
-      manifolds[[k]] <- list(manifold = "poblq",
-                             parameters = xtheta_group[i],
-                             extra = list(
-                               p = nitems[[i]],
-                               q = nitems[[i]],
-                               constraints = target_theta[[i]]))
-      k <- k+1L
+    if(dataList$positive) {
+
+      if(xpsi_group[i] %in% names(param)) {
+        manifolds[[k]] <- list(manifold = "poblq",
+                               parameters = xpsi_group[i],
+                               extra = list(p = dataList$nfactors[[i]],
+                                            q = dataList$nfactors[[i]],
+                                            constraints = target_psi[[i]]))
+        k <- k+1L
+      }
+
+      if(xtheta_group[i] %in% names(param)) {
+        manifolds[[k]] <- list(manifold = "poblq",
+                               parameters = xtheta_group[i],
+                               extra = list(p = dataList$nitems[[i]],
+                                            q = dataList$nitems[[i]],
+                                            constraints = target_theta[[i]]))
+        k <- k+1L
+      }
 
     } else {
 
-      manifolds[[k]] <- list(manifold = "euclidean",
-                             parameters = psi_group[i])
-      k <- k+1L
-
-      manifolds[[k]] <- list(manifold = "euclidean",
-                             parameters = theta_group[i])
-      k <- k+1L
+      add_euclidean(psi_group[i])
+      add_euclidean(theta_group[i])
 
     }
 
@@ -1051,62 +1534,63 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
   control_manifold <- create_manifolds(manifolds = manifolds,
                                        structures = param)
 
-  #### Transformations ####
+  #### Result ####
+
+  return(control_manifold)
+
+}
+
+transformations_lcfa <- function(dataList, data_param, trans, control) {
+
+  list2env(data_param, envir = environment())
 
   transforms <- list()
-  dots <- list()
   k <- 1L
 
-  for(i in 1:ngroups) {
+  for(i in seq_len(dataList$ngroups)) {
 
-    if(positive) {
+    #### Positive-definite covariance matrices ####
 
-      lower_psi <- lower.tri(trans[[psi_group[i]]], diag = TRUE)
-      lower_theta <- lower.tri(trans[[theta_group[i]]], diag = TRUE)
+    if(dataList$positive) {
 
-      dots$p <- nrow(trans[[psi_group[i]]])
       transforms[[k]] <- list(transform = "crossprod",
                               parameters_in = xpsi_group[i],
                               parameters_out = psi_group[i],
-                              extra = dots)
+                              extra = list(p = nrow(trans[[psi_group[i]]])))
       k <- k+1L
 
-      dots$p <- nrow(trans[[theta_group[i]]])
       transforms[[k]] <- list(transform = "crossprod",
                               parameters_in = xtheta_group[i],
                               parameters_out = theta_group[i],
-                              extra = dots)
+                              extra = list(p = nrow(trans[[theta_group[i]]])))
       k <- k+1L
 
     }
 
+    #### Delta parameterization ####
+
     if(control$deltaparam) {
 
-      dots$p <- nrow(trans[[theta_group[i]]])
-      dots$q <- nrow(trans[[psi_group[i]]])
       transforms[[k]] <- list(transform = "deltaparam",
                               parameters_in = c(delta_group[i],
                                                 lambda_group[i],
                                                 psi_group[i]),
                               parameters_out = list(diag(trans[[theta_group[i]]])),
-                              extra = dots)
+                              extra = list(p = nrow(trans[[theta_group[i]]]),
+                                           q = nrow(trans[[psi_group[i]]])))
       k <- k+1L
 
     }
 
-    # Model matrix correlation:
-    lower_psi <- lower.tri(trans[[psi_group[i]]], diag = TRUE)
-    lower_theta <- lower.tri(trans[[theta_group[i]]], diag = TRUE)
-    lower_diag <- lower.tri(trans[[model_group[i]]], diag = TRUE)
+    #### Model-implied covariance matrix ####
 
-    dots$p <- nitems[[i]]
-    dots$q <- nfactors[[i]]
     transforms[[k]] <- list(transform = "factor_cor",
                             parameters_in = c(lambda_group[i],
                                               psi_group[i],
                                               theta_group[i]),
                             parameters_out = model_group[i],
-                            extra = dots)
+                            extra = list(p = dataList$nitems[[i]],
+                                         q = dataList$nfactors[[i]]))
     k <- k+1L
 
   }
@@ -1114,95 +1598,111 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
   control_transform <- create_transforms(transforms = transforms,
                                          structures = trans)
 
-  #### Estimators ####
+  #### Result ####
+
+  return(control_transform)
+
+}
+
+estimators_lcfa <- function(dataList, data_param, trans, control) {
+
+  list2env(data_param, envir = environment())
 
   estimators <- list()
   k <- 1L
 
-  for(i in 1:ngroups) {
+  #### CFA discrepancy functions ####
 
-    estimator <- tolower(estimator)
-    cfa_estimator <- switch(estimator,
+  for(i in seq_len(dataList$ngroups)) {
+
+    cfa_estimator <- switch(tolower(dataList$estimator),
                             uls = "cfa_dwls",
-                            dwls  = "cfa_dwls",
+                            dwls = "cfa_dwls",
                             ml = "cfa_fml",
-                            fml  = "cfa_fml",
+                            fml = "cfa_fml",
                             means_fml = "cfa_means_fml",
                             means_dwls = "cfa_means_dwls",
                             means_uls = "cfa_means_dwls",
-                            stop("Unknown estimator: ", estimator)
-    )
+                            stop("Unknown estimator: ", dataList$estimator))
 
-    idx <- startsWith(names(cov_params[[i]]), "S")
-    cov_params[[i]] <- cov_params[[i]][idx]
-    for(j in seq_len(length(cov_params[[i]]))) {
+    cov_params_i <- cov_params[[i]]
+    cov_params_i <- cov_params_i[startsWith(names(cov_params_i), "S")]
 
-      pick <- rownames(cov_params[[i]][[j]])
+    for(j in seq_along(cov_params_i)) {
+
+      pick <- rownames(cov_params_i[[j]])
       S_group_ij <- S_group[[i]][[j]]
       M_group_ij <- M_group[[i]][[j]]
+      p <- nrow(cov_params_i[[j]])
 
-      p <- nrow(cov_params[[i]][[j]])
-      if(control$estimator %in% c("uls", "means_uls", "ml", "fml", "means_fml")) {
+      if(control$estimator %in%
+         c("uls", "means_uls", "ml", "fml", "means_fml")) {
+
         W_cov <- matrix(1, nrow = p, ncol = p)
+
       } else {
+
         idx <- startsWith(rownames(acov_cov[[i]][[j]]), "S")
         W_cov <- matrix(NA_real_, nrow = p, ncol = p)
         W_cov[lower.tri(W_cov, diag = !control$std.ov)] <-
-          diag(acov_cov[[i]][[j]][idx, idx]) #/ nobs_ij[[i]][[j]]
+          diag(acov_cov[[i]][[j]][idx, idx, drop = FALSE])
         W_cov[upper.tri(W_cov)] <- t(W_cov)[upper.tri(W_cov)]
-        W_cov <- 1 / W_cov
-        # if(control$std.ov) {
-        #   diag(W_cov) <- 1
-        # } else {
-        #   diag(W_cov) <- 0
-        # }
+        W_cov <- 1/W_cov
+
         if(control$std.ov) diag(W_cov) <- 0
+
       }
+
       w_means <- diag(acov_means[[i]][[j]])
 
-      group_pattern_name <- dataList$data_param$S_group[j]
+      model_parameters <- c(trans[[model_group[i]]][pick, pick])
+      sample_covariance <- c(trans[[S_group_ij]])
+
+      if(control$meanstructure) {
+        model_means <- c(trans[[nu_group[i]]][pick, ])
+        sample_means <- c(trans[[M_group_ij]])
+      } else {
+        model_means <- numeric(0L)
+        sample_means <- numeric(0L)
+      }
+
       estimators[[k]] <- list(estimator = cfa_estimator,
-                              parameters = list(c(trans[[model_group[i]]][pick, pick]),
-                                                c(trans[[S_group_ij]]),
-                                                c(trans[[nu_group[i]]][pick, ]),
-                                                c(trans[[M_group_ij]])),
+                              parameters = list(model_parameters,
+                                                sample_covariance,
+                                                model_means,
+                                                sample_means),
                               extra = list(W = W_cov,
-                                           w = nobs_ij[[i]][[j]] /
+                                           w = nobs_ij[[i]][[j]]/
                                              sum(unlist(dataList$nobs)),
                                            w_means = w_means,
                                            q = nrow(trans[[psi_group[i]]]),
                                            p = p,
                                            n = nobs_ij[[i]][[j]],
-                                           double_names = c(S_group_ij),
+                                           double_names = S_group_ij,
                                            matrix_names = c(S_group_ij,
                                                             M_group_ij)))
-
-      k <- k + 1L
+      k <- k+1L
 
     }
 
   }
 
+  #### Penalties ####
+
   if(control$reg) {
 
-    for(i in 1:ngroups) {
-
-      # For the psi matrix:
+    for(i in seq_len(dataList$ngroups)) {
 
       lower_indices <- which(lower.tri(trans[[psi_group[i]]], diag = TRUE))
-      logdetw <- control$penalties$logdet$w #* nfactors[[i]]
       estimators[[k]] <- list(estimator = "logdetR",
                               parameters = psi_group[i],
                               extra = list(lower_indices = lower_indices-1L,
                                            p = nrow(trans[[psi_group[i]]]),
-                                           logdetw = logdetw,
+                                           logdetw = control$penalties$logdet$w,
                                            double_names = "logdetR psi"))
       k <- k+1L
 
-      # For the theta matrix:
-
       lower_indices <- which(lower.tri(trans[[theta_group[i]]], diag = TRUE))
-      logdetw <- control$penalties$logdet$w * nitems[[i]]
       estimators[[k]] <- list(estimator = "logdetR",
                               parameters = theta_group[i],
                               extra = list(lower_indices = lower_indices-1L,
@@ -1218,153 +1718,9 @@ create_cfa_modelInfo <- function(dataList, full_model, control) {
   control_estimator <- create_estimators(estimators = estimators,
                                          structures = trans)
 
-  #### Pass the initial values to vectors ####
+  #### Result ####
 
-  inits <- create_init(trans, param, init_param,
-                       control_transform = control_transform, control)
-  list2env(inits, envir = environment())
-
-  #### Set up the optimizer ####
-
-  # Create defaults for the control of the optimizer:
-  control_optimizer <- control
-  control_optimizer$parameters <- parameters
-  control_optimizer$transparameters <- transparameters
-  control_optimizer$init_param <- init_param
-  control_optimizer$transparam2param <- trans2param-1L
-
-  #### Collect all the model information ####
-
-  modelInfo <- list(param = param,
-                    trans = trans,
-                    nparam = nparam,
-                    ntrans = ntrans,
-                    parameters_labels = parameters_labels,
-                    transparameters_labels = transparameters_labels,
-                    dof = sum(unlist(npatterns)) - nparam,
-                    control_manifold = control_manifold,
-                    control_transform = control_transform,
-                    control_estimator = control_estimator,
-                    control_optimizer = control_optimizer)
-
-  #### Return ####
-
-  return(modelInfo)
+  return(control_estimator)
 
 }
 
-lcfa_control <- function(control) {
-
-  # Auxiliary function for lcfa.R
-
-  # Control input
-
-  if(is.null(control$opt)) {
-    if(control$positive) {
-      control$opt <- "grad"
-      if(is.null(control$rstarts)) {
-        control$rstarts <- 10L
-      }
-    } else {
-      control$opt <- "lbfgs"
-    }
-  }
-
-  if(!control$positive) {
-
-    control$penalties <- FALSE
-
-  }
-
-  if(isFALSE(control$penalties)) {
-
-    control$reg <- FALSE
-
-  } else if(isTRUE(control$penalties)) {
-
-    control$reg <- TRUE
-
-    control$penalties <- list(
-      logdet = list(w = 1e-03)
-    )
-
-  } else if(is.list(control$penalties)) {
-
-    if(control$penalties$logdet$w <= 0) {
-      stop("The penalty w must be positive")
-    }
-    control$reg <- TRUE
-
-  } else {
-
-    stop("penalties should be TRUE, FALSE, or a list")
-
-  }
-
-  if(is.null(control$free_S)) {
-    control$free_S <- FALSE
-  }
-
-  if(is.null(control$free_taus)) {
-    control$free_taus <- FALSE
-  }
-
-  if(is.null(control$free_M)) {
-    control$free_M <- FALSE
-  }
-
-  if(is.null(control$deltaparam)) {
-    control$deltaparam <- FALSE
-  }
-
-  if(is.null(control$step_maxit)) {
-    control$step_maxit <- 30L
-  }
-
-  if(is.null(control$c1)) {
-    control$c1 <- 0.5
-  }
-
-  if(is.null(control$c2)) {
-    control$c2 <- 0.5
-  }
-
-  if(is.null(control$step_eps)) {
-    control$step_eps <- 1e-09
-  }
-
-  if(is.null(control$df_eps)) {
-    control$df_eps <- 1e-09
-  }
-
-  if(is.null(control$M)) {
-    control$M <- 100L
-  }
-
-  if(is.null(control$eps)) {
-    control$eps <- 1e-06
-  }
-
-  if(is.null(control$ss_fac)) {
-    control$ss_fac <- 2
-  }
-
-  if(is.null(control$maxit)) {
-    control$maxit <- 1000L
-  }
-
-  if(is.null(control$rstarts)) {
-    control$rstarts <- 1L
-  }
-
-  if(is.null(control$cores)) {
-    control$cores <- 1L
-  }
-
-  if(is.null(control$tcg_maxit)) {
-    control$tcg_maxit <- 10L
-  }
-
-  return(control)
-
-}

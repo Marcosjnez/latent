@@ -1,500 +1,912 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/03/2026
+# Modification date: 13/08/2026
 #'
 #' @title
-#' Rotate the lambda matrix of an orthogonal factor model.
+#' Rotate a factor loading matrix
+#'
+#' @description
+#' \code{lrotate} rotates one or more factor loading matrices using an
+#' orthogonal or oblique projection and a selected rotation criterion.
 #'
 #' @usage
-#'
 #' lrotate(lambda, projection = "oblq", rotation = "oblimin",
-#' group = NULL, positive = FALSE, penalties = TRUE,
-#' do.fit = TRUE, control = NULL, ...)
+#'         group = NULL, positive = FALSE, penalties = TRUE,
+#'         do.fit = TRUE, control = NULL, ...)
 #'
-#' @param lambda List, loading matrices for each group.
-#' @param projection String. Can be "orth", "oblq", or "poblq".
-#' @param rotation String. Name of the variable that splits the data in different groups.
-#' @param group String. Name of the variable that splits the data in different groups.
-#' @param positive Force a positive-definite solution. Defaults to FALSE.
-#' @param penalties list of penalty terms for the parameters.
-#' @param do.fit TRUE to fit the model and FALSE to return only the model setup. Defaults to TRUE.
-#' @param control List of control parameters for the optimization algorithm. See 'details' for more information.
-#' @param ... Additional arguments.
+#' @param lambda A matrix or a list of loading matrices, one for each group.
+#' @param projection Character string. Available projections are
+#'   \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.
+#' @param rotation Character string identifying the rotation criterion.
+#' @param group Optional grouping information retained in the fitted object.
+#' @param positive Logical. Retained for compatibility with the factor-analysis
+#'   interface.
+#' @param penalties Logical or list of penalty settings retained in the
+#'   optimization control.
+#' @param do.fit Logical. If \code{TRUE}, fit the rotation. If \code{FALSE},
+#'   return only the model specification.
+#' @param control List of optimization-control arguments.
+#' @param ... Additional arguments required by the selected projection or
+#'   rotation criterion.
 #'
-#' @details \code{lrotate} estimates confirmatory factor models.
-#'
-#' @return List with the following objects:
-#' \item{version}{Version number of 'latent' when the model was estimated.}
-#' \item{call}{Code used to estimate the model.}
-#' \item{ModelInfo}{Model information.}
-#' \item{Optim}{Output of the optimizer.}
-#' \item{parameters}{Structure with all model parameters.}
-#' \item{transparameters}{Structure with all transformed model parameters.}
-#' \item{loglik}{Logarithm likelihood of the model.}
-#' \item{penalized_loglik}{Logarithm likelihood + logarithm priors of the model.}
+#' @return An object of class \code{"latent"}.
 #'
 #' @examples
-#'
 #' \dontrun{
-#'
-#' fit <- lrotate(lambda = , projection = "oblq", rotation = "oblimin")
-#' summary(fit, digits = 3L)
-#'}
+#' fit <- lrotate(lambda = list(lambda),
+#'                projection = "oblq",
+#'                rotation = "oblimin")
+#' }
 #'
 #' @export
 lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                     group = NULL, positive = FALSE, penalties = TRUE,
                     do.fit = TRUE, control = NULL, ...) {
 
-  # Capture everything in ... as a named list
-  dots <- list(...)
+  #### Check input arguments ####
 
-  #### Arrange the data ####
+  lambda <- check_lambda_lrotate(lambda)
 
-  # Check orthogonality
-  if(projection == "oblq" || projection == "poblq") {
-    orthogonal <- FALSE
-  } else if(projection == "orth") {
-    orthogonal <- TRUE
-  } else {
-    stop("Unknown projection")
+  projection <- tolower(projection)
+  rotation <- tolower(rotation)
+
+  supported_projection <- c("orth", "oblq", "poblq")
+
+  if(!(projection %in% supported_projection)) {
+    stop("Unknown projection: ", projection)
   }
 
-  # Check the arguments to control_optimizer and create defaults:
-  estimator <- rotation
+  supported_rotation <- c("cf", "geomin", "lclf", "oblimin",
+                          "target", "varimax", "varimin", "xtarget")
+
+  if(!(rotation %in% supported_rotation)) {
+    stop("Unknown rotation criterion: ", rotation)
+  }
+
+  if(length(positive) != 1L || !is.logical(positive) || is.na(positive)) {
+    stop("positive must be TRUE or FALSE")
+  }
+
+  if(length(do.fit) != 1L || !is.logical(do.fit) || is.na(do.fit)) {
+    stop("do.fit must be TRUE or FALSE")
+  }
+
+  #### Store original call ####
+
+  mc <- match.call()
+
+  #### Rotation-specific arguments ####
+
+  dots <- list(...)
+  dots <- rotation_defaults_lrotate(rotation = rotation,
+                                    dots = dots)
+
+  #### Check control parameters ####
+
   control$penalties <- penalties
-  control$estimator <- tolower(rotation)
-  control <- lcfa_control(control)
-  if(control$opt == "lbfgs") control$opt <- "newton"
+  control$positive <- positive
+  control$estimator <- rotation
+  control$projection <- projection
+  control <- lrotate_control(control)
 
-  # Data and structure information:
-  ngroups        <- length(lambda)
-  group_label    <- names(lambda)
-  item_label   <- lapply(lambda, FUN = \(x) rownames(x))
-  factor_label   <- lapply(lambda, FUN = \(x) colnames(x))
-  nitems <- lapply(lambda, FUN = nrow)
-  nfactors <- lapply(lambda, FUN = ncol)
+  #### Create the dataList ####
 
-  data_list <- vector("list")
-  data_list$ngroups <- ngroups
-  data_list$data <- lambda
-  data_list$nitems <- nitems
-  data_list$nfactors <- nfactors
-  data_list$positive <- positive
-  data_list$estimator <- estimator
-  data_list$group_label <- group_label
-  data_list$item_label <- item_label
-  data_list$factor_label <- factor_label
-  data_list$orthogonal <- orthogonal
-
-  ## store original call
-  mc  <- match.call()
+  dataList <- create_lrotate_dataList(lambda = lambda,
+                                      projection = projection,
+                                      rotation = rotation,
+                                      group = group,
+                                      positive = positive)
 
   #### Create the model ####
 
-  # # Generate the model syntax and initial parameter values
-  #
-  # list2env(data_list, envir = environment())
-
-  # Initialize the objects to store the initial parameters:
-  rot_param <- rot_trans <- model <- vector("list")
-  fixed <- fixed_values <- nonfixed <- vector("list")
-  ulambda_group <- paste("ulambda.group", 1:ngroups, sep = "")
-  X_group <- paste("X.group", 1:ngroups, sep = "")
-  Xinv_group <- paste("Xinv.group", 1:ngroups, sep = "")
-  lambda_group <- paste("lambda.group", 1:ngroups, sep = "")
-  psi_group <- paste("psi.group", 1:ngroups, sep = "")
-  model_description <- list()
-
-  for(i in 1:ngroups) {
-
-    model[[ulambda_group[i]]] <- lambda[[i]]
-    X_labels <- paste("g", i, ".X[", rep(1:nfactors[[i]], times = nfactors[[i]]),
-                      ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-
-    model[[X_group[i]]] <- matrix(X_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
-
-    # Transformed parameters:
-
-    # Get the positions of parameters and fixed values:
-
-    group_i <- c(ulambda_group[i], X_group[i])
-
-    nonfixed[group_i] <- lapply(model[group_i], FUN = \(x) {
-      which(is.na(suppressWarnings(as.numeric(x))))
-    })
-
-    fixed[group_i] <- lapply(model[group_i], FUN = \(x) {
-      which(!is.na(suppressWarnings(as.numeric(x))))
-    })
-
-    fixed_values[group_i] <- lapply(model[group_i], FUN = \(x) {
-      numerals <- suppressWarnings(as.numeric(x))
-      inds <- which(!is.na(numerals))
-      return(numerals[inds])
-    })
-
-    # Unrotated lambda:
-    ulambda_labels <- paste("g", i, ".ulambda[", rep(1:nitems[[i]], times = nfactors[[i]]),
-                            ",", rep(1:nfactors[[i]], each = nitems[[i]]), "]", sep = "")
-    rot_trans[[ulambda_group[i]]] <- matrix(ulambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
-
-    # X:
-    rot_trans[[X_group[i]]] <- model[[X_group[i]]]
-
-    if(!orthogonal) {
-      # Xinv:
-      Xinv_labels <- paste("g", i, ".Xinv[", rep(1:nfactors[[i]], times = nfactors[[i]]),
-                           ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-      rot_trans[[Xinv_group[i]]] <- matrix(Xinv_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
-    }
-
-    # Rotated lambda:
-    lambda_labels <- paste("g", i, ".lambda[", rep(1:nitems[[i]], times = nfactors[[i]]),
-                           ",", rep(1:nfactors[[i]], each = nitems[[i]]), "]", sep = "")
-    rot_trans[[lambda_group[i]]] <- matrix(lambda_labels, nrow = nitems[[i]], ncol = nfactors[[i]])
-
-    # Latent correlations:
-    psi_labels <- paste("g", i, ".psi[", rep(1:nfactors[[i]], times = nfactors[[i]]),
-                           ",", rep(1:nfactors[[i]], each = nfactors[[i]]), "]", sep = "")
-    rot_trans[[psi_group[i]]] <- matrix(psi_labels, nrow = nfactors[[i]], ncol = nfactors[[i]])
-    rot_trans[[psi_group[i]]][upper.tri(rot_trans[[psi_group[i]]], diag = FALSE)] <- t(rot_trans[[psi_group[i]]])[upper.tri(rot_trans[[psi_group[i]]], diag = FALSE)]
-
-    # Untransformed parameters:
-
-    rot_param[[ulambda_group[i]]] <- model[[ulambda_group[i]]]
-    rot_param[[X_group[i]]] <- rot_trans[[X_group[i]]]
-
-    # p <- nitems[[i]]
-    # q <- nfactors[[i]]
-    # model_description[[ulambda_group[i]]] <- list(type = "matrix",
-    #                                               nrow = p,
-    #                                               ncol = q)
-    # model_description[[X_group[i]]] <- list(type = "matrix",
-    #                                         nrow = q,
-    #                                         ncol = q)
-    # if(orthogonal) {
-    #
-    #   model_description[[Xinv_group[i]]] <- list(type = "matrix",
-    #                                              nrow = q,
-    #                                              ncol = q)
-    #
-    # }
-    #
-    # model_description[[lambda_group[i]]] <- list(type = "matrix",
-    #                                              nrow = p,
-    #                                              ncol = q)
-    # model_description[[psi_group[i]]] <- list(type = "matrix",
-    #                                           nrow = q,
-    #                                           ncol = q,
-    #                                           symmetric = TRUE)
-
-  }
-
-  #### Arrange labels ####
-
-  # Arrange parameter labels:
-  vector_param <- unname(unique(unlist(rot_param)))
-
-  # Select the unique, nonnumeric labels:
-  nonfixed_pars <- which(is.na(suppressWarnings(as.numeric(vector_param))))
-  parameters_labels <- vector_param[nonfixed_pars]
-  nparam <- length(parameters_labels)
-
-  # Arrange transparameter labels:
-  vector_trans <- unname(unlist(rot_trans))
-  transparameters_labels <- unique(vector_trans)
-  nonfixed_trans <- which(is.na(suppressWarnings(as.numeric(transparameters_labels))))
-  transparameters_labels <- transparameters_labels[nonfixed_trans]
-  ntrans <- length(transparameters_labels)
-
-  #### Relate the transformed parameters to the parameters ####
-
-  param2trans <- match(transparameters_labels, parameters_labels)
-  param2trans <- param2trans[!is.na(param2trans)]
-  # Relate the parameters to the transformed parameters:
-  trans2param <- match(parameters_labels, transparameters_labels)
-
-  #### Create the initial values for the parameters ####
-
-  # Collect the unique nontransformed parameters and the unique transformed parameters:
-
-  init_trans <- vector("list", length = control$rstarts)
-
-  for(rs in 1:control$rstarts) {
-
-    init_trans[[rs]] <- vector("list")
-
-    for(i in 1:ngroups) {
-
-      init_trans[[rs]][[ulambda_group[i]]] <- lambda[[i]]
-      init_trans[[rs]][[X_group[i]]] <- rorth(nfactors[[i]], nfactors[[i]])
-      # init_trans[[rs]][[X_group[i]]] <- roblq(nfactors[[i]], nfactors[[i]])
-
-      if(orthogonal) {
-        init_trans[[rs]][[lambda_group[i]]] <- lambda[[i]] %*%
-          init_trans[[rs]][[X_group[i]]]
-      } else {
-        init_trans[[rs]][[Xinv_group[i]]] <- solve(init_trans[[rs]][[X_group[i]]])
-        init_trans[[rs]][[lambda_group[i]]] <- lambda[[i]] %*%
-          t(init_trans[[rs]][[Xinv_group[i]]])
-      }
-
-      init_trans[[rs]][[psi_group[i]]] <- crossprod(init_trans[[rs]][[X_group[i]]])
-
-    }
-
-  }
-
-  #### Create the vectors of parameters and transformed parameters ####
-
-  parameters <- transparameters <- vector("list", length = control$rstarts)
-  # Indices of the unique transparameters in init_trans:
-  trans_inds <- match(transparameters_labels, vector_trans)
-  init_inds <- match(parameters_labels, vector_trans)
-
-  for(rs in 1:control$rstarts) {
-
-    transparameters[[rs]] <- unlist(init_trans[[rs]])[trans_inds]
-    names(transparameters[[rs]]) <- transparameters_labels
-    parameters[[rs]] <- unlist(init_trans[[rs]])[init_inds]
-    names(parameters[[rs]]) <- parameters_labels
-
-  }
-
-  #### Set up the optimizer ####
-
-  # Create defaults for the control of the optimizer:
-  control$parameters <- parameters
-  control$transparameters <- transparameters
-  control$param2transparam <- param2trans-1L
-  control$transparam2param <- trans2param-1L
-
-  full_model <- list(parameters_labels = parameters_labels,
-                     nparam = nparam,
-                     transparameters_labels = transparameters_labels,
-                     ntrans = ntrans,
-                     rot_param = rot_param,
-                     rot_trans = rot_trans,
-                     fixed = fixed,
-                     nonfixed = nonfixed,
-                     init_trans = init_trans,
-                     control = control)
-
-  #### Manifolds ####
-
-  manifolds <- list()
-  for(i in 1:ngroups) {
-
-    dots$p <- nfactors[[i]]
-    dots$q <- nfactors[[i]]
-
-    manifolds[[i]] <- list(manifold = projection, parameters = X_group[i],
-                           extra = dots)
-
-  }
-
-  control_manifold <- create_manifoldsfold(manifolds = manifolds,
-                                           structures = rot_param)
-
-  #### Transformations ####
-
-  transforms <- list()
-  k <- 1L
-
-  for(i in 1:ngroups) {
-
-    if(orthogonal) {
-
-      # Rotated lambda:
-
-      # Get the extra objects required for the transformation:
-      dots$p <- nitems[[i]]
-      dots$q <- nfactors[[i]]
-      transforms[[k]] <- list(transform = "XY",
-                              parameters_in = c(ulambda_group[i],
-                                                X_group[i]),
-                              parameters_out = lambda_group[i],
-                              extra = dots)
-      k <- k+1L
-
-    } else {
-
-      # Inverse of X:
-
-      # Get the extra objects required for the transformation:
-      dots$p <- nfactors[[i]]
-      transforms[[k]] <- list(transform = "matrix_inverse",
-                              parameters_in = X_group[i],
-                              parameters_out = Xinv_group[i],
-                              extra = dots)
-      k <- k+1L
-
-      # Rotated lambda:
-
-      # Get the extra objects required for the transformation:
-      dots$p <- nitems[[i]]
-      dots$q <- nfactors[[i]]
-      transforms[[k]] <- list(transform = "XYt",
-                              parameters_in = c(ulambda_group[i],
-                                                Xinv_group[i]),
-                              parameters_out = lambda_group[i],
-                              extra = dots)
-      k <- k+1L
-
-    }
-
-    # Latent covariances:
-
-    # Get the extra objects required for the transformation:
-    dots$p <- nfactors[[i]]
-    lower_psi <- lower.tri(diag(nfactors[[i]], nfactors[[i]]), diag = TRUE)
-    transforms[[k]] <- list(transform = "crossprod",
-                            parameters_in = X_group[i],
-                            parameters_out = psi_group[i],
-                            extra = dots)
-    k <- k+1L
-
-  }
-
-  control_transform <- create_transforms(transforms = transforms,
-                                         structures = rot_trans)
-
-  #### Estimators ####
-
-  estimators <- list()
-  dots <- list(...)
-  k <- 1L
-
-  for(i in 1:ngroups) {
-
-    # Rotation criteria:
-    dots$p <- nitems[[i]]
-    dots$q <- nfactors[[i]]
-
-    estimators[[i]] <- list(estimator = rotation,
-                            parameters = c(lambda_group[i], psi_group[i]),
-                            extra = dots)
-    k <- k+1L
-
-  }
-
-  control_estimator <- create_estimators(estimators = estimators,
-                                         structures = rot_trans)
-
-  #### Structures ####
-
-  structures <- list(control_manifold = control_manifold,
-                     control_transform = control_transform,
-                     control_estimator = control_estimator)
-
-  #### Collect all the model information ####
-
-  # Model information:
-  modelInfo <- list(
-                    # nobs = nobs,
-                    # nparam = nparam - rest,
-                    # npatterns = npatterns,
-                    # dof = sum(unlist(npatterns)) - nparam + rest,
-                    ntrans = ntrans,
-                    parameters_labels = parameters_labels,
-                    transparameters_labels = transparameters_labels,
-                    rot_param = rot_param,
-                    rot_trans = rot_trans,
-                    rotation = rotation,
-                    model_description = model_description,
-                    control_manifold = control_manifold,
-                    control_transform = control_transform,
-                    control_estimator = control_estimator,
-                    control = control)
+  full_model <- create_lrotate_model(dataList = dataList,
+                                     control = control)
+
+  #### Create the manifold, transformation, and estimator structures ####
+
+  modelInfo <- create_lrotate_modelInfo(dataList = dataList,
+                                        full_model = full_model,
+                                        control = control,
+                                        dots = dots)
 
   #### Fit the model ####
 
   if(!do.fit) {
 
-    lcfa_list <- new("lcfa",
-                     version            = as.character( packageVersion('latent') ),
-                     call               = mc,
-                     timing             = numeric(),
-                     data_list          = data_list,
-                     modelInfo          = modelInfo,
-                     Optim              = list(),
-                     parameters         = list(),
-                     transformed_pars   = list(),
-                     loglik             = numeric(),
-                     penalized_loglik   = numeric(),
-                     loss               = numeric(),
-                     penalized_loss     = numeric()
-    )
+    result <- new("latent",
+                  version          = as.character(packageVersion("latent")),
+                  call             = mc,
+                  timing           = numeric(),
+                  dataList         = dataList,
+                  modelInfo        = modelInfo,
+                  Optim            = list(),
+                  parameters       = list(),
+                  transformed_pars = list(),
+                  extra            = list())
 
-    return(lcfa_list)
+    #### Result ####
+
+    return(result)
 
   }
 
-  control$cores <- min(control$rstarts, control$cores)
-  # Fit the model:
-  x <- optimizer(control_manifold = control_manifold,
-                 control_transform = control_transform,
-                 control_estimator = control_estimator,
-                 control_optimizer = control)
+  Optim <- fit_lrotate(modelInfo = modelInfo)
 
-  # Collect all the information about the optimization:
+  #### Process the outputs ####
 
-  Optim <- x
-  elapsed <- x$elapsed
-
-  #### Estimated model structures ####
-
-  # Create the structures of untransformed parameters:
-  indices_pars <- match(modelInfo$parameters_labels,
-                        unlist(modelInfo$rot_param))
-
-  parameters <- fill_in(modelInfo$rot_param, Optim$parameters)
-  # FIXED PARAMETERS?
-
-  # Create the structures of transformed parameters:
-  transformed_pars <- fill_in(modelInfo$rot_trans,
+  transformed_pars <- fill_in(modelInfo$trans,
                               Optim$transparameters)
 
-  #### Process the fit information ####
+  parameters <- transformed_pars[names(modelInfo$param)]
 
-  # Initialize the objects to be returned:
-  loss <- penalized_loss <- loglik <- penalized_loglik <- penalty <-
-    vector("list", length = ngroups)
+  #### latent object ####
 
-  # For each group, extract the loss, penalized loss, loglik and penalized loglik
-  for(i in 1:ngroups) {
-
-    loss[[i]] <- c(x$outputs$estimators$doubles[[1]][[1]])
-    loglik[[i]] <- c(x$outputs$estimators$doubles[[1]][[2]])
-    penalized_loss[[i]] <- loss[[i]]
-    penalized_loglik[[i]] <- loglik[[i]]
-
-  }
-
-  loss <- sum(unlist(loss))
-  penalized_loss <- sum(unlist(penalized_loss))
-  loglik <- sum(unlist(loglik))
-  penalized_loglik <- sum(unlist(penalized_loglik))
+  result <- new("latent",
+                version          = as.character(packageVersion("latent")),
+                call             = mc,
+                timing           = Optim$elapsed,
+                dataList         = dataList,
+                modelInfo        = modelInfo,
+                Optim            = Optim,
+                parameters       = parameters,
+                transformed_pars = transformed_pars,
+                extra            = list())
 
   #### Result ####
-
-  result <- new("lcfa",
-                version            = as.character( packageVersion('latent') ),
-                call               = mc,
-                timing             = elapsed,
-                data_list          = data_list,
-                modelInfo          = modelInfo,
-                Optim              = Optim,
-                parameters         = parameters,
-                transformed_pars   = transformed_pars,
-                loglik             = loglik,
-                penalized_loglik   = penalized_loglik,
-                loss               = loss,
-                penalized_loss     = penalized_loss
-  )
 
   return(result)
 
 }
 
+#### Function to check the loading matrices ####
+
+check_lambda_lrotate <- function(lambda) {
+
+  if(is.matrix(lambda)) {
+    lambda <- list(lambda)
+  }
+
+  if(!is.list(lambda) || length(lambda) == 0L) {
+    stop("lambda must be a matrix or a non-empty list of matrices")
+  }
+
+  ngroups <- length(lambda)
+
+  group_label <- names(lambda)
+
+  if(is.null(group_label)) {
+
+    group_label <- paste("group", seq_len(ngroups), sep = "")
+
+  } else {
+
+    empty_names <- is.na(group_label) | group_label == ""
+
+    if(any(empty_names)) {
+      group_label[empty_names] <-
+        paste("group", which(empty_names), sep = "")
+    }
+
+    if(anyDuplicated(group_label)) {
+      stop("lambda must have unique group names")
+    }
+
+  }
+
+  for(i in seq_len(ngroups)) {
+
+    if(is.data.frame(lambda[[i]])) {
+      lambda[[i]] <- as.matrix(lambda[[i]])
+    }
+
+    if(!is.matrix(lambda[[i]]) || !is.numeric(lambda[[i]])) {
+      stop("Every element of lambda must be a numeric matrix")
+    }
+
+    if(nrow(lambda[[i]]) < 1L || ncol(lambda[[i]]) < 1L) {
+      stop("Every loading matrix must contain at least one row and one column")
+    }
+
+    if(anyNA(lambda[[i]]) || any(!is.finite(lambda[[i]]))) {
+      stop("Loading matrices cannot contain missing or non-finite values")
+    }
+
+    item_label <- rownames(lambda[[i]])
+    factor_label <- colnames(lambda[[i]])
+
+    if(is.null(item_label)) {
+      item_label <- paste("item", seq_len(nrow(lambda[[i]])), sep = "")
+    }
+
+    if(is.null(factor_label)) {
+      factor_label <- paste("factor", seq_len(ncol(lambda[[i]])), sep = "")
+    }
+
+    if(any(item_label == "") || anyDuplicated(item_label)) {
+      stop("Loading-matrix row names must be unique and non-empty")
+    }
+
+    if(any(factor_label == "") || anyDuplicated(factor_label)) {
+      stop("Loading-matrix column names must be unique and non-empty")
+    }
+
+    rownames(lambda[[i]]) <- item_label
+    colnames(lambda[[i]]) <- factor_label
+
+  }
+
+  names(lambda) <- group_label
+
+  #### Result ####
+
+  return(lambda)
+
+}
+
+#### Function to create defaults for rotation-specific arguments ####
+
+rotation_defaults_lrotate <- function(rotation, dots) {
+
+  # These defaults make the two commonly used criteria directly usable from
+  # lrotate()/lefa() without requiring an otherwise undocumented argument.
+
+  if(rotation == "oblimin" && is.null(dots$gamma)) {
+    dots$gamma <- 0
+  }
+
+  if(rotation == "geomin" && is.null(dots$epsilon)) {
+    dots$epsilon <- 0.01
+  }
+
+  #### Result ####
+
+  return(dots)
+
+}
+
+#### Function to create the dataList ####
+
+create_lrotate_dataList <- function(lambda, projection, rotation,
+                                    group, positive) {
+
+  ngroups <- length(lambda)
+
+  item_label <- lapply(lambda, rownames)
+  factor_label <- lapply(lambda, colnames)
+  nitems <- lapply(lambda, nrow)
+  nfactors <- lapply(lambda, ncol)
+
+  orthogonal <- projection == "orth"
+
+  dataList <- list(
+    data = lambda,
+    ngroups = ngroups,
+    group = group,
+    group_label = names(lambda),
+    item_label = item_label,
+    factor_label = factor_label,
+    nitems = nitems,
+    nfactors = nfactors,
+    projection = projection,
+    rotation = rotation,
+    estimator = rotation,
+    positive = positive,
+    orthogonal = orthogonal
+  )
+
+  #### Result ####
+
+  return(dataList)
+
+}
+
+#### Function to create the model ####
+
+create_lrotate_model <- function(dataList, control) {
+
+  data_param <- create_lrotate_data_param(dataList = dataList)
+
+  #### Model for the transformed parameters ####
+
+  trans <- model_lrotate(dataList = dataList,
+                         data_param = data_param)
+
+  #### Model for the parameters ####
+
+  param <- constraints_lrotate(trans = trans,
+                               dataList = dataList,
+                               data_param = data_param)
+
+  #### Create the initial values for the parameters ####
+
+  init_param <- start_lrotate(trans = trans,
+                              dataList = dataList,
+                              data_param = data_param,
+                              control = control)
+
+  #### Custom initial values ####
+
+  init_param <- custom_init_param(control$start, init_param)
+
+  # Recompute every transformed quantity from X after custom starts have been
+  # inserted. The unrotated loadings remain fixed at the supplied values.
+  init_param <- refresh_start_lrotate(init_param = init_param,
+                                      trans = trans,
+                                      dataList = dataList,
+                                      data_param = data_param)
+
+  #### Result ####
+
+  result <- list(param = param,
+                 trans = trans,
+                 init_param = init_param,
+                 data_param = data_param)
+
+  return(result)
+
+}
+
+#### Function to create the parameter-block names ####
+
+create_lrotate_data_param <- function(dataList) {
+
+  groups <- seq_len(dataList$ngroups)
+
+  result <- list(
+    ulambda_group = paste("ulambda.group", groups, sep = ""),
+    X_group = paste("X.group", groups, sep = ""),
+    Xinv_group = paste("Xinv.group", groups, sep = ""),
+    lambda_group = paste("lambda.group", groups, sep = ""),
+    psi_group = paste("psi.group", groups, sep = "")
+  )
+
+  #### Result ####
+
+  return(result)
+
+}
+
+#### Function to create matrix parameter labels ####
+
+labels_lrotate <- function(group, object, nrow, ncol) {
+
+  labels <- paste("g", group, ".", object, "[",
+                  rep(seq_len(nrow), times = ncol), ",",
+                  rep(seq_len(ncol), each = nrow), "]",
+                  sep = "")
+
+  result <- matrix(labels, nrow = nrow, ncol = ncol)
+
+  #### Result ####
+
+  return(result)
+
+}
+
+#### Function to create the transformed-parameter model ####
+
+model_lrotate <- function(dataList, data_param) {
+
+  list2env(data_param, envir = environment())
+
+  list_struct <- list()
+  k <- 1L
+
+  for(i in seq_len(dataList$ngroups)) {
+
+    p <- dataList$nitems[[i]]
+    q <- dataList$nfactors[[i]]
+    item_names <- dataList$item_label[[i]]
+    factor_names <- dataList$factor_label[[i]]
+
+    #### Unrotated loadings ####
+
+    list_struct[[k]] <- list(
+      name = ulambda_group[i],
+      type = "matrix",
+      dim = c(p, q),
+      rownames = item_names,
+      colnames = factor_names,
+      labels = labels_lrotate(i, "ulambda", p, q)
+    )
+    k <- k+1L
+
+    #### Rotation matrix ####
+
+    list_struct[[k]] <- list(
+      name = X_group[i],
+      type = "matrix",
+      dim = c(q, q),
+      rownames = factor_names,
+      colnames = factor_names,
+      labels = labels_lrotate(i, "X", q, q)
+    )
+    k <- k+1L
+
+    #### Inverse rotation matrix ####
+
+    if(!dataList$orthogonal) {
+
+      list_struct[[k]] <- list(
+        name = Xinv_group[i],
+        type = "matrix",
+        dim = c(q, q),
+        rownames = factor_names,
+        colnames = factor_names,
+        labels = labels_lrotate(i, "Xinv", q, q)
+      )
+      k <- k+1L
+
+    }
+
+    #### Rotated loadings ####
+
+    list_struct[[k]] <- list(
+      name = lambda_group[i],
+      type = "matrix",
+      dim = c(p, q),
+      rownames = item_names,
+      colnames = factor_names,
+      labels = labels_lrotate(i, "lambda", p, q)
+    )
+    k <- k+1L
+
+    #### Latent correlations ####
+
+    list_struct[[k]] <- list(
+      name = psi_group[i],
+      type = "matrix",
+      dim = c(q, q),
+      rownames = factor_names,
+      colnames = factor_names,
+      symmetric = TRUE,
+      labels = labels_lrotate(i, "psi", q, q)
+    )
+    k <- k+1L
+
+  }
+
+  trans <- create_parameters(list_struct)
+
+  #### Result ####
+
+  return(trans)
+
+}
+
+#### Function to create the parameter constraints ####
+
+constraints_lrotate <- function(trans, dataList, data_param) {
+
+  list2env(data_param, envir = environment())
+
+  param <- list()
+
+  for(i in seq_len(dataList$ngroups)) {
+
+    # The unrotated loading matrix is fixed at the supplied solution.
+    param[[ulambda_group[i]]] <- dataList$data[[i]]
+    dimnames(param[[ulambda_group[i]]]) <-
+      dimnames(trans[[ulambda_group[i]]])
+
+    # X is the only free parameter block for the rotation.
+    param[[X_group[i]]] <- trans[[X_group[i]]]
+
+  }
+
+  #### Result ####
+
+  return(param)
+
+}
+
+#### Function to create starting values ####
+
+start_lrotate <- function(trans, dataList, data_param, control) {
+
+  list2env(data_param, envir = environment())
+
+  init_param <- vector("list", length = control$rstarts)
+
+  for(rs in seq_len(control$rstarts)) {
+
+    init_param[[rs]] <- list()
+
+    for(i in seq_len(dataList$ngroups)) {
+
+      q <- dataList$nfactors[[i]]
+
+      #### Fixed unrotated loadings ####
+
+      init_param[[rs]][[ulambda_group[i]]] <- dataList$data[[i]]
+      dimnames(init_param[[rs]][[ulambda_group[i]]]) <-
+        dimnames(trans[[ulambda_group[i]]])
+
+      #### Rotation matrix ####
+
+      X <- rorth(q, q)
+      dimnames(X) <- dimnames(trans[[X_group[i]]])
+      init_param[[rs]][[X_group[i]]] <- X
+
+      #### Derived transformed quantities ####
+
+      init_param[[rs]] <- update_rotation_lrotate(
+        x = init_param[[rs]],
+        group_index = i,
+        trans = trans,
+        dataList = dataList,
+        data_param = data_param
+      )
+
+    }
+
+  }
+
+  #### Result ####
+
+  return(init_param)
+
+}
+
+#### Function to refresh starting transformed quantities ####
+
+refresh_start_lrotate <- function(init_param, trans,
+                                  dataList, data_param) {
+
+  list2env(data_param, envir = environment())
+
+  for(rs in seq_along(init_param)) {
+
+    for(i in seq_len(dataList$ngroups)) {
+
+      # The unrotated loadings are data, not free starting values.
+      init_param[[rs]][[ulambda_group[i]]] <- dataList$data[[i]]
+      dimnames(init_param[[rs]][[ulambda_group[i]]]) <-
+        dimnames(trans[[ulambda_group[i]]])
+
+      init_param[[rs]] <- update_rotation_lrotate(
+        x = init_param[[rs]],
+        group_index = i,
+        trans = trans,
+        dataList = dataList,
+        data_param = data_param
+      )
+
+    }
+
+  }
+
+  #### Result ####
+
+  return(init_param)
+
+}
+
+#### Function to update quantities implied by a rotation matrix ####
+
+update_rotation_lrotate <- function(x, group_index, trans,
+                                    dataList, data_param) {
+
+  list2env(data_param, envir = environment())
+
+  i <- group_index
+  U <- dataList$data[[i]]
+  X <- x[[X_group[i]]]
+
+  if(is.null(X) ||
+     !identical(dim(X), c(dataList$nfactors[[i]],
+                          dataList$nfactors[[i]]))) {
+    stop("Invalid starting value for '", X_group[i], "'")
+  }
+
+  dimnames(X) <- dimnames(trans[[X_group[i]]])
+  x[[X_group[i]]] <- X
+
+  if(dataList$orthogonal) {
+
+    rotated_lambda <- U %*% X
+
+  } else {
+
+    Xinv <- solve(X)
+    dimnames(Xinv) <- dimnames(trans[[Xinv_group[i]]])
+    x[[Xinv_group[i]]] <- Xinv
+
+    rotated_lambda <- U %*% t(Xinv)
+
+  }
+
+  dimnames(rotated_lambda) <- dimnames(trans[[lambda_group[i]]])
+  x[[lambda_group[i]]] <- rotated_lambda
+
+  psi <- crossprod(X)
+  dimnames(psi) <- dimnames(trans[[psi_group[i]]])
+  x[[psi_group[i]]] <- psi
+
+  #### Result ####
+
+  return(x)
+
+}
+
+#### Function to create the modelInfo ####
+
+create_lrotate_modelInfo <- function(dataList, full_model,
+                                     control, dots) {
+
+  list2env(full_model, envir = environment())
+
+  #### Manifolds ####
+
+  manifolds <- manifolds_lrotate(dataList = dataList,
+                                 data_param = data_param,
+                                 dots = dots)
+
+  control_manifold <- create_manifolds(manifolds = manifolds,
+                                       structures = param)
+
+  #### Transformations ####
+
+  transforms <- transformations_lrotate(dataList = dataList,
+                                        data_param = data_param)
+
+  control_transform <- create_transforms(transforms = transforms,
+                                         structures = trans)
+
+  #### Estimators ####
+
+  estimators <- estimators_lrotate(dataList = dataList,
+                                   data_param = data_param,
+                                   dots = dots)
+
+  control_estimator <- create_estimators(estimators = estimators,
+                                         structures = trans)
+
+  #### Pass the initial values to vectors ####
+
+  inits <- create_init(trans, param, init_param,
+                       control_transform = control_transform, control)
+
+  list2env(inits, envir = environment())
+
+  #### Set up the optimizer ####
+
+  control_optimizer <- control
+  control_optimizer$parameters <- parameters
+  control_optimizer$transparameters <- transparameters
+  control_optimizer$init_param <- init_param
+  control_optimizer$transparam2param <- trans2param-1L
+
+  #### Result ####
+
+  modelInfo <- list(
+    param = param,
+    trans = trans,
+    nparam = nparam,
+    ntrans = ntrans,
+    parameters_labels = parameters_labels,
+    transparameters_labels = transparameters_labels,
+    dof = NA_integer_,
+    rotation = dataList$rotation,
+    projection = dataList$projection,
+    data_param = data_param,
+    control_manifold = control_manifold,
+    control_transform = control_transform,
+    control_estimator = control_estimator,
+    control_optimizer = control_optimizer
+  )
+
+  return(modelInfo)
+
+}
+
+#### Function to create the manifolds ####
+
+manifolds_lrotate <- function(dataList, data_param, dots) {
+
+  X_group <- data_param$X_group
+
+  manifolds <- vector("list", length = dataList$ngroups)
+
+  for(i in seq_len(dataList$ngroups)) {
+
+    q <- dataList$nfactors[[i]]
+    extra <- group_dots_lrotate(dots = dots,
+                                group_index = i,
+                                ngroups = dataList$ngroups)
+
+    extra$p <- q
+    extra$q <- q
+
+    manifolds[[i]] <- list(
+      manifold = dataList$projection,
+      parameters = X_group[i],
+      extra = extra
+    )
+
+  }
+
+  #### Result ####
+
+  return(manifolds)
+
+}
+
+#### Function to create the transformations ####
+
+transformations_lrotate <- function(dataList, data_param) {
+
+  list2env(data_param, envir = environment())
+
+  transforms <- list()
+  k <- 1L
+
+  for(i in seq_len(dataList$ngroups)) {
+
+    p <- dataList$nitems[[i]]
+    q <- dataList$nfactors[[i]]
+
+    if(dataList$orthogonal) {
+
+      #### Rotated loadings ####
+
+      transforms[[k]] <- list(
+        transform = "XY",
+        parameters_in = c(ulambda_group[i], X_group[i]),
+        parameters_out = lambda_group[i],
+        extra = list(p = p, q = q)
+      )
+      k <- k+1L
+
+    } else {
+
+      #### Inverse rotation matrix ####
+
+      transforms[[k]] <- list(
+        transform = "matrix_inverse",
+        parameters_in = X_group[i],
+        parameters_out = Xinv_group[i],
+        extra = list(p = q)
+      )
+      k <- k+1L
+
+      #### Rotated loadings ####
+
+      transforms[[k]] <- list(
+        transform = "XYt",
+        parameters_in = c(ulambda_group[i], Xinv_group[i]),
+        parameters_out = lambda_group[i],
+        extra = list(p = p, q = q)
+      )
+      k <- k+1L
+
+    }
+
+    #### Latent correlations ####
+
+    transforms[[k]] <- list(
+      transform = "crossprod",
+      parameters_in = X_group[i],
+      parameters_out = psi_group[i],
+      extra = list(p = q)
+    )
+    k <- k+1L
+
+  }
+
+  #### Result ####
+
+  return(transforms)
+
+}
+
+#### Function to create the estimators ####
+
+estimators_lrotate <- function(dataList, data_param, dots) {
+
+  lambda_group <- data_param$lambda_group
+  psi_group <- data_param$psi_group
+
+  estimators <- vector("list", length = dataList$ngroups)
+
+  for(i in seq_len(dataList$ngroups)) {
+
+    extra <- group_dots_lrotate(dots = dots,
+                                group_index = i,
+                                ngroups = dataList$ngroups)
+
+    extra$p <- dataList$nitems[[i]]
+    extra$q <- dataList$nfactors[[i]]
+
+    estimators[[i]] <- list(
+      estimator = dataList$rotation,
+      parameters = c(lambda_group[i], psi_group[i]),
+      extra = extra
+    )
+
+  }
+
+  #### Result ####
+
+  return(estimators)
+
+}
+
+#### Function to select group-specific extra arguments ####
+
+group_dots_lrotate <- function(dots, group_index, ngroups) {
+
+  extra <- dots
+
+  # Matrix-valued projection/criterion arguments may be supplied either once
+  # for every group or as a list with one object per group.
+  group_objects <- c("constraints", "target", "weight",
+                     "psitarget", "psiweight")
+
+  for(nm in intersect(names(extra), group_objects)) {
+
+    object <- extra[[nm]]
+
+    if(is.list(object) &&
+       !is.data.frame(object) &&
+       length(object) == ngroups) {
+      extra[[nm]] <- object[[group_index]]
+    }
+
+  }
+
+  #### Result ####
+
+  return(extra)
+
+}
+
+#### Function to fit the rotation ####
+
+fit_lrotate <- function(modelInfo) {
+
+  control_optimizer <- modelInfo$control_optimizer
+
+  control_optimizer$cores <-
+    min(control_optimizer$rstarts,
+        control_optimizer$cores)
+
+  Optim <- optimizer(
+    control_manifold = modelInfo$control_manifold,
+    control_transform = modelInfo$control_transform,
+    control_estimator = modelInfo$control_estimator,
+    control_optimizer = control_optimizer
+  )
+
+  names(Optim$parameters) <- modelInfo$parameters_labels
+  names(Optim$transparameters) <- modelInfo$transparameters_labels
+
+  #### Result ####
+
+  return(Optim)
+
+}
+
+#### Function to create the control list ####
+
+lrotate_control <- function(control) {
+
+  # Keep the optimizer defaults used by the CFA/EFA machinery. Rotation is
+  # normally more stable with the Newton optimizer, matching the previous
+  # implementation.
+
+  control <- lcfa_control(control)
+
+  if(control$opt == "lbfgs") {
+    control$opt <- "newton"
+  }
+
+  if(is.null(control$start)) {
+    control$start <- NULL
+  }
+
+  #### Result ####
+
+  return(control)
+
+}

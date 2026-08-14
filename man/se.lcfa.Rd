@@ -2,27 +2,24 @@
 % Please edit documentation in R/se_lcfa.R
 \name{se.lcfa}
 \alias{se.lcfa}
-\title{Standard Errors}
+\title{Standard Errors for Confirmatory Factor Analysis}
 \usage{
-se(fit)
+\method{se}{lcfa}(fit, type = "standard", digits = 5L, ...)
 }
 \arguments{
-\item{fit}{model fitted with lca.}
+\item{fit}{A fitted object of class \code{"lcfa"}.}
 
-\item{confidence}{Coverage of the confidence interval.}
+\item{type}{Character string identifying the requested standard-error type.}
+
+\item{digits}{Optional number of decimal places used for formatted output.}
+
+\item{...}{Additional arguments.}
 }
 \value{
-List with the following objects:
-\item{vcov}{Variance-covariance matrix between the parameters.}
-\item{se}{Standard errors.}
-\item{SE}{Standard errors in the model list.}
+A list containing the standard errors, variance-covariance matrix,
+  Hessian, sandwich middle matrix, and the parameter-shaped standard-error
+  table.
 }
 \description{
-Compute standard errors.
-}
-\details{
-Compute standard errors.
-}
-\references{
-None yet.
+Extract or compute standard errors for a fitted \code{"lcfa"} object.
 }
