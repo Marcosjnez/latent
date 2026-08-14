@@ -9,10 +9,10 @@ subsequently rotating the estimated loading matrices with
 ## Usage
 
 ``` r
-lefa(data, nfactors = 1L, estimator = "ml",
+lefa(data = NULL, nfactors = 1L, estimator = "ml",
      projection = "oblq", rotation = "oblimin",
      model = NULL, ordered = FALSE, group = NULL,
-     sample.cov = NULL, nobs = NULL,
+     sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
      positive = FALSE, penalties = TRUE,
      missing = "pairwise.complete.obs",
      std.lv = TRUE, do.fit = TRUE,
@@ -24,7 +24,8 @@ lefa(data, nfactors = 1L, estimator = "ml",
 
 - data:
 
-  A data frame or matrix containing the observed variables.
+  Optional data frame or matrix containing the observed variables.
+  Alternatively, sample.cov can be supplied.
 
 - nfactors:
 
@@ -66,7 +67,12 @@ lefa(data, nfactors = 1L, estimator = "ml",
   passed to
   [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
 
-- nobs:
+- sample.mean:
+
+  Optional sample mean vector or list of vectors passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
+
+- sample.nobs:
 
   Optional number of observations passed to
   [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).

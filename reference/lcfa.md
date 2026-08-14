@@ -6,9 +6,9 @@ the optimization infrastructure of latent.
 ## Usage
 
 ``` r
-lcfa(data, model = NULL, estimator = "ml",
+lcfa(data = NULL, model = NULL, estimator = "ml",
      ordered = FALSE, group = NULL,
-     sample.cov = NULL, nobs = NULL,
+     sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
      positive = FALSE, penalties = FALSE,
      missing = "pairwise.complete.obs",
      std.lv = FALSE, std.ov = FALSE,
@@ -23,7 +23,8 @@ lcfa(data, model = NULL, estimator = "ml",
 
 - data:
 
-  A data frame or matrix containing the observed variables.
+  Optional data frame or matrix containing the observed variables. If
+  NULL, sample.cov and sample.nobs must be supplied.
 
 - model:
 
@@ -45,11 +46,18 @@ lcfa(data, model = NULL, estimator = "ml",
 
 - sample.cov:
 
-  Optional sample covariance matrix or list of covariance matrices.
+  Optional sample covariance matrix or list of covariance matrices. Used
+  when data is NULL.
 
-- nobs:
+- sample.mean:
 
-  Optional number of observations.
+  Optional sample mean vector or list of vectors. Required when data is
+  NULL and meanstructure = TRUE.
+
+- sample.nobs:
+
+  Optional number of observations, or one value per group, used when
+  data is NULL.
 
 - positive:
 
@@ -126,5 +134,10 @@ HS.model <- '
 
 fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
 summary(fit, digits = 3L)
+
+S <- cov(HolzingerSwineford1939[, paste0("x", 1:9)])
+M <- colMeans(HolzingerSwineford1939[, paste0("x", 1:9)])
+fit_cov <- lcfa(model = HS.model, sample.cov = S, sample.mean = M,
+                sample.nobs = nrow(HolzingerSwineford1939))
 } # }
 ```

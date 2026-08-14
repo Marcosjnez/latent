@@ -87,9 +87,9 @@ optimization infrastructure of <span class="pkg">latent</span>.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lcfa</span><span class="op">(</span><span class="va">data</span>, model <span class="op">=</span> <span class="cn">NULL</span>, estimator <span class="op">=</span> <span class="st">"ml"</span>,</span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lcfa</span><span class="op">(</span>data <span class="op">=</span> <span class="cn">NULL</span>, model <span class="op">=</span> <span class="cn">NULL</span>, estimator <span class="op">=</span> <span class="st">"ml"</span>,</span>
 <span>     ordered <span class="op">=</span> <span class="cn">FALSE</span>, group <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>     sample.cov <span class="op">=</span> <span class="cn">NULL</span>, nobs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>     sample.cov <span class="op">=</span> <span class="cn">NULL</span>, sample.mean <span class="op">=</span> <span class="cn">NULL</span>, sample.nobs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>     positive <span class="op">=</span> <span class="cn">FALSE</span>, penalties <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>     missing <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>,</span>
 <span>     std.lv <span class="op">=</span> <span class="cn">FALSE</span>, std.ov <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -105,7 +105,8 @@ optimization infrastructure of <span class="pkg">latent</span>.</p>
 
 
 <dl><dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
-<dd><p>A data frame or matrix containing the observed variables.</p></dd>
+<dd><p>Optional data frame or matrix containing the observed variables.
+If NULL, sample.cov and sample.nobs must be supplied.</p></dd>
 
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
@@ -128,11 +129,17 @@ character value <code>"yule"</code> requests Yule correlations.</p></dd>
 
 <dt id="arg-sample-cov">sample.cov<a class="anchor" aria-label="anchor" href="#arg-sample-cov"></a></dt>
 <dd><p>Optional sample covariance matrix or list of covariance
-matrices.</p></dd>
+matrices. Used when data is NULL.</p></dd>
 
 
-<dt id="arg-nobs">nobs<a class="anchor" aria-label="anchor" href="#arg-nobs"></a></dt>
-<dd><p>Optional number of observations.</p></dd>
+<dt id="arg-sample-mean">sample.mean<a class="anchor" aria-label="anchor" href="#arg-sample-mean"></a></dt>
+<dd><p>Optional sample mean vector or list of vectors. Required
+when data is NULL and meanstructure = TRUE.</p></dd>
+
+
+<dt id="arg-sample-nobs">sample.nobs<a class="anchor" aria-label="anchor" href="#arg-sample-nobs"></a></dt>
+<dd><p>Optional number of observations, or one value per group,
+used when data is NULL.</p></dd>
 
 
 <dt id="arg-positive">positive<a class="anchor" aria-label="anchor" href="#arg-positive"></a></dt>
@@ -213,6 +220,11 @@ estimators where applicable.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">lcfa</span><span class="op">(</span>model <span class="op">=</span> <span class="va">HS.model</span>, data <span class="op">=</span> <span class="va">HolzingerSwineford1939</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span>, digits <span class="op">=</span> <span class="fl">3L</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">S</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cov</a></span><span class="op">(</span><span class="va">HolzingerSwineford1939</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">M</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">HolzingerSwineford1939</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit_cov</span> <span class="op">&lt;-</span> <span class="fu">lcfa</span><span class="op">(</span>model <span class="op">=</span> <span class="va">HS.model</span>, sample.cov <span class="op">=</span> <span class="va">S</span>, sample.mean <span class="op">=</span> <span class="va">M</span>,</span></span>
+<span class="r-in"><span>                sample.nobs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">HolzingerSwineford1939</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
