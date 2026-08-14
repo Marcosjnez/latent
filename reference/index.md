@@ -68,6 +68,8 @@
   : Classification Diagnostics for Latent Class Analysis
 - [`lefa()`](https://marcosjnez.github.io/latent/reference/lefa.md) :
   Exploratory Factor Analysis
+- [`lmean()`](https://marcosjnez.github.io/latent/reference/lmean.md) :
+  Sample Means
 - [`lpearson()`](https://marcosjnez.github.io/latent/reference/lpearson.md)
   : Pearson Covariance or Correlation Matrix
 - [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
