@@ -3,8 +3,9 @@
 estimated or transformed parameters of a fitted object inheriting from
 class "latent".
 For ordinary one-step models, covariance matrices are obtained from the
-inverse Hessian and transformed to the requested parameterization using the
-delta method.
+inverse Hessian, or from an alternative information matrix supplied through
+H, and transformed to the requested parameterization using the delta
+method.
 When the fitted model contains a previous "latent" object among the
 model specifications stored in
 fit@modelInfo$control_optimizer$model, uncertainty from the previous
@@ -13,8 +14,9 @@ fitted models are handled recursively.'><meta property="og:description" content=
 estimated or transformed parameters of a fitted object inheriting from
 class "latent".
 For ordinary one-step models, covariance matrices are obtained from the
-inverse Hessian and transformed to the requested parameterization using the
-delta method.
+inverse Hessian, or from an alternative information matrix supplied through
+H, and transformed to the requested parameterization using the delta
+method.
 When the fitted model contains a previous "latent" object among the
 model specifications stored in
 fit@modelInfo$control_optimizer$model, uncertainty from the previous
@@ -103,8 +105,9 @@ fitted models are handled recursively.'></head><body><p>
 estimated or transformed parameters of a fitted object inheriting from
 class <code>"latent"</code>.</p>
 <p>For ordinary one-step models, covariance matrices are obtained from the
-inverse Hessian and transformed to the requested parameterization using the
-delta method.</p>
+inverse Hessian, or from an alternative information matrix supplied through
+<code>H</code>, and transformed to the requested parameterization using the delta
+method.</p>
 <p>When the fitted model contains a previous <code>"latent"</code> object among the
 model specifications stored in
 <code>fit@modelInfo$control_optimizer$model</code>, uncertainty from the previous
@@ -134,11 +137,13 @@ blocks corresponding to the fitted model parameters are used.</p></dd>
 
 
 <dt id="arg-h">H<a class="anchor" aria-label="anchor" href="#arg-h"></a></dt>
-<dd><p>Optional Hessian or equivalent information matrix for the freely
-estimated parameters. If <code>NULL</code>, the Hessian is computed from
-<code>fit</code>. Supplying <code>H</code> allows alternative covariance estimators,
-such as sandwich estimators, to use the same transformation and sequential
-uncertainty machinery.</p></dd>
+<dd><p>Optional information specification for the freely estimated
+parameters. If <code>NULL</code>, the ordinary Hessian is used. A numeric matrix
+can be supplied as the information matrix for the current model. A function
+can also be supplied; it must take a fitted model as its first argument and
+return an information matrix. Function-valued specifications are propagated
+recursively so that the information matrix is recomputed separately for
+each nested model.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -154,7 +159,7 @@ uncertainty machinery.</p></dd>
     parameter transformations.</p></dd>
 
   <dt><code>H</code></dt>
-<dd><p>Hessian or information matrix used in the covariance
+<dd><p>Information matrix used in the final covariance
     calculation.</p></dd>
 
   <dt><code>B</code></dt>
@@ -173,31 +178,37 @@ uncertainty machinery.</p></dd>
     <p>Compute covariance matrices and standard errors for fitted latent variable
 models, including uncertainty propagated across sequential estimation steps.</p>
 
-<p>For a one-step model, let \(H\) denote the Hessian of the objective
-function. The covariance matrix of the freely estimated parameters is based
-on \(H^{-1}\). Covariances of transformed parameters are subsequently
-obtained with the delta method.</p>
+<p>For a one-step model, let \(P\) denote the information matrix used for
+inference. With ordinary Hessian-based inference, \(P = H\), where \(H\)
+is the Hessian of the objective function. The covariance matrix of the freely
+estimated parameters is based on \(P^{-1}\). Covariances of transformed
+parameters are subsequently obtained with the delta method.</p>
 <p>For a sequential model, suppose that measurement or nuisance parameters
 \(\theta_M\) are estimated in an earlier step and subsequently treated as
 fixed while structural parameters \(\theta_S\) are estimated. Let
 \(A\) denote the covariance matrix of the earlier parameter estimates,
-\(H_2\) the Hessian for the structural parameters, and \(C\) the
+\(H_2\) the ordinary Hessian for the structural parameters, \(P_2\) the
+information matrix whose inverse gives the structural covariance when the
+earlier parameters are treated as known, and \(C\) the
 measurement-structural cross-derivative matrix.</p>
 <p>The propagated structural uncertainty contains the additional term
 $$H_2^{-1} C^\top A C H_2^{-1}.$$</p>
-<p>The method constructs the corresponding joint precision matrix
+<p>The corresponding joint covariance matrix is
 $$
 \begin{pmatrix}
-A^{-1} + C H_2^{-1} C^\top &amp; C \\
-C^\top &amp; H_2
-\end{pmatrix}
-$$
-so that covariance between parameters estimated in different stages is
-retained.</p>
-<p>If the earlier fitted model itself contains a previous <code>"latent"</code>
-object, <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> is called recursively before uncertainty is propagated
-to the current stage. Consequently, chains of sequential plug-in estimation
-steps can be handled recursively.</p>
+A &amp; -A C H_2^{-1} \\
+-H_2^{-1} C^\top A &amp;
+P_2^{-1} + H_2^{-1} C^\top A C H_2^{-1}
+\end{pmatrix}.
+$$</p>
+<p>Rather than constructing and inverting this covariance matrix directly, the
+method constructs its inverse and passes it through the ordinary covariance
+machinery. When \(P_2 = H_2\), this reduces to the standard sequential
+pseudo-likelihood correction.</p>
+<p>If <code>H</code> is supplied as a function and the earlier fitted model itself
+contains a previous <code>"latent"</code> object, the same function is passed
+recursively and evaluated independently for each nested fit. This allows, for
+example, robust information matrices to be used at every estimation stage.</p>
 <p>At most one nested <code>"latent"</code> object is currently supported at each
 estimation level.</p>
     </div>

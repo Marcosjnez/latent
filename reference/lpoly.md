@@ -1,123 +1,99 @@
-# Maximum likelihood estimation of positive-definite polychoric correlation matrices
+# Polychoric Correlation Matrix
 
-`lpoly` estimates a polychoric correlation matrix from ordinal data
-using maximum likelihood. The function can use either a one-step or a
-two-step estimation approach and optionally enforce
-positive-semidefiniteness or positive-definiteness through constrained
-estimation or penalties.
+Estimate a polychoric correlation matrix from ordinal data using
+one-step or two-step estimation.
 
 ## Usage
 
 ``` r
-lpoly(data,
-      method = "two-step",
-      model = NULL,
-      positive = FALSE,
-      penalties = FALSE,
-      do.fit = TRUE,
-      message = FALSE,
-      control = NULL,
-      ...)
+lpoly(data, method = "two-step", model = NULL,
+      positive = FALSE, penalties = FALSE,
+      start = NULL, do.fit = TRUE, message = FALSE,
+      control = NULL, ...)
 ```
 
 ## Arguments
 
 - data:
 
-  A data frame or matrix containing the raw ordinal data.
+  A data frame or matrix containing ordinal variables coded numerically.
 
 - method:
 
-  Character string indicating the estimation method. Possible values are
-  `"one-step"` and `"two-step"`. Default is `"two-step"`.
+  Character string indicating the estimation method. Available options
+  are `"one-step"` and `"two-step"`.
 
 - model:
 
-  Optional model object used internally for initialization or custom
-  model setup. Default is `NULL`.
+  Optional named list used with `method = "one-step"` to fix parameters
+  or impose equality constraints. Names should correspond to parameter
+  blocks such as `S` or the threshold blocks. Numeric values fix
+  parameters, repeated character labels impose equality constraints, and
+  `NA` leaves the corresponding parameter unchanged.
 
 - positive:
 
-  Logical. If `TRUE`, the estimated polychoric correlation matrix is
-  forced to be positive semidefinite. Default is `FALSE`.
+  Logical. If `TRUE`, the correlation matrix is parameterized through an
+  oblique manifold so that the resulting matrix is positive
+  semidefinite. This option is available for one-step estimation.
 
 - penalties:
 
-  Logical. If `TRUE`, penalties are added to the objective function to
-  encourage a positive-definite solution. Default is `FALSE`.
+  Logical value or named list controlling regularization. If `TRUE`, the
+  default log-determinant penalty is used. Two-step estimation does not
+  use penalties.
+
+- start:
+
+  Optional named list of starting values used with
+  `method = "one-step"`. Names should correspond to parameter blocks in
+  the model. Partial matrices/vectors and `NA` values are handled in the
+  same way as in
+  [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md).
 
 - do.fit:
 
-  Logical. If `TRUE`, the model is fitted. If `FALSE`, only the model
-  setup is returned. Default is `TRUE`.
+  Logical. If `FALSE`, return the prepared but unfitted `"latent"`
+  object.
 
 - message:
 
-  Logical. If `TRUE`, progress messages are printed during estimation.
-  Default is `FALSE`.
+  Logical. Print progress messages during estimation.
 
 - control:
 
-  A list of control parameters for the optimization algorithm. This may
-  include starting values, convergence tolerances, maximum number of
-  iterations, and other optimizer-specific options.
+  Optional list of optimization controls.
 
 - ...:
 
-  Additional arguments passed to internal optimization and model setup
-  routines.
+  Additional arguments reserved for future extensions.
 
 ## Value
 
-A list containing the fitted model and related information. Typical
-elements include:
-
-- `version`: Version number of latent used when the model was estimated.
-
-- `call`: Matched call used to estimate the model.
-
-- `ModelInfo`: Information about the model specification and data.
-
-- `Optim`: Output of the optimization routine.
-
-- `parameters`: Structure containing the model parameters.
-
-- `transparameters`: Structure containing transformed model parameters.
-
-- `loglik`: Log-likelihood of the fitted model.
-
-- `penalized_loglik`: Penalized log-likelihood of the fitted model.
+An S4 object of class `"latent"`. The object contains the processed data
+in `dataList`, the model and optimization structures in `modelInfo`,
+optimizer output in `Optim`, and the estimated parameter structures in
+`parameters` and `transformed_pars`.
 
 ## Details
 
-`lpoly` estimates positive-definite or positive-semidefinite polychoric
-correlation matrices from ordinal data. The function is designed for
-situations in which the unrestricted polychoric matrix is not guaranteed
-to be admissible, for example because of sampling variability or sparse
-response patterns.
+With `method = "two-step"`, thresholds are obtained from the marginal
+distributions and the polychoric correlations are then estimated
+pairwise. With `method = "one-step"`, thresholds and correlations are
+optimized jointly using the general optimization infrastructure of
+latent.
 
-Two estimation strategies are available:
-
-- `"two-step"`: thresholds are estimated first and the correlation
-  matrix is estimated in a second step.
-
-- `"one-step"`: thresholds and correlations are estimated jointly.
-
-If `positive = TRUE`, the estimated matrix is constrained to be positive
-semidefinite. If `penalties = TRUE`, penalty terms are added to the
-objective function to encourage positive-definiteness.
-
-If `do.fit = FALSE`, the function returns the model setup without
-running the optimizer.
+The two-step method always uses the unconstrained pairwise estimator and
+therefore does not support `model`, `start`, `positive`, or `penalties`.
+Model constraints and custom starts are available for
+`method = "one-step"`.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
 fit <- lpoly(data = values)
-
-fit_psd <- lpoly(data = values, positive = TRUE)
-
-setup_only <- lpoly(data = values, do.fit = FALSE)
+fit_one_step <- lpoly(data = values, method = "one-step")
+fit_positive <- lpoly(data = values, method = "one-step", positive = TRUE)
 } # }
 ```

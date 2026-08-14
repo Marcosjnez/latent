@@ -1,141 +1,132 @@
-# Fit an Exploratory Factor Analysis (EFA) model.
+# Exploratory Factor Analysis
 
-Fit an Exploratory Factor Analysis (EFA) model.
+Fit an exploratory factor analysis model by first estimating an
+orthogonal factor model with
+[`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) and
+subsequently rotating the estimated loading matrices with
+[`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
 
 ## Usage
 
 ``` r
-lefa(data, nfactors = 1L, model = NULL,
-estimator = "ml", rotation = "oblimin",
-ordered = FALSE, group = NULL,
-sample.cov = NULL, nobs = NULL,
-positive = FALSE, penalties = TRUE,
-missing = "pairwise.complete.obs",
-std.lv = FALSE, do.fit = TRUE, mimic = 'latent',
-control = NULL, ...)
+lefa(data, nfactors = 1L, estimator = "ml",
+     projection = "oblq", rotation = "oblimin",
+     model = NULL, ordered = FALSE, group = NULL,
+     sample.cov = NULL, nobs = NULL,
+     positive = FALSE, penalties = TRUE,
+     missing = "pairwise.complete.obs",
+     std.lv = TRUE, do.fit = TRUE,
+     mimic = "latent", control = NULL,
+     ...)
 ```
 
 ## Arguments
 
 - data:
 
-  data frame or matrix.
+  A data frame or matrix containing the observed variables.
 
 - nfactors:
 
-  integer. Number of latent variables.
+  Integer. Number of factors used when `model = NULL`.
 
 - estimator:
 
-  Available estimators: "ml", "uls", and "dwls". Defaults to "ml".
+  Estimation method passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
+
+- projection:
+
+  Rotation projection passed to
+  [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
+  Available options are `"orth"`, `"oblq"`, and `"poblq"`.
 
 - rotation:
 
-  Available rotations: "oblimin", "geomin", and "target". Defaults to
-  "oblimin".
+  Rotation criterion passed to
+  [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
 
 - model:
 
-  lavaan's model syntax.
+  Optional lavaan model syntax. If `NULL`, an exploratory lower-diagonal
+  loading model is generated automatically.
 
 - ordered:
 
-  Logical. Defaults to TRUE.
+  Logical value indicating whether indicators are ordinal. The character
+  value `"yule"` requests Yule correlations.
 
 - group:
 
-  String. Name of the variable that splits the data in different groups.
+  Optional character string identifying the grouping variable.
 
 - sample.cov:
 
-  Covariance matrix between the items. Defaults to NULL.
+  Optional sample covariance matrix or list of covariance matrices
+  passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
 
 - nobs:
 
-  Number of observations. Defaults to NULL.
+  Optional number of observations passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
 
 - positive:
 
-  Force a positive-definite solution. Defaults to FALSE.
+  Logical. Request the positive-definite parameterization used by
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
 
 - penalties:
 
-  list of penalty terms for the parameters.
+  Logical value or list controlling regularization.
 
 - missing:
 
-  Method to handle missing data.
+  Missing-data method passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
 
 - std.lv:
 
-  Provide the parameters of the standardized model.
+  Logical. Standardize latent variables in the unrotated model.
 
 - do.fit:
 
-  TRUE to fit the model and FALSE to return only the model setup.
-  Defaults to TRUE.
+  Logical. If `FALSE`, return the unrotated `lcfa` model specification
+  without fitting or rotation.
 
 - mimic:
 
-  String. Choose the output you want to obtain. Defaults to 'latent'.
+  Retained for backward compatibility. Only `"latent"` is currently
+  supported.
 
 - control:
 
-  List of control parameters for the optimization algorithm. See
-  'details' for more information.
+  Optional list of optimization controls passed to the unrotated
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md)
+  model.
 
 - ...:
 
-  Additional lavaan arguments. See ?lavaan for more information.
+  Additional arguments. CFA/lavaan arguments are passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md);
+  arguments required by the selected rotation criterion or projection
+  are passed only to
+  [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
 
 ## Value
 
-List with the following objects:
-
-- version:
-
-  Version number of 'latent' when the model was estimated.
-
-- call:
-
-  Code used to estimate the model.
-
-- ModelInfo:
-
-  Model information.
-
-- Optim:
-
-  Output of the optimizer.
-
-- parameters:
-
-  Structure with all model parameters.
-
-- transparameters:
-
-  Structure with all transformed model parameters.
-
-- loglik:
-
-  Logarithm likelihood of the model.
-
-- penalized_loglik:
-
-  Logarithm likelihood + logarithm priors of the model.
-
-## Details
-
-`lefa` estimates confirmatory factor models.
+If the fitted model contains more than one factor, a list with
+components `efa` (the unrotated `lcfa` fit) and `rotation` (the rotated
+`latent` fit). For a one-factor model, the unrotated `lcfa` fit is
+returned directly. If `do.fit = FALSE`, the unfitted `lcfa`
+specification is returned.
 
 ## Examples
 
 ``` r
-
 if (FALSE) { # \dontrun{
-# The famous Holzinger and Swineford (1939) example
-
-fit <- lefa(data = HolzingerSwineford1939, nfactors = 3L)
-summary(fit, digits = 3L)
+fit <- lefa(data = HolzingerSwineford1939,
+            nfactors = 3L,
+            rotation = "oblimin")
 } # }
 ```

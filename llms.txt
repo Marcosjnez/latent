@@ -120,18 +120,21 @@ The package development is supported by two projects:
 - [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md) :
   Latent Class Analysis
 - [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
-  Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+  Confirmatory Factor Analysis
 - [`lcfa_to_lavaan()`](https://marcosjnez.github.io/latent/reference/lcfa_to_lavaan.md)
   : Convert a fitted lcfa object (latent) to a lavaan object
 - [`lclass_diag()`](https://marcosjnez.github.io/latent/reference/lclass_diag.md)
   : Classification Diagnostics for Latent Class Analysis
 - [`lefa()`](https://marcosjnez.github.io/latent/reference/lefa.md) :
-  Fit an Exploratory Factor Analysis (EFA) model.
+  Exploratory Factor Analysis
+- [`lpearson()`](https://marcosjnez.github.io/latent/reference/lpearson.md)
+  : Pearson Covariance or Correlation Matrix
 - [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
-  Maximum likelihood estimation of positive-definite polychoric
-  correlation matrices
+  Polychoric Correlation Matrix
 - [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md)
-  : Rotate the lambda matrix of an orthogonal factor model.
+  : Rotate a factor loading matrix
+- [`lyule()`](https://marcosjnez.github.io/latent/reference/lyule.md) :
+  Yule Correlation Matrix
 - [`plot(`*`<getfit.llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/plot.getfit.llcalist.md)
   : Plot fit indices across latent class solutions
 - [`plot(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/plot.llca.md)
@@ -156,8 +159,8 @@ The package development is supported by two projects:
   : Print mixed latent class profile plots
 - [`reshape_lca_mixed()`](https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.md)
   : Reshape class-conditional indicator profiles
-- [`se()`](https://marcosjnez.github.io/latent/reference/se.lcfa.md) :
-  Standard Errors
+- [`se(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/se.lcfa.md)
+  : Standard Errors for Confirmatory Factor Analysis
 - [`se(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/se.llca.md)
   : Standard Errors for Latent Class Models
 - [`se(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/se.llca_sam.md)

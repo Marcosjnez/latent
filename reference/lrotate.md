@@ -1,102 +1,69 @@
-# Rotate the lambda matrix of an orthogonal factor model.
+# Rotate a factor loading matrix
 
-Rotate the lambda matrix of an orthogonal factor model.
+`lrotate` rotates one or more factor loading matrices using an
+orthogonal or oblique projection and a selected rotation criterion.
 
 ## Usage
 
 ``` r
 lrotate(lambda, projection = "oblq", rotation = "oblimin",
-group = NULL, positive = FALSE, penalties = TRUE,
-do.fit = TRUE, control = NULL, ...)
+        group = NULL, positive = FALSE, penalties = TRUE,
+        do.fit = TRUE, control = NULL, ...)
 ```
 
 ## Arguments
 
 - lambda:
 
-  List, loading matrices for each group.
+  A matrix or a list of loading matrices, one for each group.
 
 - projection:
 
-  String. Can be "orth", "oblq", or "poblq".
+  Character string. Available projections are `"orth"`, `"oblq"`, and
+  `"poblq"`.
 
 - rotation:
 
-  String. Name of the variable that splits the data in different groups.
+  Character string identifying the rotation criterion.
 
 - group:
 
-  String. Name of the variable that splits the data in different groups.
+  Optional grouping information retained in the fitted object.
 
 - positive:
 
-  Force a positive-definite solution. Defaults to FALSE.
+  Logical. Retained for compatibility with the factor-analysis
+  interface.
 
 - penalties:
 
-  list of penalty terms for the parameters.
+  Logical or list of penalty settings retained in the optimization
+  control.
 
 - do.fit:
 
-  TRUE to fit the model and FALSE to return only the model setup.
-  Defaults to TRUE.
+  Logical. If `TRUE`, fit the rotation. If `FALSE`, return only the
+  model specification.
 
 - control:
 
-  List of control parameters for the optimization algorithm. See
-  'details' for more information.
+  List of optimization-control arguments.
 
 - ...:
 
-  Additional arguments.
+  Additional arguments required by the selected projection or rotation
+  criterion.
 
 ## Value
 
-List with the following objects:
-
-- version:
-
-  Version number of 'latent' when the model was estimated.
-
-- call:
-
-  Code used to estimate the model.
-
-- ModelInfo:
-
-  Model information.
-
-- Optim:
-
-  Output of the optimizer.
-
-- parameters:
-
-  Structure with all model parameters.
-
-- transparameters:
-
-  Structure with all transformed model parameters.
-
-- loglik:
-
-  Logarithm likelihood of the model.
-
-- penalized_loglik:
-
-  Logarithm likelihood + logarithm priors of the model.
-
-## Details
-
-`lrotate` estimates confirmatory factor models.
+An object of class `"latent"`.
 
 ## Examples
 
 ``` r
-
 if (FALSE) { # \dontrun{
-
-fit <- lrotate(lambda = , projection = "oblq", rotation = "oblimin")
-summary(fit, digits = 3L)
+fit <- lrotate(lambda = list(lambda),
+               projection = "oblq",
+               rotation = "oblimin")
 } # }
 ```

@@ -1,156 +1,128 @@
-# Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+# Confirmatory Factor Analysis
 
-Fit a Confirmatory Factor Analysis (CFA) model with lavaan syntax.
+Fit confirmatory factor analysis models using lavaan model syntax and
+the optimization infrastructure of latent.
 
 ## Usage
 
 ``` r
 lcfa(data, model = NULL, estimator = "ml",
-ordered = FALSE, group = NULL,
-sample.cov = NULL, nobs = NULL,
-positive = FALSE, penalties = TRUE,
-missing = "pairwise.complete.obs",
-std.lv = FALSE, do.fit = TRUE,
-message = FALSE, mimic = 'latent',
-control = NULL, ...)
+     ordered = FALSE, group = NULL,
+     sample.cov = NULL, nobs = NULL,
+     positive = FALSE, penalties = FALSE,
+     missing = "pairwise.complete.obs",
+     std.lv = FALSE, std.ov = FALSE,
+     acov = "standard", meanstructure = TRUE,
+     parameterization = NULL,
+     likelihood = NULL, se = TRUE,
+     control = NULL, message = FALSE,
+     do.fit = TRUE, ...)
 ```
 
 ## Arguments
 
 - data:
 
-  data frame or matrix.
+  A data frame or matrix containing the observed variables.
 
 - model:
 
-  lavaan's model syntax.
+  Confirmatory factor model specified using lavaan syntax.
 
 - estimator:
 
-  Available estimators: "ml", "uls", and "dwls". Defaults to "ml".
+  Estimation method. Available options include `"ml"`, `"uls"`, and
+  `"dwls"`.
 
 - ordered:
 
-  Logical. Defaults to TRUE.
+  Logical value indicating whether indicators are ordinal. The character
+  value `"yule"` requests Yule correlations.
 
 - group:
 
-  String. Name of the variable that splits the data in different groups.
+  Optional character string identifying the grouping variable.
 
 - sample.cov:
 
-  Covariance matrix between the items. Defaults to NULL.
+  Optional sample covariance matrix or list of covariance matrices.
 
 - nobs:
 
-  Number of observations. Defaults to NULL.
+  Optional number of observations.
 
 - positive:
 
-  Force a positive-definite solution. Defaults to FALSE.
+  Logical. If `TRUE`, positive-definite covariance structures are
+  imposed through the corresponding manifold parameterization.
 
 - penalties:
 
-  list of penalty terms for the parameters.
+  Logical value or list controlling regularization.
 
 - missing:
 
-  Method to handle missing data.
+  Missing-data method.
 
 - std.lv:
 
-  Logical. Provide the parameters of the standardized model. Default is
-  TRUE.
+  Logical. Standardize latent variables.
 
 - std.ov:
 
-  Logical. Standardize the observed variables before fitting. Default is
-  FALSE.
+  Logical. Standardize observed variables.
 
 - acov:
 
-  String. "standard" or "robust". Default is "standard".
+  Method used to estimate the asymptotic covariance matrix of the sample
+  statistics.
 
 - meanstructure:
 
-  Logical. Estimate the means of the variables. Default is FALSE.
+  Logical. Estimate the observed-variable mean structure.
+
+- parameterization:
+
+  Optional parameterization specification.
 
 - likelihood:
 
-  String. Use N (normal) or N-1 (wishart) in the denominator. Defaults
-  to "normal" for ML and "wishart" otherwise.
+  Character string controlling the normal/Wishart likelihood convention.
 
 - se:
 
-  Logical. Compute standard errors. Defaults to TRUE.
+  Logical. Compute standard errors before returning the fitted object.
 
 - control:
 
-  List of control parameters for the optimization algorithm. See
-  'details' for more information.
+  Optional list of optimization controls.
 
 - message:
 
-  Logical. Defaults to FALSE.
+  Logical. Print progress messages.
 
 - do.fit:
 
-  TRUE to fit the model and FALSE to return only the model setup.
-  Defaults to TRUE.
+  Logical. If `FALSE`, return the prepared but unfitted `"lcfa"` object.
 
 - ...:
 
-  Additional lavaan arguments. See ?lavaan for more information.
+  Additional arguments passed to lavaan and the sample-statistic
+  estimators where applicable.
 
 ## Value
 
-List with the following objects:
-
-- version:
-
-  Version number of 'latent' when the model was estimated.
-
-- call:
-
-  Code used to estimate the model.
-
-- ModelInfo:
-
-  Model information.
-
-- Optim:
-
-  Output of the optimizer.
-
-- parameters:
-
-  Structure with all model parameters.
-
-- transparameters:
-
-  Structure with all transformed model parameters.
-
-- loglik:
-
-  Logarithm likelihood of the model.
-
-- penalized_loglik:
-
-  Logarithm likelihood + logarithm priors of the model.
-
-## Details
-
-`lcfa` estimates confirmatory factor models.
+An S4 object of class `"lcfa"`, which inherits from `"latent"`.
 
 ## Examples
 
 ``` r
-
 if (FALSE) { # \dontrun{
-# The famous Holzinger and Swineford (1939) example
-HS.model <- ' visual  =~ x1 + x2 + x3
-              textual =~ x4 + x5 + x6
-              speed   =~ x7 + x8 + x9 '
+HS.model <- '
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+'
 
 fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
 summary(fit, digits = 3L)

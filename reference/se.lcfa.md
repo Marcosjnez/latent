@@ -1,43 +1,34 @@
-# Standard Errors
+# Standard Errors for Confirmatory Factor Analysis
 
-Compute standard errors.
+Extract or compute standard errors for a fitted `"lcfa"` object.
 
 ## Usage
 
 ``` r
-se(fit)
+# S3 method for class 'lcfa'
+se(fit, type = "standard", digits = 5L, ...)
 ```
 
 ## Arguments
 
 - fit:
 
-  model fitted with lca.
+  A fitted object of class `"lcfa"`.
 
-- confidence:
+- type:
 
-  Coverage of the confidence interval.
+  Character string identifying the requested standard-error type.
+
+- digits:
+
+  Optional number of decimal places used for formatted output.
+
+- ...:
+
+  Additional arguments.
 
 ## Value
 
-List with the following objects:
-
-- vcov:
-
-  Variance-covariance matrix between the parameters.
-
-- se:
-
-  Standard errors.
-
-- SE:
-
-  Standard errors in the model list.
-
-## Details
-
-Compute standard errors.
-
-## References
-
-None yet.
+A list containing the standard errors, variance-covariance matrix,
+Hessian, sandwich middle matrix, and the parameter-shaped standard-error
+table.
