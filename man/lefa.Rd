@@ -4,10 +4,10 @@
 \alias{lefa}
 \title{Exploratory Factor Analysis}
 \usage{
-lefa(data, nfactors = 1L, estimator = "ml",
+lefa(data = NULL, nfactors = 1L, estimator = "ml",
      projection = "oblq", rotation = "oblimin",
      model = NULL, ordered = FALSE, group = NULL,
-     sample.cov = NULL, nobs = NULL,
+     sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
      positive = FALSE, penalties = TRUE,
      missing = "pairwise.complete.obs",
      std.lv = TRUE, do.fit = TRUE,
@@ -15,7 +15,8 @@ lefa(data, nfactors = 1L, estimator = "ml",
      ...)
 }
 \arguments{
-\item{data}{A data frame or matrix containing the observed variables.}
+\item{data}{Optional data frame or matrix containing the observed variables.
+Alternatively, sample.cov can be supplied.}
 
 \item{nfactors}{Integer. Number of factors used when \code{model = NULL}.}
 
@@ -37,7 +38,9 @@ character value \code{"yule"} requests Yule correlations.}
 \item{sample.cov}{Optional sample covariance matrix or list of covariance
 matrices passed to \code{lcfa()}.}
 
-\item{nobs}{Optional number of observations passed to \code{lcfa()}.}
+\item{sample.mean}{Optional sample mean vector or list of vectors passed to \code{lcfa()}.}
+
+\item{sample.nobs}{Optional number of observations passed to \code{lcfa()}.}
 
 \item{positive}{Logical. Request the positive-definite parameterization used
 by \code{lcfa()}.}

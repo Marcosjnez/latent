@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/08/2026
+# Modification date: 14/08/2026
 #'
 #' Exploratory Factor Analysis
 #'
@@ -9,17 +9,18 @@
 #' loading matrices with \code{lrotate()}.
 #'
 #' @usage
-#' lefa(data, nfactors = 1L, estimator = "ml",
+#' lefa(data = NULL, nfactors = 1L, estimator = "ml",
 #'      projection = "oblq", rotation = "oblimin",
 #'      model = NULL, ordered = FALSE, group = NULL,
-#'      sample.cov = NULL, nobs = NULL,
+#'      sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
 #'      positive = FALSE, penalties = TRUE,
 #'      missing = "pairwise.complete.obs",
 #'      std.lv = TRUE, do.fit = TRUE,
 #'      mimic = "latent", control = NULL,
 #'      ...)
 #'
-#' @param data A data frame or matrix containing the observed variables.
+#' @param data Optional data frame or matrix containing the observed variables.
+#'   Alternatively, sample.cov can be supplied.
 #' @param nfactors Integer. Number of factors used when \code{model = NULL}.
 #' @param estimator Estimation method passed to \code{lcfa()}.
 #' @param projection Rotation projection passed to \code{lrotate()}. Available
@@ -32,7 +33,8 @@
 #' @param group Optional character string identifying the grouping variable.
 #' @param sample.cov Optional sample covariance matrix or list of covariance
 #'   matrices passed to \code{lcfa()}.
-#' @param nobs Optional number of observations passed to \code{lcfa()}.
+#' @param sample.mean Optional sample mean vector or list of vectors passed to \code{lcfa()}.
+#' @param sample.nobs Optional number of observations passed to \code{lcfa()}.
 #' @param positive Logical. Request the positive-definite parameterization used
 #'   by \code{lcfa()}.
 #' @param penalties Logical value or list controlling regularization.
@@ -62,10 +64,10 @@
 #' }
 #'
 #' @export
-lefa <- function(data, nfactors = 1L, estimator = "ml",
+lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                  projection = "oblq", rotation = "oblimin",
                  model = NULL, ordered = FALSE, group = NULL,
-                 sample.cov = NULL, nobs = NULL,
+                 sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
                  positive = FALSE, penalties = TRUE,
                  missing = "pairwise.complete.obs",
                  std.lv = TRUE, do.fit = TRUE,
@@ -74,8 +76,12 @@ lefa <- function(data, nfactors = 1L, estimator = "ml",
 
   #### Check input arguments ####
 
-  if(!is.data.frame(data) && !is.matrix(data)) {
-    stop("data must be a data.frame or matrix")
+  if(is.null(data) && is.null(sample.cov)) {
+    stop("Either data or sample.cov must be provided")
+  }
+
+  if(!is.null(data) && !is.data.frame(data) && !is.matrix(data)) {
+    stop("data must be NULL, a data.frame, or a matrix")
   }
 
   if(!is.null(control) && !is.list(control)) {
@@ -179,6 +185,7 @@ lefa <- function(data, nfactors = 1L, estimator = "ml",
   #### Create the EFA model ####
 
   efa_model <- create_lefa_model(data = data,
+                                 sample.cov = sample.cov,
                                  nfactors = nfactors,
                                  model = model,
                                  group = group)
@@ -191,7 +198,8 @@ lefa <- function(data, nfactors = 1L, estimator = "ml",
                           ordered = ordered,
                           group = group,
                           sample.cov = sample.cov,
-                          nobs = nobs,
+                          sample.mean = sample.mean,
+                          sample.nobs = sample.nobs,
                           positive = positive,
                           penalties = penalties,
                           missing = missing,
@@ -288,7 +296,7 @@ split_dots_lefa <- function(dots, projection, rotation) {
 
 #### Function to create the exploratory factor model ####
 
-create_lefa_model <- function(data, nfactors, model, group) {
+create_lefa_model <- function(data, sample.cov, nfactors, model, group) {
 
   if(!is.null(model)) {
 
@@ -298,9 +306,21 @@ create_lefa_model <- function(data, nfactors, model, group) {
 
   }
 
-  model_data <- data
+  if(is.null(data)) {
 
-  if(!is.null(group)) {
+    if(is.list(sample.cov)) {
+      model_data <- sample.cov[[1L]]
+    } else {
+      model_data <- sample.cov
+    }
+
+  } else {
+
+    model_data <- data
+
+  }
+
+  if(!is.null(group) && !is.null(data)) {
 
     if(is.null(colnames(model_data)) ||
        !(group %in% colnames(model_data))) {
@@ -330,7 +350,7 @@ create_lefa_model <- function(data, nfactors, model, group) {
 
 fit_lefa_cfa <- function(data, model, estimator,
                          ordered, group,
-                         sample.cov, nobs,
+                         sample.cov, sample.mean, sample.nobs,
                          positive, penalties,
                          missing, std.lv,
                          do.fit, control,
@@ -343,7 +363,8 @@ fit_lefa_cfa <- function(data, model, estimator,
     ordered = ordered,
     group = group,
     sample.cov = sample.cov,
-    nobs = nobs,
+    sample.mean = sample.mean,
+    sample.nobs = sample.nobs,
     positive = positive,
     penalties = penalties,
     missing = missing,

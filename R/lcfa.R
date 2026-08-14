@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/08/2026
+# Modification date: 14/08/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -8,9 +8,9 @@
 #' optimization infrastructure of \pkg{latent}.
 #'
 #' @usage
-#' lcfa(data, model = NULL, estimator = "ml",
+#' lcfa(data = NULL, model = NULL, estimator = "ml",
 #'      ordered = FALSE, group = NULL,
-#'      sample.cov = NULL, nobs = NULL,
+#'      sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
 #'      positive = FALSE, penalties = FALSE,
 #'      missing = "pairwise.complete.obs",
 #'      std.lv = FALSE, std.ov = FALSE,
@@ -20,7 +20,8 @@
 #'      control = NULL, message = FALSE,
 #'      do.fit = TRUE, ...)
 #'
-#' @param data A data frame or matrix containing the observed variables.
+#' @param data Optional data frame or matrix containing the observed variables.
+#'   If NULL, sample.cov and sample.nobs must be supplied.
 #' @param model Confirmatory factor model specified using lavaan syntax.
 #' @param estimator Estimation method. Available options include \code{"ml"},
 #'   \code{"uls"}, and \code{"dwls"}.
@@ -28,8 +29,11 @@
 #'   character value \code{"yule"} requests Yule correlations.
 #' @param group Optional character string identifying the grouping variable.
 #' @param sample.cov Optional sample covariance matrix or list of covariance
-#'   matrices.
-#' @param nobs Optional number of observations.
+#'   matrices. Used when data is NULL.
+#' @param sample.mean Optional sample mean vector or list of vectors. Required
+#'   when data is NULL and meanstructure = TRUE.
+#' @param sample.nobs Optional number of observations, or one value per group,
+#'   used when data is NULL.
 #' @param positive Logical. If \code{TRUE}, positive-definite covariance
 #'   structures are imposed through the corresponding manifold parameterization.
 #' @param penalties Logical value or list controlling regularization.
@@ -63,12 +67,17 @@
 #'
 #' fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
 #' summary(fit, digits = 3L)
+#'
+#' S <- cov(HolzingerSwineford1939[, paste0("x", 1:9)])
+#' M <- colMeans(HolzingerSwineford1939[, paste0("x", 1:9)])
+#' fit_cov <- lcfa(model = HS.model, sample.cov = S, sample.mean = M,
+#'                 sample.nobs = nrow(HolzingerSwineford1939))
 #' }
 #'
 #' @export
-lcfa <- function(data, model = NULL, estimator = "ml",
+lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                  ordered = FALSE, group = NULL,
-                 sample.cov = NULL, nobs = NULL,
+                 sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
                  positive = FALSE, penalties = FALSE,
                  missing = "pairwise.complete.obs",
                  std.lv = FALSE, std.ov = FALSE,
@@ -81,8 +90,12 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
   #### Check input arguments ####
 
-  if(!is.data.frame(data) && !is.matrix(data)) {
-    stop("data must be a data.frame or matrix")
+  if(is.null(data) && is.null(sample.cov)) {
+    stop("Either data or sample.cov must be provided")
+  }
+
+  if(!is.null(data) && !is.data.frame(data) && !is.matrix(data)) {
+    stop("data must be NULL, a data.frame, or a matrix")
   }
 
   if(is.matrix(data)) {
@@ -136,16 +149,39 @@ lcfa <- function(data, model = NULL, estimator = "ml",
   }
 
   # Preserve the likelihood convention currently used by lcfa.
-  # if(estimator == "ml" || is.null(likelihood)) {
   if(is.null(likelihood)) {
     likelihood <- "normal"
-    # if estimator == "ml", then likelihood should always be "normal" because
-    # it would use the right log-likelihood equation, but let the user choose
   }
 
   if(missing == "fiml") {
+
+    if(is.null(data)) {
+      stop("missing = 'fiml' requires raw data")
+    }
+
     meanstructure <- TRUE
     std.ov <- FALSE
+
+  }
+
+  if(is.null(data)) {
+
+    if(meanstructure && is.null(sample.mean)) {
+      stop("sample.mean= argument is missing, but model contains mean/intercept parameters.")
+    }
+
+    if(is.null(sample.nobs)) {
+      stop("sample.nobs must be supplied when data is NULL")
+    }
+
+    if(!isFALSE(ordered)) {
+      stop("ordered models require raw data")
+    }
+
+    if(acov == "robust") {
+      stop("acov = 'robust' requires raw data")
+    }
+
   }
 
   if(meanstructure) {
@@ -180,7 +216,8 @@ lcfa <- function(data, model = NULL, estimator = "ml",
                                    ordered = ordered,
                                    group = group,
                                    sample.cov = sample.cov,
-                                   nobs = nobs,
+                                   sample.mean = sample.mean,
+                                   sample.nobs = sample.nobs,
                                    positive = positive,
                                    penalties = penalties,
                                    missing = missing,
@@ -291,9 +328,10 @@ lcfa <- function(data, model = NULL, estimator = "ml",
 
 #### Function to create the dataList ####
 
-create_lcfa_dataList <- function(data, model = NULL, cor = "pearson",
+create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                                  estimator = "ml", ordered = FALSE,
-                                 group = NULL, sample.cov = NULL, nobs = NULL,
+                                 group = NULL, sample.cov = NULL,
+                                 sample.mean = NULL, sample.nobs = NULL,
                                  positive = FALSE, penalties = TRUE,
                                  missing = "pairwise.complete.obs",
                                  std.lv = TRUE, std.ov = FALSE,
@@ -307,9 +345,54 @@ create_lcfa_dataList <- function(data, model = NULL, cor = "pearson",
   acov <- tolower(acov)
   missing <- tolower(missing)
 
+  sample_stats_only <- is.null(data)
+
   #### Groups ####
 
-  if(is.null(group)) {
+  if(sample_stats_only) {
+
+    if(!is.null(group)) {
+      stop("group cannot be used when data is NULL; provide sample.cov as a list for multiple groups")
+    }
+
+    if(is.data.frame(sample.cov)) {
+      sample.cov <- as.matrix(sample.cov)
+    }
+
+    if(!is.list(sample.cov)) {
+      sample.cov <- list(sample.cov)
+    }
+
+    ngroups <- length(sample.cov)
+
+    if(ngroups < 1L) {
+      stop("sample.cov must contain at least one covariance matrix")
+    }
+
+    group_label <- names(sample.cov)
+
+    if(is.null(group_label)) {
+      group_label <- rep("", ngroups)
+    }
+
+    if(ngroups == 1L) {
+
+      group_label <- ""
+
+    } else {
+
+      empty <- is.na(group_label) | group_label == ""
+      group_label[empty] <- as.character(which(empty))
+
+      if(anyDuplicated(group_label)) {
+        stop("sample.cov must have unique group names when supplied as a named list")
+      }
+
+      names(sample.cov) <- group_label
+
+    }
+
+  } else if(is.null(group)) {
 
     ngroups <- 1L
     group <- "group"
@@ -329,93 +412,184 @@ create_lcfa_dataList <- function(data, model = NULL, cor = "pearson",
 
   item_names <- extract_item_names_lavaan(model, ngroups = ngroups)
 
-  #### Remove cases with no observed model variables ####
-
-  keep <- rep(FALSE, nrow(data))
-
   for(i in seq_len(ngroups)) {
-
-    group_i <- data[[group]] == group_label[i]
-    items_i <- item_names[[i]]
-
-    if(length(items_i) == 0L) {
+    if(length(item_names[[i]]) == 0L) {
       stop("No observed variables were identified for group ", i)
     }
-
-    not_all_na_i <- !apply(is.na(data[group_i, items_i, drop = FALSE]),
-                           MARGIN = 1L, FUN = all)
-    keep[group_i] <- not_all_na_i
-
   }
 
-  data <- data[keep, , drop = FALSE]
+  #### Raw data ####
 
-  if(nrow(data) == 0L) {
-    stop("No observations remain after removing cases with all model variables missing")
+  if(!sample_stats_only) {
+
+    keep <- rep(FALSE, nrow(data))
+
+    for(i in seq_len(ngroups)) {
+
+      group_i <- data[[group]] == group_label[i]
+      items_i <- item_names[[i]]
+
+      not_all_na_i <- !apply(is.na(data[group_i, items_i, drop = FALSE]),
+                             MARGIN = 1L, FUN = all)
+      keep[group_i] <- not_all_na_i
+
+    }
+
+    data <- data[keep, , drop = FALSE]
+
+    if(nrow(data) == 0L) {
+      stop("No observations remain after removing cases with all model variables missing")
+    }
+
   }
 
   #### Sample statistics ####
 
-  sample.cov <- normalize_lcfa_group_input(sample.cov, ngroups)
-
   X <- vector("list", length = ngroups)
   nobs_list <- vector("list", length = ngroups)
+  sample.mean_list <- vector("list", length = ngroups)
+  sample.cov_input <- vector("list", length = ngroups)
   NACOV <- vector("list", length = ngroups)
   ACOV <- vector("list", length = ngroups)
+  ACOV_means <- vector("list", length = ngroups)
   WLS.V <- vector("list", length = ngroups)
   thresholds <- vector("list", length = ngroups)
   fit_cov <- vector("list", length = ngroups)
   fit_means <- vector("list", length = ngroups)
 
-  for(i in seq_len(ngroups)) {
+  if(sample_stats_only) {
 
-    X[[i]] <- extract_lcfa_group_data(data = data,
-                                      group = group,
-                                      group_label = group_label,
-                                      item_names = item_names,
-                                      i = i,
-                                      ngroups = ngroups)
+    nobs_list <- normalize_lcfa_sample_nobs(sample.nobs = sample.nobs,
+                                            ngroups = ngroups,
+                                            group_label = group_label)
 
-    control_i <- control
+    sample.mean_list <- normalize_lcfa_sample_mean(sample.mean = sample.mean,
+                                                   item_names = item_names,
+                                                   ngroups = ngroups,
+                                                   group_label = group_label,
+                                                   meanstructure = meanstructure,
+                                                   std.ov = std.ov)
 
-    if(ngroups < 2L) {
-      control_i$subfix <- ""
-    } else {
-      control_i$subfix <- paste0(".", group_label[i])
+    for(i in seq_len(ngroups)) {
+
+      S_input <- validate_lcfa_sample_covariance(sample.cov[[i]],
+                                                 item_names = item_names[[i]])
+
+      sample.cov_input[[i]] <- S_input
+
+      S <- prepare_lcfa_sample_covariance(S = S_input,
+                                          sample.nobs = nobs_list[[i]],
+                                          std.ov = std.ov,
+                                          likelihood = likelihood)
+
+      sample.cov[[i]] <- S
+
+      ACOV[[i]] <- asymptotic_normal(S,
+                                     cov = !std.ov,
+                                     diag = FALSE)
+      NACOV[[i]] <- ACOV[[i]]*nobs_list[[i]]
+      WLS.V[[i]] <- diag(ACOV[[i]])
+
+      ACOV_means[[i]] <- diag(diag(S_input))
+      dimnames(ACOV_means[[i]]) <- dimnames(S_input)
+
+      thresholds[[i]] <- list()
+
     }
 
-    sample_stats <- estimate_lcfa_sample_statistics(data = X[[i]],
-                                                    model = model,
-                                                    cor = cor,
-                                                    std.ov = std.ov,
-                                                    acov = acov,
-                                                    likelihood = likelihood,
-                                                    missing = missing,
-                                                    control = control_i,
-                                                    ...)
+  } else {
 
-    fit_means[[i]] <- sample_stats$fit_means
-    fit_cov[[i]] <- sample_stats$fit_cov
+    sample.cov <- normalize_lcfa_group_input(sample.cov, ngroups)
 
-    nobs_list[[i]] <- fit_cov[[i]]@dataList$nobs
-    sample.cov[[i]] <- fit_cov[[i]]@transformed_pars$S
-    NACOV[[i]] <- fit_cov[[i]]@Optim$SE$ACOV * fit_cov[[i]]@dataList$nobs
-    ACOV[[i]] <- fit_cov[[i]]@Optim$SE$ACOV
-    WLS.V[[i]] <- diag(ACOV[[i]])
+    for(i in seq_len(ngroups)) {
 
-    idx_taus <- startsWith(names(fit_cov[[i]]@transformed_pars), "taus")
-    thresholds[[i]] <- fit_cov[[i]]@transformed_pars[idx_taus]
+      X[[i]] <- extract_lcfa_group_data(data = data,
+                                        group = group,
+                                        group_label = group_label,
+                                        item_names = item_names,
+                                        i = i,
+                                        ngroups = ngroups)
+
+      control_i <- control
+
+      if(ngroups < 2L) {
+        control_i$subfix <- ""
+      } else {
+        control_i$subfix <- paste0(".", group_label[i])
+      }
+
+      sample_stats <- estimate_lcfa_sample_statistics(data = X[[i]],
+                                                      model = model,
+                                                      cor = cor,
+                                                      std.ov = std.ov,
+                                                      acov = acov,
+                                                      likelihood = likelihood,
+                                                      missing = missing,
+                                                      control = control_i,
+                                                      ...)
+
+      fit_means[[i]] <- sample_stats$fit_means
+      fit_cov[[i]] <- sample_stats$fit_cov
+
+      nobs_list[[i]] <- fit_cov[[i]]@dataList$nobs
+      sample.cov[[i]] <- fit_cov[[i]]@transformed_pars$S
+      sample.cov_input[[i]] <- sample.cov[[i]]
+      NACOV[[i]] <- fit_cov[[i]]@Optim$SE$ACOV * fit_cov[[i]]@dataList$nobs
+      ACOV[[i]] <- fit_cov[[i]]@Optim$SE$ACOV
+      ACOV_means[[i]] <- fit_means[[i]]@Optim$SE$ACOV
+      WLS.V[[i]] <- diag(ACOV[[i]])
+
+      idx_taus <- startsWith(names(fit_cov[[i]]@transformed_pars), "taus")
+      thresholds[[i]] <- fit_cov[[i]]@transformed_pars[idx_taus]
+
+      idx_means <- startsWith(names(fit_means[[i]]@transformed_pars), "means")
+
+      if(any(idx_means)) {
+
+        M <- fit_means[[i]]@transformed_pars[[which(idx_means)[1L]]]
+        sample.mean_list[[i]] <- c(M)
+        names(sample.mean_list[[i]]) <- rownames(M)
+
+      } else {
+
+        sample.mean_list[[i]] <- setNames(rep(0, length(item_names[[i]])),
+                                          item_names[[i]])
+
+      }
+
+    }
 
   }
 
   #### Lavaan model structure ####
 
+  sample.cov_lav <- if(sample_stats_only) sample.cov_input else sample.cov
+
+  if(ngroups > 1L && sample_stats_only) {
+    names(sample.cov_lav) <- group_label
+    names(sample.mean_list) <- group_label
+    names(nobs_list) <- group_label
+  }
+
   LAV <- lavaan::cfa(model = model,
-                     sample.cov = unwrap_lcfa_group_input(sample.cov, ngroups),
+                     sample.cov = unwrap_lcfa_group_input(sample.cov_lav, ngroups),
+                     sample.mean = if(meanstructure) {
+                       unwrap_lcfa_group_input(sample.mean_list, ngroups)
+                     } else {
+                       NULL
+                     },
                      sample.nobs = unwrap_lcfa_group_input(nobs_list, ngroups),
                      group = group,
-                     NACOV = unwrap_lcfa_group_input(NACOV, ngroups),
-                     WLS.V = unwrap_lcfa_group_input(WLS.V, ngroups),
+                     NACOV = if(sample_stats_only) {
+                       NULL
+                     } else {
+                       unwrap_lcfa_group_input(NACOV, ngroups)
+                     },
+                     WLS.V = if(sample_stats_only) {
+                       NULL
+                     } else {
+                       unwrap_lcfa_group_input(WLS.V, ngroups)
+                     },
                      ordered = ordered,
                      std.lv = std.lv,
                      std.ov = std.ov,
@@ -431,6 +605,17 @@ create_lcfa_dataList <- function(data, model = NULL, cor = "pearson",
   nobs_list <- LAV@Data@nobs
   factor_label <- replicate(ngroups,
                             list(LAV@Model@dimNames[[1L]][[2L]]))
+
+  if(sample_stats_only && ngroups > 1L) {
+
+    lav_group_label <- tryCatch(lavaan::lavInspect(LAV, "group.label"),
+                                error = function(e) NULL)
+
+    if(length(lav_group_label) == ngroups) {
+      group_label <- lav_group_label
+    }
+
+  }
 
   model_out <- getmodel_fromlavaan(LAV)
 
@@ -457,7 +642,9 @@ create_lcfa_dataList <- function(data, model = NULL, cor = "pearson",
   dataList <- list(ngroups = ngroups,
                    data = data,
                    data_per_group = X,
+                   sample_stats_only = sample_stats_only,
                    nobs = nobs_list,
+                   sample.nobs = nobs_list,
                    nitems = nitems,
                    npatterns = npatterns,
                    nfactors = nfactors,
@@ -473,8 +660,11 @@ create_lcfa_dataList <- function(data, model = NULL, cor = "pearson",
                    args = args,
                    model = model_out,
                    sample.cov = sample.cov,
+                   sample.cov.input = sample.cov_input,
+                   sample.mean = sample.mean_list,
                    NACOV = NACOV,
                    ACOV = ACOV,
+                   ACOV_means = ACOV_means,
                    WLS.V = WLS.V,
                    thresholds = thresholds,
                    fit_means = fit_means,
@@ -819,6 +1009,228 @@ unwrap_lcfa_group_input <- function(x, ngroups) {
 
 }
 
+normalize_lcfa_sample_nobs <- function(sample.nobs, ngroups,
+                                        group_label = NULL) {
+
+  input_names <- names(sample.nobs)
+
+  if(is.list(sample.nobs)) {
+    sample.nobs <- unlist(sample.nobs, use.names = TRUE)
+  }
+
+  if(!is.null(input_names) && is.null(names(sample.nobs))) {
+    names(sample.nobs) <- input_names
+  }
+
+  if(ngroups > 1L &&
+     !is.null(group_label) &&
+     !is.null(names(sample.nobs))) {
+
+    if(!setequal(names(sample.nobs), group_label)) {
+      stop("Names of sample.nobs must match the groups in sample.cov")
+    }
+
+    sample.nobs <- sample.nobs[group_label]
+
+  }
+
+  if(!is.numeric(sample.nobs) ||
+     length(sample.nobs) != ngroups ||
+     any(!is.finite(sample.nobs)) ||
+     any(sample.nobs < 2L) ||
+     any(sample.nobs != as.integer(sample.nobs))) {
+    stop("sample.nobs must contain one integer greater than 1 for each group")
+  }
+
+  result <- as.list(as.integer(sample.nobs))
+
+  if(ngroups > 1L && !is.null(group_label)) {
+    names(result) <- group_label
+  }
+
+  #### Result ####
+
+  return(result)
+
+}
+
+normalize_lcfa_sample_mean <- function(sample.mean, item_names, ngroups,
+                                       group_label = NULL,
+                                       meanstructure, std.ov) {
+
+  if(is.null(sample.mean)) {
+
+    if(meanstructure) {
+      stop("sample.mean= argument is missing, but model contains mean/intercept parameters.")
+    }
+
+    sample.mean <- lapply(item_names, FUN = \(x) {
+      setNames(rep(0, length(x)), x)
+    })
+
+  } else if(ngroups == 1L && !is.list(sample.mean)) {
+
+    sample.mean <- list(sample.mean)
+
+  } else if(!is.list(sample.mean) || length(sample.mean) != ngroups) {
+
+    stop("sample.mean must be a vector or a list with one vector per group")
+
+  }
+
+  if(ngroups > 1L &&
+     !is.null(group_label) &&
+     !is.null(names(sample.mean))) {
+
+    if(!setequal(names(sample.mean), group_label)) {
+      stop("Names of sample.mean must match the groups in sample.cov")
+    }
+
+    sample.mean <- sample.mean[group_label]
+
+  }
+
+  result <- vector("list", ngroups)
+
+  for(i in seq_len(ngroups)) {
+
+    x <- sample.mean[[i]]
+
+    if(is.matrix(x)) {
+
+      if(!any(dim(x) == 1L)) {
+        stop("Each sample.mean element must be a vector")
+      }
+
+      if(ncol(x) == 1L) {
+        x_names <- rownames(x)
+      } else {
+        x_names <- colnames(x)
+      }
+
+      x <- c(x)
+
+      if(!is.null(x_names)) {
+        names(x) <- x_names
+      }
+
+    }
+
+    if(!is.numeric(x) || length(x) != length(item_names[[i]]) ||
+       any(!is.finite(x))) {
+      stop("Each sample.mean element must contain one finite numeric value for each observed variable")
+    }
+
+    if(is.null(names(x))) {
+
+      names(x) <- item_names[[i]]
+
+    } else {
+
+      if(any(names(x) == "") || anyDuplicated(names(x))) {
+        stop("sample.mean must have unique, non-empty names")
+      }
+
+      unknown <- setdiff(names(x), item_names[[i]])
+      missing <- setdiff(item_names[[i]], names(x))
+
+      if(length(unknown) > 0L || length(missing) > 0L) {
+        stop("Names of sample.mean must match the observed variables in the model")
+      }
+
+      x <- x[item_names[[i]]]
+
+    }
+
+    if(std.ov) {
+      x[] <- 0
+    }
+
+    result[[i]] <- x
+
+  }
+
+  if(ngroups > 1L && !is.null(group_label)) {
+    names(result) <- group_label
+  }
+
+  #### Result ####
+
+  return(result)
+
+}
+
+validate_lcfa_sample_covariance <- function(S, item_names) {
+
+  if(is.data.frame(S)) {
+    S <- as.matrix(S)
+  }
+
+  if(!is.matrix(S) || !is.numeric(S) || nrow(S) != ncol(S)) {
+    stop("sample.cov must be a numeric square matrix or a list of numeric square matrices")
+  }
+
+  if(any(!is.finite(S))) {
+    stop("sample.cov cannot contain missing or non-finite values")
+  }
+
+  rn <- rownames(S)
+  cn <- colnames(S)
+
+  if(is.null(rn) || is.null(cn) ||
+     any(rn == "") || any(cn == "") ||
+     anyDuplicated(rn) || anyDuplicated(cn)) {
+    stop("sample.cov must have unique, non-empty rownames and colnames")
+  }
+
+  unknown_rows <- setdiff(rn, item_names)
+  unknown_cols <- setdiff(cn, item_names)
+  missing_rows <- setdiff(item_names, rn)
+  missing_cols <- setdiff(item_names, cn)
+
+  if(length(unknown_rows) > 0L || length(unknown_cols) > 0L ||
+     length(missing_rows) > 0L || length(missing_cols) > 0L) {
+    stop("rownames and colnames of sample.cov must match the observed variables in the model")
+  }
+
+  S <- S[item_names, item_names, drop = FALSE]
+
+  if(!isSymmetric(S, tol = sqrt(.Machine$double.eps))) {
+    stop("sample.cov must be symmetric")
+  }
+
+  #### Result ####
+
+  return(S)
+
+}
+
+prepare_lcfa_sample_covariance <- function(S, sample.nobs,
+                                           std.ov, likelihood) {
+
+  if(std.ov) {
+
+    if(any(diag(S) <= 0)) {
+      stop("Observed variables cannot be standardized because at least one variance is non-positive")
+    }
+
+    item_names <- rownames(S)
+    inv_sqrtdiagS <- diag(1/sqrt(diag(S)), nrow = nrow(S))
+    S <- inv_sqrtdiagS %*% S %*% inv_sqrtdiagS
+    rownames(S) <- colnames(S) <- item_names
+
+  }
+
+  if(likelihood == "normal") {
+    S <- S*(sample.nobs-1L)/sample.nobs
+  }
+
+  #### Result ####
+
+  return(S)
+
+}
+
 extract_lcfa_group_data <- function(data, group, group_label,
                                     item_names, i, ngroups) {
 
@@ -1002,51 +1414,126 @@ create_lcfa_data_param <- function(dataList, control) {
   acov_cov <- vector("list", length = ngroups)
   nobs_ij <- vector("list", length = ngroups)
 
-  for(i in seq_len(ngroups)) {
+  if(isTRUE(dataList$sample_stats_only)) {
 
-    if(control$missing == "fiml") {
+    for(i in seq_len(ngroups)) {
 
-      means_params[[i]] <- unlist(lapply(dataList$fit_means[[i]]@extra,
-                                         FUN = \(x) x@parameters),
-                                  recursive = FALSE)
-      means_params_labels[[i]] <-
-        unlist(lapply(dataList$fit_means[[i]]@extra,
-                      FUN = \(x) x@modelInfo$trans),
-               recursive = FALSE)
-      acov_means[[i]] <- lapply(dataList$fit_means[[i]]@extra,
-                                FUN = \(x) x@Optim$SE$ACOV)
+      if(ngroups < 2L) {
+        subfix <- ""
+      } else {
+        subfix <- paste0(".", dataList$group_label[i])
+      }
 
-      cov_params[[i]] <- unlist(lapply(dataList$fit_cov[[i]]@extra,
-                                       FUN = \(x) x@parameters),
-                                recursive = FALSE)
-      cov_params_labels[[i]] <-
-        unlist(lapply(dataList$fit_cov[[i]]@extra,
-                      FUN = \(x) x@modelInfo$trans),
-               recursive = FALSE)
-      acov_cov[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
-                              FUN = \(x) x@Optim$SE$ACOV)
-      nobs_ij[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
-                             FUN = \(x) x@dataList$nobs)
+      items <- dataList$item_label[[i]]
+      p <- length(items)
 
-    } else {
+      #### Means ####
 
-      means_params[[i]] <- dataList$fit_means[[i]]@parameters
-      means_params_labels[[i]] <- dataList$fit_means[[i]]@modelInfo$trans
-      acov_means[[i]] <- list(dataList$fit_means[[i]]@Optim$SE$ACOV)
+      means_name <- paste0("means", subfix)
 
-      cov_params[[i]] <- dataList$fit_cov[[i]]@parameters
-      cov_params_labels[[i]] <- dataList$fit_cov[[i]]@modelInfo$trans
-      acov_cov[[i]] <- list(dataList$fit_cov[[i]]@Optim$SE$ACOV)
-      nobs_ij[[i]] <- dataList$fit_cov[[i]]@dataList$nobs
+      means_struct <- create_parameters(list(
+        list(name = means_name,
+             type = "matrix",
+             dim = c(p, 1L),
+             rownames = items,
+             colnames = "intrcpt")
+      ))
+
+      means_params_labels[[i]] <- means_struct
+      means_params[[i]] <- list()
+      means_params[[i]][[means_name]] <-
+        matrix(dataList$sample.mean[[i]][items],
+               nrow = p,
+               ncol = 1L,
+               dimnames = list(items, "intrcpt"))
+
+      mean_labels <- c(means_struct[[means_name]])
+      acov_means[[i]] <- list(dataList$ACOV_means[[i]])
+      rownames(acov_means[[i]][[1L]]) <-
+        colnames(acov_means[[i]][[1L]]) <- mean_labels
+
+      #### Covariance matrix ####
+
+      S_name <- paste0("S", subfix)
+
+      cov_struct <- create_parameters(list(
+        list(name = S_name,
+             type = "matrix",
+             dim = c(p, p),
+             rownames = items,
+             colnames = items,
+             symmetric = TRUE)
+      ))
+
+      cov_params_labels[[i]] <- cov_struct
+      cov_params[[i]] <- list()
+      cov_params[[i]][[S_name]] <- dataList$sample.cov[[i]]
+      dimnames(cov_params[[i]][[S_name]]) <- dimnames(cov_struct[[S_name]])
+
+      S_labels <- c(cov_struct[[S_name]][lower.tri(cov_struct[[S_name]],
+                                                   diag = !control$std.ov)])
+
+      acov_cov[[i]] <- list(dataList$ACOV[[i]])
+      rownames(acov_cov[[i]][[1L]]) <-
+        colnames(acov_cov[[i]][[1L]]) <- S_labels
+
+      nobs_ij[[i]] <- dataList$nobs[[i]]
+
+      M_group[[i]] <- means_name
+      S_group[[i]] <- S_name
+      taus_group[[i]] <- character(0L)
 
     }
 
-    means_names <- names(means_params[[i]])
-    cov_names <- names(cov_params[[i]])
+  } else {
 
-    M_group[[i]] <- means_names[startsWith(means_names, "means")]
-    S_group[[i]] <- cov_names[startsWith(cov_names, "S")]
-    taus_group[[i]] <- cov_names[startsWith(cov_names, "taus")]
+    for(i in seq_len(ngroups)) {
+
+      if(control$missing == "fiml") {
+
+        means_params[[i]] <- unlist(lapply(dataList$fit_means[[i]]@extra,
+                                           FUN = \(x) x@parameters),
+                                    recursive = FALSE)
+        means_params_labels[[i]] <-
+          unlist(lapply(dataList$fit_means[[i]]@extra,
+                        FUN = \(x) x@modelInfo$trans),
+                 recursive = FALSE)
+        acov_means[[i]] <- lapply(dataList$fit_means[[i]]@extra,
+                                  FUN = \(x) x@Optim$SE$ACOV)
+
+        cov_params[[i]] <- unlist(lapply(dataList$fit_cov[[i]]@extra,
+                                         FUN = \(x) x@parameters),
+                                  recursive = FALSE)
+        cov_params_labels[[i]] <-
+          unlist(lapply(dataList$fit_cov[[i]]@extra,
+                        FUN = \(x) x@modelInfo$trans),
+                 recursive = FALSE)
+        acov_cov[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
+                                FUN = \(x) x@Optim$SE$ACOV)
+        nobs_ij[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
+                               FUN = \(x) x@dataList$nobs)
+
+      } else {
+
+        means_params[[i]] <- dataList$fit_means[[i]]@parameters
+        means_params_labels[[i]] <- dataList$fit_means[[i]]@modelInfo$trans
+        acov_means[[i]] <- list(dataList$fit_means[[i]]@Optim$SE$ACOV)
+
+        cov_params[[i]] <- dataList$fit_cov[[i]]@parameters
+        cov_params_labels[[i]] <- dataList$fit_cov[[i]]@modelInfo$trans
+        acov_cov[[i]] <- list(dataList$fit_cov[[i]]@Optim$SE$ACOV)
+        nobs_ij[[i]] <- dataList$fit_cov[[i]]@dataList$nobs
+
+      }
+
+      means_names <- names(means_params[[i]])
+      cov_names <- names(cov_params[[i]])
+
+      M_group[[i]] <- means_names[startsWith(means_names, "means")]
+      S_group[[i]] <- cov_names[startsWith(cov_names, "S")]
+      taus_group[[i]] <- cov_names[startsWith(cov_names, "taus")]
+
+    }
 
   }
 
@@ -1439,8 +1926,14 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
       if(control$meanstructure) {
 
+        if(isTRUE(dataList$sample_stats_only)) {
+          init_means <- dataList$sample.mean[[i]][dataList$item_label[[i]]]
+        } else {
+          init_means <- colMeans(dataList$data_per_group[[i]], na.rm = TRUE)
+        }
+
         init_param[[rs]][[nu_group[i]]] <-
-          matrix(colMeans(dataList$data_per_group[[i]], na.rm = TRUE),
+          matrix(init_means,
                  ncol = 1L,
                  dimnames = dimnames(trans[[nu_group[i]]]))
 
@@ -1723,4 +2216,3 @@ estimators_lcfa <- function(dataList, data_param, trans, control) {
   return(control_estimator)
 
 }
-

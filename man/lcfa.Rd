@@ -4,9 +4,9 @@
 \alias{lcfa}
 \title{Confirmatory Factor Analysis}
 \usage{
-lcfa(data, model = NULL, estimator = "ml",
+lcfa(data = NULL, model = NULL, estimator = "ml",
      ordered = FALSE, group = NULL,
-     sample.cov = NULL, nobs = NULL,
+     sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
      positive = FALSE, penalties = FALSE,
      missing = "pairwise.complete.obs",
      std.lv = FALSE, std.ov = FALSE,
@@ -17,7 +17,8 @@ lcfa(data, model = NULL, estimator = "ml",
      do.fit = TRUE, ...)
 }
 \arguments{
-\item{data}{A data frame or matrix containing the observed variables.}
+\item{data}{Optional data frame or matrix containing the observed variables.
+If NULL, sample.cov and sample.nobs must be supplied.}
 
 \item{model}{Confirmatory factor model specified using lavaan syntax.}
 
@@ -30,9 +31,13 @@ character value \code{"yule"} requests Yule correlations.}
 \item{group}{Optional character string identifying the grouping variable.}
 
 \item{sample.cov}{Optional sample covariance matrix or list of covariance
-matrices.}
+matrices. Used when data is NULL.}
 
-\item{nobs}{Optional number of observations.}
+\item{sample.mean}{Optional sample mean vector or list of vectors. Required
+when data is NULL and meanstructure = TRUE.}
+
+\item{sample.nobs}{Optional number of observations, or one value per group,
+used when data is NULL.}
 
 \item{positive}{Logical. If \code{TRUE}, positive-definite covariance
 structures are imposed through the corresponding manifold parameterization.}
@@ -85,6 +90,11 @@ HS.model <- '
 
 fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
 summary(fit, digits = 3L)
+
+S <- cov(HolzingerSwineford1939[, paste0("x", 1:9)])
+M <- colMeans(HolzingerSwineford1939[, paste0("x", 1:9)])
+fit_cov <- lcfa(model = HS.model, sample.cov = S, sample.mean = M,
+                sample.nobs = nrow(HolzingerSwineford1939))
 }
 
 }

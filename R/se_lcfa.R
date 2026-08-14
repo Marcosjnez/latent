@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/08/2026
+# Modification date: 14/08/2026
 #'
 #' Standard Errors for Confirmatory Factor Analysis
 #'
@@ -74,37 +74,53 @@ compute_se_lcfa <- function(dataList, modelInfo, Optim) {
 
   #### Asymptotic covariance of the sample statistics ####
 
-  ACOV_covij <- lapply(dataList$fit_cov, FUN = \(grp) {
+  data_param <- dataList$data_param
 
-    if(length(grp@extra) == 0L) {
-      object <- list(grp)
-    } else {
-      object <- grp@extra
+  scale_acov_lcfa <- function(acov, nobs, object_name) {
+
+    if(!is.list(acov)) {
+      acov <- list(acov)
     }
 
-    result <- lapply(object, FUN = \(ij) {
-      ij@Optim$SE$ACOV/ij@dataList$nobs[[1L]]
+    nobs <- unlist(nobs, use.names = FALSE)
+
+    if(length(nobs) == 1L && length(acov) > 1L) {
+      nobs <- rep(nobs, length(acov))
+    }
+
+    if(length(nobs) != length(acov)) {
+      stop("The number of ", object_name,
+           " ACOV matrices does not match the number of sample sizes.")
+    }
+
+    result <- lapply(seq_along(acov), FUN = \(j) {
+      acov[[j]]/nobs[j]
     })
+
+    #### Result ####
 
     return(result)
 
-  })
+  }
 
-  ACOV_meansij <- lapply(dataList$fit_means, FUN = \(grp) {
+  ACOV_covij <- vector("list", length = dataList$ngroups)
+  ACOV_meansij <- vector("list", length = dataList$ngroups)
 
-    if(length(grp@extra) == 0L) {
-      object <- list(grp)
-    } else {
-      object <- grp@extra
-    }
+  for(i in seq_len(dataList$ngroups)) {
 
-    result <- lapply(object, FUN = \(ij) {
-      ij@Optim$SE$ACOV/ij@dataList$nobs[[1L]]
-    })
+    ACOV_covij[[i]] <- scale_acov_lcfa(
+      acov = data_param$acov_cov[[i]],
+      nobs = data_param$nobs_ij[[i]],
+      object_name = "covariance"
+    )
 
-    return(result)
+    ACOV_meansij[[i]] <- scale_acov_lcfa(
+      acov = data_param$acov_means[[i]],
+      nobs = data_param$nobs_ij[[i]],
+      object_name = "mean"
+    )
 
-  })
+  }
 
   if(modelInfo$control_optimizer$meanstructure) {
     ACOV <- block_diag(c(ACOV_meansij, ACOV_covij))

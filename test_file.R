@@ -255,6 +255,8 @@ library(lavaan)
 model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
+S <- cov(HolzingerSwineford1939[, paste("x", 1:9, sep = "")])
+means <- colMeans(cov(HolzingerSwineford1939[, paste("x", 1:9, sep = "")]))
 
 set.seed(2026)
 estimator <- "ml"
@@ -264,8 +266,11 @@ meanstructure <- TRUE
 likelihood <- "normal"
 acov <- "standard"
 
-fit <- lcfa(HolzingerSwineford1939,
-            model = model,
+fit <- lcfa(model = model,
+            data = HolzingerSwineford1939,
+            # sample.cov = S,
+            # sample.mean = means,
+            # sample.nobs = 301,
             estimator = estimator,
             acov = acov,
             std.ov = std.ov,
@@ -277,8 +282,11 @@ fit <- lcfa(HolzingerSwineford1939,
             do.fit = TRUE)
 
 # With lavaan:
-fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
-                    model = model,
+fit2 <- lavaan::cfa(model = model,
+                    data = HolzingerSwineford1939,
+                    # sample.cov = S,
+                    # sample.mean = means,
+                    # sample.nobs = 301,
                     estimator = estimator,
                     std.lv = std.lv,
                     std.ov = std.ov,
@@ -296,6 +304,8 @@ latInspect(fit, "loglik") # loglik           -3737.745
 
 inspect(fit2, "est")
 latInspect(fit, "est")
+fit@Optim$SE$se
+fit2@ParTable$se
 
 fitmeasures(fit2)
 getfit(fit)
@@ -839,6 +849,36 @@ fit@Optim$iterations
 fit@Optim$convergence
 fit@Optim$ng
 fit@Optim$elapsed
+
+#### EFA ####
+
+library(latent)
+
+set.seed(2026)
+
+# Simulate data:
+nfactors <- 3L
+nitems <- 12
+sim <- simfactor(nfactors = 3, nitems = nitems/nfactors,
+                 correlations = 0.40, crossloadings = 0.30)
+scores <- MASS::mvrnorm(1e3, rep(0, nrow(sim$R)), Sigma = sim$R)
+s <- cor(scores)
+
+estimator <- "uls"
+rotation <- "oblimin"
+projection <- "poblq"
+# Fit efa with bifactor:
+fit <- bifactor::efast(s, nfactors = nfactors, estimator = estimator,
+                       rotation = rotation, projection = projection,
+                       oblq_factors = c(2),
+                       gamma = 0, random_starts = 10L, cores = 1L)
+fit$rotation$f
+
+fit <- lefa(data = scores, #sample.cov = s,
+            nfactors = nfactors, estimator = estimator,
+            rotation = rotation, projection = projection)
+
+
 
 #### Check derivatives ####
 
