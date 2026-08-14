@@ -791,6 +791,55 @@ fit <- lpoly(data = mooc,
 fit@parameters$S
 fit@Optim$SE$se
 
+#### Factor rotation ####
+
+library(latent)
+
+set.seed(2026)
+
+# Simulate data:
+nfactors <- 3L
+nitems <- 12
+sim <- simfactor(nfactors = 3, nitems = nitems/nfactors,
+                 correlations = 0.40, crossloadings = 0.30)
+scores <- MASS::mvrnorm(1e3, rep(0, nrow(sim$R)), Sigma = sim$R)
+s <- cor(scores)
+
+estimator <- "uls"
+rotation <- "oblimin"
+projection <- "poblq"
+# Fit efa with bifactor:
+fit <- bifactor::efast(s, nfactors = nfactors, estimator = estimator,
+                       rotation = rotation, projection = projection,
+                       oblq_factors = c(2),
+                       gamma = 0, random_starts = 10L, cores = 1L)
+fit$rotation$f
+rownames(fit$efa$lambda) <- paste("X", 1:nitems, sep = "")
+colnames(fit$efa$lambda) <- paste("F", 1:nfactors, sep = "")
+lambda <- list(fit$efa$lambda)
+
+set.seed(2028)
+p <- nitems
+q <- nfactors
+target <- diag(nfactors) %x% rep(1, nitems/nfactors)
+weight <- 1-target
+psitarget <- matrix(1, q, q)
+psitarget[1:2, 1:2] <- 0
+psiweight <- 1-psitarget; diag(weight) <- 0
+constraints <- matrix(0, nfactors, nfactors)
+constraints[1:2, 1:2] <- 1; diag(constraints) <- 0
+fit <- lrotate(lambda, rotation = rotation, projection = projection,
+               target = target, weight = weight,
+               psitarget = psitarget, psiweight = psiweight, w = 1,
+               gamma = 0.00, epsilon = 0.01, k = 0, a = 1, b = 0.5,
+               constraints = constraints,
+               do.fit = TRUE, control = list(opt = "newton", rstarts = 100L))
+fit@Optim$f
+fit@Optim$iterations
+fit@Optim$convergence
+fit@Optim$ng
+fit@Optim$elapsed
+
 #### Check derivatives ####
 
 control_manifold <- fit@modelInfo$control_manifold
@@ -864,6 +913,4 @@ x
 
 #### To-do ####
 # Fix class ordering by size
-# Create a class and methods for measurement + structural objects
-# loglik from BK¿?
 # SE for ML-modal-prop

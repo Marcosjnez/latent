@@ -54,8 +54,11 @@ constraints_derivs.latent <- function(fit, parameters = NULL) {
                          fit@modelInfo$control_optimizer)$dconstr
   rownames(dconstr) <- fit@modelInfo$transparameters_labels
   idx_transforms <- fit@modelInfo$control_optimizer$idx_transforms
-  colnames(dconstr) <- sapply(fit@modelInfo$control_transform[idx_transforms+1L],
-                              FUN = \(x) x$transform)
+
+  # Not every transformation contributes with just one column of constraints, so
+  # don't put names to columns (do not run this code):
+  # colnames(dconstr) <- sapply(fit@modelInfo$control_transform[idx_transforms+1L],
+  #                             FUN = \(x) x$transform)
 
   selected_parameters <- unique(unlist(parameters))
   selected_idx <- match(selected_parameters, fit@modelInfo$transparameters_labels)

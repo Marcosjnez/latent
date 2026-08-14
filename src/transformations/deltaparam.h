@@ -1,14 +1,15 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/08/2026
+ * Modification date: 14/08/2026
  */
 
 // vars - diag(X * Y * X.t()) transformation:
 
 // This is the delta parameterization in factor analysis
-// latent scores have a fixed variance of 1 for identification
+// latent scores have a fixed variance for identification
 // Error variances become vars - diag(lambda * psi * lambda.t())
+// Usually, vars are fixed to 1.00
 
 class deltaparam: public transformations {
 
@@ -104,6 +105,32 @@ public:
     }
 
     jacob = arma::join_rows(Jvars, arma::join_rows(Jx, Jy));
+
+  }
+
+  void dconstraints(arguments_optim& x) {
+
+    // Compute the Jacobian of the transformation:
+    jacobian(x);
+
+    arma::uword ndconstr = x.dconstr.n_cols;
+    arma::uword nconstraints = indices_out.n_elem;
+
+    // Add one constraint for each transformed residual variance:
+    x.dconstr.resize(x.transparameters.n_elem, ndconstr + nconstraints);
+
+    // Initialize the new columns:
+    x.dconstr.cols(ndconstr, ndconstr + nconstraints - 1L).zeros();
+
+    for(arma::uword i = 0L; i < nconstraints; ++i) {
+      arma::uword column = ndconstr + i;
+      // d constraint / d output:
+      x.dconstr(indices_out[i], column) += 1.00;
+      // d constraint / d inputs:
+      for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
+        x.dconstr(indices_in[j], column) -= jacob(i, j);
+      }
+    }
 
   }
 
