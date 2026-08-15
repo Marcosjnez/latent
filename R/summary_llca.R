@@ -95,20 +95,6 @@ summary.llca <- function(fit) {
 }
 
 #' @rdname summary.llca
-#' @param model For the \code{"llca_sam"} method, an object containing fitted
-#'   \code{measurement} and \code{structural} components.
-#' @details
-#' For an \code{"llca_sam"} object, the summary of the final structural model is
-#' displayed.
-#' @method summary llca_sam
-#' @export
-summary.llca_sam <- function(model) {
-
-  result <- summary(model$structural)
-
-}
-
-#' @rdname summary.llca
 #' @param model For the \code{"llcalist"} method, a collection of fitted
 #'   \code{"llca"} and/or \code{"llca_sam"} models.
 #' @details

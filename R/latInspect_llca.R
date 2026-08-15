@@ -491,32 +491,6 @@ latInspect.llca <- function(fit,
 
 }
 
-#' @rdname latInspect.llca
-#' @param model For the \code{"llca_sam"} method, an object containing fitted
-#'   \code{measurement} and \code{structural} components.
-#' @details
-#' For an \code{"llca_sam"} object, the requested quantity is extracted
-#' separately from the measurement and structural models and returned as a
-#' two-element list.
-#' @method latInspect llca_sam
-#' @export
-latInspect.llca_sam <- function(model,
-                                what = "profile",
-                                digits = 4L) {
-
-  if(!inherits(model, "llca_sam")) {
-    stop("model must inherit from class 'llca_sam'.")
-  }
-
-  result <- lapply(model, FUN = latInspect, what = what, digits = digits)
-
-  class(result) <- "latInspect.llca_sam"
-
-  return(result)
-
-}
-
-#' @rdname latInspect.llca
 #' @param model For the \code{"llcalist"} method, a collection containing
 #'   \code{"llca"} and/or \code{"llca_sam"} model fits.
 #' @method latInspect llcalist

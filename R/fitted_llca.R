@@ -84,20 +84,6 @@ fitted.llca <- function(object, ...) {
 
 }
 
-#' @rdname fitted.llca
-#' @param object For the \code{"llca_sam"} method, an object containing fitted
-#'   \code{measurement} and \code{structural} components.
-#' @details
-#' For an \code{"llca_sam"} object, \code{fitted()} returns prior latent class
-#' membership probabilities from the structural model.
-#' @method fitted llca_sam
-#' @export
-fitted.llca_sam <- function(object, ...) {
-
-  return(fitted(object$structural, ...))
-
-}
-
 #' Fitted Probabilities for Lists of Latent Class Models
 #'
 #' Extract fitted prior latent class membership probabilities from an

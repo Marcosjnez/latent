@@ -2,13 +2,10 @@
 % Please edit documentation in R/summary_llca.R
 \name{summary.llca}
 \alias{summary.llca}
-\alias{summary.llca_sam}
 \alias{summary.llcalist}
 \title{Summary of a Latent Class Model}
 \usage{
 \method{summary}{llca}(fit)
-
-\method{summary}{llca_sam}(model)
 
 \method{summary}{llcalist}(model)
 }
@@ -37,9 +34,6 @@ observed response patterns.
 
 For fully multinomial models, the likelihood-ratio statistic, degrees of
 freedom, and corresponding p-value are also displayed.
-
-For an \code{"llca_sam"} object, the summary of the final structural model is
-displayed.
 
 For an \code{"llcalist"}, \code{summary()} is applied to each model in the
 collection.

@@ -1,14 +1,14 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/08/2026
+ * Modification date: 15/08/2026
  */
 
 Rcpp::List get_vcov(Rcpp::List control_manifold,
                     Rcpp::List control_transform,
                     Rcpp::List control_estimator,
                     Rcpp::List control_optimizer,
-                    arma::mat H,
+                    arma::mat vcov,
                     int cores) {
 
   Rcpp::List result;
@@ -56,7 +56,7 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
   final_estimator->G(x, xestimators);
   final_transform->update_grad(x, xtransforms);
 
-  x.h = H;
+  x.v = vcov;
   final_transform->update_vcov(x, xtransforms);
 
   result["vcov"] = x.vcov;

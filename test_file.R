@@ -24,8 +24,8 @@ set.seed(20216)
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
-           # outcomes = "MARITAL",
+           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
            # model = list("UNDERSTA ~~ COOPERAT
@@ -87,11 +87,11 @@ latInspect(fit, what = "pattern")
 latInspect(fit, what = "table")
 
 # Get standard errors:
-SE <- se(fit, type = "standard", digits = 4)
+SE <- se(fit, type = "information", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
+CI <- ci(fit, type = "information", confidence = 0.95, digits = 2)
 CI$table
 
 #### LCA (gaussian) ####
@@ -131,11 +131,11 @@ latInspect(fit, what = "posterior")
 plot(fit)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", digits = 4)
+SE <- se(fit, type = "information", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2) # FIX THIS
+CI <- ci(fit, type = "information", confidence = 0.95, digits = 2) # FIX THIS
 CI$table
 
 #### Mixed LCA (multinomial and gaussian) ####
@@ -179,11 +179,11 @@ latInspect(fit, what = "profile")
 latInspect(fit, what = "posterior")
 
 # Get standard errors:
-SE <- se(fit, type = "standard", digits = 4) # FIX stdv
+SE <- se(fit, type = "information", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
+CI <- ci(fit, type = "information", confidence = 0.95, digits = 2)
 CI$table
 
 # hypothesis(fit, "b1|2 - b1|3 = 0")

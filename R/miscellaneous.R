@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/08/2026
+# Modification date: 15/08/2026
 
 # Miscellaneous functions used in latent
 
@@ -1148,5 +1148,106 @@ insert_partial_object <- function(X, Y, object_name = NULL) {
   #### Result ####
 
   return(X)
+
+}
+
+block_diag <- function(mats) {
+
+  if(!is.list(mats) || length(mats) == 0L) {
+    stop("mats must be a non-empty list of square matrices or nested lists.")
+  }
+
+  flatten_mats <- function(x) {
+
+    if(is.matrix(x)) {
+
+      result <- list(x)
+
+    } else if(is.list(x)) {
+
+      result <- unlist(lapply(x, flatten_mats), recursive = FALSE)
+
+    } else {
+
+      stop("All elements must be matrices or lists containing matrices.")
+
+    }
+
+    #### Result ####
+
+    return(result)
+
+  }
+
+  mats <- flatten_mats(mats)
+
+  if(length(mats) == 0L) {
+    stop("No matrices found in mats.")
+  }
+
+  dims <- vapply(mats, FUN = function(M) {
+
+    nr <- nrow(M)
+    nc <- ncol(M)
+
+    if(nr != nc) {
+      stop("All matrices must be square.")
+    }
+
+    #### Result ####
+
+    return(nr)
+
+  }, FUN.VALUE = integer(1L))
+
+  n_tot <- sum(dims)
+
+  rn <- unlist(Map(function(M, d) {
+
+    if(is.null(rownames(M))) {
+      result <- rep(NA_character_, d)
+    } else {
+      result <- rownames(M)
+    }
+
+    #### Result ####
+
+    return(result)
+
+  }, mats, dims), use.names = FALSE)
+
+  cn <- unlist(Map(function(M, d) {
+
+    if(is.null(colnames(M))) {
+      result <- rep(NA_character_, d)
+    } else {
+      result <- colnames(M)
+    }
+
+    #### Result ####
+
+    return(result)
+
+  }, mats, dims), use.names = FALSE)
+
+  result <- matrix(0,
+                   nrow = n_tot,
+                   ncol = n_tot,
+                   dimnames = list(rn, cn))
+
+  idx <- 0L
+
+  for(k in seq_along(mats)) {
+
+    d <- dims[k]
+    r <- (idx+1L):(idx+d)
+    result[r, r] <- mats[[k]]
+    idx <- idx+d
+
+  }
+
+  #### Result ####
+
+  return(result)
 
 }

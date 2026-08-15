@@ -35,7 +35,7 @@ struct arguments_optim{
   arma::vec parameters, dparameters, g, dg, rg, drg, dH;
   arma::vec transparameters, transparameters_init, dtransparameters, grad,
   dgrad, grad_init, dgrad_init;
-  arma::mat h, B, inv_h, inv_hess;
+  arma::mat h, v, B, inv_h, inv_hess;
   arma::sp_mat jacob, vcov, dconstr;
   arma::mat hess; // Returned as dgCMatrix class type from Matrix package
   arma::mat posterior;

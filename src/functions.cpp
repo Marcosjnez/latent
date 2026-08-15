@@ -129,7 +129,7 @@ Rcpp::List get_vcov(Rcpp::List control_manifold,
                     Rcpp::List control_transform,
                     Rcpp::List control_estimator,
                     Rcpp::List control_optimizer,
-                    arma::mat H,
+                    arma::mat vcov,
                     int cores = 1L);
 
 // [[Rcpp::export]]

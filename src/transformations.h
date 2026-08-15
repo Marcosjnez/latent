@@ -183,9 +183,6 @@ public:
 
   void update_vcov(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
-    // Approximate the inverse if the hessian is not positive-definite:
-    x.inv_h = arma::inv_sympd(x.h, arma::inv_opts::allow_approx);
-
     // Get the variance-covariance matrix of selected parameters:
     x.vcov.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
     x.jacob.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
@@ -194,7 +191,7 @@ public:
     // element-wise:
     for(arma::uword j = 0L; j < x.transparam2param.n_elem; ++j) {
       for(arma::uword i = 0L; i < x.transparam2param.n_elem; ++i) {
-        x.vcov(x.transparam2param[i], x.transparam2param[j]) = x.inv_h(i, j);
+        x.vcov(x.transparam2param[i], x.transparam2param[j]) = x.v(i, j);
       }
     }
 

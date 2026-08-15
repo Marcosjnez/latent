@@ -285,8 +285,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // get_vcov
-Rcpp::List get_vcov(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, arma::mat H, int cores);
-RcppExport SEXP _latent_get_vcov(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP HSEXP, SEXP coresSEXP) {
+Rcpp::List get_vcov(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, arma::mat vcov, int cores);
+RcppExport SEXP _latent_get_vcov(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP vcovSEXP, SEXP coresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -294,9 +294,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type H(HSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type vcov(vcovSEXP);
     Rcpp::traits::input_parameter< int >::type cores(coresSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_vcov(control_manifold, control_transform, control_estimator, control_optimizer, H, cores));
+    rcpp_result_gen = Rcpp::wrap(get_vcov(control_manifold, control_transform, control_estimator, control_optimizer, vcov, cores));
     return rcpp_result_gen;
 END_RCPP
 }

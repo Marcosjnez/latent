@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/08/2026
+# Modification date: 15/08/2026
 #'
 #' Base Class for Fitted Latent Models
 #'
@@ -42,31 +42,16 @@ setClass("latent",
 )
 
 setClass("llca",
-         slots = c(
-           version          = "character",
-           call             = "call",
-           timing           = "numeric",
-           dataList         = "list",
-           modelInfo        = "list",
-           Optim            = "list",
-           parameters       = "list",
-           transformed_pars = "list",
-           extra            = "list"
-         ),
-         contains = "latent"
-)
+         contains = "latent")
 
 setClass("lcfa",
-         slots = c(
-           version          = "character",
-           call             = "call",
-           timing           = "numeric",
-           dataList         = "list",
-           modelInfo        = "list",
-           Optim            = "list",
-           parameters       = "list",
-           transformed_pars = "list",
-           extra            = "list"
-         ),
-         contains = "latent"
-)
+         contains = "latent")
+
+setClass("multistage",
+         contains = "latent")
+
+setClass("multistage_llca",
+         contains = c("multistage", "llca"))
+
+setClass("multistage_lcfa",
+         contains = c("multistage", "lcfa"))

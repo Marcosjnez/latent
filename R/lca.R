@@ -465,7 +465,7 @@ lca <- function(data,
   # Fix the measurement part of the model if a previous llca fit was provided in
   # the model argument. This is usually done for two or three-step estimation:
 
-  control$model <- model
+  # control$model <- model
 
   if(!is.null(model) && !inherits(model, "llca") && !is.list(model)) {
     stop("model must be a llca object or a list containing parameter blocks or llca objects")
@@ -1825,10 +1825,9 @@ lca_bakk_kuha <- function(data,
 
   #### Return ####
 
-  # fit2@modelInfo$control_optimizer$model[[1]] <- NULL
-  result <- list(measurement = fit1, structural = fit2)
-  class(result) <- "llca_sam"
-  return(result)
+  fit2@extra <- list(fit1)
+  class(fit2) <- "multistage_llca"
+  return(fit2)
 
 }
 
@@ -1923,10 +1922,9 @@ lca_ml <- function(data,
 
   #### Return ####
 
-  # fit2@modelInfo$control_optimizer <- model[[1]] <- NULL
-  result <- list(measurement = fit1, structural = fit2)
-  class(result) <- "llca_sam"
-  return(result)
+  fit2@extra <- list(fit1)
+  class(fit2) <- "multistage_llca"
+  return(fit2)
 
   # NO VALID STANDARD ERRORS BECAUSE VAR(log_class_error_modal) IS NOT CALCULATED IN fit1
   # Solution for classification = "modal":

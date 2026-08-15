@@ -293,20 +293,6 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   parameters <- transformed_pars[names(modelInfo$param)]
 
-  #### Standard errors ####
-
-  if(isTRUE(se)) {
-
-    if(message) {
-      print_lcfa_message("Computing standard errors")
-    }
-
-    Optim$SE <- compute_se_lcfa(dataList = dataList,
-                                modelInfo = modelInfo,
-                                Optim = Optim)
-
-  }
-
   #### latent object ####
 
   result <- new("lcfa",
@@ -319,6 +305,21 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                 parameters       = parameters,
                 transformed_pars = transformed_pars,
                 extra            = list())
+
+  #### Standard errors ####
+
+  if(isTRUE(se) && do.fit) {
+
+    if(message) {
+      print_lcfa_message("Computing standard errors")
+    }
+
+    result@Optim$SE <- se(result, type = "robust",
+                          parameters = modelInfo$parameters_labels)
+    # Mau, I know you don't like using a method function before exporting the
+    # object, but this works great!
+
+  }
 
   #### Result ####
 
