@@ -30,6 +30,8 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/hessian.latent.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/hexaco.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/index.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/information.latent.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/information.lcfa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/jacobian.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/jacobian.latent.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/latInspect.lcfa.html</loc></url>
@@ -60,11 +62,12 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/print.lclassd.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/print.llca_plots.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.html</loc></url>
-<url><loc>https://marcosjnez.github.io/latent/reference/robust_LG.html</loc></url>
-<url><loc>https://marcosjnez.github.io/latent/reference/se.lcfa.html</loc></url>
-<url><loc>https://marcosjnez.github.io/latent/reference/se.llca.html</loc></url>
-<url><loc>https://marcosjnez.github.io/latent/reference/se.llca_sam.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/robust.latent.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/robust.lcfa.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/robust.llca.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/se.latent.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/se.llcalist.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/se.multistage.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/simfactor.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/summary.lcfa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/summary.llca.html</loc></url>

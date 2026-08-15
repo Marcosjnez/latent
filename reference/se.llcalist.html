@@ -74,7 +74,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Standard errors for a collection of latent class models</h1>
-      <small class="dont-index">Source: <a href="https://github.com/Marcosjnez/latent/blob/master/R/se_llca.R" class="external-link"><code>R/se_llca.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/Marcosjnez/latent/blob/master/R/se_llcalist.R" class="external-link"><code>R/se_llcalist.R</code></a></small>
       <div class="d-none name"><code>se.llcalist.Rd</code></div>
     </div>
 
@@ -85,7 +85,7 @@
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'llcalist'</span></span>
-<span><span class="fu">se</span><span class="op">(</span><span class="va">model</span>, type <span class="op">=</span> <span class="st">"standard"</span>, parameters <span class="op">=</span> <span class="cn">NULL</span>, digits <span class="op">=</span> <span class="fl">4L</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">se</span><span class="op">(</span><span class="va">model</span>, type <span class="op">=</span> <span class="st">"information"</span>, parameters <span class="op">=</span> <span class="cn">NULL</span>, digits <span class="op">=</span> <span class="fl">4L</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -99,7 +99,7 @@
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
 <dd><p>Character string indicating the standard-error estimator. See
-<code><a href="se.llca.html">se.llca()</a></code>.</p></dd>
+<code>se.llca()</code>.</p></dd>
 
 
 <dt id="arg-digits">digits<a class="anchor" aria-label="anchor" href="#arg-digits"></a></dt>
@@ -108,7 +108,7 @@ in the formatted tables, or <code>NULL</code> to avoid rounding.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to <code><a href="se.llca.html">se.llca()</a></code>.</p></dd>
+<dd><p>Additional arguments passed to <code>se.llca()</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

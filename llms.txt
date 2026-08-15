@@ -77,7 +77,6 @@ The package development is supported by two projects:
 - [`empathy`](https://marcosjnez.github.io/latent/reference/empathy.md)
   : Example dataset: empathy
 - [`fitted(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
-  [`fitted(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llca.md)
   : Fitted Latent Class Membership Probabilities
 - [`fitted(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/fitted.llcalist.md)
   : Fitted Probabilities for Lists of Latent Class Models
@@ -87,7 +86,6 @@ The package development is supported by two projects:
   : Fit indices
 - [`getfit(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
   [`getfit(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
-  [`getfit(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
   : Fit indices for latent class models
 - [`gss82`](https://marcosjnez.github.io/latent/reference/gss82.md) :
   Example dataset: gss82
@@ -97,6 +95,12 @@ The package development is supported by two projects:
   : Hessian Matrix for Latent Models
 - [`hexaco`](https://marcosjnez.github.io/latent/reference/hexaco.md) :
   Example dataset: hexaco
+- [`information(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/information.latent.md)
+  : Hessian and Variance-Covariance Matrix matrix for Latent Models
+  using the Information method
+- [`information(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/information.lcfa.md)
+  : Hessian and Variance-Covariance Matrix matrix for Confirmatory
+  Factor Models using the Information method
 - [`jacobian()`](https://marcosjnez.github.io/latent/reference/jacobian.md)
   : Jacobian Matrix
 - [`jacobian(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/jacobian.latent.md)
@@ -104,8 +108,6 @@ The package development is supported by two projects:
 - [`se()`](https://marcosjnez.github.io/latent/reference/latInspect.lcfa.md)
   : Standard Errors
 - [`latInspect(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
-  [`latInspect(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
-  [`latInspect(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
   : Inspect fitted latent class models
 - [`latent-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
   : Base Class for Fitted Latent Models
@@ -113,7 +115,6 @@ The package development is supported by two projects:
   [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   : An R package for Latent Variable Modeling
 - [`lbvr(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llca.md)
-  [`lbvr(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llca.md)
   : Local bivariate residuals for latent class analysis
 - [`lbvr(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llcalist.md)
   : Local bivariate residuals for a collection of latent class models
@@ -151,7 +152,6 @@ The package development is supported by two projects:
   : Plot multinomial response probabilities
 - [`predict(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   [`predict(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
-  [`predict(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/predict.llca.md)
   : Predict latent class membership probabilities
 - [`print(`*`<lbvr>`*`)`](https://marcosjnez.github.io/latent/reference/print.lbvr.md)
   : Print local bivariate residual diagnostics
@@ -161,26 +161,26 @@ The package development is supported by two projects:
   : Print mixed latent class profile plots
 - [`reshape_lca_mixed()`](https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.md)
   : Reshape class-conditional indicator profiles
-- [`se(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/se.lcfa.md)
-  : Standard Errors for Confirmatory Factor Analysis
-- [`se(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/se.llca.md)
-  : Standard Errors for Latent Class Models
-- [`se(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/se.llca_sam.md)
-  : Standard Errors for Structural-After-Measurement Models
+- [`robust(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/robust.latent.md)
+  : Hessian and Variance-Covariance Matrix matrix for Latent Models
+  using the Information method
+- [`se(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/se.latent.md)
+  : Variances-Covariance Matrix for Latent Objects
 - [`se(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/se.llcalist.md)
   : Standard errors for a collection of latent class models
+- [`se(`*`<multistage>`*`)`](https://marcosjnez.github.io/latent/reference/se.multistage.md)
+  : Standard Errors for Latent Objects with multistage estimation.
 - [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
   : Simulate factor structures with misspecification errors.
 - [`getfit()`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)
   : Fit indices
 - [`summary(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/summary.llca.md)
-  [`summary(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/summary.llca.md)
   [`summary(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/summary.llca.md)
   : Summary of a Latent Class Model
 - [`values`](https://marcosjnez.github.io/latent/reference/values.md) :
   Example dataset: values
 - [`vcov(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/vcov.latent.md)
-  : Variance-Covariance Matrix for Latent Models
+  : Variance-Covariance Matrix for Latent Objects
 
 # Articles
 

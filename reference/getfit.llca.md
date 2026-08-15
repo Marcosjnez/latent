@@ -15,17 +15,14 @@ getfit(model, digits = 4)
 
 # S3 method for class 'llcalist'
 getfit(model, digits = 4L)
-
-# S3 method for class 'llca_sam'
-getfit(model, digits = 4L)
 ```
 
 ## Arguments
 
 - model:
 
-  An object of class `"llca_sam"` containing two fitted `"llca"` objects
-  named measurement and structural.
+  An object of class `"llcalist"` containing fitted `"llca"` or
+  `"llca_sam"` objects.
 
 - digits:
 

@@ -30,8 +30,7 @@ fitted(object, ...)
 
   Character string indicating the standard-error estimator used to
   construct the intervals. Available options are `"standard"` and
-  `"robust"`. See
-  [`se.llca()`](https://marcosjnez.github.io/latent/reference/se.llca.md).
+  `"robust"`. See `se.llca()`.
 
 - confidence:
 

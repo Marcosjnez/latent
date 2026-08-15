@@ -6,7 +6,7 @@ Applies `se()` to every fitted model in an `"llcalist"` object.
 
 ``` r
 # S3 method for class 'llcalist'
-se(model, type = "standard", parameters = NULL, digits = 4L, ...)
+se(model, type = "information", parameters = NULL, digits = 4L, ...)
 ```
 
 ## Arguments
@@ -18,7 +18,7 @@ se(model, type = "standard", parameters = NULL, digits = 4L, ...)
 - type:
 
   Character string indicating the standard-error estimator. See
-  [`se.llca()`](https://marcosjnez.github.io/latent/reference/se.llca.md).
+  `se.llca()`.
 
 - digits:
 
@@ -27,8 +27,7 @@ se(model, type = "standard", parameters = NULL, digits = 4L, ...)
 
 - ...:
 
-  Additional arguments passed to
-  [`se.llca()`](https://marcosjnez.github.io/latent/reference/se.llca.md).
+  Additional arguments passed to `se.llca()`.
 
 ## Value
 

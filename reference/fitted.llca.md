@@ -10,17 +10,13 @@ not on the observed indicator responses.
 ``` r
 # S3 method for class 'llca'
 fitted(object, ...)
-
-# S3 method for class 'llca_sam'
-fitted(object, ...)
 ```
 
 ## Arguments
 
 - object:
 
-  For the `"llca_sam"` method, an object containing fitted `measurement`
-  and `structural` components.
+  A fitted object of class `"llca"`.
 
 - ...:
 
@@ -52,10 +48,6 @@ of missing covariates are not included.
 
 If the model has no covariates, every subject receives the same vector
 of estimated class proportions.
-
-For an `"llca_sam"` object,
-[`fitted()`](https://rdrr.io/r/stats/fitted.values.html) returns prior
-latent class membership probabilities from the structural model.
 
 ## References
 

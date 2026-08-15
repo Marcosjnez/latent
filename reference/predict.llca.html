@@ -108,9 +108,6 @@ only predictions from the structural fit are returned.</p>
 <span><span class="co"># S3 method for class 'llcalist'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">model</span>, new <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># S3 method for class 'llca_sam'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">model</span>, new <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
-<span></span>
 <span><span class="co"># S3 method for class 'llcalist'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">model</span>, new <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -120,8 +117,7 @@ only predictions from the structural fit are returned.</p>
 
 
 <dl><dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
-<dd><p>For the <code>"llca_sam"</code> method, an object containing fitted
-<code>measurement</code> and <code>structural</code> components.</p></dd>
+<dd><p>A fitted object of class `"llca"` or `"llcalist"`.</p></dd>
 
 
 <dt id="arg-new">new<a class="anchor" aria-label="anchor" href="#arg-new"></a></dt>
@@ -168,9 +164,6 @@ measurement fit is skipped. For other collections containing both models with
 and without covariates, only models with covariates are retained. For
 class-enumeration objects, predictions are returned for every relevant fitted
 model.</p>
-<p>For an <code>"llca_sam"</code> object, predictions are obtained from the structural
-model because it contains the final class-membership regression coefficients.
-The <code>new</code> data argument is passed unchanged to that model.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

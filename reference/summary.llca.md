@@ -10,9 +10,6 @@ statistics, and the estimated latent class profile.
 # S3 method for class 'llca'
 summary(fit)
 
-# S3 method for class 'llca_sam'
-summary(model)
-
 # S3 method for class 'llcalist'
 summary(model)
 ```
@@ -44,9 +41,6 @@ information about the observed response patterns.
 For fully multinomial models, the likelihood-ratio statistic, degrees of
 freedom, and corresponding p-value are also displayed.
 
-For an `"llca_sam"` object, the summary of the final structural model is
-displayed.
-
 For an `"llcalist"`, [`summary()`](https://rdrr.io/r/base/summary.html)
 is applied to each model in the collection.
 
@@ -54,4 +48,4 @@ is applied to each model in the collection.
 
 [`getfit.llca`](https://marcosjnez.github.io/latent/reference/getfit.llca.md),
 [`latInspect.llca`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md),
-[`se.llca`](https://marcosjnez.github.io/latent/reference/se.llca.md)
+`se.llca`

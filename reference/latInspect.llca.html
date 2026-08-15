@@ -94,13 +94,7 @@ fitted <code>"llca"</code> objects.</p>
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'llca'</span></span>
-<span><span class="fu">latInspect</span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"profile"</span>, digits <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># S3 method for class 'llca_sam'</span></span>
-<span><span class="fu">latInspect</span><span class="op">(</span><span class="va">model</span>, what <span class="op">=</span> <span class="st">"profile"</span>, digits <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># S3 method for class 'llcalist'</span></span>
-<span><span class="fu">latInspect</span><span class="op">(</span><span class="va">model</span>, what <span class="op">=</span> <span class="st">"profile"</span>, digits <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">latInspect</span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"profile"</span>, digits <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -200,11 +194,6 @@ values and aliases include:</p><dl><dt><code>"profile"</code></dt>
 inspection methods. Numeric results are returned without rounding so they
 can safely be used in subsequent computations.</p></dd>
 
-
-<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
-<dd><p>For the <code>"llcalist"</code> method, a collection containing
-<code>"llca"</code> and/or <code>"llca_sam"</code> model fits.</p></dd>
-
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -223,9 +212,6 @@ frequency-weighted models produce weighted inspection results.</p>
 <code>"stdv"</code>. Multinomial item matrices are assumed to contain probabilities
 in their first rows and log-probability parameters in their following rows;
 only the probability rows are returned in response profiles.</p>
-<p>For an <code>"llca_sam"</code> object, the requested quantity is extracted
-separately from the measurement and structural models and returned as a
-two-element list.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

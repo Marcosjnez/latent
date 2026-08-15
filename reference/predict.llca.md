@@ -18,9 +18,6 @@ predict(model, new = NULL, ...)
 # S3 method for class 'llcalist'
 predict(model, new = NULL, ...)
 
-# S3 method for class 'llca_sam'
-predict(model, new = NULL, ...)
-
 # S3 method for class 'llcalist'
 predict(model, new = NULL, ...)
 ```
@@ -29,8 +26,7 @@ predict(model, new = NULL, ...)
 
 - model:
 
-  For the `"llca_sam"` method, an object containing fitted `measurement`
-  and `structural` components.
+  A fitted object of class \`"llca"\` or \`"llcalist"\`.
 
 - new:
 
@@ -83,10 +79,6 @@ the measurement fit is skipped. For other collections containing both
 models with and without covariates, only models with covariates are
 retained. For class-enumeration objects, predictions are returned for
 every relevant fitted model.
-
-For an `"llca_sam"` object, predictions are obtained from the structural
-model because it contains the final class-membership regression
-coefficients. The `new` data argument is passed unchanged to that model.
 
 ## References
 
