@@ -124,6 +124,7 @@ compute_se_lcfa <- function(dataList, modelInfo, Optim) {
 
   if(modelInfo$control_optimizer$meanstructure) {
     ACOV <- block_diag(c(ACOV_meansij, ACOV_covij))
+    # This assumes that means and covariances are estimated independently
   } else {
     ACOV <- block_diag(ACOV_covij)
   }

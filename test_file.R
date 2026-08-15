@@ -776,7 +776,6 @@ fit <- lpoly(data = mooc,
                             tcg_maxit = 30,
                             ss = 0.001,
                             eps = 1e-06))
-# FIX: fix parameters also when method = "two-step"
 # fit@loglik # -176520.8
 # fit@penalized_loglik # -176520.8
 fit@Optim$iterations
@@ -791,6 +790,8 @@ fit@modelInfo$parameters_labels
 
 fit@parameters
 fit@Optim$SE$se
+VCOV <- vcov(fit)
+VCOV$se
 # FIX: get standard errors for taus
 
 # Tur <- Turbofuns:::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)

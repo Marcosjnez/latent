@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/08/2026
+# Modification date: 15/08/2026
 #'
 #' Variance-Covariance Matrix for Latent Models
 #'
@@ -174,7 +174,7 @@ vcov.latent <- function(fit, parameters = NULL, H = NULL) {
     P <- information_matrix(fit, H)
 
     fit@modelInfo$control_optimizer$idx_transforms <-
-      trans_depends(fit, parameters)
+      trans_depends(fit@modelInfo, parameters)
 
     VCOV <- get_vcov(fit@modelInfo$control_manifold,
                      fit@modelInfo$control_transform,

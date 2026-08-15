@@ -919,7 +919,7 @@ move_intercept <- function(coeffs, vcov, column = 1L) {
 
 }
 
-trans_depends <- function(fit, trans_subset) {
+trans_depends <- function(modelInfo, trans_subset) {
 
   # We want to compute the standard errors of a subset of parameters. Some
   # parameters may be transformed parameters. In this scenario, we first must
@@ -932,9 +932,9 @@ trans_depends <- function(fit, trans_subset) {
   # We already have the VCOV of the untransformed parameters, so this is just
   # computing the jacobians and applying the delta method bottom-up.
 
-  control_transform <- fit@modelInfo$control_transform
-  parameters_labels <- fit@modelInfo$parameters_labels
-  transparameters_labels <- fit@modelInfo$transparameters_labels
+  control_transform <- modelInfo$control_transform
+  parameters_labels <- modelInfo$parameters_labels
+  transparameters_labels <- modelInfo$transparameters_labels
 
   # Unique parameters in the subset of parameters:
   unq_trans_subset <- unique(c(unlist(trans_subset), parameters_labels))

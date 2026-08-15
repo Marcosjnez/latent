@@ -1028,11 +1028,27 @@ compute_se_lpoly <- function(dataList, modelInfo, Optim) {
 
   # Preserve the current lpoly convention: polyfast()$hess is stored directly
   # as the diagonal ACOV contribution and divided by N when computing SEs.
-  ACOV <- diag(hess, nrow = length(hess), ncol = length(hess))
-  rownames(ACOV) <- colnames(ACOV) <- correlation_labels
+  # ACOV <- diag((1/hess), nrow = length(hess), ncol = length(hess))
+  # rownames(ACOV) <- colnames(ACOV) <- correlation_labels
+  # se <- sqrt(diag(ACOV)/dataList$nobs)
+  # names(se) <- correlation_labels
 
+  modelInfo$control_optimizer$parameters[[1]] <- Optim$parameters
+  modelInfo$control_optimizer$transparameters[[1]] <- Optim$transparameters
+
+  parameters <- modelInfo$trans[names(modelInfo$param)]
+  modelInfo$control_optimizer$idx_transforms <-
+    trans_depends(modelInfo, parameters)
+
+  H <- get_hess(modelInfo$control_manifold,
+                modelInfo$control_transform,
+                modelInfo$control_estimator,
+                modelInfo$control_optimizer)$h
+  rownames(H) <- colnames(H) <- modelInfo$parameters_labels
+
+  ACOV <- solve(H)
+  dimnames(ACOV) <- dimnames(H)
   se <- sqrt(diag(ACOV)/dataList$nobs)
-  names(se) <- correlation_labels
 
   #### Result ####
 
