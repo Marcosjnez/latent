@@ -9,8 +9,8 @@ se.latent <- function(fit, type = "information", parameters = NULL,
                       digits = 4L, ...) {
 
   if(is.null(parameters)) {
-    # parameters <- fit@modelInfo$trans[names(fit@modelInfo$param)]
-    parameters <- fit@modelInfo$parameters_labels
+    parameters <- fit@modelInfo$trans[names(fit@modelInfo$param)]
+    # parameters <- fit@modelInfo$parameters_labels
   } else if(!any(unlist(parameters) %in%
                  fit@modelInfo$transparameters_labels)) {
     stop("Unknown parameters.")

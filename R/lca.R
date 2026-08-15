@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/07/2026
+# Modification date: 15/08/2026
 #'
 #' Latent Class Analysis
 #'
@@ -78,8 +78,11 @@
 #'   Gaussian blocks. Character strings containing residual-dependency syntax
 #'   such as \code{"y1 ~~ y2"} or \code{"u1 ~~ u2 ~~ u3"} are also used to
 #'   identify residual covariances or residual associations. If an object of
-#'   class \code{"llca"} is supplied, its measurement parameters are reused
-#'   while the class-membership regression coefficients are re-estimated.
+#'   class \code{"llca"} is supplied, its model parameters are reused while the
+#'   class-membership regression coefficients are re-estimated. If the supplied
+#'   object also inherits from \code{"multistage"}, previous \code{"llca"}
+#'   objects stored in its \code{extra} slot are traversed recursively so that
+#'   parameters fixed in earlier stages are retained.
 #' @param weights Optional numeric vector of observation weights, with one value
 #'   per row of \code{data}.
 #' @param start Optional named list of starting values. Names should correspond
@@ -189,12 +192,11 @@
 #' }
 #'
 #' If \code{adjustment = "bk"} or \code{adjustment = "ml"}, the function returns
-#' a list with two elements:
-#' \describe{
-#'   \item{\code{measurement}}{The measurement-model fit from the first step.}
-#'   \item{\code{structural}}{The structural-model fit with covariates and/or
-#'   distal outcomes.}
-#' }
+#' an S4 object of class \code{"multistage_llca"}, which inherits from both
+#' \code{"multistage"} and \code{"llca"}. The final-stage model is stored in the
+#' ordinary slots and the fitted model from the preceding stage is stored in the
+#' \code{extra} slot. This allows uncertainty from earlier estimation stages to
+#' be propagated recursively by the multistage covariance methods.
 #'
 #' If \code{nclasses} contains several values, a list of fitted objects is
 #' returned with class \code{"llcalist"}.
@@ -478,6 +480,14 @@ lca <- function(data,
                                  control = control)
   list2env(full_model, envir = environment())
 
+  #### Object class ####
+
+  object_class <- if(length(previous_models) > 0L) {
+    "multistage_llca"
+  } else {
+    "llca"
+  }
+
   #### Create the manifold, transformation, and estimator structures ####
 
   # Generate the structures for optimization:
@@ -489,8 +499,8 @@ lca <- function(data,
 
   if(!do.fit) { # Just get the model specification (empty model)
 
-    result <- new("llca",
-                  version            = as.character(packageVersion('latent')),
+    result <- new(object_class,
+                  version            = as.character(packageVersion("latent")),
                   call               = mc,
                   timing             = numeric(),
                   dataList           = dataList,
@@ -498,8 +508,9 @@ lca <- function(data,
                   Optim              = list(),
                   parameters         = list(),
                   transformed_pars   = list(),
-                  extra              = list()
-    )
+                  extra              = previous_models)
+
+    #### Result ####
 
     return(result)
 
@@ -536,8 +547,8 @@ lca <- function(data,
 
   elapsed <- Optim$elapsed
 
-  result <- new("llca",
-                version            = as.character(packageVersion('latent')),
+  result <- new(object_class,
+                version            = as.character(packageVersion("latent")),
                 call               = mc,
                 timing             = elapsed,
                 dataList           = dataList,
@@ -545,11 +556,9 @@ lca <- function(data,
                 Optim              = Optim,
                 parameters         = parameters,
                 transformed_pars   = transformed_pars,
-                extra              = list()
-  )
+                extra              = previous_models)
 
-
-  #### Return ####
+  #### Result ####
 
   return(result)
 
@@ -948,7 +957,10 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   result <- list(param = param,
                  trans = trans,
                  init_param = init_param,
+                 previous_models = llca_models,
                  control = control)
+
+  #### Result ####
 
   return(result)
 
@@ -1823,10 +1835,8 @@ lca_bakk_kuha <- function(data,
               do.fit = do.fit,
               verbose = verbose)
 
-  #### Return ####
+  #### Result ####
 
-  fit2@extra <- list(fit1)
-  class(fit2) <- "multistage_llca"
   return(fit2)
 
 }
@@ -1920,11 +1930,14 @@ lca_ml <- function(data,
               do.fit = do.fit,
               verbose = verbose)
 
-  #### Return ####
+  #### Multistage object ####
 
-  fit2@extra <- list(fit1)
-  class(fit2) <- "multistage_llca"
-  return(fit2)
+  result <- as_multistage_llca(fit = fit2,
+                               previous_models = list(fit1))
+
+  #### Result ####
+
+  return(result)
 
   # NO VALID STANDARD ERRORS BECAUSE VAR(log_class_error_modal) IS NOT CALCULATED IN fit1
   # Solution for classification = "modal":
@@ -1937,6 +1950,42 @@ lca_ml <- function(data,
   # (1) Calculate log_class_error_prop as transformed parameters in fit1
   # (2) Provide the full fit1 with the states matrix in model
   # (3) Automatically propagate SE estimation for transformed parameters
+
+}
+
+#### Function to create a multistage llca object ####
+
+as_multistage_llca <- function(fit, previous_models = list()) {
+
+  if(!inherits(fit, "llca")) {
+    stop("fit must inherit from class 'llca'.")
+  }
+
+  if(!is.list(previous_models)) {
+    previous_models <- list(previous_models)
+  }
+
+  previous_models <- c(fit@extra, previous_models)
+  previous_models <- previous_models[
+    vapply(previous_models,
+           FUN = \(x) inherits(x, "latent"),
+           FUN.VALUE = logical(1L))
+  ]
+
+  result <- new("multistage_llca",
+                version            = fit@version,
+                call               = fit@call,
+                timing             = fit@timing,
+                dataList           = fit@dataList,
+                modelInfo          = fit@modelInfo,
+                Optim              = fit@Optim,
+                parameters         = fit@parameters,
+                transformed_pars   = fit@transformed_pars,
+                extra              = previous_models)
+
+  #### Result ####
+
+  return(result)
 
 }
 
@@ -2417,6 +2466,8 @@ apply_model_lca <- function(model, llca_models, param, trans, control) {
 
   if(length(llca_models) > 0L) {
 
+    llca_models <- expand_llca_models(llca_models)
+
     fixed_values <- numeric(0L)
 
     for(obj in llca_models) {
@@ -2485,6 +2536,62 @@ apply_model_lca <- function(model, llca_models, param, trans, control) {
   #### Result ####
 
   result <- list(param = param, trans = trans)
+
+  return(result)
+
+}
+
+#### Function to recursively collect previous llca models ####
+
+expand_llca_models <- function(models) {
+
+  if(!is.list(models)) {
+    models <- list(models)
+  }
+
+  result <- list()
+
+  add_model <- function(model) {
+
+    if(!inherits(model, "llca")) {
+
+      #### Result ####
+
+      return(invisible(NULL))
+
+    }
+
+    previous <- model@extra
+    previous <- previous[
+      vapply(previous,
+             FUN = \(x) inherits(x, "llca"),
+             FUN.VALUE = logical(1L))
+    ]
+
+    for(previous_model in previous) {
+      add_model(previous_model)
+    }
+
+    duplicated <- length(result) > 0L &&
+      any(vapply(result,
+                 FUN = \(x) identical(x, model),
+                 FUN.VALUE = logical(1L)))
+
+    if(!duplicated) {
+      result[[length(result)+1L]] <<- model
+    }
+
+    #### Result ####
+
+    return(invisible(NULL))
+
+  }
+
+  for(model in models) {
+    add_model(model)
+  }
+
+  #### Result ####
 
   return(result)
 
