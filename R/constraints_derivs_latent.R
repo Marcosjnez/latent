@@ -38,7 +38,7 @@
 constraints_derivs.latent <- function(fit, parameters = NULL) {
 
   if(is.null(parameters)) {
-    parameters <- fit@modelInfo$trans[names(fit@modelInfo$param)]
+    parameters <- fit@modelInfo$parameters_labels
   } else if(!any(unlist(parameters) %in% fit@modelInfo$transparameters_labels)) {
     stop("Unknown parameters.")
   }
@@ -46,7 +46,7 @@ constraints_derivs.latent <- function(fit, parameters = NULL) {
   fit@modelInfo$control_optimizer$parameters[[1]] <- fit@Optim$parameters
   fit@modelInfo$control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 
-  fit@modelInfo$control_optimizer$idx_transforms <-
+  fit@modelInfo$control_optimizer$idx_transforms <- #c(0, 1)
     trans_depends(fit@modelInfo, parameters)
 
   dconstr <- get_dconstr(fit@modelInfo$control_manifold,

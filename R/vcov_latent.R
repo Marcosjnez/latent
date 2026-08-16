@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/08/2026
+# Modification date: 16/08/2026
 #'
 #' Variance-Covariance Matrix for Latent Objects
 #'
@@ -39,6 +39,7 @@ vcov.latent <- function(fit, v, parameters = NULL) {
                         fit@modelInfo$transparameters_labels)
 
   VCOV$vcov <- VCOV$vcov[selected_idx, selected_idx, drop = FALSE]
+  # VCOV$vcov <- (VCOV$vcov + t(VCOV$vcov)) / 2
   VCOV$se <- VCOV$se[selected_idx]
   VCOV$jacob <- VCOV$jacob[selected_idx, selected_idx, drop = FALSE]
   VCOV$B <- matrix(numeric(0L), nrow = 0L, ncol = 0L)

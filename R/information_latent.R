@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/08/2026
+# Modification date: 16/08/2026
 #'
 #' Hessian and Variance-Covariance Matrix matrix for Latent Models using the
 #' Information method
@@ -19,6 +19,8 @@ information.latent <- function(fit) {
                 fit@modelInfo$control_optimizer)$h
   rownames(H) <- colnames(H) <- fit@modelInfo$parameters_labels
   VCOV <- solve(H)
+  VCOV <- (VCOV+t(VCOV))/2
+  # VCOV <- chol2inv(chol(H))
 
   #### Return ####
 

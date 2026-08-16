@@ -252,11 +252,11 @@ se.multistage <- function(fit, type = "information", parameters = NULL,
                  table_se = table_se,
                  se = c(VCOV$se),
                  vcov = VCOV$vcov,
+                 jacob = VCOV$jacob,
                  H = H2,
                  B = B,
                  A = A,
                  C = C,
-                 jacob = VCOV$jacob,
                  joint_vcov = v)
 
   return(result)

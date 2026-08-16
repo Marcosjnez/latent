@@ -314,8 +314,10 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
       print_lcfa_message("Computing standard errors")
     }
 
+    parameters <- modelInfo$trans[names(modelInfo$param)]
+    # parameters <- modelInfo$parameters_labels
     result@Optim$SE <- se(result, type = "robust",
-                          parameters = modelInfo$parameters_labels)
+                          parameters = parameters)
     # Mau, I know you don't like using a method function before exporting the
     # object, but this works great!
 

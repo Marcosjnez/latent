@@ -51,9 +51,6 @@
 #' @examples
 #' \dontrun{
 #' fit <- lmean(data = HolzingerSwineford1939[, paste0("x", 1:9)])
-#'
-#' fit_std <- lmean(data = HolzingerSwineford1939[, paste0("x", 1:9)],
-#'                  std.ov = TRUE)
 #' }
 #'
 #' @export

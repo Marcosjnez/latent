@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/08/2026
+# Modification date: 16/08/2026
 
 #### Store a dataset ####
 
@@ -24,8 +24,8 @@ set.seed(20216)
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
-           outcomes = "MARITAL",
+           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           # outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
            # model = list("UNDERSTA ~~ COOPERAT
@@ -192,6 +192,8 @@ plot(fit)
 
 #### LCA with covariates (gaussian) ####
 
+library(latent)
+
 fit <- lca(data = empathy,
             nclasses = 4L,
             gaussian = c("ec1", "ec2", "ec3", "ec4", "ec5", "ec6"),
@@ -202,7 +204,7 @@ fit <- lca(data = empathy,
             # model = list("ec2 ~~ ec3"),
             penalties = TRUE,
             do.fit = TRUE)
-latInspect(fit$structural, what = "loglik")
+latInspect(fit, what = "loglik")
 # loglik: -1747.135 # penalized_loglik: -1750.566
 # loglik: -2049.840 # penalized_loglik: -2053.322 (outcomes = list(gaussian = c("pt5")))
 # SE <- se(fit, type = "standard", digits = 4)
@@ -240,11 +242,11 @@ predict(fit, new = rbind(c(2, 2, 2.428571, 2.142857),
 fitted(fit)
 
 # Get standard errors:
-SE <- se(fit, type = "standard", digits = 4)
+SE <- se(fit, type = "information", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "standard", confidence = 0.95, digits = 2)
+CI <- ci(fit, type = "information", confidence = 0.95, digits = 2)
 CI$table
 
 #### CFA ####
