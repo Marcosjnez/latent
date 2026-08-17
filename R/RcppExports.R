@@ -21,6 +21,10 @@ mytest <- function(p) {
     .Call(`_latent_mytest`, p)
 }
 
+approx_Hinv <- function(H) {
+    .Call(`_latent_approx_Hinv`, H)
+}
+
 optimizer <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
     .Call(`_latent_optimizer`, control_manifold, control_transform, control_estimator, control_optimizer)
 }

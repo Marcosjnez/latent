@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/08/2026
+# Modification date: 17/08/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -258,7 +258,8 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                   Optim            = list(),
                   parameters       = list(),
                   transformed_pars = list(),
-                  extra            = list())
+                  extra            = list(c(dataList$fit_means,
+                                            dataList$fit_cov)))
 
     #### Result ####
 
@@ -304,7 +305,8 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                 Optim            = Optim,
                 parameters       = parameters,
                 transformed_pars = transformed_pars,
-                extra            = list())
+                extra            = list(c(dataList$fit_means,
+                                          dataList$fit_cov)))
 
   #### Standard errors ####
 
@@ -490,9 +492,9 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
       # Use always asymptotic_normal when the full data is not available:
       ACOV[[i]] <- asymptotic_normal(S,
                                      cov = !std.ov,
-                                     diag = FALSE)
+                                     diag = FALSE) / nobs_list[[i]]
       NACOV[[i]] <- ACOV[[i]]*nobs_list[[i]]
-      WLS.V[[i]] <- diag(ACOV[[i]])
+      WLS.V[[i]] <- diag(NACOV[[i]])
 
       ACOV_means[[i]] <- diag(diag(S_input))
       dimnames(ACOV_means[[i]]) <- dimnames(S_input)
@@ -526,7 +528,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                                                       model = model,
                                                       cor = cor,
                                                       std.ov = std.ov,
-                                                      acov = acov,
+                                                      ACOV = ACOV,
                                                       likelihood = likelihood,
                                                       missing = missing,
                                                       control = control_i,

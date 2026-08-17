@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/08/2026
+# Modification date: 17/08/2026
 #'
 #' Robust Variance-Covariance Matrix
 #'
@@ -13,7 +13,9 @@ robust.lcfa <- function(fit) {
 
   #### Compute the Hessian ####
 
-  H <- hessian(fit)
+  VCOV_fit <- information.latent(fit)
+  H <- VCOV_fit$H
+  Hinv <- VCOV_fit$VCOV
 
   #### Asymptotic covariance of the sample statistics ####
 
@@ -154,13 +156,6 @@ robust.lcfa <- function(fit) {
 
   #### Sandwich covariance matrix ####
 
-  # dC <- constraints_derivs(fit, parameters = fit@modelInfo$parameters_labels)
-  # dC <- as.matrix(dC)
-  # H_new <- rbind(cbind(H, dC),
-  #                cbind(t(dC), matrix(0, ncol(dC), ncol(dC))))
-  # Hinv <- solve(H_new)[fit@modelInfo$parameters_labels, fit@modelInfo$parameters_labels]
-  Hinv <- solve(H)
-  dim(fit)
   VCOV <- Hinv %*% B %*% Hinv
   VCOV <- (VCOV+t(VCOV))/2
 

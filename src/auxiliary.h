@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 27/10/2025
+ * Modification date: 17/08/2026
  */
 
 double root_quad(double a, double b, double c) {
@@ -372,125 +372,9 @@ void print_arma_matrix(const arma::mat& x, const char* name) {
   Rprintf("]\n");
 }
 
-// arma::mat center_mat(arma::mat X) {
-//   return X.each_row() - arma::mean(X, 0);
-// }
+// [[Rcpp::export]]
+arma::mat approx_Hinv(arma::mat H) {
+  // Approximate the inverse if the hessian is not positive-definite:
+  return(arma::inv_sympd(H, arma::inv_opts::allow_approx));
+}
 
-// arma::mat bspline(arma::vec x, arma::vec knots, int degree, arma::vec boundaries,
-//                   bool center = false, bool intercept = false) {
-//
-//   int n = x.size();
-//   unsigned int p = knots.size() + degree;
-//   double z0, z1, output;
-//
-//   arma::vec lower_boundary(degree);
-//   arma::vec upper_boundary(degree);
-//   for(int i = 0; i < degree; i++) {
-//     lower_boundary(i) = boundaries(0);
-//   }
-//   for(int i = 0; i < degree; i++) {
-//     upper_boundary(i) = boundaries(1);
-//   }
-//
-//   knots = arma::join_cols(lower_boundary, knots, upper_boundary);
-//
-//   arma::mat X(n, p);
-//
-//   for(int j = 0; j < n; j++) {
-//     for(int k = 0; k < p; k++) {
-//       if((x[j] <= knots[k+1]) && (x[j] > knots[k])) {
-//         X(j, k) = 1;
-//       } else {
-//         X(j, k) = 0;
-//       }
-//     }
-//   }
-//
-//   X.insert_cols(p, 1);
-//
-//   for(int m = 1; m < (degree+1); m++) {
-//     for(int j = 0; j < n; j++) {
-//       for(int k = 0; k < p; k++) {
-//
-//         if(knots[k+m] == knots[k]) {
-//           z0 = 0;
-//         } else {
-//           z0 = (x[j] - knots[k]) / (knots[k+m] - knots[k]);
-//         }
-//         if(knots[k+m+1] == knots[k+1]) {
-//           z1 = 0;
-//         } else {
-//           z1 = (knots[k+m+1] - x[j]) / (knots[k+m+1] - knots[k+1]);
-//         }
-//
-//         X(j, k) = z0 * X(j, k) + z1 * X(j, k+1);
-//       }
-//     }
-//   }
-//
-//   arma::uvec indices = {p};
-//   X.shed_cols(indices);
-//
-//   if(center) {
-//     X = center_mat(X, n, p);
-//   }
-//
-//   if(intercept) {
-//     X.insert_cols(0, arma::ones(n));
-//   }
-//
-//   return X;
-// }
-
-// Cox–de Boor recursion for one (x, k, d)
-// knots: full knot sequence, k: basis index, d: degree, x: input value
-// double bspline_basis(double x, const arma::vec &knots, int k, int d) {
-//   if (d == 0) {
-//     return (x >= knots[k] && x < knots[k+1]) ? 1.0 : 0.0;
-//   } else {
-//     double denom1 = knots[k+d] - knots[k];
-//     double denom2 = knots[k+d+1] - knots[k+1];
-//     double term1 = 0.0;
-//     double term2 = 0.0;
-//     if (denom1 > 0) {
-//       term1 = (x - knots[k]) / denom1 * bspline_basis(x, knots, k, d-1);
-//     }
-//     if (denom2 > 0) {
-//       term2 = (knots[k+d+1] - x) / denom2 * bspline_basis(x, knots, k+1, d-1);
-//     }
-//     return term1 + term2;
-//   }
-// }
-//
-// // [[Rcpp::export]]
-// arma::mat bspline(arma::vec x, arma::vec internal_knots, int degree,
-//                   arma::vec boundaries, bool center = false, bool intercept = false) {
-//
-//   int n = x.size();
-//   // Knot sequence: degree repeated at each boundary, plus internal knots
-//   arma::vec knots = arma::join_cols(
-//     arma::vec(degree, arma::fill::value(boundaries[0])),
-//     internal_knots,
-//     arma::vec(degree, arma::fill::value(boundaries[1]))
-//   );
-//
-//   int K = knots.size() - degree - 1; // Number of basis functions
-//
-//   arma::mat X(n, K);
-//   for (int i = 0; i < n; ++i) {
-//     for (int j = 0; j < K; ++j) {
-//       X(i, j) = bspline_basis(x[i], knots, j, degree);
-//     }
-//   }
-//
-//   if (center) {
-//     X = center_mat(X);
-//   }
-//
-//   if (intercept) {
-//     X.insert_cols(0, arma::ones(n));
-//   }
-//
-//   return X;
-// }
-//

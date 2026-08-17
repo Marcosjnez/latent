@@ -605,18 +605,18 @@ compute_se_lyule <- function(dataList, modelInfo, yule_output) {
   # yule_cor_full_rcpp() returns sampling standard errors. Store the equivalent
   # N-scaled asymptotic covariance so that SE = sqrt(diag(ACOV) / N), matching
   # the convention used by the other sample-statistic estimators in latent.
-  ACOV <- diag(pair_se^2*dataList$nobs,
+  VCOV <- diag(pair_se^2,
                nrow = length(pair_se),
                ncol = length(pair_se))
 
-  rownames(ACOV) <- colnames(ACOV) <- modelInfo$parameters_labels
+  rownames(VCOV) <- colnames(VCOV) <- modelInfo$parameters_labels
 
-  se <- sqrt(diag(ACOV)/dataList$nobs)
+  se <- sqrt(diag(VCOV))
   names(se) <- modelInfo$parameters_labels
 
   #### Result ####
 
-  result <- list(ACOV = ACOV,
+  result <- list(vcov = VCOV,
                  se = se)
 
   return(result)

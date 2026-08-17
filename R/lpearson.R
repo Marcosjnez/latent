@@ -236,7 +236,7 @@ create_lpearson_dataList <- function(data, control) {
                  npatterns = nrow(data),
                  item_names = colnames(data),
                  S = sample_stats$S,
-                 acov = sample_stats$acov,
+                 VCOV = sample_stats$VCOV,
                  likelihood = sample_stats$likelihood)
 
   return(result)
@@ -495,7 +495,7 @@ sample_lpearson <- function(data, control) {
   #### Result ####
 
   result <- list(S = S,
-                 acov = acov,
+                 VCOV = VCOV,
                  likelihood = likelihood)
 
   return(result)
@@ -661,17 +661,17 @@ compute_se_lpearson <- function(dataList, modelInfo, Optim, control) {
 
   #### Asymptotic covariance ####
 
-  if(dataList$acov == "standard") {
+  if(dataList$VCOV == "standard") {
 
-    ACOV <- asymptotic_normal(dataList$S,
+    VCOV <- asymptotic_normal(dataList$S,
                               cov = !control$std.ov,
-                              diag = FALSE)
+                              diag = FALSE)/dataList$nobs
 
-  } else if(dataList$acov == "robust") {
+  } else if(dataList$VCOV == "robust") {
 
-    ACOV <- asymptotic_general(as.matrix(dataList$data),
+    VCOV <- asymptotic_general(as.matrix(dataList$data),
                                cov = !control$std.ov,
-                               diag = FALSE)
+                               diag = FALSE)/dataList$nobs
 
   } else {
 
@@ -679,19 +679,19 @@ compute_se_lpearson <- function(dataList, modelInfo, Optim, control) {
 
   }
 
-  if(nrow(ACOV) != length(modelInfo$parameters_labels) ||
-     ncol(ACOV) != length(modelInfo$parameters_labels)) {
+  if(nrow(VCOV) != length(modelInfo$parameters_labels) ||
+     ncol(VCOV) != length(modelInfo$parameters_labels)) {
     stop("The asymptotic covariance matrix does not match the number of free Pearson parameters")
   }
 
-  rownames(ACOV) <- colnames(ACOV) <- modelInfo$parameters_labels
+  rownames(VCOV) <- colnames(VCOV) <- modelInfo$parameters_labels
 
-  se <- sqrt(diag(ACOV)/dataList$nobs)
+  se <- sqrt(diag(VCOV))
   names(se) <- modelInfo$parameters_labels
 
   #### Result ####
 
-  result <- list(ACOV = ACOV,
+  result <- list(vcov = VCOV,
                  se = se)
 
   return(result)

@@ -108,38 +108,6 @@ public:
 
   }
 
-  void dconstraints(arguments_optim& x) {
-
-    // Compute the Jacobian of the transformation:
-    jacobian(x);
-
-    arma::uword ndconstr = x.dconstr.n_cols;
-    arma::uword nconstraints = indices_out.n_elem;
-
-    // Add one constraint for each transformed residual variance:
-    x.dconstr.resize(x.transparameters.n_elem,
-                     ndconstr + nconstraints);
-
-    // // Initialize the new columns:
-    // x.dconstr.cols(ndconstr,
-    //                ndconstr + nconstraints - 1L).zeros();
-
-    for(arma::uword i = 0L; i < nconstraints; ++i) {
-
-      arma::uword column = ndconstr + i;
-
-      // d constraint / d output:
-      x.dconstr(indices_out[i], column) += 1.00;
-
-      // d constraint / d inputs:
-      for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
-        x.dconstr(indices_in[j], column) -= jacob(i, j);
-      }
-
-    }
-
-  }
-
   void outcomes(arguments_optim& x) {
 
     matrices.resize(1);

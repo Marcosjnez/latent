@@ -183,52 +183,192 @@ public:
 
   void update_vcov(arguments_optim& x, std::vector<transformations*>& xtransformations) {
 
-    // Get the variance-covariance matrix of selected parameters:
-    x.vcov.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
-    x.jacob.set_size(x.transparameters.n_elem, x.transparameters.n_elem);
+    const arma::uword ntrans = x.transparameters.n_elem;
 
-    // x.transparam2param may not contain contiguous indices so fill x.vcov
-    // element-wise:
+    // Initialize the covariance and Jacobian matrices
+
+    x.vcov.zeros(ntrans, ntrans);
+    x.jacob.zeros(ntrans, ntrans);
+
+    // Indicates which transformed-parameter positions currently have a valid
+    // variance-covariance row and column.
+    arma::uvec available(ntrans, arma::fill::zeros);
+
+    // Variance-covariance matrix of the untransformed parameters
+
+    // x.transparam2param may not contain contiguous indices, so insert the
+    // covariance matrix element by element.
     for(arma::uword j = 0L; j < x.transparam2param.n_elem; ++j) {
+
+      arma::uword jj = x.transparam2param[j];
+      available[jj] = 1L;
+
       for(arma::uword i = 0L; i < x.transparam2param.n_elem; ++i) {
-        x.vcov(x.transparam2param[i], x.transparam2param[j]) = x.v(i, j);
+
+        arma::uword ii = x.transparam2param[i];
+
+        x.vcov(ii, jj) = x.v(i, j);
+
       }
+
     }
 
-    // Update vcov using the delta method:
-    for(arma::uword i : x.idx_transforms) {
+    // Update the variance-covariance matrix through the transformations
 
-      arma::uvec indices_in = xtransformations[i]->indices_in;
-      arma::uvec indices_out = xtransformations[i]->indices_out;
-      arma::mat vcov_in(indices_in.n_elem, indices_in.n_elem);
+    // x.idx_transforms must be ordered so that the transformations producing an
+    // input parameter are evaluated before transformations using that parameter.
+    for(arma::uword t : x.idx_transforms) {
 
-      xtransformations[i]->jacobian(x);
-      for(arma::uword k = 0L; k < indices_in.n_elem; ++k) {
-        for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
-          x.jacob(indices_out[j], indices_in[k]) = xtransformations[i]->jacob(j, k);
-        }
+      arma::uvec indices_in = xtransformations[t]->indices_in;
+      arma::uvec indices_out = xtransformations[t]->indices_out;
+
+      // Local Jacobian
+
+      xtransformations[t]->jacobian(x);
+
+      const arma::mat& J = xtransformations[t]->jacob;
+
+      if(J.n_rows != indices_out.n_elem ||
+         J.n_cols != indices_in.n_elem) {
+        Rcpp::stop(
+          "The Jacobian dimensions of transformation " +
+            std::to_string(t + 1L) +
+            " do not match its input and output parameter indices."
+        );
       }
+
+      // Store the local Jacobian in the complete Jacobian matrix.
+      for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
+
+        for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
+
+          x.jacob(indices_out[i], indices_in[j]) = J(i, j);
+
+        }
+
+      }
+
+      // Parameters whose covariance is already available
+
+      // Remove the current output coordinates from the set of already available
+      // parameters. Their old covariance, if any, must not be used when the
+      // transformation replaces them.
+      arma::uvec available_previous = available;
+
+      for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
+        available_previous[indices_out[i]] = 0L;
+      }
+
+      arma::uvec indices_previous =
+        arma::find(available_previous > 0L);
+
+      // Covariance among the transformation inputs
+
+      arma::mat vcov_in(indices_in.n_elem,
+                        indices_in.n_elem,
+                        arma::fill::zeros);
 
       for(arma::uword j = 0L; j < indices_in.n_elem; ++j) {
-        for(arma::uword k = 0L; k < indices_in.n_elem; ++k) {
-          vcov_in(k, j) = x.vcov(indices_in[k], indices_in[j]);
+
+        for(arma::uword i = 0L; i < indices_in.n_elem; ++i) {
+
+          vcov_in(i, j) =
+            x.vcov(indices_in[i], indices_in[j]);
+
         }
+
       }
 
-      // vcov(out, out) = jacobian * vcov(in, in) * jacobian.t():
-      arma::mat vcov_out = xtransformations[i]->jacob * vcov_in *
-        xtransformations[i]->jacob.t();
+      // Covariance between inputs and all previous parameters
+
+      arma::mat vcov_in_previous(indices_in.n_elem,
+                                 indices_previous.n_elem,
+                                 arma::fill::zeros);
+
+      for(arma::uword j = 0L; j < indices_previous.n_elem; ++j) {
+
+        for(arma::uword i = 0L; i < indices_in.n_elem; ++i) {
+
+          vcov_in_previous(i, j) =
+            x.vcov(indices_in[i], indices_previous[j]);
+
+        }
+
+      }
+
+      // Propagate the covariance
+
+      // Cov(output, previous) =
+      //   J * Cov(input, previous)
+      arma::mat vcov_out_previous =
+        J * vcov_in_previous;
+
+      // Cov(output, output) =
+      //   J * Cov(input, input) * J'
+      arma::mat vcov_out =
+        J * vcov_in * J.t();
+
+      // Remove small numerical asymmetries.
+      vcov_out = 0.5*(vcov_out + vcov_out.t());
+
+      // Insert output/previous cross-covariances
+
+      for(arma::uword j = 0L; j < indices_previous.n_elem; ++j) {
+
+        arma::uword previous_index = indices_previous[j];
+
+        for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
+
+          arma::uword output_index = indices_out[i];
+          double value = vcov_out_previous(i, j);
+
+          x.vcov(output_index, previous_index) = value;
+          x.vcov(previous_index, output_index) = value;
+
+        }
+
+      }
+
+      //  Insert output/output covariance
 
       for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
-        for(arma::uword k = 0L; k < indices_out.n_elem; ++k) {
-          x.vcov(indices_out[k], indices_out[j]) = vcov_out(k, j);
+
+        arma::uword jj = indices_out[j];
+
+        for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
+
+          arma::uword ii = indices_out[i];
+
+          x.vcov(ii, jj) = vcov_out(i, j);
+
         }
+
+      }
+
+      // Make the outputs available to subsequent transformations
+
+      for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
+        available[indices_out[i]] = 1L;
       }
 
     }
 
-    // Finally, get the standard errors:
-    x.se = arma::sqrt(arma::vec(x.vcov.diag()));
+    // Standard errors
+
+    arma::vec variances = arma::vec(x.vcov.diag());
+
+    // Protect only against negligible negative values caused by floating-point
+    // error. Substantively negative variances remain negative and therefore
+    // produce NaN, making the problem visible.
+    for(arma::uword i = 0L; i < variances.n_elem; ++i) {
+
+      if(variances[i] < 0.00 && variances[i] > -1e-12) {
+        variances[i] = 0.00;
+      }
+
+    }
+
+    x.se = arma::sqrt(variances);
 
   }
 

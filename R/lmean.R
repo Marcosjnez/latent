@@ -482,7 +482,7 @@ compute_se_lmean <- function(dataList, modelInfo, Optim, control) {
 
   if(dataList$nobs < 2L || control$std.ov) {
 
-    ACOV <- matrix(0,
+    VCOV <- matrix(0,
                    nrow = dataList$nitems,
                    ncol = dataList$nitems)
 
@@ -491,17 +491,17 @@ compute_se_lmean <- function(dataList, modelInfo, Optim, control) {
     variances <- apply(dataList$data, MARGIN = 2L,
                        FUN = var, na.rm = TRUE)
 
-    ACOV <- diag(variances,
+    VCOV <- diag(variances/dataList$nobs,
                  nrow = dataList$nitems,
                  ncol = dataList$nitems)
 
   }
 
-  rownames(ACOV) <- colnames(ACOV) <- modelInfo$parameters_labels
+  rownames(VCOV) <- colnames(VCOV) <- modelInfo$parameters_labels
 
   SE <- list(
-    ACOV = ACOV,
-    se = sqrt(diag(ACOV) / dataList$nobs)
+    vcov = VCOV,
+    se = sqrt(diag(VCOV))
   )
 
   names(SE$se) <- modelInfo$parameters_labels

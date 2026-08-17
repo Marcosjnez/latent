@@ -1033,26 +1033,20 @@ compute_se_lpoly <- function(dataList, modelInfo, Optim) {
   # se <- sqrt(diag(ACOV)/dataList$nobs)
   # names(se) <- correlation_labels
 
-  modelInfo$control_optimizer$parameters[[1]] <- Optim$parameters
-  modelInfo$control_optimizer$transparameters[[1]] <- Optim$transparameters
-
   parameters <- modelInfo$trans[names(modelInfo$param)]
   modelInfo$control_optimizer$idx_transforms <-
     trans_depends(modelInfo, parameters)
 
-  H <- get_hess(modelInfo$control_manifold,
-                modelInfo$control_transform,
-                modelInfo$control_estimator,
-                modelInfo$control_optimizer)$h
-  rownames(H) <- colnames(H) <- modelInfo$parameters_labels
+  VCOV_fit <- information.latent(fit)
+  H <- VCOV_fit$H / dataList$nobs
+  VCOV <- VCOV_fit$VCOV / dataList$nobs
 
-  ACOV <- solve(H)
-  dimnames(ACOV) <- dimnames(H)
-  se <- sqrt(diag(ACOV)/dataList$nobs)
+  dimnames(VCOV) <- dimnames(H)
+  se <- sqrt(diag(VCOV))
 
   #### Result ####
 
-  result <- list(ACOV = ACOV,
+  result <- list(vcov = VCOV,
                  se = se)
 
   return(result)

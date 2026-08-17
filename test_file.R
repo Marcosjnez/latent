@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 16/08/2026
+# Modification date: 17/08/2026
 
 #### Store a dataset ####
 
@@ -24,15 +24,15 @@ set.seed(20216)
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
-           # outcomes = "MARITAL",
+           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
            # model = list("UNDERSTA ~~ COOPERAT
            #               PURPOSE ~~ COOPERAT"),
            # start = start,
            penalties = list(class = list(alpha=1),
-                            prob  = list(alpha=1)),
+                            prob  = list(alpha=0)),
            # control = list(opt = "em", rstarts = 30, cores = 30,
            #                maxit = 50L, eps = 1e-05, step_maxit = 30L,
            #                mopt = "grad", mstep_maxit = 20L, mstep_eps = 1e-05),

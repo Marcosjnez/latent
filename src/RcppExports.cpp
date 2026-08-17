@@ -71,6 +71,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// approx_Hinv
+arma::mat approx_Hinv(arma::mat H);
+RcppExport SEXP _latent_approx_Hinv(SEXP HSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type H(HSEXP);
+    rcpp_result_gen = Rcpp::wrap(approx_Hinv(H));
+    return rcpp_result_gen;
+END_RCPP
+}
 // optimizer
 Rcpp::List optimizer(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
 RcppExport SEXP _latent_optimizer(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
@@ -434,6 +445,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_soft", (DL_FUNC) &_latent_soft, 2},
     {"_latent_duplication", (DL_FUNC) &_latent_duplication, 3},
     {"_latent_mytest", (DL_FUNC) &_latent_mytest, 1},
+    {"_latent_approx_Hinv", (DL_FUNC) &_latent_approx_Hinv, 1},
     {"_latent_optimizer", (DL_FUNC) &_latent_optimizer, 4},
     {"_latent_polyfast", (DL_FUNC) &_latent_polyfast, 7},
     {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 3},
