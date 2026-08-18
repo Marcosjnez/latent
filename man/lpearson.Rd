@@ -5,7 +5,7 @@
 \title{Pearson Covariance or Correlation Matrix}
 \usage{
 lpearson(data, model = NULL, std.ov = FALSE,
-         acov = "standard", likelihood = "normal",
+         VCOV = "standard", likelihood = "normal",
          missing = "pairwise.complete.obs", do.fit = TRUE,
          message = FALSE, control = NULL, ...)
 }
@@ -18,7 +18,7 @@ lpearson(data, model = NULL, std.ov = FALSE,
 before the sample matrix is returned, so the off-diagonal elements represent
 correlations rather than covariances.}
 
-\item{acov}{Character string selecting the asymptotic covariance estimator.
+\item{VCOV}{Character string selecting the variance-covariance estimator.
 Available options are \code{"standard"} and \code{"robust"}.}
 
 \item{likelihood}{Character string controlling the covariance denominator.
@@ -42,7 +42,7 @@ be supplied through \code{control$start}.}
 \value{
 An S4 object of class \code{"latent"}. The object contains the
   processed data in \code{dataList}, the parameter and optimization structures
-  in \code{modelInfo}, the direct estimation output and asymptotic covariance
+  in \code{modelInfo}, the direct estimation output and variance-covariance
   information in \code{Optim}, and the estimated parameter structures in
   \code{parameters} and \code{transformed_pars}.
 }
@@ -56,7 +56,7 @@ than estimating it numerically. With \code{std.ov = TRUE}, the sample matrix
 is standardized before being stored in the fitted object.
 
 Standard asymptotic covariance matrices are computed under multivariate
-normality. With \code{acov = "robust"}, fourth-moment information from the
+normality. With \code{VCOV = "robust"}, fourth-moment information from the
 observed data is used instead.
 }
 \examples{

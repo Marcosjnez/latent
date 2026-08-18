@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/08/2026
+# Modification date: 17/08/2026
 #'
 #' Yule Correlation Matrix
 #'
@@ -27,8 +27,8 @@
 #' associations are treated as free parameters.
 #'
 #' Standard errors are obtained from the pairwise asymptotic standard errors
-#' returned by the Yule association routine. The corresponding asymptotic
-#' covariance matrix is stored in \code{Optim$SE$ACOV}.
+#' returned by the Yule association routine. The corresponding sampling
+#' variance-covariance matrix is stored in \code{Optim$SE$VCOV}.
 #'
 #' @return An S4 object of class \code{"latent"}. The object contains the
 #'   processed data in \code{dataList}, the parameter and optimization structures
@@ -480,8 +480,8 @@ start_lyule <- function(dataList, data_param, param, trans, control) {
   for(rs in seq_len(control$rstarts)) {
 
     init_param[[rs]] <- list()
-    init_param[[rs]][[S_matrix]] <- diag(rep(1, times = dataList$nitems))
-
+    init_param[[rs]][[S_matrix]] <- diag(1, nrow = dataList$nitems,
+                                         ncol = dataList$nitems)
     dimnames(init_param[[rs]][[S_matrix]]) <- dimnames(trans[[S_matrix]])
 
   }
@@ -600,11 +600,10 @@ compute_se_lyule <- function(dataList, modelInfo, yule_output) {
     stop("The number of Yule standard errors does not match the number of free parameters")
   }
 
-  #### Asymptotic covariance ####
+  #### Variance-covariance matrix ####
 
-  # yule_cor_full_rcpp() returns sampling standard errors. Store the equivalent
-  # N-scaled asymptotic covariance so that SE = sqrt(diag(ACOV) / N), matching
-  # the convention used by the other sample-statistic estimators in latent.
+  # yule_cor_full_rcpp() already returns sampling standard errors, so no
+  # additional multiplication or division by the sample size is required.
   VCOV <- diag(pair_se^2,
                nrow = length(pair_se),
                ncol = length(pair_se))
@@ -616,7 +615,7 @@ compute_se_lyule <- function(dataList, modelInfo, yule_output) {
 
   #### Result ####
 
-  result <- list(vcov = VCOV,
+  result <- list(VCOV = VCOV,
                  se = se)
 
   return(result)

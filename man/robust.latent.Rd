@@ -2,12 +2,17 @@
 % Please edit documentation in R/robust_latent.R
 \name{robust.latent}
 \alias{robust.latent}
-\title{Hessian and Variance-Covariance Matrix matrix for Latent Models using the
-Information method}
+\title{Robust Variance-Covariance Matrix for Latent Models}
 \usage{
 \method{robust}{latent}(fit)
 }
+\arguments{
+\item{fit}{A fitted object inheriting from class \code{"latent"}.}
+}
+\value{
+The result of \code{information(fit)}.
+}
 \description{
-Hessian and Variance-Covariance Matrix matrix for Latent Models using the
-Information method
+Default robust method for latent objects without a class-specific robust
+estimator. The information covariance matrix is returned.
 }

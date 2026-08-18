@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/08/2026
+# Modification date: 17/08/2026
 #'
 #' Polychoric Correlation Matrix
 #'
@@ -1007,46 +1007,36 @@ fit_lpoly <- function(dataList, modelInfo, method) {
 
 compute_se_lpoly <- function(dataList, modelInfo, Optim) {
 
-  #### Correlation labels ####
+  #### Hessian ####
 
-  S_name <- names(modelInfo$trans)[startsWith(names(modelInfo$trans), "S")]
+  modelInfo$control_optimizer$parameters[[1L]] <- Optim$parameters
+  modelInfo$control_optimizer$transparameters[[1L]] <-
+    Optim$transparameters
 
-  if(length(S_name) != 1L) {
-    stop("Unable to identify the polychoric correlation matrix")
-  }
+  H <- get_hess(control_manifold = modelInfo$control_manifold,
+                control_transform = modelInfo$control_transform,
+                control_estimator = modelInfo$control_estimator,
+                control_optimizer = modelInfo$control_optimizer,
+                cores = 1L)$h
 
-  S <- modelInfo$trans[[S_name]]
-  correlation_labels <- c(S[lower.tri(S, diag = FALSE)])
+  rownames(H) <- colnames(H) <- modelInfo$parameters_labels
 
-  #### Asymptotic covariance ####
+  #### Variance-covariance matrix ####
 
-  hess <- c(dataList$polychorics$hess)
+  # The polychoric objective is averaged over observations. Therefore, the
+  # inverse Hessian is the N-scaled asymptotic covariance and must be divided by
+  # the sample size to obtain the sampling variance-covariance matrix.
+  VCOV <- approx_Hinv(H)/dataList$nobs
+  VCOV <- (VCOV+t(VCOV))/2
+  rownames(VCOV) <- colnames(VCOV) <- modelInfo$parameters_labels
 
-  if(length(hess) != length(correlation_labels)) {
-    stop("The number of polychoric Hessian values does not match the number of correlations")
-  }
-
-  # Preserve the current lpoly convention: polyfast()$hess is stored directly
-  # as the diagonal ACOV contribution and divided by N when computing SEs.
-  # ACOV <- diag((1/hess), nrow = length(hess), ncol = length(hess))
-  # rownames(ACOV) <- colnames(ACOV) <- correlation_labels
-  # se <- sqrt(diag(ACOV)/dataList$nobs)
-  # names(se) <- correlation_labels
-
-  parameters <- modelInfo$trans[names(modelInfo$param)]
-  modelInfo$control_optimizer$idx_transforms <-
-    trans_depends(modelInfo, parameters)
-
-  VCOV_fit <- information.latent(fit)
-  H <- VCOV_fit$H / dataList$nobs
-  VCOV <- VCOV_fit$VCOV / dataList$nobs
-
-  dimnames(VCOV) <- dimnames(H)
   se <- sqrt(diag(VCOV))
+  names(se) <- modelInfo$parameters_labels
 
   #### Result ####
 
-  result <- list(vcov = VCOV,
+  result <- list(H = H,
+                 VCOV = VCOV,
                  se = se)
 
   return(result)

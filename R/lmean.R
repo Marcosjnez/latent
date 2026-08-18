@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/08/2026
+# Modification date: 17/08/2026
 #'
 #' Sample Means
 #'
@@ -28,15 +28,16 @@
 #' @details
 #' \code{lmean()} computes the arithmetic mean of each observed variable using
 #' all available non-missing observations for that variable. When
-#' \code{std.ov = FALSE}, the asymptotic covariance matrix of the sample means
-#' is represented by the diagonal matrix of observed-variable variances, and
-#' the reported standard errors are obtained by dividing this matrix by the
-#' sample size.
+#' \code{std.ov = FALSE}, the variance-covariance matrix of the sample means
+#' retains covariances between variables. With complete data, it is the sample
+#' covariance matrix divided by the sample size. With missing data, each entry
+#' is adjusted for the numbers of observations contributing to the two means.
+#' Standard errors are the square roots of its diagonal.
 #'
 #' When \code{std.ov = TRUE}, the mean parameters are fixed to zero rather than
 #' estimated. This is the appropriate mean structure for standardized observed
-#' variables. Because these values are fixed, their asymptotic covariance
-#' matrix and standard errors are set to zero.
+#' variables. Because these values are fixed, their variance-covariance matrix
+#' and standard errors are set to zero.
 #'
 #' The function uses the same parameter/model infrastructure as the other
 #' estimators in \pkg{latent}, even though the sample means themselves are
@@ -51,6 +52,9 @@
 #' @examples
 #' \dontrun{
 #' fit <- lmean(data = HolzingerSwineford1939[, paste0("x", 1:9)])
+#'
+#' fit_std <- lmean(data = HolzingerSwineford1939[, paste0("x", 1:9)],
+#'                  std.ov = TRUE)
 #' }
 #'
 #' @export
@@ -488,19 +492,38 @@ compute_se_lmean <- function(dataList, modelInfo, Optim, control) {
 
   } else {
 
-    variances <- apply(dataList$data, MARGIN = 2L,
-                       FUN = var, na.rm = TRUE)
+    X <- as.matrix(dataList$data)
+    observed <- !is.na(X)
+    nobs_item <- colSums(observed)
 
-    VCOV <- diag(variances/dataList$nobs,
-                 nrow = dataList$nitems,
-                 ncol = dataList$nitems)
+    if(any(nobs_item == 0L)) {
+      stop("Every variable must contain at least one observed value")
+    }
+
+    means <- colMeans(X, na.rm = TRUE)
+    centered <- sweep(X, MARGIN = 2L, STATS = means, FUN = "-")
+    centered[!observed] <- 0
+
+    nobs_pair <- crossprod(observed)
+    crossproducts <- crossprod(centered)
+
+    sample_cov <- matrix(0,
+                         nrow = dataList$nitems,
+                         ncol = dataList$nitems)
+
+    estimable <- nobs_pair > 1L
+    sample_cov[estimable] <-
+      crossproducts[estimable]/(nobs_pair[estimable]-1L)
+
+    denominator <- outer(nobs_item, nobs_item)
+    VCOV <- sample_cov*nobs_pair/denominator
 
   }
 
   rownames(VCOV) <- colnames(VCOV) <- modelInfo$parameters_labels
 
   SE <- list(
-    vcov = VCOV,
+    VCOV = VCOV,
     se = sqrt(diag(VCOV))
   )
 

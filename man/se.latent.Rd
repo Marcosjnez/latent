@@ -2,10 +2,27 @@
 % Please edit documentation in R/se_latent.R
 \name{se.latent}
 \alias{se.latent}
-\title{Variances-Covariance Matrix for Latent Objects}
+\title{Standard Errors for Latent Objects}
 \usage{
 \method{se}{latent}(fit, type = "information", parameters = NULL, digits = 4L, ...)
 }
+\arguments{
+\item{fit}{A fitted object inheriting from class \code{"latent"}.}
+
+\item{type}{Character string selecting \code{"information"} or
+\code{"robust"} covariance estimation.}
+
+\item{parameters}{Optional parameter specification.}
+
+\item{digits}{Non-negative integer used to format parameter tables, or
+\code{NULL} to avoid rounding.}
+
+\item{...}{Additional arguments.}
+}
+\value{
+A list containing parameter tables, standard errors, covariance
+  matrices, and derivative information.
+}
 \description{
-Variances-Covariance Matrix for Latent Objects
+Standard Errors for Latent Objects
 }

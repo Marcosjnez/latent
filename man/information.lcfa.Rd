@@ -2,12 +2,16 @@
 % Please edit documentation in R/information_lcfa.R
 \name{information.lcfa}
 \alias{information.lcfa}
-\title{Hessian and Variance-Covariance Matrix matrix for Confirmatory Factor Models
-using the Information method}
+\title{Information Variance-Covariance Matrix for Confirmatory Factor Models}
 \usage{
 \method{information}{lcfa}(fit)
 }
+\arguments{
+\item{fit}{A fitted object of class \code{"lcfa"}.}
+}
+\value{
+A list containing the CFA Hessian and variance-covariance matrix.
+}
 \description{
-Hessian and Variance-Covariance Matrix matrix for Confirmatory Factor Models
-using the Information method
+Information Variance-Covariance Matrix for Confirmatory Factor Models
 }

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 17/08/2026
+# Modification date: 18/08/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -40,8 +40,9 @@
 #' @param missing Missing-data method.
 #' @param std.lv Logical. Standardize latent variables.
 #' @param std.ov Logical. Standardize observed variables.
-#' @param acov Method used to estimate the asymptotic covariance matrix of the
-#'   sample statistics.
+#' @param acov Character string selecting the variance-covariance estimator
+#'   for the sample statistics. Available options are \code{"standard"} and
+#'   \code{"robust"}.
 #' @param meanstructure Logical. Estimate the observed-variable mean structure.
 #' @param parameterization Optional parameterization specification.
 #' @param likelihood Character string controlling the normal/Wishart likelihood
@@ -116,7 +117,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   estimator <- tolower(estimator)
   missing <- tolower(missing)
-  acov <- tolower(acov)
+  VCOV_type <- match.arg(tolower(acov), c("standard", "robust"))
 
   if(isTRUE(ordered)) {
 
@@ -178,7 +179,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
       stop("ordered models require raw data")
     }
 
-    if(acov == "robust") {
+    if(VCOV_type == "robust") {
       stop("acov = 'robust' requires raw data")
     }
 
@@ -205,6 +206,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
   control$estimator <- estimator
   control$meanstructure <- meanstructure
   control$missing <- missing
+  control$VCOV <- VCOV_type
   control <- lcfa_control(control)
 
   #### Create the dataList ####
@@ -223,7 +225,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                                    missing = missing,
                                    std.lv = std.lv,
                                    std.ov = std.ov,
-                                   acov = acov,
+                                   VCOV = VCOV_type,
                                    message = message,
                                    likelihood = likelihood,
                                    meanstructure = meanstructure,
@@ -249,6 +251,14 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   if(!do.fit) {
 
+    previous_models <- c(dataList$fit_means,
+                         dataList$fit_cov)
+    previous_models <- previous_models[
+      vapply(previous_models,
+             FUN = \(x) inherits(x, "latent"),
+             FUN.VALUE = logical(1L))
+    ]
+
     result <- new("lcfa",
                   version          = as.character(packageVersion("latent")),
                   call             = mc,
@@ -258,8 +268,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                   Optim            = list(),
                   parameters       = list(),
                   transformed_pars = list(),
-                  extra            = list(c(dataList$fit_means,
-                                            dataList$fit_cov)))
+                  extra            = previous_models)
 
     #### Result ####
 
@@ -294,6 +303,16 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   parameters <- transformed_pars[names(modelInfo$param)]
 
+  #### Previous sample-statistic models ####
+
+  previous_models <- c(dataList$fit_means,
+                       dataList$fit_cov)
+  previous_models <- previous_models[
+    vapply(previous_models,
+           FUN = \(x) inherits(x, "latent"),
+           FUN.VALUE = logical(1L))
+  ]
+
   #### latent object ####
 
   result <- new("lcfa",
@@ -305,23 +324,23 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                 Optim            = Optim,
                 parameters       = parameters,
                 transformed_pars = transformed_pars,
-                extra            = list(c(dataList$fit_means,
-                                          dataList$fit_cov)))
+                extra            = previous_models)
 
   #### Standard errors ####
 
-  if(isTRUE(se) && do.fit) {
+  if(isTRUE(se)) {
 
     if(message) {
       print_lcfa_message("Computing standard errors")
     }
 
-    parameters <- modelInfo$trans[names(modelInfo$param)]
-    # parameters <- modelInfo$parameters_labels
-    result@Optim$SE <- se(result, type = "robust",
+    # parameters_se <- modelInfo$trans[names(modelInfo$param)]
+    parameters <- modelInfo$parameters_labels
+    type_se <- if(VCOV_type == "robust") "robust" else "information"
+
+    result@Optim$SE <- se(result,
+                          type = type_se,
                           parameters = parameters)
-    # Mau, I know you don't like using a method function before exporting the
-    # object, but this works great!
 
   }
 
@@ -340,14 +359,14 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                                  positive = FALSE, penalties = TRUE,
                                  missing = "pairwise.complete.obs",
                                  std.lv = TRUE, std.ov = FALSE,
-                                 acov = "standard", message = FALSE,
+                                 VCOV = "standard", message = FALSE,
                                  likelihood = NULL, meanstructure = TRUE,
                                  args = NULL, control = NULL,
                                  ...) {
 
   cor <- tolower(cor)
   estimator <- tolower(estimator)
-  acov <- tolower(acov)
+  VCOV_type <- match.arg(tolower(VCOV), c("standard", "robust"))
   missing <- tolower(missing)
 
   sample_stats_only <- is.null(data)
@@ -454,9 +473,10 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
   nobs_list <- vector("list", length = ngroups)
   sample.mean_list <- vector("list", length = ngroups)
   sample.cov_input <- vector("list", length = ngroups)
-  NACOV <- vector("list", length = ngroups)
-  ACOV <- vector("list", length = ngroups)
-  ACOV_means <- vector("list", length = ngroups)
+  NVCOV <- vector("list", length = ngroups)
+  VCOV_cov <- vector("list", length = ngroups)
+  NVCOV_means <- vector("list", length = ngroups)
+  VCOV_means <- vector("list", length = ngroups)
   WLS.V <- vector("list", length = ngroups)
   thresholds <- vector("list", length = ngroups)
   fit_cov <- vector("list", length = ngroups)
@@ -489,15 +509,31 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
       sample.cov[[i]] <- S
 
-      # Use always asymptotic_normal when the full data is not available:
-      ACOV[[i]] <- asymptotic_normal(S,
-                                     cov = !std.ov,
-                                     diag = FALSE) / nobs_list[[i]]
-      NACOV[[i]] <- ACOV[[i]]*nobs_list[[i]]
-      WLS.V[[i]] <- diag(NACOV[[i]])
+      # asymptotic_normal() returns the N-scaled covariance matrix.
+      NVCOV[[i]] <- asymptotic_normal(S,
+                                      cov = !std.ov,
+                                      diag = FALSE)
+      VCOV_cov[[i]] <- NVCOV[[i]]/nobs_list[[i]]
 
-      ACOV_means[[i]] <- diag(diag(S_input))
-      dimnames(ACOV_means[[i]]) <- dimnames(S_input)
+      # lavaan and the DWLS discrepancy use the N-scaled covariance matrix.
+      WLS.V[[i]] <- diag(1/diag(NVCOV[[i]]))
+
+      if(std.ov) {
+
+        NVCOV_means[[i]] <- matrix(0,
+                                    nrow = nrow(S_input),
+                                    ncol = ncol(S_input),
+                                    dimnames = dimnames(S_input))
+
+      } else {
+
+        # Under normal sampling, Var(sqrt(N)*sample.mean) is the observed
+        # covariance matrix. Retain its off-diagonal elements.
+        NVCOV_means[[i]] <- S_input
+
+      }
+
+      VCOV_means[[i]] <- NVCOV_means[[i]]/nobs_list[[i]]
 
       thresholds[[i]] <- list()
 
@@ -528,7 +564,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                                                       model = model,
                                                       cor = cor,
                                                       std.ov = std.ov,
-                                                      ACOV = ACOV,
+                                                      VCOV = VCOV_type,
                                                       likelihood = likelihood,
                                                       missing = missing,
                                                       control = control_i,
@@ -540,10 +576,14 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
       nobs_list[[i]] <- fit_cov[[i]]@dataList$nobs
       sample.cov[[i]] <- fit_cov[[i]]@transformed_pars$S
       sample.cov_input[[i]] <- sample.cov[[i]]
-      NACOV[[i]] <- fit_cov[[i]]@Optim$SE$ACOV * fit_cov[[i]]@dataList$nobs
-      ACOV[[i]] <- fit_cov[[i]]@Optim$SE$ACOV
-      ACOV_means[[i]] <- fit_means[[i]]@Optim$SE$ACOV
-      WLS.V[[i]] <- diag(ACOV[[i]])
+      VCOV_cov[[i]] <- fit_cov[[i]]@Optim$SE$VCOV
+      NVCOV[[i]] <- VCOV_cov[[i]]*fit_cov[[i]]@dataList$nobs
+
+      VCOV_means[[i]] <- fit_means[[i]]@Optim$SE$VCOV
+      NVCOV_means[[i]] <-
+        VCOV_means[[i]]*fit_means[[i]]@dataList$nobs
+
+      WLS.V[[i]] <- diag(1/diag(NVCOV[[i]]))
 
       idx_taus <- startsWith(names(fit_cov[[i]]@transformed_pars), "taus")
       thresholds[[i]] <- fit_cov[[i]]@transformed_pars[idx_taus]
@@ -589,7 +629,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                      NACOV = if(sample_stats_only) {
                        NULL
                      } else {
-                       unwrap_lcfa_group_input(NACOV, ngroups)
+                       unwrap_lcfa_group_input(NVCOV, ngroups)
                      },
                      WLS.V = if(sample_stats_only) {
                        NULL
@@ -657,7 +697,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                    positive = positive,
                    estimator = estimator,
                    cor = cor,
-                   acov = acov,
+                   VCOV_type = VCOV_type,
                    group = group,
                    group_label = group_label,
                    item_label = item_label,
@@ -668,9 +708,10 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                    sample.cov = sample.cov,
                    sample.cov.input = sample.cov_input,
                    sample.mean = sample.mean_list,
-                   NACOV = NACOV,
-                   ACOV = ACOV,
-                   ACOV_means = ACOV_means,
+                   NVCOV = NVCOV,
+                   VCOV = VCOV_cov,
+                   NVCOV_means = NVCOV_means,
+                   VCOV_means = VCOV_means,
                    WLS.V = WLS.V,
                    thresholds = thresholds,
                    fit_means = fit_means,
@@ -1254,7 +1295,7 @@ extract_lcfa_group_data <- function(data, group, group_label,
 }
 
 estimate_lcfa_sample_statistics <- function(data, model, cor,
-                                            std.ov, acov, likelihood,
+                                            std.ov, VCOV, likelihood,
                                             missing, control, ...) {
 
   #### Means ####
@@ -1270,7 +1311,7 @@ estimate_lcfa_sample_statistics <- function(data, model, cor,
 
     fit_cov <- lpearson(data = data,
                         std.ov = std.ov,
-                        acov = acov,
+                        VCOV = VCOV,
                         likelihood = likelihood,
                         missing = missing,
                         control = control,
@@ -1300,7 +1341,7 @@ estimate_lcfa_sample_statistics <- function(data, model, cor,
         fit_cov@extra[[j]] <- lpearson(data = patterns[[j]]$data,
                                        model = model,
                                        std.ov = std.ov,
-                                       acov = acov,
+                                       VCOV = VCOV,
                                        likelihood = likelihood,
                                        missing = "pairwise.complete.obs",
                                        do.fit = TRUE,
@@ -1416,8 +1457,10 @@ create_lcfa_data_param <- function(dataList, control) {
   means_params_labels <- vector("list", length = ngroups)
   cov_params <- vector("list", length = ngroups)
   cov_params_labels <- vector("list", length = ngroups)
-  acov_means <- vector("list", length = ngroups)
-  acov_cov <- vector("list", length = ngroups)
+  VCOV_means <- vector("list", length = ngroups)
+  VCOV_cov <- vector("list", length = ngroups)
+  NVCOV_means <- vector("list", length = ngroups)
+  NVCOV_cov <- vector("list", length = ngroups)
   nobs_ij <- vector("list", length = ngroups)
 
   if(isTRUE(dataList$sample_stats_only)) {
@@ -1454,9 +1497,13 @@ create_lcfa_data_param <- function(dataList, control) {
                dimnames = list(items, "intrcpt"))
 
       mean_labels <- c(means_struct[[means_name]])
-      acov_means[[i]] <- list(dataList$ACOV_means[[i]])
-      rownames(acov_means[[i]][[1L]]) <-
-        colnames(acov_means[[i]][[1L]]) <- mean_labels
+      VCOV_means[[i]] <- list(dataList$VCOV_means[[i]])
+      NVCOV_means[[i]] <- list(dataList$NVCOV_means[[i]])
+
+      rownames(VCOV_means[[i]][[1L]]) <-
+        colnames(VCOV_means[[i]][[1L]]) <- mean_labels
+      rownames(NVCOV_means[[i]][[1L]]) <-
+        colnames(NVCOV_means[[i]][[1L]]) <- mean_labels
 
       #### Covariance matrix ####
 
@@ -1479,9 +1526,13 @@ create_lcfa_data_param <- function(dataList, control) {
       S_labels <- c(cov_struct[[S_name]][lower.tri(cov_struct[[S_name]],
                                                    diag = !control$std.ov)])
 
-      acov_cov[[i]] <- list(dataList$ACOV[[i]])
-      rownames(acov_cov[[i]][[1L]]) <-
-        colnames(acov_cov[[i]][[1L]]) <- S_labels
+      VCOV_cov[[i]] <- list(dataList$VCOV[[i]])
+      NVCOV_cov[[i]] <- list(dataList$NVCOV[[i]])
+
+      rownames(VCOV_cov[[i]][[1L]]) <-
+        colnames(VCOV_cov[[i]][[1L]]) <- S_labels
+      rownames(NVCOV_cov[[i]][[1L]]) <-
+        colnames(NVCOV_cov[[i]][[1L]]) <- S_labels
 
       nobs_ij[[i]] <- dataList$nobs[[i]]
 
@@ -1504,8 +1555,14 @@ create_lcfa_data_param <- function(dataList, control) {
           unlist(lapply(dataList$fit_means[[i]]@extra,
                         FUN = \(x) x@modelInfo$trans),
                  recursive = FALSE)
-        acov_means[[i]] <- lapply(dataList$fit_means[[i]]@extra,
-                                  FUN = \(x) x@Optim$SE$ACOV)
+        VCOV_means[[i]] <- lapply(dataList$fit_means[[i]]@extra,
+                                  FUN = \(x) x@Optim$SE$VCOV)
+        NVCOV_means[[i]] <- Map(
+          FUN = \(V, n) V*n,
+          VCOV_means[[i]],
+          lapply(dataList$fit_means[[i]]@extra,
+                 FUN = \(x) x@dataList$nobs)
+        )
 
         cov_params[[i]] <- unlist(lapply(dataList$fit_cov[[i]]@extra,
                                          FUN = \(x) x@parameters),
@@ -1514,8 +1571,14 @@ create_lcfa_data_param <- function(dataList, control) {
           unlist(lapply(dataList$fit_cov[[i]]@extra,
                         FUN = \(x) x@modelInfo$trans),
                  recursive = FALSE)
-        acov_cov[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
-                                FUN = \(x) x@Optim$SE$ACOV)
+        VCOV_cov[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
+                                FUN = \(x) x@Optim$SE$VCOV)
+        NVCOV_cov[[i]] <- Map(
+          FUN = \(V, n) V*n,
+          VCOV_cov[[i]],
+          lapply(dataList$fit_cov[[i]]@extra,
+                 FUN = \(x) x@dataList$nobs)
+        )
         nobs_ij[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
                                FUN = \(x) x@dataList$nobs)
 
@@ -1523,11 +1586,17 @@ create_lcfa_data_param <- function(dataList, control) {
 
         means_params[[i]] <- dataList$fit_means[[i]]@parameters
         means_params_labels[[i]] <- dataList$fit_means[[i]]@modelInfo$trans
-        acov_means[[i]] <- list(dataList$fit_means[[i]]@Optim$SE$ACOV)
+        VCOV_means[[i]] <- list(dataList$fit_means[[i]]@Optim$SE$VCOV)
+        NVCOV_means[[i]] <- list(
+          VCOV_means[[i]][[1L]]*dataList$fit_means[[i]]@dataList$nobs
+        )
 
         cov_params[[i]] <- dataList$fit_cov[[i]]@parameters
         cov_params_labels[[i]] <- dataList$fit_cov[[i]]@modelInfo$trans
-        acov_cov[[i]] <- list(dataList$fit_cov[[i]]@Optim$SE$ACOV)
+        VCOV_cov[[i]] <- list(dataList$fit_cov[[i]]@Optim$SE$VCOV)
+        NVCOV_cov[[i]] <- list(
+          VCOV_cov[[i]][[1L]]*dataList$fit_cov[[i]]@dataList$nobs
+        )
         nobs_ij[[i]] <- dataList$fit_cov[[i]]@dataList$nobs
 
       }
@@ -1561,8 +1630,10 @@ create_lcfa_data_param <- function(dataList, control) {
                  means_params_labels = means_params_labels,
                  cov_params = cov_params,
                  cov_params_labels = cov_params_labels,
-                 acov_means = acov_means,
-                 acov_cov = acov_cov,
+                 VCOV_means = VCOV_means,
+                 VCOV_cov = VCOV_cov,
+                 NVCOV_means = NVCOV_means,
+                 NVCOV_cov = NVCOV_cov,
                  nobs_ij = nobs_ij)
 
   return(result)
@@ -2141,10 +2212,10 @@ estimators_lcfa <- function(dataList, data_param, trans, control) {
 
       } else {
 
-        idx <- startsWith(rownames(acov_cov[[i]][[j]]), "S")
+        idx <- startsWith(rownames(NVCOV_cov[[i]][[j]]), "S")
         W_cov <- matrix(NA_real_, nrow = p, ncol = p)
         W_cov[lower.tri(W_cov, diag = !control$std.ov)] <-
-          diag(acov_cov[[i]][[j]][idx, idx, drop = FALSE])
+          diag(NVCOV_cov[[i]][[j]][idx, idx, drop = FALSE])
         W_cov[upper.tri(W_cov)] <- t(W_cov)[upper.tri(W_cov)]
         W_cov <- 1/W_cov
 
@@ -2152,7 +2223,7 @@ estimators_lcfa <- function(dataList, data_param, trans, control) {
 
       }
 
-      w_means <- diag(acov_means[[i]][[j]])
+      w_means <- diag(NVCOV_means[[i]][[j]])
 
       model_parameters <- c(trans[[model_group[i]]][pick, pick])
       sample_covariance <- c(trans[[S_group_ij]])

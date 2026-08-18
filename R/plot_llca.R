@@ -148,6 +148,8 @@ plot.getfit.llcalist <- function(x, indices = NULL,
                                   base_size = 12, colors = NULL, pch = 19,
                                   lwd = 2, ...) {
 
+  x <- do.call(rbind, x)
+
   if(!is.matrix(x) && !is.data.frame(x)) {
     stop("x must be a matrix or data.frame containing model-fit indices")
   }

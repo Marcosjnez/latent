@@ -2,12 +2,17 @@
 % Please edit documentation in R/information_latent.R
 \name{information.latent}
 \alias{information.latent}
-\title{Hessian and Variance-Covariance Matrix matrix for Latent Models using the
-Information method}
+\title{Information Variance-Covariance Matrix for Latent Models}
 \usage{
 \method{information}{latent}(fit)
 }
+\arguments{
+\item{fit}{A fitted object inheriting from class \code{"latent"}.}
+}
+\value{
+A list containing the Hessian, variance-covariance matrix, and
+  standard errors of the freely estimated parameters.
+}
 \description{
-Hessian and Variance-Covariance Matrix matrix for Latent Models using the
-Information method
+Information Variance-Covariance Matrix for Latent Models
 }

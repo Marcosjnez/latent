@@ -62,8 +62,11 @@ labels. Names should match internal parameter blocks, for example
 Gaussian blocks. Character strings containing residual-dependency syntax
 such as \code{"y1 ~~ y2"} or \code{"u1 ~~ u2 ~~ u3"} are also used to
 identify residual covariances or residual associations. If an object of
-class \code{"llca"} is supplied, its measurement parameters are reused
-while the class-membership regression coefficients are re-estimated.}
+class \code{"llca"} is supplied, its model parameters are reused while the
+class-membership regression coefficients are re-estimated. If the supplied
+object also inherits from \code{"multistage"}, previous \code{"llca"}
+objects stored in its \code{extra} slot are traversed recursively so that
+parameters fixed in earlier stages are retained.}
 
 \item{weights}{Optional numeric vector of observation weights, with one value
 per row of \code{data}.}
@@ -139,12 +142,11 @@ of class \code{"llca"} with the following slots:
 }
 
 If \code{adjustment = "bk"} or \code{adjustment = "ml"}, the function returns
-a list with two elements:
-\describe{
-  \item{\code{measurement}}{The measurement-model fit from the first step.}
-  \item{\code{structural}}{The structural-model fit with covariates and/or
-  distal outcomes.}
-}
+an S4 object of class \code{"multistage_llca"}, which inherits from both
+\code{"multistage"} and \code{"llca"}. The final-stage model is stored in the
+ordinary slots and the fitted model from the preceding stage is stored in the
+\code{extra} slot. This allows uncertainty from earlier estimation stages to
+be propagated recursively by the multistage covariance methods.
 
 If \code{nclasses} contains several values, a list of fitted objects is
 returned with class \code{"llcalist"}.

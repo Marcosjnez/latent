@@ -50,8 +50,9 @@ structures are imposed through the corresponding manifold parameterization.}
 
 \item{std.ov}{Logical. Standardize observed variables.}
 
-\item{acov}{Method used to estimate the asymptotic covariance matrix of the
-sample statistics.}
+\item{acov}{Character string selecting the variance-covariance estimator
+for the sample statistics. Available options are \code{"standard"} and
+\code{"robust"}.}
 
 \item{meanstructure}{Logical. Estimate the observed-variable mean structure.}
 

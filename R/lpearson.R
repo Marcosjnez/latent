@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/08/2026
+# Modification date: 17/08/2026
 #'
 #' Pearson Covariance or Correlation Matrix
 #'
@@ -9,7 +9,7 @@
 #'
 #' @usage
 #' lpearson(data, model = NULL, std.ov = FALSE,
-#'          acov = "standard", likelihood = "normal",
+#'          VCOV = "standard", likelihood = "normal",
 #'          missing = "pairwise.complete.obs", do.fit = TRUE,
 #'          message = FALSE, control = NULL, ...)
 #'
@@ -18,7 +18,7 @@
 #' @param std.ov Logical. If \code{TRUE}, the observed variables are standardized
 #'   before the sample matrix is returned, so the off-diagonal elements represent
 #'   correlations rather than covariances.
-#' @param acov Character string selecting the asymptotic covariance estimator.
+#' @param VCOV Character string selecting the variance-covariance estimator.
 #'   Available options are \code{"standard"} and \code{"robust"}.
 #' @param likelihood Character string controlling the covariance denominator.
 #'   Use \code{"normal"} for the maximum-likelihood denominator \eqn{N} and
@@ -39,12 +39,12 @@
 #' is standardized before being stored in the fitted object.
 #'
 #' Standard asymptotic covariance matrices are computed under multivariate
-#' normality. With \code{acov = "robust"}, fourth-moment information from the
+#' normality. With \code{VCOV = "robust"}, fourth-moment information from the
 #' observed data is used instead.
 #'
 #' @return An S4 object of class \code{"latent"}. The object contains the
 #'   processed data in \code{dataList}, the parameter and optimization structures
-#'   in \code{modelInfo}, the direct estimation output and asymptotic covariance
+#'   in \code{modelInfo}, the direct estimation output and variance-covariance
 #'   information in \code{Optim}, and the estimated parameter structures in
 #'   \code{parameters} and \code{transformed_pars}.
 #'
@@ -59,7 +59,7 @@
 lpearson <- function(data,
                      model = NULL,
                      std.ov = FALSE,
-                     acov = "standard",
+                     VCOV = "standard",
                      likelihood = "normal",
                      missing = "pairwise.complete.obs",
                      do.fit = TRUE,
@@ -104,7 +104,7 @@ lpearson <- function(data,
     stop("message must be TRUE or FALSE")
   }
 
-  acov <- match.arg(tolower(acov), c("standard", "robust"))
+  VCOV <- match.arg(tolower(VCOV), c("standard", "robust"))
   likelihood <- match.arg(tolower(likelihood), c("normal", "wishart"))
 
   missing <- tolower(missing)
@@ -135,7 +135,7 @@ lpearson <- function(data,
   #### Check control parameters ####
 
   control$std.ov <- std.ov
-  control$acov <- acov
+  control$VCOV <- VCOV
   control$likelihood <- likelihood
   control$missing <- missing
   control <- lpearson_control(control)
@@ -236,7 +236,7 @@ create_lpearson_dataList <- function(data, control) {
                  npatterns = nrow(data),
                  item_names = colnames(data),
                  S = sample_stats$S,
-                 VCOV = sample_stats$VCOV,
+                 VCOV_type = sample_stats$VCOV_type,
                  likelihood = sample_stats$likelihood)
 
   return(result)
@@ -461,13 +461,13 @@ sample_lpearson <- function(data, control) {
   if(nobs < 2L) {
 
     S <- t(as.matrix(data)) %*% as.matrix(data)
-    acov <- "standard"
+    VCOV_type <- "standard"
     likelihood <- "wishart"
 
   } else {
 
     S <- stats::cov(data, use = control$missing)
-    acov <- control$acov
+    VCOV_type <- control$VCOV
     likelihood <- control$likelihood
 
   }
@@ -495,7 +495,7 @@ sample_lpearson <- function(data, control) {
   #### Result ####
 
   result <- list(S = S,
-                 VCOV = VCOV,
+                 VCOV_type = VCOV_type,
                  likelihood = likelihood)
 
   return(result)
@@ -659,15 +659,21 @@ fit_lpearson <- function(dataList, modelInfo) {
 
 compute_se_lpearson <- function(dataList, modelInfo, Optim, control) {
 
-  #### Asymptotic covariance ####
+  #### Variance-covariance matrix ####
 
-  if(dataList$VCOV == "standard") {
+  if(dataList$nobs < 2L) {
+
+    VCOV <- matrix(0,
+                   nrow = modelInfo$nparam,
+                   ncol = modelInfo$nparam)
+
+  } else if(dataList$VCOV_type == "standard") {
 
     VCOV <- asymptotic_normal(dataList$S,
                               cov = !control$std.ov,
                               diag = FALSE)/dataList$nobs
 
-  } else if(dataList$VCOV == "robust") {
+  } else if(dataList$VCOV_type == "robust") {
 
     VCOV <- asymptotic_general(as.matrix(dataList$data),
                                cov = !control$std.ov,
@@ -675,13 +681,13 @@ compute_se_lpearson <- function(dataList, modelInfo, Optim, control) {
 
   } else {
 
-    stop("Unknown acov method")
+    stop("Unknown VCOV method")
 
   }
 
   if(nrow(VCOV) != length(modelInfo$parameters_labels) ||
      ncol(VCOV) != length(modelInfo$parameters_labels)) {
-    stop("The asymptotic covariance matrix does not match the number of free Pearson parameters")
+    stop("The variance-covariance matrix does not match the number of free Pearson parameters")
   }
 
   rownames(VCOV) <- colnames(VCOV) <- modelInfo$parameters_labels
@@ -691,7 +697,7 @@ compute_se_lpearson <- function(dataList, modelInfo, Optim, control) {
 
   #### Result ####
 
-  result <- list(vcov = VCOV,
+  result <- list(VCOV = VCOV,
                  se = se)
 
   return(result)

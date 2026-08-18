@@ -2,83 +2,71 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 17/08/2026
 #'
-#' Robust Variance-Covariance Matrix
+#' Variance-Covariance Matrix for Confirmatory Factor Models
+#'
+#' Compute the covariance matrix of CFA parameters by propagating the sampling
+#' covariance matrix of the means, covariances, correlations, and thresholds
+#' used as sample statistics.
+#'
+#' @param fit A fitted object of class \code{"lcfa"}.
+#'
+#' @return A list containing the Hessian, cross-derivative matrix, sandwich
+#'   middle matrix, parameter variance-covariance matrix, and standard errors.
 #'
 #' @keywords internal
 robust.lcfa <- function(fit) {
 
+  result <- vcov_lcfa(fit)
+
+  #### Result ####
+
+  return(result)
+
+}
+
+vcov_lcfa <- function(fit) {
+
   dataList <- fit@dataList
   modelInfo <- fit@modelInfo
   Optim <- fit@Optim
-
-  #### Compute the Hessian ####
-
-  VCOV_fit <- information.latent(fit)
-  H <- VCOV_fit$H
-  Hinv <- VCOV_fit$VCOV
-
-  #### Asymptotic covariance of the sample statistics ####
-
   data_param <- dataList$data_param
 
-  scale_acov_lcfa <- function(acov, nobs, object_name) {
+  #### Hessian of the fitted CFA model ####
 
-    if(!is.list(acov)) {
-      acov <- list(acov)
-    }
+  H <- hessian(fit)
+  H <- (H+t(H))/2
 
-    nobs <- unlist(nobs, use.names = FALSE)
+  eigenvalues <- eigen(H, symmetric = TRUE, only.values = TRUE)$values
+  tolerance <- sqrt(.Machine$double.eps)*max(1, max(abs(eigenvalues)))
 
-    if(length(nobs) == 1L && length(acov) > 1L) {
-      nobs <- rep(nobs, length(acov))
-    }
-
-    if(length(nobs) != length(acov)) {
-      stop("The number of ", object_name,
-           " ACOV matrices does not match the number of sample sizes.")
-    }
-
-    result <- lapply(seq_along(acov), FUN = \(j) {
-      acov[[j]]/nobs[j]
-    })
-
-    #### Result ####
-
-    return(result)
-
+  if(any(eigenvalues <= tolerance)) {
+    warning("The CFA Hessian is not positive definite; an approximate inverse was used.")
   }
 
-  ACOV_covij <- vector("list", length = dataList$ngroups)
-  ACOV_meansij <- vector("list", length = dataList$ngroups)
+  Hinv <- approx_Hinv(H)
 
-  for(i in seq_len(dataList$ngroups)) {
-
-    ACOV_covij[[i]] <- scale_acov_lcfa(
-      acov = data_param$acov_cov[[i]],
-      nobs = data_param$nobs_ij[[i]],
-      object_name = "covariance"
-    )
-
-    ACOV_meansij[[i]] <- scale_acov_lcfa(
-      acov = data_param$acov_means[[i]],
-      nobs = data_param$nobs_ij[[i]],
-      object_name = "mean"
-    )
-
+  if(any(!is.finite(Hinv))) {
+    stop("The CFA Hessian could not be inverted.")
   }
+
+  Hinv <- (Hinv+t(Hinv))/2
+  rownames(Hinv) <- colnames(Hinv) <- modelInfo$parameters_labels
+
+  #### Variance-covariance matrix of the sample statistics ####
+
+  VCOV_cov <- data_param$VCOV_cov
+  VCOV_means <- data_param$VCOV_means
 
   if(modelInfo$control_optimizer$meanstructure) {
-    ACOV <- block_diag(c(ACOV_meansij, ACOV_covij))
-    # This assumes that means and covariances are estimated independently
+    sample_VCOV <- block_diag(c(VCOV_means, VCOV_cov))
+    # Means and covariance statistics are currently treated as independent
+    # blocks. Their within-block covariances are retained.
   } else {
-    ACOV <- block_diag(ACOV_covij)
+    sample_VCOV <- block_diag(VCOV_cov)
   }
 
   #### Unrestricted sample-statistic model ####
 
-  # Recreate only the model and optimization structures. The sample means,
-  # covariances, thresholds, and their ACOV matrices already stored in dataList
-  # are reused, so this does not recompute the correlations or means.
   control_free <- modelInfo$control_optimizer
   control_free$free_taus <- TRUE
   control_free$free_S <- TRUE
@@ -142,26 +130,37 @@ robust.lcfa <- function(fit) {
 
   C <- C[, modelInfo$parameters_labels, drop = FALSE]
 
-  common <- intersect(rownames(ACOV), rownames(C))
+  nuisance_labels <- rownames(C)
+  missing_VCOV <- setdiff(nuisance_labels, rownames(sample_VCOV))
 
-  if(length(common) == 0L) {
-    stop("The sample-statistic covariance matrix and cross-Hessian have no matching parameters.")
+  if(length(missing_VCOV) > 0L) {
+    stop("The sample-statistic variance-covariance matrix is missing parameter(s): ",
+         paste(missing_VCOV, collapse = ", "))
   }
 
-  C <- C[common, , drop = FALSE]
-  ACOV <- ACOV[common, common, drop = FALSE]
+  sample_VCOV <- sample_VCOV[nuisance_labels,
+                              nuisance_labels, drop = FALSE]
 
-  B <- t(C) %*% ACOV %*% C
+  B <- t(C) %*% sample_VCOV %*% C
   B <- (B+t(B))/2
 
   #### Sandwich covariance matrix ####
 
   VCOV <- Hinv %*% B %*% Hinv
   VCOV <- (VCOV+t(VCOV))/2
+  rownames(VCOV) <- colnames(VCOV) <- modelInfo$parameters_labels
+
+  se <- sqrt(diag(VCOV))
+  names(se) <- modelInfo$parameters_labels
 
   #### Result ####
 
-  result <- list(H = H, C = C, VCOV = VCOV, se = sqrt(diag(VCOV)))
+  result <- list(H = H,
+                 C = C,
+                 B = B,
+                 sample_VCOV = sample_VCOV,
+                 VCOV = VCOV,
+                 se = se)
 
   return(result)
 

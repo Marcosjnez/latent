@@ -6,6 +6,19 @@
 \usage{
 \method{vcov}{latent}(fit, v, parameters = NULL)
 }
+\arguments{
+\item{fit}{A fitted object inheriting from class \code{"latent"}.}
+
+\item{v}{Variance-covariance matrix of the freely estimated, untransformed
+parameters.}
+
+\item{parameters}{Optional parameter specification identifying the parameters
+or transformed parameters to return.}
+}
+\value{
+A list containing the selected variance-covariance matrix, standard
+  errors, and transformation Jacobian.
+}
 \description{
 Variance-Covariance Matrix for Latent Objects
 }

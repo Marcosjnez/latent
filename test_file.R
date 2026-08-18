@@ -22,10 +22,10 @@ set.seed(2026)
 gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 set.seed(20216)
 fit <- lca(data = gss82,
-           nclasses = 3L,
+           nclasses = 1:3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
-           outcomes = "MARITAL",
+           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           # outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
            # model = list("UNDERSTA ~~ COOPERAT

@@ -39,8 +39,8 @@ diagonal of the resulting matrix is fixed to one and only the off-diagonal
 associations are treated as free parameters.
 
 Standard errors are obtained from the pairwise asymptotic standard errors
-returned by the Yule association routine. The corresponding asymptotic
-covariance matrix is stored in \code{Optim$SE$ACOV}.
+returned by the Yule association routine. The corresponding sampling
+variance-covariance matrix is stored in \code{Optim$SE$VCOV}.
 }
 \examples{
 \dontrun{

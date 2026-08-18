@@ -2,11 +2,20 @@
 % Please edit documentation in R/robust_lcfa.R
 \name{robust.lcfa}
 \alias{robust.lcfa}
-\title{Robust Variance-Covariance Matrix}
+\title{Variance-Covariance Matrix for Confirmatory Factor Models}
 \usage{
 \method{robust}{lcfa}(fit)
 }
+\arguments{
+\item{fit}{A fitted object of class \code{"lcfa"}.}
+}
+\value{
+A list containing the Hessian, cross-derivative matrix, sandwich
+  middle matrix, parameter variance-covariance matrix, and standard errors.
+}
 \description{
-Robust Variance-Covariance Matrix
+Compute the covariance matrix of CFA parameters by propagating the sampling
+covariance matrix of the means, covariances, correlations, and thresholds
+used as sample statistics.
 }
 \keyword{internal}
