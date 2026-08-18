@@ -22,6 +22,7 @@
 #' A symmetric numeric matrix representing the robust information matrix.
 #'
 #' @keywords internal
+#' @export
 robust.llca <- function(fit) {
 
   if(fit@dataList$nobs <= 1L) {

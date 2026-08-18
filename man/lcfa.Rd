@@ -10,7 +10,7 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
      positive = FALSE, penalties = FALSE,
      missing = "pairwise.complete.obs",
      std.lv = FALSE, std.ov = FALSE,
-     acov = "standard", meanstructure = TRUE,
+     meanstructure = TRUE,
      parameterization = NULL,
      likelihood = NULL, se = TRUE,
      control = NULL, message = FALSE,
@@ -50,10 +50,6 @@ structures are imposed through the corresponding manifold parameterization.}
 
 \item{std.ov}{Logical. Standardize observed variables.}
 
-\item{acov}{Character string selecting the variance-covariance estimator
-for the sample statistics. Available options are \code{"standard"} and
-\code{"robust"}.}
-
 \item{meanstructure}{Logical. Estimate the observed-variable mean structure.}
 
 \item{parameterization}{Optional parameterization specification.}
@@ -61,21 +57,26 @@ for the sample statistics. Available options are \code{"standard"} and
 \item{likelihood}{Character string controlling the normal/Wishart likelihood
 convention.}
 
-\item{se}{Logical. Compute standard errors before returning the fitted object.}
+\item{se}{Logical or character. \code{TRUE}, \code{"standard"}, and
+\code{"information"} use standard sampling covariance matrices for the
+sample statistics. \code{"robust"} requests robust sampling covariance
+matrices where implemented. \code{FALSE} skips computation of the final
+CFA standard errors. The CFA covariance itself is always propagated by
+\code{se.multistep()} rather than obtained from an inverse CFA Hessian.}
 
 \item{control}{Optional list of optimization controls.}
 
 \item{message}{Logical. Print progress messages.}
 
 \item{do.fit}{Logical. If \code{FALSE}, return the prepared but unfitted
-\code{"lcfa"} object.}
+\code{"multistep_lcfa"} object.}
 
 \item{...}{Additional arguments passed to lavaan and the sample-statistic
 estimators where applicable.}
 }
 \value{
-An S4 object of class \code{"lcfa"}, which inherits from
-  \code{"latent"}.
+An S4 object of class \code{"multistep_lcfa"}, which inherits
+  from \code{"multistep"}, \code{"lcfa"}, and \code{"latent"}.
 }
 \description{
 Fit confirmatory factor analysis models using lavaan model syntax and the

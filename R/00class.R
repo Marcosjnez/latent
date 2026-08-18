@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/08/2026
+# Modification date: 18/08/2026
 #'
 #' Base Class for Fitted Latent Models
 #'
@@ -19,7 +19,8 @@
 #' @slot Optim List containing raw optimization results.
 #' @slot parameters List containing fitted model parameters.
 #' @slot transformed_pars List containing transformed parameter estimates.
-#' @slot extra List reserved for additional model-specific information.
+#' @slot extra List containing fitted models from previous estimation steps or
+#'   other model-specific information.
 #'
 #' @seealso
 #' \code{\link{hessian}}, \code{\link{jacobian}},
@@ -47,6 +48,8 @@ setClass("llca",
 setClass("lcfa",
          contains = "latent")
 
+# A multistage estimator retains conditional sampling variability in every new
+# estimation stage, as in structural-after-measurement LCA.
 setClass("multistage",
          contains = "latent")
 
@@ -55,3 +58,12 @@ setClass("multistage_llca",
 
 setClass("multistage_lcfa",
          contains = c("multistage", "lcfa"))
+
+# A multistep estimator is a deterministic estimating step conditional on the
+# outputs of previous fitted models. Its sampling covariance is obtained only
+# by propagating uncertainty from those previous steps.
+setClass("multistep",
+         contains = "latent")
+
+setClass("multistep_lcfa",
+         contains = c("multistep", "lcfa"))

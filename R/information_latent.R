@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 17/08/2026
+# Modification date: 18/08/2026
 #'
 #' Information Variance-Covariance Matrix for Latent Models
 #'
@@ -12,6 +12,16 @@
 #' @method information latent
 #' @export
 information.latent <- function(fit) {
+
+  if(inherits(fit, "multistep")) {
+
+    result <- information.multistep(fit)
+
+    #### Result ####
+
+    return(result)
+
+  }
 
   labels <- fit@modelInfo$parameters_labels
 

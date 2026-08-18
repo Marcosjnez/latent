@@ -14,7 +14,7 @@
 #'      positive = FALSE, penalties = FALSE,
 #'      missing = "pairwise.complete.obs",
 #'      std.lv = FALSE, std.ov = FALSE,
-#'      acov = "standard", meanstructure = TRUE,
+#'      meanstructure = TRUE,
 #'      parameterization = NULL,
 #'      likelihood = NULL, se = TRUE,
 #'      control = NULL, message = FALSE,
@@ -40,23 +40,25 @@
 #' @param missing Missing-data method.
 #' @param std.lv Logical. Standardize latent variables.
 #' @param std.ov Logical. Standardize observed variables.
-#' @param acov Character string selecting the variance-covariance estimator
-#'   for the sample statistics. Available options are \code{"standard"} and
-#'   \code{"robust"}.
 #' @param meanstructure Logical. Estimate the observed-variable mean structure.
 #' @param parameterization Optional parameterization specification.
 #' @param likelihood Character string controlling the normal/Wishart likelihood
 #'   convention.
-#' @param se Logical. Compute standard errors before returning the fitted object.
+#' @param se Logical or character. \code{TRUE}, \code{"standard"}, and
+#'   \code{"information"} use standard sampling covariance matrices for the
+#'   sample statistics. \code{"robust"} requests robust sampling covariance
+#'   matrices where implemented. \code{FALSE} skips computation of the final
+#'   CFA standard errors. The CFA covariance itself is always propagated by
+#'   \code{se.multistep()} rather than obtained from an inverse CFA Hessian.
 #' @param control Optional list of optimization controls.
 #' @param message Logical. Print progress messages.
 #' @param do.fit Logical. If \code{FALSE}, return the prepared but unfitted
-#'   \code{"lcfa"} object.
+#'   \code{"multistep_lcfa"} object.
 #' @param ... Additional arguments passed to lavaan and the sample-statistic
 #'   estimators where applicable.
 #'
-#' @return An S4 object of class \code{"lcfa"}, which inherits from
-#'   \code{"latent"}.
+#' @return An S4 object of class \code{"multistep_lcfa"}, which inherits
+#'   from \code{"multistep"}, \code{"lcfa"}, and \code{"latent"}.
 #'
 #' @examples
 #' \dontrun{
@@ -82,7 +84,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                  positive = FALSE, penalties = FALSE,
                  missing = "pairwise.complete.obs",
                  std.lv = FALSE, std.ov = FALSE,
-                 acov = "standard", meanstructure = TRUE,
+                 meanstructure = TRUE,
                  parameterization = NULL,
                  likelihood = NULL, se = TRUE,
                  control = NULL, message = FALSE,
@@ -117,7 +119,10 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   estimator <- tolower(estimator)
   missing <- tolower(missing)
-  VCOV_type <- match.arg(tolower(acov), c("standard", "robust"))
+
+  se_control <- normalize_lcfa_se(se)
+  sample_se <- se_control$sample
+  compute_se <- se_control$compute
 
   if(isTRUE(ordered)) {
 
@@ -179,10 +184,18 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
       stop("ordered models require raw data")
     }
 
-    if(VCOV_type == "robust") {
-      stop("acov = 'robust' requires raw data")
+    if(sample_se == "robust") {
+      stop("se = 'robust' requires raw data")
     }
 
+  }
+
+  if(sample_se == "robust" &&
+     (meanstructure || cor != "pearson")) {
+    warning("Robust sampling covariance is currently implemented only for ",
+            "Pearson covariance/correlation statistics. Sample means, ",
+            "polychoric correlations, and Yule correlations use their ",
+            "standard covariance matrices.")
   }
 
   if(meanstructure) {
@@ -206,7 +219,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
   control$estimator <- estimator
   control$meanstructure <- meanstructure
   control$missing <- missing
-  control$VCOV <- VCOV_type
+  control$sample_se <- sample_se
   control <- lcfa_control(control)
 
   #### Create the dataList ####
@@ -225,7 +238,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                                    missing = missing,
                                    std.lv = std.lv,
                                    std.ov = std.ov,
-                                   VCOV = VCOV_type,
+                                   se = sample_se,
                                    message = message,
                                    likelihood = likelihood,
                                    meanstructure = meanstructure,
@@ -247,19 +260,22 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                                      full_model = full_model,
                                      control = control)
 
+  #### Previous sample-statistic models ####
+
+  previous_models <- previous_models_lcfa(dataList)
+
+  object_class <- if(length(previous_models) > 0L ||
+                     isTRUE(dataList$sample_stats_only)) {
+    "multistep_lcfa"
+  } else {
+    "lcfa"
+  }
+
   #### Fit the model ####
 
   if(!do.fit) {
 
-    previous_models <- c(dataList$fit_means,
-                         dataList$fit_cov)
-    previous_models <- previous_models[
-      vapply(previous_models,
-             FUN = \(x) inherits(x, "latent"),
-             FUN.VALUE = logical(1L))
-    ]
-
-    result <- new("lcfa",
+    result <- new(object_class,
                   version          = as.character(packageVersion("latent")),
                   call             = mc,
                   timing           = numeric(),
@@ -303,19 +319,9 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   parameters <- transformed_pars[names(modelInfo$param)]
 
-  #### Previous sample-statistic models ####
-
-  previous_models <- c(dataList$fit_means,
-                       dataList$fit_cov)
-  previous_models <- previous_models[
-    vapply(previous_models,
-           FUN = \(x) inherits(x, "latent"),
-           FUN.VALUE = logical(1L))
-  ]
-
   #### latent object ####
 
-  result <- new("lcfa",
+  result <- new(object_class,
                 version          = as.character(packageVersion("latent")),
                 call             = mc,
                 timing           = Optim$elapsed,
@@ -328,19 +334,20 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   #### Standard errors ####
 
-  if(isTRUE(se)) {
+  if(compute_se) {
 
     if(message) {
       print_lcfa_message("Computing standard errors")
     }
 
-    # parameters_se <- modelInfo$trans[names(modelInfo$param)]
-    parameters <- modelInfo$parameters_labels
-    type_se <- if(VCOV_type == "robust") "robust" else "information"
-
-    result@Optim$SE <- se(result,
-                          type = type_se,
-                          parameters = parameters)
+    # Store the covariance of the current freely estimated parameters. Calling
+    # se() later with another parameter specification propagates the same joint
+    # multistep covariance to any requested transformed parameters.
+    result@Optim$SE <- se.multistep(
+      fit = result,
+      parameters = modelInfo$parameters_labels
+    )
+    result@Optim$SE$sample_se <- sample_se
 
   }
 
@@ -359,14 +366,14 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                                  positive = FALSE, penalties = TRUE,
                                  missing = "pairwise.complete.obs",
                                  std.lv = TRUE, std.ov = FALSE,
-                                 VCOV = "standard", message = FALSE,
+                                 se = "standard", message = FALSE,
                                  likelihood = NULL, meanstructure = TRUE,
                                  args = NULL, control = NULL,
                                  ...) {
 
   cor <- tolower(cor)
   estimator <- tolower(estimator)
-  VCOV_type <- match.arg(tolower(VCOV), c("standard", "robust"))
+  se_type <- match.arg(tolower(se), c("standard", "robust"))
   missing <- tolower(missing)
 
   sample_stats_only <- is.null(data)
@@ -564,7 +571,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                                                       model = model,
                                                       cor = cor,
                                                       std.ov = std.ov,
-                                                      VCOV = VCOV_type,
+                                                      se = se_type,
                                                       likelihood = likelihood,
                                                       missing = missing,
                                                       control = control_i,
@@ -697,7 +704,9 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                    positive = positive,
                    estimator = estimator,
                    cor = cor,
-                   VCOV_type = VCOV_type,
+                   se_type = se_type,
+                   meanstructure = meanstructure,
+                   missing = missing,
                    group = group,
                    group_label = group_label,
                    item_label = item_label,
@@ -1295,7 +1304,7 @@ extract_lcfa_group_data <- function(data, group, group_label,
 }
 
 estimate_lcfa_sample_statistics <- function(data, model, cor,
-                                            std.ov, VCOV, likelihood,
+                                            std.ov, se, likelihood,
                                             missing, control, ...) {
 
   #### Means ####
@@ -1311,7 +1320,7 @@ estimate_lcfa_sample_statistics <- function(data, model, cor,
 
     fit_cov <- lpearson(data = data,
                         std.ov = std.ov,
-                        VCOV = VCOV,
+                        VCOV = if(se == "robust") "robust" else "standard",
                         likelihood = likelihood,
                         missing = missing,
                         control = control,
@@ -1341,7 +1350,7 @@ estimate_lcfa_sample_statistics <- function(data, model, cor,
         fit_cov@extra[[j]] <- lpearson(data = patterns[[j]]$data,
                                        model = model,
                                        std.ov = std.ov,
-                                       VCOV = VCOV,
+                                       VCOV = if(se == "robust") "robust" else "standard",
                                        likelihood = likelihood,
                                        missing = "pairwise.complete.obs",
                                        do.fit = TRUE,
@@ -1371,12 +1380,128 @@ estimate_lcfa_sample_statistics <- function(data, model, cor,
 
   }
 
+  #### Sampling covariance methods ####
+
+  fit_means@Optim$SE$type <- "standard"
+
+  if(cor == "pearson") {
+    fit_cov@Optim$SE$type <- se
+  } else {
+    fit_cov@Optim$SE$type <- "standard"
+  }
+
   #### Result ####
 
   result <- list(fit_means = fit_means,
                  fit_cov = fit_cov)
 
   return(result)
+
+}
+
+normalize_lcfa_se <- function(se) {
+
+  if(isTRUE(se)) {
+
+    result <- list(sample = "standard",
+                   compute = TRUE)
+
+  } else if(isFALSE(se)) {
+
+    result <- list(sample = "standard",
+                   compute = FALSE)
+
+  } else if(is.character(se) &&
+            length(se) == 1L &&
+            !is.na(se)) {
+
+    se <- match.arg(tolower(se),
+                    c("standard", "information", "robust"))
+
+    result <- list(
+      sample = if(se == "robust") "robust" else "standard",
+      compute = TRUE
+    )
+
+  } else {
+
+    stop("se must be TRUE, FALSE, 'standard', 'information', or 'robust'")
+
+  }
+
+  #### Result ####
+
+  return(result)
+
+}
+
+previous_models_lcfa <- function(dataList) {
+
+  models <- list()
+
+  append_model <- function(object) {
+
+    if(!inherits(object, "latent")) {
+      return(invisible(NULL))
+    }
+
+    if(inherits(object, "multistep")) {
+
+      models[[length(models)+1L]] <<- object
+      return(invisible(NULL))
+
+    }
+
+    children <- object@extra[
+      vapply(object@extra,
+             FUN = \(x) inherits(x, "latent"),
+             FUN.VALUE = logical(1L))
+    ]
+
+    if(length(children) > 0L) {
+
+      for(child in children) {
+        append_model(child)
+      }
+
+    } else {
+
+      models[[length(models)+1L]] <<- object
+
+    }
+
+    return(invisible(NULL))
+
+  }
+
+  if(isTRUE(dataList$meanstructure)) {
+    for(object in dataList$fit_means) {
+      append_model(object)
+    }
+  }
+
+  for(object in dataList$fit_cov) {
+    append_model(object)
+  }
+
+  unique_models <- list()
+
+  for(model in models) {
+
+    duplicated <- length(unique_models) > 0L &&
+      any(vapply(unique_models,
+                 FUN = \(x) identical(x, model),
+                 FUN.VALUE = logical(1L)))
+
+    if(!duplicated) {
+      unique_models[[length(unique_models)+1L]] <- model
+    }
+
+  }
+
+  #### Result ####
+
+  return(unique_models)
 
 }
 

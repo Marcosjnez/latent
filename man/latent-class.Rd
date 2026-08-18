@@ -30,7 +30,8 @@ estimators, manifolds, and optimizer controls.}
 
 \item{\code{transformed_pars}}{List containing transformed parameter estimates.}
 
-\item{\code{extra}}{List reserved for additional model-specific information.}
+\item{\code{extra}}{List containing fitted models from previous estimation steps or
+other model-specific information.}
 }}
 
 \seealso{

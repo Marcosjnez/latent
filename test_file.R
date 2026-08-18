@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 17/08/2026
+# Modification date: 19/08/2026
 
 #### Store a dataset ####
 
@@ -22,10 +22,10 @@ set.seed(2026)
 gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
 set.seed(20216)
 fit <- lca(data = gss82,
-           nclasses = 1:3L,
+           nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
-           # outcomes = "MARITAL",
+           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
            # model = list("UNDERSTA ~~ COOPERAT
@@ -266,7 +266,6 @@ std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
-acov <- "standard"
 
 fit <- lcfa(model = model,
             data = HolzingerSwineford1939,
@@ -274,14 +273,16 @@ fit <- lcfa(model = model,
             # sample.mean = means,
             # sample.nobs = 301,
             estimator = estimator,
-            acov = acov,
             std.ov = std.ov,
             std.lv = std.lv,
             meanstructure = meanstructure,
             likelihood = likelihood,
-            se = TRUE,
+            se = "standard",
             control = NULL,
             do.fit = TRUE)
+
+x <- se(fit, parameters = fit@modelInfo$trans[names(fit@modelInfo$param)])
+x$table
 
 # With lavaan:
 fit2 <- lavaan::cfa(model = model,
@@ -332,18 +333,16 @@ std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
-acov <- "standard"
 
 fit <- lcfa(HolzingerSwineford1939,
             model = model,
             group = "school",
             estimator = estimator,
-            acov = acov,
             std.ov = std.ov,
             std.lv = std.lv,
             meanstructure = meanstructure,
             likelihood = likelihood,
-            se = TRUE,
+            se = "standard",
             control = NULL,
             do.fit = TRUE)
 
@@ -388,14 +387,18 @@ std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
-acov <- "standard"
-fit <- lcfa(data = HolzingerSwineford1939, model = model,
-            estimator = estimator, ordered = FALSE,
+
+fit <- lcfa(data = HolzingerSwineford1939,
+            model = model,
+            estimator = estimator,
+            ordered = FALSE,
             positive = TRUE,
+            std.lv = std.lv,
+            std.ov = std.ov,
+            likelihood = likelihood,
             # penalties = TRUE,
             penalties = list(logdet = list(w = 0.001)),
-            std.lv = std.lv, std.ov = std.ov,
-            likelihood = likelihood,
+            se = "standard",
             do.fit = TRUE, control = NULL)
 
 latInspect(fit, "loglik") # loglik           -3732.196
@@ -439,15 +442,19 @@ std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
-acov <- "standard"
+
 fit <- lcfa(data = HolzingerSwineford1939,
-            model = model, group = "school",
-            estimator = estimator, ordered = FALSE,
-            std.ov = std.ov, std.lv = std.lv,
-            positive = TRUE, penalties = TRUE,
+            model = model,
+            group = "school",
+            estimator = estimator,
+            ordered = FALSE,
+            std.ov = std.ov,
+            std.lv = std.lv,
+            positive = TRUE,
+            penalties = TRUE,
             meanstructure = meanstructure,
             likelihood = likelihood,
-            acov = acov,
+            se = "standard",
             do.fit = TRUE, control = NULL)
 latInspect(fit, "loglik") # loglik           -3674.300
                           # penalized_loglik -3674.302
@@ -497,7 +504,7 @@ std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
-acov <- "standard"
+
 fit <- lcfa(data = mooc,
             model = model.EM,
             ordered = TRUE,
@@ -505,13 +512,12 @@ fit <- lcfa(data = mooc,
             std.ov = std.ov,
             std.lv = std.lv,
             meanstructure = meanstructure,
-            acov = acov,
-            se = TRUE,
+            se = "standard",
             control = NULL,
             do.fit = TRUE)
-latInspect(fit, "loss") # loss           0.3845136
-                        # penalized_loss 0.3845136
-                        # loss_base      6.4196570
+latInspect(fit, "loss") # loss           0.379735
+                        # penalized_loss 0.379735
+                        # loss_base      7.491586
                         # loss_sat       0.0000000
 fit@Optim$iterations
 fit@Optim$convergence
@@ -572,14 +578,17 @@ std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
-acov <- "standard"
-fit <- lcfa(model = model.EM, data = mooc,
-            ordered = "yule", estimator = estimator,
-            positive = FALSE, penalties = FALSE,
+
+fit <- lcfa(model = model.EM,
+            data = mooc,
+            ordered = "yule",
+            estimator = estimator,
+            positive = FALSE,
+            penalties = FALSE,
             std.ov = std.ov,
             std.lv = std.lv,
             meanstructure = meanstructure,
-            se = TRUE,
+            se = "standard",
             do.fit = TRUE,
             control = NULL)
 latInspect(fit, "loss") # loss           0.1159708
@@ -615,17 +624,18 @@ model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
              DEP =~ hexemdep62 + hexemdep182 + hexemdep134 + hexemdep158
              SEN =~ hexemsen44 + hexemsen164 + hexemsen20 + hexemsen68"
 
-fit <- lcfa(model = model.EM, data = mooc,
-            ordered = TRUE, estimator = "dwls",
+fit <- lcfa(model = model.EM,
+            data = mooc,
+            ordered = TRUE,
+            estimator = "dwls",
             group = "school",
-            do.fit = TRUE, control = NULL)
-fit@loglik # -45281.39
-fit@penalized_loglik # -45281.39
-fit@loss # 0.394728
-fit@Optim$iterations
-fit@Optim$convergence
-fit@timing
-fit@Optim$SE$se
+            se = "standard",
+            do.fit = TRUE,
+            control = NULL)
+latInspect(fit, "loss") # loss           0.7875589
+                        # penalized_loss 0.7875589
+                        # loss_base      14.9698079
+                        # loss_sat       0.0000000
 
 # With lavaan:
 fit2 <- lavaan::cfa(model = model.EM, data = mooc,
@@ -637,7 +647,6 @@ fit2 <- lavaan::cfa(model = model.EM, data = mooc,
                     parameterization = "theta")
 # Same loss value: OK
 fit2@Fit@fx*2
-fit@loss
 
 lavaan::inspect(fit2, what = "se")$lambda
 round(fit@Optim$SE$table_se$lambda.group1, 3)
@@ -675,7 +684,7 @@ fit <- lcfa(data_missing,
             # missing = "pairwise.complete.obs",
             missing = "fiml",
             std.ov = FALSE,
-            se = TRUE,
+            se = "standard",
             do.fit = TRUE,
             control = NULL)
 
