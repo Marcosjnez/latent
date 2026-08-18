@@ -12,7 +12,7 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
      positive = FALSE, penalties = FALSE,
      missing = "pairwise.complete.obs",
      std.lv = FALSE, std.ov = FALSE,
-     acov = "standard", meanstructure = TRUE,
+     meanstructure = TRUE,
      parameterization = NULL,
      likelihood = NULL, se = TRUE,
      control = NULL, message = FALSE,
@@ -80,11 +80,6 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
   Logical. Standardize observed variables.
 
-- acov:
-
-  Character string selecting the variance-covariance estimator for the
-  sample statistics. Available options are `"standard"` and `"robust"`.
-
 - meanstructure:
 
   Logical. Estimate the observed-variable mean structure.
@@ -99,7 +94,13 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 - se:
 
-  Logical. Compute standard errors before returning the fitted object.
+  Logical or character. `TRUE`, `"standard"`, and `"information"` use
+  standard sampling covariance matrices for the sample statistics.
+  `"robust"` requests robust sampling covariance matrices where
+  implemented. `FALSE` skips computation of the final CFA standard
+  errors. The CFA covariance itself is always propagated by
+  [`se.multistep()`](https://marcosjnez.github.io/latent/reference/se.multistep.md)
+  rather than obtained from an inverse CFA Hessian.
 
 - control:
 
@@ -111,7 +112,8 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 - do.fit:
 
-  Logical. If `FALSE`, return the prepared but unfitted `"lcfa"` object.
+  Logical. If `FALSE`, return the prepared but unfitted
+  `"multistep_lcfa"` object.
 
 - ...:
 
@@ -120,7 +122,8 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 ## Value
 
-An S4 object of class `"lcfa"`, which inherits from `"latent"`.
+An S4 object of class `"multistep_lcfa"`, which inherits from
+`"multistep"`, `"lcfa"`, and `"latent"`.
 
 ## Examples
 

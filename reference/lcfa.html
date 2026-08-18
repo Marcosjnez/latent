@@ -93,7 +93,7 @@ optimization infrastructure of <span class="pkg">latent</span>.</p>
 <span>     positive <span class="op">=</span> <span class="cn">FALSE</span>, penalties <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>     missing <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>,</span>
 <span>     std.lv <span class="op">=</span> <span class="cn">FALSE</span>, std.ov <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>     acov <span class="op">=</span> <span class="st">"standard"</span>, meanstructure <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>     meanstructure <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>     parameterization <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>     likelihood <span class="op">=</span> <span class="cn">NULL</span>, se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>     control <span class="op">=</span> <span class="cn">NULL</span>, message <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -163,12 +163,6 @@ structures are imposed through the corresponding manifold parameterization.</p><
 <dd><p>Logical. Standardize observed variables.</p></dd>
 
 
-<dt id="arg-acov">acov<a class="anchor" aria-label="anchor" href="#arg-acov"></a></dt>
-<dd><p>Character string selecting the variance-covariance estimator
-for the sample statistics. Available options are <code>"standard"</code> and
-<code>"robust"</code>.</p></dd>
-
-
 <dt id="arg-meanstructure">meanstructure<a class="anchor" aria-label="anchor" href="#arg-meanstructure"></a></dt>
 <dd><p>Logical. Estimate the observed-variable mean structure.</p></dd>
 
@@ -183,7 +177,12 @@ convention.</p></dd>
 
 
 <dt id="arg-se">se<a class="anchor" aria-label="anchor" href="#arg-se"></a></dt>
-<dd><p>Logical. Compute standard errors before returning the fitted object.</p></dd>
+<dd><p>Logical or character. <code>TRUE</code>, <code>"standard"</code>, and
+<code>"information"</code> use standard sampling covariance matrices for the
+sample statistics. <code>"robust"</code> requests robust sampling covariance
+matrices where implemented. <code>FALSE</code> skips computation of the final
+CFA standard errors. The CFA covariance itself is always propagated by
+<code><a href="se.multistep.html">se.multistep()</a></code> rather than obtained from an inverse CFA Hessian.</p></dd>
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
@@ -196,7 +195,7 @@ convention.</p></dd>
 
 <dt id="arg-do-fit">do.fit<a class="anchor" aria-label="anchor" href="#arg-do-fit"></a></dt>
 <dd><p>Logical. If <code>FALSE</code>, return the prepared but unfitted
-<code>"lcfa"</code> object.</p></dd>
+<code>"multistep_lcfa"</code> object.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -206,8 +205,8 @@ estimators where applicable.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An S4 object of class <code>"lcfa"</code>, which inherits from
-  <code>"latent"</code>.</p>
+    <p>An S4 object of class <code>"multistep_lcfa"</code>, which inherits
+  from <code>"multistep"</code>, <code>"lcfa"</code>, and <code>"latent"</code>.</p>
     </div>
 
     <div class="section level2">

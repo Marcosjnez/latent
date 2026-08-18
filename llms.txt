@@ -97,9 +97,9 @@ The package development is supported by two projects:
   Example dataset: hexaco
 - [`information(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/information.latent.md)
   : Information Variance-Covariance Matrix for Latent Models
-- [`information(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/information.lcfa.md)
-  : Information Variance-Covariance Matrix for Confirmatory Factor
-  Models
+- [`information(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
+  [`information(`*`<multistep_lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
+  : Information Covariance for Multistep Models
 - [`jacobian()`](https://marcosjnez.github.io/latent/reference/jacobian.md)
   : Jacobian Matrix
 - [`jacobian(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/jacobian.latent.md)
@@ -162,12 +162,18 @@ The package development is supported by two projects:
   : Reshape class-conditional indicator profiles
 - [`robust(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/robust.latent.md)
   : Robust Variance-Covariance Matrix for Latent Models
+- [`robust(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
+  [`robust(`*`<multistep_lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
+  : Robust Covariance for Multistep Models
 - [`se(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/se.latent.md)
   : Standard Errors for Latent Objects
 - [`se(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/se.llcalist.md)
   : Standard errors for a collection of latent class models
 - [`se(`*`<multistage>`*`)`](https://marcosjnez.github.io/latent/reference/se.multistage.md)
   : Standard Errors for Multistage Latent Models
+- [`se(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/se.multistep.md)
+  [`se(`*`<multistep_lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/se.multistep.md)
+  : Standard Errors for Multistep Latent Models
 - [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
   : Simulate factor structures with misspecification errors.
 - [`getfit()`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)

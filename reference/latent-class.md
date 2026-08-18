@@ -41,7 +41,8 @@ infrastructure of latent.
 
 - `extra`:
 
-  List reserved for additional model-specific information.
+  List containing fitted models from previous estimation steps or other
+  model-specific information.
 
 ## See also
 
