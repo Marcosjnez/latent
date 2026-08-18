@@ -1,7 +1,7 @@
-# Hessian and Variance-Covariance Matrix matrix for Latent Models using the Information method
+# Robust Variance-Covariance Matrix for Latent Models
 
-Hessian and Variance-Covariance Matrix matrix for Latent Models using
-the Information method
+Default robust method for latent objects without a class-specific robust
+estimator. The information covariance matrix is returned.
 
 ## Usage
 
@@ -9,3 +9,13 @@ the Information method
 # S3 method for class 'latent'
 robust(fit)
 ```
+
+## Arguments
+
+- fit:
+
+  A fitted object inheriting from class `"latent"`.
+
+## Value
+
+The result of `information(fit)`.

@@ -180,8 +180,11 @@ labels. Names should match internal parameter blocks, for example
 Gaussian blocks. Character strings containing residual-dependency syntax
 such as <code>"y1 ~~ y2"</code> or <code>"u1 ~~ u2 ~~ u3"</code> are also used to
 identify residual covariances or residual associations. If an object of
-class <code>"llca"</code> is supplied, its measurement parameters are reused
-while the class-membership regression coefficients are re-estimated.</p></dd>
+class <code>"llca"</code> is supplied, its model parameters are reused while the
+class-membership regression coefficients are re-estimated. If the supplied
+object also inherits from <code>"multistage"</code>, previous <code>"llca"</code>
+objects stored in its <code>extra</code> slot are traversed recursively so that
+parameters fixed in earlier stages are retained.</p></dd>
 
 
 <dt id="arg-weights">weights<a class="anchor" aria-label="anchor" href="#arg-weights"></a></dt>
@@ -290,15 +293,12 @@ of class <code>"llca"</code> with the following slots:</p><dl><dt><code>version<
 
 
 </dl><p>If <code>adjustment = "bk"</code> or <code>adjustment = "ml"</code>, the function returns
-a list with two elements:</p><dl><dt><code>measurement</code></dt>
-<dd><p>The measurement-model fit from the first step.</p></dd>
-
-  <dt><code>structural</code></dt>
-<dd><p>The structural-model fit with covariates and/or
-  distal outcomes.</p></dd>
-
-
-</dl><p>If <code>nclasses</code> contains several values, a list of fitted objects is
+an S4 object of class <code>"multistage_llca"</code>, which inherits from both
+<code>"multistage"</code> and <code>"llca"</code>. The final-stage model is stored in the
+ordinary slots and the fitted model from the preceding stage is stored in the
+<code>extra</code> slot. This allows uncertainty from earlier estimation stages to
+be propagated recursively by the multistage covariance methods.</p>
+<p>If <code>nclasses</code> contains several values, a list of fitted objects is
 returned with class <code>"llcalist"</code>.</p>
     </div>
     <div class="section level2">

@@ -96,11 +96,10 @@ The package development is supported by two projects:
 - [`hexaco`](https://marcosjnez.github.io/latent/reference/hexaco.md) :
   Example dataset: hexaco
 - [`information(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/information.latent.md)
-  : Hessian and Variance-Covariance Matrix matrix for Latent Models
-  using the Information method
+  : Information Variance-Covariance Matrix for Latent Models
 - [`information(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/information.lcfa.md)
-  : Hessian and Variance-Covariance Matrix matrix for Confirmatory
-  Factor Models using the Information method
+  : Information Variance-Covariance Matrix for Confirmatory Factor
+  Models
 - [`jacobian()`](https://marcosjnez.github.io/latent/reference/jacobian.md)
   : Jacobian Matrix
 - [`jacobian(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/jacobian.latent.md)
@@ -162,14 +161,13 @@ The package development is supported by two projects:
 - [`reshape_lca_mixed()`](https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.md)
   : Reshape class-conditional indicator profiles
 - [`robust(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/robust.latent.md)
-  : Hessian and Variance-Covariance Matrix matrix for Latent Models
-  using the Information method
+  : Robust Variance-Covariance Matrix for Latent Models
 - [`se(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/se.latent.md)
-  : Variances-Covariance Matrix for Latent Objects
+  : Standard Errors for Latent Objects
 - [`se(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/se.llcalist.md)
   : Standard errors for a collection of latent class models
 - [`se(`*`<multistage>`*`)`](https://marcosjnez.github.io/latent/reference/se.multistage.md)
-  : Standard Errors for Latent Objects with multistage estimation.
+  : Standard Errors for Multistage Latent Models
 - [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
   : Simulate factor structures with misspecification errors.
 - [`getfit()`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)

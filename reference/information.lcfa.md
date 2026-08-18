@@ -1,7 +1,6 @@
-# Hessian and Variance-Covariance Matrix matrix for Confirmatory Factor Models using the Information method
+# Information Variance-Covariance Matrix for Confirmatory Factor Models
 
-Hessian and Variance-Covariance Matrix matrix for Confirmatory Factor
-Models using the Information method
+Information Variance-Covariance Matrix for Confirmatory Factor Models
 
 ## Usage
 
@@ -9,3 +8,13 @@ Models using the Information method
 # S3 method for class 'lcfa'
 information(fit)
 ```
+
+## Arguments
+
+- fit:
+
+  A fitted object of class `"lcfa"`.
+
+## Value
+
+A list containing the CFA Hessian and variance-covariance matrix.

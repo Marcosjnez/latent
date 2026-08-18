@@ -1,7 +1,6 @@
-# Hessian and Variance-Covariance Matrix matrix for Latent Models using the Information method
+# Information Variance-Covariance Matrix for Latent Models
 
-Hessian and Variance-Covariance Matrix matrix for Latent Models using
-the Information method
+Information Variance-Covariance Matrix for Latent Models
 
 ## Usage
 
@@ -9,3 +8,14 @@ the Information method
 # S3 method for class 'latent'
 information(fit)
 ```
+
+## Arguments
+
+- fit:
+
+  A fitted object inheriting from class `"latent"`.
+
+## Value
+
+A list containing the Hessian, variance-covariance matrix, and standard
+errors of the freely estimated parameters.

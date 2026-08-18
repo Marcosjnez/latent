@@ -88,7 +88,7 @@ matrix from continuous data.</p>
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lpearson</span><span class="op">(</span><span class="va">data</span>, model <span class="op">=</span> <span class="cn">NULL</span>, std.ov <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>         acov <span class="op">=</span> <span class="st">"standard"</span>, likelihood <span class="op">=</span> <span class="st">"normal"</span>,</span>
+<span>         VCOV <span class="op">=</span> <span class="st">"standard"</span>, likelihood <span class="op">=</span> <span class="st">"normal"</span>,</span>
 <span>         missing <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>         message <span class="op">=</span> <span class="cn">FALSE</span>, control <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -111,8 +111,8 @@ before the sample matrix is returned, so the off-diagonal elements represent
 correlations rather than covariances.</p></dd>
 
 
-<dt id="arg-acov">acov<a class="anchor" aria-label="anchor" href="#arg-acov"></a></dt>
-<dd><p>Character string selecting the asymptotic covariance estimator.
+<dt id="arg-vcov">VCOV<a class="anchor" aria-label="anchor" href="#arg-vcov"></a></dt>
+<dd><p>Character string selecting the variance-covariance estimator.
 Available options are <code>"standard"</code> and <code>"robust"</code>.</p></dd>
 
 
@@ -150,7 +150,7 @@ be supplied through <code>control$start</code>.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An S4 object of class <code>"latent"</code>. The object contains the
   processed data in <code>dataList</code>, the parameter and optimization structures
-  in <code>modelInfo</code>, the direct estimation output and asymptotic covariance
+  in <code>modelInfo</code>, the direct estimation output and variance-covariance
   information in <code>Optim</code>, and the estimated parameter structures in
   <code>parameters</code> and <code>transformed_pars</code>.</p>
     </div>
@@ -160,7 +160,7 @@ be supplied through <code>control$start</code>.</p></dd>
 than estimating it numerically. With <code>std.ov = TRUE</code>, the sample matrix
 is standardized before being stored in the fitted object.</p>
 <p>Standard asymptotic covariance matrices are computed under multivariate
-normality. With <code>acov = "robust"</code>, fourth-moment information from the
+normality. With <code>VCOV = "robust"</code>, fourth-moment information from the
 observed data is used instead.</p>
     </div>
 

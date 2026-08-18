@@ -52,7 +52,7 @@ off-diagonal associations are treated as free parameters.
 
 Standard errors are obtained from the pairwise asymptotic standard
 errors returned by the Yule association routine. The corresponding
-asymptotic covariance matrix is stored in `Optim$SE$ACOV`.
+sampling variance-covariance matrix is stored in `Optim$SE$VCOV`.
 
 ## Examples
 

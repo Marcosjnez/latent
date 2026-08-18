@@ -82,8 +82,8 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 - acov:
 
-  Method used to estimate the asymptotic covariance matrix of the sample
-  statistics.
+  Character string selecting the variance-covariance estimator for the
+  sample statistics. Available options are `"standard"` and `"robust"`.
 
 - meanstructure:
 

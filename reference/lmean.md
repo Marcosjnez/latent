@@ -57,15 +57,16 @@ parameter-shaped results in `parameters` and `transformed_pars`.
 
 `lmean()` computes the arithmetic mean of each observed variable using
 all available non-missing observations for that variable. When
-`std.ov = FALSE`, the asymptotic covariance matrix of the sample means
-is represented by the diagonal matrix of observed-variable variances,
-and the reported standard errors are obtained by dividing this matrix by
-the sample size.
+`std.ov = FALSE`, the variance-covariance matrix of the sample means
+retains covariances between variables. With complete data, it is the
+sample covariance matrix divided by the sample size. With missing data,
+each entry is adjusted for the numbers of observations contributing to
+the two means. Standard errors are the square roots of its diagonal.
 
 When `std.ov = TRUE`, the mean parameters are fixed to zero rather than
 estimated. This is the appropriate mean structure for standardized
-observed variables. Because these values are fixed, their asymptotic
-covariance matrix and standard errors are set to zero.
+observed variables. Because these values are fixed, their
+variance-covariance matrix and standard errors are set to zero.
 
 The function uses the same parameter/model infrastructure as the other
 estimators in latent, even though the sample means themselves are

@@ -88,9 +88,12 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
   multivariate Gaussian blocks. Character strings containing
   residual-dependency syntax such as `"y1 ~~ y2"` or `"u1 ~~ u2 ~~ u3"`
   are also used to identify residual covariances or residual
-  associations. If an object of class `"llca"` is supplied, its
-  measurement parameters are reused while the class-membership
-  regression coefficients are re-estimated.
+  associations. If an object of class `"llca"` is supplied, its model
+  parameters are reused while the class-membership regression
+  coefficients are re-estimated. If the supplied object also inherits
+  from `"multistage"`, previous `"llca"` objects stored in its `extra`
+  slot are traversed recursively so that parameters fixed in earlier
+  stages are retained.
 
 - weights:
 
@@ -203,16 +206,13 @@ class `"llca"` with the following slots:
 
   Additional information reserved for downstream methods.
 
-If `adjustment = "bk"` or `adjustment = "ml"`, the function returns a
-list with two elements:
-
-- `measurement`:
-
-  The measurement-model fit from the first step.
-
-- `structural`:
-
-  The structural-model fit with covariates and/or distal outcomes.
+If `adjustment = "bk"` or `adjustment = "ml"`, the function returns an
+S4 object of class `"multistage_llca"`, which inherits from both
+`"multistage"` and `"llca"`. The final-stage model is stored in the
+ordinary slots and the fitted model from the preceding stage is stored
+in the `extra` slot. This allows uncertainty from earlier estimation
+stages to be propagated recursively by the multistage covariance
+methods.
 
 If `nclasses` contains several values, a list of fitted objects is
 returned with class `"llcalist"`.

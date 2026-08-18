@@ -7,7 +7,7 @@ covariance matrix from continuous data.
 
 ``` r
 lpearson(data, model = NULL, std.ov = FALSE,
-         acov = "standard", likelihood = "normal",
+         VCOV = "standard", likelihood = "normal",
          missing = "pairwise.complete.obs", do.fit = TRUE,
          message = FALSE, control = NULL, ...)
 ```
@@ -28,9 +28,9 @@ lpearson(data, model = NULL, std.ov = FALSE,
   sample matrix is returned, so the off-diagonal elements represent
   correlations rather than covariances.
 
-- acov:
+- VCOV:
 
-  Character string selecting the asymptotic covariance estimator.
+  Character string selecting the variance-covariance estimator.
   Available options are `"standard"` and `"robust"`.
 
 - likelihood:
@@ -68,7 +68,7 @@ lpearson(data, model = NULL, std.ov = FALSE,
 
 An S4 object of class `"latent"`. The object contains the processed data
 in `dataList`, the parameter and optimization structures in `modelInfo`,
-the direct estimation output and asymptotic covariance information in
+the direct estimation output and variance-covariance information in
 `Optim`, and the estimated parameter structures in `parameters` and
 `transformed_pars`.
 
@@ -79,7 +79,7 @@ than estimating it numerically. With `std.ov = TRUE`, the sample matrix
 is standardized before being stored in the fitted object.
 
 Standard asymptotic covariance matrices are computed under multivariate
-normality. With `acov = "robust"`, fourth-moment information from the
+normality. With `VCOV = "robust"`, fourth-moment information from the
 observed data is used instead.
 
 ## Examples
