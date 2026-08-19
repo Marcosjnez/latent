@@ -679,7 +679,6 @@ fit <- lcfa(data_missing,
             model = model,
             estimator = "ml",
             positive = FALSE,
-            ordered = FALSE,
             std.lv = FALSE,
             # missing = "pairwise.complete.obs",
             missing = "fiml",
@@ -688,14 +687,15 @@ fit <- lcfa(data_missing,
             do.fit = TRUE,
             control = NULL)
 
-fit@loss   # 0.9767859
-fit@loglik # -3733.769
-fit@penalized_loglik # -3733.769
-fit@Optim$iterations
-fit@Optim$convergence
-fit@timing
+latInspect(fit, "loss") # loss           0.9767859
+                        # penalized_loss 0.9767859
+                        # loss_base      4.1225250
+                        # loss_sat       5439.4915116
 
-latInspect(fit, what = "loglik")
+latInspect(fit, "loglik") # loglik           -3733.769
+                          # penalized_loglik -3733.769
+                          # loglik_base      -4207.203
+                          # loglik_sat       -822230.235
 
 # With lavaan:
 fit2 <- cfa(model, data = data_missing,
@@ -706,13 +706,12 @@ fit2 <- cfa(model, data = data_missing,
             std.lv = FALSE, std.ov = FALSE)
 
 fit2@loglik$loglik
-fit@loglik
 fit2@Fit@fx
-fit@loss
 
 lavInspect(fit2, "se")
 fit2@ParTable$se
-fit@Optim$SE$se
+x <- se(fit, parameters = fit@modelInfo$trans[c("lambda", "theta", "psi")])
+x$table_se
 
 #### lmean ####
 

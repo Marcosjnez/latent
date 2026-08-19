@@ -1683,7 +1683,7 @@ create_lcfa_data_param <- function(dataList, control) {
         VCOV_means[[i]] <- lapply(dataList$fit_means[[i]]@extra,
                                   FUN = \(x) x@Optim$SE$VCOV)
         NVCOV_means[[i]] <- Map(
-          FUN = \(V, n) V*n,
+          f = \(V, n) V*n,
           VCOV_means[[i]],
           lapply(dataList$fit_means[[i]]@extra,
                  FUN = \(x) x@dataList$nobs)
@@ -1699,7 +1699,7 @@ create_lcfa_data_param <- function(dataList, control) {
         VCOV_cov[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
                                 FUN = \(x) x@Optim$SE$VCOV)
         NVCOV_cov[[i]] <- Map(
-          FUN = \(V, n) V*n,
+          f = \(V, n) V*n,
           VCOV_cov[[i]],
           lapply(dataList$fit_cov[[i]]@extra,
                  FUN = \(x) x@dataList$nobs)
