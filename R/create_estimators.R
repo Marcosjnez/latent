@@ -65,6 +65,7 @@ create_estimators <- function(estimators, structures) {
                           cfa_ml             = c("p", "w", "n"),
                           cfa_fml            = c("p", "w", "n"),
                           cfa_means_fml      = c("p", "w", "n"),
+                          cfa_means_ml       = c("p", "w", "n", "S", "means"),
                           stop("Unknown estimator: ", estimator)
     )
 

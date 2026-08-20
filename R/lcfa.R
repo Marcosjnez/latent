@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 18/08/2026
+# Modification date: 20/08/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -24,7 +24,8 @@
 #'   If NULL, sample.cov and sample.nobs must be supplied.
 #' @param model Confirmatory factor model specified using lavaan syntax.
 #' @param estimator Estimation method. Available options include \code{"ml"},
-#'   \code{"uls"}, and \code{"dwls"}.
+#'   \code{"uls"}, and \code{"dwls"}. The value \code{"fiml"} is accepted as
+#'   an alias for \code{estimator = "ml", missing = "fiml"}.
 #' @param ordered Logical value indicating whether indicators are ordinal. The
 #'   character value \code{"yule"} requests Yule correlations.
 #' @param group Optional character string identifying the grouping variable.
@@ -37,7 +38,11 @@
 #' @param positive Logical. If \code{TRUE}, positive-definite covariance
 #'   structures are imposed through the corresponding manifold parameterization.
 #' @param penalties Logical value or list controlling regularization.
-#' @param missing Missing-data method.
+#' @param missing Missing-data method. With \code{"fiml"} and incomplete
+#'   continuous data, \code{lmvnorm()} first estimates one unrestricted mean
+#'   vector and covariance matrix per group from all missing-data patterns.
+#'   The CFA is then fitted to those saturated moments and their uncertainty is
+#'   propagated by \code{se.multistep()}.
 #' @param std.lv Logical. Standardize latent variables.
 #' @param std.ov Logical. Standardize observed variables.
 #' @param meanstructure Logical. Estimate the observed-variable mean structure.
@@ -56,6 +61,17 @@
 #'   \code{"multistep_lcfa"} object.
 #' @param ... Additional arguments passed to lavaan and the sample-statistic
 #'   estimators where applicable.
+#'
+#'
+#' @details
+#' Missing-data patterns are internal computational summaries. They are not
+#' represented by separate latent objects and do not enlarge the covariance
+#' matrix used by \code{se.multistep()}. The single \code{lmvnorm} fit is stored
+#' in the \code{extra} slot of the returned \code{"multistep_lcfa"} object.
+#'
+#' This is a saturated-moment two-step estimator rather than casewise direct
+#' FIML. The same first-step moments can therefore be combined with ML, ULS, or
+#' DWLS discrepancy functions.
 #'
 #' @return An S4 object of class \code{"multistep_lcfa"}, which inherits
 #'   from \code{"multistep"}, \code{"lcfa"}, and \code{"latent"}.
@@ -120,6 +136,11 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
   estimator <- tolower(estimator)
   missing <- tolower(missing)
 
+  if(estimator == "fiml") {
+    estimator <- "ml"
+    missing <- "fiml"
+  }
+
   se_control <- normalize_lcfa_se(se)
   sample_se <- se_control$sample
   compute_se <- se_control$compute
@@ -159,10 +180,26 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
     likelihood <- "normal"
   }
 
+  if(!is.character(likelihood) ||
+     length(likelihood) != 1L ||
+     is.na(likelihood)) {
+    stop("likelihood must be a single character string")
+  }
+
+  likelihood <- tolower(likelihood)
+
   if(missing == "fiml") {
 
     if(is.null(data)) {
       stop("missing = 'fiml' requires raw data")
+    }
+
+    if(!isFALSE(ordered)) {
+      stop("missing = 'fiml' currently requires continuous variables")
+    }
+
+    if(likelihood != "normal") {
+      stop("missing = 'fiml' requires likelihood = 'normal'")
     }
 
     meanstructure <- TRUE
@@ -191,6 +228,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
   }
 
   if(sample_se == "robust" &&
+     missing != "fiml" &&
      (meanstructure || cor != "pearson")) {
     warning("Robust sampling covariance is currently implemented only for ",
             "Pearson covariance/correlation statistics. Sample means, ",
@@ -488,6 +526,8 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
   thresholds <- vector("list", length = ngroups)
   fit_cov <- vector("list", length = ngroups)
   fit_means <- vector("list", length = ngroups)
+  fit_moments <- NULL
+  fiml_moments <- FALSE
 
   if(sample_stats_only) {
 
@@ -550,6 +590,8 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
     sample.cov <- normalize_lcfa_group_input(sample.cov, ngroups)
 
+    #### Data per group ####
+
     for(i in seq_len(ngroups)) {
 
       X[[i]] <- extract_lcfa_group_data(data = data,
@@ -559,54 +601,151 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                                         i = i,
                                         ngroups = ngroups)
 
-      control_i <- control
+    }
 
-      if(ngroups < 2L) {
-        control_i$subfix <- ""
-      } else {
-        control_i$subfix <- paste0(".", group_label[i])
+    fiml_moments <- missing == "fiml" &&
+      any(vapply(X, FUN = anyNA, FUN.VALUE = logical(1L)))
+
+    if(fiml_moments) {
+
+      if(cor != "pearson") {
+        stop("The saturated multivariate-normal moment estimator requires continuous variables")
       }
 
-      sample_stats <- estimate_lcfa_sample_statistics(data = X[[i]],
-                                                      model = model,
-                                                      cor = cor,
-                                                      std.ov = std.ov,
-                                                      se = se_type,
-                                                      likelihood = likelihood,
-                                                      missing = missing,
-                                                      control = control_i,
-                                                      ...)
+      if(se_type == "robust") {
+        stop("Robust covariance estimation is not yet implemented for ",
+             "incomplete multivariate-normal moments")
+      }
 
-      fit_means[[i]] <- sample_stats$fit_means
-      fit_cov[[i]] <- sample_stats$fit_cov
+      #### Saturated incomplete-data moments ####
 
-      nobs_list[[i]] <- fit_cov[[i]]@dataList$nobs
-      sample.cov[[i]] <- fit_cov[[i]]@transformed_pars$S
-      sample.cov_input[[i]] <- sample.cov[[i]]
-      VCOV_cov[[i]] <- fit_cov[[i]]@Optim$SE$VCOV
-      NVCOV[[i]] <- VCOV_cov[[i]]*fit_cov[[i]]@dataList$nobs
+      control_moments <- control
+      control_moments$start <- NULL
+      control_moments$rstarts <- 1L
+      control_moments$cores <- 1L
 
-      VCOV_means[[i]] <- fit_means[[i]]@Optim$SE$VCOV
-      NVCOV_means[[i]] <-
-        VCOV_means[[i]]*fit_means[[i]]@dataList$nobs
+      if(ngroups < 2L) {
+        data_moments <- X[[1L]]
+        group_moments <- NULL
+        variables_moments <- item_names[[1L]]
+      } else {
+        data_moments <- data
+        group_moments <- group
+        variables_moments <- item_names
+      }
 
-      WLS.V[[i]] <- diag(1/diag(NVCOV[[i]]))
+      fit_moments <- lmvnorm(data = data_moments,
+                             group = group_moments,
+                             variables = variables_moments,
+                             se = "information",
+                             do.fit = TRUE,
+                             message = message,
+                             control = control_moments)
 
-      idx_taus <- startsWith(names(fit_cov[[i]]@transformed_pars), "taus")
-      thresholds[[i]] <- fit_cov[[i]]@transformed_pars[idx_taus]
+      moment_param <- fit_moments@modelInfo$data_param
+      moment_VCOV <- fit_moments@Optim$SE$VCOV
 
-      idx_means <- startsWith(names(fit_means[[i]]@transformed_pars), "means")
+      for(i in seq_len(ngroups)) {
 
-      if(any(idx_means)) {
+        M_name <- moment_param$means_group[i]
+        S_name <- moment_param$S_group[i]
 
-        M <- fit_means[[i]]@transformed_pars[[which(idx_means)[1L]]]
+        M <- fit_moments@transformed_pars[[M_name]]
+        S <- fit_moments@transformed_pars[[S_name]]
+
+        mean_labels <- fit_moments@modelInfo$parameters_labels[
+          fit_moments@modelInfo$parameters_labels %in%
+            c(fit_moments@modelInfo$trans[[M_name]])
+        ]
+        S_labels <- fit_moments@modelInfo$parameters_labels[
+          fit_moments@modelInfo$parameters_labels %in%
+            c(fit_moments@modelInfo$trans[[S_name]])
+        ]
+
+        nobs_list[[i]] <- fit_moments@dataList$nobs_group[[i]]
         sample.mean_list[[i]] <- c(M)
         names(sample.mean_list[[i]]) <- rownames(M)
+        sample.cov[[i]] <- S
+        sample.cov_input[[i]] <- S
 
-      } else {
+        VCOV_means[[i]] <- moment_VCOV[mean_labels, mean_labels,
+                                       drop = FALSE]
+        VCOV_cov[[i]] <- moment_VCOV[S_labels, S_labels,
+                                     drop = FALSE]
+        NVCOV_means[[i]] <- VCOV_means[[i]]*nobs_list[[i]]
+        NVCOV[[i]] <- VCOV_cov[[i]]*nobs_list[[i]]
+        WLS.V[[i]] <- diag(1/diag(NVCOV[[i]]))
+        thresholds[[i]] <- list()
 
-        sample.mean_list[[i]] <- setNames(rep(0, length(item_names[[i]])),
-                                          item_names[[i]])
+      }
+
+    } else {
+
+      #### Complete-data or ordinary sample statistics ####
+
+      for(i in seq_len(ngroups)) {
+
+        control_i <- control
+
+        if(ngroups < 2L) {
+          control_i$subfix <- ""
+        } else {
+          control_i$subfix <- paste0(".", group_label[i])
+        }
+
+        missing_i <- if(missing == "fiml") {
+          "pairwise.complete.obs"
+        } else {
+          missing
+        }
+
+        sample_stats <- estimate_lcfa_sample_statistics(
+          data = X[[i]],
+          model = model,
+          cor = cor,
+          std.ov = std.ov,
+          se = se_type,
+          likelihood = likelihood,
+          missing = missing_i,
+          control = control_i,
+          ...
+        )
+
+        fit_means[[i]] <- sample_stats$fit_means
+        fit_cov[[i]] <- sample_stats$fit_cov
+
+        nobs_list[[i]] <- fit_cov[[i]]@dataList$nobs
+        sample.cov[[i]] <- fit_cov[[i]]@transformed_pars$S
+        sample.cov_input[[i]] <- sample.cov[[i]]
+        VCOV_cov[[i]] <- fit_cov[[i]]@Optim$SE$VCOV
+        NVCOV[[i]] <- VCOV_cov[[i]]*fit_cov[[i]]@dataList$nobs
+
+        VCOV_means[[i]] <- fit_means[[i]]@Optim$SE$VCOV
+        NVCOV_means[[i]] <-
+          VCOV_means[[i]]*fit_means[[i]]@dataList$nobs
+
+        WLS.V[[i]] <- diag(1/diag(NVCOV[[i]]))
+
+        idx_taus <- startsWith(names(fit_cov[[i]]@transformed_pars),
+                               "taus")
+        thresholds[[i]] <- fit_cov[[i]]@transformed_pars[idx_taus]
+
+        idx_means <- startsWith(names(fit_means[[i]]@transformed_pars),
+                                "means")
+
+        if(any(idx_means)) {
+
+          M <- fit_means[[i]]@transformed_pars[[which(idx_means)[1L]]]
+          sample.mean_list[[i]] <- c(M)
+          names(sample.mean_list[[i]]) <- rownames(M)
+
+        } else {
+
+          sample.mean_list[[i]] <-
+            setNames(rep(0, length(item_names[[i]])),
+                     item_names[[i]])
+
+        }
 
       }
 
@@ -618,7 +757,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
   sample.cov_lav <- if(sample_stats_only) sample.cov_input else sample.cov
 
-  if(ngroups > 1L && sample_stats_only) {
+  if(ngroups > 1L && (sample_stats_only || fiml_moments)) {
     names(sample.cov_lav) <- group_label
     names(sample.mean_list) <- group_label
     names(nobs_list) <- group_label
@@ -724,7 +863,9 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                    WLS.V = WLS.V,
                    thresholds = thresholds,
                    fit_means = fit_means,
-                   fit_cov = fit_cov)
+                   fit_cov = fit_cov,
+                   fit_moments = fit_moments,
+                   fiml_moments = fiml_moments)
 
   #### Result ####
 
@@ -1326,40 +1467,6 @@ estimate_lcfa_sample_statistics <- function(data, model, cor,
                         control = control,
                         do.fit = TRUE)
 
-    if(missing == "fiml") {
-
-      patterns <- split_by_missing_pattern(data)
-      npatterns <- length(patterns)
-
-      fit_means@extra <- vector("list", length = npatterns)
-      fit_cov@extra <- vector("list", length = npatterns)
-
-      subfix <- control$subfix
-
-      for(j in seq_len(npatterns)) {
-
-        control_j <- control
-        control_j$subfix <- paste0(subfix, ".pattern", j)
-
-        fit_means@extra[[j]] <- lmean(data = patterns[[j]]$data,
-                                      std.ov = std.ov,
-                                      do.fit = TRUE,
-                                      control = control_j,
-                                      ...)
-
-        fit_cov@extra[[j]] <- lpearson(data = patterns[[j]]$data,
-                                       model = model,
-                                       std.ov = std.ov,
-                                       VCOV = if(se == "robust") "robust" else "standard",
-                                       likelihood = likelihood,
-                                       missing = "pairwise.complete.obs",
-                                       do.fit = TRUE,
-                                       control = control_j,
-                                       ...)
-
-      }
-
-    }
 
   } else if(cor == "poly") {
 
@@ -1437,6 +1544,14 @@ normalize_lcfa_se <- function(se) {
 
 previous_models_lcfa <- function(dataList) {
 
+  if(inherits(dataList$fit_moments, "latent")) {
+
+    #### Result ####
+
+    return(list(dataList$fit_moments))
+
+  }
+
   models <- list()
 
   append_model <- function(object) {
@@ -1502,50 +1617,6 @@ previous_models_lcfa <- function(dataList) {
   #### Result ####
 
   return(unique_models)
-
-}
-
-split_by_missing_pattern <- function(data) {
-
-  if(!is.data.frame(data) && !is.matrix(data)) {
-    stop("data must be a data.frame or matrix.")
-  }
-
-  if(nrow(data) == 0L) {
-
-    #### Result ####
-
-    return(list())
-
-  }
-
-  miss <- is.na(data)
-  pattern_key <- apply(miss, MARGIN = 1L,
-                       FUN = \(x) paste(as.integer(x), collapse = ""))
-  pattern_levels <- unique(pattern_key)
-  counts <- tabulate(match(pattern_key, pattern_levels),
-                     nbins = length(pattern_levels))
-  ord <- order(-counts, seq_along(pattern_levels))
-  pattern_levels <- pattern_levels[ord]
-
-  result <- vector("list", length(pattern_levels))
-
-  for(k in seq_along(pattern_levels)) {
-
-    idx_rows <- which(pattern_key == pattern_levels[k])
-    idx_vars <- !miss[idx_rows[1L], ]
-
-    result[[k]] <- list(data = data[idx_rows, idx_vars, drop = FALSE],
-                        vars = idx_vars,
-                        nobs = length(idx_rows))
-
-  }
-
-  names(result) <- NULL
-
-  #### Result ####
-
-  return(result)
 
 }
 
@@ -1667,64 +1738,69 @@ create_lcfa_data_param <- function(dataList, control) {
 
     }
 
+  } else if(isTRUE(dataList$fiml_moments)) {
+
+    fit_moments <- dataList$fit_moments
+    moment_param <- fit_moments@modelInfo$data_param
+    moment_VCOV <- fit_moments@Optim$SE$VCOV
+
+    for(i in seq_len(ngroups)) {
+
+      M_name <- moment_param$means_group[i]
+      S_name <- moment_param$S_group[i]
+
+      means_params[[i]] <- fit_moments@parameters[M_name]
+      means_params_labels[[i]] <- fit_moments@modelInfo$trans[M_name]
+      cov_params[[i]] <- fit_moments@parameters[S_name]
+      cov_params_labels[[i]] <- fit_moments@modelInfo$trans[S_name]
+
+      mean_labels <- fit_moments@modelInfo$parameters_labels[
+        fit_moments@modelInfo$parameters_labels %in%
+          c(fit_moments@modelInfo$trans[[M_name]])
+      ]
+      S_labels <- fit_moments@modelInfo$parameters_labels[
+        fit_moments@modelInfo$parameters_labels %in%
+          c(fit_moments@modelInfo$trans[[S_name]])
+      ]
+
+      VCOV_means[[i]] <- list(
+        moment_VCOV[mean_labels, mean_labels, drop = FALSE]
+      )
+      VCOV_cov[[i]] <- list(
+        moment_VCOV[S_labels, S_labels, drop = FALSE]
+      )
+      NVCOV_means[[i]] <- list(
+        VCOV_means[[i]][[1L]]*dataList$nobs[[i]]
+      )
+      NVCOV_cov[[i]] <- list(
+        VCOV_cov[[i]][[1L]]*dataList$nobs[[i]]
+      )
+      nobs_ij[[i]] <- dataList$nobs[[i]]
+
+      M_group[[i]] <- M_name
+      S_group[[i]] <- S_name
+      taus_group[[i]] <- character(0L)
+
+    }
+
   } else {
 
     for(i in seq_len(ngroups)) {
 
-      if(control$missing == "fiml") {
+      means_params[[i]] <- dataList$fit_means[[i]]@parameters
+      means_params_labels[[i]] <- dataList$fit_means[[i]]@modelInfo$trans
+      VCOV_means[[i]] <- list(dataList$fit_means[[i]]@Optim$SE$VCOV)
+      NVCOV_means[[i]] <- list(
+        VCOV_means[[i]][[1L]]*dataList$fit_means[[i]]@dataList$nobs
+      )
 
-        means_params[[i]] <- unlist(lapply(dataList$fit_means[[i]]@extra,
-                                           FUN = \(x) x@parameters),
-                                    recursive = FALSE)
-        means_params_labels[[i]] <-
-          unlist(lapply(dataList$fit_means[[i]]@extra,
-                        FUN = \(x) x@modelInfo$trans),
-                 recursive = FALSE)
-        VCOV_means[[i]] <- lapply(dataList$fit_means[[i]]@extra,
-                                  FUN = \(x) x@Optim$SE$VCOV)
-        NVCOV_means[[i]] <- Map(
-          f = \(V, n) V*n,
-          VCOV_means[[i]],
-          lapply(dataList$fit_means[[i]]@extra,
-                 FUN = \(x) x@dataList$nobs)
-        )
-
-        cov_params[[i]] <- unlist(lapply(dataList$fit_cov[[i]]@extra,
-                                         FUN = \(x) x@parameters),
-                                  recursive = FALSE)
-        cov_params_labels[[i]] <-
-          unlist(lapply(dataList$fit_cov[[i]]@extra,
-                        FUN = \(x) x@modelInfo$trans),
-                 recursive = FALSE)
-        VCOV_cov[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
-                                FUN = \(x) x@Optim$SE$VCOV)
-        NVCOV_cov[[i]] <- Map(
-          f = \(V, n) V*n,
-          VCOV_cov[[i]],
-          lapply(dataList$fit_cov[[i]]@extra,
-                 FUN = \(x) x@dataList$nobs)
-        )
-        nobs_ij[[i]] <- lapply(dataList$fit_cov[[i]]@extra,
-                               FUN = \(x) x@dataList$nobs)
-
-      } else {
-
-        means_params[[i]] <- dataList$fit_means[[i]]@parameters
-        means_params_labels[[i]] <- dataList$fit_means[[i]]@modelInfo$trans
-        VCOV_means[[i]] <- list(dataList$fit_means[[i]]@Optim$SE$VCOV)
-        NVCOV_means[[i]] <- list(
-          VCOV_means[[i]][[1L]]*dataList$fit_means[[i]]@dataList$nobs
-        )
-
-        cov_params[[i]] <- dataList$fit_cov[[i]]@parameters
-        cov_params_labels[[i]] <- dataList$fit_cov[[i]]@modelInfo$trans
-        VCOV_cov[[i]] <- list(dataList$fit_cov[[i]]@Optim$SE$VCOV)
-        NVCOV_cov[[i]] <- list(
-          VCOV_cov[[i]][[1L]]*dataList$fit_cov[[i]]@dataList$nobs
-        )
-        nobs_ij[[i]] <- dataList$fit_cov[[i]]@dataList$nobs
-
-      }
+      cov_params[[i]] <- dataList$fit_cov[[i]]@parameters
+      cov_params_labels[[i]] <- dataList$fit_cov[[i]]@modelInfo$trans
+      VCOV_cov[[i]] <- list(dataList$fit_cov[[i]]@Optim$SE$VCOV)
+      NVCOV_cov[[i]] <- list(
+        VCOV_cov[[i]][[1L]]*dataList$fit_cov[[i]]@dataList$nobs
+      )
+      nobs_ij[[i]] <- dataList$fit_cov[[i]]@dataList$nobs
 
       means_names <- names(means_params[[i]])
       cov_names <- names(cov_params[[i]])

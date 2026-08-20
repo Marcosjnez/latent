@@ -69,6 +69,7 @@ public:
 #include "estimators/cfa/cfa_fml.h"
 #include "estimators/cfa/cfa_means_fml.h"
 #include "estimators/cfa/cfa_means_dwls.h"
+#include "estimators/cfa/cfa_means_ml.h"
 
 #include "estimators/loglik/gaussian_loglik.h"
 #include "estimators/loglik/poisson_loglik.h"
@@ -84,6 +85,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "cfa_fml",                     choose_cfa_fml                   },
   { "cfa_means_fml",               choose_cfa_means_fml             },
   { "cfa_means_dwls",              choose_cfa_means_dwls            },
+  { "cfa_means_ml",                choose_cfa_means_ml              },
   { "cf",                          choose_cf                        },
   { "oblimin",                     choose_oblimin                   },
   { "geomin",                      choose_geomin                    },

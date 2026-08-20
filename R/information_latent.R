@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 18/08/2026
+# Modification date: 20/08/2026
 #'
 #' Information Variance-Covariance Matrix for Latent Models
 #'
@@ -8,6 +8,14 @@
 #'
 #' @return A list containing the Hessian, variance-covariance matrix, and
 #'   standard errors of the freely estimated parameters.
+#'
+#' @details
+#' If an object does not contain a stored covariance matrix,
+#' \code{information.latent()} multiplies the inverse Hessian by
+#' \code{fit@modelInfo$information_scale} when that scalar is present. The
+#' default multiplier is one. This permits estimators whose objective is
+#' normalized or multiplied by a known constant to retain the common
+#' information interface.
 #'
 #' @method information latent
 #' @export
@@ -77,7 +85,20 @@ information.latent <- function(fit) {
       warning("The Hessian is not positive definite; an approximate inverse was used.")
     }
 
-    VCOV <- approx_Hinv(H)
+    information_scale <- fit@modelInfo$information_scale
+
+    if(is.null(information_scale)) {
+      information_scale <- 1
+    }
+
+    if(!is.numeric(information_scale) ||
+       length(information_scale) != 1L ||
+       !is.finite(information_scale) ||
+       information_scale <= 0) {
+      stop("modelInfo$information_scale must be a positive finite number.")
+    }
+
+    VCOV <- information_scale*approx_Hinv(H)
 
     if(any(!is.finite(VCOV))) {
       stop("The Hessian could not be inverted.")
