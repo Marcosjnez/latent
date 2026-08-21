@@ -29,6 +29,7 @@ parameters.
 
 ## Details
 
-Only transformations required by the selected outputs are evaluated.
-Local Jacobians are composed in dependency order, so chains of
-transformations are represented correctly.
+The cumulative Jacobian is computed only when this method is called.
+Local transformation Jacobians are composed in dependency order, and the
+matrix is stored relative to the freely estimated parameter vector
+rather than the complete transformed-parameter vector.

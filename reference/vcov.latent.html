@@ -108,10 +108,14 @@ or transformed parameters to return.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list containing the selected variance-covariance matrix, standard
-  errors, and cumulative transformation Jacobian. Jacobian rows correspond to
-  the selected transformed parameters and columns to the freely estimated
-  parameter coordinates.</p>
+    <p>A list containing the selected variance-covariance matrix and
+  standard errors.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Transformation covariances are propagated incrementally in C++. The internal
+Jacobian workspace used by that computation is not returned because it is not
+the cumulative Jacobian exposed by <code><a href="jacobian.latent.html">jacobian.latent()</a></code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

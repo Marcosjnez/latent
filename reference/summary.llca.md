@@ -1,51 +1,38 @@
 # Summary of a Latent Class Model
 
-`summary.llca()` displays optimization information, the estimation
-method, the number of parameters and observations, available model-fit
-statistics, and the estimated latent class profile.
+Print optimization information, likelihood-based fit indices, and the
+estimated latent class profile of a fitted latent class model.
 
 ## Usage
 
 ``` r
 # S3 method for class 'llca'
-summary(fit)
+summary(fit, digits = 3L, ...)
 
 # S3 method for class 'llcalist'
-summary(model)
+summary(model, digits = 3L, ...)
 ```
 
 ## Arguments
 
 - fit:
 
-  A fitted object of class `"llca"`.
+  A fitted object inheriting from class `"llca"`.
+
+- digits:
+
+  Non-negative integer giving the number of decimal places used in
+  printed numeric results.
+
+- ...:
+
+  Additional arguments reserved for future summary options.
 
 - model:
 
-  For the `"llcalist"` method, a collection of fitted `"llca"` and/or
-  `"llca_sam"` models.
+  For the `"llcalist"` method, a collection of fitted `"llca"` models.
 
 ## Value
 
 The latent class profile returned by
 `latInspect(fit, what = "profile")`, invisibly.
-
-## Details
-
-Print a summary of a fitted latent class model.
-
-The printed output reports whether optimization converged, the
-optimization method, the number of freely estimated parameters, and
-information about the observed response patterns.
-
-For fully multinomial models, the likelihood-ratio statistic, degrees of
-freedom, and corresponding p-value are also displayed.
-
-For an `"llcalist"`, [`summary()`](https://rdrr.io/r/base/summary.html)
-is applied to each model in the collection.
-
-## See also
-
-[`getfit.llca`](https://marcosjnez.github.io/latent/reference/getfit.llca.md),
-[`latInspect.llca`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md),
-`se.llca`

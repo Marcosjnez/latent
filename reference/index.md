@@ -7,10 +7,9 @@
 - [`cancer`](https://marcosjnez.github.io/latent/reference/cancer.md) :
   Example dataset: cancer
 - [`ci(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/ci.llca.md)
-  [`fitted(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/ci.llca.md)
-  : Confidence intervals for latent class models
-- [`ci(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/ci.llcalist.md)
-  : Confidence intervals for a collection of latent class models
+  [`ci(`*`<llca_sam>`*`)`](https://marcosjnez.github.io/latent/reference/ci.llca.md)
+  [`ci(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/ci.llca.md)
+  : Confidence Intervals for Latent Class Models
 - [`constraints_derivs()`](https://marcosjnez.github.io/latent/reference/constraints_derivs.md)
   : Derivatives of Parameter Constraints
 - [`constraints_derivs(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/constraints_derivs.latent.md)
