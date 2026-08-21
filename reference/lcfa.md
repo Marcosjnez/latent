@@ -82,7 +82,10 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 - std.ov:
 
-  Logical. Standardize observed variables.
+  Logical. Standardize observed variables. With direct or
+  saturated-moment FIML, raw variables are standardized within
+  substantive groups before missingness patterns are constructed;
+  observed-variable means remain freely estimated.
 
 - meanstructure:
 
@@ -117,7 +120,7 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 - do.fit:
 
-  Logical. If `FALSE`, return the prepared but unfitted
+  Logical. If `FALSE`, return the prepared but unfitted `"lcfa"` or
   `"multistep_lcfa"` object.
 
 - ...:

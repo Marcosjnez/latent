@@ -6,7 +6,7 @@ are dichotomous and polytomous.
 ## Usage
 
 ``` r
-data(gss82)
+gss82
 ```
 
 ## Format

@@ -5,7 +5,7 @@ Fit measurement models with discrete or continuous latent variables.
 # Installation in Windows and Linux
 
 ``` R
-devtools::install_github("marcosjnez/latent", force = TRUE)
+pak::pak("marcosjnez/latent")
 ```
 
 # Installation in macOS

@@ -1,8 +1,6 @@
-# Variance-Covariance Matrix for Confirmatory Factor Models
+# Robust Variance-Covariance Matrix for CFA Models
 
-Compute the covariance matrix of CFA parameters by propagating the
-sampling covariance matrix of the means, covariances, correlations, and
-thresholds used as sample statistics.
+Robust Variance-Covariance Matrix for CFA Models
 
 ## Usage
 
@@ -15,9 +13,10 @@ robust(fit)
 
 - fit:
 
-  A fitted object of class `"lcfa"`.
+  A fitted object inheriting from class `"lcfa"`.
 
 ## Value
 
-A list containing the Hessian, cross-derivative matrix, sandwich middle
-matrix, parameter variance-covariance matrix, and standard errors.
+This method currently stops because casewise/patternwise robust
+likelihood scores have not yet been implemented for direct CFA
+likelihood models.

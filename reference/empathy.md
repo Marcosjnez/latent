@@ -6,7 +6,7 @@ first 6 columns are continuous item responses.
 ## Usage
 
 ``` r
-data(empathy)
+empathy
 ```
 
 ## Format

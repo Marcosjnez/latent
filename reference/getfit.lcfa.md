@@ -1,35 +1,31 @@
-# Fit indices
+# Fit Indices for CFA Models
 
-Compute fit indices from any model.
+Fit Indices for CFA Models
 
 ## Usage
 
 ``` r
-getfit(model)
+# S3 method for class 'lcfa'
+getfit(model, digits = 3L, fit_matrix = NULL)
 ```
 
 ## Arguments
 
 - model:
 
-  data.frame or matrix of response.
+  A fitted object inheriting from class `"lcfa"`.
+
+- digits:
+
+  Number of decimal places used in the returned values.
+
+- fit_matrix:
+
+  Optional precomputed internal fit matrix. This argument is used by
+  package post-processing methods to avoid refitting the direct-FIML
+  saturated model more than once.
 
 ## Value
 
-List with the following fit indices:
-
-- AIC:
-
-  .
-
-- BIC:
-
-  .
-
-## Details
-
-`getfit` computes all the fit indices related to a specific model.
-
-## References
-
-None yet.
+A named numeric vector containing model dimensions and available fit
+statistics.

@@ -6,7 +6,7 @@ A dataset from the poLCA R package with 216 rows and 4 columns. All the
 ## Usage
 
 ``` r
-data(values)
+values
 ```
 
 ## Format

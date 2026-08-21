@@ -1,7 +1,6 @@
-# Robust Variance-Covariance Matrix for Latent Models
+# Robust Variance-Covariance Matrix for General Latent Models
 
-Default robust method for latent objects without a class-specific robust
-estimator. The information covariance matrix is returned.
+Robust Variance-Covariance Matrix for General Latent Models
 
 ## Usage
 
@@ -18,4 +17,6 @@ robust(fit)
 
 ## Value
 
-The result of `information(fit)`.
+A stored robust covariance result when available. If no class-specific
+robust covariance exists, the information covariance is returned with a
+warning and an explicit fallback label.

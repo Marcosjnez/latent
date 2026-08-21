@@ -23,8 +23,8 @@
   : Fitted Probabilities for Lists of Latent Class Models
 - [`forestplot()`](https://marcosjnez.github.io/latent/reference/forestplot.md)
   : Forest plot for grouped parameter estimates
-- [`getfit()`](https://marcosjnez.github.io/latent/reference/getfit.lcfa.md)
-  : Fit indices
+- [`getfit(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.lcfa.md)
+  : Fit Indices for CFA Models
 - [`getfit(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
   [`getfit(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
   : Fit indices for latent class models
@@ -45,15 +45,15 @@
   : Jacobian Matrix
 - [`jacobian(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/jacobian.latent.md)
   : Jacobian Matrix for Latent Models
-- [`se()`](https://marcosjnez.github.io/latent/reference/latInspect.lcfa.md)
-  : Standard Errors
+- [`latInspect(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.lcfa.md)
+  : Inspect Fitted CFA Objects
 - [`latInspect(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
   : Inspect fitted latent class models
 - [`latent-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
   : Base Class for Fitted Latent Models
 - [`latent-package`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
-  : An R package for Latent Variable Modeling
+  : An R Package for Latent Variable Modeling
 - [`lbvr(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llca.md)
   : Local bivariate residuals for latent class analysis
 - [`lbvr(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llcalist.md)
@@ -63,7 +63,7 @@
 - [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
   Confirmatory Factor Analysis
 - [`lcfa_to_lavaan()`](https://marcosjnez.github.io/latent/reference/lcfa_to_lavaan.md)
-  : Convert a fitted lcfa object (latent) to a lavaan object
+  : Convert a Fitted lcfa Object to lavaan
 - [`lclass_diag()`](https://marcosjnez.github.io/latent/reference/lclass_diag.md)
   : Classification Diagnostics for Latent Class Analysis
 - [`lefa()`](https://marcosjnez.github.io/latent/reference/lefa.md) :
@@ -104,7 +104,11 @@
 - [`reshape_lca_mixed()`](https://marcosjnez.github.io/latent/reference/reshape_lca_mixed.md)
   : Reshape class-conditional indicator profiles
 - [`robust(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/robust.latent.md)
-  : Robust Variance-Covariance Matrix for Latent Models
+  : Robust Variance-Covariance Matrix for General Latent Models
+- [`robust(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/robust.lcfa.md)
+  : Robust Variance-Covariance Matrix for CFA Models
+- [`robust(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/robust.llca.md)
+  : LatentGold-Style Robust Variance-Covariance Matrix
 - [`robust(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
   [`robust(`*`<multistep_lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
   : Robust Covariance for Multistep Models
@@ -119,8 +123,8 @@
   : Standard Errors for Multistep Latent Models
 - [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
   : Simulate factor structures with misspecification errors.
-- [`getfit()`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)
-  : Fit indices
+- [`summary(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)
+  : Summarize a Fitted CFA Model
 - [`summary(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/summary.llca.md)
   [`summary(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/summary.llca.md)
   : Summary of a Latent Class Model

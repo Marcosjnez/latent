@@ -1,43 +1,25 @@
-# Standard Errors
+# Inspect Fitted CFA Objects
 
-Compute standard errors.
+Inspect Fitted CFA Objects
 
 ## Usage
 
 ``` r
-se(fit)
+# S3 method for class 'lcfa'
+latInspect(fit, what = "est")
 ```
 
 ## Arguments
 
 - fit:
 
-  model fitted with lca.
+  A fitted object inheriting from class `"lcfa"`.
 
-- confidence:
+- what:
 
-  Coverage of the confidence interval.
+  Character string identifying the requested component.
 
 ## Value
 
-List with the following objects:
-
-- vcov:
-
-  Variance-covariance matrix between the parameters.
-
-- se:
-
-  Standard errors.
-
-- SE:
-
-  Standard errors in the model list.
-
-## Details
-
-Compute standard errors.
-
-## References
-
-None yet.
+A parameter list, residual list, fit matrix, or estimator-specific
+control component, depending on `what`.

@@ -5,7 +5,7 @@ A dataset with 475 rows and 13 columns.
 ## Usage
 
 ``` r
-data(cancer)
+cancer
 ```
 
 ## Format

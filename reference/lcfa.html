@@ -165,7 +165,10 @@ deterministic multistep estimator.</p></dd>
 
 
 <dt id="arg-std-ov">std.ov<a class="anchor" aria-label="anchor" href="#arg-std-ov"></a></dt>
-<dd><p>Logical. Standardize observed variables.</p></dd>
+<dd><p>Logical. Standardize observed variables. With direct or
+saturated-moment FIML, raw variables are standardized within
+substantive groups before missingness patterns are constructed;
+observed-variable means remain freely estimated.</p></dd>
 
 
 <dt id="arg-meanstructure">meanstructure<a class="anchor" aria-label="anchor" href="#arg-meanstructure"></a></dt>
@@ -201,7 +204,7 @@ statistics with <code><a href="se.multistep.html">se.multistep()</a></code>.</p>
 
 <dt id="arg-do-fit">do.fit<a class="anchor" aria-label="anchor" href="#arg-do-fit"></a></dt>
 <dd><p>Logical. If <code>FALSE</code>, return the prepared but unfitted
-<code>"multistep_lcfa"</code> object.</p></dd>
+<code>"lcfa"</code> or <code>"multistep_lcfa"</code> object.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -249,7 +252,7 @@ Saturated-moment FIML instead stores one <code>lmvnorm</code> source object in
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Marcos Jiménez.</p>
+  <p>Developed by Marcos Jiménez, Mauricio Garnier-Villarreal, Vithor R. Franco.</p>
 </div>
 
 <div class="pkgdown-footer-right">

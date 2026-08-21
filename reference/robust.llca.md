@@ -1,7 +1,7 @@
 # LatentGold-Style Robust Variance-Covariance Matrix
 
-Construct an information matrix corresponding to a LatentGold-style
-sandwich covariance estimator for a fitted latent class model.
+Construct a sandwich covariance estimator for a fitted latent class
+model.
 
 ## Usage
 
@@ -18,15 +18,5 @@ robust(fit)
 
 ## Value
 
-A symmetric numeric matrix representing the robust information matrix.
-
-## Details
-
-Let \\H\\ denote the Hessian and \\B\\ the empirical covariance matrix
-of score contributions. The robust covariance matrix is \$\$H^{-1} B
-H^{-1}.\$\$
-
-Because
-[`vcov.latent`](https://marcosjnez.github.io/latent/reference/vcov.latent.md)
-expects an information matrix that is subsequently inverted, this
-function returns the equivalent matrix \$\$H B^{-1} H.\$\$
+A list containing the Hessian, empirical score covariance, robust
+variance-covariance matrix, standard errors, and method label.

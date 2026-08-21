@@ -1,4 +1,4 @@
-# An R package for Latent Variable Modeling
+# An R Package for Latent Variable Modeling
 
 Fit measurement models with discrete or continuous latent variables.
 
@@ -12,12 +12,10 @@ functions \~~
 
 ## Author
 
-Marcos Jiménez \[fnd, cre\], Mauricio Garnier-Villarreal \[cre\], Vithor
-R. Franco \[cre\]
+Marcos Jiménez \[aut, cre\], Mauricio Garnier-Villarreal \[aut\], Vithor
+R. Franco \[aut\]
 
-Maintainer: Marcos Jiménez \<m.j.jimenezhenriquez@vu.nl\>, Mauricio
-Garnier-Villarreal \<m.garniervillarreal@vu.nl\>, Vithor R. Franco
-\<vithorfranco@gmail.com\>
+Maintainer: Marcos Jiménez \<m.j.jimenezhenriquez@vu.nl\>
 
 ## References
 

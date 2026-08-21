@@ -5,7 +5,7 @@ A dataset from the lavaan R package.
 ## Usage
 
 ``` r
-data(HolzingerSwineford1939)
+HolzingerSwineford1939
 ```
 
 ## Format

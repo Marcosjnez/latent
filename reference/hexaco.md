@@ -5,7 +5,7 @@ A dataset from https://osf.io/72zp3/.
 ## Usage
 
 ``` r
-data(hexaco)
+hexaco
 ```
 
 ## Format

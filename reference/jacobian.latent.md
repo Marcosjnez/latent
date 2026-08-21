@@ -1,9 +1,7 @@
 # Jacobian Matrix for Latent Models
 
-`jacobian.latent()` evaluates the derivatives of transformed parameters
-at the fitted parameter estimates. The Jacobian is used by latent to
-propagate covariance matrices through parameter transformations using
-the delta method.
+Compute the cumulative Jacobian from the freely estimated parameters to
+selected transformed parameters.
 
 ## Usage
 
@@ -21,33 +19,16 @@ jacobian(fit, parameters = NULL)
 - parameters:
 
   Optional parameter specification identifying the transformed
-  parameters for which derivatives should be returned. Parameter labels
-  must occur in `fit@modelInfo$transparameters_labels`. If `NULL`, the
-  parameter blocks corresponding to the fitted model parameters are
-  used.
+  parameters whose derivatives should be returned.
 
 ## Value
 
-A numeric matrix containing the Jacobian for the selected parameters.
-Row and column names correspond to transformed-parameter labels.
+A numeric matrix whose rows correspond to selected transformed
+parameters and whose columns correspond to the freely estimated
+parameters.
 
 ## Details
 
-Compute the Jacobian matrix associated with parameter transformations in
-a fitted latent variable model.
-
-Only transformations required to obtain the selected parameters are
-evaluated. Dependencies between transformations are identified
-recursively, so parameters obtained through several successive
-transformations are supported.
-
-The same Jacobian machinery is used by
-[`vcov.latent`](https://marcosjnez.github.io/latent/reference/vcov.latent.md)
-to apply the delta method to transformed parameters.
-
-## See also
-
-[`jacobian`](https://marcosjnez.github.io/latent/reference/jacobian.md),
-[`hessian.latent`](https://marcosjnez.github.io/latent/reference/hessian.latent.md),
-[`vcov.latent`](https://marcosjnez.github.io/latent/reference/vcov.latent.md),
-[`constraints_derivs.latent`](https://marcosjnez.github.io/latent/reference/constraints_derivs.latent.md)
+Only transformations required by the selected outputs are evaluated.
+Local Jacobians are composed in dependency order, so chains of
+transformations are represented correctly.
