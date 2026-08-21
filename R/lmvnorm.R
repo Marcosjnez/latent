@@ -871,43 +871,39 @@ compute_se_lmvnorm <- function(dataList, modelInfo, Optim) {
   control_optimizer$parameters[[1L]] <- Optim$parameters
   control_optimizer$transparameters[[1L]] <- Optim$transparameters
 
-  H <- get_hess(modelInfo$control_manifold,
-                modelInfo$control_transform,
-                modelInfo$control_estimator,
-                control_optimizer)$h
-  H <- (H+t(H))/2
-  rownames(H) <- colnames(H) <- modelInfo$parameters_labels
+  labels <- modelInfo$parameters_labels
 
-  eigenvalues <- eigen(H, symmetric = TRUE, only.values = TRUE)$values
-  tolerance <- sqrt(.Machine$double.eps)*
-    max(1, max(abs(eigenvalues)))
+  H <- get_hess(
+    modelInfo$control_manifold,
+    modelInfo$control_transform,
+    modelInfo$control_estimator,
+    control_optimizer
+  )$h
+  H <- validate_covariance_matrix(
+    H,
+    labels = labels,
+    object_name = "saturated-moment Hessian"
+  )
 
-  if(any(eigenvalues <= tolerance)) {
-    warning("The saturated-moment Hessian is not positive definite; ",
-            "an approximate inverse was used.")
-  }
+  VCOV <- invert_information_matrix(
+    H,
+    labels = labels,
+    object_name = "saturated-moment Hessian"
+  )
 
-  # The optimized criterion is the total negative log-likelihood.
-  VCOV <- approx_Hinv(H)
-
-  if(any(!is.finite(VCOV))) {
-    stop("The saturated-moment Hessian could not be inverted")
-  }
-
-  VCOV <- (VCOV+t(VCOV))/2
-  rownames(VCOV) <- colnames(VCOV) <- modelInfo$parameters_labels
-
-  variances <- diag(VCOV)
-  variances[variances < 0 & variances > -1e-12] <- 0
-  se <- sqrt(variances)
-  names(se) <- modelInfo$parameters_labels
+  se <- standard_errors_from_vcov(
+    VCOV,
+    object_name = "saturated-moment variance-covariance matrix"
+  )
 
   #### Result ####
 
-  result <- list(H = H,
-                 VCOV = VCOV,
-                 se = se,
-                 type = "information")
+  result <- list(
+    H = H,
+    VCOV = VCOV,
+    se = se,
+    type = "information"
+  )
 
   return(result)
 
