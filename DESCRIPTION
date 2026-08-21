@@ -1,22 +1,40 @@
 Package: latent
 Type: Package
-Title: An R package for Latent Variable Modeling
+Title: An R Package for Latent Variable Modeling
 Version: 0.1.0
-Date: 2025-20-01
+Date: 2026-08-21
 Description: Fit measurement models with discrete or continuous latent variables.
-Author: Marcos Jiménez [fnd, cre],
-  Mauricio Garnier-Villarreal [cre],
-  Vithor R. Franco [cre]
-Maintainer: Marcos Jiménez <m.j.jimenezhenriquez@vu.nl>, Mauricio Garnier-Villarreal <m.garniervillarreal@vu.nl>, Vithor R. Franco <vithorfranco@gmail.com>
+Authors@R: c(
+    person("Marcos", "Jiménez", role = c("aut", "cre"),
+           email = "m.j.jimenezhenriquez@vu.nl"),
+    person("Mauricio", "Garnier-Villarreal", role = "aut",
+           email = "m.garniervillarreal@vu.nl"),
+    person("Vithor R.", "Franco", role = "aut",
+           email = "vithorfranco@gmail.com")
+  )
+Maintainer: Marcos Jiménez <m.j.jimenezhenriquez@vu.nl>
 License: GPL-3
-Imports: Rcpp (>= 1.0.11), png, grid, data.table, lavaan, Matrix, car, psych, ggplot2
-LinkingTo: Rcpp, RcppArmadillo
+Imports:
+    car,
+    data.table,
+    ggplot2,
+    grid,
+    lavaan,
+    Matrix,
+    png,
+    psych,
+    Rcpp (>= 1.0.11)
+Suggests:
+    testthat (>= 3.0.0)
+LinkingTo:
+    Rcpp,
+    RcppArmadillo
 Encoding: UTF-8
 URL: https://github.com/Marcosjnez/latent, https://marcosjnez.github.io/latent/
 BugReports: https://github.com/Marcosjnez/latent/issues
 NeedsCompilation: yes
-LazyData: TRUE
-Year: 2025
-Depends: 
+LazyData: true
+Depends:
     R (>= 3.5)
 Config/roxygen2/version: 8.0.0
+Config/testthat/edition: 3

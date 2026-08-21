@@ -1,212 +1,192 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/07/2026
+# Modification date: 21/08/2026
 #'
-#' @title
-#' Standard Errors
-#' @description
+#' Inspect Fitted CFA Objects
 #'
-#' Compute standard errors.
+#' @param fit A fitted object inheriting from class \code{"lcfa"}.
+#' @param what Character string identifying the requested component.
 #'
-#' @usage
-#'
-#' se(fit)
-#'
-#' @param fit model fitted with lca.
-#' @param confidence Coverage of the confidence interval.
-#'
-#' @details Compute standard errors.
-#'
-#' @return List with the following objects:
-#' \item{vcov}{Variance-covariance matrix between the parameters.}
-#' \item{se}{Standard errors.}
-#' \item{SE}{Standard errors in the model list.}
-#'
-#' @references
-#'
-#' None yet.
+#' @return A parameter list, residual list, fit matrix, or estimator-specific
+#'   control component, depending on \code{what}.
 #'
 #' @method latInspect lcfa
 #' @export
 latInspect.lcfa <- function(fit, what = "est") {
 
-  # fit must inherit from class lcfa
-  stopifnot(inherits(fit, "lcfa"))
+  #### Check inputs ####
 
-  # be case insensitive
-  what <- tolower(what)
-
-  groups <- vector("list", length = fit@dataList$ngroups)
-  names(groups) <- fit@dataList$group_label
-
-  #### Extract the fit ####
-
-  doubles <- fit@Optim$outputs$estimators$doubles
-
-  fit_matrix <- vapply(
-    doubles,
-    FUN = function(x) {
-      c(
-        loss             = x[[1]],
-        loss_base        = x[[2]],
-        loss_sat         = x[[3]],
-        loglik           = x[[4]],
-        loglik_base      = x[[5]],
-        loglik_sat       = x[[6]],
-        penalty          = x[[7]],
-        penalized_loss   = x[[1]] + x[[7]],
-        penalized_loglik = x[[4]] - x[[7]]
-      )
-    },
-    FUN.VALUE = numeric(9)
-  )
-
-  colnames(fit_matrix) <-
-    unlist(lapply(fit@modelInfo$control_estimator, FUN = \(x) x$estimator))
-
-  # group_by_fit <- matrix(rowSums(fit_matrix), ncol = 1L,
-  #                        dimnames = list(rownames(fit_matrix), "value"))
-
-  if(fit@dataList$ngroups > 1) {
-
-    Ind <- sapply(fit@dataList$group_label, FUN = \(x) {
-      idx <- grepl(paste0(x, "($|\\.)"), colnames(fit_matrix)) + 0.00
-    })
-    Ind <- cbind(Ind, 1)
-    fit_by_group <- fit_matrix %*% Ind
-    colnames(fit_by_group) <- c(as.character(fit@dataList$group_label),
-                                "overall")
-
-  } else {
-
-    # fit_by_group <- cbind(fit_by_group, overall = rowSums(fit_matrix))
-    fit_by_group <- matrix(rowSums(fit_matrix), ncol = 1L,
-                           dimnames = list(rownames(fit_matrix), "overall"))
-
+  if(!inherits(fit, "lcfa")) {
+    stop("fit must inherit from class 'lcfa'.")
   }
 
-  #### Compute residuals ####
+  if(!is.character(what) ||
+     length(what) != 1L ||
+     is.na(what)) {
+    stop("what must be a single character string.")
+  }
 
-  # matrices <- fit@Optim$outputs$estimators$matrices
-  # idx_S <- grepl(paste(c("S"), collapse = "|"),
-  #                names(fit@transformed_pars))
-  # idx_means <- grepl(paste(c("means"), collapse = "|"),
-  #                    names(fit@transformed_pars))
-  # resids_S <- vector("list", length = sum(idx_S))
-  # for(i in 1:sum(idx_S)) {
-  #   p <- sqrt(length(matrices[[1]][[i]]))
-  #   resids_S[[i]] <- matrix(matrices[[1]][[i]], nrow = p, ncol = p)
-  #   rownames(resids_S[[i]]) <- colnames(resids_S[[i]]) <-
-  #     rownames(fit@transformed_pars[idx_S][[i]])
-  #   names(resids_S)[i] <- names(fit@transformed_pars[idx_S])[i]
-  # }
-  #
-  # if(fit@modelInfo$control_optimizer$meanstructure) {
-  #
-  #   resids_means <- vector("list", length = sum(idx_means))
-  #   for(i in 1:sum(idx_S)) {
-  #     p <- length(matrices[[2]][[i]])
-  #     resids_means[[i]] <- matrices[[2]][[i]]
-  #   }
-  #   names(resids_means)[i] <- names(fit@transformed_pars[idx_means])[i]
-  #
-  #   resids <- c(resids_S, resids_means)
-  #
-  # } else {
-  #   resids <- resids_S
-  # }
+  what <- tolower(what)
+  data_param <- fit@dataList$data_param
 
-  #### Return ####
+  #### Parameter blocks ####
 
-  if(what == "est" ||
-     what == "estimates" ||
-     what == "parameters" ||
-     what == "fixed" ||
-     what == "items") {
+  block_names <- unique(c(
+    data_param$lambda_group,
+    data_param$theta_group,
+    data_param$psi_group,
+    data_param$nu_group,
+    data_param$delta_group
+  ))
+  block_names <- intersect(block_names,
+                           names(fit@transformed_pars))
 
-    idx <- grepl(paste(c("lambda", "theta", "psi"), collapse = "|"),
-                 names(fit@transformed_pars))
+  if(what %in% c("est", "estimates", "parameters",
+                 "fixed")) {
 
-    return(fit@transformed_pars[idx])
+    result <- fit@transformed_pars[block_names]
 
-  } else if(what == "rhat" ||
-            what == "model") {
+  } else if(what == "items") {
 
-    idx <- grepl(paste(c("model"), collapse = "|"),
-                 names(fit@transformed_pars))
+    result <- fit@dataList$item_label
 
-    return(fit@transformed_pars[idx])
+  } else if(what %in% c("rhat", "model",
+                        "implied", "implied.cov")) {
 
-    return(model)
+    names_model <- intersect(
+      data_param$model_group,
+      names(fit@transformed_pars)
+    )
+    result <- fit@transformed_pars[names_model]
 
-  } else if(what == "resid" ||
-            what == "residuals") {
+  } else if(what %in% c("resid", "residuals")) {
 
-    return(resids)
+    result <- lcfa_residuals(fit)
 
-  } else if(what == "lambda" ||
-            what == "loadings") {
+  } else if(what %in% c("lambda", "loadings")) {
 
-    idx <- grepl(paste(c("lambda"), collapse = "|"),
-                 names(fit@transformed_pars))
-
-    return(fit@transformed_pars[idx])
+    names_lambda <- intersect(
+      data_param$lambda_group,
+      names(fit@transformed_pars)
+    )
+    result <- fit@transformed_pars[names_lambda]
 
   } else if(what == "psi") {
 
-    idx <- grepl(paste(c("psi"), collapse = "|"),
-                 names(fit@transformed_pars))
-
-    return(fit@transformed_pars[idx])
+    names_psi <- intersect(
+      data_param$psi_group,
+      names(fit@transformed_pars)
+    )
+    result <- fit@transformed_pars[names_psi]
 
   } else if(what == "theta") {
 
-    idx <- grepl(paste(c("theta"), collapse = "|"),
-                 names(fit@transformed_pars))
+    names_theta <- intersect(
+      data_param$theta_group,
+      names(fit@transformed_pars)
+    )
+    result <- fit@transformed_pars[names_theta]
 
-    return(fit@transformed_pars[idx])
+  } else if(what %in% c("nu", "means")) {
+
+    names_nu <- intersect(
+      data_param$nu_group,
+      names(fit@transformed_pars)
+    )
+    result <- fit@transformed_pars[names_nu]
 
   } else if(what == "uniquenesses") {
 
-    idx <- grepl(paste(c("theta"), collapse = "|"),
-                 names(fit@transformed_pars))
+    names_theta <- intersect(
+      data_param$theta_group,
+      names(fit@transformed_pars)
+    )
+    result <- lapply(
+      fit@transformed_pars[names_theta],
+      FUN = diag
+    )
 
-    return(lapply(fit@transformed_pars[idx], FUN = diag))
+  } else if(what == "w") {
 
-  } else if(what == "W") {
-
-    W <- lapply(fit@modelInfo$control_estimator, FUN = \(x) x$W)
-    return(W)
+    result <- lapply(
+      fit@modelInfo$control_estimator,
+      FUN = \(x) x$W
+    )
+    result <- result[
+      !vapply(result, is.null, logical(1L))
+    ]
 
   } else if(what == "weights") {
 
-    w <- lapply(fit@modelInfo$control_estimator, FUN = \(x) x$w)
-    return(w)
+    result <- lapply(
+      fit@modelInfo$control_estimator,
+      FUN = \(x) x$w
+    )
+    result <- result[
+      !vapply(result, is.null, logical(1L))
+    ]
 
-  } else if(what == "loss" ||
-            what == "f") {
+  } else if(what %in% c("loss", "f")) {
 
-    return(fit_by_group[c("loss", "penalized_loss",
-                          "loss_base", "loss_sat"), , drop = FALSE])
+    fit_matrix <- lcfa_fit_matrix(fit)
+    result <- fit_matrix[
+      c("loss", "penalized_loss",
+        "loss_base", "loss_sat"),
+      ,
+      drop = FALSE
+    ]
 
-  } else if(what == "loglik") {
+  } else if(what %in% c("loglik", "logl")) {
 
-    return(fit_by_group[c("loglik", "penalized_loglik",
-                          "loglik_base", "loglik_sat"), , drop = FALSE])
+    fit_matrix <- lcfa_fit_matrix(fit)
+    result <- fit_matrix[
+      c("loglik", "penalized_loglik",
+        "loglik_base", "loglik_sat"),
+      ,
+      drop = FALSE
+    ]
 
-  } else if(what == "fit") {
+  } else if(what %in% c("fit", "fit.matrix",
+                        "fit_matrix")) {
 
-    return(fit_by_group)
+    result <- lcfa_fit_matrix(fit)
 
-  } else if(what == "fit.matrix" ||
-            what == "fit_matrix") {
+  } else if(what %in% c("fit.components",
+                        "fit_components")) {
 
-    return(fit_matrix)
+    result <- lcfa_fit_components(fit)
+
+  } else if(what %in% c("vcov", "covariance")) {
+
+    result <- tryCatch(
+      fit@Optim$SE$VCOV,
+      error = function(e) NULL
+    )
+
+    if(is.null(result)) {
+      stop("No variance-covariance matrix is stored in the fitted object.")
+    }
+
+  } else if(what %in% c("se", "standard.errors",
+                        "standard_errors")) {
+
+    result <- tryCatch(
+      fit@Optim$SE$se,
+      error = function(e) NULL
+    )
+
+    if(is.null(result)) {
+      stop("No standard errors are stored in the fitted object.")
+    }
 
   } else {
 
-    stop("Unknown request")
+    stop("Unknown request: ", what)
 
   }
+
+  #### Result ####
+
+  return(result)
 
 }

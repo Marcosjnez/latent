@@ -10,34 +10,18 @@
 \item{fit}{A fitted object inheriting from class \code{"latent"}.}
 
 \item{parameters}{Optional parameter specification identifying the transformed
-parameters for which derivatives should be returned. Parameter labels must
-occur in \code{fit@modelInfo$transparameters_labels}. If \code{NULL}, the
-parameter blocks corresponding to the fitted model parameters are used.}
+parameters whose derivatives should be returned.}
 }
 \value{
-A numeric matrix containing the Jacobian for the selected parameters. Row and
-column names correspond to transformed-parameter labels.
+A numeric matrix whose rows correspond to selected transformed
+  parameters and whose columns correspond to the freely estimated parameters.
 }
 \description{
-\code{jacobian.latent()} evaluates the derivatives of transformed parameters
-at the fitted parameter estimates. The Jacobian is used by \pkg{latent} to
-propagate covariance matrices through parameter transformations using the
-delta method.
+Compute the cumulative Jacobian from the freely estimated parameters to
+selected transformed parameters.
 }
 \details{
-Compute the Jacobian matrix associated with parameter transformations in a
-fitted latent variable model.
-
-
-Only transformations required to obtain the selected parameters are
-evaluated. Dependencies between transformations are identified recursively,
-so parameters obtained through several successive transformations are
-supported.
-
-The same Jacobian machinery is used by \code{\link{vcov.latent}} to apply
-the delta method to transformed parameters.
-}
-\seealso{
-\code{\link{jacobian}}, \code{\link{hessian.latent}},
-\code{\link{vcov.latent}}, \code{\link{constraints_derivs.latent}}
+Only transformations required by the selected outputs are evaluated. Local
+Jacobians are composed in dependency order, so chains of transformations are
+represented correctly.
 }

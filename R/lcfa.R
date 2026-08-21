@@ -44,7 +44,10 @@
 #'   incomplete-data moments with \code{lmvnorm()} and then fits CFA as a
 #'   deterministic multistep estimator.
 #' @param std.lv Logical. Standardize latent variables.
-#' @param std.ov Logical. Standardize observed variables.
+#' @param std.ov Logical. Standardize observed variables. With direct or
+#'   saturated-moment FIML, raw variables are standardized within
+#'   substantive groups before missingness patterns are constructed;
+#'   observed-variable means remain freely estimated.
 #' @param meanstructure Logical. Estimate the observed-variable mean structure.
 #' @param parameterization Optional parameterization specification.
 #' @param likelihood Character string controlling the normal/Wishart likelihood
@@ -59,7 +62,7 @@
 #' @param control Optional list of optimization controls.
 #' @param message Logical. Print progress messages.
 #' @param do.fit Logical. If \code{FALSE}, return the prepared but unfitted
-#'   \code{"multistep_lcfa"} object.
+#'   \code{"lcfa"} or \code{"multistep_lcfa"} object.
 #' @param ... Additional arguments passed to lavaan and the sample-statistic
 #'   estimators where applicable.
 #'
@@ -305,10 +308,21 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                       FUN = \(x) isTRUE(x@modelInfo$propagate_uncertainty),
                       FUN.VALUE = logical(1L))
 
-  object_class <- if(any(propagate)) {
+  numeric_multistep <- isTRUE(dataList$sample_stats_only) &&
+    dataList$estimator %in%
+      c("uls", "dwls", "means_uls", "means_dwls")
+
+  object_class <- if(any(propagate) || numeric_multistep) {
     "multistep_lcfa"
   } else {
     "lcfa"
+  }
+
+  if(sample_se == "robust" &&
+     identical(object_class, "lcfa")) {
+    stop("Robust standard errors are not yet implemented for ordinary lcfa ",
+         "likelihood models. Use information standard errors, or a multistep ",
+         "analysis whose parent statistic supplies a robust VCOV matrix.")
   }
 
   modelInfo$propagate_uncertainty <- TRUE
@@ -479,9 +493,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
   } else if(is.null(group)) {
 
     ngroups <- 1L
-    group <- "group"
     group_label <- ""
-    data$group <- group_label
 
   } else {
 
@@ -489,7 +501,16 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
       stop("The grouping variable is not present in data")
     }
 
-    group_label <- unique(data[[group]])
+    if(anyNA(data[[group]])) {
+      stop("The grouping variable cannot contain missing values")
+    }
+
+    group_label <- unique(as.character(data[[group]]))
+
+    if(any(group_label == "")) {
+      stop("Group labels must be non-empty")
+    }
+
     ngroups <- length(group_label)
 
   }
@@ -510,7 +531,11 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
     for(i in seq_len(ngroups)) {
 
-      group_i <- data[[group]] == group_label[i]
+      group_i <- lcfa_group_rows(data = data,
+                                 group = group,
+                                 group_label = group_label,
+                                 i = i,
+                                 ngroups = ngroups)
       items_i <- item_names[[i]]
 
       not_all_na_i <- !apply(is.na(data[group_i, items_i, drop = FALSE]),
@@ -928,6 +953,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                    nfactors = nfactors,
                    positive = positive,
                    estimator = estimator,
+                   likelihood = likelihood,
                    cor = cor,
                    se_type = se_type,
                    meanstructure = meanstructure,
@@ -1516,12 +1542,41 @@ prepare_lcfa_sample_covariance <- function(S, sample.nobs,
 
 }
 
+lcfa_group_rows <- function(data, group, group_label,
+                            i, ngroups) {
+
+  if(ngroups == 1L || is.null(group)) {
+
+    result <- seq_len(nrow(data))
+
+  } else {
+
+    result <- which(as.character(data[[group]]) ==
+                      as.character(group_label[i]))
+
+  }
+
+  if(length(result) == 0L) {
+    stop("Group '", group_label[i],
+         "' contains no observations.")
+  }
+
+  #### Result ####
+
+  return(result)
+
+}
+
 standardize_lcfa_raw_data <- function(data, group, group_label,
                                       item_names, ngroups) {
 
   for(i in seq_len(ngroups)) {
 
-    group_i <- data[[group]] == group_label[i]
+    group_i <- lcfa_group_rows(data = data,
+                               group = group,
+                               group_label = group_label,
+                               i = i,
+                               ngroups = ngroups)
     items_i <- item_names[[i]]
     X_i <- data[group_i, items_i, drop = FALSE]
 
@@ -1529,18 +1584,16 @@ standardize_lcfa_raw_data <- function(data, group, group_label,
     sds_i <- vapply(X_i, FUN = stats::sd, FUN.VALUE = numeric(1L),
                     na.rm = TRUE)
 
-    if(any(!is.finite(means_i)) ||
-       any(!is.finite(sds_i)) ||
-       any(sds_i <= 0)) {
+    invalid <- !is.finite(means_i) |
+      !is.finite(sds_i) |
+      sds_i <= 0
 
-      bad <- items_i[!is.finite(means_i) |
-                     !is.finite(sds_i) |
-                     sds_i <= 0]
+    if(any(invalid)) {
 
       stop("Observed variables cannot be standardized because at least one ",
            "variable has a non-finite mean or a non-positive/non-finite ",
            "standard deviation in group '", group_label[i], "': ",
-           paste(bad, collapse = ", "))
+           paste(items_i[invalid], collapse = ", "))
 
     }
 
@@ -1560,12 +1613,13 @@ standardize_lcfa_raw_data <- function(data, group, group_label,
 extract_lcfa_group_data <- function(data, group, group_label,
                                     item_names, i, ngroups) {
 
-  if(ngroups > 1L) {
-    result <- data[data[[group]] == group_label[i],
-                   item_names[[i]], drop = FALSE]
-  } else {
-    result <- data[, item_names[[i]], drop = FALSE]
-  }
+  rows <- lcfa_group_rows(data = data,
+                          group = group,
+                          group_label = group_label,
+                          i = i,
+                          ngroups = ngroups)
+
+  result <- data[rows, item_names[[i]], drop = FALSE]
 
   #### Result ####
 
@@ -2708,6 +2762,12 @@ estimators_lcfa <- function(dataList, data_param, trans, control) {
                                            q = nrow(trans[[psi_group[i]]]),
                                            p = p,
                                            n = nobs_ij[[i]][[j]],
+                                           group_index = i,
+                                           group_label = dataList$group_label[i],
+                                           pattern_index = j,
+                                           role = "cfa",
+                                           covariance_name = S_group_ij,
+                                           means_name = M_group_ij,
                                            double_names = S_group_ij,
                                            matrix_names = c(S_group_ij,
                                                             M_group_ij)))
@@ -2729,6 +2789,10 @@ estimators_lcfa <- function(dataList, data_param, trans, control) {
                               extra = list(lower_indices = lower_indices-1L,
                                            p = nrow(trans[[psi_group[i]]]),
                                            logdetw = control$penalties$logdet$w,
+                                           group_index = i,
+                                           group_label = dataList$group_label[i],
+                                           pattern_index = NA_integer_,
+                                           role = "penalty",
                                            double_names = "logdetR psi"))
       k <- k+1L
 
@@ -2738,6 +2802,10 @@ estimators_lcfa <- function(dataList, data_param, trans, control) {
                               extra = list(lower_indices = lower_indices-1L,
                                            p = nrow(trans[[theta_group[i]]]),
                                            logdetw = control$penalties$logdet$w,
+                                           group_index = i,
+                                           group_label = dataList$group_label[i],
+                                           pattern_index = NA_integer_,
+                                           role = "penalty",
                                            double_names = "logdetR theta"))
       k <- k+1L
 

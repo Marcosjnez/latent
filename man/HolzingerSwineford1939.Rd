@@ -15,7 +15,7 @@ A data frame with 301 rows and 15 variables:
 Generated example
 }
 \usage{
-data(HolzingerSwineford1939)
+HolzingerSwineford1939
 }
 \description{
 A dataset from the lavaan R package.

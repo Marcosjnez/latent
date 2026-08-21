@@ -10,19 +10,9 @@
 \item{fit}{A fitted object of class \code{"llca"}.}
 }
 \value{
-A symmetric numeric matrix representing the robust information matrix.
+A list containing the Hessian, empirical score covariance, robust
+  variance-covariance matrix, standard errors, and method label.
 }
 \description{
-Construct an information matrix corresponding to a LatentGold-style
-sandwich covariance estimator for a fitted latent class model.
+Construct a sandwich covariance estimator for a fitted latent class model.
 }
-\details{
-Let \eqn{H} denote the Hessian and \eqn{B} the empirical covariance matrix
-of score contributions. The robust covariance matrix is
-\deqn{H^{-1} B H^{-1}.}
-
-Because \code{\link{vcov.latent}} expects an information matrix that is
-subsequently inverted, this function returns the equivalent matrix
-\deqn{H B^{-1} H.}
-}
-\keyword{internal}

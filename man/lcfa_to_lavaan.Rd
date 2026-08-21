@@ -2,53 +2,26 @@
 % Please edit documentation in R/lcfa_to_lavaan.R
 \name{lcfa_to_lavaan}
 \alias{lcfa_to_lavaan}
-\title{Convert a fitted lcfa object (latent) to a lavaan object}
+\title{Convert a Fitted lcfa Object to lavaan}
 \usage{
 lcfa_to_lavaan(object, ...)
 }
 \arguments{
-\item{object}{A fitted \code{lcfa} object from the \code{latent} package.}
+\item{object}{A fitted object inheriting from class \code{"lcfa"}.}
 
-\item{...}{Additional arguments passed to \code{lavaan::cfa()}.}
+\item{...}{Additional arguments used only when rebuilding the lavaan
+scaffold.}
 }
 \value{
-A \code{lavaan} object populated with estimates from the \code{lcfa} fit.
+A \code{"lavaan"} object populated with estimates and covariance
+  information from the fitted \code{"lcfa"} object.
 }
 \description{
-Convert a fitted lcfa object (latent) to a lavaan object
+Convert a Fitted lcfa Object to lavaan
 }
 \details{
-This function reconstructs a \code{lavaan} S4 object from a fitted \code{lcfa}
-object, allowing the use of lavaan post-processing functions such as
-\code{fitMeasures()}, \code{lavResiduals()}, and \code{modindices()}.
-
-The conversion works by:
-\enumerate{
-  \item Building a lavaan scaffold (un-fitted) with the same model syntax, data,
-        estimator, and options.
-  \item Injecting lcfa parameter estimates into the lavaan parameter table via
-        plabel matching.
-  \item Rebuilding the lavaan Model object and implied moments from the updated
-        parameter table.
-  \item Computing test statistics, log-likelihood, baseline model, and VCOV
-        using standard lavaan internals.
-}
-}
-\examples{
-\dontrun{
-library(latent)
-library(lavaan)
-
-HS.model <- ' visual  =~ x1 + x2 + x3
-              textual =~ x4 + x5 + x6
-              speed   =~ x7 + x8 + x9 '
-
-fit_latent <- lcfa(model = HS.model, data = HolzingerSwineford1939,
-                   estimator = "ml", std.lv = TRUE, meanstructure = TRUE)
-fit_lavaan <- lcfa_to_lavaan(fit_latent)
-fitMeasures(fit_lavaan)
-lavResiduals(fit_lavaan)
-modindices(fit_lavaan, sort = TRUE)
-}
-
+This converter uses a lavaan scaffold to preserve lavaan's parameter-table
+and model-matrix conventions. It depends on non-exported lavaan constructors,
+so compatibility is checked at run time and a descriptive error is returned
+when the installed lavaan version is incompatible.
 }

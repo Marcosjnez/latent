@@ -12,6 +12,7 @@
 
 #### Install latent ####
 
+# pak::pak("marcosjnez/latent")
 # devtools::install_github("marcosjnez/latent", force = TRUE)
 
 #### LCA (multinomial) ####
@@ -87,7 +88,8 @@ latInspect(fit, what = "pattern")
 latInspect(fit, what = "table")
 
 # Get standard errors:
-SE <- se(fit, type = "information", digits = 4)
+SE <- se(fit, type = "information", digits = 4,
+         parameters = fit@modelInfo$trans[names(fit@modelInfo$param)])
 SE$table
 
 # Get confidence intervals:
@@ -674,10 +676,15 @@ model <- 'visual  =~ x1 + x2 + x3
 data_missing <- HolzingerSwineford1939
 data_missing[1:5, "x1"] <- NA
 data_missing[9:20, "x5"] <- NA
+data_missing[167:189, "x6"] <- NA
 data_missing[244:251, "x9"] <- NA
+data_missing[280, "x8"] <- NA
+# rvars <- sample(paste("x", c(1, 4, 6), sep = ""), size = nmiss, replace = TRUE)
+# rsubjs <- sample(1:1000, size = nmiss)
+# for(j in 1:nmiss) data_missing[rsubjs[j], rvars[j]] <- NA
 
 estimator <- "ml"
-std.ov <- TRUE
+std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
@@ -687,6 +694,7 @@ fit <- lcfa(data = data_missing,
             model = model,
             estimator = estimator,
             missing = "ml",
+            group = "school",
             meanstructure = meanstructure,
             std.lv = std.lv,
             std.ov = std.ov,
@@ -701,6 +709,7 @@ fit2 <- cfa(model = model,
             data = data_missing,
             estimator = estimator,
             missing = "fiml",
+            group = "school",
             meanstructure = meanstructure,
             std.lv = std.lv,
             std.ov = std.ov,

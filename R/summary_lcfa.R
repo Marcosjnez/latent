@@ -1,122 +1,156 @@
 # Author: Marcos Jimenez
 # Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/05/2026
+# Modification date: 21/08/2026
 #'
-#' @title
-#' Fit indices
-#' @description
+#' Summarize a Fitted CFA Model
 #'
-#' Compute fit indices from any model.
+#' @param object A fitted object inheriting from class \code{"lcfa"}.
+#' @param digits Number of decimal places used when printing results.
+#' @param fit Alias retained for backward compatibility. If supplied,
+#'   \code{object} is ignored.
+#' @param ... Additional arguments reserved for future summary options.
 #'
-#' @usage
-#'
-#' getfit(model)
-#'
-#' @param model data.frame or matrix of response.
-#'
-#' @details \code{getfit} computes all the fit indices related to a specific model.
-#'
-#' @return List with the following fit indices:
-#' \item{AIC}{.}
-#' \item{BIC}{.}
-#'
-#' @references
-#'
-#' None yet.
+#' @return Invisibly, an object of class \code{"summary.lcfa"} containing the
+#'   convergence information, fit indices, and free-parameter table.
 #'
 #' @method summary lcfa
 #' @export
-summary.lcfa <- function(fit, digits = 3) {
+summary.lcfa <- function(object, digits = 3L, fit = NULL, ...) {
 
-  #### Print fit ####
+  if(!is.null(fit)) {
+    object <- fit
+  }
 
-  conv <- fit@Optim$convergence
-  # Print header with model name and version
-  if(conv) {
-    cat(sprintf("%s %s converged after %d iterations\n\n",
-                "latent", as.character( packageVersion('latent') ),
-                fit@Optim$iterations))
+  #### Check inputs ####
+
+  if(!inherits(object, "lcfa")) {
+    stop("object must inherit from class 'lcfa'.")
+  }
+
+  if(!is.numeric(digits) ||
+     length(digits) != 1L ||
+     !is.finite(digits) ||
+     digits < 0L ||
+     digits != as.integer(digits)) {
+    stop("digits must be a non-negative integer.")
+  }
+
+  converged <- isTRUE(object@Optim$convergence)
+  iterations <- object@Optim$iterations
+
+  if(is.null(iterations) || length(iterations) == 0L) {
+    iterations <- NA_integer_
+  }
+
+  estimator <- switch(
+    object@dataList$estimator,
+    ml = "Maximum likelihood",
+    fml = "Maximum likelihood",
+    means_fml = "Maximum likelihood",
+    uls = "Unweighted least squares",
+    means_uls = "Unweighted least squares",
+    dwls = "Diagonally weighted least squares",
+    means_dwls = "Diagonally weighted least squares",
+    object@dataList$estimator
+  )
+
+  optimization <- object@modelInfo$control_optimizer$opt
+  nparam <- object@modelInfo$nparam
+  npatterns <- sum(unlist(object@dataList$npatterns))
+  nobs <- sum(unlist(object@dataList$nobs))
+
+  fit_indices <- getfit(object, digits = digits)
+  parameter_table <- lcfa_parameter_table(object)
+
+  #### Print model information ####
+
+  status <- if(converged) {
+    "converged"
   } else {
-    cat(sprintf("%s %s did not converged after %d iterations\n\n",
-                "latent", as.character( packageVersion('latent') ),
-                fit@Optim$iterations))
+    "did not converge"
   }
 
+  cat("latent ", object@version, " ", status, sep = "")
 
-  # Print Estimator, Optimization, and Parameters section
-  fit_mat <- latInspect(fit, "fit.matrix")
-  penalized_loss <- fit_mat["penalized_loss", "overall"]
-  penalized_loglik <- fit_mat["penalized_loglik", "overall"]
-  if(fit@modelInfo@control_optimizer$reg) {
-    est <- "ULS"
-  } else{
-    est <- "ML"
+  if(is.finite(iterations)) {
+    cat(" after ", iterations, " iterations", sep = "")
   }
 
-  cat(sprintf("  %-45s %s\n", "Estimator", est))
-  cat(sprintf("  %-45s %s\n", "Optimization method", fit@modelInfo$control$opt))
-  cat(sprintf("  %-45s %d\n\n", "Number of model parameters", fit@modelInfo$nparam))
-  cat(sprintf("  %-45s %d\n\n", "Number of patterns", fit@modelInfo$npatterns))
+  cat("\n\n")
 
-  # Print Number of Observations
-  N <- fit@modelInfo$nobs
-  cat(sprintf("  %-45s %d\n\n", "Number of observations", fit@modelInfo$nobs))
+  cat(sprintf("  %-38s %s\n", "Estimator", estimator))
+  cat(sprintf("  %-38s %s\n", "Optimization method", optimization))
+  cat(sprintf("  %-38s %d\n", "Number of model parameters", nparam))
+  cat(sprintf("  %-38s %d\n", "Number of sample statistics", npatterns))
+  cat(sprintf("  %-38s %d\n\n", "Number of observations", nobs))
 
-  llsat <- fit_mat["loglik_sat", "overall"]
-  ll <- fit_mat["loglik", "overall"]
-  llbas <- fit_mat["loglik_base", "overall"]
-  dof <- fit@modelInfo$dof
-  X2 <- 2*(llsat - ll)
-  pval <- 1-pchisq(X2, df = dof)
-  cat("Model Test User Model:\n")
-  cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
-  cat(sprintf("  %-45s %.3f\n", "Test statistic (Chi-square)", X2))
-  cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
-  cat(sprintf("  %-45s %.3f\n", "P-value (Chi-square)", pval))
+  #### Print fit indices ####
 
-  #### Summary stats ####
+  cat("Model fit:\n")
+  cat(strrep("-", 58L), "\n", sep = "")
 
-  lambda <- fit@transformed_pars[[1]]$lambda
-  psi <- fit@transformed_pars[[1]]$psi
-  theta <- fit@transformed_pars[[1]]$theta
-  rhat <- lambda %*% psi %*% t(lambda) + theta
+  print_fit <- c(
+    "Log-likelihood" = fit_indices[["loglik"]],
+    "AIC" = fit_indices[["AIC"]],
+    "BIC" = fit_indices[["BIC"]],
+    "Chi-square" = fit_indices[["chisq"]],
+    "Degrees of freedom" = fit_indices[["dof"]],
+    "P-value" = fit_indices[["pvalue"]],
+    "CFI" = fit_indices[["cfi"]],
+    "RMSEA" = fit_indices[["rmsea"]],
+    "SRMR" = fit_indices[["srmr"]]
+  )
 
-  select <- match(fit@modelInfo$transparameters_labels,
-                  unlist(fit@modelInfo$cfa_param))
-  select <- select[!is.na(select)]
+  for(name in names(print_fit)) {
 
-  est <- c(lambda, psi, theta)[select]
-  se <- unname(se(fit, type = "standard", model = "user", digits = 3)$se)
-  z <- abs(est) / se
-  pval <- 2*(1-pnorm(z))
+    value <- print_fit[[name]]
 
-  labels <- fit@modelInfo$parameters_labels
-  numeric_matrix <- round(cbind(est = est, se = se, z = z, pval = pval),
-                          digits = digits)
-  result <- data.frame(labels = labels, numeric_matrix, stringsAsFactors = FALSE)
+    if(is.finite(value)) {
+      cat(sprintf("  %-38s %.*f\n",
+                  name, digits, value))
+    } else {
+      cat(sprintf("  %-38s %s\n",
+                  name, "NA"))
+    }
 
-  ## Header
-  cat("\nParameter Estimates:\n")
-  cat("-----------------------------------------------------\n")
-
-  ## Column names
-  cat(sprintf("%-20s %10s %10s %10s %10s\n",
-              "label", "est", "se", "z", "pval"))
-  cat("-----------------------------------------------------\n")
-
-  ## Rows
-  for (i in seq_len(nrow(result))) {
-    cat(sprintf("%-20s %10.3f %10.3f %10.3f %10.3f\n",
-                result$labels[i],
-                result$est[i],
-                result$se[i],
-                result$z[i],
-                result$pval[i]))
   }
 
+  #### Print parameter table ####
+
+  cat("\nParameter estimates:\n")
+  cat(strrep("-", 78L), "\n", sep = "")
+  cat(sprintf("%-28s %11s %11s %11s %11s\n",
+              "label", "estimate", "se", "z", "p-value"))
+  cat(strrep("-", 78L), "\n", sep = "")
+
+  for(i in seq_len(nrow(parameter_table))) {
+
+    row <- parameter_table[i, ]
+
+    cat(sprintf("%-28s %11.*f %11.*f %11.*f %11.*f\n",
+                row$label,
+                digits, row$estimate,
+                digits, row$se,
+                digits, row$z,
+                digits, row$pvalue))
+
+  }
+
+  result <- list(
+    call = object@call,
+    version = object@version,
+    converged = converged,
+    iterations = iterations,
+    estimator = estimator,
+    optimization = optimization,
+    fit = fit_indices,
+    parameters = parameter_table
+  )
   class(result) <- "summary.lcfa"
 
-  invisible(result)
+  #### Result ####
+
+  return(invisible(result))
 
 }

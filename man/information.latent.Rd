@@ -10,18 +10,16 @@
 \item{fit}{A fitted object inheriting from class \code{"latent"}.}
 }
 \value{
-A list containing the Hessian, variance-covariance matrix, and
-  standard errors of the freely estimated parameters.
+A list containing the Hessian, variance-covariance matrix, standard
+  errors, and covariance-method metadata.
 }
 \description{
 Information Variance-Covariance Matrix for Latent Models
 }
 \details{
-The fitted object is never modified. Before evaluating a Hessian for an
-ordinary latent object, a temporary derivative copy replaces
-\code{cfa_fml} by \code{cfa_ml} and \code{cfa_means_fml} by
-\code{cfa_means_ml}. The latter estimators evaluate the total negative
-log-likelihood and share the same parameter-index interfaces as their FML
-counterparts. Multistep objects continue to use their fitted discrepancy
-functions because their covariance is propagated by \code{se.multistep()}.
+The fitted object is never modified. For ordinary CFA likelihood models, a
+temporary derivative copy replaces \code{cfa_fml} by \code{cfa_ml} and
+\code{cfa_means_fml} by \code{cfa_means_ml}. Stored covariance matrices are
+reused only when they were explicitly produced by an information/standard
+method.
 }

@@ -17,7 +17,9 @@ or transformed parameters to return.}
 }
 \value{
 A list containing the selected variance-covariance matrix, standard
-  errors, and transformation Jacobian.
+  errors, and cumulative transformation Jacobian. Jacobian rows correspond to
+  the selected transformed parameters and columns to the freely estimated
+  parameter coordinates.
 }
 \description{
 Variance-Covariance Matrix for Latent Objects

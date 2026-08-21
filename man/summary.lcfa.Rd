@@ -2,24 +2,24 @@
 % Please edit documentation in R/summary_lcfa.R
 \name{summary.lcfa}
 \alias{summary.lcfa}
-\title{Fit indices}
+\title{Summarize a Fitted CFA Model}
 \usage{
-getfit(model)
+\method{summary}{lcfa}(object, digits = 3L, fit = NULL, ...)
 }
 \arguments{
-\item{model}{data.frame or matrix of response.}
+\item{object}{A fitted object inheriting from class \code{"lcfa"}.}
+
+\item{digits}{Number of decimal places used when printing results.}
+
+\item{fit}{Alias retained for backward compatibility. If supplied,
+\code{object} is ignored.}
+
+\item{...}{Additional arguments reserved for future summary options.}
 }
 \value{
-List with the following fit indices:
-\item{AIC}{.}
-\item{BIC}{.}
+Invisibly, an object of class \code{"summary.lcfa"} containing the
+  convergence information, fit indices, and free-parameter table.
 }
 \description{
-Compute fit indices from any model.
-}
-\details{
-\code{getfit} computes all the fit indices related to a specific model.
-}
-\references{
-None yet.
+Summarize a Fitted CFA Model
 }

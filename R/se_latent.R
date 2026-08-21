@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 17/08/2026
+# Modification date: 21/08/2026
 #'
 #' Standard Errors for Latent Objects
 #'
@@ -32,6 +32,7 @@ se.latent <- function(fit, type = "information", parameters = NULL,
 
   if(is.null(parameters)) {
 
+    # parameters <- fit@modelInfo$parameters_labels
     parameters <- fit@modelInfo$trans[names(fit@modelInfo$param)]
 
   } else {
@@ -45,7 +46,8 @@ se.latent <- function(fit, type = "information", parameters = NULL,
 
   }
 
-  type <- match.arg(tolower(type), c("information", "robust"))
+  requested_type <- match.arg(tolower(type),
+                              c("information", "robust"))
 
   if(!is.null(digits) &&
      (!is.numeric(digits) || length(digits) != 1L || !is.finite(digits) ||
@@ -53,9 +55,9 @@ se.latent <- function(fit, type = "information", parameters = NULL,
     stop("digits must be NULL or a non-negative integer.")
   }
 
-  #### Covariance of the untransformed parameters ####
+  #### Covariance of the freely estimated parameters ####
 
-  if(type == "information") {
+  if(requested_type == "information") {
     base_VCOV <- information(fit)
   } else {
     base_VCOV <- robust(fit)
@@ -84,6 +86,16 @@ se.latent <- function(fit, type = "information", parameters = NULL,
     B <- matrix(numeric(0L), nrow = 0L, ncol = 0L)
   }
 
+  C <- base_VCOV$C
+  if(is.null(C)) {
+    C <- matrix(numeric(0L), nrow = 0L, ncol = 0L)
+  }
+
+  actual_type <- base_VCOV$type
+  if(is.null(actual_type)) {
+    actual_type <- requested_type
+  }
+
   #### Result ####
 
   result <- list(table = table,
@@ -93,9 +105,10 @@ se.latent <- function(fit, type = "information", parameters = NULL,
                  VCOV = SE$vcov,
                  H = base_VCOV$H,
                  B = B,
-                 C = base_VCOV$C,
+                 C = C,
                  jacob = SE$jacob,
-                 type = type)
+                 requested_type = requested_type,
+                 type = actual_type)
 
   return(result)
 

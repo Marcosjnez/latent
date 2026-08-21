@@ -2,24 +2,23 @@
 % Please edit documentation in R/getfit_lcfa.R
 \name{getfit.lcfa}
 \alias{getfit.lcfa}
-\title{Fit indices}
+\title{Fit Indices for CFA Models}
 \usage{
-getfit(model)
+\method{getfit}{lcfa}(model, digits = 3L, fit_matrix = NULL)
 }
 \arguments{
-\item{model}{data.frame or matrix of response.}
+\item{model}{A fitted object inheriting from class \code{"lcfa"}.}
+
+\item{digits}{Number of decimal places used in the returned values.}
+
+\item{fit_matrix}{Optional precomputed internal fit matrix. This argument is
+used by package post-processing methods to avoid refitting the direct-FIML
+saturated model more than once.}
 }
 \value{
-List with the following fit indices:
-\item{AIC}{.}
-\item{BIC}{.}
+A named numeric vector containing model dimensions and available fit
+  statistics.
 }
 \description{
-Compute fit indices from any model.
-}
-\details{
-\code{getfit} computes all the fit indices related to a specific model.
-}
-\references{
-None yet.
+Fit Indices for CFA Models
 }

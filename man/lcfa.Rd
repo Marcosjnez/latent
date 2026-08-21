@@ -53,7 +53,10 @@ deterministic multistep estimator.}
 
 \item{std.lv}{Logical. Standardize latent variables.}
 
-\item{std.ov}{Logical. Standardize observed variables.}
+\item{std.ov}{Logical. Standardize observed variables. With direct or
+saturated-moment FIML, raw variables are standardized within
+substantive groups before missingness patterns are constructed;
+observed-variable means remain freely estimated.}
 
 \item{meanstructure}{Logical. Estimate the observed-variable mean structure.}
 
@@ -75,7 +78,7 @@ statistics with \code{se.multistep()}.}
 \item{message}{Logical. Print progress messages.}
 
 \item{do.fit}{Logical. If \code{FALSE}, return the prepared but unfitted
-\code{"multistep_lcfa"} object.}
+\code{"lcfa"} or \code{"multistep_lcfa"} object.}
 
 \item{...}{Additional arguments passed to lavaan and the sample-statistic
 estimators where applicable.}

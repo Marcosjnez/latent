@@ -1,27 +1,17 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/08/2026
+# Modification date: 21/08/2026
 #'
 #' LatentGold-Style Robust Variance-Covariance Matrix
 #'
-#' Construct an information matrix corresponding to a LatentGold-style
-#' sandwich covariance estimator for a fitted latent class model.
+#' Construct a sandwich covariance estimator for a fitted latent class model.
 #'
 #' @param fit A fitted object of class \code{"llca"}.
 #'
-#' @details
-#' Let \eqn{H} denote the Hessian and \eqn{B} the empirical covariance matrix
-#' of score contributions. The robust covariance matrix is
-#' \deqn{H^{-1} B H^{-1}.}
+#' @return A list containing the Hessian, empirical score covariance, robust
+#'   variance-covariance matrix, standard errors, and method label.
 #'
-#' Because \code{\link{vcov.latent}} expects an information matrix that is
-#' subsequently inverted, this function returns the equivalent matrix
-#' \deqn{H B^{-1} H.}
-#'
-#' @return
-#' A symmetric numeric matrix representing the robust information matrix.
-#'
-#' @keywords internal
+#' @method robust llca
 #' @export
 robust.llca <- function(fit) {
 
@@ -31,69 +21,108 @@ robust.llca <- function(fit) {
 
   #### Compute the Hessian ####
 
-  fit@modelInfo$control_optimizer$parameters[[1]] <-
+  fit@modelInfo$control_optimizer$parameters[[1L]] <-
     fit@Optim$parameters
-  fit@modelInfo$control_optimizer$transparameters[[1]] <-
+  fit@modelInfo$control_optimizer$transparameters[[1L]] <-
     fit@Optim$transparameters
 
+  labels <- fit@modelInfo$parameters_labels
   H <- hessian(fit)
+  H <- validate_covariance_matrix(H, labels = labels,
+                                  object_name = "LCA Hessian")
+  Hinv <- invert_information_matrix(H, labels = labels,
+                                    object_name = "LCA Hessian")
 
   #### Collect the gradient by response pattern ####
 
-  transparameters_labels <- fit@modelInfo$transparameters_labels
   pattern_weights <- fit@dataList$pattern_weights
   npatterns <- fit@dataList$npatterns
   nparam <- fit@modelInfo$nparam
   nobs <- fit@dataList$nobs
   nclasses <- fit@dataList$nclasses
 
-  # Remove the lca estimator but keep everything else:
+  if(any(!is.finite(pattern_weights)) ||
+     any(pattern_weights <= 0)) {
+    stop("Response-pattern weights must be positive and finite.")
+  }
+
+  # Remove the aggregate LCA estimator but keep all other estimators.
   control_estimator <- fit@modelInfo$control_estimator[-1L]
   K <- length(control_estimator)
 
   pattern_struct <- vector("list", length = npatterns)
+
   for(s in seq_len(npatterns)) {
 
-    # Put back the lca estimator but for each response pattern:
-    pattern_struct[[s]] <- list(estimator = "lca",
-                                parameters = list(fit@modelInfo$trans$class[s, ],
-                                                  fit@modelInfo$trans$loglik[s, ]),
-                                extra = list(S = 1L,
-                                             I = nclasses,
-                                             weights = pattern_weights[s]))
+    pattern_struct[[s]] <- list(
+      estimator = "lca",
+      parameters = list(fit@modelInfo$trans$class[s, ],
+                        fit@modelInfo$trans$loglik[s, ]),
+      extra = list(S = 1L,
+                   I = nclasses,
+                   weights = pattern_weights[s])
+    )
+
   }
 
-  pattern_estimators <- create_estimators(estimators = pattern_struct,
-                                          structures = fit@modelInfo$trans)
+  pattern_estimators <- create_estimators(
+    estimators = pattern_struct,
+    structures = fit@modelInfo$trans
+  )
   control_estimator <- c(control_estimator, pattern_estimators)
 
-  #### Compute the B matrix ####
+  #### Empirical score covariance ####
 
   control_manifold <- fit@modelInfo$control_manifold
   control_transform <- fit@modelInfo$control_transform
   control_optimizer <- fit@modelInfo$control_optimizer
-  B <- matrix(0, nrow = nparam, ncol = nparam)
+
+  B <- matrix(0,
+              nrow = nparam,
+              ncol = nparam,
+              dimnames = list(labels, labels))
+
   for(s in seq_len(npatterns)) {
+
     idx <- c(seq_len(K), K+s)
-    computations <- get_grad(control_manifold = control_manifold,
-                             control_transform = control_transform,
-                             control_estimator = control_estimator[idx],
-                             control_optimizer = control_optimizer)
+
+    computations <- get_grad(
+      control_manifold = control_manifold,
+      control_transform = control_transform,
+      control_estimator = control_estimator[idx],
+      control_optimizer = control_optimizer
+    )
+
     gradient <- computations$g/pattern_weights[s]
-    B <- B + pattern_weights[s] * gradient %*% t(gradient)
+    B <- B + pattern_weights[s]*tcrossprod(gradient)
+
   }
 
   B <- B*nobs/(nobs-1L)
+  B <- validate_covariance_matrix(B, labels = labels,
+                                  object_name = "empirical score covariance")
 
-  #### Sandwhich estimator ####
+  #### Sandwich estimator ####
 
-  Hinv <- solve(H)
   VCOV <- Hinv %*% B %*% Hinv
-  VCOV <- (VCOV + t(VCOV))/2
+  VCOV <- validate_covariance_matrix(
+    VCOV,
+    labels = labels,
+    object_name = "robust LCA variance-covariance matrix"
+  )
 
-  #### Return ####
+  se <- standard_errors_from_vcov(
+    VCOV,
+    object_name = "robust LCA variance-covariance matrix"
+  )
 
-  result <- list(H = H, VCOV = VCOV, se = sqrt(diag(VCOV)))
+  #### Result ####
+
+  result <- list(H = H,
+                 B = B,
+                 VCOV = VCOV,
+                 se = se,
+                 type = "robust")
 
   return(result)
 

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/08/2026
+# Modification date: 21/08/2026
 #'
 #' Standard Errors for Multistage Latent Models
 #'
@@ -80,14 +80,19 @@ se.multistage <- function(fit, type = "information", parameters = NULL,
   }
 
   if(is.null(parameters)) {
-    parameters <- fit@modelInfo$trans[names(fit@modelInfo$param)]
+
     # parameters <- fit@modelInfo$parameters_labels
+    parameters <- fit@modelInfo$trans[names(fit@modelInfo$param)]
+
   } else {
+
     selected_parameters <- unique(unlist(parameters))
+
     if(!all(selected_parameters %in%
             fit@modelInfo$transparameters_labels)) {
       stop("Unknown parameters.")
     }
+
   }
 
   #### Order the estimation stages ####
@@ -175,12 +180,26 @@ se.multistage <- function(fit, type = "information", parameters = NULL,
 
     H2 <- hessian(stage)
     H2 <- H2[current_labels, current_labels, drop = FALSE]
-    H2_inv <- solve(H2)
+    H2 <- validate_covariance_matrix(
+      H2,
+      labels = current_labels,
+      object_name = paste0("Hessian of multistage step ", i)
+    )
+    H2_inv <- invert_information_matrix(
+      H2,
+      labels = current_labels,
+      object_name = paste0("Hessian of multistage step ", i)
+    )
 
     #### Full Hessian and cross derivatives ####
 
     H_full <- hessian(fit_full)
     H_full <- H_full[full_labels, full_labels, drop = FALSE]
+    H_full <- validate_covariance_matrix(
+      H_full,
+      labels = full_labels,
+      object_name = paste0("unrestricted Hessian of multistage step ", i)
+    )
 
     C <- H_full[previous_labels, current_labels, drop = FALSE]
 
@@ -252,12 +271,14 @@ se.multistage <- function(fit, type = "information", parameters = NULL,
                  table_se = table_se,
                  se = c(VCOV$se),
                  vcov = VCOV$vcov,
-                 jacob = VCOV$jacob,
+                 VCOV = VCOV$vcov,
                  H = H2,
                  B = B,
                  A = A,
                  C = C,
-                 joint_vcov = v)
+                 jacob = VCOV$jacob,
+                 joint_vcov = v,
+                 type = type)
 
   return(result)
 
@@ -275,17 +296,11 @@ conditional_vcov_multistage <- function(fit, type = "information") {
 
   labels <- fit@modelInfo$parameters_labels
 
-  if(!is.matrix(stage_vcov)) {
-    stage_vcov <- as.matrix(stage_vcov)
-  }
-
-  if(nrow(stage_vcov) != length(labels) ||
-     ncol(stage_vcov) != length(labels) ||
-     !isSymmetric(stage_vcov)) {
-    stop("The conditional variance-covariance matrix has incompatible dimensions.")
-  }
-
-  rownames(stage_vcov) <- colnames(stage_vcov) <- labels
+  stage_vcov <- validate_covariance_matrix(
+    stage_vcov,
+    labels = labels,
+    object_name = "conditional multistage variance-covariance matrix"
+  )
 
   #### Result ####
 

@@ -2,27 +2,19 @@
 % Please edit documentation in R/latInspect_lcfa.R
 \name{latInspect.lcfa}
 \alias{latInspect.lcfa}
-\title{Standard Errors}
+\title{Inspect Fitted CFA Objects}
 \usage{
-se(fit)
+\method{latInspect}{lcfa}(fit, what = "est")
 }
 \arguments{
-\item{fit}{model fitted with lca.}
+\item{fit}{A fitted object inheriting from class \code{"lcfa"}.}
 
-\item{confidence}{Coverage of the confidence interval.}
+\item{what}{Character string identifying the requested component.}
 }
 \value{
-List with the following objects:
-\item{vcov}{Variance-covariance matrix between the parameters.}
-\item{se}{Standard errors.}
-\item{SE}{Standard errors in the model list.}
+A parameter list, residual list, fit matrix, or estimator-specific
+  control component, depending on \code{what}.
 }
 \description{
-Compute standard errors.
-}
-\details{
-Compute standard errors.
-}
-\references{
-None yet.
+Inspect Fitted CFA Objects
 }

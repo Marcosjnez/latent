@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 17/08/2026
+# Modification date: 21/08/2026
 #'
 #' Variance-Covariance Matrix for Latent Objects
 #'
@@ -11,7 +11,9 @@
 #'   or transformed parameters to return.
 #'
 #' @return A list containing the selected variance-covariance matrix, standard
-#'   errors, and transformation Jacobian.
+#'   errors, and cumulative transformation Jacobian. Jacobian rows correspond to
+#'   the selected transformed parameters and columns to the freely estimated
+#'   parameter coordinates.
 #'
 #' @method vcov latent
 #' @export
@@ -19,27 +21,12 @@ vcov.latent <- function(fit, v, parameters = NULL) {
 
   #### Check the untransformed covariance matrix ####
 
-  if(!is.matrix(v)) {
-    v <- as.matrix(v)
-  }
-
   labels <- fit@modelInfo$parameters_labels
-  nparam <- length(labels)
-
-  if(nrow(v) != nparam ||
-     ncol(v) != nparam ||
-     !isSymmetric(v)) {
-    stop("v should be a square, symmetric matrix of dimensions ",
-         nparam, "x", nparam)
-  }
-
-  if(!is.null(rownames(v)) && !is.null(colnames(v)) &&
-     all(labels %in% rownames(v)) &&
-     all(labels %in% colnames(v))) {
-    v <- v[labels, labels, drop = FALSE]
-  }
-
-  rownames(v) <- colnames(v) <- labels
+  v <- validate_covariance_matrix(
+    v,
+    labels = labels,
+    object_name = "untransformed variance-covariance matrix"
+  )
 
   #### Parameters ####
 
@@ -75,20 +62,38 @@ vcov.latent <- function(fit, v, parameters = NULL) {
                    control_optimizer = fit@modelInfo$control_optimizer,
                    vcov = v)
 
-  rownames(VCOV$vcov) <- colnames(VCOV$vcov) <- names(VCOV$se) <-
-    fit@modelInfo$transparameters_labels
-  rownames(VCOV$jacob) <- colnames(VCOV$jacob) <-
-    fit@modelInfo$transparameters_labels
+  trans_labels <- fit@modelInfo$transparameters_labels
+  rownames(VCOV$vcov) <- colnames(VCOV$vcov) <- trans_labels
+  rownames(VCOV$jacob) <- colnames(VCOV$jacob) <- trans_labels
 
   selected_parameters <- unique(unlist(parameters))
-  selected_idx <- match(selected_parameters,
-                        fit@modelInfo$transparameters_labels)
+  selected_idx <- match(selected_parameters, trans_labels)
+  free_idx <- match(labels, trans_labels)
 
-  VCOV$vcov <- as.matrix(VCOV$vcov[selected_idx, selected_idx, drop = FALSE])
-  VCOV$vcov <- (VCOV$vcov+t(VCOV$vcov))/2
-  VCOV$se <- sqrt(diag(VCOV$vcov))
-  names(VCOV$se) <- selected_parameters
-  VCOV$jacob <- VCOV$jacob[selected_idx, selected_idx, drop = FALSE]
+  if(anyNA(selected_idx) || anyNA(free_idx)) {
+    stop("The parameter labels could not be matched to the transformed ",
+         "parameter coordinates.")
+  }
+
+  VCOV$vcov <- as.matrix(
+    VCOV$vcov[selected_idx, selected_idx, drop = FALSE]
+  )
+  VCOV$vcov <- validate_covariance_matrix(
+    VCOV$vcov,
+    labels = selected_parameters,
+    object_name = "transformed variance-covariance matrix"
+  )
+
+  VCOV$se <- standard_errors_from_vcov(
+    VCOV$vcov,
+    object_name = "transformed variance-covariance matrix"
+  )
+
+  VCOV$jacob <- as.matrix(
+    VCOV$jacob[selected_idx, free_idx, drop = FALSE]
+  )
+  rownames(VCOV$jacob) <- selected_parameters
+  colnames(VCOV$jacob) <- labels
 
   #### Result ####
 

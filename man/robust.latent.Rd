@@ -2,7 +2,7 @@
 % Please edit documentation in R/robust_latent.R
 \name{robust.latent}
 \alias{robust.latent}
-\title{Robust Variance-Covariance Matrix for Latent Models}
+\title{Robust Variance-Covariance Matrix for General Latent Models}
 \usage{
 \method{robust}{latent}(fit)
 }
@@ -10,9 +10,10 @@
 \item{fit}{A fitted object inheriting from class \code{"latent"}.}
 }
 \value{
-The result of \code{information(fit)}.
+A stored robust covariance result when available. If no
+  class-specific robust covariance exists, the information covariance is
+  returned with a warning and an explicit fallback label.
 }
 \description{
-Default robust method for latent objects without a class-specific robust
-estimator. The information covariance matrix is returned.
+Robust Variance-Covariance Matrix for General Latent Models
 }
