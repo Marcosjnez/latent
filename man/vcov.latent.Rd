@@ -16,11 +16,14 @@ parameters.}
 or transformed parameters to return.}
 }
 \value{
-A list containing the selected variance-covariance matrix, standard
-  errors, and cumulative transformation Jacobian. Jacobian rows correspond to
-  the selected transformed parameters and columns to the freely estimated
-  parameter coordinates.
+A list containing the selected variance-covariance matrix and
+  standard errors.
 }
 \description{
 Variance-Covariance Matrix for Latent Objects
+}
+\details{
+Transformation covariances are propagated incrementally in C++. The internal
+Jacobian workspace used by that computation is not returned because it is not
+the cumulative Jacobian exposed by \code{jacobian.latent()}.
 }

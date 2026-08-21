@@ -1,113 +1,164 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 04/05/2026
+# Modification date: 21/08/2026
 #'
 #' Summary of a Latent Class Model
 #'
-#' Print a summary of a fitted latent class model.
+#' Print optimization information, likelihood-based fit indices, and the
+#' estimated latent class profile of a fitted latent class model.
 #'
-#' @description
-#' \code{summary.llca()} displays optimization information, the estimation
-#' method, the number of parameters and observations, available model-fit
-#' statistics, and the estimated latent class profile.
+#' @param fit A fitted object inheriting from class \code{"llca"}.
+#' @param digits Non-negative integer giving the number of decimal places used
+#'   in printed numeric results.
+#' @param ... Additional arguments reserved for future summary options.
 #'
-#' @param fit A fitted object of class \code{"llca"}.
-#'
-#' @return
-#' The latent class profile returned by
-#' \code{latInspect(fit, what = "profile")}, invisibly.
-#'
-#' @details
-#' The printed output reports whether optimization converged, the optimization
-#' method, the number of freely estimated parameters, and information about the
-#' observed response patterns.
-#'
-#' For fully multinomial models, the likelihood-ratio statistic, degrees of
-#' freedom, and corresponding p-value are also displayed.
-#'
-#' @seealso
-#' \code{\link{getfit.llca}}, \code{\link{latInspect.llca}},
-#' \code{\link{se.llca}}
+#' @return The latent class profile returned by
+#'   \code{latInspect(fit, what = "profile")}, invisibly.
 #'
 #' @method summary llca
 #' @export
-summary.llca <- function(fit) {
+summary.llca <- function(fit, digits = 3L, ...) {
 
-  #### Print fit ####
+  #### Check inputs ####
 
-  conv <- fit@Optim$convergence
-  # Print header with model name and version
-  if(conv) {
+  if(!inherits(fit, "llca")) {
+    stop("fit must inherit from class 'llca'.")
+  }
 
-    cat(sprintf("%s %s converged after %d iterations\n\n",
-                "latent", as.character(packageVersion('latent')),
-                fit@Optim$iterations))
+  if(length(fit@Optim) == 0L ||
+     length(fit@Optim$transparameters) == 0L) {
+    stop("The llca object has not been fitted.")
+  }
 
+  if(!is.numeric(digits) ||
+     length(digits) != 1L ||
+     !is.finite(digits) ||
+     digits < 0L ||
+     digits != as.integer(digits)) {
+    stop("digits must be a non-negative integer.")
+  }
+
+  #### Model information ####
+
+  converged <- isTRUE(fit@Optim$convergence)
+  iterations <- fit@Optim$iterations
+  control <- fit@modelInfo$control_optimizer
+  regularized <- isTRUE(control$reg)
+
+  estimator <- if(regularized) {
+    "Penalized maximum likelihood"
   } else {
+    "Maximum likelihood"
+  }
 
-    cat(sprintf("%s %s did not converged after %d iterations\n\n",
-                "latent", as.character(packageVersion('latent')),
-                fit@Optim$iterations))
+  status <- if(converged) {
+    "converged"
+  } else {
+    "did not converge"
+  }
+
+  cat("latent ", fit@version, " ", status, sep = "")
+
+  if(length(iterations) == 1L && is.finite(iterations)) {
+    cat(" after ", iterations, " iterations", sep = "")
+  }
+
+  cat("\n\n")
+
+  cat(sprintf("  %-45s %s\n", "Estimator", estimator))
+  cat(sprintf("  %-45s %s\n", "Optimization method", control$opt))
+  cat(sprintf("  %-45s %d\n", "Number of model parameters",
+              fit@modelInfo$nparam))
+  cat(sprintf("  %-45s %d\n", "Number of observations",
+              fit@dataList$nobs))
+  cat(sprintf("  %-45s %d\n", "Number of response patterns",
+              fit@dataList$npatterns))
+  cat(sprintf("  %-45s %d\n\n", "Number of possible patterns",
+              fit@dataList$npossible_patterns))
+
+  #### Fit indices ####
+
+  fit_indices <- getfit(fit, digits = NULL)
+
+  cat("Model fit:\n")
+  cat(strrep("-", 72L), "\n", sep = "")
+
+  print_names <- c(
+    loglik = "Log-likelihood",
+    penalized_loglik = "Penalized log-likelihood",
+    L2 = "Likelihood-ratio statistic",
+    dof = "Degrees of freedom",
+    pvalue = "P-value",
+    AIC = "AIC",
+    BIC = "BIC",
+    SABIC = "Sample-size-adjusted BIC",
+    ICL = "Integrated classification likelihood",
+    R2_entropy = "Entropy R-squared"
+  )
+
+  for(name in names(print_names)) {
+
+    if(!name %in% names(fit_indices)) {
+      next
+    }
+
+    value <- fit_indices[[name]]
+
+    if(length(value) != 1L || !is.finite(value)) {
+      next
+    }
+
+    value_digits <- if(name == "dof") 0L else digits
+
+    cat(sprintf("  %-45s %.*f\n",
+                print_names[[name]], value_digits, value))
 
   }
 
+  #### Latent class profile ####
 
-  # Print Estimator, Optimization, and Parameters section
-  if(isFALSE(fit@Optim$control$penalties)) {
-    est <- "ML"
-  } else {
-    est <- "Penalized-ML"
-  }
+  profile <- latInspect(fit, what = "profile", digits = digits)
 
-  cat(sprintf("  %-45s %s\n", "Estimator", est))
-  cat(sprintf("  %-45s %s\n", "Optimization method", fit@Optim$control$opt))
-  cat(sprintf("  %-45s %d\n\n", "Number of model parameters", fit@modelInfo$nparam))
+  cat("\nLatent class profile:\n")
+  cat(strrep("-", 72L), "\n", sep = "")
+  print(profile, digits = digits)
 
-  # Print Number of Observations
-  cat(sprintf("  %-45s %d\n\n", "Number of observations", fit@modelInfo$nobs))
-  cat(sprintf("  %-45s %d\n\n", "Number of response patterns (include NA)", fit@modelInfo$npatterns))
-  cat(sprintf("  %-45s %d\n\n", "Number of possible patterns", fit@modelInfo$npossible_patterns))
+  #### Result ####
 
-  # Print Model Test Section
-  if(sum(fit@modelInfo$item != "multinomial") == 0) {
-    summary_table <- latInspect(fit, what = "summary")
-    ni <- summary_table$Observed
-    mi <- summary_table$Estimated
-    dof <- fit@modelInfo$dof
-    L2 <- 2*sum(ni*log(ni/mi))
-    pv <- 1-pchisq(L2, dof)
-  } else {
-    L2 <- NA
-    pv <- NA
-    dof <- NA
-  }
-  cat("Model Test User Model:\n")
-  cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
-  cat(sprintf("  %-45s %.3f\n", "Test statistic (L2)", L2))
-  cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
-  cat(sprintf("  %-45s %.3f\n", "P-value (L2)", pv))
-
-  result <- latInspect(fit, what = "profile")
-
-  invisible(result)
+  return(invisible(profile))
 
 }
 
+#'
 #' @rdname summary.llca
 #' @param model For the \code{"llcalist"} method, a collection of fitted
-#'   \code{"llca"} and/or \code{"llca_sam"} models.
-#' @details
-#' For an \code{"llcalist"}, \code{summary()} is applied to each model in the
-#' collection.
+#'   \code{"llca"} models.
 #' @method summary llcalist
 #' @export
-summary.llcalist <- function(model) {
+summary.llcalist <- function(model, digits = 3L, ...) {
 
-  out <- lapply(model, FUN = summary)
+  if(!inherits(model, "llcalist")) {
+    stop("model must inherit from class 'llcalist'.")
+  }
 
-  class(out) <- "summary.llcalist"
+  if(length(model) == 0L) {
+    stop("model must contain at least one fitted llca object.")
+  }
 
-  invisible(out)
+  result <- vector("list", length = length(model))
+
+  for(i in seq_along(model)) {
+    result[[i]] <- summary(model[[i]],
+                           digits = digits,
+                           ...)
+  }
+
+  names(result) <- names(model)
+  class(result) <- "summary.llcalist"
+
+  #### Result ####
+
+  return(invisible(result))
 
 }

@@ -10,25 +10,31 @@
 #' @param parameters Optional parameter specification identifying the parameters
 #'   or transformed parameters to return.
 #'
-#' @return A list containing the selected variance-covariance matrix, standard
-#'   errors, and cumulative transformation Jacobian. Jacobian rows correspond to
-#'   the selected transformed parameters and columns to the freely estimated
-#'   parameter coordinates.
+#' @return A list containing the selected variance-covariance matrix and
+#'   standard errors.
+#'
+#' @details
+#' Transformation covariances are propagated incrementally in C++. The internal
+#' Jacobian workspace used by that computation is not returned because it is not
+#' the cumulative Jacobian exposed by \code{jacobian.latent()}.
 #'
 #' @method vcov latent
 #' @export
 vcov.latent <- function(fit, v, parameters = NULL) {
 
-  #### Check the untransformed covariance matrix ####
+  #### Check inputs ####
+
+  if(!inherits(fit, "latent")) {
+    stop("fit must inherit from class 'latent'.")
+  }
 
   labels <- fit@modelInfo$parameters_labels
+
   v <- validate_covariance_matrix(
     v,
     labels = labels,
     object_name = "untransformed variance-covariance matrix"
   )
-
-  #### Parameters ####
 
   if(is.null(parameters)) {
 
@@ -56,22 +62,22 @@ vcov.latent <- function(fit, v, parameters = NULL) {
 
   #### Delta-method covariance ####
 
-  VCOV <- get_vcov(control_manifold = fit@modelInfo$control_manifold,
-                   control_transform = fit@modelInfo$control_transform,
-                   control_estimator = fit@modelInfo$control_estimator,
-                   control_optimizer = fit@modelInfo$control_optimizer,
-                   vcov = v)
+  VCOV <- get_vcov(
+    control_manifold = fit@modelInfo$control_manifold,
+    control_transform = fit@modelInfo$control_transform,
+    control_estimator = fit@modelInfo$control_estimator,
+    control_optimizer = fit@modelInfo$control_optimizer,
+    vcov = v
+  )
 
   trans_labels <- fit@modelInfo$transparameters_labels
   rownames(VCOV$vcov) <- colnames(VCOV$vcov) <- trans_labels
-  rownames(VCOV$jacob) <- colnames(VCOV$jacob) <- trans_labels
 
   selected_parameters <- unique(unlist(parameters))
   selected_idx <- match(selected_parameters, trans_labels)
-  free_idx <- match(labels, trans_labels)
 
-  if(anyNA(selected_idx) || anyNA(free_idx)) {
-    stop("The parameter labels could not be matched to the transformed ",
+  if(anyNA(selected_idx)) {
+    stop("The selected parameters could not be matched to the transformed ",
          "parameter coordinates.")
   }
 
@@ -89,11 +95,9 @@ vcov.latent <- function(fit, v, parameters = NULL) {
     object_name = "transformed variance-covariance matrix"
   )
 
-  VCOV$jacob <- as.matrix(
-    VCOV$jacob[selected_idx, free_idx, drop = FALSE]
-  )
-  rownames(VCOV$jacob) <- selected_parameters
-  colnames(VCOV$jacob) <- labels
+  # get_vcov() uses x.jacob only as an internal workspace. It is not the
+  # cumulative Jacobian returned by jacobian.latent().
+  VCOV$jacob <- NULL
 
   #### Result ####
 

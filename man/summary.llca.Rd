@@ -5,40 +5,26 @@
 \alias{summary.llcalist}
 \title{Summary of a Latent Class Model}
 \usage{
-\method{summary}{llca}(fit)
+\method{summary}{llca}(fit, digits = 3L, ...)
 
-\method{summary}{llcalist}(model)
+\method{summary}{llcalist}(model, digits = 3L, ...)
 }
 \arguments{
-\item{fit}{A fitted object of class \code{"llca"}.}
+\item{fit}{A fitted object inheriting from class \code{"llca"}.}
+
+\item{digits}{Non-negative integer giving the number of decimal places used
+in printed numeric results.}
+
+\item{...}{Additional arguments reserved for future summary options.}
 
 \item{model}{For the \code{"llcalist"} method, a collection of fitted
-\code{"llca"} and/or \code{"llca_sam"} models.}
+\code{"llca"} models.}
 }
 \value{
 The latent class profile returned by
-\code{latInspect(fit, what = "profile")}, invisibly.
+  \code{latInspect(fit, what = "profile")}, invisibly.
 }
 \description{
-\code{summary.llca()} displays optimization information, the estimation
-method, the number of parameters and observations, available model-fit
-statistics, and the estimated latent class profile.
-}
-\details{
-Print a summary of a fitted latent class model.
-
-
-The printed output reports whether optimization converged, the optimization
-method, the number of freely estimated parameters, and information about the
-observed response patterns.
-
-For fully multinomial models, the likelihood-ratio statistic, degrees of
-freedom, and corresponding p-value are also displayed.
-
-For an \code{"llcalist"}, \code{summary()} is applied to each model in the
-collection.
-}
-\seealso{
-\code{\link{getfit.llca}}, \code{\link{latInspect.llca}},
-\code{\link{se.llca}}
+Print optimization information, likelihood-based fit indices, and the
+estimated latent class profile of a fitted latent class model.
 }

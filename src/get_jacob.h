@@ -1,7 +1,7 @@
 /*
- * Author: Marcos Jiménez
+ * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/08/2026
+ * Modification date: 21/08/2026
  */
 
 Rcpp::List get_jacob(Rcpp::List control_manifold,
@@ -9,51 +9,193 @@ Rcpp::List get_jacob(Rcpp::List control_manifold,
                      Rcpp::List control_estimator,
                      Rcpp::List control_optimizer) {
 
+  (void)control_manifold;
+  (void)control_estimator;
+
   arguments_optim x;
-
-  x.nmanifolds = control_manifold.size();
   x.ntransforms = control_transform.size();
-  x.nestimators = control_estimator.size();
 
-  product_transform* final_transform;
-  product_estimator* final_estimator;
+  // Parameter coordinates
 
-  std::vector<manifolds*> xmanifolds(x.nmanifolds);
+  if(!control_optimizer.containsElementNamed("parameters") ||
+     !control_optimizer.containsElementNamed("transparameters") ||
+     !control_optimizer.containsElementNamed("transparam2param")) {
+    Rcpp::stop("The optimizer control does not contain the parameter mappings "
+               "required to compute the Jacobian.");
+  }
+
+  std::vector<arma::vec> parameters_list =
+    control_optimizer["parameters"];
+  std::vector<arma::vec> transparameters_list =
+    control_optimizer["transparameters"];
+
+  if(parameters_list.size() == 0L ||
+     transparameters_list.size() == 0L) {
+    Rcpp::stop("The fitted parameter vectors are missing.");
+  }
+
+  x.parameters = parameters_list[0L];
+  x.transparameters = transparameters_list[0L];
+  x.transparameters_init = x.transparameters;
+  x.transparam2param =
+    Rcpp::as<arma::uvec>(control_optimizer["transparam2param"]);
+  x.nparam = x.parameters.n_elem;
+  x.ntransparam = x.transparameters.n_elem;
+
+  if(x.transparam2param.n_elem !=
+     static_cast<arma::uword>(x.nparam)) {
+    Rcpp::stop("transparam2param has incompatible dimensions.");
+  }
+
+  if(x.transparam2param.n_elem > 0L &&
+     x.transparam2param.max() >=
+       static_cast<arma::uword>(x.ntransparam)) {
+    Rcpp::stop("transparam2param contains an index outside the transformed "
+               "parameter vector.");
+  }
+
+  x.transparameters(x.transparam2param) =
+    x.parameters;
+  x.transparameters_init = x.transparameters;
+
+  if(control_optimizer.containsElementNamed("idx_transforms")) {
+    x.idx_transforms =
+      Rcpp::as<arma::uvec>(control_optimizer["idx_transforms"]);
+  } else {
+    x.idx_transforms =
+      arma::regspace<arma::uvec>(
+        0L,
+        x.ntransforms > 0L ?
+          static_cast<arma::uword>(x.ntransforms-1L) :
+          0L
+      );
+
+    if(x.ntransforms == 0L) {
+      x.idx_transforms.reset();
+    }
+  }
+
+  // Transformation objects
+
   std::vector<transformations*> xtransforms(x.ntransforms);
-  std::vector<estimators*> xestimators(x.nestimators);
 
-  optim* algorithm = choose_optim(x, control_optimizer);
-
-  std::vector<arma::vec> parameters_list = control_optimizer["parameters"];
-  std::vector<arma::vec> transparameters_list = control_optimizer["transparameters"];
-  arma::vec parameters = parameters_list[0];
-  arma::vec transparameters = transparameters_list[0];
-  x.parameters = parameters;
-  x.transparameters = transparameters;
-
-  for(int i=0; i < x.nmanifolds; ++i) {
-    xmanifolds[i] = choose_manifold(control_manifold[i]);
+  for(int i = 0L; i < x.ntransforms; ++i) {
+    xtransforms[i] =
+      choose_transform(control_transform[i]);
   }
 
-  for(int i=0; i < x.ntransforms; ++i) {
-    xtransforms[i] = choose_transform(control_transform[i]);
+  product_transform final_transform;
+
+  // Evaluate every transformation once so each local transformation object
+  // contains the fitted quantities needed by its jacobian() method.
+  final_transform.transform(x, xtransforms);
+
+  // Cumulative Jacobian
+
+  // Rows correspond to transformed-parameter coordinates. Columns correspond
+  // only to freely estimated parameters. This avoids constructing an
+  // ntransparam x ntransparam matrix.
+  x.jacob.zeros(x.ntransparam, x.nparam);
+
+  for(arma::uword j = 0L;
+      j < x.transparam2param.n_elem;
+      ++j) {
+    x.jacob(x.transparam2param[j], j) = 1.0;
   }
 
-  for(int i=0; i < x.nestimators; ++i) {
-    xestimators[i] = choose_estimator(control_estimator[i]);
+  for(arma::uword t : x.idx_transforms) {
+
+    if(t >= xtransforms.size()) {
+      Rcpp::stop("A requested transformation index is outside the "
+                 "transformation list.");
+    }
+
+    arma::uvec indices_in =
+      xtransforms[t]->indices_in;
+    arma::uvec indices_out =
+      xtransforms[t]->indices_out;
+
+    if((indices_in.n_elem > 0L &&
+        indices_in.max() >=
+          static_cast<arma::uword>(x.ntransparam)) ||
+       (indices_out.n_elem > 0L &&
+        indices_out.max() >=
+          static_cast<arma::uword>(x.ntransparam))) {
+      Rcpp::stop("A transformation contains parameter indices outside the "
+                 "transformed-parameter vector.");
+    }
+
+    xtransforms[t]->jacobian(x);
+    const arma::mat& local_jacobian =
+      xtransforms[t]->jacob;
+
+    if(local_jacobian.n_rows != indices_out.n_elem ||
+       local_jacobian.n_cols != indices_in.n_elem) {
+      Rcpp::stop(
+        "The Jacobian dimensions of transformation " +
+        std::to_string(t+1L) +
+        " do not match its input and output indices."
+      );
+    }
+
+    if(!local_jacobian.is_finite()) {
+      Rcpp::stop(
+        "Transformation " +
+        std::to_string(t+1L) +
+        " returned a non-finite Jacobian."
+      );
+    }
+
+    // Save the cumulative derivatives of the inputs before replacing any
+    // output rows. This also handles transformations whose input and output
+    // coordinates overlap.
+    arma::mat input_jacobian(
+      indices_in.n_elem,
+      x.nparam,
+      arma::fill::zeros
+    );
+
+    for(arma::uword i = 0L;
+        i < indices_in.n_elem;
+        ++i) {
+
+      for(arma::sp_mat::const_row_iterator it =
+            x.jacob.begin_row(indices_in[i]);
+          it != x.jacob.end_row(indices_in[i]);
+          ++it) {
+        input_jacobian(i, it.col()) = *it;
+      }
+
+    }
+
+    arma::mat output_jacobian =
+      local_jacobian*input_jacobian;
+
+    for(arma::uword i = 0L;
+        i < indices_out.n_elem;
+        ++i) {
+
+      arma::uword output_index =
+        indices_out[i];
+      x.jacob.row(output_index).zeros();
+
+      for(arma::uword j = 0L;
+          j < static_cast<arma::uword>(x.nparam);
+          ++j) {
+
+        double value = output_jacobian(i, j);
+
+        if(value != 0.0) {
+          x.jacob(output_index, j) = value;
+        }
+
+      }
+
+    }
+
   }
 
-  /*
-   * Computations
-   */
-
-  final_transform->transform(x, xtransforms);
-  final_estimator->param(x, xestimators);
-  final_estimator->F(x, xestimators);
-  final_estimator->G(x, xestimators);
-  final_transform->update_grad(x, xtransforms);
-
-  final_transform->jacobian(x, xtransforms);
+  // Result
 
   Rcpp::List result;
   result["jacob"] = x.jacob;

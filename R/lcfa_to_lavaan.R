@@ -72,8 +72,10 @@ lcfa_to_lavaan <- function(object, ...) {
       list(...)
     )
 
-    scaffold <- do.call(lavaan::cfa,
-                        scaffold_args)
+    scaffold <- do.call(
+      lavaan::cfa,
+      scaffold_args
+    )
 
   } else {
 
@@ -96,14 +98,10 @@ lcfa_to_lavaan <- function(object, ...) {
   #### Parameter estimates ####
 
   transparameters <- object@Optim$transparameters
+
   if(is.null(names(transparameters))) {
     names(transparameters) <-
       object@modelInfo$transparameters_labels
-  }
-
-  if(is.null(names(free_parameters))) {
-    names(free_parameters) <-
-      object@modelInfo$parameters_labels
   }
 
   est <- lavpartable$start
@@ -130,8 +128,10 @@ lcfa_to_lavaan <- function(object, ...) {
   free_ids <- sort(unique(
     lavpartable$free[all_free_rows]
   ))
-  free_rows <- match(free_ids,
-                     lavpartable$free)
+  free_rows <- match(
+    free_ids,
+    lavpartable$free
+  )
   free_plabels <- lavpartable$plabel[free_rows]
 
   stored_se <- tryCatch(
@@ -151,9 +151,12 @@ lcfa_to_lavaan <- function(object, ...) {
     }
 
     all_free_plabels <- lavpartable$plabel[all_free_rows]
-    matched <- match(all_free_plabels,
-                     names(stored_se))
+    matched <- match(
+      all_free_plabels,
+      names(stored_se)
+    )
     available <- !is.na(matched)
+
     se_vector[all_free_rows[available]] <-
       stored_se[matched[available]]
 
@@ -171,18 +174,24 @@ lcfa_to_lavaan <- function(object, ...) {
     if(!is.null(rownames(stored_vcov)) &&
        all(free_plabels %in% rownames(stored_vcov)) &&
        all(free_plabels %in% colnames(stored_vcov))) {
+
       lcfa_vcov <- stored_vcov[
         free_plabels,
         free_plabels,
         drop = FALSE
       ]
+
     } else if(nrow(stored_vcov) == length(free_plabels)) {
+
       lcfa_vcov <- stored_vcov
       rownames(lcfa_vcov) <-
         colnames(lcfa_vcov) <- free_plabels
+
     } else {
+
       warning("The stored lcfa VCOV could not be aligned with lavaan's ",
               "free-parameter order and was omitted.")
+
     }
 
   }
@@ -203,13 +212,17 @@ lcfa_to_lavaan <- function(object, ...) {
     "lav_partable_attributes",
     "lav_object_independence"
   )
+
   namespace <- asNamespace("lavaan")
+
   unavailable <- required_internal[
-    !vapply(required_internal,
-            exists,
-            FUN.VALUE = logical(1L),
-            envir = namespace,
-            inherits = FALSE)
+    !vapply(
+      required_internal,
+      exists,
+      FUN.VALUE = logical(1L),
+      envir = namespace,
+      inherits = FALSE
+    )
   ]
 
   if(length(unavailable) > 0L) {
@@ -218,9 +231,13 @@ lcfa_to_lavaan <- function(object, ...) {
          paste(unavailable, collapse = ", "))
   }
 
-  lav_model <- getFromNamespace("lav_model", "lavaan")
+  lav_model <- getFromNamespace(
+    "lav_model",
+    "lavaan"
+  )
   lav_model_x2glist <- getFromNamespace(
-    "lav_model_x2glist", "lavaan"
+    "lav_model_x2glist",
+    "lavaan"
   )
 
   lavmodel <- lav_model(
@@ -250,16 +267,20 @@ lcfa_to_lavaan <- function(object, ...) {
   #### Log-likelihood and test statistics ####
 
   lav_h1_implied_logl <- getFromNamespace(
-    "lav_h1_implied_logl", "lavaan"
+    "lav_h1_implied_logl",
+    "lavaan"
   )
   lav_model_loglik <- getFromNamespace(
-    "lav_model_loglik", "lavaan"
+    "lav_model_loglik",
+    "lavaan"
   )
   lav_model_test <- getFromNamespace(
-    "lav_model_test", "lavaan"
+    "lav_model_test",
+    "lavaan"
   )
   lav_model_fit <- getFromNamespace(
-    "lav_model_fit", "lavaan"
+    "lav_model_fit",
+    "lavaan"
   )
 
   lavh1 <- tryCatch(
@@ -284,6 +305,7 @@ lcfa_to_lavaan <- function(object, ...) {
   )
 
   fit_matrix <- lcfa_fit_matrix(object)
+
   fit_indices <- getfit.lcfa(
     object,
     digits = 12L,
@@ -302,10 +324,14 @@ lcfa_to_lavaan <- function(object, ...) {
   ]
 
   fx <- if(is.finite(fit_indices[["chisq"]])) {
+
     fit_indices[["chisq"]]/
       sum(unlist(object@dataList$nobs))
+
   } else {
+
     fit_matrix["penalized_loss", "overall"]
+
   }
 
   attr(x, "fx") <- fx
@@ -365,7 +391,8 @@ lcfa_to_lavaan <- function(object, ...) {
   }
 
   lav_partable_attributes <- getFromNamespace(
-    "lav_partable_attributes", "lavaan"
+    "lav_partable_attributes",
+    "lavaan"
   )
   lavpta <- lav_partable_attributes(
     lavpartable
@@ -412,12 +439,15 @@ lcfa_to_lavaan <- function(object, ...) {
   )
 
   lav_object_independence <- getFromNamespace(
-    "lav_object_independence", "lavaan"
+    "lav_object_independence",
+    "lavaan"
   )
 
   result@baseline <- tryCatch({
 
-    baseline <- lav_object_independence(object = result)
+    baseline <- lav_object_independence(
+      object = result
+    )
 
     list(
       partable = baseline@ParTable,

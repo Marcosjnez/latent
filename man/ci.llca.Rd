@@ -3,84 +3,58 @@
 \name{ci.llca}
 \alias{ci.llca}
 \alias{ci.llca_sam}
-\title{Confidence intervals for latent class models}
+\alias{ci.llcalist}
+\title{Confidence Intervals for Latent Class Models}
 \usage{
 \method{ci}{llca}(
   fit,
-  type = "standard",
+  type = "information",
   confidence = 0.95,
   parameters = NULL,
   digits = 3L,
   ...
 )
 
-\method{fitted}{llca_sam}(object, ...)
+\method{ci}{llca_sam}(object, ...)
+
+\method{ci}{llcalist}(
+  model,
+  type = "information",
+  confidence = 0.95,
+  parameters = NULL,
+  digits = 3L,
+  ...
+)
 }
 \arguments{
-\item{fit}{A fitted object of class \code{"llca"}.}
+\item{fit}{A fitted object inheriting from class \code{"llca"}.}
 
-\item{type}{Character string indicating the standard-error estimator used to
-construct the intervals. Available options are \code{"standard"} and
-\code{"robust"}. See \code{se.llca()}.}
+\item{type}{Character string selecting the standard-error estimator.
+Available options are \code{"information"} and \code{"robust"}.
+\code{"standard"} is retained as an alias of \code{"information"}.}
 
 \item{confidence}{Numeric scalar strictly between zero and one specifying the
 confidence level.}
 
-\item{digits}{Non-negative integer indicating the number of decimal places used
-in the formatted confidence-interval table.}
+\item{parameters}{Optional parameter specification identifying the parameters
+or transformed parameters for which intervals should be returned.}
 
-\item{...}{Additional arguments passed to other methods.}
+\item{digits}{Non-negative integer indicating the number of decimal places
+used in the formatted confidence-interval table.}
 
-\item{object}{For the \code{"llca_sam"} method, an object containing fitted
-\code{measurement} and \code{structural} components.}
+\item{...}{Additional arguments passed to \code{se()}.}
+
+\item{object}{A legacy structural-after-measurement object containing a
+fitted structural \code{"llca"} component.}
+
+\item{model}{For the \code{"llcalist"} method, a collection of fitted
+\code{"llca"} models.}
 }
 \value{
-A list with the following components:
-\describe{
-  \item{\code{table}}{A list of formatted parameter tables showing the estimate
-  and its confidence interval.}
-  \item{\code{lower_table}}{The lower confidence limits arranged in the model
-  parameter structure.}
-  \item{\code{upper_table}}{The upper confidence limits arranged in the model
-  parameter structure.}
-  \item{\code{lower}}{A named numeric vector of lower confidence limits.}
-  \item{\code{upper}}{A named numeric vector of upper confidence limits.}
-  \item{\code{se}}{A named numeric vector of standard errors.}
-  \item{\code{vcov}}{The variance-covariance matrix used to construct the
-  intervals.}
-  \item{\code{B}}{The empirical or two-step correction matrix, when available.}
-  \item{\code{H}}{The Hessian matrix, when available.}
-  \item{\code{newH}}{The adjusted Hessian used by the robust estimator, when
-  available.}
-}
+A list containing formatted and numeric confidence limits and the
+  standard-error result used to construct them.
 }
 \description{
-Computes confidence intervals for the parameters of a fitted latent class
-model.
-}
-\details{
-Confidence limits are computed using the asymptotic normal approximation. The
-critical value is obtained as the square root of the corresponding one-degree-
-of-freedom chi-squared quantile. Standard errors are obtained through
-\code{se()}, so two-step and robust adjustments are used when requested.
-
-The \code{digits} argument affects only the formatted \code{table}. The numeric
-confidence limits, standard errors, and covariance matrices are returned
-without rounding.
-
-For an \code{"llca_sam"} object, \code{ci()} returns confidence intervals
-for the measurement and structural parameters.
-}
-\examples{
-\dontrun{
-fit <- lca(data = empathy, nclasses = 3L,
-           gaussian = c("ec1", "ec2", "ec3"))
-
-ci(fit)
-ci(fit, type = "robust", confidence = 0.90, digits = 4L)
-}
-
-}
-\seealso{
-\code{se()}
+Compute normal-approximation confidence intervals for parameters of a fitted
+latent class model.
 }

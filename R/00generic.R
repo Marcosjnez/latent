@@ -1,50 +1,111 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/07/2026
+# Modification date: 21/08/2026
+
+.show_latent_row <- function(label, value) {
+
+  cat(sprintf("  %-45s %s\n", label, value))
+
+  #### Result ####
+
+  return(invisible(NULL))
+
+}
+
+.show_latent_number <- function(label, value, digits = 3L) {
+
+  if(length(value) == 1L && is.finite(value)) {
+    .show_latent_row(label, formatC(value, format = "f", digits = digits))
+  }
+
+  #### Result ####
+
+  return(invisible(NULL))
+
+}
 
 setMethod("show", "llca", function(object) {
 
-  conv <- object@Optim$convergence
-  # Print header with model name and version
-  if(conv) {
-    cat(sprintf("%s %s converged after %d iterations\n\n",
-                "latent", as.character(packageVersion('latent')),
-                object@Optim$iterations))
-  } else{
-    cat(sprintf("%s %s did not converged after %d iterations\n\n",
-                "latent", as.character(packageVersion('latent')),
-                object@Optim$iterations))
+  fitted <- length(object@Optim) > 0L &&
+    length(object@Optim$transparameters) > 0L
+
+  if(!fitted) {
+
+    cat("Unfitted latent class model specification\n\n")
+    .show_latent_row("Object class", class(object)[1L])
+    .show_latent_row("Number of model parameters",
+                     object@modelInfo$nparam)
+
+    #### Result ####
+
+    return(invisible(object))
+
   }
 
+  converged <- isTRUE(object@Optim$convergence)
+  iterations <- object@Optim$iterations
 
-  # Print Estimator, Optimization, and Parameters section
-  if(isFALSE(object@modelInfo$control$penalties)) {
-    est <- "ML"
+  status <- if(converged) {
+    "converged"
   } else {
-    est <- "Penalized-ML"}
+    "did not converge"
+  }
 
-  cat(sprintf("  %-45s %s\n", "Estimator", est))
-  cat(sprintf("  %-45s %s\n", "Optimization method", object@modelInfo$control$opt))
-  cat(sprintf("  %-45s %d\n\n", "Number of model parameters", object@modelInfo$nparam))
+  cat("latent ", object@version, " ", status, sep = "")
 
-  # Print Number of Observations
-  cat(sprintf("  %-45s %d\n\n", "Number of observations", object@modelInfo$nobs))
-  cat(sprintf("  %-45s %d\n\n", "Number of response patterns (include NA)", object@modelInfo$npatterns))
-  cat(sprintf("  %-45s %d\n\n", "Number of possible patterns", object@modelInfo$npossible_patterns))
+  if(length(iterations) == 1L && is.finite(iterations)) {
+    cat(" after ", iterations, " iterations", sep = "")
+  }
 
-  # Print Model Test Section
-  fit_ind <- getfit(object)
-  L2 <- fit_ind[["L2"]]
-  pv <- fit_ind[["pvalue"]]
-  dof <- fit_ind[["dof"]]
+  cat("\n\n")
 
-  cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
+  control <- object@modelInfo$control_optimizer
+  regularized <- isTRUE(control$reg)
 
-  cat("Model Test User Model:\n")
-  cat(sprintf("  %-45s %.3f\n", "Test statistic (L2)", L2))
-  cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
-  cat(sprintf("  %-45s %.3f\n", "P-value (L2)", pv))
+  estimator <- if(regularized) {
+    "Penalized maximum likelihood"
+  } else {
+    "Maximum likelihood"
+  }
+
+  .show_latent_row("Estimator", estimator)
+  .show_latent_row("Optimization method", control$opt)
+  .show_latent_row("Number of model parameters",
+                   object@modelInfo$nparam)
+  .show_latent_row("Number of observations",
+                   object@dataList$nobs)
+  .show_latent_row("Number of response patterns",
+                   object@dataList$npatterns)
+  .show_latent_row("Number of possible patterns",
+                   object@dataList$npossible_patterns)
+
+  fit_indices <- tryCatch(
+    getfit(object, digits = NULL),
+    error = function(e) NULL
+  )
+
+  if(!is.null(fit_indices)) {
+
+    cat("\nModel fit:\n")
+    cat(strrep("-", 58L), "\n", sep = "")
+
+    .show_latent_number("Log-likelihood",
+                        fit_indices[["loglik"]])
+
+    if("penalized_loglik" %in% names(fit_indices)) {
+      .show_latent_number("Penalized log-likelihood",
+                          fit_indices[["penalized_loglik"]])
+    }
+
+    .show_latent_number("Likelihood-ratio statistic",
+                        fit_indices[["L2"]])
+    .show_latent_number("Degrees of freedom",
+                        fit_indices[["dof"]], digits = 0L)
+    .show_latent_number("P-value",
+                        fit_indices[["pvalue"]])
+
+  }
 
   #### Result ####
 
@@ -54,73 +115,101 @@ setMethod("show", "llca", function(object) {
 
 setMethod("show", "lcfa", function(object) {
 
-  conv <- object@Optim$convergence
-  # Print header with model name and version
-  if(conv) {
-    cat(sprintf("%s %s converged after %d iterations\n\n",
-                "latent", as.character(packageVersion('latent')),
-                object@Optim$iterations))
-  } else {
-    cat(sprintf("%s %s did not converged after %d iterations\n\n",
-                "latent", as.character(packageVersion('latent')),
-                object@Optim$iterations))
-  }
+  fitted <- length(object@Optim) > 0L &&
+    length(object@Optim$transparameters) > 0L
 
+  if(!fitted) {
 
-  N <- object@modelInfo$nobs
-  dof <- object@modelInfo$dof
+    cat("Unfitted confirmatory factor model specification\n\n")
+    .show_latent_row("Object class", class(object)[1L])
+    .show_latent_row("Number of model parameters",
+                     object@modelInfo$nparam)
 
-  opt_method <- object@modelInfo$control$opt
-  nparam <- object@modelInfo$nparam
-  npatterns <- sum(unlist(object@modelInfo$npatterns))
-  nobs <- sum(unlist(object@modelInfo$nobs))
-  fit_mat <- latInspect(object, "fit.matrix")
-  penalized_loss <- fit_mat["penalized_loss", "overall"]
-  penalized_loglik <- fit_mat["penalized_loglik", "overall"]
+    #### Result ####
 
-  # Print Estimator, Optimization, and Parameters section
-  if(object@modelInfo@control_optimizer$reg) {
-
-    loglik <- NA
-    X2 <- NA
-    pval <- NA
-    est <- "ULS"
-    test_message <- sprintf("  %-45s %.3f\n", "Test statistic", penalized_loss)
-    pval_message <- sprintf("  %-45s %.3f\n", "P-value (Unknown)", pval)
-
-  } else {
-
-    llsat <- fit_mat["loglik_sat", "overall"]
-    ll <- fit_mat["loglik", "overall"]
-    llbas <- fit_mat["loglik_base", "overall"]
-    X2 <- 2*(llsat - ll)
-    pval <- 1-pchisq(X2, df = dof)
-    est <- "ML"
-    test_message <- sprintf("  %-45s %.3f\n", "Test statistic (Chi-square)", X2)
-    pval_message <- sprintf("  %-45s %.3f\n", "P-value (Chi-square)", pval)
+    return(invisible(object))
 
   }
 
-  cat(sprintf("  %-45s %s\n", "Estimator", est))
-  cat(sprintf("  %-45s %s\n", "Optimization method", opt_method))
-  cat(sprintf("  %-45s %d\n\n", "Number of model parameters", nparam))
-  cat(sprintf("  %-45s %d\n\n", "Number of patterns", npatterns))
+  converged <- isTRUE(object@Optim$convergence)
+  iterations <- object@Optim$iterations
 
-  # Print Number of Observations
-  cat(sprintf("  %-45s %d\n\n", "Number of observations", nobs))
+  status <- if(converged) {
+    "converged"
+  } else {
+    "did not converge"
+  }
 
-  cat("  ", paste(rep("-", 54), collapse = ""), "\n\n", sep = "")
+  cat("latent ", object@version, " ", status, sep = "")
 
-  cat("Model Test User Model:\n")
-  cat(test_message)
-  cat(sprintf("  %-45s %d\n", "Degrees of freedom", dof))
-  cat(pval_message)
+  if(length(iterations) == 1L && is.finite(iterations)) {
+    cat(" after ", iterations, " iterations", sep = "")
+  }
+
+  cat("\n\n")
+
+  estimator <- switch(
+    object@dataList$estimator,
+    ml = "Maximum likelihood",
+    fml = "Maximum likelihood",
+    means_fml = "Maximum likelihood",
+    uls = "Unweighted least squares",
+    means_uls = "Unweighted least squares",
+    dwls = "Diagonally weighted least squares",
+    means_dwls = "Diagonally weighted least squares",
+    object@dataList$estimator
+  )
+
+  if(isTRUE(object@modelInfo$control_optimizer$reg)) {
+    estimator <- paste("Penalized", tolower(estimator))
+  }
+
+  .show_latent_row("Estimator", estimator)
+  .show_latent_row(
+    "Optimization method",
+    object@modelInfo$control_optimizer$opt
+  )
+  .show_latent_row("Number of model parameters",
+                   object@modelInfo$nparam)
+  .show_latent_row("Number of sample statistics",
+                   sum(unlist(object@dataList$npatterns)))
+  .show_latent_row("Number of observations",
+                   sum(unlist(object@dataList$nobs)))
+
+  # Keep show() inexpensive. Full likelihood-ratio and incremental fit indices,
+  # including the saturated incomplete-data model for direct FIML, are computed
+  # by summary() or getfit().
+  fit_matrix <- tryCatch(
+    lcfa_fit_matrix(object, compute_h1 = FALSE),
+    error = function(e) NULL
+  )
+
+  if(!is.null(fit_matrix)) {
+
+    cat("\nModel objective:\n")
+    cat(strrep("-", 58L), "\n", sep = "")
+
+    .show_latent_number(
+      "Loss",
+      fit_matrix["loss", "overall"]
+    )
+    .show_latent_number(
+      "Penalized loss",
+      fit_matrix["penalized_loss", "overall"]
+    )
+    .show_latent_number(
+      "Log-likelihood",
+      fit_matrix["loglik", "overall"]
+    )
+    .show_latent_number(
+      "Penalized log-likelihood",
+      fit_matrix["penalized_loglik", "overall"]
+    )
+
+  }
 
   #### Result ####
 
   return(invisible(object))
 
 })
-
-
-
