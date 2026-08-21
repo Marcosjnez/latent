@@ -4,7 +4,7 @@
 \alias{lmean}
 \title{Sample Means}
 \usage{
-lmean(data, model = NULL, std.ov = FALSE,
+lmean(data, model = NULL, std.ov = FALSE, se = TRUE,
       do.fit = TRUE, message = FALSE,
       control = NULL, ...)
 }
@@ -17,6 +17,10 @@ Column names are required and are used as the observed-variable labels.}
 \item{std.ov}{Logical. If \code{TRUE}, the observed variables are treated as
 standardized and all mean parameters are fixed to zero. Their asymptotic
 covariance matrix and standard errors are consequently also zero.}
+
+\item{se}{Logical. Compute and store the sampling covariance matrix. When
+\code{FALSE}, \code{Optim$SE} remains empty and the object is marked as a
+fixed computational statistic rather than an uncertainty source.}
 
 \item{do.fit}{Logical. If \code{TRUE}, compute the sample means. If
 \code{FALSE}, return the prepared but unfitted \code{"latent"} object.}

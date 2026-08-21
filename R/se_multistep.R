@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 18/08/2026
+# Modification date: 21/08/2026
 #'
 #' Standard Errors for Multistep Latent Models
 #'
@@ -322,8 +322,13 @@ initial_vcov_multistep <- function(stage, parameters) {
 
   for(model in models) {
 
-    model_labels <- intersect(parameters,
-                              model@modelInfo$parameters_labels)
+    source_labels <- model@modelInfo$step_labels
+
+    if(is.null(source_labels)) {
+      source_labels <- model@modelInfo$parameters_labels
+    }
+
+    model_labels <- intersect(parameters, source_labels)
 
     if(length(model_labels) == 0L) {
       next
@@ -413,7 +418,15 @@ initial_vcov_multistep <- function(stage, parameters) {
 
 stored_vcov_multistep <- function(fit) {
 
-  labels <- fit@modelInfo$parameters_labels
+  if(!isTRUE(fit@modelInfo$propagate_uncertainty)) {
+    stop("The preceding object is not marked for uncertainty propagation.")
+  }
+
+  labels <- fit@modelInfo$step_labels
+
+  if(is.null(labels)) {
+    labels <- fit@modelInfo$parameters_labels
+  }
 
   VCOV <- tryCatch(fit@Optim$SE$VCOV,
                    error = function(e) NULL)
@@ -520,22 +533,23 @@ collect_latent_models_multistep <- function(objects) {
       return(invisible(NULL))
     }
 
+    propagate <- isTRUE(object@modelInfo$propagate_uncertainty)
+
+    if(propagate) {
+
+      result[[length(result)+1L]] <<- object
+      return(invisible(NULL))
+
+    }
+
     children <- object@extra[
       vapply(object@extra,
              FUN = \(x) inherits(x, "latent"),
              FUN.VALUE = logical(1L))
     ]
 
-    if(length(children) > 0L) {
-
-      for(child in children) {
-        visit(child)
-      }
-
-    } else {
-
-      result[[length(result)+1L]] <<- object
-
+    for(child in children) {
+      visit(child)
     }
 
     return(invisible(NULL))

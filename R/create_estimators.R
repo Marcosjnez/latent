@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 09/08/2026
+# Modification date: 21/08/2026
 
 create_estimators <- function(estimators, structures) {
 
@@ -14,22 +14,18 @@ create_estimators <- function(estimators, structures) {
   if(!is.list(estimators_and_labels)) {
     stop("estimators should be a list")
   }
-  nestimators <- length(estimators_and_labels) # Number of estimators
-  # Pick the estimators:
+
+  nestimators <- length(estimators_and_labels)
   estimators <- lapply(estimators_and_labels, FUN = \(x) x$estimator)
-  # Pick the parameter labels going to each estimator:
   inputs <- lapply(estimators_and_labels, FUN = \(x) x$parameters)
-  # Pick the extra objects going to each estimator:
   dots <- lapply(estimators_and_labels, FUN = \(x) x$extra)
 
-  # For each estimator:
   result <- vector("list", length = nestimators)
-  k <- 1L
+
   for(i in seq_len(nestimators)) {
 
     estimator <- estimators[[i]]
 
-    # Choose which extra objects from 'dots' should be kept for this estimator:
     est_objects <- switch(estimator,
                           beta_loglik        = c("X"),
                           binomial_loglik    = c("X", "Ntrials"),
@@ -65,51 +61,48 @@ create_estimators <- function(estimators, structures) {
                           cfa_ml             = c("p", "w", "n"),
                           cfa_fml            = c("p", "w", "n"),
                           cfa_means_fml      = c("p", "w", "n"),
-                          cfa_means_ml       = c("p", "w", "n", "S", "means"),
-                          stop("Unknown estimator: ", estimator)
-    )
+                          cfa_means_ml       = c("p", "w", "n"),
+                          stop("Unknown estimator: ", estimator))
 
-    # Pick only those objects from 'dots':
     extra <- dots[[i]][c(est_objects, "double_names", "matrix_names")]
 
-    # Ensure the required extras are present and named:
-    if (length(est_objects) > 0L) {
+    if(length(est_objects) > 0L) {
       missing <- setdiff(est_objects, names(extra))
-      if (length(missing) > 0L) {
+      if(length(missing) > 0L) {
         stop("Missing required object(s) for estimator '", estimator, "': ",
              paste(missing, collapse = ", "))
       }
     }
 
-    ninputs <- length(inputs[[i]]) # Number of estimators
+    ninputs <- length(inputs[[i]])
     indices <- vector("list", length = ninputs)
-    for(j in 1:ninputs) {
 
-      # Collect the unique subset of parameter labels that are not fixed values:
+    for(j in seq_len(ninputs)) {
+
       if(is.list(inputs[[i]][j])) {
         labels_vector <- unname(c(unlist(inputs[[i]][[j]])))
       } else {
         labels_vector <- unname(c(unlist(structures[inputs[[i]][[j]]])))
       }
 
-      # Get the indices of the vector_structures that are in the labels_vector:
       m <- match(labels_vector, vector_structures)
-      if (anyNA(m)) { # Check for wrong parameter labels
+
+      if(anyNA(m)) {
         stop("Some parameters were not found in structures: ",
              paste(labels_vector[is.na(m)], collapse = ", "))
       }
 
-      indices[[j]] <- m-1L # C++ indexing starts at 0
+      indices[[j]] <- m-1L
 
     }
 
-    result[[i]] <- c(
-      list(estimator = estimator,
-           indices  = indices),
-      extra
-    )
+    result[[i]] <- c(list(estimator = estimator,
+                          indices = indices),
+                     extra)
 
   }
+
+  #### Result ####
 
   return(result)
 

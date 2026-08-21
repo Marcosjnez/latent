@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 20/08/2026
+# Modification date: 21/08/2026
 #'
 #' Saturated Multivariate-Normal Moments with Incomplete Data
 #'
@@ -37,10 +37,10 @@
 #' The covariance matrix uses the maximum-likelihood divisor \eqn{n_r}; for a
 #' singleton pattern it is the zero matrix.
 #'
-#' The optimized objective is minus twice the log-likelihood divided by the
-#' total sample size, apart from constants that do not depend on the parameters.
-#' Consequently, the finite-sample information covariance is calculated as
-#' \eqn{2 H^{-1}/N}.
+#' The optimized objective is the total negative observed-data log-likelihood.
+#' Pattern means and covariance matrices are fixed transformed parameters, so
+#' the information covariance is the inverse Hessian on its natural
+#' finite-sample scale.
 #'
 #' @return An S4 object of class \code{"latent"}. Its public parameter blocks
 #'   are named \code{means} and \code{S} for a single group, with group suffixes
@@ -507,7 +507,9 @@ create_lmvnorm_model <- function(dataList, control) {
 
   #### Model for the parameters ####
 
-  param <- constraints_lmvnorm(trans = trans)
+  param <- constraints_lmvnorm(dataList = dataList,
+                               data_param = data_param,
+                               trans = trans)
 
   #### Create the initial values for the parameters ####
 
@@ -539,10 +541,25 @@ create_lmvnorm_data_param <- function(dataList) {
     suffix <- paste0(".", dataList$group_label)
   }
 
+  pattern_means_group <- vector("list", length = dataList$ngroups)
+  pattern_S_group <- vector("list", length = dataList$ngroups)
+
+  for(i in seq_len(dataList$ngroups)) {
+
+    pattern_id <- seq_along(dataList$patterns[[i]])
+    pattern_means_group[[i]] <-
+      paste0("means", suffix[i], ".pattern", pattern_id)
+    pattern_S_group[[i]] <-
+      paste0("S", suffix[i], ".pattern", pattern_id)
+
+  }
+
   #### Result ####
 
   result <- list(means_group = paste0("means", suffix),
-                 S_group = paste0("S", suffix))
+                 S_group = paste0("S", suffix),
+                 pattern_means_group = pattern_means_group,
+                 pattern_S_group = pattern_S_group)
 
   return(result)
 
@@ -575,6 +592,28 @@ model_lmvnorm <- function(dataList, data_param) {
                              symmetric = TRUE)
     k <- k+1L
 
+    for(j in seq_along(dataList$patterns[[i]])) {
+
+      items_pattern <- dataList$patterns[[i]][[j]]$observed_names
+      p_pattern <- length(items_pattern)
+
+      list_struct[[k]] <- list(name = pattern_means_group[[i]][j],
+                               type = "matrix",
+                               dim = c(p_pattern, 1L),
+                               rownames = items_pattern,
+                               colnames = "intrcpt")
+      k <- k+1L
+
+      list_struct[[k]] <- list(name = pattern_S_group[[i]][j],
+                               type = "matrix",
+                               dim = c(p_pattern, p_pattern),
+                               rownames = items_pattern,
+                               colnames = items_pattern,
+                               symmetric = TRUE)
+      k <- k+1L
+
+    }
+
   }
 
   #### Result ####
@@ -585,11 +624,37 @@ model_lmvnorm <- function(dataList, data_param) {
 
 }
 
-constraints_lmvnorm <- function(trans) {
+constraints_lmvnorm <- function(dataList, data_param, trans) {
+
+  list2env(data_param, envir = environment())
+
+  param <- trans
+
+  for(i in seq_len(dataList$ngroups)) {
+
+    for(j in seq_along(dataList$patterns[[i]])) {
+
+      pattern <- dataList$patterns[[i]][[j]]
+
+      means <- matrix(pattern$means,
+                      ncol = 1L,
+                      dimnames = dimnames(
+                        trans[[pattern_means_group[[i]][j]]]
+                      ))
+
+      S <- pattern$covariance
+      dimnames(S) <- dimnames(trans[[pattern_S_group[[i]][j]]])
+
+      param[[pattern_means_group[[i]][j]]] <- means
+      param[[pattern_S_group[[i]][j]]] <- S
+
+    }
+
+  }
 
   #### Result ####
 
-  return(trans)
+  return(param)
 
 }
 
@@ -678,8 +743,9 @@ create_lmvnorm_modelInfo <- function(dataList, full_model, control) {
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,
+                    step_labels = parameters_labels,
+                    propagate_uncertainty = TRUE,
                     dof = 0L,
-                    information_scale = 2/dataList$nobs,
                     data_param = data_param,
                     control_manifold = control_manifold,
                     control_transform = control_transform,
@@ -737,18 +803,20 @@ estimators_lmvnorm <- function(dataList, data_param, trans) {
       pattern <- dataList$patterns[[i]][[j]]
       pick <- pattern$observed_names
 
-      covariance_parameters <-
+      model_covariance <-
         trans[[S_group[i]]][pick, pick, drop = FALSE]
-      mean_parameters <-
+      sample_covariance <- trans[[pattern_S_group[[i]][j]]]
+      model_means <-
         trans[[means_group[i]]][pick, , drop = FALSE]
+      sample_means <- trans[[pattern_means_group[[i]][j]]]
 
       estimators[[k]] <- list(
         estimator = "cfa_means_ml",
-        parameters = list(covariance_parameters,
-                          mean_parameters),
+        parameters = list(model_covariance,
+                          sample_covariance,
+                          model_means,
+                          sample_means),
         extra = list(
-          S = pattern$covariance,
-          means = pattern$means,
           p = length(pick),
           n = pattern$nobs,
           w = pattern$nobs/dataList$nobs,
@@ -819,8 +887,8 @@ compute_se_lmvnorm <- function(dataList, modelInfo, Optim) {
             "an approximate inverse was used.")
   }
 
-  # The optimized criterion is -2*logLik/N, apart from constants.
-  VCOV <- modelInfo$information_scale*approx_Hinv(H)
+  # The optimized criterion is the total negative log-likelihood.
+  VCOV <- approx_Hinv(H)
 
   if(any(!is.finite(VCOV))) {
     stop("The saturated-moment Hessian could not be inverted")

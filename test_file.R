@@ -347,12 +347,12 @@ fit <- lcfa(HolzingerSwineford1939,
             do.fit = TRUE)
 
 # latInspect(fit, "est")
+latInspect(fit, "loss")
 latInspect(fit, "loglik") # loglik           -3682.198
                           # penalized_loglik -3682.198
                           # loglik_base      -4150.500
                           # loglik_sat       -3624.272
 
-latInspect(fit, what = "loss")
 
 # With lavaan:
 fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
@@ -672,42 +672,55 @@ model <- 'visual  =~ x1 + x2 + x3
           speed   =~ x7 + x8 + x9'
 
 data_missing <- HolzingerSwineford1939
-data_missing[1:3, "x1"] <- NA
+data_missing[1:5, "x1"] <- NA
+data_missing[9:20, "x5"] <- NA
+data_missing[244:251, "x9"] <- NA
+
+estimator <- "ml"
+std.ov <- TRUE
+std.lv <- FALSE
+meanstructure <- TRUE
+likelihood <- "normal"
 
 set.seed(2026)
-fit <- lcfa(data_missing,
+fit <- lcfa(data = data_missing,
             model = model,
-            estimator = "ml",
-            meanstructure = TRUE,
-            std.lv = FALSE,
-            std.ov = FALSE,
+            estimator = estimator,
+            missing = "ml",
+            meanstructure = meanstructure,
+            std.lv = std.lv,
+            std.ov = std.ov,
+            likelihood = likelihood,
             # missing = "pairwise.complete.obs",
-            missing = "fiml",
             positive = FALSE,
             se = "standard",
-            do.fit = TRUE,
-            control = NULL)
+            do.fit = TRUE)
 
-latInspect(fit, "loss") # loss           0.9767859
-                        # penalized_loss 0.9767859
-                        # loss_base      4.1225250
-                        # loss_sat       5439.4915116
+# With lavaan:
+fit2 <- cfa(model = model,
+            data = data_missing,
+            estimator = estimator,
+            missing = "fiml",
+            meanstructure = meanstructure,
+            std.lv = std.lv,
+            std.ov = std.ov,
+            likelihood = likelihood)
+
+latInspect(fit, "loss") # loss           0.3951155
+                        # penalized_loss 0.3951155
+                        # loss_base      3.5408549
+                        # loss_sat
 
 latInspect(fit, "loglik") # loglik           -3733.769
                           # penalized_loglik -3733.769
                           # loglik_base      -4207.203
-                          # loglik_sat       -822230.235
-
-# With lavaan:
-fit2 <- cfa(model, data = data_missing,
-            estimator = "ml",
-            missing = "fiml",
-            # likelihood = "wishart",
-            # meanstructure = TRUE,
-            std.lv = FALSE, std.ov = FALSE)
+                          # loglik_sat
 
 fit2@loglik$loglik
 fit2@Fit@fx
+
+latInspect(fit, "est")
+lavInspect(fit2, "est")
 
 lavInspect(fit2, "se")
 fit2@ParTable$se

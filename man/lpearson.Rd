@@ -6,7 +6,8 @@
 \usage{
 lpearson(data, model = NULL, std.ov = FALSE,
          VCOV = "standard", likelihood = "normal",
-         missing = "pairwise.complete.obs", do.fit = TRUE,
+         missing = "pairwise.complete.obs", se = TRUE,
+         do.fit = TRUE,
          message = FALSE, control = NULL, ...)
 }
 \arguments{
@@ -28,6 +29,10 @@ Use \code{"normal"} for the maximum-likelihood denominator \eqn{N} and
 \item{missing}{Character string passed to \code{stats::cov()} to control the
 handling of missing values. \code{"fiml"} is treated as
 \code{"pairwise.complete.obs"} because FIML is handled at the CFA level.}
+
+\item{se}{Logical. Compute and store the covariance matrix of the sample
+covariance/correlation estimates. With \code{FALSE}, the object is retained
+only as a fixed computational statistic.}
 
 \item{do.fit}{Logical. If \code{FALSE}, return the prepared but unfitted
 \code{"latent"} object.}

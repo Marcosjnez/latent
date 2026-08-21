@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 17/08/2026
+# Modification date: 21/08/2026
 #'
 #' Sample Means
 #'
@@ -8,7 +8,7 @@
 #' asymptotic covariance matrix.
 #'
 #' @usage
-#' lmean(data, model = NULL, std.ov = FALSE,
+#' lmean(data, model = NULL, std.ov = FALSE, se = TRUE,
 #'       do.fit = TRUE, message = FALSE,
 #'       control = NULL, ...)
 #'
@@ -18,6 +18,9 @@
 #' @param std.ov Logical. If \code{TRUE}, the observed variables are treated as
 #'   standardized and all mean parameters are fixed to zero. Their asymptotic
 #'   covariance matrix and standard errors are consequently also zero.
+#' @param se Logical. Compute and store the sampling covariance matrix. When
+#'   \code{FALSE}, \code{Optim$SE} remains empty and the object is marked as a
+#'   fixed computational statistic rather than an uncertainty source.
 #' @param do.fit Logical. If \code{TRUE}, compute the sample means. If
 #'   \code{FALSE}, return the prepared but unfitted \code{"latent"} object.
 #' @param message Logical. Print progress messages during estimation.
@@ -61,6 +64,7 @@
 lmean <- function(data,
                   model = NULL,
                   std.ov = FALSE,
+                  se = TRUE,
                   do.fit = TRUE,
                   message = FALSE,
                   control = NULL,
@@ -95,6 +99,10 @@ lmean <- function(data,
     stop("std.ov must be TRUE or FALSE")
   }
 
+  if(length(se) != 1L || !is.logical(se) || is.na(se)) {
+    stop("se must be TRUE or FALSE")
+  }
+
   if(length(do.fit) != 1L || !is.logical(do.fit) || is.na(do.fit)) {
     stop("do.fit must be TRUE or FALSE")
   }
@@ -110,6 +118,8 @@ lmean <- function(data,
   #### Check control parameters ####
 
   control$std.ov <- std.ov
+  control$se <- se
+  control$propagate_uncertainty <- isTRUE(se)
   control <- lmean_control(control)
 
   #### Create the dataList ####
@@ -160,10 +170,18 @@ lmean <- function(data,
 
   #### Standard errors ####
 
-  Optim$SE <- compute_se_lmean(dataList = dataList,
-                               modelInfo = modelInfo,
-                               Optim = Optim,
-                               control = control)
+  if(se) {
+
+    Optim$SE <- compute_se_lmean(dataList = dataList,
+                                 modelInfo = modelInfo,
+                                 Optim = Optim,
+                                 control = control)
+
+  } else {
+
+    Optim$SE <- list()
+
+  }
 
   #### Process the outputs ####
 
@@ -394,6 +412,7 @@ create_lmean_modelInfo <- function(dataList, full_model, control) {
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,
+                    propagate_uncertainty = isTRUE(control$propagate_uncertainty),
                     dof = dataList$npatterns - nparam,
                     control_manifold = control_manifold,
                     control_transform = control_transform,

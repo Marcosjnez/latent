@@ -1,11 +1,17 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 07/05/2026
+ * Modification date: 21/08/2026
  */
 
 /*
- * Confirmatory factor analysis (maximum-likelihood)
+ * Confirmatory factor analysis (maximum-likelihood discrepancy)
+ *
+ * When the sample covariance is positive definite, the ordinary FML discrepancy
+ * is used. For rank-deficient missing-pattern covariance matrices, terms that
+ * depend only on the fixed sample covariance are omitted. This leaves parameter
+ * estimates, model gradients, and log-likelihood contributions unchanged while
+ * allowing singleton and low-frequency missingness patterns.
  */
 
 class cfa_fml: public estimators {
@@ -14,13 +20,15 @@ public:
 
   int p, n;
   double loss, w, logdetS, logdetShat, plogpi2;
-  arma::uvec indices_S, indices_Shat, lower_diag;
-  arma::mat S, Shat, residuals, dShat, dS, Shat_inv, S_inv, gShat, gS, I;
+  bool S_sympd;
+  arma::uvec indices_S, indices_Shat;
+  arma::mat S, Shat, dShat, dS, Shat_inv, S_inv, gShat, gS, I;
 
   void param(arguments_optim& x) {
 
-    S = arma::reshape(x.transparameters(indices_S), p, p);
     Shat = arma::reshape(x.transparameters(indices_Shat), p, p);
+    S = arma::reshape(x.transparameters(indices_S), p, p);
+    S = 0.5*(S + S.t());
 
     if(!Shat.is_sympd()) {
       arma::vec eigval;
@@ -30,33 +38,42 @@ public:
       Shat = eigvec * arma::diagmat(d) * eigvec.t();
     }
 
-    if(!S.is_sympd()) {
-      arma::vec eigval;
-      arma::mat eigvec;
-      eig_sym(eigval, eigvec, S);
-      arma::vec d = arma::clamp(eigval, 0.00001, eigval.max());
-      S = eigvec * arma::diagmat(d) * eigvec.t();
-    }
-
     Shat_inv = arma::inv_sympd(Shat);
+    S_sympd = S.is_sympd();
+
+    if(S_sympd) {
+      S_inv = arma::inv_sympd(S);
+      logdetS = arma::log_det_sympd(S);
+    } else {
+      S_inv.zeros(p, p);
+      logdetS = 0.0;
+    }
 
   }
 
   void F(arguments_optim& x) {
 
-    logdetS = arma::log_det_sympd(S);
     logdetShat = arma::log_det_sympd(Shat);
 
-    loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p);
+    if(S_sympd) {
+      loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p);
+    } else {
+      loss = w*(logdetShat + arma::accu(S % Shat_inv));
+    }
+
     x.f += loss;
 
   }
 
   void G(arguments_optim& x) {
 
-    S_inv = arma::inv_sympd(S);
-    gS = Shat_inv - S_inv;
     gShat = Shat_inv * (I - S * Shat_inv);
+
+    if(S_sympd) {
+      gS = Shat_inv - S_inv;
+    } else {
+      gS = Shat_inv;
+    }
 
     x.grad.elem(indices_S) += w*arma::vectorise(gS);
     x.grad.elem(indices_Shat) += w*arma::vectorise(gShat);
@@ -68,41 +85,47 @@ public:
     dS = arma::reshape(x.dtransparameters(indices_S), p, p);
     dShat = arma::reshape(x.dtransparameters(indices_Shat), p, p);
 
-    arma::mat dS_inv = -S_inv * dS * S_inv;
     arma::mat dShat_inv = -Shat_inv * dShat * Shat_inv;
-    arma::mat dgShat = dShat_inv * (I - S * Shat_inv)
-      - Shat_inv * dS * Shat_inv
-    - Shat_inv * S * dShat_inv;
+    arma::mat dgShat = dShat_inv * (I - S * Shat_inv) -
+      Shat_inv * dS * Shat_inv -
+      Shat_inv * S * dShat_inv;
 
-    x.dgrad.elem(indices_S) += w*arma::vectorise(dShat_inv - dS_inv);
+    arma::mat dgS = dShat_inv;
+
+    if(S_sympd) {
+      arma::mat dS_inv = -S_inv * dS * S_inv;
+      dgS -= dS_inv;
+    }
+
+    x.dgrad.elem(indices_S) += w*arma::vectorise(dgS);
     x.dgrad.elem(indices_Shat) += w*arma::vectorise(dgShat);
 
   }
 
   void outcomes(arguments_optim& x) {
 
-    arma::mat I(p, p, arma::fill::eye);
-    double loss = w*(logdetShat - logdetS + arma::accu(S % Shat_inv) - p);
-    double loss_indep = w*(-logdetS + arma::accu(S % I) - p);
-    double loss_sat = 0.00;
+    (void)x;
 
-    double loglik = n*0.5*(-plogpi2 - logdetShat - arma::accu(S % Shat_inv));
+    double loss_indep = S_sympd ?
+      w*(-logdetS + arma::trace(S) - p) :
+      w*arma::trace(S);
+    double loglik = n*0.5*(-plogpi2 -
+      arma::log_det_sympd(Shat) - arma::accu(S % Shat_inv));
     double loglik_indep = n*0.5*(-plogpi2 - arma::trace(S));
-    double loglik_sat = n*0.5*(-plogpi2 - logdetS - p);
 
     doubles.resize(7);
-    doubles[0] =  loss;          // loss   actual model
-    doubles[1] =  loss_indep;    // loss independence model
-    doubles[2] =  loss_sat;      // loss saturated model
-    doubles[3] =  loglik;        // loglik actual model
-    doubles[4] =  loglik_indep;  // loglik independence model
-    doubles[5] =  loglik_sat;    // loglik saturated model
-    doubles[6] =  0.00;          // penalty
+    doubles[0] = loss;
+    doubles[1] = loss_indep;
+    doubles[2] = S_sympd ? 0.0 : NA_REAL;
+    doubles[3] = loglik;
+    doubles[4] = loglik_indep;
+    doubles[5] = S_sympd ? n*0.5*(-plogpi2 - logdetS - p) : NA_REAL;
+    doubles[6] = 0.0;
 
     matrices.resize(1);
     matrices[0] = S - Shat;
 
-  };
+  }
 
 };
 
@@ -115,21 +138,30 @@ cfa_fml* choose_cfa_fml(const Rcpp::List& estimator_setup) {
   int n = estimator_setup["n"];
   int p = estimator_setup["p"];
 
-  arma::mat Shat(p, p, arma::fill::zeros);
-  arma::uvec lower_diag = arma::trimatl_ind(arma::size(Shat));
-  double plogpi2 = p*std::log(arma::datum::pi*2);
-  arma::mat I(p, p, arma::fill::eye);
+  if(p < 1 || n < 1 || !std::isfinite(w) || w <= 0.0) {
+    Rcpp::stop("cfa_fml received invalid p, n, or w values");
+  }
+
+  if(indices.size() != 2L) {
+    Rcpp::stop("cfa_fml requires model and sample covariance indices");
+  }
 
   myestimator->indices_Shat = indices[0];
   myestimator->indices_S = indices[1];
   myestimator->p = p;
   myestimator->n = n;
   myestimator->w = w;
-  myestimator->Shat = Shat;
-  myestimator->dShat = Shat;
-  myestimator->lower_diag = lower_diag;
-  myestimator->plogpi2 = plogpi2;
-  myestimator->I = I;
+  myestimator->Shat.zeros(p, p);
+  myestimator->S.zeros(p, p);
+  myestimator->dShat.zeros(p, p);
+  myestimator->dS.zeros(p, p);
+  myestimator->Shat_inv.zeros(p, p);
+  myestimator->S_inv.zeros(p, p);
+  myestimator->gShat.zeros(p, p);
+  myestimator->gS.zeros(p, p);
+  myestimator->I.eye(p, p);
+  myestimator->plogpi2 = p*std::log(arma::datum::pi*2.0);
+  myestimator->S_sympd = false;
 
   return myestimator;
 

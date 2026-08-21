@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 20/08/2026
+# Modification date: 21/08/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -24,8 +24,9 @@
 #'   If NULL, sample.cov and sample.nobs must be supplied.
 #' @param model Confirmatory factor model specified using lavaan syntax.
 #' @param estimator Estimation method. Available options include \code{"ml"},
-#'   \code{"uls"}, and \code{"dwls"}. The value \code{"fiml"} is accepted as
-#'   an alias for \code{estimator = "ml", missing = "fiml"}.
+#'   \code{"uls"}, and \code{"dwls"}. The value \code{"fiml"} requests
+#'   direct pattern-likelihood FIML unless \code{missing = "fiml"} is
+#'   supplied explicitly.
 #' @param ordered Logical value indicating whether indicators are ordinal. The
 #'   character value \code{"yule"} requests Yule correlations.
 #' @param group Optional character string identifying the grouping variable.
@@ -38,11 +39,10 @@
 #' @param positive Logical. If \code{TRUE}, positive-definite covariance
 #'   structures are imposed through the corresponding manifold parameterization.
 #' @param penalties Logical value or list controlling regularization.
-#' @param missing Missing-data method. With \code{"fiml"} and incomplete
-#'   continuous data, \code{lmvnorm()} first estimates one unrestricted mean
-#'   vector and covariance matrix per group from all missing-data patterns.
-#'   The CFA is then fitted to those saturated moments and their uncertainty is
-#'   propagated by \code{se.multistep()}.
+#' @param missing Missing-data method. \code{"ml"} uses direct
+#'   pattern-likelihood FIML. \code{"fiml"} first estimates saturated
+#'   incomplete-data moments with \code{lmvnorm()} and then fits CFA as a
+#'   deterministic multistep estimator.
 #' @param std.lv Logical. Standardize latent variables.
 #' @param std.ov Logical. Standardize observed variables.
 #' @param meanstructure Logical. Estimate the observed-variable mean structure.
@@ -53,8 +53,9 @@
 #'   \code{"information"} use standard sampling covariance matrices for the
 #'   sample statistics. \code{"robust"} requests robust sampling covariance
 #'   matrices where implemented. \code{FALSE} skips computation of the final
-#'   CFA standard errors. The CFA covariance itself is always propagated by
-#'   \code{se.multistep()} rather than obtained from an inverse CFA Hessian.
+#'   CFA standard errors. Ordinary ML and direct FIML use information from the
+#'   likelihood; multistep analyses propagate the covariance of their parent
+#'   statistics with \code{se.multistep()}.
 #' @param control Optional list of optimization controls.
 #' @param message Logical. Print progress messages.
 #' @param do.fit Logical. If \code{FALSE}, return the prepared but unfitted
@@ -64,17 +65,15 @@
 #'
 #'
 #' @details
-#' Missing-data patterns are internal computational summaries. They are not
-#' represented by separate latent objects and do not enlarge the covariance
-#' matrix used by \code{se.multistep()}. The single \code{lmvnorm} fit is stored
-#' in the \code{extra} slot of the returned \code{"multistep_lcfa"} object.
+#' Direct FIML creates one likelihood contribution for every missingness
+#' pattern and substantive group. Pattern means and covariance matrices are
+#' fixed transformed parameters and are not stored as separate latent objects.
+#' Saturated-moment FIML instead stores one \code{lmvnorm} source object in
+#' \code{extra}; its uncertainty is propagated automatically.
 #'
-#' This is a saturated-moment two-step estimator rather than casewise direct
-#' FIML. The same first-step moments can therefore be combined with ML, ULS, or
-#' DWLS discrepancy functions.
-#'
-#' @return An S4 object of class \code{"multistep_lcfa"}, which inherits
-#'   from \code{"multistep"}, \code{"lcfa"}, and \code{"latent"}.
+#' @return An S4 object of class \code{"lcfa"} for ordinary likelihood
+#'   analyses, or \code{"multistep_lcfa"} when at least one parent object is
+#'   marked for uncertainty propagation.
 #'
 #' @examples
 #' \dontrun{
@@ -133,12 +132,13 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
     control <- list()
   }
 
+  missing_was_supplied <- !missing(missing)
   estimator <- tolower(estimator)
   missing <- tolower(missing)
 
   if(estimator == "fiml") {
     estimator <- "ml"
-    missing <- "fiml"
+    if(!missing_was_supplied) missing <- "ml"
   }
 
   se_control <- normalize_lcfa_se(se)
@@ -188,22 +188,21 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   likelihood <- tolower(likelihood)
 
-  if(missing == "fiml") {
+  if(missing %in% c("ml", "fiml")) {
 
     if(is.null(data)) {
-      stop("missing = 'fiml' requires raw data")
+      stop("missing = '", missing, "' requires raw data")
     }
 
     if(!isFALSE(ordered)) {
-      stop("missing = 'fiml' currently requires continuous variables")
+      stop("missing = '", missing, "' currently requires continuous variables")
     }
 
     if(likelihood != "normal") {
-      stop("missing = 'fiml' requires likelihood = 'normal'")
+      stop("missing = '", missing, "' requires likelihood = 'normal'")
     }
 
     meanstructure <- TRUE
-    std.ov <- FALSE
 
   }
 
@@ -228,7 +227,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
   }
 
   if(sample_se == "robust" &&
-     missing != "fiml" &&
+     !(missing %in% c("ml", "fiml")) &&
      (meanstructure || cor != "pearson")) {
     warning("Robust sampling covariance is currently implemented only for ",
             "Pearson covariance/correlation statistics. Sample means, ",
@@ -302,12 +301,18 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   previous_models <- previous_models_lcfa(dataList)
 
-  object_class <- if(length(previous_models) > 0L ||
-                     isTRUE(dataList$sample_stats_only)) {
+  propagate <- vapply(previous_models,
+                      FUN = \(x) isTRUE(x@modelInfo$propagate_uncertainty),
+                      FUN.VALUE = logical(1L))
+
+  object_class <- if(any(propagate)) {
     "multistep_lcfa"
   } else {
     "lcfa"
   }
+
+  modelInfo$propagate_uncertainty <- TRUE
+  modelInfo$step_labels <- modelInfo$parameters_labels
 
   #### Fit the model ####
 
@@ -378,13 +383,23 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
       print_lcfa_message("Computing standard errors")
     }
 
-    # Store the covariance of the current freely estimated parameters. Calling
-    # se() later with another parameter specification propagates the same joint
-    # multistep covariance to any requested transformed parameters.
-    result@Optim$SE <- se.multistep(
-      fit = result,
-      parameters = modelInfo$parameters_labels
-    )
+    if(inherits(result, "multistep")) {
+
+      result@Optim$SE <- se.multistep(
+        fit = result,
+        parameters = modelInfo$parameters_labels
+      )
+
+    } else {
+
+      result@Optim$SE <- se.latent(
+        fit = result,
+        type = if(sample_se == "robust") "robust" else "information",
+        parameters = modelInfo$parameters_labels
+      )
+
+    }
+
     result@Optim$SE$sample_se <- sample_se
 
   }
@@ -510,6 +525,16 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
       stop("No observations remain after removing cases with all model variables missing")
     }
 
+    #### Standardize observed variables for FIML ####
+
+    if(std.ov && missing %in% c("ml", "fiml")) {
+      data <- standardize_lcfa_raw_data(data = data,
+                                        group = group,
+                                        group_label = group_label,
+                                        item_names = item_names,
+                                        ngroups = ngroups)
+    }
+
   }
 
   #### Sample statistics ####
@@ -528,6 +553,8 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
   fit_means <- vector("list", length = ngroups)
   fit_moments <- NULL
   fiml_moments <- FALSE
+  direct_fiml <- FALSE
+  direct_patterns <- vector("list", length = ngroups)
 
   if(sample_stats_only) {
 
@@ -603,8 +630,9 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
     }
 
-    fiml_moments <- missing == "fiml" &&
-      any(vapply(X, FUN = anyNA, FUN.VALUE = logical(1L)))
+    has_missing <- any(vapply(X, FUN = anyNA, FUN.VALUE = logical(1L)))
+    direct_fiml <- missing == "ml" && has_missing
+    fiml_moments <- missing == "fiml" && has_missing
 
     if(fiml_moments) {
 
@@ -679,6 +707,33 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
       }
 
+    } else if(direct_fiml) {
+
+      #### Direct pattern-likelihood FIML ####
+
+      for(i in seq_len(ngroups)) {
+
+        direct_patterns[[i]] <- create_lmvnorm_patterns(X[[i]])
+        nobs_list[[i]] <- nrow(X[[i]])
+        sample.mean_list[[i]] <- colMeans(X[[i]], na.rm = TRUE)
+
+        S_pairwise <- initial_lmvnorm_covariance(X[[i]])
+        S_pairwise <- S_pairwise*(nobs_list[[i]]-1L)/nobs_list[[i]]
+        dimnames(S_pairwise) <- list(item_names[[i]], item_names[[i]])
+
+        sample.cov[[i]] <- S_pairwise
+        sample.cov_input[[i]] <- S_pairwise
+        NVCOV[[i]] <- asymptotic_normal(S_pairwise,
+                                        cov = TRUE,
+                                        diag = FALSE)
+        VCOV_cov[[i]] <- NVCOV[[i]]/nobs_list[[i]]
+        NVCOV_means[[i]] <- S_pairwise
+        VCOV_means[[i]] <- S_pairwise/nobs_list[[i]]
+        WLS.V[[i]] <- diag(1/diag(NVCOV[[i]]))
+        thresholds[[i]] <- list()
+
+      }
+
     } else {
 
       #### Complete-data or ordinary sample statistics ####
@@ -693,11 +748,18 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
           control_i$subfix <- paste0(".", group_label[i])
         }
 
-        missing_i <- if(missing == "fiml") {
+        missing_i <- if(missing %in% c("ml", "fiml")) {
           "pairwise.complete.obs"
         } else {
           missing
         }
+
+        direct_complete_ml <- cor == "pearson" &&
+          control$estimator %in% c("ml", "fml", "means_fml") &&
+          !anyNA(X[[i]])
+
+        source_se <- !direct_complete_ml
+        control_i$propagate_uncertainty <- source_se
 
         sample_stats <- estimate_lcfa_sample_statistics(
           data = X[[i]],
@@ -705,6 +767,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
           cor = cor,
           std.ov = std.ov,
           se = se_type,
+          compute_se = source_se,
           likelihood = likelihood,
           missing = missing_i,
           control = control_i,
@@ -717,12 +780,35 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
         nobs_list[[i]] <- fit_cov[[i]]@dataList$nobs
         sample.cov[[i]] <- fit_cov[[i]]@transformed_pars$S
         sample.cov_input[[i]] <- sample.cov[[i]]
-        VCOV_cov[[i]] <- fit_cov[[i]]@Optim$SE$VCOV
-        NVCOV[[i]] <- VCOV_cov[[i]]*fit_cov[[i]]@dataList$nobs
+        if(source_se) {
 
-        VCOV_means[[i]] <- fit_means[[i]]@Optim$SE$VCOV
-        NVCOV_means[[i]] <-
-          VCOV_means[[i]]*fit_means[[i]]@dataList$nobs
+          VCOV_cov[[i]] <- stored_sample_vcov_lcfa(fit_cov[[i]])
+          NVCOV[[i]] <- VCOV_cov[[i]]*fit_cov[[i]]@dataList$nobs
+          VCOV_means[[i]] <- stored_sample_vcov_lcfa(fit_means[[i]])
+          NVCOV_means[[i]] <-
+            VCOV_means[[i]]*fit_means[[i]]@dataList$nobs
+
+        } else {
+
+          NVCOV[[i]] <- asymptotic_normal(sample.cov[[i]],
+                                          cov = !std.ov,
+                                          diag = FALSE)
+          VCOV_cov[[i]] <- NVCOV[[i]]/fit_cov[[i]]@dataList$nobs
+
+          if(std.ov) {
+            NVCOV_means[[i]] <- matrix(
+              0, nrow = nrow(sample.cov[[i]]),
+              ncol = ncol(sample.cov[[i]]),
+              dimnames = dimnames(sample.cov[[i]])
+            )
+          } else {
+            NVCOV_means[[i]] <- sample.cov[[i]]
+          }
+
+          VCOV_means[[i]] <-
+            NVCOV_means[[i]]/fit_means[[i]]@dataList$nobs
+
+        }
 
         WLS.V[[i]] <- diag(1/diag(NVCOV[[i]]))
 
@@ -757,7 +843,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
   sample.cov_lav <- if(sample_stats_only) sample.cov_input else sample.cov
 
-  if(ngroups > 1L && (sample_stats_only || fiml_moments)) {
+  if(ngroups > 1L && (sample_stats_only || fiml_moments || direct_fiml)) {
     names(sample.cov_lav) <- group_label
     names(sample.mean_list) <- group_label
     names(nobs_list) <- group_label
@@ -865,7 +951,9 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                    fit_means = fit_means,
                    fit_cov = fit_cov,
                    fit_moments = fit_moments,
-                   fiml_moments = fiml_moments)
+                   fiml_moments = fiml_moments,
+                   direct_fiml = direct_fiml,
+                   direct_patterns = direct_patterns)
 
   #### Result ####
 
@@ -1428,6 +1516,47 @@ prepare_lcfa_sample_covariance <- function(S, sample.nobs,
 
 }
 
+standardize_lcfa_raw_data <- function(data, group, group_label,
+                                      item_names, ngroups) {
+
+  for(i in seq_len(ngroups)) {
+
+    group_i <- data[[group]] == group_label[i]
+    items_i <- item_names[[i]]
+    X_i <- data[group_i, items_i, drop = FALSE]
+
+    means_i <- colMeans(X_i, na.rm = TRUE)
+    sds_i <- vapply(X_i, FUN = stats::sd, FUN.VALUE = numeric(1L),
+                    na.rm = TRUE)
+
+    if(any(!is.finite(means_i)) ||
+       any(!is.finite(sds_i)) ||
+       any(sds_i <= 0)) {
+
+      bad <- items_i[!is.finite(means_i) |
+                     !is.finite(sds_i) |
+                     sds_i <= 0]
+
+      stop("Observed variables cannot be standardized because at least one ",
+           "variable has a non-finite mean or a non-positive/non-finite ",
+           "standard deviation in group '", group_label[i], "': ",
+           paste(bad, collapse = ", "))
+
+    }
+
+    X_i <- sweep(X_i, MARGIN = 2L, STATS = means_i, FUN = "-")
+    X_i <- sweep(X_i, MARGIN = 2L, STATS = sds_i, FUN = "/")
+
+    data[group_i, items_i] <- X_i
+
+  }
+
+  #### Result ####
+
+  return(data)
+
+}
+
 extract_lcfa_group_data <- function(data, group, group_label,
                                     item_names, i, ngroups) {
 
@@ -1445,13 +1574,16 @@ extract_lcfa_group_data <- function(data, group, group_label,
 }
 
 estimate_lcfa_sample_statistics <- function(data, model, cor,
-                                            std.ov, se, likelihood,
-                                            missing, control, ...) {
+                                            std.ov, se, compute_se = TRUE,
+                                            likelihood, missing, control, ...) {
 
   #### Means ####
 
+  control$propagate_uncertainty <- isTRUE(compute_se)
+
   fit_means <- lmean(data = data,
                      std.ov = std.ov,
+                     se = compute_se,
                      control = control,
                      do.fit = TRUE)
 
@@ -1464,6 +1596,7 @@ estimate_lcfa_sample_statistics <- function(data, model, cor,
                         VCOV = if(se == "robust") "robust" else "standard",
                         likelihood = likelihood,
                         missing = missing,
+                        se = compute_se,
                         control = control,
                         do.fit = TRUE)
 
@@ -1489,12 +1622,19 @@ estimate_lcfa_sample_statistics <- function(data, model, cor,
 
   #### Sampling covariance methods ####
 
-  fit_means@Optim$SE$type <- "standard"
+  fit_means@modelInfo$propagate_uncertainty <- isTRUE(compute_se)
+  fit_cov@modelInfo$propagate_uncertainty <- isTRUE(compute_se)
 
-  if(cor == "pearson") {
-    fit_cov@Optim$SE$type <- se
-  } else {
-    fit_cov@Optim$SE$type <- "standard"
+  if(length(fit_means@Optim$SE) > 0L) {
+    fit_means@Optim$SE$type <- "standard"
+  }
+
+  if(length(fit_cov@Optim$SE) > 0L) {
+    if(cor == "pearson") {
+      fit_cov@Optim$SE$type <- se
+    } else {
+      fit_cov@Optim$SE$type <- "standard"
+    }
   }
 
   #### Result ####
@@ -1503,6 +1643,38 @@ estimate_lcfa_sample_statistics <- function(data, model, cor,
                  fit_cov = fit_cov)
 
   return(result)
+
+}
+
+stored_sample_vcov_lcfa <- function(fit) {
+
+  labels <- fit@modelInfo$parameters_labels
+  VCOV <- tryCatch(fit@Optim$SE$VCOV,
+                   error = function(e) NULL)
+
+  if(is.null(VCOV)) {
+    VCOV <- matrix(0,
+                   nrow = length(labels),
+                   ncol = length(labels),
+                   dimnames = list(labels, labels))
+  }
+
+  if(!is.matrix(VCOV)) {
+    VCOV <- as.matrix(VCOV)
+  }
+
+  if(!is.null(rownames(VCOV)) &&
+     !is.null(colnames(VCOV)) &&
+     all(labels %in% rownames(VCOV)) &&
+     all(labels %in% colnames(VCOV))) {
+    VCOV <- VCOV[labels, labels, drop = FALSE]
+  }
+
+  rownames(VCOV) <- colnames(VCOV) <- labels
+
+  #### Result ####
+
+  return(VCOV)
 
 }
 
@@ -1738,6 +1910,90 @@ create_lcfa_data_param <- function(dataList, control) {
 
     }
 
+  } else if(isTRUE(dataList$direct_fiml)) {
+
+    for(i in seq_len(ngroups)) {
+
+      if(ngroups < 2L) {
+        subfix <- ""
+      } else {
+        subfix <- paste0(".", dataList$group_label[i])
+      }
+
+      means_params[[i]] <- list()
+      means_params_labels[[i]] <- list()
+      cov_params[[i]] <- list()
+      cov_params_labels[[i]] <- list()
+      VCOV_means[[i]] <- list()
+      VCOV_cov[[i]] <- list()
+      NVCOV_means[[i]] <- list()
+      NVCOV_cov[[i]] <- list()
+      M_group[[i]] <- character(0L)
+      S_group[[i]] <- character(0L)
+      taus_group[[i]] <- character(0L)
+      nobs_ij[[i]] <- list()
+
+      for(j in seq_along(dataList$direct_patterns[[i]])) {
+
+        pattern <- dataList$direct_patterns[[i]][[j]]
+        items <- pattern$observed_names
+        p <- length(items)
+        means_name <- paste0("means", subfix, ".pattern", j)
+        S_name <- paste0("S", subfix, ".pattern", j)
+
+        means_struct <- create_parameters(list(
+          list(name = means_name,
+               type = "matrix",
+               dim = c(p, 1L),
+               rownames = items,
+               colnames = "intrcpt")
+        ))
+
+        cov_struct <- create_parameters(list(
+          list(name = S_name,
+               type = "matrix",
+               dim = c(p, p),
+               rownames = items,
+               colnames = items,
+               symmetric = TRUE)
+        ))
+
+        means_params_labels[[i]] <-
+          c(means_params_labels[[i]], means_struct)
+        cov_params_labels[[i]] <-
+          c(cov_params_labels[[i]], cov_struct)
+
+        means_params[[i]][[means_name]] <-
+          matrix(pattern$means,
+                 ncol = 1L,
+                 dimnames = list(items, "intrcpt"))
+        cov_params[[i]][[S_name]] <- pattern$covariance
+        dimnames(cov_params[[i]][[S_name]]) <- list(items, items)
+
+        mean_labels <- c(means_struct[[means_name]])
+        S_labels <- c(cov_struct[[S_name]][lower.tri(
+          cov_struct[[S_name]], diag = TRUE
+        )])
+
+        VCOV_means[[i]][[j]] <- matrix(
+          0, nrow = length(mean_labels), ncol = length(mean_labels),
+          dimnames = list(mean_labels, mean_labels)
+        )
+        NVCOV_means[[i]][[j]] <- VCOV_means[[i]][[j]]
+        VCOV_cov[[i]][[j]] <- matrix(
+          0, nrow = length(S_labels), ncol = length(S_labels),
+          dimnames = list(S_labels, S_labels)
+        )
+        NVCOV_cov[[i]][[j]] <- VCOV_cov[[i]][[j]]
+
+        M_group[[i]] <- c(M_group[[i]], means_name)
+        S_group[[i]] <- c(S_group[[i]], S_name)
+        nobs_ij[[i]][[j]] <- pattern$nobs
+
+      }
+
+    }
+
   } else if(isTRUE(dataList$fiml_moments)) {
 
     fit_moments <- dataList$fit_moments
@@ -1789,14 +2045,14 @@ create_lcfa_data_param <- function(dataList, control) {
 
       means_params[[i]] <- dataList$fit_means[[i]]@parameters
       means_params_labels[[i]] <- dataList$fit_means[[i]]@modelInfo$trans
-      VCOV_means[[i]] <- list(dataList$fit_means[[i]]@Optim$SE$VCOV)
+      VCOV_means[[i]] <- list(dataList$VCOV_means[[i]])
       NVCOV_means[[i]] <- list(
         VCOV_means[[i]][[1L]]*dataList$fit_means[[i]]@dataList$nobs
       )
 
       cov_params[[i]] <- dataList$fit_cov[[i]]@parameters
       cov_params_labels[[i]] <- dataList$fit_cov[[i]]@modelInfo$trans
-      VCOV_cov[[i]] <- list(dataList$fit_cov[[i]]@Optim$SE$VCOV)
+      VCOV_cov[[i]] <- list(dataList$VCOV[[i]])
       NVCOV_cov[[i]] <- list(
         VCOV_cov[[i]][[1L]]*dataList$fit_cov[[i]]@dataList$nobs
       )
@@ -2064,7 +2320,10 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
         param[M_group[[i]]] <- means_params[[i]][M_group[[i]]]
       }
 
-      if(control$std.ov) {
+      fiml_missing <- isTRUE(dataList$direct_fiml) ||
+        isTRUE(dataList$fiml_moments)
+
+      if(control$std.ov && !fiml_missing) {
 
         param[[nu_group[i]]] <- matrix(0,
                                        nrow = dataList$nitems[[i]],

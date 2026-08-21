@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 09/08/2026
+ * Modification date: 21/08/2026
  */
 
 class estimators {
@@ -19,25 +19,17 @@ public:
   names_cubes, names_list_vectors, names_list_matrices;
 
   virtual void param(arguments_optim& x) = 0;
-
   virtual void F(arguments_optim& x) = 0;
-
   virtual void G(arguments_optim& x) = 0;
-
   virtual void dG(arguments_optim& x) = 0;
-
   virtual void E(arguments_optim& x) {}
 
   virtual void observed_F(arguments_optim& x) {
-
     F(x);
-
   }
 
   virtual void observed_G(arguments_optim& x) {
-
     G(x);
-
   }
 
   virtual void outcomes(arguments_optim& x) = 0;
@@ -74,7 +66,6 @@ public:
 #include "estimators/loglik/gaussian_loglik.h"
 #include "estimators/loglik/poisson_loglik.h"
 #include "estimators/penalties/ridge.h"
-
 #include "estimators/correlation/polycor.h"
 
 using EstimatorFactory = std::function<estimators*(const Rcpp::List&)>;
@@ -110,105 +101,59 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
 };
 
 estimators* choose_estimator(const Rcpp::List& estimator_setup) {
+
   const std::string name = Rcpp::as<std::string>(estimator_setup["estimator"]);
   auto it = estimator_factories.find(name);
-  if (it == estimator_factories.end()) {
+
+  if(it == estimator_factories.end()) {
     Rcpp::stop("Unknown estimator: " + name);
   }
-  return it->second(estimator_setup);
-}
 
-// Product Estimator
+  return it->second(estimator_setup);
+
+}
 
 class product_estimator {
 
 public:
 
   void param(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
-    for(int i=0; i < x.nestimators; ++i) {
-
-      xestimators[i]->param(x);
-
-    }
-
+    for(int i = 0; i < x.nestimators; ++i) xestimators[i]->param(x);
   }
 
   void F(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
     x.f = 0;
-
-    for(int i=0; i < x.nestimators; ++i) {
-
-      xestimators[i]->F(x);
-
-    }
-
+    for(int i = 0; i < x.nestimators; ++i) xestimators[i]->F(x);
   }
 
   void G(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
     x.grad.zeros();
-
-    for(int i=0; i < x.nestimators; ++i) {
-
-      xestimators[i]->G(x);
-
-    }
-
-    // x.grad_init = x.grad;
-
+    for(int i = 0; i < x.nestimators; ++i) xestimators[i]->G(x);
   }
 
   void dG(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
     x.dgrad.zeros();
-
-    for(int i=0; i < x.nestimators; ++i) {
-
-      xestimators[i]->dG(x);
-
-    }
-
-    // x.dgrad_init = x.dgrad;
-
+    for(int i = 0; i < x.nestimators; ++i) xestimators[i]->dG(x);
   }
 
   void E(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
-    for(int i = 0; i < x.nestimators; ++i) {
-
-      xestimators[i]->E(x);
-
-    }
-
+    for(int i = 0; i < x.nestimators; ++i) xestimators[i]->E(x);
   }
 
-  void observed_F(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
+  void observed_F(arguments_optim& x,
+                  std::vector<estimators*>& xestimators) {
     x.f = 0.0;
-
-    for(int i = 0; i < x.nestimators; ++i) {
-
-      xestimators[i]->observed_F(x);
-
-    }
-
+    for(int i = 0; i < x.nestimators; ++i) xestimators[i]->observed_F(x);
   }
 
-  void observed_G(arguments_optim& x, std::vector<estimators*>& xestimators) {
-
+  void observed_G(arguments_optim& x,
+                  std::vector<estimators*>& xestimators) {
     x.grad.zeros();
-
-    for(int i = 0; i < x.nestimators; ++i) {
-
-      xestimators[i]->observed_G(x);
-
-    }
-
+    for(int i = 0; i < x.nestimators; ++i) xestimators[i]->observed_G(x);
   }
 
-  void outcomes(arguments_optim& x, std::vector<estimators*>& xestimators) {
+  void outcomes(arguments_optim& x,
+                std::vector<estimators*>& xestimators) {
 
     std::get<0>(x.outputs_estimator).resize(x.nestimators);
     std::get<1>(x.outputs_estimator).resize(x.nestimators);
@@ -216,7 +161,6 @@ public:
     std::get<3>(x.outputs_estimator).resize(x.nestimators);
     std::get<4>(x.outputs_estimator).resize(x.nestimators);
     std::get<5>(x.outputs_estimator).resize(x.nestimators);
-
     std::get<6>(x.outputs_estimator).resize(x.nestimators);
     std::get<7>(x.outputs_estimator).resize(x.nestimators);
     std::get<8>(x.outputs_estimator).resize(x.nestimators);
@@ -224,7 +168,7 @@ public:
     std::get<10>(x.outputs_estimator).resize(x.nestimators);
     std::get<11>(x.outputs_estimator).resize(x.nestimators);
 
-    for(int i=0; i < x.nestimators; ++i) {
+    for(int i = 0; i < x.nestimators; ++i) {
 
       xestimators[i]->outcomes(x);
 
@@ -234,7 +178,6 @@ public:
       std::get<3>(x.outputs_estimator)[i] = xestimators[i]->cubes;
       std::get<4>(x.outputs_estimator)[i] = xestimators[i]->list_vectors;
       std::get<5>(x.outputs_estimator)[i] = xestimators[i]->list_matrices;
-
       std::get<6>(x.outputs_estimator)[i] = xestimators[i]->names_doubles;
       std::get<7>(x.outputs_estimator)[i] = xestimators[i]->names_vectors;
       std::get<8>(x.outputs_estimator)[i] = xestimators[i]->names_matrices;
@@ -247,4 +190,3 @@ public:
   }
 
 };
-

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 20/08/2026
+# Modification date: 21/08/2026
 #'
 #' Information Variance-Covariance Matrix for Latent Models
 #'
@@ -10,12 +10,13 @@
 #'   standard errors of the freely estimated parameters.
 #'
 #' @details
-#' If an object does not contain a stored covariance matrix,
-#' \code{information.latent()} multiplies the inverse Hessian by
-#' \code{fit@modelInfo$information_scale} when that scalar is present. The
-#' default multiplier is one. This permits estimators whose objective is
-#' normalized or multiplied by a known constant to retain the common
-#' information interface.
+#' The fitted object is never modified. Before evaluating a Hessian for an
+#' ordinary latent object, a temporary derivative copy replaces
+#' \code{cfa_fml} by \code{cfa_ml} and \code{cfa_means_fml} by
+#' \code{cfa_means_ml}. The latter estimators evaluate the total negative
+#' log-likelihood and share the same parameter-index interfaces as their FML
+#' counterparts. Multistep objects continue to use their fitted discrepancy
+#' functions because their covariance is propagated by \code{se.multistep()}.
 #'
 #' @method information latent
 #' @export
@@ -75,7 +76,9 @@ information.latent <- function(fit) {
 
   } else {
 
-    H <- hessian(fit)
+    fit_information <- information_model_latent(fit)
+
+    H <- hessian(fit_information)
     H <- (H+t(H))/2
 
     eigenvalues <- eigen(H, symmetric = TRUE, only.values = TRUE)$values
@@ -85,20 +88,7 @@ information.latent <- function(fit) {
       warning("The Hessian is not positive definite; an approximate inverse was used.")
     }
 
-    information_scale <- fit@modelInfo$information_scale
-
-    if(is.null(information_scale)) {
-      information_scale <- 1
-    }
-
-    if(!is.numeric(information_scale) ||
-       length(information_scale) != 1L ||
-       !is.finite(information_scale) ||
-       information_scale <= 0) {
-      stop("modelInfo$information_scale must be a positive finite number.")
-    }
-
-    VCOV <- information_scale*approx_Hinv(H)
+    VCOV <- approx_Hinv(H)
 
     if(any(!is.finite(VCOV))) {
       stop("The Hessian could not be inverted.")
@@ -117,6 +107,38 @@ information.latent <- function(fit) {
   result <- list(H = H,
                  VCOV = VCOV,
                  se = se)
+
+  return(result)
+
+}
+
+#### Temporary information model ####
+
+information_model_latent <- function(fit) {
+
+  result <- fit
+
+  if(length(result@modelInfo$control_estimator) == 0L) {
+
+    #### Result ####
+
+    return(result)
+
+  }
+
+  for(i in seq_along(result@modelInfo$control_estimator)) {
+
+    estimator <- result@modelInfo$control_estimator[[i]]$estimator
+
+    if(identical(estimator, "cfa_fml")) {
+      result@modelInfo$control_estimator[[i]]$estimator <- "cfa_ml"
+    } else if(identical(estimator, "cfa_means_fml")) {
+      result@modelInfo$control_estimator[[i]]$estimator <- "cfa_means_ml"
+    }
+
+  }
+
+  #### Result ####
 
   return(result)
 

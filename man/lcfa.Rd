@@ -23,7 +23,9 @@ If NULL, sample.cov and sample.nobs must be supplied.}
 \item{model}{Confirmatory factor model specified using lavaan syntax.}
 
 \item{estimator}{Estimation method. Available options include \code{"ml"},
-\code{"uls"}, and \code{"dwls"}.}
+\code{"uls"}, and \code{"dwls"}. The value \code{"fiml"} requests
+direct pattern-likelihood FIML unless \code{missing = "fiml"} is
+supplied explicitly.}
 
 \item{ordered}{Logical value indicating whether indicators are ordinal. The
 character value \code{"yule"} requests Yule correlations.}
@@ -44,7 +46,10 @@ structures are imposed through the corresponding manifold parameterization.}
 
 \item{penalties}{Logical value or list controlling regularization.}
 
-\item{missing}{Missing-data method.}
+\item{missing}{Missing-data method. \code{"ml"} uses direct
+pattern-likelihood FIML. \code{"fiml"} first estimates saturated
+incomplete-data moments with \code{lmvnorm()} and then fits CFA as a
+deterministic multistep estimator.}
 
 \item{std.lv}{Logical. Standardize latent variables.}
 
@@ -61,8 +66,9 @@ convention.}
 \code{"information"} use standard sampling covariance matrices for the
 sample statistics. \code{"robust"} requests robust sampling covariance
 matrices where implemented. \code{FALSE} skips computation of the final
-CFA standard errors. The CFA covariance itself is always propagated by
-\code{se.multistep()} rather than obtained from an inverse CFA Hessian.}
+CFA standard errors. Ordinary ML and direct FIML use information from the
+likelihood; multistep analyses propagate the covariance of their parent
+statistics with \code{se.multistep()}.}
 
 \item{control}{Optional list of optimization controls.}
 
@@ -75,12 +81,20 @@ CFA standard errors. The CFA covariance itself is always propagated by
 estimators where applicable.}
 }
 \value{
-An S4 object of class \code{"multistep_lcfa"}, which inherits
-  from \code{"multistep"}, \code{"lcfa"}, and \code{"latent"}.
+An S4 object of class \code{"lcfa"} for ordinary likelihood
+  analyses, or \code{"multistep_lcfa"} when at least one parent object is
+  marked for uncertainty propagation.
 }
 \description{
 Fit confirmatory factor analysis models using lavaan model syntax and the
 optimization infrastructure of \pkg{latent}.
+}
+\details{
+Direct FIML creates one likelihood contribution for every missingness
+pattern and substantive group. Pattern means and covariance matrices are
+fixed transformed parameters and are not stored as separate latent objects.
+Saturated-moment FIML instead stores one \code{lmvnorm} source object in
+\code{extra}; its uncertainty is propagated automatically.
 }
 \examples{
 \dontrun{

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 17/08/2026
+# Modification date: 21/08/2026
 #'
 #' Pearson Covariance or Correlation Matrix
 #'
@@ -10,7 +10,8 @@
 #' @usage
 #' lpearson(data, model = NULL, std.ov = FALSE,
 #'          VCOV = "standard", likelihood = "normal",
-#'          missing = "pairwise.complete.obs", do.fit = TRUE,
+#'          missing = "pairwise.complete.obs", se = TRUE,
+#'          do.fit = TRUE,
 #'          message = FALSE, control = NULL, ...)
 #'
 #' @param data A data frame or matrix containing numeric observed variables.
@@ -26,6 +27,9 @@
 #' @param missing Character string passed to \code{stats::cov()} to control the
 #'   handling of missing values. \code{"fiml"} is treated as
 #'   \code{"pairwise.complete.obs"} because FIML is handled at the CFA level.
+#' @param se Logical. Compute and store the covariance matrix of the sample
+#'   covariance/correlation estimates. With \code{FALSE}, the object is retained
+#'   only as a fixed computational statistic.
 #' @param do.fit Logical. If \code{FALSE}, return the prepared but unfitted
 #'   \code{"latent"} object.
 #' @param message Logical. Print progress messages during estimation.
@@ -62,6 +66,7 @@ lpearson <- function(data,
                      VCOV = "standard",
                      likelihood = "normal",
                      missing = "pairwise.complete.obs",
+                     se = TRUE,
                      do.fit = TRUE,
                      message = FALSE,
                      control = NULL,
@@ -94,6 +99,10 @@ lpearson <- function(data,
 
   if(!is.logical(std.ov) || length(std.ov) != 1L || is.na(std.ov)) {
     stop("std.ov must be TRUE or FALSE")
+  }
+
+  if(!is.logical(se) || length(se) != 1L || is.na(se)) {
+    stop("se must be TRUE or FALSE")
   }
 
   if(!is.logical(do.fit) || length(do.fit) != 1L || is.na(do.fit)) {
@@ -136,6 +145,8 @@ lpearson <- function(data,
 
   control$std.ov <- std.ov
   control$VCOV <- VCOV
+  control$se <- se
+  control$propagate_uncertainty <- isTRUE(se)
   control$likelihood <- likelihood
   control$missing <- missing
   control <- lpearson_control(control)
@@ -195,10 +206,18 @@ lpearson <- function(data,
 
   #### Standard errors ####
 
-  Optim$SE <- compute_se_lpearson(dataList = dataList,
-                                  modelInfo = modelInfo,
-                                  Optim = Optim,
-                                  control = control)
+  if(se) {
+
+    Optim$SE <- compute_se_lpearson(dataList = dataList,
+                                    modelInfo = modelInfo,
+                                    Optim = Optim,
+                                    control = control)
+
+  } else {
+
+    Optim$SE <- list()
+
+  }
 
   #### latent object ####
 
@@ -352,6 +371,7 @@ create_lpearson_modelInfo <- function(dataList, full_model, control) {
                     ntrans = ntrans,
                     parameters_labels = parameters_labels,
                     transparameters_labels = transparameters_labels,
+                    propagate_uncertainty = isTRUE(control$propagate_uncertainty),
                     dof = dataList$npatterns-nparam,
                     control_manifold = control_manifold,
                     control_transform = control_transform,
