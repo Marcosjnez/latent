@@ -115,7 +115,9 @@ If NULL, sample.cov and sample.nobs must be supplied.</p></dd>
 
 <dt id="arg-estimator">estimator<a class="anchor" aria-label="anchor" href="#arg-estimator"></a></dt>
 <dd><p>Estimation method. Available options include <code>"ml"</code>,
-<code>"uls"</code>, and <code>"dwls"</code>.</p></dd>
+<code>"uls"</code>, and <code>"dwls"</code>. The value <code>"fiml"</code> requests
+direct pattern-likelihood FIML unless <code>missing = "fiml"</code> is
+supplied explicitly.</p></dd>
 
 
 <dt id="arg-ordered">ordered<a class="anchor" aria-label="anchor" href="#arg-ordered"></a></dt>
@@ -152,7 +154,10 @@ structures are imposed through the corresponding manifold parameterization.</p><
 
 
 <dt id="arg-missing">missing<a class="anchor" aria-label="anchor" href="#arg-missing"></a></dt>
-<dd><p>Missing-data method.</p></dd>
+<dd><p>Missing-data method. <code>"ml"</code> uses direct
+pattern-likelihood FIML. <code>"fiml"</code> first estimates saturated
+incomplete-data moments with <code><a href="lmvnorm.html">lmvnorm()</a></code> and then fits CFA as a
+deterministic multistep estimator.</p></dd>
 
 
 <dt id="arg-std-lv">std.lv<a class="anchor" aria-label="anchor" href="#arg-std-lv"></a></dt>
@@ -181,8 +186,9 @@ convention.</p></dd>
 <code>"information"</code> use standard sampling covariance matrices for the
 sample statistics. <code>"robust"</code> requests robust sampling covariance
 matrices where implemented. <code>FALSE</code> skips computation of the final
-CFA standard errors. The CFA covariance itself is always propagated by
-<code><a href="se.multistep.html">se.multistep()</a></code> rather than obtained from an inverse CFA Hessian.</p></dd>
+CFA standard errors. Ordinary ML and direct FIML use information from the
+likelihood; multistep analyses propagate the covariance of their parent
+statistics with <code><a href="se.multistep.html">se.multistep()</a></code>.</p></dd>
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
@@ -205,8 +211,17 @@ estimators where applicable.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An S4 object of class <code>"multistep_lcfa"</code>, which inherits
-  from <code>"multistep"</code>, <code>"lcfa"</code>, and <code>"latent"</code>.</p>
+    <p>An S4 object of class <code>"lcfa"</code> for ordinary likelihood
+  analyses, or <code>"multistep_lcfa"</code> when at least one parent object is
+  marked for uncertainty propagation.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Direct FIML creates one likelihood contribution for every missingness
+pattern and substantive group. Pattern means and covariance matrices are
+fixed transformed parameters and are not stored as separate latent objects.
+Saturated-moment FIML instead stores one <code>lmvnorm</code> source object in
+<code>extra</code>; its uncertainty is propagated automatically.</p>
     </div>
 
     <div class="section level2">

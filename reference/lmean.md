@@ -6,7 +6,7 @@ asymptotic covariance matrix.
 ## Usage
 
 ``` r
-lmean(data, model = NULL, std.ov = FALSE,
+lmean(data, model = NULL, std.ov = FALSE, se = TRUE,
       do.fit = TRUE, message = FALSE,
       control = NULL, ...)
 ```
@@ -27,6 +27,12 @@ lmean(data, model = NULL, std.ov = FALSE,
   Logical. If `TRUE`, the observed variables are treated as standardized
   and all mean parameters are fixed to zero. Their asymptotic covariance
   matrix and standard errors are consequently also zero.
+
+- se:
+
+  Logical. Compute and store the sampling covariance matrix. When
+  `FALSE`, `Optim$SE` remains empty and the object is marked as a fixed
+  computational statistic rather than an uncertainty source.
 
 - do.fit:
 

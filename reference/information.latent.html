@@ -101,6 +101,16 @@
     <p>A list containing the Hessian, variance-covariance matrix, and
   standard errors of the freely estimated parameters.</p>
     </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The fitted object is never modified. Before evaluating a Hessian for an
+ordinary latent object, a temporary derivative copy replaces
+<code>cfa_fml</code> by <code>cfa_ml</code> and <code>cfa_means_fml</code> by
+<code>cfa_means_ml</code>. The latter estimators evaluate the total negative
+log-likelihood and share the same parameter-index interfaces as their FML
+counterparts. Multistep objects continue to use their fitted discrepancy
+functions because their covariance is propagated by <code><a href="se.multistep.html">se.multistep()</a></code>.</p>
+    </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -8,7 +8,8 @@ covariance matrix from continuous data.
 ``` r
 lpearson(data, model = NULL, std.ov = FALSE,
          VCOV = "standard", likelihood = "normal",
-         missing = "pairwise.complete.obs", do.fit = TRUE,
+         missing = "pairwise.complete.obs", se = TRUE,
+         do.fit = TRUE,
          message = FALSE, control = NULL, ...)
 ```
 
@@ -45,6 +46,12 @@ lpearson(data, model = NULL, std.ov = FALSE,
   [`stats::cov()`](https://rdrr.io/r/stats/cor.html) to control the
   handling of missing values. `"fiml"` is treated as
   `"pairwise.complete.obs"` because FIML is handled at the CFA level.
+
+- se:
+
+  Logical. Compute and store the covariance matrix of the sample
+  covariance/correlation estimates. With `FALSE`, the object is retained
+  only as a fixed computational statistic.
 
 - do.fit:
 

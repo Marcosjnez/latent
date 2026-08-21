@@ -33,7 +33,8 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 - estimator:
 
   Estimation method. Available options include `"ml"`, `"uls"`, and
-  `"dwls"`.
+  `"dwls"`. The value `"fiml"` requests direct pattern-likelihood FIML
+  unless `missing = "fiml"` is supplied explicitly.
 
 - ordered:
 
@@ -70,7 +71,10 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 - missing:
 
-  Missing-data method.
+  Missing-data method. `"ml"` uses direct pattern-likelihood FIML.
+  `"fiml"` first estimates saturated incomplete-data moments with
+  [`lmvnorm()`](https://marcosjnez.github.io/latent/reference/lmvnorm.md)
+  and then fits CFA as a deterministic multistep estimator.
 
 - std.lv:
 
@@ -98,9 +102,10 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
   standard sampling covariance matrices for the sample statistics.
   `"robust"` requests robust sampling covariance matrices where
   implemented. `FALSE` skips computation of the final CFA standard
-  errors. The CFA covariance itself is always propagated by
-  [`se.multistep()`](https://marcosjnez.github.io/latent/reference/se.multistep.md)
-  rather than obtained from an inverse CFA Hessian.
+  errors. Ordinary ML and direct FIML use information from the
+  likelihood; multistep analyses propagate the covariance of their
+  parent statistics with
+  [`se.multistep()`](https://marcosjnez.github.io/latent/reference/se.multistep.md).
 
 - control:
 
@@ -122,8 +127,17 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 ## Value
 
-An S4 object of class `"multistep_lcfa"`, which inherits from
-`"multistep"`, `"lcfa"`, and `"latent"`.
+An S4 object of class `"lcfa"` for ordinary likelihood analyses, or
+`"multistep_lcfa"` when at least one parent object is marked for
+uncertainty propagation.
+
+## Details
+
+Direct FIML creates one likelihood contribution for every missingness
+pattern and substantive group. Pattern means and covariance matrices are
+fixed transformed parameters and are not stored as separate latent
+objects. Saturated-moment FIML instead stores one `lmvnorm` source
+object in `extra`; its uncertainty is propagated automatically.
 
 ## Examples
 

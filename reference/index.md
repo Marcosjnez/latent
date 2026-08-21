@@ -70,6 +70,8 @@
   Exploratory Factor Analysis
 - [`lmean()`](https://marcosjnez.github.io/latent/reference/lmean.md) :
   Sample Means
+- [`lmvnorm()`](https://marcosjnez.github.io/latent/reference/lmvnorm.md)
+  : Saturated Multivariate-Normal Moments with Incomplete Data
 - [`lpearson()`](https://marcosjnez.github.io/latent/reference/lpearson.md)
   : Pearson Covariance or Correlation Matrix
 - [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
