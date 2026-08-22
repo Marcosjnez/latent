@@ -238,12 +238,6 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
             "standard covariance matrices.")
   }
 
-  if(meanstructure) {
-    if(estimator %in% c("ml", "fml")) estimator <- "means_fml"
-    if(estimator == "uls") estimator <- "means_uls"
-    if(estimator == "dwls") estimator <- "means_dwls"
-  }
-
   #### Store original call ####
 
   mc <- match.call(expand.dots = TRUE)
@@ -310,7 +304,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
   numeric_multistep <- isTRUE(dataList$sample_stats_only) &&
     dataList$estimator %in%
-      c("uls", "dwls", "means_uls", "means_dwls")
+      c("uls", "dwls")
 
   object_class <- if(any(propagate) || numeric_multistep) {
     "multistep_lcfa"
@@ -780,7 +774,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
         }
 
         direct_complete_ml <- cor == "pearson" &&
-          control$estimator %in% c("ml", "fml", "means_fml") &&
+          control$estimator %in% c("ml", "fml") &&
           !anyNA(X[[i]])
 
         source_se <- !direct_complete_ml
@@ -2218,7 +2212,7 @@ model_lcfa <- function(dataList, data_param, control) {
                              symmetric = TRUE)
     k <- k+1L
 
-    if(control$meanstructure) {
+    # if(control$meanstructure) {
 
       list_struct[[k]] <- list(name = nu_group[i],
                                type = "matrix",
@@ -2227,7 +2221,7 @@ model_lcfa <- function(dataList, data_param, control) {
                                colnames = "intrcp")
       k <- k+1L
 
-    }
+    # }
 
     if(control$deltaparam) {
 
@@ -2244,9 +2238,9 @@ model_lcfa <- function(dataList, data_param, control) {
 
   trans <- create_parameters(list_struct)
 
-  if(control$meanstructure) {
+  # if(control$meanstructure) {
     trans <- c(trans, unlist(means_params_labels, recursive = FALSE))
-  }
+  # }
 
   trans <- c(trans, unlist(cov_params_labels, recursive = FALSE))
 
@@ -2303,10 +2297,10 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
     trans[[psi_group[i]]][nonfixed[[psi_group[i]]]] <-
       lavaan_model[[i]]$psi[nonfixed[[psi_group[i]]]]
 
-    if(control$meanstructure) {
+    # if(control$meanstructure) {
       trans[[nu_group[i]]][nonfixed[[nu_group[i]]]] <-
         lavaan_model[[i]]$nu[nonfixed[[nu_group[i]]]]
-    }
+    # }
 
   }
 
@@ -2366,8 +2360,9 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
     }
 
     # Mean structure:
-    if(control$meanstructure) {
+    # if(control$meanstructure) {
 
+    # stop("2365")
       if(control$free_M) {
         param[M_group[[i]]] <- trans[M_group[[i]]]
       } else {
@@ -2385,6 +2380,10 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
                                        dimnames = list(dataList$item_label[[i]],
                                                        "intrcp"))
 
+      } else if(!control$meanstructure && !fiml_missing) {
+
+        param[nu_group[[i]]] <- means_params[[i]][M_group[[i]]]
+
       } else {
 
         param[[nu_group[i]]] <- trans[[nu_group[i]]]
@@ -2393,7 +2392,7 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
 
       }
 
-    }
+    # }
 
     # Delta parameterization:
     if(control$deltaparam) {
@@ -2515,7 +2514,7 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
       #### Mean structure ####
 
-      if(control$meanstructure) {
+      # if(control$meanstructure) {
 
         if(isTRUE(dataList$sample_stats_only)) {
           init_means <- dataList$sample.mean[[i]][dataList$item_label[[i]]]
@@ -2528,7 +2527,7 @@ start_lcfa <- function(dataList, data_param, param, trans,
                  ncol = 1L,
                  dimnames = dimnames(trans[[nu_group[i]]]))
 
-      }
+      # }
 
       #### Delta parameterization ####
 
@@ -2704,9 +2703,6 @@ estimators_lcfa <- function(dataList, data_param, trans, control) {
                             dwls = "cfa_dwls",
                             ml = "cfa_fml",
                             fml = "cfa_fml",
-                            means_fml = "cfa_means_fml",
-                            means_dwls = "cfa_means_dwls",
-                            means_uls = "cfa_means_dwls",
                             stop("Unknown estimator: ", dataList$estimator))
 
     cov_params_i <- cov_params[[i]]
@@ -2720,7 +2716,7 @@ estimators_lcfa <- function(dataList, data_param, trans, control) {
       p <- nrow(cov_params_i[[j]])
 
       if(control$estimator %in%
-         c("uls", "means_uls", "ml", "fml", "means_fml")) {
+         c("uls", "ml", "fml")) {
 
         W_cov <- matrix(1, nrow = p, ncol = p)
 
@@ -2742,13 +2738,13 @@ estimators_lcfa <- function(dataList, data_param, trans, control) {
       model_parameters <- c(trans[[model_group[i]]][pick, pick])
       sample_covariance <- c(trans[[S_group_ij]])
 
-      if(control$meanstructure) {
+      # if(control$meanstructure) {
         model_means <- c(trans[[nu_group[i]]][pick, ])
         sample_means <- c(trans[[M_group_ij]])
-      } else {
-        model_means <- numeric(0L)
-        sample_means <- numeric(0L)
-      }
+      # } else {
+      #   model_means <- numeric(0L)
+      #   sample_means <- numeric(0L)
+      # }
 
       estimators[[k]] <- list(estimator = cfa_estimator,
                               parameters = list(model_parameters,

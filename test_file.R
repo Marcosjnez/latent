@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 19/08/2026
+# Modification date: 22/08/2026
 
 #### Store a dataset ####
 
@@ -277,8 +277,7 @@ fit <- lcfa(model = model,
             control = NULL,
             do.fit = TRUE)
 
-x <- se(fit, parameters = fit@modelInfo$trans[names(fit@modelInfo$param)])
-x$table
+# fit@modelInfo$param
 
 # With lavaan:
 fit2 <- lavaan::cfa(model = model,
@@ -342,13 +341,7 @@ fit <- lcfa(HolzingerSwineford1939,
             control = NULL,
             do.fit = TRUE)
 
-# latInspect(fit, "est")
-latInspect(fit, "loss")
-latInspect(fit, "loglik") # loglik           -3682.198
-                          # penalized_loglik -3682.198
-                          # loglik_base      -4150.500
-                          # loglik_sat       -3624.272
-
+# fit@modelInfo$param
 
 # With lavaan:
 fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
@@ -360,8 +353,14 @@ fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
                     meanstructure = meanstructure,
                     likelihood = likelihood,
                     do.fit = TRUE)
-fit2@loglik$loglik # -3682.198
 fit2@Fit@fx*2      # 0.3848882
+fit2@loglik$loglik # -3682.198
+latInspect(fit, "loss")
+latInspect(fit, "loglik") # loglik           -3682.198
+                          # penalized_loglik -3682.198
+                          # loglik_base      -4150.500
+                          # loglik_sat       -3624.272
+
 lavaan::fitMeasures(fit2, "unrestricted.logl")
 
 #### CFA (nonpositive definite) ####
@@ -718,6 +717,8 @@ fit <- lcfa(data = data_missing,
             se = "standard",
             do.fit = TRUE)
 
+# fit@modelInfo$param
+
 # With lavaan:
 fit2 <- cfa(model = model,
             data = data_missing,
@@ -729,6 +730,8 @@ fit2 <- cfa(model = model,
             std.ov = std.ov,
             likelihood = likelihood)
 
+fit2@Fit@fx
+fit2@loglik$loglik
 latInspect(fit, "loss") # loss           0.3951155
                         # penalized_loss 0.3951155
                         # loss_base      3.5408549
@@ -738,9 +741,6 @@ latInspect(fit, "loglik") # loglik           -3733.769
                           # penalized_loglik -3733.769
                           # loglik_base      -4207.203
                           # loglik_sat
-
-fit2@loglik$loglik
-fit2@Fit@fx
 
 latInspect(fit, "est")
 lavInspect(fit2, "est")
