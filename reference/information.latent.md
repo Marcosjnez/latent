@@ -23,7 +23,6 @@ errors, and covariance-method metadata.
 ## Details
 
 The fitted object is never modified. For ordinary CFA likelihood models,
-a temporary derivative copy replaces `cfa_fml` by `cfa_ml` and
-`cfa_means_fml` by `cfa_means_ml`. Stored covariance matrices are reused
-only when they were explicitly produced by an information/standard
-method.
+a temporary derivative copy replaces `cfa_fml` by `cfa_ml`. Stored
+covariance matrices are reused only when they were explicitly produced
+by an information/standard method.

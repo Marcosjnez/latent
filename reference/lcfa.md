@@ -136,11 +136,17 @@ uncertainty propagation.
 
 ## Details
 
+The model-implied observed means are computed as
+\$\$\widehat{\mu}=\nu+\Lambda\alpha,\$\$ where \\\nu\\ contains
+observed-variable intercepts and \\\alpha\\ contains latent-factor
+means. For ordinal models, standardized model thresholds are computed
+from the unstandardized thresholds, model-implied means, and
+model-implied variances.
+
 Direct FIML creates one likelihood contribution for every missingness
-pattern and substantive group. Pattern means and covariance matrices are
-fixed transformed parameters and are not stored as separate latent
-objects. Saturated-moment FIML instead stores one `lmvnorm` source
-object in `extra`; its uncertainty is propagated automatically.
+pattern and substantive group. Saturated-moment FIML instead stores one
+`lmvnorm` source object in `extra`; its uncertainty is propagated
+automatically.
 
 ## Examples
 
@@ -151,13 +157,6 @@ HS.model <- '
   textual =~ x4 + x5 + x6
   speed   =~ x7 + x8 + x9
 '
-
 fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
-summary(fit, digits = 3L)
-
-S <- cov(HolzingerSwineford1939[, paste0("x", 1:9)])
-M <- colMeans(HolzingerSwineford1939[, paste0("x", 1:9)])
-fit_cov <- lcfa(model = HS.model, sample.cov = S, sample.mean = M,
-                sample.nobs = nrow(HolzingerSwineford1939))
 } # }
 ```
