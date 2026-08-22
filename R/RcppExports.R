@@ -49,6 +49,10 @@ asymptotic_poly <- function(data, correlation, thresholds, return_scores = FALSE
     .Call(`_latent_asymptotic_poly`, data, correlation, thresholds, return_scores, probability_floor, inversion_tolerance)
 }
 
+composite_poly_scores <- function(data, thresholds, correlation) {
+    .Call(`_latent_composite_poly_scores`, data, thresholds, correlation)
+}
+
 orth <- function(X) {
     .Call(`_latent_orth`, X)
 }

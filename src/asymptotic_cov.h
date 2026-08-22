@@ -366,6 +366,200 @@ inline arma::uword category_index(const arma::vec& levels,
 
 } // namespace latent_asymptotic_poly
 
+arma::mat composite_poly_scores(const arma::mat& data,
+                                const Rcpp::List& thresholds,
+                                const arma::mat& correlation) {
+
+  using namespace latent_asymptotic_poly;
+
+  const arma::uword nobs = data.n_rows;
+  const arma::uword nitems = data.n_cols;
+  const double probability_floor = 1e-16;
+
+  if(nobs < 1L || nitems < 2L) {
+    Rcpp::stop("data must contain at least one observation and two variables.");
+  }
+
+  if(!data.is_finite()) {
+    Rcpp::stop("composite_poly_scores() currently requires complete ordinal data.");
+  }
+
+  if(correlation.n_rows != nitems ||
+     correlation.n_cols != nitems ||
+     !correlation.is_finite()) {
+    Rcpp::stop("correlation must be a finite square matrix matching data.");
+  }
+
+  if(!arma::approx_equal(correlation, correlation.t(),
+                         "absdiff", 1e-08)) {
+    Rcpp::stop("correlation must be symmetric.");
+  }
+
+  if(arma::any(arma::abs(correlation.diag()-1.0) > 1e-08)) {
+    Rcpp::stop("correlation must have a unit diagonal.");
+  }
+
+  if(thresholds.size() != static_cast<R_xlen_t>(nitems)) {
+    Rcpp::stop("thresholds must contain one vector per observed variable.");
+  }
+
+  std::vector<arma::vec> tau(nitems);
+  std::vector<arma::vec> levels(nitems);
+  std::vector<arma::vec> bounds(nitems);
+  std::vector<arma::vec> bounds_cdf(nitems);
+
+  arma::uvec threshold_offsets(nitems, arma::fill::zeros);
+  arma::umat categories(nobs, nitems, arma::fill::zeros);
+
+  arma::uword nthresholds = 0L;
+
+  for(arma::uword j = 0L; j < nitems; ++j) {
+
+    tau[j] = finite_thresholds(thresholds[j], j);
+    threshold_offsets[j] = nthresholds;
+    nthresholds += tau[j].n_elem;
+
+    levels[j] = arma::sort(arma::unique(data.col(j)));
+
+    if(levels[j].n_elem != tau[j].n_elem+1L) {
+      Rcpp::stop("The number of thresholds for variable " +
+        std::to_string(j+1L) +
+        " does not match its observed categories. The threshold representation "
+        "cannot contain empty internal categories.");
+    }
+
+    for(arma::uword i = 0L; i < nobs; ++i) {
+      categories(i, j) = category_index(levels[j], data(i, j));
+    }
+
+    bounds[j].set_size(tau[j].n_elem+2L);
+    bounds[j][0L] = neg_inf;
+    bounds[j].subvec(1L, tau[j].n_elem) = tau[j];
+    bounds[j][bounds[j].n_elem-1L] = pos_inf;
+
+    bounds_cdf[j].set_size(bounds[j].n_elem);
+
+    for(arma::uword h = 0L; h < bounds[j].n_elem; ++h) {
+      bounds_cdf[j][h] = normal_cdf_bound(bounds[j][h]);
+    }
+
+  }
+
+  const arma::uword ncorrelations = nitems*(nitems-1L)/2L;
+  const arma::uword nparameters = nthresholds+ncorrelations;
+  arma::mat scores(nobs, nparameters, arma::fill::zeros);
+  arma::uword floored_probabilities = 0L;
+
+  arma::uword q = 0L;
+
+  for(arma::uword j = 0L; j < nitems-1L; ++j) {
+
+    for(arma::uword k = j+1L; k < nitems; ++k, ++q) {
+
+      const double rho = correlation(j, k);
+
+      if(std::abs(rho) >= 1.0-1e-10) {
+        Rcpp::stop("Every polychoric correlation must lie strictly inside (-1, 1).");
+      }
+
+      for(arma::uword i = 0L; i < nobs; ++i) {
+
+        const arma::uword category_j = categories(i, j);
+        const arma::uword category_k = categories(i, k);
+
+        const double lower_j = bounds[j][category_j];
+        const double upper_j = bounds[j][category_j+1L];
+        const double lower_k = bounds[k][category_k];
+        const double upper_k = bounds[k][category_k+1L];
+
+        double probability = pbinorm(
+          rho,
+          lower_j, lower_k,
+          upper_j, upper_k,
+          bounds_cdf[j][category_j],
+          bounds_cdf[k][category_k],
+          bounds_cdf[j][category_j+1L],
+          bounds_cdf[k][category_k+1L]
+        );
+
+        if(!std::isfinite(probability) || probability < probability_floor) {
+          probability = probability_floor;
+          ++floored_probabilities;
+        }
+
+        const double probability_rho =
+          dbinorm(rho, upper_j, upper_k)-
+          dbinorm(rho, lower_j, upper_k)-
+          dbinorm(rho, upper_j, lower_k)+
+          dbinorm(rho, lower_j, lower_k);
+
+        scores(i, nthresholds+q) += probability_rho/probability;
+
+        auto add_first_score = [&](const arma::uword threshold,
+                                   const double sign) {
+
+          double probability_threshold = 0.0;
+          double rho_threshold = 0.0;
+
+          first_threshold_derivatives(
+            rho, tau[j][threshold], sign,
+            lower_k, upper_k,
+            probability_threshold, rho_threshold
+          );
+
+          scores(i, threshold_offsets[j]+threshold) +=
+            probability_threshold/probability;
+
+        };
+
+        auto add_second_score = [&](const arma::uword threshold,
+                                    const double sign) {
+
+          double probability_threshold = 0.0;
+          double rho_threshold = 0.0;
+
+          second_threshold_derivatives(
+            rho, tau[k][threshold], sign,
+            lower_j, upper_j,
+            probability_threshold, rho_threshold
+          );
+
+          scores(i, threshold_offsets[k]+threshold) +=
+            probability_threshold/probability;
+
+        };
+
+        if(category_j > 0L) {
+          add_first_score(category_j-1L, -1.0);
+        }
+
+        if(category_j < tau[j].n_elem) {
+          add_first_score(category_j, 1.0);
+        }
+
+        if(category_k > 0L) {
+          add_second_score(category_k-1L, -1.0);
+        }
+
+        if(category_k < tau[k].n_elem) {
+          add_second_score(category_k, 1.0);
+        }
+
+      }
+
+    }
+
+  }
+
+  if(floored_probabilities > 0L) {
+    Rcpp::warning(std::to_string(floored_probabilities) +
+      " bivariate probabilities were replaced by 1e-16.");
+  }
+
+  return scores;
+
+}
+
 Rcpp::List asymptotic_poly(const arma::mat& data,
                            const arma::mat& correlation,
                            const Rcpp::List& thresholds,

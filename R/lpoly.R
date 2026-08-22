@@ -1031,20 +1031,21 @@ compute_se_lpoly_one_step <- function(dataList, modelInfo, Optim, parameters) {
 
   var_names <- rownames(parameters$S)
 
-  # scores <- composite_poly_scores(
+  # Scores for the two-step method:
+  # ACOV <- asymptotic_poly(
   #   data = as.matrix(dataList$data),
   #   correlation = parameters$S,
-  #   thresholds = parameters[paste("taus", var_names, sep = "")]
+  #   thresholds = parameters[paste("taus", var_names, sep = "")],
+  #   return_scores = TRUE,
+  #   probability_floor = 1e-12,
+  #   inversion_tolerance = 1e-10
   # )
-  ACOV <- asymptotic_poly(
-    data = as.matrix(dataList$data),
-    correlation = parameters$S,
-    thresholds = parameters[paste("taus", var_names, sep = "")],
-    return_scores = TRUE,
-    probability_floor = 1e-12,
-    inversion_tolerance = 1e-10
-  )
-  scores <- ACOV$pattern_scores * c(ACOV$pattern_weights)
+  # scores <- ACOV$pattern_scores * c(ACOV$pattern_weights)
+
+  # Scores for pairwise log-likelihoods:
+  scores <- composite_poly_scores(data = as.matrix(dataList$data),
+                                    correlation = parameters$S,
+                                    thresholds = parameters[paste("taus", var_names, sep = "")])
 
   J <- crossprod(scores)/nrow(scores)
 

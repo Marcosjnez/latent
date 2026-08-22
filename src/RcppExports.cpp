@@ -169,6 +169,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// composite_poly_scores
+arma::mat composite_poly_scores(const arma::mat& data, const Rcpp::List& thresholds, const arma::mat& correlation);
+RcppExport SEXP _latent_composite_poly_scores(SEXP dataSEXP, SEXP thresholdsSEXP, SEXP correlationSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type thresholds(thresholdsSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type correlation(correlationSEXP);
+    rcpp_result_gen = Rcpp::wrap(composite_poly_scores(data, thresholds, correlation));
+    return rcpp_result_gen;
+END_RCPP
+}
 // orth
 arma::mat orth(arma::mat X);
 RcppExport SEXP _latent_orth(SEXP XSEXP) {
@@ -468,6 +481,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_asymptotic_elliptical", (DL_FUNC) &_latent_asymptotic_elliptical, 4},
     {"_latent_asymptotic_general", (DL_FUNC) &_latent_asymptotic_general, 3},
     {"_latent_asymptotic_poly", (DL_FUNC) &_latent_asymptotic_poly, 6},
+    {"_latent_composite_poly_scores", (DL_FUNC) &_latent_composite_poly_scores, 3},
     {"_latent_orth", (DL_FUNC) &_latent_orth, 1},
     {"_latent_oblq", (DL_FUNC) &_latent_oblq, 1},
     {"_latent_poblq", (DL_FUNC) &_latent_poblq, 2},

@@ -89,6 +89,11 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
                            double inversion_tolerance = 1e-10);
 
 // [[Rcpp::export]]
+arma::mat composite_poly_scores(const arma::mat& data,
+                                const Rcpp::List& thresholds,
+                                const arma::mat& correlation);
+
+// [[Rcpp::export]]
 arma::mat orth(arma::mat X);
 
 // [[Rcpp::export]]
