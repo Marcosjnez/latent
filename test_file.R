@@ -511,9 +511,9 @@ fit <- lcfa(data = mooc,
             se = "standard",
             control = NULL,
             do.fit = TRUE)
-latInspect(fit, "loss") # loss           0.379735
-                        # penalized_loss 0.379735
-                        # loss_base      7.491586
+latInspect(fit, "loss") # loss           0.4883727
+                        # penalized_loss 0.4883727
+                        # loss_base      9.9220011
                         # loss_sat       0.0000000
 latInspect(fit, "loglik") # loss           0.0000000
                           # penalized_loss 0.0000000
