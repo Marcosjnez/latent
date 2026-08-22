@@ -510,14 +510,6 @@ fit <- lcfa(data = mooc,
             se = "standard",
             control = NULL,
             do.fit = TRUE)
-latInspect(fit, "loss") # loss           0.4883727
-                        # penalized_loss 0.4883727
-                        # loss_base      9.9220011
-                        # loss_sat       0.0000000
-latInspect(fit, "loglik") # loss           0.0000000
-                          # penalized_loss 0.0000000
-                          # loss_base      0.0000000
-                          # loss_sat       0.0000000
 
 # With lavaan:
 fit2 <- lavaan::cfa(data = mooc,
@@ -530,19 +522,16 @@ fit2 <- lavaan::cfa(data = mooc,
                     # parameterization = "theta",
                     parameterization = "delta",
                     do.fit = TRUE)
+
 fit2@Fit@fx*2      # 0.4663271
+latInspect(fit, "loss") # loss           0.4883727
+                        # penalized_loss 0.4883727
+                        # loss_base      9.9220011
+                        # loss_sat       0.0000000
 
-lavaan::inspect(fit2, "est")$delta
-round(fit@parameters$delta, 3)
+diag(inspect(fit2, "est")$theta)
+diag(latInspect(fit, "est")$theta)
 
-diag(lavaan::inspect(fit2, "est")$theta)
-diag(round(fit@parameters$theta, 3))
-
-lavaan::inspect(fit2, "est")$lambda
-round(fit@parameters$lambda, 3)
-
-lavaan::inspect(fit2, "est")$psi
-round(fit@parameters$psi, 3)
 
 # fit@Optim$SE$se
 # fit2@ParTable$se
