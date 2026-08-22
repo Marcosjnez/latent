@@ -975,10 +975,24 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
         stop("The ordinal CFA model did not produce threshold parameters.")
       }
 
+      tau_names <- if(ngroups == 1L) {
+        names(sample.th_lav)
+      } else {
+        names(sample.th_lav[[i]])
+      }
+
       if(is.null(dim(model_out[[i]]$tau))) {
-        tau_names <- names(model_out[[i]]$tau)
-        model_out[[i]]$tau <- matrix(model_out[[i]]$tau, ncol = 1L,
-                                      dimnames = list(tau_names, "threshold"))
+        model_out[[i]]$tau <- matrix(model_out[[i]]$tau, ncol = 1L)
+      }
+
+      if(length(tau_names) != nrow(model_out[[i]]$tau)) {
+        stop("The lavaan threshold matrix and sample thresholds have different lengths.")
+      }
+
+      rownames(model_out[[i]]$tau) <- tau_names
+
+      if(is.null(colnames(model_out[[i]]$tau))) {
+        colnames(model_out[[i]]$tau) <- "threshold"
       }
 
     }

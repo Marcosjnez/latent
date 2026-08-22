@@ -476,8 +476,8 @@ det(inspect(fit2, what = "est")$Pasteur$theta)
 
 #### CFA (polychorics) ####
 
-library(latent)
 library(lavaan)
+library(latent)
 
 samples <- unique(hexaco$sample) # industry mooc fire student dutch
 Ns <- sapply(samples, FUN = function(x) sum(hexaco$sample == x))
