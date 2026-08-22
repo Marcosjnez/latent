@@ -57,6 +57,7 @@ public:
 #include "estimators/lreg/lreg.h"
 
 #include "estimators/cfa/cfa_dwls.h"
+#include "estimators/cfa/cfa_dwls_poly.h"
 #include "estimators/cfa/cfa_ml.h"
 #include "estimators/cfa/cfa_fml.h"
 
@@ -69,14 +70,9 @@ using EstimatorFactory = std::function<estimators*(const Rcpp::List&)>;
 
 static const std::unordered_map<std::string, EstimatorFactory> estimator_factories = {
   { "cfa_dwls",                    choose_cfa_dwls                  },
+  { "cfa_dwls_poly",               choose_cfa_dwls_poly             },
   { "cfa_ml",                      choose_cfa_ml                    },
   { "cfa_fml",                     choose_cfa_fml                   },
-
-  // Temporary compatibility aliases. These names use the same generalized
-  // estimator implementations and do not require separate cfa_means_*.h files.
-  { "cfa_means_dwls",              choose_cfa_dwls                  },
-  { "cfa_means_ml",                choose_cfa_ml                    },
-  { "cfa_means_fml",               choose_cfa_fml                   },
 
   { "cf",                          choose_cf                        },
   { "oblimin",                     choose_oblimin                   },

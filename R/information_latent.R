@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 22/08/2026
 #'
 #' Information Variance-Covariance Matrix for Latent Models
 #'
@@ -11,10 +11,9 @@
 #'
 #' @details
 #' The fitted object is never modified. For ordinary CFA likelihood models, a
-#' temporary derivative copy replaces \code{cfa_fml} by \code{cfa_ml} and
-#' \code{cfa_means_fml} by \code{cfa_means_ml}. Stored covariance matrices are
-#' reused only when they were explicitly produced by an information/standard
-#' method.
+#' temporary derivative copy replaces \code{cfa_fml} by \code{cfa_ml}. Stored
+#' covariance matrices are reused only when they were explicitly produced by an
+#' information/standard method.
 #'
 #' @method information latent
 #' @export
@@ -201,8 +200,6 @@ information_model_latent <- function(fit) {
 
     if(identical(estimator, "cfa_fml")) {
       result@modelInfo$control_estimator[[i]]$estimator <- "cfa_ml"
-    } else if(identical(estimator, "cfa_means_fml")) {
-      result@modelInfo$control_estimator[[i]]$estimator <- "cfa_means_ml"
     }
 
   }
@@ -212,7 +209,6 @@ information_model_latent <- function(fit) {
   return(result)
 
 }
-
 
 #### Deferred information covariance for source estimators ####
 

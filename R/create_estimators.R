@@ -73,11 +73,9 @@ create_estimators <- function(estimators, structures) {
       logdetmat          = c("lower_indices", "logdetw", "p"),
       logdetR            = c("lower_indices", "logdetw", "p"),
       cfa_dwls           = c("q", "w", "p", "W", "w_means"),
-      cfa_means_dwls     = c("q", "w", "p", "W", "w_means"),
+      cfa_dwls_poly      = c("q", "w", "p", "W", "w_thresholds"),
       cfa_ml             = c("p", "w", "n"),
       cfa_fml            = c("p", "w", "n"),
-      cfa_means_fml      = c("p", "w", "n"),
-      cfa_means_ml       = c("p", "w", "n"),
       stop("Unknown estimator: ", estimator)
     )
 

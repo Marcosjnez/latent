@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 22/08/2026
 #'
 #' Fit Indices for CFA Models
 #'
@@ -43,7 +43,7 @@ getfit.lcfa <- function(model, digits = 3L, fit_matrix = NULL) {
   }
 
   likelihood_model <- model@dataList$estimator %in%
-    c("ml", "fml", "means_fml")
+    c("ml", "fml")
 
   loglik <- NA_real_
   AIC <- NA_real_

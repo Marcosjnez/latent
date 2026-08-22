@@ -1,130 +1,126 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/07/2026
+# Modification date: 22/08/2026
 
 create_transforms <- function(transforms, structures) {
 
-  # Collect the unique parameter labels that are not fixed values:
-  param_structures_vector <- unname(unique(c(unlist(structures))))
+  #### Check inputs ####
 
-  # Handle the transformations:
-  transforms_and_labels <- transforms
-
-  # Check that a list was provided:
-  if(!is.list(transforms_and_labels)) {
-    stop("transforms_and_labels should be a list")
+  if(!is.list(transforms)) {
+    stop("transforms should be a list")
   }
-  ntransforms <- length(transforms_and_labels) # Number of transforms
-  # Pick the transforms:
-  transforms <- lapply(transforms_and_labels, FUN = \(x) x$transform)
-  # Pick the in parameter labels going to each transform:
-  labels_in <- lapply(transforms_and_labels, FUN = \(x) x$parameters_in)
-  # Pick the out parameter labels going to each transform:
-  labels_out <- lapply(transforms_and_labels, FUN = \(x) x$parameters_out)
-  # Pick the extra objects going to each manifold:
-  dots <- lapply(transforms_and_labels, FUN = \(x) x$extra)
 
-  # loop for each transform:
-  result <- vector("list", length = ntransforms)
-  k <- 1L
-  for(i in seq_len(ntransforms)) {
+  param_structures_vector <- unname(unique(c(unlist(structures))))
+  transform_names <- lapply(transforms, FUN = \(x) x$transform)
+  labels_in <- lapply(transforms, FUN = \(x) x$parameters_in)
+  labels_out <- lapply(transforms, FUN = \(x) x$parameters_out)
+  dots <- lapply(transforms, FUN = \(x) x$extra)
 
-    # Pick the transform label:
-    transform <- transforms[[i]]
+  #### Create transformation control objects ####
 
-    # Choose which extra objects from 'dots' should be kept for this transform:
-    transform_objects <- switch(transform,
-                                XYt = c("p", "q"),
-                                XY      = c("p", "q"),
-                                softmax   = character(0),
-                                matrix_inverse = c("p"),
-                                logarithm   = character(0),
-                                identity   = character(0),
-                                factor_cor   = c("p", "q"),
-                                exponential   = character(0),
-                                crossprod   = c("p"),
-                                column_space   = c("X"),
-                                deltaparam   = c("p", "q"),
-                                multinomial = c("y", "K", "S", "J", "I"),
-                                normal   = c("y", "S", "J", "I"),
-                                mvnormal   = c("y", "S", "J", "I"),
-                                sum_vectors   = character(0),
-                                sqrt_vector = character(0),
-                                pos_incrsng = character(0),
-                                stop("Unknown transform: ", transform)
+  result <- vector("list", length = length(transforms))
+
+  for(i in seq_along(transforms)) {
+
+    transform <- transform_names[[i]]
+
+    transform_objects <- switch(
+      transform,
+      XYt = c("p", "q"),
+      XY = c("p", "q"),
+      softmax = character(0L),
+      matrix_inverse = "p",
+      logarithm = character(0L),
+      identity = character(0L),
+      factor_cor = c("p", "q"),
+      meanstructure = c("p", "q"),
+      tau_param = c("p", "threshold_items"),
+      exponential = character(0L),
+      crossprod = "p",
+      column_space = "X",
+      deltaparam = c("p", "q"),
+      multinomial = c("y", "K", "S", "J", "I"),
+      normal = c("y", "S", "J", "I"),
+      mvnormal = c("y", "S", "J", "I"),
+      sum_vectors = character(0L),
+      sqrt_vector = character(0L),
+      pos_incrsng = character(0L),
+      stop("Unknown transform: ", transform)
     )
 
-    # Pick only those objects from 'dots':
-    extra <- dots[[i]][transform_objects]
+    extra_i <- dots[[i]]
 
-    # Ensure the required extras are present and named:
-    if (length(transform_objects) > 0L) {
-      missing <- setdiff(transform_objects, names(extra))
-      if (length(missing) > 0L) {
-        stop("Missing required object(s) for transform '", transform, "': ",
-             paste(missing, collapse = ", "))
-      }
+    if(is.null(extra_i)) {
+      extra_i <- list()
     }
 
-    #### labels_in ####
+    extra <- extra_i[transform_objects]
+
+    if(length(transform_objects) > 0L) {
+
+      missing_objects <- setdiff(transform_objects, names(extra))
+
+      if(length(missing_objects) > 0L) {
+        stop("Missing required object(s) for transform '", transform, "': ",
+             paste(missing_objects, collapse = ", "))
+      }
+
+    }
+
+    #### Input indices ####
 
     indices_in <- vector("list", length = length(labels_in[[i]]))
-    for(j in 1:length(labels_in[[i]])) {
 
-      # Collect the labels_in:
+    for(j in seq_along(labels_in[[i]])) {
+
       if(is.list(labels_in[[i]][j])) {
         labels_in_vector <- unname(c(unlist(labels_in[[i]][[j]])))
       } else {
         labels_in_vector <- unname(c(unlist(structures[labels_in[[i]][[j]]])))
       }
 
-      # Get the indices of the param_structures_vector that are in the labels_in_vector:
-      m_in <- match(labels_in_vector, param_structures_vector)
-      if (anyNA(m_in)) { # Check for wrong parameter labels_in
+      match_in <- match(labels_in_vector, param_structures_vector)
+
+      if(anyNA(match_in)) {
         stop("Some labels_in were not found in param_structures_vector: ",
-             paste(labels_in_vector[is.na(m_in)], collapse = ", "))
+             paste(labels_in_vector[is.na(match_in)], collapse = ", "))
       }
 
-      indices_in[[j]] <- m_in-1L # C++ indexing starts at 0
+      indices_in[[j]] <- match_in-1L
 
     }
 
-    #### labels_out ####
+    #### Output indices ####
 
     indices_out <- vector("list", length = length(labels_out[[i]]))
-    for(j in 1:length(labels_out[[i]])) {
 
-      # Collect the labels_out:
+    for(j in seq_along(labels_out[[i]])) {
+
       if(is.list(labels_out[[i]][j])) {
         labels_out_vector <- unname(c(unlist(labels_out[[i]][[j]])))
       } else {
         labels_out_vector <- unname(c(unlist(structures[labels_out[[i]][[j]]])))
       }
 
-      # Get the indices of the param_structures_vector that are in the labels_out_vector:
-      m_out <- match(labels_out_vector, param_structures_vector)
-      if (anyNA(m_out)) { # Check for wrong parameter labels_out
+      match_out <- match(labels_out_vector, param_structures_vector)
+
+      if(anyNA(match_out)) {
         stop("Some labels_out were not found in param_structures_vector: ",
-             paste(labels_out_vector[is.na(m_out)], collapse = ", "))
+             paste(labels_out_vector[is.na(match_out)], collapse = ", "))
       }
 
-      indices_out[[j]] <- m_out-1L # C++ indexing starts at 0
+      indices_out[[j]] <- match_out-1L
 
     }
 
-    #### result ####
-
-    result[[k]] <- c(
-      list(transform = transform,
-           indices_in  = indices_in,
-           indices_out = indices_out),
-      extra
-      # labels_in = labels_in[[i]],
-      # labels_out = labels_out[[i]]
-    )
-    k <- k+1L
+    result[[i]] <- c(list(transform = transform,
+                          indices_in = indices_in,
+                          indices_out = indices_out),
+                     extra)
 
   }
+
+  #### Result ####
 
   return(result)
 

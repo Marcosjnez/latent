@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 22/08/2026
 
 #### Display labels for substantive groups ####
 
@@ -339,7 +339,7 @@ lcfa_fit_matrix <- function(fit, compute_h1 = TRUE) {
   result[missing_value] <- NA_real_
 
   likelihood_model <- fit@dataList$estimator %in%
-    c("ml", "fml", "means_fml")
+    c("ml", "fml")
 
   normal_likelihood <- is.null(fit@dataList$likelihood) ||
     identical(tolower(fit@dataList$likelihood), "normal")
@@ -413,7 +413,7 @@ lcfa_residuals <- function(fit) {
   for(i in seq_len(fit@dataList$ngroups)) {
 
     model_name <- data_param$model_group[i]
-    nu_name <- data_param$nu_group[i]
+    meanshat_name <- data_param$meanshat_group[i]
 
     model_cov <- fit@transformed_pars[[model_name]]
     sample_cov <- fit@dataList$sample.cov[[i]]
@@ -422,19 +422,39 @@ lcfa_residuals <- function(fit) {
     dimnames(covariance) <- dimnames(model_cov)
 
     means <- NULL
+    thresholds <- NULL
 
-    if(isTRUE(fit@dataList$meanstructure)) {
+    if(fit@dataList$cor == "pearson" &&
+       isTRUE(fit@dataList$meanstructure)) {
 
       sample_mean <- fit@dataList$sample.mean[[i]]
-      model_mean <- c(fit@transformed_pars[[nu_name]])
-      names(model_mean) <- rownames(fit@transformed_pars[[nu_name]])
+      model_mean <- c(fit@transformed_pars[[meanshat_name]])
+      names(model_mean) <- rownames(fit@transformed_pars[[meanshat_name]])
       means <- sample_mean[names(model_mean)]-model_mean
+
+    }
+
+    if(fit@dataList$cor == "poly") {
+
+      tauhat_name <- data_param$tauhat_group[i]
+      model_thresholds <- c(fit@transformed_pars[[tauhat_name]])
+      names(model_thresholds) <- rownames(
+        fit@transformed_pars[[tauhat_name]]
+      )
+
+      sample_thresholds <- lcfa_order_thresholds(
+        threshold_blocks = fit@transformed_pars[data_param$taus_group[[i]]],
+        model_tau = fit@dataList$model[[i]]$tau
+      )
+      names(sample_thresholds) <- names(model_thresholds)
+      thresholds <- sample_thresholds-model_thresholds
 
     }
 
     result[[i]] <- list(
       covariance = covariance,
-      means = means
+      means = means,
+      thresholds = thresholds
     )
 
   }

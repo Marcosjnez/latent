@@ -93,11 +93,17 @@ Fit confirmatory factor analysis models using lavaan model syntax and the
 optimization infrastructure of \pkg{latent}.
 }
 \details{
+The model-implied observed means are computed as
+\deqn{\widehat{\mu}=\nu+\Lambda\alpha,}
+where \eqn{\nu} contains observed-variable intercepts and \eqn{\alpha}
+contains latent-factor means. For ordinal models, standardized model
+thresholds are computed from the unstandardized thresholds, model-implied
+means, and model-implied variances.
+
 Direct FIML creates one likelihood contribution for every missingness
-pattern and substantive group. Pattern means and covariance matrices are
-fixed transformed parameters and are not stored as separate latent objects.
-Saturated-moment FIML instead stores one \code{lmvnorm} source object in
-\code{extra}; its uncertainty is propagated automatically.
+pattern and substantive group. Saturated-moment FIML instead stores one
+\code{lmvnorm} source object in \code{extra}; its uncertainty is propagated
+automatically.
 }
 \examples{
 \dontrun{
@@ -106,14 +112,7 @@ HS.model <- '
   textual =~ x4 + x5 + x6
   speed   =~ x7 + x8 + x9
 '
-
 fit <- lcfa(model = HS.model, data = HolzingerSwineford1939)
-summary(fit, digits = 3L)
-
-S <- cov(HolzingerSwineford1939[, paste0("x", 1:9)])
-M <- colMeans(HolzingerSwineford1939[, paste0("x", 1:9)])
-fit_cov <- lcfa(model = HS.model, sample.cov = S, sample.mean = M,
-                sample.nobs = nrow(HolzingerSwineford1939))
 }
 
 }

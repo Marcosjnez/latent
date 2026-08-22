@@ -1,7 +1,7 @@
 # Author: Marcos Jimenez
 # Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 22/08/2026
 #'
 #' Summarize a Fitted CFA Model
 #'
@@ -47,11 +47,8 @@ summary.lcfa <- function(object, digits = 3L, fit = NULL, ...) {
     object@dataList$estimator,
     ml = "Maximum likelihood",
     fml = "Maximum likelihood",
-    means_fml = "Maximum likelihood",
     uls = "Unweighted least squares",
-    means_uls = "Unweighted least squares",
     dwls = "Diagonally weighted least squares",
-    means_dwls = "Diagonally weighted least squares",
     object@dataList$estimator
   )
 

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 22/08/2026
 #'
 #' Inspect Fitted CFA Objects
 #'
@@ -33,9 +33,11 @@ latInspect.lcfa <- function(fit, what = "est") {
 
   block_names <- unique(c(
     data_param$lambda_group,
+    data_param$alpha_group,
     data_param$theta_group,
     data_param$psi_group,
     data_param$nu_group,
+    data_param$kappa_group,
     data_param$delta_group
   ))
   block_names <- intersect(block_names,
@@ -51,7 +53,8 @@ latInspect.lcfa <- function(fit, what = "est") {
     result <- fit@dataList$item_label
 
   } else if(what %in% c("rhat", "model",
-                        "implied", "implied.cov")) {
+                        "implied", "implied.cov",
+                        "implied_cov")) {
 
     names_model <- intersect(
       data_param$model_group,
@@ -87,13 +90,50 @@ latInspect.lcfa <- function(fit, what = "est") {
     )
     result <- fit@transformed_pars[names_theta]
 
-  } else if(what %in% c("nu", "means")) {
+  } else if(what %in% c("alpha", "latent.means",
+                        "latent_means")) {
+
+    names_alpha <- intersect(
+      data_param$alpha_group,
+      names(fit@transformed_pars)
+    )
+    result <- fit@transformed_pars[names_alpha]
+
+  } else if(what %in% c("nu", "intercepts")) {
 
     names_nu <- intersect(
       data_param$nu_group,
       names(fit@transformed_pars)
     )
     result <- fit@transformed_pars[names_nu]
+
+  } else if(what %in% c("means", "meanshat",
+                        "implied.means", "implied_means")) {
+
+    names_meanshat <- intersect(
+      data_param$meanshat_group,
+      names(fit@transformed_pars)
+    )
+    result <- fit@transformed_pars[names_meanshat]
+
+  } else if(what %in% c("kappa", "kappas",
+                        "unstandardized.thresholds",
+                        "unstandardized_thresholds")) {
+
+    names_kappa <- intersect(
+      data_param$kappa_group,
+      names(fit@transformed_pars)
+    )
+    result <- fit@transformed_pars[names_kappa]
+
+  } else if(what %in% c("tauhat", "implied.thresholds",
+                        "implied_thresholds")) {
+
+    names_tauhat <- intersect(
+      data_param$tauhat_group,
+      names(fit@transformed_pars)
+    )
+    result <- fit@transformed_pars[names_tauhat]
 
   } else if(what == "uniquenesses") {
 

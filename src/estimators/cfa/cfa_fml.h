@@ -7,9 +7,8 @@
 /*
  * Confirmatory factor analysis (maximum-likelihood discrepancy)
  *
- * General CFA FML estimator. A mean structure is included whenever model and
- * sample mean indices are supplied. If they are omitted, the mean contribution
- * is exactly zero and the estimator reduces to the covariance-only FML model.
+ * The estimator always receives model-implied and sample covariance matrices,
+ * followed by model-implied and sample observed means.
  *
  * Rank-deficient sample covariance matrices are permitted for direct FIML
  * missingness-pattern contributions. Terms depending only on a singular fixed
@@ -22,24 +21,20 @@ public:
 
   int p, n;
   double loss, w, logdetS, logdetShat, plogpi2;
-  bool S_sympd, use_means;
-  arma::uvec indices_S, indices_Shat, indices_nu, indices_means;
+  bool S_sympd;
+  arma::uvec indices_S, indices_Shat, indices_meanshat, indices_means;
   arma::mat S, Shat, dShat, dS, Shat_inv, S_inv, gShat, gS, I;
-  arma::vec nu, means, delta, dnu, dmeans, gnu, gmeans;
+  arma::vec meanshat, means, delta, dmeanshat, dmeans,
+    gmeanshat, gmeans;
 
   void param(arguments_optim& x) {
 
     Shat = arma::reshape(x.transparameters(indices_Shat), p, p);
     S = arma::reshape(x.transparameters(indices_S), p, p);
     S = 0.5*(S+S.t());
-
-    if(use_means) {
-      nu = x.transparameters(indices_nu);
-      means = x.transparameters(indices_means);
-      delta = means-nu;
-    } else {
-      delta.zeros();
-    }
+    meanshat = x.transparameters(indices_meanshat);
+    means = x.transparameters(indices_means);
+    delta = means-meanshat;
 
     if(!Shat.is_sympd()) {
       arma::vec eigval;
@@ -83,6 +78,8 @@ public:
     gShat = Shat_inv-
       Shat_inv*S*Shat_inv-
       Shat_inv*delta*delta.t()*Shat_inv;
+    gmeanshat = -2.0*Shat_inv*delta;
+    gmeans = 2.0*Shat_inv*delta;
 
     if(S_sympd) {
       gS = Shat_inv-S_inv;
@@ -92,29 +89,19 @@ public:
 
     x.grad.elem(indices_S) += w*arma::vectorise(gS);
     x.grad.elem(indices_Shat) += w*arma::vectorise(gShat);
-
-    if(use_means) {
-      gnu = -2.0*Shat_inv*delta;
-      gmeans = 2.0*Shat_inv*delta;
-      x.grad.elem(indices_nu) += w*gnu;
-      x.grad.elem(indices_means) += w*gmeans;
-    }
+    x.grad.elem(indices_meanshat) += w*gmeanshat;
+    x.grad.elem(indices_means) += w*gmeans;
 
   }
 
   void dG(arguments_optim& x) {
 
-    dS = arma::reshape(x.dtransparameters(indices_S), p, p);
     dShat = arma::reshape(x.dtransparameters(indices_Shat), p, p);
+    dS = arma::reshape(x.dtransparameters(indices_S), p, p);
+    dmeanshat = x.dtransparameters(indices_meanshat);
+    dmeans = x.dtransparameters(indices_means);
 
-    arma::vec ddelta(p, arma::fill::zeros);
-
-    if(use_means) {
-      dnu = x.dtransparameters(indices_nu);
-      dmeans = x.dtransparameters(indices_means);
-      ddelta = dmeans-dnu;
-    }
-
+    arma::vec ddelta = dmeans-dmeanshat;
     arma::mat dD = ddelta*delta.t()+delta*ddelta.t();
     arma::mat dShat_inv = -Shat_inv*dShat*Shat_inv;
 
@@ -134,15 +121,15 @@ public:
       dgS -= dS_inv;
     }
 
+    arma::vec dgmeanshat =
+      -2.0*(dShat_inv*delta+Shat_inv*ddelta);
+    arma::vec dgmeans =
+      2.0*(dShat_inv*delta+Shat_inv*ddelta);
+
     x.dgrad.elem(indices_S) += w*arma::vectorise(dgS);
     x.dgrad.elem(indices_Shat) += w*arma::vectorise(dgShat);
-
-    if(use_means) {
-      arma::vec dgnu = -2.0*(dShat_inv*delta+Shat_inv*ddelta);
-      arma::vec dgmeans = 2.0*(dShat_inv*delta+Shat_inv*ddelta);
-      x.dgrad.elem(indices_nu) += w*dgnu;
-      x.dgrad.elem(indices_means) += w*dgmeans;
-    }
+    x.dgrad.elem(indices_meanshat) += w*dgmeanshat;
+    x.dgrad.elem(indices_means) += w*dgmeans;
 
   }
 
@@ -169,12 +156,9 @@ public:
     doubles[5] = S_sympd ? n*0.5*(-plogpi2-logdetS-p) : NA_REAL;
     doubles[6] = 0.0;
 
-    matrices.resize(use_means ? 2L : 1L);
+    matrices.resize(2);
     matrices[0] = S-Shat;
-
-    if(use_means) {
-      matrices[1] = delta;
-    }
+    matrices[1] = delta;
 
   }
 
@@ -190,51 +174,27 @@ cfa_fml* choose_cfa_fml(const Rcpp::List& estimator_setup) {
   int p = estimator_setup["p"];
 
   if(p < 1 || n < 1 || !std::isfinite(w) || w <= 0.0) {
-    Rcpp::stop("cfa_fml received invalid p, n, or w values");
+    Rcpp::stop("cfa_fml received invalid p, n, or w values.");
   }
 
-  if(indices.size() != 2L && indices.size() != 4L) {
-    Rcpp::stop("cfa_fml requires two or four parameter-index objects");
+  if(indices.size() != 4L) {
+    Rcpp::stop("cfa_fml requires Shat, S, meanshat, and means indices.");
   }
 
   if(indices[0].n_elem != static_cast<arma::uword>(p*p) ||
-     indices[1].n_elem != static_cast<arma::uword>(p*p)) {
-    Rcpp::stop("The cfa_fml covariance indices have incompatible dimensions");
-  }
-
-  bool use_means = false;
-  arma::uvec indices_nu;
-  arma::uvec indices_means;
-
-  if(indices.size() == 4L) {
-
-    const bool has_nu = indices[2].n_elem > 0L;
-    const bool has_means = indices[3].n_elem > 0L;
-
-    if(has_nu != has_means) {
-      Rcpp::stop("cfa_fml requires both model and sample means, or neither");
-    }
-
-    if(has_nu) {
-      if(indices[2].n_elem != static_cast<arma::uword>(p) ||
-         indices[3].n_elem != static_cast<arma::uword>(p)) {
-        Rcpp::stop("The cfa_fml mean indices have incompatible dimensions");
-      }
-      use_means = true;
-      indices_nu = indices[2];
-      indices_means = indices[3];
-    }
-
+     indices[1].n_elem != static_cast<arma::uword>(p*p) ||
+     indices[2].n_elem != static_cast<arma::uword>(p) ||
+     indices[3].n_elem != static_cast<arma::uword>(p)) {
+    Rcpp::stop("The cfa_fml parameter indices have incompatible dimensions.");
   }
 
   myestimator->indices_Shat = indices[0];
   myestimator->indices_S = indices[1];
-  myestimator->indices_nu = indices_nu;
-  myestimator->indices_means = indices_means;
+  myestimator->indices_meanshat = indices[2];
+  myestimator->indices_means = indices[3];
   myestimator->p = p;
   myestimator->n = n;
   myestimator->w = w;
-  myestimator->use_means = use_means;
   myestimator->Shat.zeros(p, p);
   myestimator->S.zeros(p, p);
   myestimator->dShat.zeros(p, p);
@@ -244,12 +204,12 @@ cfa_fml* choose_cfa_fml(const Rcpp::List& estimator_setup) {
   myestimator->gShat.zeros(p, p);
   myestimator->gS.zeros(p, p);
   myestimator->I.eye(p, p);
-  myestimator->nu.zeros(p);
+  myestimator->meanshat.zeros(p);
   myestimator->means.zeros(p);
   myestimator->delta.zeros(p);
-  myestimator->dnu.zeros(p);
+  myestimator->dmeanshat.zeros(p);
   myestimator->dmeans.zeros(p);
-  myestimator->gnu.zeros(p);
+  myestimator->gmeanshat.zeros(p);
   myestimator->gmeans.zeros(p);
   myestimator->plogpi2 = p*std::log(arma::datum::pi*2.0);
   myestimator->S_sympd = false;

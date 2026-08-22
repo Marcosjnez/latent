@@ -7,10 +7,8 @@
 /*
  * Confirmatory factor analysis (negative log-likelihood)
  *
- * General CFA likelihood estimator. The estimator can include a mean structure
- * through the model-implied means (nu) and sample means. If the mean vectors are
- * omitted from the transformed-parameter interface, their contribution is zero,
- * reproducing the covariance-only objective.
+ * The estimator always receives model-implied and sample covariance matrices,
+ * followed by model-implied and sample observed means.
  */
 
 class cfa_ml: public estimators {
@@ -19,23 +17,18 @@ public:
 
   int p, n;
   double loss, w, plogpi2;
-  bool use_means;
-  arma::uvec indices_Shat, indices_S, indices_nu, indices_means;
+  arma::uvec indices_Shat, indices_S, indices_meanshat, indices_means;
   arma::mat S, Shat, dS, dShat, Shat_inv, gS, gShat;
-  arma::vec means, nu, delta, dmeans, dnu, gmeans, gnu;
+  arma::vec meanshat, means, delta, dmeanshat, dmeans,
+    gmeanshat, gmeans;
 
   void param(arguments_optim& x) {
 
     Shat = arma::reshape(x.transparameters(indices_Shat), p, p);
     S = arma::reshape(x.transparameters(indices_S), p, p);
-
-    if(use_means) {
-      nu = x.transparameters(indices_nu);
-      means = x.transparameters(indices_means);
-      delta = means-nu;
-    } else {
-      delta.zeros();
-    }
+    meanshat = x.transparameters(indices_meanshat);
+    means = x.transparameters(indices_means);
+    delta = means-meanshat;
 
     if(!Shat.is_sympd()) {
       arma::vec eigval;
@@ -65,32 +58,24 @@ public:
     gShat = Shat_inv-
       Shat_inv*S*Shat_inv-
       Shat_inv*delta*delta.t()*Shat_inv;
+    gmeanshat = -2.0*Shat_inv*delta;
+    gmeans = 2.0*Shat_inv*delta;
 
     x.grad.elem(indices_S) += n*0.5*arma::vectorise(gS);
     x.grad.elem(indices_Shat) += n*0.5*arma::vectorise(gShat);
-
-    if(use_means) {
-      gnu = -2.0*Shat_inv*delta;
-      gmeans = 2.0*Shat_inv*delta;
-      x.grad.elem(indices_nu) += n*0.5*gnu;
-      x.grad.elem(indices_means) += n*0.5*gmeans;
-    }
+    x.grad.elem(indices_meanshat) += n*0.5*gmeanshat;
+    x.grad.elem(indices_means) += n*0.5*gmeans;
 
   }
 
   void dG(arguments_optim& x) {
 
-    dS = arma::reshape(x.dtransparameters(indices_S), p, p);
     dShat = arma::reshape(x.dtransparameters(indices_Shat), p, p);
+    dS = arma::reshape(x.dtransparameters(indices_S), p, p);
+    dmeanshat = x.dtransparameters(indices_meanshat);
+    dmeans = x.dtransparameters(indices_means);
 
-    arma::vec ddelta(p, arma::fill::zeros);
-
-    if(use_means) {
-      dnu = x.dtransparameters(indices_nu);
-      dmeans = x.dtransparameters(indices_means);
-      ddelta = dmeans-dnu;
-    }
-
+    arma::vec ddelta = dmeans-dmeanshat;
     arma::mat dD = ddelta*delta.t()+delta*ddelta.t();
     arma::mat dShat_inv = -Shat_inv*dShat*Shat_inv;
 
@@ -104,15 +89,15 @@ public:
       -Shat_inv*dD*Shat_inv
       -Shat_inv*delta*delta.t()*dShat_inv;
 
+    arma::vec dgmeanshat =
+      -2.0*(dShat_inv*delta+Shat_inv*ddelta);
+    arma::vec dgmeans =
+      2.0*(dShat_inv*delta+Shat_inv*ddelta);
+
     x.dgrad.elem(indices_S) += n*0.5*arma::vectorise(dgS);
     x.dgrad.elem(indices_Shat) += n*0.5*arma::vectorise(dgShat);
-
-    if(use_means) {
-      arma::vec dgnu = -2.0*(dShat_inv*delta+Shat_inv*ddelta);
-      arma::vec dgmeans = 2.0*(dShat_inv*delta+Shat_inv*ddelta);
-      x.dgrad.elem(indices_nu) += n*0.5*dgnu;
-      x.dgrad.elem(indices_means) += n*0.5*dgmeans;
-    }
+    x.dgrad.elem(indices_meanshat) += n*0.5*dgmeanshat;
+    x.dgrad.elem(indices_means) += n*0.5*dgmeans;
 
   }
 
@@ -126,12 +111,9 @@ public:
     doubles[0] = loss;
     doubles[1] = loglik;
 
-    matrices.resize(use_means ? 2L : 1L);
+    matrices.resize(2);
     matrices[0] = S-Shat;
-
-    if(use_means) {
-      matrices[1] = means-nu;
-    }
+    matrices[1] = delta;
 
   }
 
@@ -147,51 +129,27 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   double w = estimator_setup["w"];
 
   if(p < 1 || n < 1 || !std::isfinite(w) || w <= 0.0) {
-    Rcpp::stop("cfa_ml received invalid p, n, or w values");
+    Rcpp::stop("cfa_ml received invalid p, n, or w values.");
   }
 
-  if(indices.size() != 2L && indices.size() != 4L) {
-    Rcpp::stop("cfa_ml requires two or four parameter-index objects");
+  if(indices.size() != 4L) {
+    Rcpp::stop("cfa_ml requires Shat, S, meanshat, and means indices.");
   }
 
   if(indices[0].n_elem != static_cast<arma::uword>(p*p) ||
-     indices[1].n_elem != static_cast<arma::uword>(p*p)) {
-    Rcpp::stop("The cfa_ml covariance indices have incompatible dimensions");
-  }
-
-  bool use_means = false;
-  arma::uvec indices_nu;
-  arma::uvec indices_means;
-
-  if(indices.size() == 4L) {
-
-    const bool has_nu = indices[2].n_elem > 0L;
-    const bool has_means = indices[3].n_elem > 0L;
-
-    if(has_nu != has_means) {
-      Rcpp::stop("cfa_ml requires both model and sample means, or neither");
-    }
-
-    if(has_nu) {
-      if(indices[2].n_elem != static_cast<arma::uword>(p) ||
-         indices[3].n_elem != static_cast<arma::uword>(p)) {
-        Rcpp::stop("The cfa_ml mean indices have incompatible dimensions");
-      }
-      use_means = true;
-      indices_nu = indices[2];
-      indices_means = indices[3];
-    }
-
+     indices[1].n_elem != static_cast<arma::uword>(p*p) ||
+     indices[2].n_elem != static_cast<arma::uword>(p) ||
+     indices[3].n_elem != static_cast<arma::uword>(p)) {
+    Rcpp::stop("The cfa_ml parameter indices have incompatible dimensions.");
   }
 
   myestimator->indices_Shat = indices[0];
   myestimator->indices_S = indices[1];
-  myestimator->indices_nu = indices_nu;
-  myestimator->indices_means = indices_means;
+  myestimator->indices_meanshat = indices[2];
+  myestimator->indices_means = indices[3];
   myestimator->p = p;
   myestimator->n = n;
   myestimator->w = w;
-  myestimator->use_means = use_means;
   myestimator->Shat.zeros(p, p);
   myestimator->S.zeros(p, p);
   myestimator->dShat.zeros(p, p);
@@ -199,12 +157,12 @@ cfa_ml* choose_cfa_ml(const Rcpp::List& estimator_setup) {
   myestimator->Shat_inv.zeros(p, p);
   myestimator->gS.zeros(p, p);
   myestimator->gShat.zeros(p, p);
-  myestimator->nu.zeros(p);
+  myestimator->meanshat.zeros(p);
   myestimator->means.zeros(p);
   myestimator->delta.zeros(p);
-  myestimator->dnu.zeros(p);
+  myestimator->dmeanshat.zeros(p);
   myestimator->dmeans.zeros(p);
-  myestimator->gnu.zeros(p);
+  myestimator->gmeanshat.zeros(p);
   myestimator->gmeans.zeros(p);
   myestimator->plogpi2 = p*std::log(arma::datum::pi*2.0);
 

@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 22/08/2026
 
 .show_latent_row <- function(label, value) {
 
@@ -152,11 +152,8 @@ setMethod("show", "lcfa", function(object) {
     object@dataList$estimator,
     ml = "Maximum likelihood",
     fml = "Maximum likelihood",
-    means_fml = "Maximum likelihood",
     uls = "Unweighted least squares",
-    means_uls = "Unweighted least squares",
     dwls = "Diagonally weighted least squares",
-    means_dwls = "Diagonally weighted least squares",
     object@dataList$estimator
   )
 

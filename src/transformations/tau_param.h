@@ -7,10 +7,10 @@
 /*
  * Model-implied ordinal threshold transformation:
  *
- * tauhat = (kappas - means)/sqrt(diag(Shat))
+ * tauhat = (kappas - meanshat)/sqrt(diag(Shat))
  *
  * Since each observed variable may have a different number of thresholds,
- * threshold_items maps each element of kappas to its observed variable.
+ * threshold_items maps every element of kappas to its observed variable.
  * threshold_items must use zero-based indices.
  */
 
@@ -19,16 +19,16 @@ class tau_param: public transformations {
 public:
 
   int p, ntau;
-  arma::uvec indices_kappas, indices_means, indices_Shat,
+  arma::uvec indices_kappas, indices_meanshat, indices_Shat,
     threshold_items;
-  arma::vec kappas, means, tauhat, dkappas, dmeans, dtauhat,
+  arma::vec kappas, meanshat, tauhat, dkappas, dmeanshat, dtauhat,
     variances, sqrt_variances, inv_sqrt_variances, grad_out;
   arma::mat Shat, dShat;
 
   void transform(arguments_optim& x) {
 
     kappas = x.transparameters.elem(indices_kappas);
-    means = x.transparameters.elem(indices_means);
+    meanshat = x.transparameters.elem(indices_meanshat);
     Shat = arma::reshape(x.transparameters.elem(indices_Shat), p, p);
 
     variances = Shat.diag();
@@ -45,9 +45,8 @@ public:
     for(int k = 0; k < ntau; ++k) {
 
       const arma::uword j = threshold_items[k];
-
       tauhat[k] =
-        (kappas[k]-means[j])*inv_sqrt_variances[j];
+        (kappas[k]-meanshat[j])*inv_sqrt_variances[j];
 
     }
 
@@ -60,25 +59,25 @@ public:
     grad_out = x.grad.elem(indices_out);
 
     arma::vec grad_kappas(ntau, arma::fill::zeros);
-    arma::vec grad_means(p, arma::fill::zeros);
+    arma::vec grad_meanshat(p, arma::fill::zeros);
     arma::mat grad_Shat(p, p, arma::fill::zeros);
 
     for(int k = 0; k < ntau; ++k) {
 
       const arma::uword j = threshold_items[k];
-      const double a = kappas[k]-means[j];
+      const double a = kappas[k]-meanshat[j];
       const double inv_sd = inv_sqrt_variances[j];
       const double inv_var_sd = inv_sd/variances[j];
       const double g = grad_out[k];
 
       grad_kappas[k] += g*inv_sd;
-      grad_means[j] -= g*inv_sd;
+      grad_meanshat[j] -= g*inv_sd;
       grad_Shat(j, j) -= 0.5*g*a*inv_var_sd;
 
     }
 
     x.grad.elem(indices_kappas) += grad_kappas;
-    x.grad.elem(indices_means) += grad_means;
+    x.grad.elem(indices_meanshat) += grad_meanshat;
     x.grad.elem(indices_Shat) += arma::vectorise(grad_Shat);
 
   }
@@ -86,7 +85,7 @@ public:
   void dtransform(arguments_optim& x) {
 
     dkappas = x.dtransparameters.elem(indices_kappas);
-    dmeans = x.dtransparameters.elem(indices_means);
+    dmeanshat = x.dtransparameters.elem(indices_meanshat);
     dShat = arma::reshape(x.dtransparameters.elem(indices_Shat), p, p);
 
     dtauhat.set_size(ntau);
@@ -94,8 +93,8 @@ public:
     for(int k = 0; k < ntau; ++k) {
 
       const arma::uword j = threshold_items[k];
-      const double a = kappas[k]-means[j];
-      const double da = dkappas[k]-dmeans[j];
+      const double a = kappas[k]-meanshat[j];
+      const double da = dkappas[k]-dmeanshat[j];
       const double v = variances[j];
       const double dv = dShat(j, j);
       const double inv_sd = inv_sqrt_variances[j];
@@ -116,32 +115,23 @@ public:
     arma::vec dgrad_out = x.dgrad.elem(indices_out);
 
     arma::vec dgrad_kappas(ntau, arma::fill::zeros);
-    arma::vec dgrad_means(p, arma::fill::zeros);
+    arma::vec dgrad_meanshat(p, arma::fill::zeros);
     arma::mat dgrad_Shat(p, p, arma::fill::zeros);
 
     for(int k = 0; k < ntau; ++k) {
 
       const arma::uword j = threshold_items[k];
-
-      const double a = kappas[k]-means[j];
-      const double da = dkappas[k]-dmeans[j];
-
+      const double a = kappas[k]-meanshat[j];
+      const double da = dkappas[k]-dmeanshat[j];
       const double v = variances[j];
       const double dv = dShat(j, j);
-
       const double inv_sd = inv_sqrt_variances[j];
       const double inv_v32 = inv_sd/v;
       const double inv_v52 = inv_v32/v;
-
       const double g = grad_out[k];
       const double dg = dgrad_out[k];
-
-      const double d_inv_sd =
-        -0.5*inv_v32*dv;
-
-      const double h =
-        -0.5*a*inv_v32;
-
+      const double d_inv_sd = -0.5*inv_v32*dv;
+      const double h = -0.5*a*inv_v32;
       const double dh =
         -0.5*da*inv_v32+
         0.75*a*inv_v52*dv;
@@ -150,7 +140,7 @@ public:
         dg*inv_sd+
         g*d_inv_sd;
 
-      dgrad_means[j] -=
+      dgrad_meanshat[j] -=
         dg*inv_sd+
         g*d_inv_sd;
 
@@ -161,7 +151,7 @@ public:
     }
 
     x.dgrad.elem(indices_kappas) += dgrad_kappas;
-    x.dgrad.elem(indices_means) += dgrad_means;
+    x.dgrad.elem(indices_meanshat) += dgrad_meanshat;
     x.dgrad.elem(indices_Shat) += arma::vectorise(dgrad_Shat);
 
   }
@@ -169,7 +159,7 @@ public:
   void jacobian(arguments_optim& x) {
 
     kappas = x.transparameters.elem(indices_kappas);
-    means = x.transparameters.elem(indices_means);
+    meanshat = x.transparameters.elem(indices_meanshat);
     Shat = arma::reshape(x.transparameters.elem(indices_Shat), p, p);
 
     variances = Shat.diag();
@@ -183,26 +173,26 @@ public:
 
     const arma::uword ninputs =
       indices_kappas.n_elem+
-      indices_means.n_elem+
+      indices_meanshat.n_elem+
       indices_Shat.n_elem;
 
     jacob.zeros(ntau, ninputs);
 
     const arma::uword offset_kappas = 0L;
-    const arma::uword offset_means = indices_kappas.n_elem;
+    const arma::uword offset_meanshat = indices_kappas.n_elem;
     const arma::uword offset_Shat =
-      indices_kappas.n_elem+indices_means.n_elem;
+      indices_kappas.n_elem+indices_meanshat.n_elem;
 
     for(int k = 0; k < ntau; ++k) {
 
       const arma::uword j = threshold_items[k];
-      const double a = kappas[k]-means[j];
+      const double a = kappas[k]-meanshat[j];
       const double inv_sd = inv_sqrt_variances[j];
       const double inv_var_sd = inv_sd/variances[j];
       const arma::uword jj = j+j*p;
 
       jacob(k, offset_kappas+k) = inv_sd;
-      jacob(k, offset_means+j) = -inv_sd;
+      jacob(k, offset_meanshat+j) = -inv_sd;
       jacob(k, offset_Shat+jj) = -0.5*a*inv_var_sd;
 
     }
@@ -210,6 +200,8 @@ public:
   }
 
   void outcomes(arguments_optim& x) {
+
+    (void)x;
 
     vectors.resize(1);
     vectors[0] = tauhat;
@@ -234,15 +226,23 @@ tau_param* choose_tau_param(const Rcpp::List& trans_setup) {
   arma::uvec threshold_items = trans_setup["threshold_items"];
   int p = trans_setup["p"];
 
+  if(p < 1) {
+    Rcpp::stop("tau_param requires a positive p dimension.");
+  }
+
+  if(indices_in.size() != 3L || indices_out.size() != 1L) {
+    Rcpp::stop("tau_param requires kappas, meanshat, and Shat inputs and one tauhat output.");
+  }
+
   arma::uvec indices_kappas = indices_in[0];
-  arma::uvec indices_means = indices_in[1];
+  arma::uvec indices_meanshat = indices_in[1];
   arma::uvec indices_Shat = indices_in[2];
   arma::uvec indices_tauhat = indices_out[0];
 
   const arma::uword ntau = indices_kappas.n_elem;
 
-  if(indices_means.n_elem != static_cast<arma::uword>(p)) {
-    Rcpp::stop("tau_param requires one model mean per observed variable.");
+  if(indices_meanshat.n_elem != static_cast<arma::uword>(p)) {
+    Rcpp::stop("tau_param requires one model-implied mean per observed variable.");
   }
 
   if(indices_Shat.n_elem != static_cast<arma::uword>(p*p)) {
@@ -262,14 +262,13 @@ tau_param* choose_tau_param(const Rcpp::List& trans_setup) {
   }
 
   mytrans->indices_kappas = indices_kappas;
-  mytrans->indices_means = indices_means;
+  mytrans->indices_meanshat = indices_meanshat;
   mytrans->indices_Shat = indices_Shat;
   mytrans->indices_in = arma::join_cols(
     indices_kappas,
-    arma::join_cols(indices_means, indices_Shat)
+    arma::join_cols(indices_meanshat, indices_Shat)
   );
   mytrans->indices_out = indices_tauhat;
-
   mytrans->threshold_items = threshold_items;
   mytrans->p = p;
   mytrans->ntau = static_cast<int>(ntau);

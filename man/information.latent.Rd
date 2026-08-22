@@ -18,8 +18,7 @@ Information Variance-Covariance Matrix for Latent Models
 }
 \details{
 The fitted object is never modified. For ordinary CFA likelihood models, a
-temporary derivative copy replaces \code{cfa_fml} by \code{cfa_ml} and
-\code{cfa_means_fml} by \code{cfa_means_ml}. Stored covariance matrices are
-reused only when they were explicitly produced by an information/standard
-method.
+temporary derivative copy replaces \code{cfa_fml} by \code{cfa_ml}. Stored
+covariance matrices are reused only when they were explicitly produced by an
+information/standard method.
 }
