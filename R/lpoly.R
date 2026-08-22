@@ -1013,6 +1013,10 @@ fit_lpoly <- function(dataList, modelInfo, method) {
 
 compute_se_lpoly_one_step <- function(dataList, modelInfo, Optim, parameters) {
 
+  data_param <- create_lpoly_data_param(dataList = dataList,
+                                        control = modelInfo$control_optimizer)
+  list2env(data_param, envir = environment())
+
   #### Hessian ####
 
   modelInfo$control_optimizer$parameters[[1L]] <- Optim$parameters
@@ -1034,8 +1038,8 @@ compute_se_lpoly_one_step <- function(dataList, modelInfo, Optim, parameters) {
   # Scores for the two-step method:
   # ACOV <- asymptotic_poly(
   #   data = as.matrix(dataList$data),
-  #   correlation = parameters$S,
-  #   thresholds = parameters[paste("taus", var_names, sep = "")],
+  #   correlation = parameters[[S_matrix]],
+  #   thresholds = parameters[taus_item],
   #   return_scores = TRUE,
   #   probability_floor = 1e-12,
   #   inversion_tolerance = 1e-10
@@ -1044,8 +1048,8 @@ compute_se_lpoly_one_step <- function(dataList, modelInfo, Optim, parameters) {
 
   # Scores for pairwise log-likelihoods:
   scores <- composite_poly_scores(data = as.matrix(dataList$data),
-                                    correlation = parameters$S,
-                                    thresholds = parameters[paste("taus", var_names, sep = "")])
+                                  correlation = parameters[[S_matrix]],
+                                  thresholds = parameters[taus_item])
 
   J <- crossprod(scores)/nrow(scores)
 
@@ -1067,12 +1071,14 @@ compute_se_lpoly_one_step <- function(dataList, modelInfo, Optim, parameters) {
 
 compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
 
-  var_names <- rownames(parameters$S)
+  data_param <- create_lpoly_data_param(dataList = dataList,
+                                        control = modelInfo$control_optimizer)
+  list2env(data_param, envir = environment())
 
   ACOV <- asymptotic_poly(
     data = as.matrix(dataList$data),
-    correlation = parameters$S,
-    thresholds = parameters[paste("taus", var_names, sep = "")],
+    correlation = parameters[[S_matrix]],
+    thresholds = parameters[taus_item],
     return_scores = FALSE,
     probability_floor = 1e-12,
     inversion_tolerance = 1e-10
@@ -1081,7 +1087,8 @@ compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
   H <- solve(ACOV$VCOV)
   rownames(H) <- colnames(H) <- modelInfo$parameters_labels
 
-  rownames(ACOV$VCOV) <- colnames(ACOV$VCOV) <- modelInfo$parameters_labels
+  rownames(ACOV$VCOV) <- colnames(ACOV$VCOV) <-
+    modelInfo$parameters_labels
   se <- sqrt(diag(ACOV$VCOV))
   names(se) <- modelInfo$parameters_labels
 
