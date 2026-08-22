@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 16/07/2026
+ * Modification date: 22/08/2026
  */
 
 // #define ARMA_NO_DEBUG
@@ -50,7 +50,7 @@
 #include "get_dconstr.h"
 #include <R_ext/Utils.h>
 #include <Rinternals.h>
-#include <R_ext/Print.h>   // For Rprintf()
+#include <R_ext/Print.h>
 #include "yule_copula_measure.h"
 
 // [[Rcpp::export]]
@@ -60,9 +60,12 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
                      Rcpp::List control_optimizer);
 
 // [[Rcpp::export]]
-Rcpp::List polyfast(arma::mat data, std::string missing = "pairwise.complete.cases",
-                    const std::string smooth = "none", double min_eigval = 0.001,
-                    const int nboot = 1000L, const bool fit = false,
+Rcpp::List polyfast(arma::mat data,
+                    std::string missing = "pairwise.complete.cases",
+                    const std::string smooth = "none",
+                    double min_eigval = 0.001,
+                    const int nboot = 1000L,
+                    const bool fit = false,
                     const int cores = 1L);
 
 // [[Rcpp::export]]
@@ -74,7 +77,16 @@ arma::mat asymptotic_elliptical(const arma::mat& S, double eta = 1.00,
                                 bool cov = true, bool diag = true);
 
 // [[Rcpp::export]]
-arma::mat asymptotic_general(arma::mat X, bool cov = true, bool diag = true);
+arma::mat asymptotic_general(arma::mat X, bool cov = true,
+                             bool diag = true);
+
+// [[Rcpp::export]]
+Rcpp::List asymptotic_poly(const arma::mat& data,
+                           const arma::mat& correlation,
+                           const Rcpp::List& thresholds,
+                           bool return_scores = false,
+                           double probability_floor = 1e-12,
+                           double inversion_tolerance = 1e-10);
 
 // [[Rcpp::export]]
 arma::mat orth(arma::mat X);
@@ -113,9 +125,9 @@ Rcpp::List get_grad(Rcpp::List control_manifold,
 
 // [[Rcpp::export]]
 Rcpp::List get_dgrad(Rcpp::List control_manifold,
-                    Rcpp::List control_transform,
-                    Rcpp::List control_estimator,
-                    Rcpp::List control_optimizer);
+                     Rcpp::List control_transform,
+                     Rcpp::List control_estimator,
+                     Rcpp::List control_optimizer);
 
 // [[Rcpp::export]]
 Rcpp::List get_hess(Rcpp::List control_manifold,

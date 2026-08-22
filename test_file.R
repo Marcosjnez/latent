@@ -25,8 +25,8 @@ set.seed(20216)
 fit <- lca(data = gss82,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
-           covariates = c("RACE", "SEX", "EDUCR", "AGE"),
-           outcomes = "MARITAL",
+           # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
+           # outcomes = "MARITAL",
            # adjustment = "bk",
            # classification = "modal",
            # model = list("UNDERSTA ~~ COOPERAT
@@ -44,12 +44,6 @@ latInspect(fit, what = "elapsed")
 # loglik: -3891.252 # penalized_loglik: -3892.478
 # loglik: -3879.167 # penalized_loglik: -3880.371 ("UNDERSTA ~~ COOPERAT
 #                                                   PURPOSE ~~ COOPERAT")
-
-dconstraints <- constraints_derivs(fit)
-labs <- c(fit@modelInfo$trans$PURPOSE)
-dconstraints[labs, ]
-colnames(dconstraints)
-dim(dconstraints)
 
 jacob <- jacobian(fit)
 labs1 <- c(fit@modelInfo$trans$PURPOSE[1, ])
@@ -521,10 +515,10 @@ latInspect(fit, "loss") # loss           0.379735
                         # penalized_loss 0.379735
                         # loss_base      7.491586
                         # loss_sat       0.0000000
-fit@Optim$iterations
-fit@Optim$convergence
-fit@timing
-latInspect(fit, what = "lambda")
+latInspect(fit, "loglik") # loss           0.0000000
+                          # penalized_loss 0.0000000
+                          # loss_base      0.0000000
+                          # loss_sat       0.0000000
 
 # With lavaan:
 fit2 <- lavaan::cfa(data = mooc,
@@ -553,6 +547,26 @@ round(fit@parameters$psi, 3)
 
 # fit@Optim$SE$se
 # fit2@ParTable$se
+
+var_names <- c("hexemfea146", "hexemfea170", "hexemfea74", "hexemfea2",
+               "hexemanx128", "hexemanx8", "hexemanx80", "hexemanx176",
+               "hexemdep62", "hexemdep182", "hexemdep134", "hexemdep158",
+               "hexemsen44", "hexemsen164", "hexemsen20", "hexemsen68")
+df <- as.matrix(mooc[, var_names])
+x <- polyfast(df)
+
+ACOV <- asymptotic_poly(
+  data = df,
+  correlation = fit@parameters$S,
+  thresholds = fit@parameters[paste("taus", var_names, sep = "")],
+  # correlation = x$correlation,
+  # thresholds = x$thresholds,
+  return_scores = TRUE,
+  probability_floor = 1e-12,
+  inversion_tolerance = 1e-10
+)
+ACOV$VCOV
+ACOV$pattern_scores
 
 #### CFA (Yule correlation) ####
 

@@ -153,6 +153,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// asymptotic_poly
+Rcpp::List asymptotic_poly(const arma::mat& data, const arma::mat& correlation, const Rcpp::List& thresholds, bool return_scores, double probability_floor, double inversion_tolerance);
+RcppExport SEXP _latent_asymptotic_poly(SEXP dataSEXP, SEXP correlationSEXP, SEXP thresholdsSEXP, SEXP return_scoresSEXP, SEXP probability_floorSEXP, SEXP inversion_toleranceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type correlation(correlationSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type thresholds(thresholdsSEXP);
+    Rcpp::traits::input_parameter< bool >::type return_scores(return_scoresSEXP);
+    Rcpp::traits::input_parameter< double >::type probability_floor(probability_floorSEXP);
+    Rcpp::traits::input_parameter< double >::type inversion_tolerance(inversion_toleranceSEXP);
+    rcpp_result_gen = Rcpp::wrap(asymptotic_poly(data, correlation, thresholds, return_scores, probability_floor, inversion_tolerance));
+    return rcpp_result_gen;
+END_RCPP
+}
 // orth
 arma::mat orth(arma::mat X);
 RcppExport SEXP _latent_orth(SEXP XSEXP) {
@@ -451,6 +467,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 3},
     {"_latent_asymptotic_elliptical", (DL_FUNC) &_latent_asymptotic_elliptical, 4},
     {"_latent_asymptotic_general", (DL_FUNC) &_latent_asymptotic_general, 3},
+    {"_latent_asymptotic_poly", (DL_FUNC) &_latent_asymptotic_poly, 6},
     {"_latent_orth", (DL_FUNC) &_latent_orth, 1},
     {"_latent_oblq", (DL_FUNC) &_latent_oblq, 1},
     {"_latent_poblq", (DL_FUNC) &_latent_poblq, 2},

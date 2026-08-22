@@ -231,9 +231,15 @@ lpoly <- function(data,
 
   #### Standard errors ####
 
-  Optim$SE <- compute_se_lpoly(dataList = dataList,
-                               modelInfo = modelInfo,
-                               Optim = Optim)
+  # ACOV for the composite pairwise likelihood:
+  # Optim$SE <- compute_se_lpoly_one_step(dataList = dataList,
+  #                                       modelInfo = modelInfo,
+  #                                       Optim = Optim,
+  #                                       parameters = parameters)
+  # For now, we use always the ACOV of the two-steps method:
+  Optim$SE <- compute_se_lpoly_two_step(dataList = dataList,
+                                        modelInfo = modelInfo,
+                                        parameters = parameters)
 
   #### latent object ####
 
@@ -1005,7 +1011,7 @@ fit_lpoly <- function(dataList, modelInfo, method) {
 
 }
 
-compute_se_lpoly <- function(dataList, modelInfo, Optim) {
+compute_se_lpoly_one_step <- function(dataList, modelInfo, Optim, parameters) {
 
   #### Hessian ####
 
@@ -1023,13 +1029,28 @@ compute_se_lpoly <- function(dataList, modelInfo, Optim) {
 
   #### Variance-covariance matrix ####
 
-  # The polychoric objective is averaged over observations. Therefore, the
-  # inverse Hessian is the N-scaled asymptotic covariance and must be divided by
-  # the sample size to obtain the sampling variance-covariance matrix.
-  VCOV <- approx_Hinv(H)/dataList$nobs
-  VCOV <- (VCOV+t(VCOV))/2
-  rownames(VCOV) <- colnames(VCOV) <- modelInfo$parameters_labels
+  var_names <- rownames(parameters$S)
 
+  # scores <- composite_poly_scores(
+  #   data = as.matrix(dataList$data),
+  #   correlation = parameters$S,
+  #   thresholds = parameters[paste("taus", var_names, sep = "")]
+  # )
+  ACOV <- asymptotic_poly(
+    data = as.matrix(dataList$data),
+    correlation = parameters$S,
+    thresholds = parameters[paste("taus", var_names, sep = "")],
+    return_scores = TRUE,
+    probability_floor = 1e-12,
+    inversion_tolerance = 1e-10
+  )
+  scores <- ACOV$pattern_scores * c(ACOV$pattern_weights)
+
+  J <- crossprod(scores)/nrow(scores)
+
+  Hinv <- approx_Hinv(H)
+  VCOV <- Hinv %*% J %*% Hinv/nrow(scores)
+  VCOV <- (VCOV+t(VCOV))/2
   se <- sqrt(diag(VCOV))
   names(se) <- modelInfo$parameters_labels
 
@@ -1037,6 +1058,36 @@ compute_se_lpoly <- function(dataList, modelInfo, Optim) {
 
   result <- list(H = H,
                  VCOV = VCOV,
+                 se = se)
+
+  return(result)
+
+}
+
+compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
+
+  var_names <- rownames(parameters$S)
+
+  ACOV <- asymptotic_poly(
+    data = as.matrix(dataList$data),
+    correlation = parameters$S,
+    thresholds = parameters[paste("taus", var_names, sep = "")],
+    return_scores = FALSE,
+    probability_floor = 1e-12,
+    inversion_tolerance = 1e-10
+  )
+
+  H <- solve(ACOV$VCOV)
+  rownames(H) <- colnames(H) <- modelInfo$parameters_labels
+
+  rownames(ACOV$VCOV) <- colnames(ACOV$VCOV) <- modelInfo$parameters_labels
+  se <- sqrt(diag(ACOV$VCOV))
+  names(se) <- modelInfo$parameters_labels
+
+  #### Result ####
+
+  result <- list(H = H,
+                 VCOV = ACOV$VCOV,
                  se = se)
 
   return(result)

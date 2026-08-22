@@ -45,6 +45,10 @@ asymptotic_general <- function(X, cov = TRUE, diag = TRUE) {
     .Call(`_latent_asymptotic_general`, X, cov, diag)
 }
 
+asymptotic_poly <- function(data, correlation, thresholds, return_scores = FALSE, probability_floor = 1e-12, inversion_tolerance = 1e-10) {
+    .Call(`_latent_asymptotic_poly`, data, correlation, thresholds, return_scores, probability_floor, inversion_tolerance)
+}
+
 orth <- function(X) {
     .Call(`_latent_orth`, X)
 }
