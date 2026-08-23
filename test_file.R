@@ -929,8 +929,8 @@ library(latent)
 
 df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
 
-nfactors <- 3L
-estimator <- "uls"
+nfactors <- 2L
+estimator <- "ml"
 std.ov <- TRUE
 std.lv <- TRUE
 meanstructure <- FALSE
@@ -949,8 +949,8 @@ fit <- lefa(data = df,
             rotation = rotation,
             projection = projection,
             control = list(rstarts = 10L),
-            se = FALSE)
-# fit@Optim$SE$table # FIX: standard errors for psi_rotated
+            se = TRUE)
+# fit@Optim$SE$table_se # FIX: standard errors for psi_rotated
 
 fit_b <- bifactor::efast(as.matrix(df), nfactors = nfactors, estimator = estimator,
                          rotation = rotation, projection = projection,

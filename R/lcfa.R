@@ -2599,7 +2599,24 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
     #### Sample covariance and thresholds ####
 
     if(control$free_S) {
-      param[S_group[[i]]] <- trans[S_group[[i]]]
+
+      param[S_group[[i]]] <- cov_params[[i]][S_group[[i]]]
+
+      for(j in seq_along(S_group[[i]])) {
+
+        S_name <- S_group[[i]][j]
+        statistic_labels <- rownames(NVCOV_cov[[i]][[j]])
+
+        if(is.null(statistic_labels)) {
+          stop("The sample covariance matrix must have parameter labels before it can be freed.")
+        }
+
+        free_statistics <- trans[[S_name]] %in% statistic_labels
+        param[[S_name]][free_statistics] <-
+          trans[[S_name]][free_statistics]
+
+      }
+
     } else {
       param[S_group[[i]]] <- cov_params[[i]][S_group[[i]]]
     }
@@ -2619,7 +2636,9 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
 
     #### Sample means ####
 
-    if(control$free_M) {
+    if(control$free_M &&
+       control$meanstructure &&
+       dataList$cor == "pearson") {
       param[M_group[[i]]] <- trans[M_group[[i]]]
     } else {
       param[M_group[[i]]] <- means_params[[i]][M_group[[i]]]
