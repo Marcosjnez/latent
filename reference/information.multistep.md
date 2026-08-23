@@ -6,13 +6,13 @@ covariance estimators selected when the model was fitted.
 ## Usage
 
 ``` r
+# S3 method for class 'lefa'
+information(fit)
+
 # S3 method for class 'multistep'
 information(fit)
 
 # S3 method for class 'multistep_lcfa'
-information(fit)
-
-# S3 method for class 'lefa'
 information(fit)
 ```
 

@@ -17,7 +17,8 @@ se(fit, type = NULL, parameters = NULL, digits = 4L, ...)
 
 - type:
 
-  Optional compatibility argument.
+  Optional compatibility argument passed to
+  [`se.multistep()`](https://marcosjnez.github.io/latent/reference/se.multistep.md).
 
 - parameters:
 
@@ -32,9 +33,10 @@ se(fit, type = NULL, parameters = NULL, digits = 4L, ...)
 
 - ...:
 
-  Additional arguments reserved for future methods.
+  Additional arguments passed to
+  [`se.multistep()`](https://marcosjnez.github.io/latent/reference/se.multistep.md).
 
 ## Value
 
-Standard errors propagated from the fitted unrotated `lcfa` model to the
-rotated EFA parameters.
+The result of
+[`se.multistep()`](https://marcosjnez.github.io/latent/reference/se.multistep.md).

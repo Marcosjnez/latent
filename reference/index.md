@@ -39,9 +39,9 @@
   Example dataset: hexaco
 - [`information(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/information.latent.md)
   : Information Variance-Covariance Matrix for Latent Models
-- [`information(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
+- [`information(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
+  [`information(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
   [`information(`*`<multistep_lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
-  [`information(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
   : Information Covariance for Multistep Models
 - [`jacobian()`](https://marcosjnez.github.io/latent/reference/jacobian.md)
   : Jacobian Matrix
@@ -115,9 +115,9 @@
   : Robust Variance-Covariance Matrix for CFA Models
 - [`robust(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/robust.llca.md)
   : LatentGold-Style Robust Variance-Covariance Matrix
-- [`robust(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
+- [`robust(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
+  [`robust(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
   [`robust(`*`<multistep_lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
-  [`robust(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
   : Robust Covariance for Multistep Models
 - [`se(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/se.latent.md)
   : Standard Errors for Latent Objects

@@ -8,13 +8,13 @@ same multistep propagation as
 ## Usage
 
 ``` r
+# S3 method for class 'lefa'
+robust(fit)
+
 # S3 method for class 'multistep'
 robust(fit)
 
 # S3 method for class 'multistep_lcfa'
-robust(fit)
-
-# S3 method for class 'lefa'
 robust(fit)
 ```
 

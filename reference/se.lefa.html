@@ -74,7 +74,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Standard Errors for Exploratory Factor Analysis</h1>
-      <small class="dont-index">Source: <a href="https://github.com/Marcosjnez/latent/blob/master/R/se_lefa.R" class="external-link"><code>R/se_lefa.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/Marcosjnez/latent/blob/master/R/00generic_lefa.R" class="external-link"><code>R/00generic_lefa.R</code></a></small>
       <div class="d-none name"><code>se.lefa.Rd</code></div>
     </div>
 
@@ -97,7 +97,8 @@
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Optional compatibility argument.</p></dd>
+<dd><p>Optional compatibility argument passed to
+<code><a href="se.multistep.html">se.multistep()</a></code>.</p></dd>
 
 
 <dt id="arg-parameters">parameters<a class="anchor" aria-label="anchor" href="#arg-parameters"></a></dt>
@@ -112,13 +113,12 @@ and factor means.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments reserved for future methods.</p></dd>
+<dd><p>Additional arguments passed to <code><a href="se.multistep.html">se.multistep()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Standard errors propagated from the fitted unrotated <code>lcfa</code>
-  model to the rotated EFA parameters.</p>
+    <p>The result of <code><a href="se.multistep.html">se.multistep()</a></code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
