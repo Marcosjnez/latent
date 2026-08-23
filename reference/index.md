@@ -76,7 +76,7 @@
 - [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
   Polychoric Correlation Matrix
 - [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md)
-  : Rotate a factor loading matrix
+  : Rotate a fitted CFA model
 - [`lyule()`](https://marcosjnez.github.io/latent/reference/lyule.md) :
   Yule Correlation Matrix
 - [`plot(`*`<getfit.llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/plot.getfit.llcalist.md)

@@ -1,21 +1,21 @@
-# Rotate a factor loading matrix
+# Rotate a fitted CFA model
 
-`lrotate` rotates one or more factor loading matrices using an
-orthogonal or oblique projection and a selected rotation criterion.
+`lrotate` rotates the factor loading matrices of a fitted `lcfa` object
+using an orthogonal or oblique projection and a selected rotation
+criterion.
 
 ## Usage
 
 ``` r
-lrotate(lambda, projection = "oblq", rotation = "oblimin",
-        group = NULL, positive = FALSE, penalties = TRUE,
+lrotate(fit, projection = "oblq", rotation = "oblimin",
         do.fit = TRUE, control = NULL, ...)
 ```
 
 ## Arguments
 
-- lambda:
+- fit:
 
-  A matrix or a list of loading matrices, one for each group.
+  A fitted object inheriting from class `"lcfa"`.
 
 - projection:
 
@@ -26,24 +26,10 @@ lrotate(lambda, projection = "oblq", rotation = "oblimin",
 
   Character string identifying the rotation criterion.
 
-- group:
-
-  Optional grouping information retained in the fitted object.
-
-- positive:
-
-  Logical. Retained for compatibility with the factor-analysis
-  interface.
-
-- penalties:
-
-  Logical or list of penalty settings retained in the optimization
-  control.
-
 - do.fit:
 
-  Logical. If `TRUE`, fit the rotation. If `FALSE`, return only the
-  model specification.
+  Logical. If `TRUE`, fit the rotation. If `FALSE`, return the
+  unrestricted rotation specification used for derivative calculations.
 
 - control:
 
@@ -56,14 +42,28 @@ lrotate(lambda, projection = "oblq", rotation = "oblimin",
 
 ## Value
 
-An object of class `"latent"`.
+An object of class `"multistep"`. The fitted `lcfa` object is stored in
+`extra` as the preceding estimation step.
+
+## Details
+
+Let \\X\\ be the rotation matrix and let \\\Lambda_0\\, \\\Psi_0\\, and
+\\\alpha_0\\ denote the unrotated factor loadings, factor covariance
+matrix, and factor means. The rotated quantities are
+\$\$\Lambda_r=\Lambda_0X^{-T},\$\$ \$\$\Psi_r=X^T\Psi_0X,\$\$ and
+\$\$\alpha_r=X^T\alpha_0.\$\$ For an orthogonal projection,
+\\X^{-T}=X\\. If \\\Psi_0\\ is a fixed identity matrix, \\\Psi_r\\ is
+computed as \\X^TX\\.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-fit <- lrotate(lambda = list(lambda),
-               projection = "oblq",
-               rotation = "oblimin")
+fit_cfa <- lcfa(data = HolzingerSwineford1939,
+                model = model,
+                std.lv = TRUE)
+fit_rotation <- lrotate(fit = fit_cfa,
+                        projection = "oblq",
+                        rotation = "oblimin")
 } # }
 ```

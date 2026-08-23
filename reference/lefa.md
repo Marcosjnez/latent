@@ -3,7 +3,7 @@
 Fit an exploratory factor analysis model by first estimating an
 orthogonal factor model with
 [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) and
-subsequently rotating the estimated loading matrices with
+subsequently rotating the fitted model with
 [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
 
 ## Usage
@@ -15,9 +15,13 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
      sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
      positive = FALSE, penalties = TRUE,
      missing = "pairwise.complete.obs",
-     std.lv = TRUE, do.fit = TRUE,
+     std.lv = TRUE, std.ov = FALSE,
+     meanstructure = TRUE,
+     parameterization = NULL,
+     likelihood = NULL, se = TRUE,
+     message = FALSE, do.fit = TRUE,
      mimic = "latent", control = NULL,
-     ...)
+     rotation.control = NULL, ...)
 ```
 
 ## Arguments
@@ -84,7 +88,8 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 
 - penalties:
 
-  Logical value or list controlling regularization.
+  Logical value or list controlling regularization in
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
 
 - missing:
 
@@ -94,6 +99,33 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 - std.lv:
 
   Logical. Standardize latent variables in the unrotated model.
+
+- std.ov:
+
+  Logical. Standardize observed variables in the unrotated model.
+
+- meanstructure:
+
+  Logical. Estimate the observed-variable mean structure.
+
+- parameterization:
+
+  Optional parameterization passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
+
+- likelihood:
+
+  Character string controlling the likelihood convention in
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
+
+- se:
+
+  Logical or character controlling standard errors in
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
+
+- message:
+
+  Logical. Print progress messages during CFA estimation.
 
 - do.fit:
 
@@ -107,9 +139,13 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 
 - control:
 
-  Optional list of optimization controls passed to the unrotated
-  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md)
-  model.
+  Optional list of optimization controls passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
+
+- rotation.control:
+
+  Optional list of optimization controls passed to
+  [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
 
 - ...:
 
@@ -122,10 +158,10 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 ## Value
 
 If the fitted model contains more than one factor, a list with
-components `efa` (the unrotated `lcfa` fit) and `rotation` (the rotated
-`latent` fit). For a one-factor model, the unrotated `lcfa` fit is
-returned directly. If `do.fit = FALSE`, the unfitted `lcfa`
-specification is returned.
+components `efa` (the unrotated `lcfa` fit) and `rotation` (the fitted
+`multistep` rotation object). For a one-factor model, the unrotated
+`lcfa` fit is returned directly. If `do.fit = FALSE`, the unfitted
+`lcfa` specification is returned.
 
 ## Examples
 
