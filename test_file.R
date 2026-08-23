@@ -913,12 +913,27 @@ fit@Optim$elapsed
 library(latent)
 
 df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
+
+estimator <- "ml"
+std.ov <- FALSE
+std.lv <- FALSE
+meanstructure <- FALSE
+likelihood <- "normal"
+
 fit <- lefa(data = df,
             nfactors = 3L,
+            estimator = estimator,
+            std.ov = std.ov,
+            std.lv = std.lv,
+            meanstructure = meanstructure,
+            likelihood = likelihood,
             orthogonal = TRUE,
-            std.lv = TRUE,
             rotation = "oblimin",
-            projection = "oblq")
+            projection = "oblq",
+            se = TRUE)
+fit@parameters$lambda
+fit@transformed_pars$lambda_rotated
+fit
 
 # Exploratory factor analysis
 
@@ -936,7 +951,7 @@ s <- cor(scores)
 
 estimator <- "uls"
 rotation <- "oblimin"
-projection <- "orth"
+projection <- "poblq"
 # Fit efa with bifactor:
 fit_b <- bifactor::efast(s, nfactors = nfactors, estimator = estimator,
                          rotation = rotation, projection = projection,
@@ -947,17 +962,35 @@ fit_b$rotation$f
 
 target <- matrix(0, nfactors, nfactors)
 target[1:2, 1:2] <- 1
+diag(target) <- 0
+
+estimator <- "ml"
+std.ov <- TRUE
+std.lv <- TRUE
+meanstructure <- FALSE
+likelihood <- "normal"
+
 fit <- lefa(data = scores, #std.ov = TRUE, #sample.cov = s,
-            nfactors = nfactors, estimator = estimator,
-            rotation = rotation, projection = projection)
+            nfactors = nfactors,
+            estimator = estimator,
+            rotation = rotation,
+            projection = projection,
+            std.ov = std.ov,
+            std.lv = std.lv,
+            meanstructure = meanstructure,
+            likelihood = likelihood,
+            orthogonal = TRUE,
+            constraints = target,
+            control = list(rstarts = 10L),
+            se = FALSE)
 fit@extra$efa@Optim$f
 fit@Optim$f
 
-round(fit$rotation@transformed_pars$lambda_rotated.group1, 3)
+round(fit@transformed_pars$lambda_rotated, 3)
 round(fit_b$rotation$lambda, 3)
 
-fit$rotation@transformed_pars$psi_rotated.group1
-fit_b$rotation$phi
+round(fit@transformed_pars$psi_rotated, 3)
+round(fit_b$rotation$phi, 3)
 
 #### Check derivatives ####
 
