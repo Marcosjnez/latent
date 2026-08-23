@@ -9,7 +9,7 @@ orthogonal or oblique projection and a selected rotation criterion.
 ``` r
 lrotate(fit = NULL, lambda = NULL, psi = NULL,
         projection = "oblq", rotation = "oblimin",
-        do.fit = TRUE, control = NULL, ...)
+        se = TRUE, do.fit = TRUE, control = NULL, ...)
 ```
 
 ## Arguments
@@ -37,6 +37,12 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
 - rotation:
 
   Character string identifying the rotation criterion.
+
+- se:
+
+  Logical. If `TRUE` and `fit` is supplied, propagate standard errors
+  from the fitted `lcfa` model to the rotated parameters. Standard
+  errors are not available when matrices are supplied directly.
 
 - do.fit:
 
