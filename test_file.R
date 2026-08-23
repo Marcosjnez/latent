@@ -915,8 +915,8 @@ library(latent)
 df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
 
 estimator <- "ml"
-std.ov <- FALSE
-std.lv <- FALSE
+std.ov <- TRUE
+std.lv <- TRUE
 meanstructure <- FALSE
 likelihood <- "normal"
 
@@ -933,7 +933,7 @@ fit <- lefa(data = df,
             se = TRUE)
 fit@parameters$lambda
 fit@transformed_pars$lambda_rotated
-fit
+fit@Optim$
 
 # Exploratory factor analysis
 

@@ -434,7 +434,7 @@ fit_lefa_cfa <- function(data, model, estimator,
 
   args <- c(args, dots)
 
-  result <- do.call(lcfa, args)
+  result <- do.call("lcfa", args)
 
   #### Result ####
 
@@ -472,7 +472,7 @@ fit_lefa_rotation <- function(fit, projection, rotation,
 
   args <- c(args, dots)
 
-  result <- do.call(lrotate, args)
+  result <- do.call("lrotate", args)
 
   #### Result ####
 
