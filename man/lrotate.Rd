@@ -6,7 +6,7 @@
 \usage{
 lrotate(fit = NULL, lambda = NULL, psi = NULL,
         projection = "oblq", rotation = "oblimin",
-        do.fit = TRUE, control = NULL, ...)
+        se = TRUE, do.fit = TRUE, control = NULL, ...)
 }
 \arguments{
 \item{fit}{Optional fitted object inheriting from class \code{"lcfa"}.}
@@ -22,6 +22,11 @@ used. This argument cannot be used together with \code{fit}.}
 \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
 
 \item{rotation}{Character string identifying the rotation criterion.}
+
+\item{se}{Logical. If \code{TRUE} and \code{fit} is supplied, propagate
+standard errors from the fitted \code{lcfa} model to the rotated
+parameters. Standard errors are not available when matrices are supplied
+directly.}
 
 \item{do.fit}{Logical. If \code{TRUE}, fit the rotation. If \code{FALSE},
 return the model specification. With a fitted \code{lcfa} input, the

@@ -850,14 +850,26 @@ model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
           speed   =~ x7 + x8 + x9'
 
+estimator <- "ml"
+std.ov <- TRUE
+std.lv <- TRUE
+meanstructure <- FALSE
+likelihood <- "normal"
+
 fit_cfa <- lcfa(data = HolzingerSwineford1939,
                 model = model,
-                std.lv = TRUE,
+                estimator = estimator,
+                std.ov = std.ov,
+                std.lv = std.lv,
+                meanstructure = meanstructure,
+                likelihood = likelihood,
                 orthogonal = TRUE)
 fit_rotation <- lrotate(fit = fit_cfa,
                         projection = "oblq",
-                        rotation = "oblimin")
+                        rotation = "oblimin",
+                        se = TRUE)
 fit_rotation@parameters
+fit_rotation@Optim$SE
 
 # Factor rotation
 
@@ -930,10 +942,11 @@ fit <- lefa(data = df,
             orthogonal = TRUE,
             rotation = "oblimin",
             projection = "oblq",
-            se = TRUE)
+            se = "standard")
 fit@parameters$lambda
 fit@transformed_pars$lambda_rotated
-fit@Optim$
+fit@transformed_pars$psi_rotated
+fit@Optim$SE$table # FIX: standard errors for psi_rotated
 
 # Exploratory factor analysis
 

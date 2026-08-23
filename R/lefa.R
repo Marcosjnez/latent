@@ -270,6 +270,7 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                                     projection = projection,
                                     rotation = rotation,
                                     control = rotation.control,
+                                    se = !isFALSE(se),
                                     dots = dots_split$rotation)
 
   result <- as_lefa(rotation_fit, call = mc)
@@ -460,12 +461,13 @@ rotate_lefa <- function(fit) {
 #### Function to fit the rotation ####
 
 fit_lefa_rotation <- function(fit, projection, rotation,
-                              control, dots) {
+                              control, se, dots) {
 
   args <- list(
     fit = fit,
     projection = projection,
     rotation = rotation,
+    se = se,
     do.fit = TRUE,
     control = control
   )

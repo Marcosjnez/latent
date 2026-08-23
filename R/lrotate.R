@@ -13,7 +13,7 @@
 #' @usage
 #' lrotate(fit = NULL, lambda = NULL, psi = NULL,
 #'         projection = "oblq", rotation = "oblimin",
-#'         do.fit = TRUE, control = NULL, ...)
+#'         se = TRUE, do.fit = TRUE, control = NULL, ...)
 #'
 #' @param fit Optional fitted object inheriting from class \code{"lcfa"}.
 #' @param lambda Optional loading matrix or list of loading matrices. This is an
@@ -24,6 +24,10 @@
 #' @param projection Character string. Available projections are
 #'   \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.
 #' @param rotation Character string identifying the rotation criterion.
+#' @param se Logical. If \code{TRUE} and \code{fit} is supplied, propagate
+#'   standard errors from the fitted \code{lcfa} model to the rotated
+#'   parameters. Standard errors are not available when matrices are supplied
+#'   directly.
 #' @param do.fit Logical. If \code{TRUE}, fit the rotation. If \code{FALSE},
 #'   return the model specification. With a fitted \code{lcfa} input, the
 #'   unrestricted specification used for derivative calculations is returned.
@@ -69,7 +73,7 @@
 #' @export
 lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
                     projection = "oblq", rotation = "oblimin",
-                    do.fit = TRUE, control = NULL, ...) {
+                    se = TRUE, do.fit = TRUE, control = NULL, ...) {
 
   #### Check input arguments ####
 
@@ -110,6 +114,10 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
 
   if(!(rotation %in% supported_rotation)) {
     stop("Unknown rotation criterion: ", rotation)
+  }
+
+  if(length(se) != 1L || !is.logical(se) || is.na(se)) {
+    stop("se must be TRUE or FALSE")
   }
 
   if(length(do.fit) != 1L || !is.logical(do.fit) || is.na(do.fit)) {
@@ -161,6 +169,7 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
   dataList$args <- c(input_args,
                      list(projection = projection,
                           rotation = rotation,
+                          se = se,
                           do.fit = do.fit,
                           control = control),
                      dots)
@@ -225,6 +234,24 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
                 parameters       = parameters,
                 transformed_pars = transformed_pars,
                 extra            = extra)
+
+  #### Standard errors ####
+
+  if(fit_input && se) {
+
+    data_param <- modelInfo$data_param
+    rotated_parameters <- modelInfo$trans[
+      unique(c(data_param$lambda_group,
+               data_param$psi_group,
+               data_param$alpha_group))
+    ]
+
+    result@Optim$SE <- se.multistep(
+      fit = result,
+      parameters = rotated_parameters
+    )
+
+  }
 
   #### Result ####
 
