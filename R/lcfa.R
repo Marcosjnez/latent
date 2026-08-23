@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/08/2026
+# Modification date: 23/08/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -2131,6 +2131,7 @@ create_lcfa_data_param <- function(dataList, control) {
   alpha_group <- paste("alpha", dataList$group_label, sep = sep)
   psi_group <- paste("psi", dataList$group_label, sep = sep)
   theta_group <- paste("theta", dataList$group_label, sep = sep)
+  logvars_group <- paste("logvars", dataList$group_label, sep = sep)
   xpsi_group <- paste("xpsi", dataList$group_label, sep = sep)
   xtheta_group <- paste("xtheta", dataList$group_label, sep = sep)
   model_group <- paste("model", dataList$group_label, sep = sep)
@@ -2360,6 +2361,7 @@ create_lcfa_data_param <- function(dataList, control) {
   result <- list(lambda_group = lambda_group,
                  alpha_group = alpha_group,
                  theta_group = theta_group,
+                 logvars_group = logvars_group,
                  psi_group = psi_group,
                  xtheta_group = xtheta_group,
                  xpsi_group = xpsi_group,
@@ -2439,6 +2441,16 @@ model_lcfa <- function(dataList, data_param, control) {
                              colnames = items,
                              symmetric = TRUE)
     k <- k+1L
+
+    if(!dataList$positive && !control$deltaparam) {
+
+      list_struct[[k]] <- list(name = logvars_group[i],
+                               type = "vector",
+                               dim = p,
+                               rownames = items)
+      k <- k+1L
+
+    }
 
     list_struct[[k]] <- list(name = psi_group[i],
                              type = "matrix",
@@ -2558,6 +2570,21 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
         model_blocks[[nm]][nonfixed[[nm]]]
     }
 
+    if(!dataList$positive && !control$deltaparam) {
+
+      p <- dataList$nitems[[i]]
+      diag_indices <- seq.int(1L, p*p, by = p+1L)
+      free_diag <- diag_indices %in% nonfixed[[theta_group[i]]]
+      theta_diag_labels <- diag(trans[[theta_group[i]]])
+
+      trans[[logvars_group[i]]][free_diag] <-
+        paste0("log(", theta_diag_labels[free_diag], ")")
+      theta_diag_labels[free_diag] <-
+        paste0(theta_group[i], ".exp[", which(free_diag), "]")
+      diag(trans[[theta_group[i]]]) <- theta_diag_labels
+
+    }
+
   }
 
   #### Model for the parameters ####
@@ -2587,7 +2614,24 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
         fixed_values_list[[theta_group[i]]]
 
       if(control$deltaparam) {
+
         diag(param[[theta_group[i]]]) <- "1"
+
+      } else {
+
+        diag_indices <- seq.int(1L, p*p, by = p+1L)
+        free_diag <- diag_indices %in% nonfixed[[theta_group[i]]]
+        theta_diag <- diag(param[[theta_group[i]]])
+        theta_diag[free_diag] <- "1"
+        diag(param[[theta_group[i]]]) <- theta_diag
+
+        param[[logvars_group[i]]] <- setNames(
+          rep(0, p),
+          names(trans[[logvars_group[i]]])
+        )
+        param[[logvars_group[i]]][free_diag] <-
+          trans[[logvars_group[i]]][free_diag]
+
       }
 
       param[[psi_group[i]]] <- trans[[psi_group[i]]]
@@ -2806,6 +2850,26 @@ start_lcfa <- function(dataList, data_param, param, trans,
         init_param[[rs]][[theta_group[i]]][fixed[[theta_group[i]]]] <-
           fixed_values_list[[theta_group[i]]]
 
+        if(!control$deltaparam) {
+
+          diag_indices <- seq.int(1L, p*p, by = p+1L)
+          free_diag <- !(diag_indices %in% fixed[[theta_group[i]]])
+          theta_diag <- diag(init_param[[rs]][[theta_group[i]]])
+          minimum_variance <- pmax(0.05*diag(S),
+                                   sqrt(.Machine$double.eps))
+          theta_diag[free_diag] <- pmax(theta_diag[free_diag],
+                                        minimum_variance[free_diag])
+          diag(init_param[[rs]][[theta_group[i]]]) <- theta_diag
+
+          init_param[[rs]][[logvars_group[i]]] <- setNames(
+            rep(0, p),
+            names(trans[[logvars_group[i]]])
+          )
+          init_param[[rs]][[logvars_group[i]]][free_diag] <-
+            log(theta_diag[free_diag])
+
+        }
+
         init_param[[rs]][[psi_group[i]]] <- diag(q)
         dimnames(init_param[[rs]][[psi_group[i]]]) <-
           dimnames(trans[[psi_group[i]]])
@@ -2926,6 +2990,7 @@ manifolds_lcfa <- function(dataList, data_param, param,
     add_euclidean(alpha_group[i])
     add_euclidean(kappa_group[i])
     add_euclidean(delta_group[i])
+    add_euclidean(logvars_group[i])
     add_euclidean(M_group[[i]])
     add_euclidean(S_group[[i]])
     add_euclidean(taus_group[[i]])
@@ -3003,6 +3068,26 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
                               extra = list(p = nrow(trans[[theta_group[i]]]),
                                            q = nrow(trans[[psi_group[i]]])))
       k <- k+1L
+
+    } else if(!dataList$positive) {
+
+      p <- dataList$nitems[[i]]
+      diag_indices <- seq.int(1L, p*p, by = p+1L)
+      theta_numeric <- suppressWarnings(
+        as.numeric(dataList$model[[i]]$theta)
+      )
+      free_diag <- is.na(theta_numeric[diag_indices])
+
+      if(any(free_diag)) {
+
+        transforms[[k]] <- list(
+          transform = "exponential",
+          parameters_in = list(trans[[logvars_group[i]]][free_diag]),
+          parameters_out = list(diag(trans[[theta_group[i]]])[free_diag])
+        )
+        k <- k+1L
+
+      }
 
     }
 
