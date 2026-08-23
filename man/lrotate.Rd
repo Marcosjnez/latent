@@ -2,30 +2,22 @@
 % Please edit documentation in R/lrotate.R
 \name{lrotate}
 \alias{lrotate}
-\title{Rotate a factor loading matrix}
+\title{Rotate a fitted CFA model}
 \usage{
-lrotate(lambda, projection = "oblq", rotation = "oblimin",
-        group = NULL, positive = FALSE, penalties = TRUE,
+lrotate(fit, projection = "oblq", rotation = "oblimin",
         do.fit = TRUE, control = NULL, ...)
 }
 \arguments{
-\item{lambda}{A matrix or a list of loading matrices, one for each group.}
+\item{fit}{A fitted object inheriting from class \code{"lcfa"}.}
 
 \item{projection}{Character string. Available projections are
 \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
 
 \item{rotation}{Character string identifying the rotation criterion.}
 
-\item{group}{Optional grouping information retained in the fitted object.}
-
-\item{positive}{Logical. Retained for compatibility with the factor-analysis
-interface.}
-
-\item{penalties}{Logical or list of penalty settings retained in the
-optimization control.}
-
 \item{do.fit}{Logical. If \code{TRUE}, fit the rotation. If \code{FALSE},
-return only the model specification.}
+return the unrestricted rotation specification used for derivative
+calculations.}
 
 \item{control}{List of optimization-control arguments.}
 
@@ -33,17 +25,33 @@ return only the model specification.}
 rotation criterion.}
 }
 \value{
-An object of class \code{"latent"}.
+An object of class \code{"multistep"}. The fitted \code{lcfa}
+object is stored in \code{extra} as the preceding estimation step.
 }
 \description{
-\code{lrotate} rotates one or more factor loading matrices using an
-orthogonal or oblique projection and a selected rotation criterion.
+\code{lrotate} rotates the factor loading matrices of a fitted \code{lcfa}
+object using an orthogonal or oblique projection and a selected rotation
+criterion.
+}
+\details{
+Let \eqn{X} be the rotation matrix and let \eqn{\Lambda_0}, \eqn{\Psi_0},
+and \eqn{\alpha_0} denote the unrotated factor loadings, factor covariance
+matrix, and factor means. The rotated quantities are
+\deqn{\Lambda_r=\Lambda_0X^{-T},}
+\deqn{\Psi_r=X^T\Psi_0X,}
+and
+\deqn{\alpha_r=X^T\alpha_0.}
+For an orthogonal projection, \eqn{X^{-T}=X}. If \eqn{\Psi_0} is a fixed
+identity matrix, \eqn{\Psi_r} is computed as \eqn{X^TX}.
 }
 \examples{
 \dontrun{
-fit <- lrotate(lambda = list(lambda),
-               projection = "oblq",
-               rotation = "oblimin")
+fit_cfa <- lcfa(data = HolzingerSwineford1939,
+                model = model,
+                std.lv = TRUE)
+fit_rotation <- lrotate(fit = fit_cfa,
+                        projection = "oblq",
+                        rotation = "oblimin")
 }
 
 }

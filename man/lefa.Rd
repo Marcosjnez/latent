@@ -10,9 +10,13 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
      sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
      positive = FALSE, penalties = TRUE,
      missing = "pairwise.complete.obs",
-     std.lv = TRUE, do.fit = TRUE,
+     std.lv = TRUE, std.ov = FALSE,
+     meanstructure = TRUE,
+     parameterization = NULL,
+     likelihood = NULL, se = TRUE,
+     message = FALSE, do.fit = TRUE,
      mimic = "latent", control = NULL,
-     ...)
+     rotation.control = NULL, ...)
 }
 \arguments{
 \item{data}{Optional data frame or matrix containing the observed variables.
@@ -38,18 +42,33 @@ character value \code{"yule"} requests Yule correlations.}
 \item{sample.cov}{Optional sample covariance matrix or list of covariance
 matrices passed to \code{lcfa()}.}
 
-\item{sample.mean}{Optional sample mean vector or list of vectors passed to \code{lcfa()}.}
+\item{sample.mean}{Optional sample mean vector or list of vectors passed to
+\code{lcfa()}.}
 
 \item{sample.nobs}{Optional number of observations passed to \code{lcfa()}.}
 
 \item{positive}{Logical. Request the positive-definite parameterization used
 by \code{lcfa()}.}
 
-\item{penalties}{Logical value or list controlling regularization.}
+\item{penalties}{Logical value or list controlling regularization in
+\code{lcfa()}.}
 
 \item{missing}{Missing-data method passed to \code{lcfa()}.}
 
 \item{std.lv}{Logical. Standardize latent variables in the unrotated model.}
+
+\item{std.ov}{Logical. Standardize observed variables in the unrotated model.}
+
+\item{meanstructure}{Logical. Estimate the observed-variable mean structure.}
+
+\item{parameterization}{Optional parameterization passed to \code{lcfa()}.}
+
+\item{likelihood}{Character string controlling the likelihood convention in
+\code{lcfa()}.}
+
+\item{se}{Logical or character controlling standard errors in \code{lcfa()}.}
+
+\item{message}{Logical. Print progress messages during CFA estimation.}
 
 \item{do.fit}{Logical. If \code{FALSE}, return the unrotated \code{lcfa}
 model specification without fitting or rotation.}
@@ -57,8 +76,11 @@ model specification without fitting or rotation.}
 \item{mimic}{Retained for backward compatibility. Only \code{"latent"} is
 currently supported.}
 
-\item{control}{Optional list of optimization controls passed to the
-unrotated \code{lcfa()} model.}
+\item{control}{Optional list of optimization controls passed to
+\code{lcfa()}.}
+
+\item{rotation.control}{Optional list of optimization controls passed to
+\code{lrotate()}.}
 
 \item{...}{Additional arguments. CFA/lavaan arguments are passed to
 \code{lcfa()}; arguments required by the selected rotation criterion or
@@ -67,14 +89,14 @@ projection are passed only to \code{lrotate()}.}
 \value{
 If the fitted model contains more than one factor, a list with
   components \code{efa} (the unrotated \code{lcfa} fit) and
-  \code{rotation} (the rotated \code{latent} fit). For a one-factor model,
-  the unrotated \code{lcfa} fit is returned directly. If
+  \code{rotation} (the fitted \code{multistep} rotation object). For a
+  one-factor model, the unrotated \code{lcfa} fit is returned directly. If
   \code{do.fit = FALSE}, the unfitted \code{lcfa} specification is returned.
 }
 \description{
 Fit an exploratory factor analysis model by first estimating an orthogonal
-factor model with \code{lcfa()} and subsequently rotating the estimated
-loading matrices with \code{lrotate()}.
+factor model with \code{lcfa()} and subsequently rotating the fitted model
+with \code{lrotate()}.
 }
 \examples{
 \dontrun{

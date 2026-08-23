@@ -47,6 +47,8 @@ public:
 #include "transformations/matrix_inverse.h"
 #include "transformations/XY.h"
 #include "transformations/XYt.h"
+#include "transformations/XtY.h"
+#include "transformations/XtYX.h"
 #include "transformations/deltaparam.h"
 #include "transformations/mvnormal.h"
 #include "transformations/normal.h"
@@ -73,6 +75,8 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "matrix_inverse",choose_matrix_inverse},
   { "XY",            choose_XY            },
   { "XYt",           choose_XYt           },
+  { "XtY",           choose_XtY           },
+  { "XtYX",          choose_XtYX          },
   { "deltaparam",    choose_deltaparam    },
   { "mvnormal",      choose_mvnormal      },
   { "sum_vectors",   choose_sum_vectors   },

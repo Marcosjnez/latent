@@ -1,12 +1,12 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 14/08/2026
+# Modification date: 23/08/2026
 #'
 #' Exploratory Factor Analysis
 #'
 #' Fit an exploratory factor analysis model by first estimating an orthogonal
-#' factor model with \code{lcfa()} and subsequently rotating the estimated
-#' loading matrices with \code{lrotate()}.
+#' factor model with \code{lcfa()} and subsequently rotating the fitted model
+#' with \code{lrotate()}.
 #'
 #' @usage
 #' lefa(data = NULL, nfactors = 1L, estimator = "ml",
@@ -15,9 +15,13 @@
 #'      sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
 #'      positive = FALSE, penalties = TRUE,
 #'      missing = "pairwise.complete.obs",
-#'      std.lv = TRUE, do.fit = TRUE,
+#'      std.lv = TRUE, std.ov = FALSE,
+#'      meanstructure = TRUE,
+#'      parameterization = NULL,
+#'      likelihood = NULL, se = TRUE,
+#'      message = FALSE, do.fit = TRUE,
 #'      mimic = "latent", control = NULL,
-#'      ...)
+#'      rotation.control = NULL, ...)
 #'
 #' @param data Optional data frame or matrix containing the observed variables.
 #'   Alternatively, sample.cov can be supplied.
@@ -33,27 +37,38 @@
 #' @param group Optional character string identifying the grouping variable.
 #' @param sample.cov Optional sample covariance matrix or list of covariance
 #'   matrices passed to \code{lcfa()}.
-#' @param sample.mean Optional sample mean vector or list of vectors passed to \code{lcfa()}.
+#' @param sample.mean Optional sample mean vector or list of vectors passed to
+#'   \code{lcfa()}.
 #' @param sample.nobs Optional number of observations passed to \code{lcfa()}.
 #' @param positive Logical. Request the positive-definite parameterization used
 #'   by \code{lcfa()}.
-#' @param penalties Logical value or list controlling regularization.
+#' @param penalties Logical value or list controlling regularization in
+#'   \code{lcfa()}.
 #' @param missing Missing-data method passed to \code{lcfa()}.
 #' @param std.lv Logical. Standardize latent variables in the unrotated model.
+#' @param std.ov Logical. Standardize observed variables in the unrotated model.
+#' @param meanstructure Logical. Estimate the observed-variable mean structure.
+#' @param parameterization Optional parameterization passed to \code{lcfa()}.
+#' @param likelihood Character string controlling the likelihood convention in
+#'   \code{lcfa()}.
+#' @param se Logical or character controlling standard errors in \code{lcfa()}.
+#' @param message Logical. Print progress messages during CFA estimation.
 #' @param do.fit Logical. If \code{FALSE}, return the unrotated \code{lcfa}
 #'   model specification without fitting or rotation.
 #' @param mimic Retained for backward compatibility. Only \code{"latent"} is
 #'   currently supported.
-#' @param control Optional list of optimization controls passed to the
-#'   unrotated \code{lcfa()} model.
+#' @param control Optional list of optimization controls passed to
+#'   \code{lcfa()}.
+#' @param rotation.control Optional list of optimization controls passed to
+#'   \code{lrotate()}.
 #' @param ... Additional arguments. CFA/lavaan arguments are passed to
 #'   \code{lcfa()}; arguments required by the selected rotation criterion or
 #'   projection are passed only to \code{lrotate()}.
 #'
 #' @return If the fitted model contains more than one factor, a list with
 #'   components \code{efa} (the unrotated \code{lcfa} fit) and
-#'   \code{rotation} (the rotated \code{latent} fit). For a one-factor model,
-#'   the unrotated \code{lcfa} fit is returned directly. If
+#'   \code{rotation} (the fitted \code{multistep} rotation object). For a
+#'   one-factor model, the unrotated \code{lcfa} fit is returned directly. If
 #'   \code{do.fit = FALSE}, the unfitted \code{lcfa} specification is returned.
 #'
 #' @examples
@@ -70,8 +85,13 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                  sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
                  positive = FALSE, penalties = TRUE,
                  missing = "pairwise.complete.obs",
-                 std.lv = TRUE, do.fit = TRUE,
+                 std.lv = TRUE, std.ov = FALSE,
+                 meanstructure = TRUE,
+                 parameterization = NULL,
+                 likelihood = NULL, se = TRUE,
+                 message = FALSE, do.fit = TRUE,
                  mimic = "latent", control = NULL,
+                 rotation.control = NULL,
                  ...) {
 
   #### Check input arguments ####
@@ -86,6 +106,10 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
 
   if(!is.null(control) && !is.list(control)) {
     stop("control must be NULL or a list")
+  }
+
+  if(!is.null(rotation.control) && !is.list(rotation.control)) {
+    stop("rotation.control must be NULL or a list")
   }
 
   if(!is.null(model) &&
@@ -108,6 +132,24 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
      !is.logical(std.lv) ||
      is.na(std.lv)) {
     stop("std.lv must be TRUE or FALSE")
+  }
+
+  if(length(std.ov) != 1L ||
+     !is.logical(std.ov) ||
+     is.na(std.ov)) {
+    stop("std.ov must be TRUE or FALSE")
+  }
+
+  if(length(meanstructure) != 1L ||
+     !is.logical(meanstructure) ||
+     is.na(meanstructure)) {
+    stop("meanstructure must be TRUE or FALSE")
+  }
+
+  if(length(message) != 1L ||
+     !is.logical(message) ||
+     is.na(message)) {
+    stop("message must be TRUE or FALSE")
   }
 
   if(length(do.fit) != 1L ||
@@ -204,6 +246,12 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                           penalties = penalties,
                           missing = missing,
                           std.lv = std.lv,
+                          std.ov = std.ov,
+                          meanstructure = meanstructure,
+                          parameterization = parameterization,
+                          likelihood = likelihood,
+                          se = se,
+                          message = message,
                           do.fit = do.fit,
                           control = control,
                           dots = dots_split$cfa)
@@ -218,13 +266,9 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
 
   }
 
-  #### Extract the unrotated loadings ####
-
-  lambda <- extract_lambda_lefa(efa_fit)
-
   #### Check whether rotation is required ####
 
-  if(!rotate_lefa(lambda)) {
+  if(!rotate_lefa(efa_fit)) {
 
     #### Result ####
 
@@ -234,12 +278,10 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
 
   #### Rotate the factor solution ####
 
-  rotation_fit <- fit_lefa_rotation(lambda = lambda,
+  rotation_fit <- fit_lefa_rotation(fit = efa_fit,
                                     projection = projection,
                                     rotation = rotation,
-                                    group = group,
-                                    positive = positive,
-                                    penalties = penalties,
+                                    control = rotation.control,
                                     dots = dots_split$rotation)
 
   result <- list(
@@ -352,7 +394,9 @@ fit_lefa_cfa <- function(data, model, estimator,
                          ordered, group,
                          sample.cov, sample.mean, sample.nobs,
                          positive, penalties,
-                         missing, std.lv,
+                         missing, std.lv, std.ov,
+                         meanstructure, parameterization,
+                         likelihood, se, message,
                          do.fit, control,
                          dots) {
 
@@ -369,6 +413,12 @@ fit_lefa_cfa <- function(data, model, estimator,
     penalties = penalties,
     missing = missing,
     std.lv = std.lv,
+    std.ov = std.ov,
+    meanstructure = meanstructure,
+    parameterization = parameterization,
+    likelihood = likelihood,
+    se = se,
+    message = message,
     do.fit = do.fit,
     control = control,
     orthogonal = TRUE
@@ -384,55 +434,12 @@ fit_lefa_cfa <- function(data, model, estimator,
 
 }
 
-#### Function to extract loading matrices ####
-
-extract_lambda_lefa <- function(fit) {
-
-  lambda <- latInspect(fit, what = "lambda")
-
-  if(is.matrix(lambda)) {
-    lambda <- list(lambda)
-  }
-
-  if(!is.list(lambda) || length(lambda) == 0L) {
-    stop("No loading matrices were returned by the unrotated factor model")
-  }
-
-  valid_lambda <- vapply(
-    lambda,
-    FUN = \(x) is.matrix(x) && is.numeric(x),
-    FUN.VALUE = logical(1L)
-  )
-
-  if(!all(valid_lambda)) {
-    stop("The unrotated factor model returned invalid loading matrices")
-  }
-
-  #### Group labels ####
-
-  if(length(lambda) == fit@dataList$ngroups) {
-
-    group_labels <- as.character(fit@dataList$group_label)
-
-    if(length(group_labels) == length(lambda)) {
-      names(lambda) <- group_labels
-    }
-
-  }
-
-  #### Result ####
-
-  return(lambda)
-
-}
-
 #### Function to determine whether rotation is required ####
 
-rotate_lefa <- function(lambda) {
+rotate_lefa <- function(fit) {
 
-  nfactors <- vapply(lambda,
-                     FUN = ncol,
-                     FUN.VALUE = integer(1L))
+  nfactors <- unlist(fit@dataList$nfactors,
+                     use.names = FALSE)
 
   result <- any(nfactors > 1L)
 
@@ -444,19 +451,15 @@ rotate_lefa <- function(lambda) {
 
 #### Function to fit the rotation ####
 
-fit_lefa_rotation <- function(lambda, projection, rotation,
-                              group, positive, penalties,
-                              dots) {
+fit_lefa_rotation <- function(fit, projection, rotation,
+                              control, dots) {
 
   args <- list(
-    lambda = lambda,
+    fit = fit,
     projection = projection,
     rotation = rotation,
-    group = group,
-    positive = positive,
-    penalties = penalties,
     do.fit = TRUE,
-    control = list(opt = "newton")
+    control = control
   )
 
   args <- c(args, dots)

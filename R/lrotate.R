@@ -1,51 +1,61 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/08/2026
+# Modification date: 23/08/2026
 #'
 #' @title
-#' Rotate a factor loading matrix
+#' Rotate a fitted CFA model
 #'
 #' @description
-#' \code{lrotate} rotates one or more factor loading matrices using an
-#' orthogonal or oblique projection and a selected rotation criterion.
+#' \code{lrotate} rotates the factor loading matrices of a fitted \code{lcfa}
+#' object using an orthogonal or oblique projection and a selected rotation
+#' criterion.
 #'
 #' @usage
-#' lrotate(lambda, projection = "oblq", rotation = "oblimin",
-#'         group = NULL, positive = FALSE, penalties = TRUE,
+#' lrotate(fit, projection = "oblq", rotation = "oblimin",
 #'         do.fit = TRUE, control = NULL, ...)
 #'
-#' @param lambda A matrix or a list of loading matrices, one for each group.
+#' @param fit A fitted object inheriting from class \code{"lcfa"}.
 #' @param projection Character string. Available projections are
 #'   \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.
 #' @param rotation Character string identifying the rotation criterion.
-#' @param group Optional grouping information retained in the fitted object.
-#' @param positive Logical. Retained for compatibility with the factor-analysis
-#'   interface.
-#' @param penalties Logical or list of penalty settings retained in the
-#'   optimization control.
 #' @param do.fit Logical. If \code{TRUE}, fit the rotation. If \code{FALSE},
-#'   return only the model specification.
+#'   return the unrestricted rotation specification used for derivative
+#'   calculations.
 #' @param control List of optimization-control arguments.
 #' @param ... Additional arguments required by the selected projection or
 #'   rotation criterion.
 #'
-#' @return An object of class \code{"latent"}.
+#' @details
+#' Let \eqn{X} be the rotation matrix and let \eqn{\Lambda_0}, \eqn{\Psi_0},
+#' and \eqn{\alpha_0} denote the unrotated factor loadings, factor covariance
+#' matrix, and factor means. The rotated quantities are
+#' \deqn{\Lambda_r=\Lambda_0X^{-T},}
+#' \deqn{\Psi_r=X^T\Psi_0X,}
+#' and
+#' \deqn{\alpha_r=X^T\alpha_0.}
+#' For an orthogonal projection, \eqn{X^{-T}=X}. If \eqn{\Psi_0} is a fixed
+#' identity matrix, \eqn{\Psi_r} is computed as \eqn{X^TX}.
+#'
+#' @return An object of class \code{"multistep"}. The fitted \code{lcfa}
+#' object is stored in \code{extra} as the preceding estimation step.
 #'
 #' @examples
 #' \dontrun{
-#' fit <- lrotate(lambda = list(lambda),
-#'                projection = "oblq",
-#'                rotation = "oblimin")
+#' fit_cfa <- lcfa(data = HolzingerSwineford1939,
+#'                 model = model,
+#'                 std.lv = TRUE)
+#' fit_rotation <- lrotate(fit = fit_cfa,
+#'                         projection = "oblq",
+#'                         rotation = "oblimin")
 #' }
 #'
 #' @export
-lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
-                    group = NULL, positive = FALSE, penalties = TRUE,
+lrotate <- function(fit, projection = "oblq", rotation = "oblimin",
                     do.fit = TRUE, control = NULL, ...) {
 
   #### Check input arguments ####
 
-  lambda <- check_lambda_lrotate(lambda)
+  check_fit_lrotate(fit)
 
   projection <- tolower(projection)
   rotation <- tolower(rotation)
@@ -63,12 +73,16 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
     stop("Unknown rotation criterion: ", rotation)
   }
 
-  if(length(positive) != 1L || !is.logical(positive) || is.na(positive)) {
-    stop("positive must be TRUE or FALSE")
-  }
-
   if(length(do.fit) != 1L || !is.logical(do.fit) || is.na(do.fit)) {
     stop("do.fit must be TRUE or FALSE")
+  }
+
+  if(!is.null(control) && !is.list(control)) {
+    stop("control must be NULL or a list")
+  }
+
+  if(is.null(control)) {
+    control <- list()
   }
 
   #### Store original call ####
@@ -83,19 +97,25 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   #### Check control parameters ####
 
-  control$penalties <- penalties
-  control$positive <- positive
+  control$penalties <- FALSE
+  control$positive <- FALSE
   control$estimator <- rotation
   control$projection <- projection
   control <- lrotate_control(control)
+  control$free_previous <- !do.fit
 
   #### Create the dataList ####
 
-  dataList <- create_lrotate_dataList(lambda = lambda,
+  dataList <- create_lrotate_dataList(fit = fit,
                                       projection = projection,
-                                      rotation = rotation,
-                                      group = group,
-                                      positive = positive)
+                                      rotation = rotation)
+
+  dataList$args <- c(list(fit = fit,
+                          projection = projection,
+                          rotation = rotation,
+                          do.fit = do.fit,
+                          control = control),
+                     dots)
 
   #### Create the model ####
 
@@ -109,11 +129,14 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                                         control = control,
                                         dots = dots)
 
+  modelInfo$propagate_uncertainty <- TRUE
+  modelInfo$step_labels <- modelInfo$parameters_labels
+
   #### Fit the model ####
 
   if(!do.fit) {
 
-    result <- new("latent",
+    result <- new("multistep",
                   version          = as.character(packageVersion("latent")),
                   call             = mc,
                   timing           = numeric(),
@@ -122,7 +145,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                   Optim            = list(),
                   parameters       = list(),
                   transformed_pars = list(),
-                  extra            = list())
+                  extra            = list(fit))
 
     #### Result ####
 
@@ -141,7 +164,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
   #### latent object ####
 
-  result <- new("latent",
+  result <- new("multistep",
                 version          = as.character(packageVersion("latent")),
                 call             = mc,
                 timing           = Optim$elapsed,
@@ -150,7 +173,7 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
                 Optim            = Optim,
                 parameters       = parameters,
                 transformed_pars = transformed_pars,
-                extra            = list())
+                extra            = list(fit))
 
   #### Result ####
 
@@ -158,88 +181,88 @@ lrotate <- function(lambda, projection = "oblq", rotation = "oblimin",
 
 }
 
-#### Function to check the loading matrices ####
+#### Function to check the fitted CFA object ####
 
-check_lambda_lrotate <- function(lambda) {
+check_fit_lrotate <- function(fit) {
 
-  if(is.matrix(lambda)) {
-    lambda <- list(lambda)
+  if(!inherits(fit, "lcfa")) {
+    stop("fit must be a fitted object inheriting from class 'lcfa'")
   }
 
-  if(!is.list(lambda) || length(lambda) == 0L) {
-    stop("lambda must be a matrix or a non-empty list of matrices")
+  if(length(fit@Optim$transparameters) == 0L ||
+     length(fit@transformed_pars) == 0L) {
+    stop("fit must contain a fitted lcfa model")
   }
 
-  ngroups <- length(lambda)
+  data_param <- fit@dataList$data_param
+  required <- c("lambda_group", "psi_group", "alpha_group")
 
-  group_label <- names(lambda)
-
-  if(is.null(group_label)) {
-
-    group_label <- paste("group", seq_len(ngroups), sep = "")
-
-  } else {
-
-    empty_names <- is.na(group_label) | group_label == ""
-
-    if(any(empty_names)) {
-      group_label[empty_names] <-
-        paste("group", which(empty_names), sep = "")
-    }
-
-    if(anyDuplicated(group_label)) {
-      stop("lambda must have unique group names")
-    }
-
+  if(is.null(data_param) ||
+     !all(required %in% names(data_param))) {
+    stop("fit does not contain the CFA parameter-block information required for rotation")
   }
-
-  for(i in seq_len(ngroups)) {
-
-    if(is.data.frame(lambda[[i]])) {
-      lambda[[i]] <- as.matrix(lambda[[i]])
-    }
-
-    if(!is.matrix(lambda[[i]]) || !is.numeric(lambda[[i]])) {
-      stop("Every element of lambda must be a numeric matrix")
-    }
-
-    if(nrow(lambda[[i]]) < 1L || ncol(lambda[[i]]) < 1L) {
-      stop("Every loading matrix must contain at least one row and one column")
-    }
-
-    if(anyNA(lambda[[i]]) || any(!is.finite(lambda[[i]]))) {
-      stop("Loading matrices cannot contain missing or non-finite values")
-    }
-
-    item_label <- rownames(lambda[[i]])
-    factor_label <- colnames(lambda[[i]])
-
-    if(is.null(item_label)) {
-      item_label <- paste("item", seq_len(nrow(lambda[[i]])), sep = "")
-    }
-
-    if(is.null(factor_label)) {
-      factor_label <- paste("factor", seq_len(ncol(lambda[[i]])), sep = "")
-    }
-
-    if(any(item_label == "") || anyDuplicated(item_label)) {
-      stop("Loading-matrix row names must be unique and non-empty")
-    }
-
-    if(any(factor_label == "") || anyDuplicated(factor_label)) {
-      stop("Loading-matrix column names must be unique and non-empty")
-    }
-
-    rownames(lambda[[i]]) <- item_label
-    colnames(lambda[[i]]) <- factor_label
-
-  }
-
-  names(lambda) <- group_label
 
   #### Result ####
 
-  return(lambda)
+  return(invisible(NULL))
+
+}
+
+#### Function to identify a fixed identity factor covariance matrix ####
+
+identity_psi_lrotate <- function(fit, psi_name, psi) {
+
+  if(!is.matrix(psi) || nrow(psi) != ncol(psi)) {
+
+    #### Result ####
+
+    return(FALSE)
+
+  }
+
+  q <- nrow(psi)
+  identity <- diag(q)
+  dimnames(identity) <- dimnames(psi)
+
+  if(!isTRUE(all.equal(psi, identity,
+                       tolerance = sqrt(.Machine$double.eps)))) {
+
+    #### Result ####
+
+    return(FALSE)
+
+  }
+
+  if(!(psi_name %in% names(fit@modelInfo$param))) {
+
+    #### Result ####
+
+    return(FALSE)
+
+  }
+
+  model_psi <- fit@modelInfo$param[[psi_name]]
+  numeric_psi <- suppressWarnings(as.numeric(model_psi))
+
+  if(anyNA(numeric_psi)) {
+
+    #### Result ####
+
+    return(FALSE)
+
+  }
+
+  numeric_psi <- matrix(numeric_psi,
+                        nrow = q,
+                        ncol = q,
+                        dimnames = dimnames(psi))
+
+  result <- isTRUE(all.equal(numeric_psi, identity,
+                             tolerance = sqrt(.Machine$double.eps)))
+
+  #### Result ####
+
+  return(result)
 
 }
 
@@ -266,32 +289,90 @@ rotation_defaults_lrotate <- function(rotation, dots) {
 
 #### Function to create the dataList ####
 
-create_lrotate_dataList <- function(lambda, projection, rotation,
-                                    group, positive) {
+create_lrotate_dataList <- function(fit, projection, rotation) {
 
-  ngroups <- length(lambda)
+  source_data_param <- fit@dataList$data_param
+  ngroups <- fit@dataList$ngroups
+
+  ulambda_group <- source_data_param$lambda_group
+  upsi_group <- source_data_param$psi_group
+  ualpha_group <- source_data_param$alpha_group
+
+  if(length(ulambda_group) != ngroups ||
+     length(upsi_group) != ngroups ||
+     length(ualpha_group) != ngroups) {
+    stop("The fitted lcfa object contains incompatible group-specific parameter blocks")
+  }
+
+  lambda <- fit@transformed_pars[ulambda_group]
+  psi <- fit@transformed_pars[upsi_group]
+  alpha <- fit@transformed_pars[ualpha_group]
+
+  valid_lambda <- vapply(lambda,
+                         FUN = \(x) is.matrix(x) && is.numeric(x),
+                         FUN.VALUE = logical(1L))
+  valid_psi <- vapply(psi,
+                      FUN = \(x) is.matrix(x) && is.numeric(x),
+                      FUN.VALUE = logical(1L))
+  valid_alpha <- vapply(alpha,
+                        FUN = \(x) is.matrix(x) && is.numeric(x),
+                        FUN.VALUE = logical(1L))
+
+  if(!all(valid_lambda) || !all(valid_psi) || !all(valid_alpha)) {
+    stop("The fitted lcfa object contains invalid lambda, psi, or alpha matrices")
+  }
 
   item_label <- lapply(lambda, rownames)
   factor_label <- lapply(lambda, colnames)
   nitems <- lapply(lambda, nrow)
   nfactors <- lapply(lambda, ncol)
 
+  for(i in seq_len(ngroups)) {
+
+    q <- nfactors[[i]]
+
+    if(!identical(dim(psi[[i]]), c(q, q)) ||
+       !identical(dim(alpha[[i]]), c(q, 1L))) {
+      stop("The fitted lcfa object contains incompatible psi or alpha dimensions")
+    }
+
+  }
+
+  identity_psi <- vapply(seq_len(ngroups), FUN = \(i) {
+    identity_psi_lrotate(fit = fit,
+                         psi_name = upsi_group[i],
+                         psi = psi[[i]])
+  }, FUN.VALUE = logical(1L))
+
   orthogonal <- projection == "orth"
 
   dataList <- list(
     data = lambda,
     ngroups = ngroups,
-    group = group,
-    group_label = names(lambda),
+    group = fit@dataList$group,
+    group_label = fit@dataList$group_label,
     item_label = item_label,
     factor_label = factor_label,
     nitems = nitems,
     nfactors = nfactors,
+    nobs = fit@dataList$nobs,
     projection = projection,
     rotation = rotation,
     estimator = rotation,
-    positive = positive,
-    orthogonal = orthogonal
+    positive = isTRUE(fit@dataList$positive),
+    orthogonal = orthogonal,
+    identity_psi = identity_psi,
+    meanstructure = fit@dataList$meanstructure,
+    se_type = fit@dataList$se_type,
+    source_dof = fit@modelInfo$dof,
+    source_nparam = fit@modelInfo$nparam,
+    source_data_param = source_data_param,
+    source_param = fit@modelInfo$param,
+    source_trans = fit@modelInfo$trans,
+    source_parameters = fit@parameters,
+    source_transformed_pars = fit@transformed_pars,
+    source_control_manifold = fit@modelInfo$control_manifold,
+    source_control_transform = fit@modelInfo$control_transform
   )
 
   #### Result ####
@@ -315,7 +396,8 @@ create_lrotate_model <- function(dataList, control) {
 
   param <- constraints_lrotate(trans = trans,
                                dataList = dataList,
-                               data_param = data_param)
+                               data_param = data_param,
+                               control = control)
 
   #### Create the initial values for the parameters ####
 
@@ -329,7 +411,7 @@ create_lrotate_model <- function(dataList, control) {
   init_param <- custom_init_param(control$start, init_param)
 
   # Recompute every transformed quantity from X after custom starts have been
-  # inserted. The unrotated loadings remain fixed at the supplied values.
+  # inserted. The unrotated CFA parameters remain fixed at the supplied values.
   init_param <- refresh_start_lrotate(init_param = init_param,
                                       trans = trans,
                                       dataList = dataList,
@@ -351,13 +433,17 @@ create_lrotate_model <- function(dataList, control) {
 create_lrotate_data_param <- function(dataList) {
 
   groups <- seq_len(dataList$ngroups)
+  source_data_param <- dataList$source_data_param
 
   result <- list(
-    ulambda_group = paste("ulambda.group", groups, sep = ""),
+    ulambda_group = source_data_param$lambda_group,
+    upsi_group = source_data_param$psi_group,
+    ualpha_group = source_data_param$alpha_group,
     X_group = paste("X.group", groups, sep = ""),
     Xinv_group = paste("Xinv.group", groups, sep = ""),
-    lambda_group = paste("lambda.group", groups, sep = ""),
-    psi_group = paste("psi.group", groups, sep = "")
+    lambda_group = paste("lambda_rotated.group", groups, sep = ""),
+    psi_group = paste("psi_rotated.group", groups, sep = ""),
+    alpha_group = paste("alpha_rotated.group", groups, sep = "")
   )
 
   #### Result ####
@@ -370,7 +456,7 @@ create_lrotate_data_param <- function(dataList) {
 
 labels_lrotate <- function(group, object, nrow, ncol) {
 
-  labels <- paste("g", group, ".", object, "[",
+  labels <- paste("rotation.g", group, ".", object, "[",
                   rep(seq_len(nrow), times = ncol), ",",
                   rep(seq_len(ncol), each = nrow), "]",
                   sep = "")
@@ -398,18 +484,6 @@ model_lrotate <- function(dataList, data_param) {
     q <- dataList$nfactors[[i]]
     item_names <- dataList$item_label[[i]]
     factor_names <- dataList$factor_label[[i]]
-
-    #### Unrotated loadings ####
-
-    list_struct[[k]] <- list(
-      name = ulambda_group[i],
-      type = "matrix",
-      dim = c(p, q),
-      rownames = item_names,
-      colnames = factor_names,
-      labels = labels_lrotate(i, "ulambda", p, q)
-    )
-    k <- k+1L
 
     #### Rotation matrix ####
 
@@ -451,7 +525,7 @@ model_lrotate <- function(dataList, data_param) {
     )
     k <- k+1L
 
-    #### Latent correlations ####
+    #### Rotated factor covariance matrix ####
 
     list_struct[[k]] <- list(
       name = psi_group[i],
@@ -464,9 +538,42 @@ model_lrotate <- function(dataList, data_param) {
     )
     k <- k+1L
 
+    #### Rotated factor means ####
+
+    list_struct[[k]] <- list(
+      name = alpha_group[i],
+      type = "matrix",
+      dim = c(q, 1L),
+      rownames = factor_names,
+      colnames = "intrcp",
+      labels = labels_lrotate(i, "alpha", q, 1L)
+    )
+    k <- k+1L
+
   }
 
-  trans <- create_parameters(list_struct)
+  rotation_trans <- create_parameters(list_struct)
+
+  duplicated_names <- intersect(names(dataList$source_trans),
+                                names(rotation_trans))
+
+  if(length(duplicated_names) > 0L) {
+    stop("The rotation parameter-block names conflict with the fitted lcfa model: ",
+         paste(duplicated_names, collapse = ", "))
+  }
+
+  source_labels <- unique(c(unlist(dataList$source_trans,
+                                   use.names = FALSE)))
+  rotation_labels <- unique(c(unlist(rotation_trans,
+                                     use.names = FALSE)))
+  duplicated_labels <- intersect(source_labels, rotation_labels)
+
+  if(length(duplicated_labels) > 0L) {
+    stop("The rotation parameter labels conflict with the fitted lcfa model: ",
+         paste(duplicated_labels, collapse = ", "))
+  }
+
+  trans <- c(dataList$source_trans, rotation_trans)
 
   #### Result ####
 
@@ -476,20 +583,33 @@ model_lrotate <- function(dataList, data_param) {
 
 #### Function to create the parameter constraints ####
 
-constraints_lrotate <- function(trans, dataList, data_param) {
+constraints_lrotate <- function(trans, dataList, data_param, control) {
 
   list2env(data_param, envir = environment())
 
-  param <- list()
+  source_names <- names(dataList$source_param)
+
+  if(isTRUE(control$free_previous)) {
+
+    param <- dataList$source_param
+
+  } else {
+
+    missing_source <- setdiff(source_names,
+                              names(dataList$source_parameters))
+
+    if(length(missing_source) > 0L) {
+      stop("The fitted lcfa object is missing parameter estimate(s): ",
+           paste(missing_source, collapse = ", "))
+    }
+
+    param <- dataList$source_parameters[source_names]
+
+  }
 
   for(i in seq_len(dataList$ngroups)) {
 
-    # The unrotated loading matrix is fixed at the supplied solution.
-    param[[ulambda_group[i]]] <- dataList$data[[i]]
-    dimnames(param[[ulambda_group[i]]]) <-
-      dimnames(trans[[ulambda_group[i]]])
-
-    # X is the only free parameter block for the rotation.
+    # X is the only new free parameter block for the rotation.
     param[[X_group[i]]] <- trans[[X_group[i]]]
 
   }
@@ -510,17 +630,11 @@ start_lrotate <- function(trans, dataList, data_param, control) {
 
   for(rs in seq_len(control$rstarts)) {
 
-    init_param[[rs]] <- list()
+    init_param[[rs]] <- dataList$source_transformed_pars
 
     for(i in seq_len(dataList$ngroups)) {
 
       q <- dataList$nfactors[[i]]
-
-      #### Fixed unrotated loadings ####
-
-      init_param[[rs]][[ulambda_group[i]]] <- dataList$data[[i]]
-      dimnames(init_param[[rs]][[ulambda_group[i]]]) <-
-        dimnames(trans[[ulambda_group[i]]])
 
       #### Rotation matrix ####
 
@@ -557,12 +671,10 @@ refresh_start_lrotate <- function(init_param, trans,
 
   for(rs in seq_along(init_param)) {
 
-    for(i in seq_len(dataList$ngroups)) {
+    init_param[[rs]][names(dataList$source_transformed_pars)] <-
+      dataList$source_transformed_pars
 
-      # The unrotated loadings are data, not free starting values.
-      init_param[[rs]][[ulambda_group[i]]] <- dataList$data[[i]]
-      dimnames(init_param[[rs]][[ulambda_group[i]]]) <-
-        dimnames(trans[[ulambda_group[i]]])
+    for(i in seq_len(dataList$ngroups)) {
 
       init_param[[rs]] <- update_rotation_lrotate(
         x = init_param[[rs]],
@@ -590,7 +702,9 @@ update_rotation_lrotate <- function(x, group_index, trans,
   list2env(data_param, envir = environment())
 
   i <- group_index
-  U <- dataList$data[[i]]
+  U <- x[[ulambda_group[i]]]
+  psi_0 <- x[[upsi_group[i]]]
+  alpha_0 <- x[[ualpha_group[i]]]
   X <- x[[X_group[i]]]
 
   if(is.null(X) ||
@@ -604,7 +718,7 @@ update_rotation_lrotate <- function(x, group_index, trans,
 
   if(dataList$orthogonal) {
 
-    rotated_lambda <- U %*% X
+    rotated_lambda <- U%*%X
 
   } else {
 
@@ -612,16 +726,26 @@ update_rotation_lrotate <- function(x, group_index, trans,
     dimnames(Xinv) <- dimnames(trans[[Xinv_group[i]]])
     x[[Xinv_group[i]]] <- Xinv
 
-    rotated_lambda <- U %*% t(Xinv)
+    rotated_lambda <- U%*%t(Xinv)
 
   }
 
   dimnames(rotated_lambda) <- dimnames(trans[[lambda_group[i]]])
   x[[lambda_group[i]]] <- rotated_lambda
 
-  psi <- crossprod(X)
-  dimnames(psi) <- dimnames(trans[[psi_group[i]]])
-  x[[psi_group[i]]] <- psi
+  if(dataList$identity_psi[i]) {
+    rotated_psi <- crossprod(X)
+  } else {
+    rotated_psi <- t(X)%*%psi_0%*%X
+  }
+
+  rotated_psi <- 0.5*(rotated_psi+t(rotated_psi))
+  dimnames(rotated_psi) <- dimnames(trans[[psi_group[i]]])
+  x[[psi_group[i]]] <- rotated_psi
+
+  rotated_alpha <- t(X)%*%alpha_0
+  dimnames(rotated_alpha) <- dimnames(trans[[alpha_group[i]]])
+  x[[alpha_group[i]]] <- rotated_alpha
 
   #### Result ####
 
@@ -642,16 +766,28 @@ create_lrotate_modelInfo <- function(dataList, full_model,
                                  data_param = data_param,
                                  dots = dots)
 
-  control_manifold <- create_manifolds(manifolds = manifolds,
-                                       structures = param)
+  control_manifold_rotation <-
+    create_manifolds(manifolds = manifolds,
+                     structures = param)
+
+  if(isTRUE(control$free_previous)) {
+    control_manifold <- c(dataList$source_control_manifold,
+                          control_manifold_rotation)
+  } else {
+    control_manifold <- control_manifold_rotation
+  }
 
   #### Transformations ####
 
   transforms <- transformations_lrotate(dataList = dataList,
                                         data_param = data_param)
 
-  control_transform <- create_transforms(transforms = transforms,
-                                         structures = trans)
+  control_transform_rotation <-
+    create_transforms(transforms = transforms,
+                      structures = trans)
+
+  control_transform <- c(dataList$source_control_transform,
+                         control_transform_rotation)
 
   #### Estimators ####
 
@@ -686,10 +822,11 @@ create_lrotate_modelInfo <- function(dataList, full_model,
     ntrans = ntrans,
     parameters_labels = parameters_labels,
     transparameters_labels = transparameters_labels,
-    dof = NA_integer_,
+    dof = dataList$source_dof,
     rotation = dataList$rotation,
     projection = dataList$projection,
     data_param = data_param,
+    source_nparam = dataList$source_nparam,
     control_manifold = control_manifold,
     control_transform = control_transform,
     control_estimator = control_estimator,
@@ -782,13 +919,37 @@ transformations_lrotate <- function(dataList, data_param) {
 
     }
 
-    #### Latent correlations ####
+    #### Rotated factor covariance matrix ####
+
+    if(dataList$identity_psi[i]) {
+
+      transforms[[k]] <- list(
+        transform = "crossprod",
+        parameters_in = X_group[i],
+        parameters_out = psi_group[i],
+        extra = list(p = q)
+      )
+
+    } else {
+
+      transforms[[k]] <- list(
+        transform = "XtYX",
+        parameters_in = c(X_group[i], upsi_group[i]),
+        parameters_out = psi_group[i],
+        extra = list(p = q, q = q)
+      )
+
+    }
+
+    k <- k+1L
+
+    #### Rotated factor means ####
 
     transforms[[k]] <- list(
-      transform = "crossprod",
-      parameters_in = X_group[i],
-      parameters_out = psi_group[i],
-      extra = list(p = q)
+      transform = "XtY",
+      parameters_in = c(X_group[i], ualpha_group[i]),
+      parameters_out = alpha_group[i],
+      extra = list(p = q, q = q, r = 1L)
     )
     k <- k+1L
 

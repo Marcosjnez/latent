@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/08/2026
+# Modification date: 23/08/2026
 
 #### Store a dataset ####
 
@@ -532,29 +532,8 @@ latInspect(fit, "loss") # loss           0.4883727
 diag(inspect(fit2, "est")$theta)
 diag(latInspect(fit, "est")$theta)
 
-
 # fit@Optim$SE$se
 # fit2@ParTable$se
-
-var_names <- c("hexemfea146", "hexemfea170", "hexemfea74", "hexemfea2",
-               "hexemanx128", "hexemanx8", "hexemanx80", "hexemanx176",
-               "hexemdep62", "hexemdep182", "hexemdep134", "hexemdep158",
-               "hexemsen44", "hexemsen164", "hexemsen20", "hexemsen68")
-df <- as.matrix(mooc[, var_names])
-x <- polyfast(df)
-
-ACOV <- asymptotic_poly(
-  data = df,
-  correlation = fit@parameters$S,
-  thresholds = fit@parameters[paste("taus", var_names, sep = "")],
-  # correlation = x$correlation,
-  # thresholds = x$thresholds,
-  return_scores = TRUE,
-  probability_floor = 1e-12,
-  inversion_tolerance = 1e-10
-)
-ACOV$VCOV
-ACOV$pattern_scores
 
 #### CFA (Yule correlation) ####
 
@@ -865,6 +844,21 @@ fit@Optim$SE$se
 
 #### lrotate ####
 
+library(latent)
+
+model <- 'visual  =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9'
+
+fit_cfa <- lcfa(data = HolzingerSwineford1939,
+                model = model,
+                std.lv = TRUE,
+                orthogonal = TRUE)
+fit_rotation <- lrotate(fit = fit_cfa,
+                        projection = "oblq",
+                        rotation = "oblimin")
+fit_rotation@parameters
+
 # Factor rotation
 
 library(latent)
@@ -915,6 +909,14 @@ fit@Optim$ng
 fit@Optim$elapsed
 
 #### lefa ####
+
+library(latent)
+
+df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
+fit <- lefa(data = df,
+            nfactors = 3L,
+            rotation = "oblimin",
+            projection = "oblq")
 
 # Exploratory factor analysis
 

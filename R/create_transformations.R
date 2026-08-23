@@ -28,6 +28,8 @@ create_transforms <- function(transforms, structures) {
       transform,
       XYt = c("p", "q"),
       XY = c("p", "q"),
+      XtY = c("p", "q", "r"),
+      XtYX = c("p", "q"),
       softmax = character(0L),
       matrix_inverse = "p",
       logarithm = character(0L),
