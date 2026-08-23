@@ -915,6 +915,8 @@ library(latent)
 df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
 fit <- lefa(data = df,
             nfactors = 3L,
+            orthogonal = TRUE,
+            std.lv = TRUE,
             rotation = "oblimin",
             projection = "oblq")
 
@@ -934,19 +936,28 @@ s <- cor(scores)
 
 estimator <- "uls"
 rotation <- "oblimin"
-projection <- "poblq"
+projection <- "orth"
 # Fit efa with bifactor:
-fit <- bifactor::efast(s, nfactors = nfactors, estimator = estimator,
-                       rotation = rotation, projection = projection,
-                       oblq_factors = c(2),
-                       gamma = 0, random_starts = 10L, cores = 1L)
-fit$rotation$f
+fit_b <- bifactor::efast(s, nfactors = nfactors, estimator = estimator,
+                         rotation = rotation, projection = projection,
+                         oblq_factors = c(2),
+                         gamma = 0, random_starts = 10L, cores = 1L)
+fit_b$efa$f
+fit_b$rotation$f
 
-fit <- lefa(data = scores, #sample.cov = s,
+target <- matrix(0, nfactors, nfactors)
+target[1:2, 1:2] <- 1
+fit <- lefa(data = scores, #std.ov = TRUE, #sample.cov = s,
             nfactors = nfactors, estimator = estimator,
             rotation = rotation, projection = projection)
+fit@extra$efa@Optim$f
+fit@Optim$f
 
+round(fit$rotation@transformed_pars$lambda_rotated.group1, 3)
+round(fit_b$rotation$lambda, 3)
 
+fit$rotation@transformed_pars$psi_rotated.group1
+fit_b$rotation$phi
 
 #### Check derivatives ####
 

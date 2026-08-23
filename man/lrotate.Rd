@@ -2,13 +2,21 @@
 % Please edit documentation in R/lrotate.R
 \name{lrotate}
 \alias{lrotate}
-\title{Rotate a fitted CFA model}
+\title{Rotate factor loading and covariance matrices}
 \usage{
-lrotate(fit, projection = "oblq", rotation = "oblimin",
+lrotate(fit = NULL, lambda = NULL, psi = NULL,
+        projection = "oblq", rotation = "oblimin",
         do.fit = TRUE, control = NULL, ...)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"lcfa"}.}
+\item{fit}{Optional fitted object inheriting from class \code{"lcfa"}.}
+
+\item{lambda}{Optional loading matrix or list of loading matrices. This is an
+alternative to supplying \code{fit}.}
+
+\item{psi}{Optional factor covariance matrix or list of factor covariance
+matrices corresponding to \code{lambda}. If omitted, identity matrices are
+used. This argument cannot be used together with \code{fit}.}
 
 \item{projection}{Character string. Available projections are
 \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
@@ -16,8 +24,8 @@ lrotate(fit, projection = "oblq", rotation = "oblimin",
 \item{rotation}{Character string identifying the rotation criterion.}
 
 \item{do.fit}{Logical. If \code{TRUE}, fit the rotation. If \code{FALSE},
-return the unrestricted rotation specification used for derivative
-calculations.}
+return the model specification. With a fitted \code{lcfa} input, the
+unrestricted specification used for derivative calculations is returned.}
 
 \item{control}{List of optimization-control arguments.}
 
@@ -25,17 +33,17 @@ calculations.}
 rotation criterion.}
 }
 \value{
-An object of class \code{"multistep"}. The fitted \code{lcfa}
-object is stored in \code{extra} as the preceding estimation step.
+An object inheriting from class \code{"latent"}.
 }
 \description{
-\code{lrotate} rotates the factor loading matrices of a fitted \code{lcfa}
-object using an orthogonal or oblique projection and a selected rotation
-criterion.
+\code{lrotate} rotates the factor loading and factor covariance matrices
+supplied directly or extracted from a fitted \code{lcfa} object using an
+orthogonal or oblique projection and a selected rotation criterion.
 }
 \details{
-Let \eqn{X} be the rotation matrix and let \eqn{\Lambda_0}, \eqn{\Psi_0},
-and \eqn{\alpha_0} denote the unrotated factor loadings, factor covariance
+Exactly one of \code{fit} and \code{lambda} must be supplied. Let \eqn{X}
+be the rotation matrix and let \eqn{\Lambda_0}, \eqn{\Psi_0}, and
+\eqn{\alpha_0} denote the unrotated factor loadings, factor covariance
 matrix, and factor means. The rotated quantities are
 \deqn{\Lambda_r=\Lambda_0X^{-T},}
 \deqn{\Psi_r=X^T\Psi_0X,}
@@ -43,6 +51,12 @@ and
 \deqn{\alpha_r=X^T\alpha_0.}
 For an orthogonal projection, \eqn{X^{-T}=X}. If \eqn{\Psi_0} is a fixed
 identity matrix, \eqn{\Psi_r} is computed as \eqn{X^TX}.
+
+When \code{fit} is supplied, the returned object inherits from
+\code{"multistep"} and the fitted \code{lcfa} object is stored in
+\code{extra}. When matrices are supplied directly, the returned object
+inherits only from \code{"latent"}; sampling uncertainty is not propagated
+because no fitted source model is available.
 }
 \examples{
 \dontrun{
@@ -52,6 +66,11 @@ fit_cfa <- lcfa(data = HolzingerSwineford1939,
 fit_rotation <- lrotate(fit = fit_cfa,
                         projection = "oblq",
                         rotation = "oblimin")
+
+direct_rotation <- lrotate(lambda = lambda,
+                           psi = psi,
+                           projection = "oblq",
+                           rotation = "oblimin")
 }
 
 }

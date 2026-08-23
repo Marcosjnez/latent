@@ -65,10 +65,8 @@
 #'   \code{lcfa()}; arguments required by the selected rotation criterion or
 #'   projection are passed only to \code{lrotate()}.
 #'
-#' @return If the fitted model contains more than one factor, a list with
-#'   components \code{efa} (the unrotated \code{lcfa} fit) and
-#'   \code{rotation} (the fitted \code{multistep} rotation object). For a
-#'   one-factor model, the unrotated \code{lcfa} fit is returned directly. If
+#' @return A fitted object of class \code{"lefa"}. The unrotated
+#'   \code{lcfa} object is stored in its \code{extra} slot. If
 #'   \code{do.fit = FALSE}, the unfitted \code{lcfa} specification is returned.
 #'
 #' @examples
@@ -266,16 +264,6 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
 
   }
 
-  #### Check whether rotation is required ####
-
-  if(!rotate_lefa(efa_fit)) {
-
-    #### Result ####
-
-    return(efa_fit)
-
-  }
-
   #### Rotate the factor solution ####
 
   rotation_fit <- fit_lefa_rotation(fit = efa_fit,
@@ -284,10 +272,30 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                                     control = rotation.control,
                                     dots = dots_split$rotation)
 
-  result <- list(
-    efa = efa_fit,
-    rotation = rotation_fit
-  )
+  result <- as_lefa(rotation_fit, call = mc)
+
+  #### Result ####
+
+  return(result)
+
+}
+
+#### Function to create an lefa object ####
+
+as_lefa <- function(fit, call) {
+
+  fit@dataList$lefa_call <- call
+
+  result <- new("lefa",
+                version          = fit@version,
+                call             = fit@call,
+                timing           = fit@timing,
+                dataList         = fit@dataList,
+                modelInfo        = fit@modelInfo,
+                Optim            = fit@Optim,
+                parameters       = fit@parameters,
+                transformed_pars = fit@transformed_pars,
+                extra            = fit@extra)
 
   #### Result ####
 

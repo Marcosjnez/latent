@@ -87,10 +87,8 @@ currently supported.}
 projection are passed only to \code{lrotate()}.}
 }
 \value{
-If the fitted model contains more than one factor, a list with
-  components \code{efa} (the unrotated \code{lcfa} fit) and
-  \code{rotation} (the fitted \code{multistep} rotation object). For a
-  one-factor model, the unrotated \code{lcfa} fit is returned directly. If
+A fitted object of class \code{"lefa"}. The unrotated
+  \code{lcfa} object is stored in its \code{extra} slot. If
   \code{do.fit = FALSE}, the unfitted \code{lcfa} specification is returned.
 }
 \description{
