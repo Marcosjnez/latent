@@ -246,7 +246,7 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
                data_param$alpha_group))
     ]
 
-    result@Optim$SE <- se.multistep(
+    result@Optim$SE <- se_lrotate_multistep(
       fit = result,
       parameters = rotated_parameters
     )

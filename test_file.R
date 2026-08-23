@@ -868,8 +868,11 @@ fit_rotation <- lrotate(fit = fit_cfa,
                         projection = "oblq",
                         rotation = "oblimin",
                         se = TRUE)
+fit_rotation@Optim$f
 fit_rotation@parameters
 fit_rotation@Optim$SE
+fit_rotation@Optim$SE$table_se
+# fit_rotation@modelInfo$param
 
 # Factor rotation
 
@@ -926,27 +929,44 @@ library(latent)
 
 df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
 
-estimator <- "ml"
+nfactors <- 3L
+estimator <- "uls"
 std.ov <- TRUE
 std.lv <- TRUE
 meanstructure <- FALSE
 likelihood <- "normal"
+rotation <- "oblimin"
+projection <- "oblq"
 
 fit <- lefa(data = df,
-            nfactors = 3L,
+            nfactors = nfactors,
             estimator = estimator,
             std.ov = std.ov,
             std.lv = std.lv,
             meanstructure = meanstructure,
             likelihood = likelihood,
             orthogonal = TRUE,
-            rotation = "oblimin",
-            projection = "oblq",
-            se = "standard")
-fit@parameters$lambda
-fit@transformed_pars$lambda_rotated
-fit@transformed_pars$psi_rotated
-fit@Optim$SE$table # FIX: standard errors for psi_rotated
+            rotation = rotation,
+            projection = projection,
+            control = list(rstarts = 10L),
+            se = FALSE)
+# fit@Optim$SE$table # FIX: standard errors for psi_rotated
+
+fit_b <- bifactor::efast(as.matrix(df), nfactors = nfactors, estimator = estimator,
+                         rotation = rotation, projection = projection,
+                         oblq_factors = c(2),
+                         gamma = 0, random_starts = 10L, cores = 1L)
+fit@extra$efa@Optim$f
+fit_b$efa$f
+
+fit@Optim$f
+fit_b$rotation$f
+
+round(fit@transformed_pars$psi_rotated, 3)
+round(fit_b$rotation$phi, 3)
+
+round(fit@transformed_pars$lambda_rotated, 3)
+round(fit_b$rotation$lambda, 3)
 
 # Exploratory factor analysis
 

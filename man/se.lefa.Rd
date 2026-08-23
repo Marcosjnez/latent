@@ -9,8 +9,7 @@
 \arguments{
 \item{fit}{A fitted object inheriting from class \code{"lefa"}.}
 
-\item{type}{Optional compatibility argument passed to
-\code{se.multistep()}.}
+\item{type}{Optional compatibility argument.}
 
 \item{parameters}{Optional parameter specification. By default, standard
 errors are returned for the rotated loadings, factor covariance matrices,
@@ -19,10 +18,11 @@ and factor means.}
 \item{digits}{Non-negative integer used to format parameter tables. If
 \code{NULL}, values are not rounded.}
 
-\item{...}{Additional arguments passed to \code{se.multistep()}.}
+\item{...}{Additional arguments reserved for future methods.}
 }
 \value{
-The result of \code{se.multistep()}.
+Standard errors propagated from the fitted unrotated \code{lcfa}
+  model to the rotated EFA parameters.
 }
 \description{
 Standard Errors for Exploratory Factor Analysis
