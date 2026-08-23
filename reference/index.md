@@ -24,6 +24,8 @@
   : Forest plot for grouped parameter estimates
 - [`getfit(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.lcfa.md)
   : Fit Indices for CFA Models
+- [`getfit(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.lefa.md)
+  : Fit Indices for Exploratory Factor Analysis
 - [`getfit(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
   [`getfit(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
   : Fit indices for latent class models
@@ -39,6 +41,7 @@
   : Information Variance-Covariance Matrix for Latent Models
 - [`information(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
   [`information(`*`<multistep_lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
+  [`information(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/information.multistep.md)
   : Information Covariance for Multistep Models
 - [`jacobian()`](https://marcosjnez.github.io/latent/reference/jacobian.md)
   : Jacobian Matrix
@@ -46,6 +49,8 @@
   : Jacobian Matrix for Latent Models
 - [`latInspect(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.lcfa.md)
   : Inspect Fitted CFA Objects
+- [`latInspect(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.lefa.md)
+  : Inspect Fitted Exploratory Factor Analysis Objects
 - [`latInspect(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
   : Inspect fitted latent class models
 - [`latent-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
@@ -65,6 +70,8 @@
   : Convert a Fitted lcfa Object to lavaan
 - [`lclass_diag()`](https://marcosjnez.github.io/latent/reference/lclass_diag.md)
   : Classification Diagnostics for Latent Class Analysis
+- [`lefa-class`](https://marcosjnez.github.io/latent/reference/lefa-class.md)
+  : Exploratory Factor Analysis Class
 - [`lefa()`](https://marcosjnez.github.io/latent/reference/lefa.md) :
   Exploratory Factor Analysis
 - [`lmean()`](https://marcosjnez.github.io/latent/reference/lmean.md) :
@@ -76,7 +83,7 @@
 - [`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md) :
   Polychoric Correlation Matrix
 - [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md)
-  : Rotate a fitted CFA model
+  : Rotate factor loading and covariance matrices
 - [`lyule()`](https://marcosjnez.github.io/latent/reference/lyule.md) :
   Yule Correlation Matrix
 - [`plot(`*`<getfit.llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/plot.getfit.llcalist.md)
@@ -110,9 +117,12 @@
   : LatentGold-Style Robust Variance-Covariance Matrix
 - [`robust(`*`<multistep>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
   [`robust(`*`<multistep_lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
+  [`robust(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/robust.multistep.md)
   : Robust Covariance for Multistep Models
 - [`se(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/se.latent.md)
   : Standard Errors for Latent Objects
+- [`se(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/se.lefa.md)
+  : Standard Errors for Exploratory Factor Analysis
 - [`se(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/se.llcalist.md)
   : Standard errors for a collection of latent class models
 - [`se(`*`<multistage>`*`)`](https://marcosjnez.github.io/latent/reference/se.multistage.md)
@@ -124,6 +134,8 @@
   : Simulate factor structures with misspecification errors.
 - [`summary(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)
   : Summarize a Fitted CFA Model
+- [`summary(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/summary.lefa.md)
+  : Summarize a Fitted Exploratory Factor Analysis
 - [`summary(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/summary.llca.md)
   [`summary(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/summary.llca.md)
   : Summary of a Latent Class Model

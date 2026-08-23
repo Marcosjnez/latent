@@ -11,6 +11,9 @@ information(fit)
 
 # S3 method for class 'multistep_lcfa'
 information(fit)
+
+# S3 method for class 'lefa'
+information(fit)
 ```
 
 ## Arguments

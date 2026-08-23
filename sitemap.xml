@@ -22,6 +22,7 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/fitted.llcalist.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/forestplot.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/getfit.lcfa.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/getfit.lefa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/getfit.llca.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/gss82.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/hessian.html</loc></url>
@@ -33,6 +34,7 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/jacobian.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/jacobian.latent.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/latInspect.lcfa.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/latInspect.lefa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/latInspect.llca.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/latent-class.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/latent-package.html</loc></url>
@@ -43,6 +45,7 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/lcfa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/lcfa_to_lavaan.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/lclass_diag.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/lefa-class.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/lefa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/lmean.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/lmvnorm.html</loc></url>
@@ -66,11 +69,13 @@
 <url><loc>https://marcosjnez.github.io/latent/reference/robust.llca.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/robust.multistep.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/se.latent.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/se.lefa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/se.llcalist.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/se.multistage.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/se.multistep.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/simfactor.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/summary.lcfa.html</loc></url>
+<url><loc>https://marcosjnez.github.io/latent/reference/summary.lefa.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/summary.llca.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/values.html</loc></url>
 <url><loc>https://marcosjnez.github.io/latent/reference/vcov.latent.html</loc></url>

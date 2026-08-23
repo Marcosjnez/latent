@@ -157,11 +157,9 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 
 ## Value
 
-If the fitted model contains more than one factor, a list with
-components `efa` (the unrotated `lcfa` fit) and `rotation` (the fitted
-`multistep` rotation object). For a one-factor model, the unrotated
-`lcfa` fit is returned directly. If `do.fit = FALSE`, the unfitted
-`lcfa` specification is returned.
+A fitted object of class `"lefa"`. The unrotated `lcfa` object is stored
+in its `extra` slot. If `do.fit = FALSE`, the unfitted `lcfa`
+specification is returned.
 
 ## Examples
 
