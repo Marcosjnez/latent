@@ -2688,10 +2688,13 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
     if(control$deltaparam) {
 
       if(control$std.ov && !fiml_missing) {
-        param[[delta_group[i]]] <- matrix(
-          1, nrow = p, ncol = 1L,
-          dimnames = dimnames(trans[[delta_group[i]]])
-        )
+        # param[[delta_group[i]]] <- matrix(
+        #   1, nrow = p, ncol = 1L,
+        #   dimnames = dimnames(trans[[delta_group[i]]])
+        # )
+        param[[delta_group[i]]] <- matrix(diag(param[[S_group[[i]]]]),
+                                          nrow = p, ncol = 1L,
+                                          dimnames = dimnames(trans[[delta_group[i]]]))
       } else {
         param[[delta_group[i]]] <- trans[[delta_group[i]]]
       }
@@ -2764,7 +2767,7 @@ start_lcfa <- function(dataList, data_param, param, trans,
       values <- pmax(eig$values[seq_len(q)], .Machine$double.eps)
       lambda <- eig$vectors[, seq_len(q), drop = FALSE]%*%
         diag(sqrt(values), nrow = q)
-      lambda <- lambda+matrix(rnorm(p*q, sd = 0.01), nrow = p, ncol = q)
+      lambda <- lambda + matrix(rnorm(p*q, sd = 0.01), nrow = p, ncol = q)
 
       init_param[[rs]][[lambda_group[i]]] <- lambda
       dimnames(init_param[[rs]][[lambda_group[i]]]) <-

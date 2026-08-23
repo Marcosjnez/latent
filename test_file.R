@@ -258,7 +258,7 @@ means <- colMeans(HolzingerSwineford1939[, paste("x", 1:9, sep = "")])
 
 set.seed(2026)
 estimator <- "ml"
-std.ov <- FALSE
+std.ov <- TRUE
 std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
@@ -274,7 +274,7 @@ fit <- lcfa(model = model,
             meanstructure = meanstructure,
             likelihood = likelihood,
             se = "standard",
-            control = NULL,
+            control = list(deltaparam = FALSE),
             do.fit = TRUE)
 
 # fit@modelInfo$param
