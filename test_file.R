@@ -929,7 +929,7 @@ library(latent)
 
 df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
 
-nfactors <- 2L
+nfactors <- 3L
 estimator <- "ml"
 std.ov <- TRUE
 std.lv <- TRUE

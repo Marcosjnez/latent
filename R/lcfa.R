@@ -2687,13 +2687,13 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
 
     if(control$deltaparam) {
 
-      if(control$std.lv) {
-        param[[delta_group[i]]] <- trans[[delta_group[i]]]
-      } else {
+      if(control$std.ov && !fiml_missing) {
         param[[delta_group[i]]] <- matrix(
           1, nrow = p, ncol = 1L,
           dimnames = dimnames(trans[[delta_group[i]]])
         )
+      } else {
+        param[[delta_group[i]]] <- trans[[delta_group[i]]]
       }
 
     }
@@ -2750,7 +2750,23 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
       #### Factor loadings ####
 
-      init_param[[rs]][[lambda_group[i]]] <- rorth(p, q)
+      # init_param[[rs]][[lambda_group[i]]] <- rorth(p, q)
+      # dimnames(init_param[[rs]][[lambda_group[i]]]) <-
+      #   dimnames(trans[[lambda_group[i]]])
+      # init_param[[rs]][[lambda_group[i]]][fixed[[lambda_group[i]]]] <-
+      #   fixed_values_list[[lambda_group[i]]]
+
+      S <- cov_params[[i]][[S_group[[i]][1L]]]
+      smc <- diag(S)-1/diag(approx_Hinv(S))
+      S_reduced <- S
+      diag(S_reduced) <- smc
+      eig <- eigen(S_reduced, symmetric = TRUE)
+      values <- pmax(eig$values[seq_len(q)], .Machine$double.eps)
+      lambda <- eig$vectors[, seq_len(q), drop = FALSE]%*%
+        diag(sqrt(values), nrow = q)
+      lambda <- lambda+matrix(rnorm(p*q, sd = 0.01), nrow = p, ncol = q)
+
+      init_param[[rs]][[lambda_group[i]]] <- lambda
       dimnames(init_param[[rs]][[lambda_group[i]]]) <-
         dimnames(trans[[lambda_group[i]]])
       init_param[[rs]][[lambda_group[i]]][fixed[[lambda_group[i]]]] <-
@@ -2780,7 +2796,8 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
       } else {
 
-        init_param[[rs]][[theta_group[i]]] <- diag(runif(p))
+        lambda <- init_param[[rs]][[lambda_group[i]]]
+        init_param[[rs]][[theta_group[i]]] <- diag(diag(S) - rowSums(lambda*lambda))
         dimnames(init_param[[rs]][[theta_group[i]]]) <-
           dimnames(trans[[theta_group[i]]])
         init_param[[rs]][[theta_group[i]]][fixed[[theta_group[i]]]] <-

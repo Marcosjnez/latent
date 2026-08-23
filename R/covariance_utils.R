@@ -143,7 +143,9 @@ standard_errors_from_vcov <- function(V,
       labels <- labels[invalid]
     }
 
-    stop("Negative parameter variance(s) were found in ", object_name, ": ",
+    # stop("Negative parameter variance(s) were found in ", object_name, ": ",
+    #      paste(labels, collapse = ", "))
+    warning("Negative parameter variance(s) were found in ", object_name, ": ",
          paste(labels, collapse = ", "))
 
   }

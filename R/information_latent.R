@@ -178,13 +178,13 @@ information_model_latent <- function(fit) {
   #        "implemented.")
   # }
 
-  if(inherits(result, "lcfa") &&
-     !is.null(result@dataList$likelihood) &&
-     !identical(tolower(result@dataList$likelihood), "normal")) {
-    stop("Information standard errors for lcfa currently require ",
-         "likelihood = 'normal'; Wishart mean/covariance scaling has not ",
-         "yet been implemented in the temporary information estimator.")
-  }
+  # if(inherits(result, "lcfa") &&
+  #    !is.null(result@dataList$likelihood) &&
+  #    !identical(tolower(result@dataList$likelihood), "normal")) {
+  #   stop("Information standard errors for lcfa currently require ",
+  #        "likelihood = 'normal'; Wishart mean/covariance scaling has not ",
+  #        "yet been implemented in the temporary information estimator.")
+  # }
 
   if(length(result@modelInfo$control_estimator) == 0L) {
 
