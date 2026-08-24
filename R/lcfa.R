@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 23/08/2026
+# Modification date: 24/08/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -2579,9 +2579,6 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
 
       trans[[logvars_group[i]]][free_diag] <-
         paste0("log(", theta_diag_labels[free_diag], ")")
-      theta_diag_labels[free_diag] <-
-        paste0(theta_group[i], ".exp[", which(free_diag), "]")
-      diag(trans[[theta_group[i]]]) <- theta_diag_labels
 
     }
 

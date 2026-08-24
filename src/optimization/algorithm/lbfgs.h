@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2026
+ * Modification date: 24/08/2026
  */
 
 // L-BFGS algorithm:
@@ -61,6 +61,18 @@ optim_result lbfgs(arguments_optim x,
     arma::vec old_parameters = x.parameters;
     arma::vec old_rg = x.rg;
 
+    if(!x.dir.is_finite() || !x.rg.is_finite()) {
+      x.convergence = false;
+      break;
+    }
+
+    double dir_dot_grad = arma::dot(x.dir, x.rg);
+    if(!std::isfinite(dir_dot_grad) || dir_dot_grad >= 0.0) {
+      x.dir = -x.rg;
+    }
+
+    // Start every L-BFGS line search from a unit step:
+    x.ss = 1;
     // armijo(x, final_manifold, final_estimator, xmanifolds, xestimators);
     wolfe(x, xtransforms, xmanifolds, xestimators);
 
@@ -76,12 +88,33 @@ optim_result lbfgs(arguments_optim x,
     s[k] = arma::vectorise(x.parameters - old_parameters);
     y[k] = arma::vectorise(x.rg - old_rg);
     double dot_ys = arma::dot(y[k], s[k]);
+    double norm_s = arma::norm(s[k], 2);
+    double norm_y = arma::norm(y[k], 2);
+    double curvature_eps = std::sqrt(std::numeric_limits<double>::epsilon());
+
+    if(!std::isfinite(dot_ys) ||
+       !std::isfinite(norm_s) ||
+       !std::isfinite(norm_y) ||
+       dot_ys <= curvature_eps*norm_s*norm_y) {
+
+      s[k].zeros(p1);
+      y[k].zeros(p1);
+      p[k] = 0.0;
+      x.dir = -x.rg;
+      continue;
+
+    }
+
     p[k] = 1/dot_ys;
 
-    if (!arma::is_finite(p[k])) { // SET AN EPS TO DECLARE CONVERGENCE
-      x.convergence = true;
-      // Rprintf("convergence declared because p[k] is not finite");
-      break;
+    if(!std::isfinite(p[k])) {
+
+      s[k].zeros(p1);
+      y[k].zeros(p1);
+      p[k] = 0.0;
+      x.dir = -x.rg;
+      continue;
+
     }
 
     for(int i=k; i > (k-m-1); --i) {
@@ -91,13 +124,32 @@ optim_result lbfgs(arguments_optim x,
 
     }
 
+    if(!q.is_finite()) {
+
+      for(int i=0; i <= k; ++i) {
+        s[i].zeros(p1);
+        y[i].zeros(p1);
+        p[i] = 0.0;
+      }
+
+      x.dir = -x.rg;
+      continue;
+
+    }
+
     double dot_yy = arma::dot(y[k], y[k]);
     double gamma = dot_ys / dot_yy;
-    if(gamma < arma::datum::eps) {
-      // x.dir = -x.rg;
-      // Rprintf("gamma < arma::datum::eps");
+
+    if(!std::isfinite(gamma) || gamma <= arma::datum::eps) {
+
+      s[k].zeros(p1);
+      y[k].zeros(p1);
+      p[k] = 0.0;
+      x.dir = -x.rg;
       continue;
+
     }
+
     arma::mat H0 = gamma*B;
     arma::vec z = H0 * q;
 
@@ -108,7 +160,37 @@ optim_result lbfgs(arguments_optim x,
 
     }
 
-    x.dir = -z;
+    if(!z.is_finite()) {
+
+      for(int i=0; i <= k; ++i) {
+        s[i].zeros(p1);
+        y[i].zeros(p1);
+        p[i] = 0.0;
+      }
+
+      x.dir = -x.rg;
+
+    } else {
+
+      x.dir = -z;
+
+    }
+
+    dir_dot_grad = arma::dot(x.dir, x.rg);
+
+    if(!x.dir.is_finite() ||
+       !std::isfinite(dir_dot_grad) ||
+       dir_dot_grad >= 0.0) {
+
+      for(int i=0; i <= k; ++i) {
+        s[i].zeros(p1);
+        y[i].zeros(p1);
+        p[i] = 0.0;
+      }
+
+      x.dir = -x.rg;
+
+    }
 
     // Check convergence:
     // x.inprod = arma::accu(x.dir % x.dir);
@@ -129,7 +211,7 @@ optim_result lbfgs(arguments_optim x,
 
     }
 
-    if (std::isnan(x.ng)) {
+    if(!std::isfinite(x.ng)) {
       x.convergence = false;
       break;
     }

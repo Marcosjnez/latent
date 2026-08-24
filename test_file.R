@@ -15,6 +15,9 @@
 # pak::pak("marcosjnez/latent")
 # devtools::install_github("marcosjnez/latent", force = TRUE)
 
+# Install a previous version:
+# remotes::install_github("marcosjnez/latent", ref = "6e3603e")
+
 #### LCA (multinomial) ####
 
 library(latent)
@@ -211,6 +214,7 @@ latInspect(fit, what = "loglik")
 # loglik: -2049.840 # penalized_loglik: -2053.322 (outcomes = list(gaussian = c("pt5")))
 # SE <- se(fit, type = "standard", digits = 4)
 # SE$se
+latInspect(fit, what = "convergence")
 
 # # Effects-coding parameterization:
 # new_se <- effects_coding(fit$structural@parameters$beta, SE$vcov)
@@ -264,7 +268,7 @@ means <- colMeans(HolzingerSwineford1939[, paste("x", 1:9, sep = "")])
 
 set.seed(2026)
 estimator <- "ml"
-std.ov <- TRUE
+std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
@@ -280,7 +284,6 @@ fit <- lcfa(model = model,
             meanstructure = meanstructure,
             likelihood = likelihood,
             se = "standard",
-            control = list(deltaparam = FALSE),
             do.fit = TRUE)
 
 # fit@modelInfo$param
