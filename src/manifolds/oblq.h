@@ -16,24 +16,34 @@ public:
 
   void param(arguments_optim& x) {
 
-    X = arma::reshape(x.parameters(indices), q, q);
+    if(indices.n_elem != p*q) {
+      Rcpp::stop("The oblique manifold requires p*q parameters.");
+    }
+
+    X = arma::reshape(x.parameters(indices), p, q);
 
   }
 
   void proj(arguments_optim& x) {
 
-    g = arma::reshape(x.g.elem(indices), q, q);
-    x.rg.elem(indices) = arma::vectorise(g - X * arma::diagmat(X.t() * g));
+    g = arma::reshape(x.g.elem(indices), p, q);
+    x.rg.elem(indices) =
+      arma::vectorise(g-X*arma::diagmat(X.t()*g));
 
   }
 
   void hess(arguments_optim& x) {
 
-    g = arma::reshape(x.g.elem(indices), q, q);
-    dg = arma::reshape(x.dg.elem(indices), q, q);
-    dX = arma::reshape(x.dparameters.elem(indices), q, q);
-    x.dH.elem(indices) = arma::vectorise(dg - dX * arma::diagmat(X.t() * g) -
-      X * arma::diagmat(X.t() * dg));
+    g = arma::reshape(x.g.elem(indices), p, q);
+    dg = arma::reshape(x.dg.elem(indices), p, q);
+    dX = arma::reshape(x.dparameters.elem(indices), p, q);
+
+    x.dH.elem(indices) =
+      arma::vectorise(
+        dg-dX*arma::diagmat(X.t()*g)-
+        X*arma::diagmat(X.t()*dg)
+      );
+
     // arma::mat drg = dg - dX * arma::diagmat( X.t() * g) - X * arma::diagmat(dX.t() * g) -
     // X * arma::diagmat(X.t() * dg);
     // dH = drg - X * arma::diagmat(X.t() * drg);
@@ -42,20 +52,78 @@ public:
 
   void retr(arguments_optim& x) {
 
-    x.parameters(indices) = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::sum(X % X, 0))));
+    x.parameters(indices) =
+      arma::vectorise(
+        X*arma::diagmat(1/sqrt(arma::sum(X % X, 0)))
+      );
 
   }
 
   void tangent_basis(arguments_optim& x) {
 
+    X = arma::reshape(x.parameters(indices), p, q);
+
+    const arma::uword dimension =
+      q*(p > 0L ? p-1L : 0L);
+
+    T.zeros(x.nparam, dimension);
+
+    arma::uword column = 0L;
+
+    for(arma::uword j=0L; j < q; ++j) {
+
+      arma::mat T_column =
+        tangent_complement(X.col(j));
+
+      for(arma::uword k=0L; k < T_column.n_cols; ++k) {
+
+        for(arma::uword i=0L; i < p; ++i) {
+          arma::uword local_index = i+j*p;
+          T(indices[local_index], column) =
+            T_column(i, k);
+        }
+
+        column++;
+
+      }
+
+    }
+
   }
 
   void dconstraints(arguments_optim& x) {
 
+    X = arma::reshape(x.parameters(indices), p, q);
+
+    arma::uword first_column = x.dconstr.n_cols;
+    x.dconstr.resize(x.transparameters.n_elem,
+                     first_column+q);
+
+    arma::uvec trans_indices =
+      x.transparam2param.elem(indices);
+
+    for(arma::uword j=0L; j < q; ++j) {
+      for(arma::uword i=0L; i < p; ++i) {
+
+        arma::uword local_index = i+j*p;
+
+        x.dconstr(trans_indices[local_index],
+                  first_column+j) =
+          2.00*X(i, j);
+
+      }
+    }
 
   }
 
   void outcomes(arguments_optim& x) {
+
+    tangent_basis(x);
+
+    matrices.resize(1);
+    matrices[0] = T;
+    names_matrices.resize(1);
+    names_matrices[0] = "tangent_basis";
 
   }
 

@@ -20,6 +20,8 @@ public:
   std::vector<std::string> names_doubles, names_vectors, names_matrices,
   names_cubes, names_list_vectors, names_list_matrices;
 
+  arma::mat T;
+
   virtual void param(arguments_optim& x) = 0;
 
   virtual void proj(arguments_optim& x) = 0;
@@ -35,6 +37,36 @@ public:
   virtual void outcomes(arguments_optim& x) = 0;
 
 };
+
+inline arma::mat tangent_complement(const arma::vec& x) {
+
+  const arma::uword n = x.n_elem;
+
+  if(n < 2L) {
+    return arma::mat(n, 0L);
+  }
+
+  const double xnorm = arma::norm(x, 2);
+
+  if(!std::isfinite(xnorm) || xnorm <= 0.00) {
+    Rcpp::stop("A tangent-space basis cannot be computed at a zero or non-finite vector.");
+  }
+
+  arma::vec u = x/xnorm;
+  arma::uword pivot = arma::index_min(arma::abs(u));
+  arma::vec e(n, arma::fill::zeros);
+  e[pivot] = 1.00;
+
+  arma::vec v = e-u;
+  double vnorm2 = arma::dot(v, v);
+  arma::mat Q = arma::eye(n, n)-2.00*(v*v.t())/vnorm2;
+
+  arma::uvec keep = arma::regspace<arma::uvec>(0L, n-1L);
+  keep.shed_row(pivot);
+
+  return Q.cols(keep);
+
+}
 
 #include "euclidean.h"
 #include "unit.h"
@@ -73,6 +105,8 @@ manifolds* choose_manifold(const Rcpp::List& manifold_setup) {
 class product_manifold {
 
 public:
+
+  arma::mat T;
 
   void param(arguments_optim& x, std::vector<manifolds*>& xmanifolds) {
 
@@ -120,10 +154,28 @@ public:
 
   }
 
-  void tanget_basis(arguments_optim& x, std::vector<manifolds*>& xmanifolds) {
+  void tangent_basis(arguments_optim& x,
+                     std::vector<manifolds*>& xmanifolds) {
 
-    for(int i=0L; i < x.nmanifolds ; ++i) {
+    T.set_size(x.nparam, 0L);
+
+    if(x.nmanifolds == 0L) {
+      T = arma::eye(x.nparam, x.nparam);
+      return;
+    }
+
+    for(int i=0L; i < x.nmanifolds; ++i) {
+
       xmanifolds[i]->tangent_basis(x);
+
+      if(xmanifolds[i]->T.n_rows != static_cast<arma::uword>(x.nparam)) {
+        Rcpp::stop("The tangent-space basis of manifold "+
+                   std::to_string(i+1L)+
+                   " does not have one row per free parameter.");
+      }
+
+      T = arma::join_rows(T, xmanifolds[i]->T);
+
     }
 
   }
@@ -176,4 +228,3 @@ public:
   }
 
 };
-

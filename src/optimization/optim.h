@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 09/08/2026
+ * Modification date: 24/08/2026
  */
 
 #include "step_update/armijo.h"
@@ -113,6 +113,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
   x.ntransparam = transparameters[0].n_elem;
   x.transparameters = transparameters[0];
+
   x.transparameters(x.transparam2param) = x.parameters;
   x.transparameters_init = x.transparameters;
 
@@ -277,4 +278,3 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   return algorithm;
 
 }
-

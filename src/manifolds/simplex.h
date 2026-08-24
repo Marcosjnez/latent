@@ -33,7 +33,17 @@ public:
 
     g = x.g.elem(indices);
     dg = x.dg.elem(indices);
-    x.dH.elem(indices) = x.dg.elem(indices);
+    dX = x.dparameters.elem(indices);
+
+    double xg = arma::dot(X, g);
+    double xdg = arma::dot(X, dg);
+    double dxg = arma::dot(dX, g);
+
+    x.dH.elem(indices) =
+      X % dg+0.5*(dX % g)-
+      X*(xdg+0.5*dxg)-0.5*xg*dX;
+
+    // Previous draft:
     // dX = dparameters;
     // arma::mat drg = -dX * X.t() * g - X * dX.t() * g;
     // // dH = drg - X * X.t() * drg;
@@ -63,7 +73,7 @@ public:
     X = X + x.ss*dir;
     // Rf_error("OK 53");
     arma::vec Y(X.size());
-    for(int j=0; j < X.size(); ++j) {
+    for(arma::uword j=0L; j < X.size(); ++j) {
       Y[j] = X[j] * exp(x.ss * (dir[j] / X[j]));
     }
     Y = Y / arma::accu(Y);
@@ -77,22 +87,56 @@ public:
 
   void tangent_basis(arguments_optim& x) {
 
+    const arma::uword n = indices.n_elem;
+    const arma::uword dimension = n > 0L ? n-1L : 0L;
+
+    T.zeros(x.nparam, dimension);
+
+    for(arma::uword j=0L; j < dimension; ++j) {
+
+      double scale = std::sqrt(
+        static_cast<double>((j+1L)*(j+2L))
+      );
+
+      for(arma::uword i=0L; i <= j; ++i) {
+        T(indices[i], j) = 1.00/scale;
+      }
+
+      T(indices[j+1L], j) =
+        -static_cast<double>(j+1L)/scale;
+
+    }
+
   }
 
   void dconstraints(arguments_optim& x) {
 
+    if(indices.n_elem == 0L) {
+      return;
+    }
+
     // Expand the matrix of constraints derivatives to put in a new column
-    // the constraint derivatives of this transformation:
-    // arma::uword ndconstr = x.dconstr.n_cols;
-    // x.dconstr.resize(x.transparameters.n_elem, ndconstr + 1L);
-    //
-    // for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
-    //   x.dconstr(indices_out[i], ndconstr) = 1.00;
-    // }
+    // the constraint derivatives of this manifold:
+    arma::uword ndconstr = x.dconstr.n_cols;
+    x.dconstr.resize(x.transparameters.n_elem, ndconstr+1L);
+
+    arma::uvec trans_indices =
+      x.transparam2param.elem(indices);
+
+    for(arma::uword i=0L; i < trans_indices.n_elem; ++i) {
+      x.dconstr(trans_indices[i], ndconstr) = 1.00;
+    }
 
   }
 
   void outcomes(arguments_optim& x) {
+
+    tangent_basis(x);
+
+    matrices.resize(1);
+    matrices[0] = T;
+    names_matrices.resize(1);
+    names_matrices[0] = "tangent_basis";
 
   }
 

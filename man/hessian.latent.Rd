@@ -4,7 +4,7 @@
 \alias{hessian.latent}
 \title{Hessian Matrix for Latent Models}
 \usage{
-\method{hessian}{latent}(fit)
+\method{hessian}{latent}(fit, riemannian = FALSE)
 }
 \arguments{
 \item{fit}{A fitted object inheriting from class \code{"latent"}.}

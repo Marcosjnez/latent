@@ -45,6 +45,7 @@
 #include "get_grad.h"
 #include "get_dgrad.h"
 #include "get_hess.h"
+#include "get_rhess.h"
 #include "get_vcov.h"
 #include "get_jacob.h"
 #include "get_dconstr.h"
@@ -140,6 +141,13 @@ Rcpp::List get_hess(Rcpp::List control_manifold,
                     Rcpp::List control_estimator,
                     Rcpp::List control_optimizer,
                     int cores = 1L);
+
+// [[Rcpp::export]]
+Rcpp::List get_rhess(Rcpp::List control_manifold,
+                     Rcpp::List control_transform,
+                     Rcpp::List control_estimator,
+                     Rcpp::List control_optimizer,
+                     int cores = 1L);
 
 // [[Rcpp::export]]
 Rcpp::List get_vcov(Rcpp::List control_manifold,

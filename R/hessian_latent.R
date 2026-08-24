@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/08/2026
+# Modification date: 24/08/2026
 #'
 #' Hessian Matrix for Latent Models
 #'
@@ -34,15 +34,22 @@
 #'
 #' @method hessian latent
 #' @export
-hessian.latent <- function(fit) {
+hessian.latent <- function(fit, riemannian = FALSE) {
 
   fit@modelInfo$control_optimizer$parameters[[1]] <- fit@Optim$parameters
   fit@modelInfo$control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 
-  H <- get_hess(fit@modelInfo$control_manifold,
-                fit@modelInfo$control_transform,
-                fit@modelInfo$control_estimator,
-                fit@modelInfo$control_optimizer)$h
+  if(riemannian) {
+    H <- get_rhess(fit@modelInfo$control_manifold,
+                   fit@modelInfo$control_transform,
+                   fit@modelInfo$control_estimator,
+                   fit@modelInfo$control_optimizer)$h
+  } else {
+    H <- get_hess(fit@modelInfo$control_manifold,
+                  fit@modelInfo$control_transform,
+                  fit@modelInfo$control_estimator,
+                  fit@modelInfo$control_optimizer)$h
+  }
 
   rownames(H) <- colnames(H) <- fit@modelInfo$parameters_labels
 

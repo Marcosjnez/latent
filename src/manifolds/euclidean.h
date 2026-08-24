@@ -34,6 +34,12 @@ public:
 
   void tangent_basis(arguments_optim& x) {
 
+    T.zeros(x.nparam, indices.n_elem);
+
+    for(arma::uword i=0L; i < indices.n_elem; ++i) {
+      T(indices[i], i) = 1.00;
+    }
+
   }
 
   void dconstraints(arguments_optim& x) {
@@ -41,6 +47,13 @@ public:
   }
 
   void outcomes(arguments_optim& x) {
+
+    tangent_basis(x);
+
+    matrices.resize(1);
+    matrices[0] = T;
+    names_matrices.resize(1);
+    names_matrices[0] = "tangent_basis";
 
   }
 
