@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 22/08/2026
+ * Modification date: 24/08/2026
  */
 
 class estimators {
@@ -36,35 +36,35 @@ public:
 
 };
 
-#include "estimators/rotation/cf.h"
-#include "estimators/rotation/oblimin.h"
-#include "estimators/rotation/geomin.h"
-#include "estimators/rotation/varimax.h"
-#include "estimators/rotation/varimin.h"
-#include "estimators/rotation/target.h"
-#include "estimators/rotation/xtarget.h"
-#include "estimators/rotation/lclf.h"
+#include "rotation/cf.h"
+#include "rotation/oblimin.h"
+#include "rotation/geomin.h"
+#include "rotation/varimax.h"
+#include "rotation/varimin.h"
+#include "rotation/target.h"
+#include "rotation/xtarget.h"
+#include "rotation/lclf.h"
 
-#include "estimators/lca/lca.h"
-#include "estimators/lca/lcaEM.h"
-#include "estimators/lca/bayesconst1.h"
-#include "estimators/lca/bayesconst2.h"
-#include "estimators/lca/bayesconst3.h"
-#include "estimators/lca/bayesconst4.h"
-#include "estimators/cfa/logdetmat.h"
-#include "estimators/cfa/logdetR.h"
+#include "lca/lca.h"
+#include "lca/lcaEM.h"
+#include "lca/bayesconst1.h"
+#include "lca/bayesconst2.h"
+#include "lca/bayesconst3.h"
+#include "lca/bayesconst4.h"
+#include "cfa/logdetmat.h"
+#include "cfa/logdetR.h"
 
-#include "estimators/lreg/lreg.h"
+#include "lreg/lreg.h"
 
-#include "estimators/cfa/cfa_dwls.h"
-#include "estimators/cfa/cfa_dwls_poly.h"
-#include "estimators/cfa/cfa_ml.h"
-#include "estimators/cfa/cfa_fml.h"
+#include "cfa/cfa_dwls.h"
+#include "cfa/cfa_dwls_poly.h"
+#include "cfa/cfa_ml.h"
+#include "cfa/cfa_fml.h"
 
-#include "estimators/loglik/gaussian_loglik.h"
-#include "estimators/loglik/poisson_loglik.h"
-#include "estimators/penalties/ridge.h"
-#include "estimators/correlation/polycor.h"
+#include "loglik/gaussian_loglik.h"
+#include "loglik/poisson_loglik.h"
+#include "penalties/ridge.h"
+#include "correlation/polycor.h"
 
 using EstimatorFactory = std::function<estimators*(const Rcpp::List&)>;
 

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2026
+ * Modification date: 24/08/2026
  */
 
 // Manifolds
@@ -28,18 +28,20 @@ public:
 
   virtual void retr(arguments_optim& x) = 0;
 
+  virtual void tangent_basis(arguments_optim& x) = 0;
+
   virtual void dconstraints(arguments_optim& x) = 0;
 
   virtual void outcomes(arguments_optim& x) = 0;
 
 };
 
-#include "manifolds/euclidean.h"
-#include "manifolds/unit.h"
-#include "manifolds/orth.h"
-#include "manifolds/oblq.h"
-#include "manifolds/poblq.h"
-#include "manifolds/simplex.h"
+#include "euclidean.h"
+#include "unit.h"
+#include "orth.h"
+#include "oblq.h"
+#include "poblq.h"
+#include "simplex.h"
 
 // type alias for factory functions
 using ManifoldFactory = std::function<manifolds*(const Rcpp::List&)>;
@@ -115,6 +117,14 @@ public:
     }
 
     x.transparameters(x.transparam2param) = x.parameters;
+
+  }
+
+  void tanget_basis(arguments_optim& x, std::vector<manifolds*>& xmanifolds) {
+
+    for(int i=0L; i < x.nmanifolds ; ++i) {
+      xmanifolds[i]->tangent_basis(x);
+    }
 
   }
 

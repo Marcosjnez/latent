@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 22/08/2026
+ * Modification date: 24/08/2026
  */
 
 // Transformations
@@ -35,27 +35,27 @@ public:
 
 };
 
-#include "transformations/identity.h"
-#include "transformations/softmax.h"
-#include "transformations/exponential.h"
-#include "transformations/logarithm.h"
-#include "transformations/crossprod.h"
-#include "transformations/column_space.h"
-#include "transformations/factor_cor.h"
-#include "transformations/meanstructure.h"
-#include "transformations/tau_param.h"
-#include "transformations/matrix_inverse.h"
-#include "transformations/XY.h"
-#include "transformations/XYt.h"
-#include "transformations/XtY.h"
-#include "transformations/XtYX.h"
-#include "transformations/deltaparam.h"
-#include "transformations/mvnormal.h"
-#include "transformations/normal.h"
-#include "transformations/multinomial.h"
-#include "transformations/sum_vectors.h"
-#include "transformations/sqrt_vector.h"
-#include "transformations/pos_incrsng.h"
+#include "identity.h"
+#include "softmax.h"
+#include "exponential.h"
+#include "logarithm.h"
+#include "crossprod.h"
+#include "column_space.h"
+#include "factor_cor.h"
+#include "meanstructure.h"
+#include "tau_param.h"
+#include "matrix_inverse.h"
+#include "XY.h"
+#include "XYt.h"
+#include "XtY.h"
+#include "XtYX.h"
+#include "deltaparam.h"
+#include "mvnormal.h"
+#include "normal.h"
+#include "multinomial.h"
+#include "sum_vectors.h"
+#include "sqrt_vector.h"
+#include "pos_incrsng.h"
 
 using TransformFactory =
   std::function<transformations*(const Rcpp::List&)>;

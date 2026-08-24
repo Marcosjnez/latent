@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 12/10/2025
+ * Modification date: 24/08/2026
  */
 
 // Unit manifold (Sphere):
@@ -43,6 +43,10 @@ public:
   void retr(arguments_optim& x) {
 
     x.parameters(indices) = X / sqrt(arma::accu(X % X));
+
+  }
+
+  void tangent_basis(arguments_optim& x) {
 
   }
 

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 12/10/2025
+ * Modification date: 24/08/2026
  */
 
 // Orthogonal manifold:
@@ -43,6 +43,10 @@ public:
     arma::qr_econ(Q, R, X);
 
     x.parameters(indices) = arma::vectorise(Q);
+
+  }
+
+  void tangent_basis(arguments_optim& x) {
 
   }
 

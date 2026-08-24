@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 09/02/2026
+ * Modification date: 24/08/2026
  */
 
 arma::mat lyap_sym(arma::mat Y, arma::mat Q) {
@@ -109,6 +109,10 @@ public:
     X.cols(ones) = Xstd.cols(ones);
     // parameters = arma::vectorise(X * arma::diagmat(1 / sqrt(arma::diagvec(X.t() * X))));
     x.parameters(indices) = arma::vectorise(X);
+
+  }
+
+  void tangent_basis(arguments_optim& x) {
 
   }
 
