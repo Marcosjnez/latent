@@ -8,7 +8,7 @@ included as separate rows or columns.
 
 ``` r
 # S3 method for class 'latent'
-hessian(fit)
+hessian(fit, riemannian = FALSE)
 ```
 
 ## Arguments
