@@ -95,24 +95,46 @@ public:
 
     X = arma::reshape(x.parameters(indices), p, q);
 
-    arma::uword first_column = x.dconstr.n_cols;
-    x.dconstr.resize(x.transparameters.n_elem,
-                     first_column+q);
-
     arma::uvec trans_indices =
       x.transparam2param.elem(indices);
 
+    arma::sp_mat first_derivatives(
+      x.transparameters.n_elem, q
+    );
+    std::vector<arma::sp_mat> second_derivatives;
+    second_derivatives.reserve(q);
+
     for(arma::uword j=0L; j < q; ++j) {
+
+      arma::sp_mat second_derivative(
+        x.transparameters.n_elem,
+        x.transparameters.n_elem
+      );
+
       for(arma::uword i=0L; i < p; ++i) {
 
         arma::uword local_index = i+j*p;
+        arma::uword trans_index =
+          trans_indices[local_index];
 
-        x.dconstr(trans_indices[local_index],
-                  first_column+j) =
+        first_derivatives(trans_index, j) =
           2.00*X(i, j);
+        second_derivative(trans_index,
+                          trans_index) = 2.00;
 
       }
+
+      second_derivatives.push_back(
+        second_derivative
+      );
+
     }
+
+    append_constraint_derivatives(
+      x,
+      first_derivatives,
+      second_derivatives
+    );
 
   }
 

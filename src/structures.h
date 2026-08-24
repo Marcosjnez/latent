@@ -36,7 +36,7 @@ struct arguments_optim{
   arma::vec transparameters, transparameters_init, dtransparameters, grad,
   dgrad, grad_init, dgrad_init;
   arma::mat h, v, B, inv_h, inv_hess;
-  arma::sp_mat jacob, vcov, dconstr;
+  arma::sp_mat jacob, vcov, dconstr, d2constraints;
   arma::mat hess; // Returned as dgCMatrix class type from Matrix package
   arma::mat posterior;
   arma::mat freqs;
@@ -122,3 +122,61 @@ struct arguments_optim{
   std::string mopt = "lbfgs";
 
 };
+
+inline void append_constraint_derivatives(
+    arguments_optim& x,
+    const arma::sp_mat& first_derivatives,
+    const std::vector<arma::sp_mat>& second_derivatives) {
+
+  const arma::uword ntrans = x.transparameters.n_elem;
+  const arma::uword nnew = first_derivatives.n_cols;
+
+  if(first_derivatives.n_rows != ntrans) {
+    Rcpp::stop("Constraint first derivatives must have one row per transformed parameter.");
+  }
+
+  if(second_derivatives.size() != nnew) {
+    Rcpp::stop("There must be one constraint Hessian for every constraint derivative column.");
+  }
+
+  if(x.dconstr.n_rows != ntrans) {
+    Rcpp::stop("The incremental constraint derivative matrix has an invalid number of rows.");
+  }
+
+  const arma::uword nold = x.dconstr.n_cols;
+  const arma::uword expected_old_dimension = nold*ntrans;
+
+  if(x.d2constraints.n_rows != expected_old_dimension ||
+     x.d2constraints.n_cols != expected_old_dimension) {
+    Rcpp::stop("The incremental second-constraint derivative matrix is not aligned with dconstr.");
+  }
+
+  x.dconstr.resize(ntrans, nold+nnew);
+
+  for(arma::sp_mat::const_iterator it = first_derivatives.begin();
+      it != first_derivatives.end(); ++it) {
+    x.dconstr(it.row(), nold+it.col()) = *it;
+  }
+
+  const arma::uword new_dimension = (nold+nnew)*ntrans;
+  x.d2constraints.resize(new_dimension, new_dimension);
+
+  for(arma::uword j=0L; j < nnew; ++j) {
+
+    const arma::sp_mat& H = second_derivatives[j];
+
+    if(H.n_rows != ntrans || H.n_cols != ntrans) {
+      Rcpp::stop("Every constraint Hessian must be square with one row and column per transformed parameter.");
+    }
+
+    const arma::uword offset = (nold+j)*ntrans;
+
+    for(arma::sp_mat::const_iterator it = H.begin();
+        it != H.end(); ++it) {
+      x.d2constraints(offset+it.row(),
+                      offset+it.col()) = *it;
+    }
+
+  }
+
+}

@@ -95,8 +95,27 @@ Rcpp::List get_rhess(Rcpp::List control_manifold,
 
   }
 
+  h = 0.5*(h+h.t());
+
+  arma::mat P(x.nparam, x.nparam, arma::fill::zeros);
+
+  if(ntangent > 0L) {
+
+    arma::mat h_inverse_Tt;
+    bool solved = arma::solve(h_inverse_Tt, h, T.t());
+
+    if(!solved || !h_inverse_Tt.is_finite()) {
+      Rcpp::stop("The tangent-coordinate Riemannian Hessian could not be inverted.");
+    }
+
+    P = T*h_inverse_Tt;
+    P = 0.5*(P+P.t());
+
+  }
+
   result["h"] = h;
   result["T"] = T;
+  result["P"] = P;
 
   (void)algorithm;
   (void)cores;

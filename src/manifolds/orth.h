@@ -127,25 +127,41 @@ public:
 
     const arma::uword nconstraints =
       q*(q+1L)/2L;
-    arma::uword first_column = x.dconstr.n_cols;
-    x.dconstr.resize(x.transparameters.n_elem,
-                     first_column+nconstraints);
 
     arma::uvec trans_indices =
       x.transparam2param.elem(indices);
+
+    arma::sp_mat first_derivatives(
+      x.transparameters.n_elem,
+      nconstraints
+    );
+    std::vector<arma::sp_mat> second_derivatives;
+    second_derivatives.reserve(nconstraints);
 
     arma::uword constraint = 0L;
 
     for(arma::uword column=0L; column < q; ++column) {
       for(arma::uword row=column; row < q; ++row) {
 
+        arma::sp_mat second_derivative(
+          x.transparameters.n_elem,
+          x.transparameters.n_elem
+        );
+
         if(row == column) {
 
           for(arma::uword i=0L; i < p; ++i) {
+
             arma::uword local_index = i+column*p;
-            x.dconstr(trans_indices[local_index],
-                      first_column+constraint) =
+            arma::uword trans_index =
+              trans_indices[local_index];
+
+            first_derivatives(trans_index,
+                              constraint) =
               2.00*X(i, column);
+            second_derivative(trans_index,
+                              trans_index) = 2.00;
+
           }
 
         } else {
@@ -154,23 +170,41 @@ public:
 
             arma::uword column_index = i+column*p;
             arma::uword row_index = i+row*p;
+            arma::uword trans_column =
+              trans_indices[column_index];
+            arma::uword trans_row =
+              trans_indices[row_index];
 
-            x.dconstr(trans_indices[column_index],
-                      first_column+constraint) =
+            first_derivatives(trans_column,
+                              constraint) =
               X(i, row);
 
-            x.dconstr(trans_indices[row_index],
-                      first_column+constraint) =
+            first_derivatives(trans_row,
+                              constraint) =
               X(i, column);
+
+            second_derivative(trans_column,
+                              trans_row) = 1.00;
+            second_derivative(trans_row,
+                              trans_column) = 1.00;
 
           }
 
         }
 
+        second_derivatives.push_back(
+          second_derivative
+        );
         constraint++;
 
       }
     }
+
+    append_constraint_derivatives(
+      x,
+      first_derivatives,
+      second_derivatives
+    );
 
   }
 

@@ -16,23 +16,35 @@ labels must occur in \code{fit@modelInfo$transparameters_labels}. If
 parameters are used.}
 }
 \value{
-A numeric matrix. Rows correspond to the selected transformed parameters and
-columns correspond to transformation-induced constraints.
+A list with two sparse matrices:
+\describe{
+  \item{\code{dconstr}}{Rows correspond to selected transformed parameters
+    and columns correspond to constraints.}
+  \item{\code{d2constr}}{A block-diagonal matrix containing one square
+    constraint Hessian per constraint, in the same order as the columns of
+    \code{dconstr}.}
+}
 }
 \description{
-Some parameter transformations imply constraints on their outputs. For
-example, probabilities produced by a softmax transformation sum to one.
-\code{constraints_derivs.latent()} extracts the derivatives associated with
-such constraints for selected transformed parameters.
+Some manifolds and parameter transformations imply constraints. For example,
+parameters on a unit manifold have unit norm and probabilities produced by a
+softmax transformation sum to one.
+\code{constraints_derivs.latent()} extracts the first and second derivatives
+associated with such constraints for selected transformed parameters.
 }
 \details{
-Compute derivatives of transformation-induced constraints for selected
-parameters of a fitted latent variable model.
+Compute first and second derivatives of manifold- and
+transformation-induced constraints for selected parameters of a fitted
+latent variable model.
 
 
 Only transformations on which the requested parameters depend are evaluated.
-Transformations that do not impose an explicit constraint do not contribute
-a constraint column.
+Manifold constraints are always evaluated. Transformations and manifolds that
+do not impose an explicit constraint do not contribute a constraint column.
+
+If \eqn{p} parameters and \eqn{m} constraints are selected,
+\code{d2constr} has dimension \eqn{pm} by \eqn{pm}. Its \eqn{j}-th
+\eqn{p} by \eqn{p} diagonal block is the Hessian of constraint \eqn{j}.
 }
 \seealso{
 \code{\link{constraints_derivs}}, \code{\link{jacobian.latent}},

@@ -72,15 +72,31 @@ public:
 
     X = x.parameters(indices);
 
-    arma::uword ndconstr = x.dconstr.n_cols;
-    x.dconstr.resize(x.transparameters.n_elem, ndconstr+1L);
-
     arma::uvec trans_indices =
       x.transparam2param.elem(indices);
 
+    arma::sp_mat first_derivatives(
+      x.transparameters.n_elem, 1L
+    );
+    arma::sp_mat second_derivative(
+      x.transparameters.n_elem,
+      x.transparameters.n_elem
+    );
+
     for(arma::uword i=0L; i < trans_indices.n_elem; ++i) {
-      x.dconstr(trans_indices[i], ndconstr) = 2.00*X[i];
+      first_derivatives(trans_indices[i], 0L) = 2.00*X[i];
+      second_derivative(trans_indices[i],
+                        trans_indices[i]) = 2.00;
     }
+
+    std::vector<arma::sp_mat> second_derivatives;
+    second_derivatives.push_back(second_derivative);
+
+    append_constraint_derivatives(
+      x,
+      first_derivatives,
+      second_derivatives
+    );
 
   }
 

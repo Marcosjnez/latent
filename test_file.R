@@ -45,10 +45,16 @@ latInspect(fit, what = "elapsed")
 # loglik: -3879.167 # penalized_loglik: -3880.371 ("UNDERSTA ~~ COOPERAT
 #                                                   PURPOSE ~~ COOPERAT")
 
-jacob <- jacobian(fit)
-labs1 <- c(fit@modelInfo$trans$PURPOSE[1, ])
-labs2 <- c(fit@modelInfo$trans$PURPOSE[4, ])
+jacob <- jacobian(fit, parameters = fit@modelInfo$trans[names(fit@modelInfo$param)])
+dim(jacob)
+labs1 <- c(fit@modelInfo$trans$PURPOSE[2, ])
+labs2 <- c(fit@modelInfo$trans$PURPOSE[5, ])
 jacob[labs1, labs2]
+
+dconstr <- constraints_derivs(fit, parameters = fit@modelInfo$trans[names(fit@modelInfo$param)])
+dim(dconstr)
+labs1 <- c(fit@modelInfo$trans$PURPOSE[1, ])
+dconstr[labs1, , drop = FALSE]
 
 # Print model fit info:
 fit
@@ -967,6 +973,11 @@ round(fit_b$rotation$phi, 3)
 
 round(fit@transformed_pars$lambda_rotated, 3)
 round(fit_b$rotation$lambda, 3)
+
+dconstr <- constraints_derivs(fit, parameters = fit@modelInfo$parameters_labels)
+dim(dconstr)
+labs1 <- c(fit@modelInfo$trans$X)
+dconstr[labs1, , drop = FALSE]
 
 # Exploratory factor analysis
 

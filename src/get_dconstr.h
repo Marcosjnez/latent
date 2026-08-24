@@ -56,11 +56,21 @@ Rcpp::List get_dconstr(Rcpp::List control_manifold,
   final_manifold.param(x, xmanifolds);
 
   x.dconstr.set_size(x.transparameters.n_elem, 0L);
+  x.d2constraints.set_size(0L, 0L);
   final_manifold.dconstraints(x, xmanifolds);
   final_transform.dconstraints(x, xtransforms);
 
+  const arma::uword expected_dimension =
+    x.transparameters.n_elem*x.dconstr.n_cols;
+
+  if(x.d2constraints.n_rows != expected_dimension ||
+     x.d2constraints.n_cols != expected_dimension) {
+    Rcpp::stop("The first- and second-constraint derivative objects are not aligned.");
+  }
+
   Rcpp::List result;
   result["dconstr"] = x.dconstr;
+  result["d2constr"] = x.d2constraints;
 
   (void)algorithm;
 

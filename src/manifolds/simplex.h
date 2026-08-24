@@ -115,17 +115,28 @@ public:
       return;
     }
 
-    // Expand the matrix of constraints derivatives to put in a new column
-    // the constraint derivatives of this manifold:
-    arma::uword ndconstr = x.dconstr.n_cols;
-    x.dconstr.resize(x.transparameters.n_elem, ndconstr+1L);
-
     arma::uvec trans_indices =
       x.transparam2param.elem(indices);
 
+    arma::sp_mat first_derivatives(
+      x.transparameters.n_elem, 1L
+    );
+
     for(arma::uword i=0L; i < trans_indices.n_elem; ++i) {
-      x.dconstr(trans_indices[i], ndconstr) = 1.00;
+      first_derivatives(trans_indices[i], 0L) = 1.00;
     }
+
+    std::vector<arma::sp_mat> second_derivatives(
+      1L,
+      arma::sp_mat(x.transparameters.n_elem,
+                   x.transparameters.n_elem)
+    );
+
+    append_constraint_derivatives(
+      x,
+      first_derivatives,
+      second_derivatives
+    );
 
   }
 

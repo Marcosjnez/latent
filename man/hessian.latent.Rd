@@ -4,15 +4,22 @@
 \alias{hessian.latent}
 \title{Hessian Matrix for Latent Models}
 \usage{
-\method{hessian}{latent}(fit, riemannian = FALSE)
+\method{hessian}{latent}(fit)
 }
 \arguments{
 \item{fit}{A fitted object inheriting from class \code{"latent"}.}
+
+\item{riemannian}{Logical. If \code{FALSE}, return the Euclidean Hessian. If
+\code{TRUE}, return the ambient constrained inverse operator
+\eqn{P=T H_R^{-1}T^\top}, where \eqn{H_R} is the tangent-coordinate
+Riemannian Hessian and \eqn{T} is the tangent-space basis.}
 }
 \value{
 A symmetric numeric matrix with one row and one column for each freely
 estimated parameter. Row and column names correspond to
-\code{fit@modelInfo$parameters_labels}.
+\code{fit@modelInfo$parameters_labels}. When \code{riemannian = FALSE}, the
+matrix is the Euclidean Hessian. When \code{riemannian = TRUE}, it is the
+ambient constrained inverse operator \eqn{P}.
 }
 \description{
 The Hessian is computed with respect to the freely estimated parameters on

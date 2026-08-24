@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/08/2026
+ * Modification date: 24/08/2026
  */
 
 // Softmax transformation:
@@ -63,14 +63,25 @@ public:
 
   void dconstraints(arguments_optim& x) {
 
-    // Expand the matrix of constraints derivatives to put in a new column
-    // the constraint derivatives of this transformation output:
-    arma::uword ndconstr = x.dconstr.n_cols;
-    x.dconstr.resize(x.transparameters.n_elem, ndconstr + 1L);
+    arma::sp_mat first_derivatives(
+      x.transparameters.n_elem, 1L
+    );
 
-    for(arma::uword i = 0L; i < indices_out.n_elem; ++i) {
-        x.dconstr(indices_out[i], ndconstr) = 1.00;
+    for(arma::uword i=0L; i < indices_out.n_elem; ++i) {
+      first_derivatives(indices_out[i], 0L) = 1.00;
     }
+
+    std::vector<arma::sp_mat> second_derivatives(
+      1L,
+      arma::sp_mat(x.transparameters.n_elem,
+                   x.transparameters.n_elem)
+    );
+
+    append_constraint_derivatives(
+      x,
+      first_derivatives,
+      second_derivatives
+    );
 
   }
 

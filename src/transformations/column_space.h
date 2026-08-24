@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 14/08/2026
+ * Modification date: 24/08/2026
  */
 
 // Column space transformation:
@@ -66,24 +66,36 @@ public:
     arma::uword n = X.n_rows;
     arma::uword q = coefs.n_cols;
 
-    // Number of existing constraint columns:
-    arma::uword ndconstr = x.dconstr.n_cols;
-
     // Each column of the output has N.n_cols constraints:
     arma::uword nconstraints = N.n_cols * q;
 
-    x.dconstr.resize(x.transparameters.n_elem,
-                     ndconstr + nconstraints);
+    arma::sp_mat first_derivatives(
+      x.transparameters.n_elem,
+      nconstraints
+    );
 
     for(arma::uword j = 0L; j < q; ++j) {
       for(arma::uword k = 0L; k < N.n_cols; ++k) {
-        arma::uword column = ndconstr + j*N.n_cols + k;
+        arma::uword column = j*N.n_cols + k;
         for(arma::uword i = 0L; i < n; ++i) {
           arma::uword output_index = j*n + i;
-          x.dconstr(indices_out[output_index], column) = N(i, k);
+          first_derivatives(indices_out[output_index],
+                            column) = N(i, k);
         }
       }
     }
+
+    std::vector<arma::sp_mat> second_derivatives(
+      nconstraints,
+      arma::sp_mat(x.transparameters.n_elem,
+                   x.transparameters.n_elem)
+    );
+
+    append_constraint_derivatives(
+      x,
+      first_derivatives,
+      second_derivatives
+    );
 
   }
 

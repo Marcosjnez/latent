@@ -13,11 +13,17 @@
 #' as separate rows or columns.
 #'
 #' @param fit A fitted object inheriting from class \code{"latent"}.
+#' @param riemannian Logical. If \code{FALSE}, return the Euclidean Hessian. If
+#'   \code{TRUE}, return the ambient constrained inverse operator
+#'   \eqn{P=T H_R^{-1}T^\top}, where \eqn{H_R} is the tangent-coordinate
+#'   Riemannian Hessian and \eqn{T} is the tangent-space basis.
 #'
 #' @return
 #' A symmetric numeric matrix with one row and one column for each freely
 #' estimated parameter. Row and column names correspond to
-#' \code{fit@modelInfo$parameters_labels}.
+#' \code{fit@modelInfo$parameters_labels}. When \code{riemannian = FALSE}, the
+#' matrix is the Euclidean Hessian. When \code{riemannian = TRUE}, it is the
+#' ambient constrained inverse operator \eqn{P}.
 #'
 #' @details
 #' The Hessian is evaluated at the parameter estimates stored in
@@ -34,22 +40,15 @@
 #'
 #' @method hessian latent
 #' @export
-hessian.latent <- function(fit, riemannian = FALSE) {
+hessian.latent <- function(fit) {
 
   fit@modelInfo$control_optimizer$parameters[[1]] <- fit@Optim$parameters
   fit@modelInfo$control_optimizer$transparameters[[1]] <- fit@Optim$transparameters
 
-  if(riemannian) {
-    H <- get_rhess(fit@modelInfo$control_manifold,
-                   fit@modelInfo$control_transform,
-                   fit@modelInfo$control_estimator,
-                   fit@modelInfo$control_optimizer)$h
-  } else {
-    H <- get_hess(fit@modelInfo$control_manifold,
-                  fit@modelInfo$control_transform,
-                  fit@modelInfo$control_estimator,
-                  fit@modelInfo$control_optimizer)$h
-  }
+  H <- get_hess(fit@modelInfo$control_manifold,
+                fit@modelInfo$control_transform,
+                fit@modelInfo$control_estimator,
+                fit@modelInfo$control_optimizer)$h
 
   rownames(H) <- colnames(H) <- fit@modelInfo$parameters_labels
 
