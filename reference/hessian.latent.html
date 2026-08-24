@@ -91,7 +91,7 @@ as separate rows or columns.</p>
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'latent'</span></span>
-<span><span class="fu"><a href="hessian.html">hessian</a></span><span class="op">(</span><span class="va">fit</span>, riemannian <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="hessian.html">hessian</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -101,12 +101,21 @@ as separate rows or columns.</p>
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
 <dd><p>A fitted object inheriting from class <code>"latent"</code>.</p></dd>
 
+
+<dt id="arg-riemannian">riemannian<a class="anchor" aria-label="anchor" href="#arg-riemannian"></a></dt>
+<dd><p>Logical. If <code>FALSE</code>, return the Euclidean Hessian. If
+<code>TRUE</code>, return the ambient constrained inverse operator
+\(P=T H_R^{-1}T^\top\), where \(H_R\) is the tangent-coordinate
+Riemannian Hessian and \(T\) is the tangent-space basis.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A symmetric numeric matrix with one row and one column for each freely
 estimated parameter. Row and column names correspond to
-<code>fit@modelInfo$parameters_labels</code>.</p>
+<code>fit@modelInfo$parameters_labels</code>. When <code>riemannian = FALSE</code>, the
+matrix is the Euclidean Hessian. When <code>riemannian = TRUE</code>, it is the
+ambient constrained inverse operator \(P\).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

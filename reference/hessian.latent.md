@@ -8,7 +8,7 @@ included as separate rows or columns.
 
 ``` r
 # S3 method for class 'latent'
-hessian(fit, riemannian = FALSE)
+hessian(fit)
 ```
 
 ## Arguments
@@ -17,11 +17,20 @@ hessian(fit, riemannian = FALSE)
 
   A fitted object inheriting from class `"latent"`.
 
+- riemannian:
+
+  Logical. If `FALSE`, return the Euclidean Hessian. If `TRUE`, return
+  the ambient constrained inverse operator \\P=T H_R^{-1}T^\top\\, where
+  \\H_R\\ is the tangent-coordinate Riemannian Hessian and \\T\\ is the
+  tangent-space basis.
+
 ## Value
 
 A symmetric numeric matrix with one row and one column for each freely
 estimated parameter. Row and column names correspond to
-`fit@modelInfo$parameters_labels`.
+`fit@modelInfo$parameters_labels`. When `riemannian = FALSE`, the matrix
+is the Euclidean Hessian. When `riemannian = TRUE`, it is the ambient
+constrained inverse operator \\P\\.
 
 ## Details
 

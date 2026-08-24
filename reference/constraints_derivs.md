@@ -1,7 +1,8 @@
 # Derivatives of Parameter Constraints
 
-`constraints_derivs()` is a generic function for obtaining derivatives
-of parameter constraints introduced by model transformations.
+`constraints_derivs()` is a generic function for obtaining first and
+second derivatives of parameter constraints introduced by manifolds and
+model transformations.
 
 ## Usage
 
@@ -21,13 +22,13 @@ constraints_derivs(x, ...)
 
 ## Value
 
-A numeric matrix containing derivatives of transformation-induced
-parameter constraints.
+A list containing the first constraint derivatives and the
+block-diagonal matrix of second constraint derivatives.
 
 ## Details
 
-Compute derivatives associated with constraints on transformed
-parameters.
+Compute first and second derivatives associated with constraints on
+model parameters and transformed parameters.
 
 ## See also
 

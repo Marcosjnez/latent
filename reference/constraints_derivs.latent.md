@@ -1,9 +1,10 @@
 # Constraint Derivatives for Latent Models
 
-Some parameter transformations imply constraints on their outputs. For
-example, probabilities produced by a softmax transformation sum to one.
-`constraints_derivs.latent()` extracts the derivatives associated with
-such constraints for selected transformed parameters.
+Some manifolds and parameter transformations imply constraints. For
+example, parameters on a unit manifold have unit norm and probabilities
+produced by a softmax transformation sum to one.
+`constraints_derivs.latent()` extracts the first and second derivatives
+associated with such constraints for selected transformed parameters.
 
 ## Usage
 
@@ -28,17 +29,32 @@ constraints_derivs(fit, parameters = NULL)
 
 ## Value
 
-A numeric matrix. Rows correspond to the selected transformed parameters
-and columns correspond to transformation-induced constraints.
+A list with two sparse matrices:
+
+- `dconstr`:
+
+  Rows correspond to selected transformed parameters and columns
+  correspond to constraints.
+
+- `d2constr`:
+
+  A block-diagonal matrix containing one square constraint Hessian per
+  constraint, in the same order as the columns of `dconstr`.
 
 ## Details
 
-Compute derivatives of transformation-induced constraints for selected
-parameters of a fitted latent variable model.
+Compute first and second derivatives of manifold- and
+transformation-induced constraints for selected parameters of a fitted
+latent variable model.
 
 Only transformations on which the requested parameters depend are
-evaluated. Transformations that do not impose an explicit constraint do
-not contribute a constraint column.
+evaluated. Manifold constraints are always evaluated. Transformations
+and manifolds that do not impose an explicit constraint do not
+contribute a constraint column.
+
+If \\p\\ parameters and \\m\\ constraints are selected, `d2constr` has
+dimension \\pm\\ by \\pm\\. Its \\j\\-th \\p\\ by \\p\\ diagonal block
+is the Hessian of constraint \\j\\.
 
 ## See also
 
