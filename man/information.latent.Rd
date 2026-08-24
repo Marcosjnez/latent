@@ -11,14 +11,22 @@
 }
 \value{
 A list containing the Hessian, variance-covariance matrix, standard
-  errors, and covariance-method metadata.
+  errors, and covariance-method metadata. Multistep objects additionally
+  return the propagation matrices and joint covariance matrix.
 }
 \description{
-Information Variance-Covariance Matrix for Latent Models
+Compute the variance-covariance matrix of the freely estimated parameters of
+a fitted latent-variable model.
 }
 \details{
-The fitted object is never modified. For ordinary CFA likelihood models, a
-temporary derivative copy replaces \code{cfa_fml} by \code{cfa_ml}. Stored
-covariance matrices are reused only when they were explicitly produced by an
-information/standard method.
+Three covariance calculations are handled directly. Deterministic multistep
+models use the covariance propagated from preceding estimation steps. Source
+estimators such as \code{lmean()}, \code{lpearson()}, \code{lpoly()},
+\code{lyule()}, and \code{lmvnorm()} use their analytic information
+covariance. Remaining latent models use the inverse Hessian.
+
+For ordinary CFA maximum-likelihood models, the Hessian is evaluated with the
+corresponding \code{cfa_ml} estimator because \code{cfa_fml} represents the
+fitted discrepancy function rather than the information contribution used
+for the covariance matrix.
 }

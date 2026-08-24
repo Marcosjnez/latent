@@ -1,35 +1,80 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/08/2026
+# Modification date: 24/08/2026
 #'
 #' Information Variance-Covariance Matrix for Latent Models
+#'
+#' Compute the variance-covariance matrix of the freely estimated parameters of
+#' a fitted latent-variable model.
 #'
 #' @param fit A fitted object inheriting from class \code{"latent"}.
 #'
 #' @return A list containing the Hessian, variance-covariance matrix, standard
-#'   errors, and covariance-method metadata.
+#'   errors, and covariance-method metadata. Multistep objects additionally
+#'   return the propagation matrices and joint covariance matrix.
 #'
 #' @details
-#' The fitted object is never modified. For ordinary CFA likelihood models, a
-#' temporary derivative copy replaces \code{cfa_fml} by \code{cfa_ml}. Stored
-#' covariance matrices are reused only when they were explicitly produced by an
-#' information/standard method.
+#' Three covariance calculations are handled directly. Deterministic multistep
+#' models use the covariance propagated from preceding estimation steps. Source
+#' estimators such as \code{lmean()}, \code{lpearson()}, \code{lpoly()},
+#' \code{lyule()}, and \code{lmvnorm()} use their analytic information
+#' covariance. Remaining latent models use the inverse Hessian.
+#'
+#' For ordinary CFA maximum-likelihood models, the Hessian is evaluated with the
+#' corresponding \code{cfa_ml} estimator because \code{cfa_fml} represents the
+#' fitted discrepancy function rather than the information contribution used
+#' for the covariance matrix.
 #'
 #' @method information latent
 #' @export
 information.latent <- function(fit) {
 
+  #### Check inputs ####
+
+  if(!inherits(fit, "latent")) {
+    stop("fit must inherit from class 'latent'.")
+  }
+
+  if(length(fit@Optim$transparameters) == 0L) {
+    stop("The latent object has not been fitted.")
+  }
+
+  labels <- fit@modelInfo$parameters_labels
+
+  #### Deterministic multistep covariance ####
+
   if(inherits(fit, "multistep")) {
 
-    result <- information.multistep(fit)
+    SE <- se.multistep(fit = fit,
+                       parameters = labels,
+                       digits = NULL)
+
+    VCOV <- validate_covariance_matrix(
+      SE$free_VCOV,
+      labels = labels,
+      object_name = "multistep variance-covariance matrix"
+    )
+
+    se <- standard_errors_from_vcov(
+      VCOV,
+      object_name = "multistep variance-covariance matrix"
+    )
 
     #### Result ####
+
+    result <- list(H = SE$H,
+                   B = SE$B,
+                   C = SE$C,
+                   VCOV = VCOV,
+                   se = se,
+                   joint_vcov = SE$joint_vcov,
+                   steps = SE$steps,
+                   type = "multistep",
+                   sample_se = SE$sample_se)
 
     return(result)
 
   }
-
-  labels <- fit@modelInfo$parameters_labels
 
   if(length(labels) == 0L) {
 
@@ -38,189 +83,21 @@ information.latent <- function(fit) {
 
     #### Result ####
 
-    return(list(H = empty, VCOV = empty, se = numeric(0L),
-                type = "information"))
-
-  }
-
-  stored_SE <- tryCatch(fit@Optim$SE,
-                        error = function(e) NULL)
-  stored_type <- tryCatch(tolower(stored_SE$type),
-                          error = function(e) character(0L))
-  stored_VCOV <- tryCatch(stored_SE$VCOV,
-                          error = function(e) NULL)
-
-  if(length(stored_type) == 0L &&
-     !is.null(stored_VCOV)) {
-
-    function_name <- tail(as.character(fit@call[[1L]]), 1L)
-
-    if(function_name == "lpearson") {
-      stored_type <- tolower(fit@dataList$VCOV_type)
-    } else if(function_name %in%
-              c("lmean", "lpoly", "lyule", "lmvnorm")) {
-      stored_type <- "information"
-    }
-
-  }
-
-  function_name <- tail(as.character(fit@call[[1L]]), 1L)
-
-  if(function_name == "lpearson" &&
-     length(stored_type) == 1L &&
-     identical(stored_type, "robust")) {
-
-    control <- fit@modelInfo$control_optimizer
-    std_ov <- isTRUE(control$std.ov)
-
-    VCOV <- asymptotic_normal(
-      fit@dataList$S,
-      cov = !std_ov,
-      diag = FALSE
-    )/fit@dataList$nobs
-    VCOV <- validate_covariance_matrix(
-      VCOV,
-      labels = labels,
-      object_name = "Pearson information variance-covariance matrix"
-    )
-    se <- standard_errors_from_vcov(
-      VCOV,
-      object_name = "Pearson information variance-covariance matrix"
-    )
-
-    #### Result ####
-
-    return(list(H = NULL,
-                VCOV = VCOV,
-                se = se,
-                type = "information"))
-
-  }
-
-  reuse_stored <- length(stored_type) == 1L &&
-    stored_type %in% c("standard", "information") &&
-    !is.null(stored_VCOV)
-
-  if(!reuse_stored &&
-     is.null(stored_VCOV)) {
-
-    lazy_SE <- lazy_information_se_latent(
-      fit = fit,
-      function_name = function_name
-    )
-
-    if(!is.null(lazy_SE)) {
-      stored_SE <- lazy_SE
-      stored_VCOV <- lazy_SE$VCOV
-      stored_type <- "information"
-      reuse_stored <- TRUE
-    }
-
-  }
-
-  if(reuse_stored) {
-
-    VCOV <- validate_covariance_matrix(
-      stored_VCOV,
-      labels = labels,
-      object_name = "stored information variance-covariance matrix"
-    )
-
-    H <- tryCatch(stored_SE$H,
-                  error = function(e) NULL)
-
-    if(!is.null(H)) {
-      H <- validate_covariance_matrix(H, labels = labels,
-                                      object_name = "stored Hessian")
-    }
-
-  } else {
-
-    fit_information <- information_model_latent(fit)
-
-    H <- hessian(fit_information)
-    H <- validate_covariance_matrix(H, labels = labels,
-                                    object_name = "Hessian")
-
-    VCOV <- invert_information_matrix(
-      H,
-      labels = labels,
-      object_name = "Hessian"
-    )
-
-  }
-
-  se <- standard_errors_from_vcov(
-    VCOV,
-    object_name = "information variance-covariance matrix"
-  )
-
-  #### Result ####
-
-  result <- list(H = H,
-                 VCOV = VCOV,
-                 se = se,
-                 type = "information")
-
-  return(result)
-
-}
-
-#### Temporary information model ####
-
-information_model_latent <- function(fit) {
-
-  result <- fit
-
-  # if(isTRUE(result@modelInfo$control_optimizer$reg)) {
-  #   stop("Information standard errors for penalized latent models require a ",
-  #        "penalty-specific covariance derivation and are not currently ",
-  #        "implemented.")
-  # }
-
-  # if(inherits(result, "lcfa") &&
-  #    !is.null(result@dataList$likelihood) &&
-  #    !identical(tolower(result@dataList$likelihood), "normal")) {
-  #   stop("Information standard errors for lcfa currently require ",
-  #        "likelihood = 'normal'; Wishart mean/covariance scaling has not ",
-  #        "yet been implemented in the temporary information estimator.")
-  # }
-
-  if(length(result@modelInfo$control_estimator) == 0L) {
-
-    #### Result ####
+    result <- list(H = empty,
+                   VCOV = empty,
+                   se = numeric(0L),
+                   type = "information")
 
     return(result)
 
   }
 
-  for(i in seq_along(result@modelInfo$control_estimator)) {
+  #### Analytic covariance of source estimators ####
 
-    estimator <- result@modelInfo$control_estimator[[i]]$estimator
-
-    if(identical(estimator, "cfa_fml")) {
-      result@modelInfo$control_estimator[[i]]$estimator <- "cfa_ml"
-    }
-
-  }
-
-  #### Result ####
-
-  return(result)
-
-}
-
-#### Deferred information covariance for source estimators ####
-
-lazy_information_se_latent <- function(fit, function_name = NULL) {
-
-  if(is.null(function_name)) {
-    function_name <- tail(as.character(fit@call[[1L]]), 1L)
-  }
-
+  function_name <- tail(as.character(fit@call[[1L]]), 1L)
   control <- fit@modelInfo$control_optimizer
 
-  result <- switch(
+  source_SE <- switch(
     function_name,
     lmean = compute_se_lmean(
       dataList = fit@dataList,
@@ -268,28 +145,77 @@ lazy_information_se_latent <- function(fit, function_name = NULL) {
     NULL
   )
 
-  if(is.null(result)) {
+  if(!is.null(source_SE)) {
+
+    VCOV <- validate_covariance_matrix(
+      source_SE$VCOV,
+      labels = labels,
+      object_name = paste0(function_name,
+                           " information variance-covariance matrix")
+    )
+
+    H <- tryCatch(source_SE$H,
+                  error = function(e) NULL)
+
+    if(!is.null(H)) {
+      H <- validate_covariance_matrix(
+        H,
+        labels = labels,
+        object_name = paste0(function_name, " Hessian")
+      )
+    }
+
+    se <- standard_errors_from_vcov(
+      VCOV,
+      object_name = paste0(function_name,
+                           " information variance-covariance matrix")
+    )
 
     #### Result ####
 
-    return(NULL)
+    result <- list(H = H,
+                   VCOV = VCOV,
+                   se = se,
+                   type = "information")
+
+    return(result)
 
   }
 
-  result$VCOV <- validate_covariance_matrix(
-    result$VCOV,
-    labels = fit@modelInfo$parameters_labels,
-    object_name = paste0(function_name,
-                         " information variance-covariance matrix")
+  #### Information Hessian ####
+
+  fit_information <- fit
+
+  for(i in seq_along(fit_information@modelInfo$control_estimator)) {
+
+    estimator <- fit_information@modelInfo$control_estimator[[i]]$estimator
+
+    if(identical(estimator, "cfa_fml")) {
+      fit_information@modelInfo$control_estimator[[i]]$estimator <- "cfa_ml"
+    }
+
+  }
+
+  H <- hessian(fit_information)
+  H <- validate_covariance_matrix(H,
+                                  labels = labels,
+                                  object_name = "Hessian")
+
+  VCOV <- invert_information_matrix(H,
+                                    labels = labels,
+                                    object_name = "Hessian")
+
+  se <- standard_errors_from_vcov(
+    VCOV,
+    object_name = "information variance-covariance matrix"
   )
-  result$se <- standard_errors_from_vcov(
-    result$VCOV,
-    object_name = paste0(function_name,
-                         " information variance-covariance matrix")
-  )
-  result$type <- "information"
 
   #### Result ####
+
+  result <- list(H = H,
+                 VCOV = VCOV,
+                 se = se,
+                 type = "information")
 
   return(result)
 

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 23/08/2026
+# Modification date: 24/08/2026
 
 setMethod("show", "lefa", function(object) {
 
@@ -118,34 +118,6 @@ se.lefa <- function(fit, type = NULL, parameters = NULL,
                          parameters = parameters,
                          digits = digits,
                          ...)
-
-  #### Result ####
-
-  return(result)
-
-}
-
-#'
-#' @rdname information.multistep
-#' @method information lefa
-#' @export
-information.lefa <- function(fit) {
-
-  result <- information.multistep(fit)
-
-  #### Result ####
-
-  return(result)
-
-}
-
-#'
-#' @rdname robust.multistep
-#' @method robust lefa
-#' @export
-robust.lefa <- function(fit) {
-
-  result <- robust.multistep(fit)
 
   #### Result ####
 
