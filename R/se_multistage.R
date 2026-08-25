@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 25/08/2026
 #'
 #' Standard Errors for Multistage Latent Models
 #'
@@ -26,24 +26,29 @@
 #' processed iteratively.
 #'
 #' Let \eqn{A} be the joint variance-covariance matrix of the parameters fixed
-#' from previous stages, \eqn{H_2} the Hessian of the parameters estimated in
-#' the current stage, \eqn{C} the cross-Hessian between previous-stage and
-#' current-stage parameters obtained from the corresponding unrestricted model,
-#' and \eqn{V_2} the conditional variance-covariance matrix of the current-stage
-#' estimator. At each stage the joint covariance matrix is enlarged as
+#' from previous stages, \eqn{P_2} the inverse-Hessian operator of the parameters
+#' estimated in the current stage, \eqn{C} the cross-Hessian between
+#' previous-stage and current-stage parameters obtained from the corresponding
+#' unrestricted model, and \eqn{V_2} the conditional variance-covariance matrix
+#' of the current-stage estimator. At each stage the joint covariance matrix is
+#' enlarged as
 #' \deqn{
 #' V =
 #' \begin{pmatrix}
-#' A & -A C H_2^{-1} \\
-#' -H_2^{-1} C^\top A &
-#' V_2 + H_2^{-1} C^\top A C H_2^{-1}
+#' A & -A C P_2 \\
+#' -P_2^\top C^\top A &
+#' V_2 + P_2 C^\top A C P_2^\top
 #' \end{pmatrix}.
 #' }
 #'
+#' By default, \eqn{P_2=H_2^{-1}}. If the current-stage control contains
+#' \code{se_method = "KKT"} and active equality constraints are available,
+#' \eqn{P_2} is the parameter block of the inverse KKT matrix.
+#'
 #' If \code{type = "robust"}, robust covariance matrices are used for
 #' \eqn{V_2} whenever a class-specific robust method is available. The ordinary
-#' Hessian \eqn{H_2} is still used for propagation of uncertainty between
-#' estimation stages.
+#' objective Hessian and, when requested, its KKT-constrained inverse operator
+#' are still used for propagation of uncertainty between estimation stages.
 #'
 #' The top-level unrestricted model must contain all parameter labels carried
 #' forward from previous stages. This is required to obtain the complete
@@ -185,8 +190,9 @@ se.multistage <- function(fit, type = "information", parameters = NULL,
       labels = current_labels,
       object_name = paste0("Hessian of multistage step ", i)
     )
-    H2_inv <- invert_information_matrix(
-      H2,
+    H2_inv <- invert_hessian_latent(
+      fit = stage,
+      H = H2,
       labels = current_labels,
       object_name = paste0("Hessian of multistage step ", i)
     )

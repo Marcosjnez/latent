@@ -25,6 +25,10 @@ approx_Hinv <- function(H) {
     .Call(`_latent_approx_Hinv`, H)
 }
 
+approx_inv <- function(KKT) {
+    .Call(`_latent_approx_inv`, KKT)
+}
+
 optimizer <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
     .Call(`_latent_optimizer`, control_manifold, control_transform, control_estimator, control_optimizer)
 }

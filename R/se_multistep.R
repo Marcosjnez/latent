@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 25/08/2026
 #'
 #' Standard Errors for Multistep Latent Models
 #'
@@ -25,18 +25,22 @@
 #' added for the new step.
 #'
 #' Let \eqn{A} be the joint variance-covariance matrix of parameters estimated
-#' in all preceding steps, \eqn{H_2} the Hessian of parameters estimated in the
-#' current step, and \eqn{C} the cross-Hessian between preceding and current
-#' parameters in the corresponding unrestricted model. The covariance matrix is
-#' enlarged at every step as
+#' in all preceding steps, \eqn{P_2} the inverse-Hessian operator for parameters
+#' estimated in the current step, and \eqn{C} the cross-Hessian between
+#' preceding and current parameters in the corresponding unrestricted model.
+#' The covariance matrix is enlarged at every step as
 #' \deqn{
 #' V =
 #' \begin{pmatrix}
-#' A & -A C H_2^{-1} \\
-#' -H_2^{-1} C^\top A &
-#' H_2^{-1} C^\top A C H_2^{-1}
+#' A & -A C P_2 \\
+#' -P_2^\top C^\top A &
+#' P_2 C^\top A C P_2^\top
 #' \end{pmatrix}.
 #' }
+#'
+#' By default, \eqn{P_2=H_2^{-1}}. If the current-step control contains
+#' \code{se_method = "KKT"} and active equality constraints are available,
+#' \eqn{P_2} is the parameter block of the inverse KKT matrix.
 #'
 #' The final joint covariance matrix is passed to \code{vcov.latent()}, which
 #' propagates it through all requested parameter transformations.
@@ -48,7 +52,7 @@
 #' @method se multistep
 #' @export
 se.multistep <- function(fit, type = NULL, parameters = NULL,
-                           digits = 4L, ...) {
+                         digits = 4L, ...) {
 
   #### Check inputs ####
 
@@ -150,8 +154,12 @@ se.multistep <- function(fit, type = NULL, parameters = NULL,
     H2 <- H2[current_labels, current_labels, drop = FALSE]
     H2 <- (H2+t(H2))/2
 
-    H2_inv <- invert_hessian_multistep(H2,
-                                       object_name = paste0("step ", i))
+    H2_inv <- invert_hessian_latent(
+      fit = stage,
+      H = H2,
+      labels = current_labels,
+      object_name = paste0("Hessian of multistep step ", i)
+    )
 
     #### Full Hessian and cross derivatives ####
 
@@ -926,40 +934,6 @@ remove_previous_models_multistep <- function(model) {
     result <- model
 
   }
-
-  #### Result ####
-
-  return(result)
-
-}
-
-invert_hessian_multistep <- function(H, object_name = "model") {
-
-  if(length(H) == 0L) {
-
-    #### Result ####
-
-    return(H)
-
-  }
-
-  eigenvalues <- eigen(H, symmetric = TRUE, only.values = TRUE)$values
-  tolerance <- sqrt(.Machine$double.eps)*
-    max(1, max(abs(eigenvalues)))
-
-  if(any(eigenvalues <= tolerance)) {
-    warning("The Hessian of ", object_name,
-            " is not positive definite; an approximate inverse was used.")
-  }
-
-  result <- approx_Hinv(H)
-
-  if(any(!is.finite(result))) {
-    stop("The Hessian of ", object_name, " could not be inverted.")
-  }
-
-  result <- (result+t(result))/2
-  dimnames(result) <- dimnames(H)
 
   #### Result ####
 

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/08/2026
+# Modification date: 25/08/2026
 #'
 #' Information Variance-Covariance Matrix for Latent Models
 #'
@@ -19,6 +19,12 @@
 #' estimators such as \code{lmean()}, \code{lpearson()}, \code{lpoly()},
 #' \code{lyule()}, and \code{lmvnorm()} use their analytic information
 #' covariance. Remaining latent models use the inverse Hessian.
+#'
+#' If \code{fit@modelInfo$control_optimizer$se_method = "KKT"}, the
+#' covariance of the freely estimated parameters is obtained from the parameter
+#' block of the inverse bordered KKT matrix. The upper-left block is the Hessian
+#' of the Lagrangian, including the second derivatives of active constraints.
+#' When no active constraint is found, the ordinary Hessian inverse is used.
 #'
 #' For ordinary CFA maximum-likelihood models, the Hessian is evaluated with the
 #' corresponding \code{cfa_ml} estimator because \code{cfa_fml} represents the
@@ -201,9 +207,12 @@ information.latent <- function(fit) {
                                   labels = labels,
                                   object_name = "Hessian")
 
-  VCOV <- invert_information_matrix(H,
-                                    labels = labels,
-                                    object_name = "Hessian")
+  VCOV <- invert_hessian_latent(
+    fit = fit_information,
+    H = H,
+    labels = labels,
+    object_name = "Hessian"
+  )
 
   se <- standard_errors_from_vcov(
     VCOV,

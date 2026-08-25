@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 25/08/2026
 #'
 #' LatentGold-Style Robust Variance-Covariance Matrix
 #'
@@ -30,8 +30,12 @@ robust.llca <- function(fit) {
   H <- hessian(fit)
   H <- validate_covariance_matrix(H, labels = labels,
                                   object_name = "LCA Hessian")
-  Hinv <- invert_information_matrix(H, labels = labels,
-                                    object_name = "LCA Hessian")
+  Hinv <- invert_hessian_latent(
+    fit = fit,
+    H = H,
+    labels = labels,
+    object_name = "LCA Hessian"
+  )
 
   #### Collect the gradient by response pattern ####
 

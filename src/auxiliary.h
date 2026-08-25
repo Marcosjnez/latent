@@ -378,3 +378,8 @@ arma::mat approx_Hinv(arma::mat H) {
   return(arma::inv_sympd(H, arma::inv_opts::allow_approx));
 }
 
+// [[Rcpp::export]]
+arma::mat approx_inv(arma::mat KKT) {
+  // Approximate the inverse of a non-symmetric matrix:
+  return(arma::inv(KKT, arma::inv_opts::allow_approx));
+}

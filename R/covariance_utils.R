@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 25/08/2026
 
 #### Validate and symmetrize a covariance matrix ####
 
@@ -101,6 +101,206 @@ invert_information_matrix <- function(H, labels = NULL,
   attr(result, "rank") <- rank
   attr(result, "condition") <- condition
   attr(result, "minimum_eigenvalue") <- min(eigenvalues)
+
+  #### Result ####
+
+  return(result)
+
+}
+
+#### Hessian or KKT inverse operator ####
+
+invert_hessian_latent <- function(fit, H,
+                                  labels = fit@modelInfo$parameters_labels,
+                                  object_name = "Hessian") {
+
+  H <- validate_covariance_matrix(H,
+                                  labels = labels,
+                                  object_name = object_name)
+
+  if(nrow(H) == 0L) {
+
+    #### Result ####
+
+    return(H)
+
+  }
+
+  se_method <- fit@modelInfo$control_optimizer$se_method
+
+  if(is.null(se_method)) {
+    se_method <- "Hessian"
+  }
+
+  if(!is.character(se_method) ||
+     length(se_method) != 1L ||
+     is.na(se_method)) {
+    stop("se_method must be 'Hessian' or 'KKT'.")
+  }
+
+  se_method <- toupper(se_method)
+
+  if(!(se_method %in% c("HESSIAN", "KKT"))) {
+    stop("se_method must be 'Hessian' or 'KKT'.")
+  }
+
+  if(se_method == "KKT") {
+
+    derivatives <- constraints_derivs(
+      fit,
+      parameters = labels
+    )
+
+    dconstr <- derivatives$dconstr
+    d2constr <- derivatives$d2constr
+
+    empty_constraints <- is.null(dconstr) ||
+      is.null(d2constr) ||
+      is.null(dim(dconstr)) ||
+      is.null(dim(d2constr)) ||
+      ncol(dconstr) == 0L ||
+      nrow(d2constr) == 0L ||
+      ncol(d2constr) == 0L
+
+  } else {
+
+    empty_constraints <- TRUE
+
+  }
+
+  if(empty_constraints) {
+
+    result <- invert_information_matrix(
+      H,
+      labels = labels,
+      object_name = object_name
+    )
+
+    #### Result ####
+
+    return(result)
+
+  }
+
+  #### Active constraint derivatives ####
+
+  nparam <- length(labels)
+  nconstraints <- ncol(dconstr)
+  expected_dimension <- nparam*nconstraints
+
+  if(nrow(dconstr) != nparam ||
+     nrow(d2constr) != expected_dimension ||
+     ncol(d2constr) != expected_dimension) {
+    stop("The first and second constraint derivatives are not aligned.")
+  }
+
+  dconstr <- as.matrix(dconstr)
+
+  if(any(!is.finite(dconstr))) {
+    stop("The first constraint derivatives contain non-finite values.")
+  }
+
+  constraint_idx <- which(colSums(abs(dconstr)) > 0)
+
+  if(length(constraint_idx) == 0L) {
+
+    result <- invert_information_matrix(
+      H,
+      labels = labels,
+      object_name = object_name
+    )
+
+    #### Result ####
+
+    return(result)
+
+  }
+
+  dconstr <- dconstr[, constraint_idx, drop = FALSE]
+  nconstraints <- ncol(dconstr)
+
+  #### Euclidean gradient and Lagrange multipliers ####
+
+  control_optimizer <- fit@modelInfo$control_optimizer
+  control_optimizer$parameters[[1L]] <- fit@Optim$parameters
+  control_optimizer$transparameters[[1L]] <- fit@Optim$transparameters
+
+  gradient <- get_grad(
+    control_manifold = fit@modelInfo$control_manifold,
+    control_transform = fit@modelInfo$control_transform,
+    control_estimator = fit@modelInfo$control_estimator,
+    control_optimizer = control_optimizer
+  )$g
+  gradient <- c(gradient)
+
+  free_labels <- fit@modelInfo$parameters_labels
+
+  if(length(gradient) != length(free_labels) ||
+     any(!is.finite(gradient)) ||
+     !all(labels %in% free_labels)) {
+    stop("The gradient does not match the KKT parameter coordinates.")
+  }
+
+  names(gradient) <- free_labels
+  gradient <- gradient[labels]
+
+  lambda <- -approx_Hinv(crossprod(dconstr)) %*%
+    crossprod(dconstr, gradient)
+  lambda <- c(lambda)
+
+  if(length(lambda) != nconstraints ||
+     any(!is.finite(lambda))) {
+    stop("The KKT Lagrange multipliers could not be computed.")
+  }
+
+  #### Hessian of the Lagrangian ####
+
+  H_L <- H
+
+  for(j in seq_len(nconstraints)) {
+
+    constraint <- constraint_idx[j]
+    idx <- (constraint-1L)*nparam+seq_len(nparam)
+
+    H_constraint <- as.matrix(
+      d2constr[idx, idx, drop = FALSE]
+    )
+
+    if(any(!is.finite(H_constraint))) {
+      stop("A constraint Hessian contains non-finite values.")
+    }
+
+    H_constraint <- (H_constraint+t(H_constraint))/2
+    H_L <- H_L+lambda[j]*H_constraint
+
+  }
+
+  H_L <- (H_L+t(H_L))/2
+
+  #### KKT inverse ####
+
+  KKT <- rbind(
+    cbind(H_L, dconstr),
+    cbind(t(dconstr), matrix(0,
+                             nrow = nconstraints,
+                             ncol = nconstraints))
+  )
+  KKT <- (KKT+t(KKT))/2
+
+  KKT_inv <- approx_inv(KKT) # KKT_inv may not be symmetric
+
+  if(!is.matrix(KKT_inv)) {
+    KKT_inv <- as.matrix(KKT_inv)
+  }
+
+  if(any(!is.finite(KKT_inv))) {
+    stop("The KKT matrix could not be inverted.")
+  }
+
+  parameter_idx <- seq_len(nparam)
+  result <- KKT_inv[parameter_idx, parameter_idx, drop = FALSE]
+  result <- (result+t(result))/2
+  rownames(result) <- colnames(result) <- labels
 
   #### Result ####
 
