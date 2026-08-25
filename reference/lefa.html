@@ -101,8 +101,8 @@ with <code><a href="lrotate.html">lrotate()</a></code>.</p>
 <span>     parameterization <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>     likelihood <span class="op">=</span> <span class="cn">NULL</span>, se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>     message <span class="op">=</span> <span class="cn">FALSE</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>     mimic <span class="op">=</span> <span class="st">"latent"</span>, control <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>     rotation.control <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span>     mimic <span class="op">=</span> <span class="st">"latent"</span>, control.efa <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>     control.rotation <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -133,7 +133,10 @@ options are <code>"orth"</code>, <code>"oblq"</code>, and <code>"poblq"</code>.<
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
 <dd><p>Optional lavaan model syntax. If <code>NULL</code>, an exploratory
-lower-diagonal loading model is generated automatically.</p></dd>
+loading model is generated automatically. By default, the loading matrix is
+lower triangular. If <code>control.efa$orth.lambda = TRUE</code>, it is dense and
+constrained to the Stiefel manifold. This option currently requires
+<code>positive = FALSE</code>.</p></dd>
 
 
 <dt id="arg-ordered">ordered<a class="anchor" aria-label="anchor" href="#arg-ordered"></a></dt>
@@ -174,7 +177,10 @@ by <code><a href="lcfa.html">lcfa()</a></code>.</p></dd>
 
 
 <dt id="arg-std-lv">std.lv<a class="anchor" aria-label="anchor" href="#arg-std-lv"></a></dt>
-<dd><p>Logical. Standardize latent variables in the unrotated model.</p></dd>
+<dd><p>Logical. Standardize latent variables in the lower-triangular
+unrotated model. When <code>control.efa$orth.lambda = TRUE</code>, factor
+variances are instead freely estimated to preserve the same effective model
+dimension.</p></dd>
 
 
 <dt id="arg-std-ov">std.ov<a class="anchor" aria-label="anchor" href="#arg-std-ov"></a></dt>
@@ -212,14 +218,16 @@ model specification without fitting or rotation.</p></dd>
 currently supported.</p></dd>
 
 
-<dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
-<dd><p>Optional list of optimization controls passed to
-<code><a href="lcfa.html">lcfa()</a></code>.</p></dd>
+<dt id="arg-control-efa">control.efa<a class="anchor" aria-label="anchor" href="#arg-control-efa"></a></dt>
+<dd><p>Optional list of controls passed to <code><a href="lcfa.html">lcfa()</a></code>. The
+defaults are <code>rstarts = 3L</code>, <code>se_method = "KKT"</code>, and
+<code>orth.lambda = FALSE</code>.</p></dd>
 
 
-<dt id="arg-rotation-control">rotation.control<a class="anchor" aria-label="anchor" href="#arg-rotation-control"></a></dt>
-<dd><p>Optional list of optimization controls passed to
-<code><a href="lrotate.html">lrotate()</a></code>.</p></dd>
+<dt id="arg-control-rotation">control.rotation<a class="anchor" aria-label="anchor" href="#arg-control-rotation"></a></dt>
+<dd><p>Optional list of controls passed to <code><a href="lrotate.html">lrotate()</a></code>.
+The defaults are <code>rstarts = 10L</code> and
+<code>se_method = "KKT"</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -234,6 +242,15 @@ projection are passed only to <code><a href="lrotate.html">lrotate()</a></code>.
   <code>lcfa</code> object is stored in its <code>extra</code> slot. If
   <code>do.fit = FALSE</code>, the unfitted <code>lcfa</code> specification is returned.</p>
     </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Two equivalent identification schemes are available for the unrotated EFA
+model. The default uses a lower-triangular loading matrix and unit factor
+variances. With <code>control.efa$orth.lambda = TRUE</code>, every loading is free,
+the loading matrix satisfies \(\Lambda^\top\Lambda=I\), and the diagonal
+factor variances are free. Both schemes impose \(q^2\) identifying
+restrictions and therefore have the same effective number of parameters.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -241,6 +258,13 @@ projection are passed only to <code><a href="lrotate.html">lrotate()</a></code>.
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">lefa</span><span class="op">(</span>data <span class="op">=</span> <span class="va">HolzingerSwineford1939</span>,</span></span>
 <span class="r-in"><span>            nfactors <span class="op">=</span> <span class="fl">3L</span>,</span></span>
 <span class="r-in"><span>            rotation <span class="op">=</span> <span class="st">"oblimin"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">fit_orth_lambda</span> <span class="op">&lt;-</span> <span class="fu">lefa</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  data <span class="op">=</span> <span class="va">HolzingerSwineford1939</span>,</span></span>
+<span class="r-in"><span>  nfactors <span class="op">=</span> <span class="fl">3L</span>,</span></span>
+<span class="r-in"><span>  rotation <span class="op">=</span> <span class="st">"oblimin"</span>,</span></span>
+<span class="r-in"><span>  control.efa <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>orth.lambda <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

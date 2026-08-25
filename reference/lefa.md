@@ -20,8 +20,8 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
      parameterization = NULL,
      likelihood = NULL, se = TRUE,
      message = FALSE, do.fit = TRUE,
-     mimic = "latent", control = NULL,
-     rotation.control = NULL, ...)
+     mimic = "latent", control.efa = NULL,
+     control.rotation = NULL, ...)
 ```
 
 ## Arguments
@@ -53,8 +53,11 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 
 - model:
 
-  Optional lavaan model syntax. If `NULL`, an exploratory lower-diagonal
-  loading model is generated automatically.
+  Optional lavaan model syntax. If `NULL`, an exploratory loading model
+  is generated automatically. By default, the loading matrix is lower
+  triangular. If `control.efa$orth.lambda = TRUE`, it is dense and
+  constrained to the Stiefel manifold. This option currently requires
+  `positive = FALSE`.
 
 - ordered:
 
@@ -98,7 +101,10 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 
 - std.lv:
 
-  Logical. Standardize latent variables in the unrotated model.
+  Logical. Standardize latent variables in the lower-triangular
+  unrotated model. When `control.efa$orth.lambda = TRUE`, factor
+  variances are instead freely estimated to preserve the same effective
+  model dimension.
 
 - std.ov:
 
@@ -137,15 +143,18 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
   Retained for backward compatibility. Only `"latent"` is currently
   supported.
 
-- control:
+- control.efa:
 
-  Optional list of optimization controls passed to
-  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
+  Optional list of controls passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md). The
+  defaults are `rstarts = 3L`, `se_method = "KKT"`, and
+  `orth.lambda = FALSE`.
 
-- rotation.control:
+- control.rotation:
 
-  Optional list of optimization controls passed to
+  Optional list of controls passed to
   [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
+  The defaults are `rstarts = 10L` and `se_method = "KKT"`.
 
 - ...:
 
@@ -161,6 +170,16 @@ A fitted object of class `"lefa"`. The unrotated `lcfa` object is stored
 in its `extra` slot. If `do.fit = FALSE`, the unfitted `lcfa`
 specification is returned.
 
+## Details
+
+Two equivalent identification schemes are available for the unrotated
+EFA model. The default uses a lower-triangular loading matrix and unit
+factor variances. With `control.efa$orth.lambda = TRUE`, every loading
+is free, the loading matrix satisfies \\\Lambda^\top\Lambda=I\\, and the
+diagonal factor variances are free. Both schemes impose \\q^2\\
+identifying restrictions and therefore have the same effective number of
+parameters.
+
 ## Examples
 
 ``` r
@@ -168,5 +187,12 @@ if (FALSE) { # \dontrun{
 fit <- lefa(data = HolzingerSwineford1939,
             nfactors = 3L,
             rotation = "oblimin")
+
+fit_orth_lambda <- lefa(
+  data = HolzingerSwineford1939,
+  nfactors = 3L,
+  rotation = "oblimin",
+  control.efa = list(orth.lambda = TRUE)
+)
 } # }
 ```
