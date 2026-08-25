@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 21/08/2026
+ * Modification date: 25/08/2026
  */
 
 Rcpp::List get_jacob(Rcpp::List control_manifold,
@@ -90,18 +90,12 @@ Rcpp::List get_jacob(Rcpp::List control_manifold,
   // contains the fitted quantities needed by its jacobian() method.
   final_transform.transform(x, xtransforms);
 
-  // Cumulative Jacobian
+  // Full transparameter dependency Jacobian
 
-  // Rows correspond to transformed-parameter coordinates. Columns correspond
-  // only to freely estimated parameters. This avoids constructing an
-  // ntransparam x ntransparam matrix.
-  x.jacob.zeros(x.ntransparam, x.nparam);
-
-  for(arma::uword j = 0L;
-      j < x.transparam2param.n_elem;
-      ++j) {
-    x.jacob(x.transparam2param[j], j) = 1.0;
-  }
+  // Every transformed parameter is represented as a coordinate, so start from
+  // the identity. Transformation rows are then replaced by their direct and
+  // cumulative dependencies while retaining their own diagonal identity.
+  x.jacob.eye(x.ntransparam, x.ntransparam);
 
   for(arma::uword t : x.idx_transforms) {
 
@@ -146,12 +140,11 @@ Rcpp::List get_jacob(Rcpp::List control_manifold,
       );
     }
 
-    // Save the cumulative derivatives of the inputs before replacing any
-    // output rows. This also handles transformations whose input and output
-    // coordinates overlap.
+    // The current rows of the inputs already contain their direct and
+    // transitive dependencies.
     arma::mat input_jacobian(
       indices_in.n_elem,
-      x.nparam,
+      x.ntransparam,
       arma::fill::zeros
     );
 
@@ -171,17 +164,26 @@ Rcpp::List get_jacob(Rcpp::List control_manifold,
     arma::mat output_jacobian =
       local_jacobian*input_jacobian;
 
+    // Replace each output row with its dependency row. The diagonal identity is
+    // retained because the full matrix is indexed by all transformed
+    // parameters, not only by the freely estimated parameters.
     for(arma::uword i = 0L;
         i < indices_out.n_elem;
         ++i) {
 
       arma::uword output_index =
         indices_out[i];
+
       x.jacob.row(output_index).zeros();
+      x.jacob(output_index, output_index) = 1.0;
 
       for(arma::uword j = 0L;
-          j < static_cast<arma::uword>(x.nparam);
+          j < static_cast<arma::uword>(x.ntransparam);
           ++j) {
+
+        if(j == output_index) {
+          continue;
+        }
 
         double value = output_jacobian(i, j);
 

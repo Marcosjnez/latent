@@ -10,19 +10,24 @@
 \item{fit}{A fitted object inheriting from class \code{"latent"}.}
 
 \item{parameters}{Optional parameter specification identifying the transformed
-parameters whose derivatives should be returned.}
+parameters whose Jacobian submatrix should be returned. If \code{NULL}, the
+complete transformed-parameter Jacobian is returned.}
 }
 \value{
-A numeric matrix whose rows correspond to selected transformed
-  parameters and whose columns correspond to the freely estimated parameters.
+A sparse square matrix. Rows and columns correspond to the selected
+  transformed parameters, or to all transformed parameters when
+  \code{parameters = NULL}.
 }
 \description{
-Compute the cumulative Jacobian from the freely estimated parameters to
-selected transformed parameters.
+Compute the dependency Jacobian among transformed parameters.
 }
 \details{
-The cumulative Jacobian is computed only when this method is called. Local
-transformation Jacobians are composed in dependency order, and the matrix is
-stored relative to the freely estimated parameter vector rather than the
-complete transformed-parameter vector.
+The complete Jacobian has one row and one column for every transformed
+parameter. Its diagonal is the identity, while off-diagonal entries describe
+direct and transitive dependencies induced by the sequence of parameter
+transformations.
+
+This square dependency Jacobian is intended for inspecting relationships
+among transformed parameters. It differs from the conventional delta-method
+Jacobian, whose columns contain only freely estimated parameters.
 }

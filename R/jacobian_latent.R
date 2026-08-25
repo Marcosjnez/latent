@@ -1,24 +1,29 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 25/08/2026
 #'
 #' Jacobian Matrix for Latent Models
 #'
-#' Compute the cumulative Jacobian from the freely estimated parameters to
-#' selected transformed parameters.
+#' Compute the dependency Jacobian among transformed parameters.
 #'
 #' @param fit A fitted object inheriting from class \code{"latent"}.
 #' @param parameters Optional parameter specification identifying the transformed
-#'   parameters whose derivatives should be returned.
+#'   parameters whose Jacobian submatrix should be returned. If \code{NULL}, the
+#'   complete transformed-parameter Jacobian is returned.
 #'
-#' @return A numeric matrix whose rows correspond to selected transformed
-#'   parameters and whose columns correspond to the freely estimated parameters.
+#' @return A sparse square matrix. Rows and columns correspond to the selected
+#'   transformed parameters, or to all transformed parameters when
+#'   \code{parameters = NULL}.
 #'
 #' @details
-#' The cumulative Jacobian is computed only when this method is called. Local
-#' transformation Jacobians are composed in dependency order, and the matrix is
-#' stored relative to the freely estimated parameter vector rather than the
-#' complete transformed-parameter vector.
+#' The complete Jacobian has one row and one column for every transformed
+#' parameter. Its diagonal is the identity, while off-diagonal entries describe
+#' direct and transitive dependencies induced by the sequence of parameter
+#' transformations.
+#'
+#' This square dependency Jacobian is intended for inspecting relationships
+#' among transformed parameters. It differs from the conventional delta-method
+#' Jacobian, whose columns contain only freely estimated parameters.
 #'
 #' @method jacobian latent
 #' @export
@@ -34,22 +39,21 @@ jacobian.latent <- function(fit, parameters = NULL) {
     stop("The latent object has not been fitted.")
   }
 
+  trans_labels <- fit@modelInfo$transparameters_labels
+
   if(is.null(parameters)) {
 
-    parameters <- fit@modelInfo$trans[names(fit@modelInfo$param)]
+    selected_parameters <- trans_labels
 
   } else {
 
     selected_parameters <- unique(unlist(parameters))
 
-    if(!all(selected_parameters %in%
-            fit@modelInfo$transparameters_labels)) {
+    if(!all(selected_parameters %in% trans_labels)) {
       stop("Unknown parameters.")
     }
 
   }
-
-  selected_parameters <- unique(unlist(parameters))
 
   #### Fitted parameter values ####
 
@@ -58,9 +62,9 @@ jacobian.latent <- function(fit, parameters = NULL) {
   fit@modelInfo$control_optimizer$transparameters[[1L]] <-
     fit@Optim$transparameters
   fit@modelInfo$control_optimizer$idx_transforms <-
-    trans_depends(fit@modelInfo, parameters)
+    trans_depends(fit@modelInfo, selected_parameters)
 
-  #### Cumulative Jacobian ####
+  #### Full dependency Jacobian ####
 
   result <- get_jacob(
     fit@modelInfo$control_manifold,
@@ -69,28 +73,23 @@ jacobian.latent <- function(fit, parameters = NULL) {
     fit@modelInfo$control_optimizer
   )$jacob
 
-  trans_labels <- fit@modelInfo$transparameters_labels
-  free_labels <- fit@modelInfo$parameters_labels
-
   if(nrow(result) != length(trans_labels) ||
-     ncol(result) != length(free_labels)) {
-    stop("The cumulative Jacobian returned by C++ has incompatible dimensions.")
+     ncol(result) != length(trans_labels)) {
+    stop("The dependency Jacobian returned by C++ has incompatible dimensions.")
   }
 
-  rownames(result) <- trans_labels
-  colnames(result) <- free_labels
+  rownames(result) <- colnames(result) <- trans_labels
+
+  #### Selected submatrix ####
 
   selected_idx <- match(selected_parameters, trans_labels)
 
   if(anyNA(selected_idx)) {
-    stop("The selected parameters could not be matched to the Jacobian rows.")
+    stop("The selected parameters could not be matched to the Jacobian.")
   }
 
-  result <- as.matrix(
-    result[selected_idx, , drop = FALSE]
-  )
-  rownames(result) <- selected_parameters
-  colnames(result) <- free_labels
+  result <- result[selected_idx, selected_idx, drop = FALSE]
+  rownames(result) <- colnames(result) <- selected_parameters
 
   #### Result ####
 

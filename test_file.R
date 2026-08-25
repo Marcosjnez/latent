@@ -50,14 +50,14 @@ latInspect(fit, what = "elapsed")
 
 jacob <- jacobian(fit, parameters = fit@modelInfo$trans[names(fit@modelInfo$param)])
 dim(jacob)
-labs1 <- c(fit@modelInfo$trans$PURPOSE[2, ])
-labs2 <- c(fit@modelInfo$trans$PURPOSE[5, ])
+labs1 <- c(fit@modelInfo$trans$PURPOSE)
+labs2 <- c(fit@modelInfo$trans$PURPOSE)
 jacob[labs1, labs2]
 
 dconstr <- constraints_derivs(fit, parameters = fit@modelInfo$trans[names(fit@modelInfo$param)])
-dim(dconstr)
-labs1 <- c(fit@modelInfo$trans$PURPOSE[1, ])
-dconstr[labs1, , drop = FALSE]
+dim(dconstr$dconstr)
+labs1 <- c(fit@modelInfo$trans$PURPOSE)
+dconstr$dconstr[labs1, , drop = FALSE]
 
 # Print model fit info:
 fit
