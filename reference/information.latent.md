@@ -35,6 +35,13 @@ steps. Source estimators such as
 use their analytic information covariance. Remaining latent models use
 the inverse Hessian.
 
+If `fit@modelInfo$control_optimizer$se_method = "KKT"`, the covariance
+of the freely estimated parameters is obtained from the parameter block
+of the inverse bordered KKT matrix. The upper-left block is the Hessian
+of the Lagrangian, including the second derivatives of active
+constraints. When no active constraint is found, the ordinary Hessian
+inverse is used.
+
 For ordinary CFA maximum-likelihood models, the Hessian is evaluated
 with the corresponding `cfa_ml` estimator because `cfa_fml` represents
 the fitted discrepancy function rather than the information contribution

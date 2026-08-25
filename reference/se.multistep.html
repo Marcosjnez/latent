@@ -138,18 +138,21 @@ used in formatted parameter tables. If <code>NULL</code>, values are not rounded
 passed from preceding steps. Consequently, no inverse-Hessian variance is
 added for the new step.</p>
 <p>Let \(A\) be the joint variance-covariance matrix of parameters estimated
-in all preceding steps, \(H_2\) the Hessian of parameters estimated in the
-current step, and \(C\) the cross-Hessian between preceding and current
-parameters in the corresponding unrestricted model. The covariance matrix is
-enlarged at every step as
+in all preceding steps, \(P_2\) the inverse-Hessian operator for parameters
+estimated in the current step, and \(C\) the cross-Hessian between
+preceding and current parameters in the corresponding unrestricted model.
+The covariance matrix is enlarged at every step as
 $$
 V =
 \begin{pmatrix}
-A &amp; -A C H_2^{-1} \\
--H_2^{-1} C^\top A &amp;
-H_2^{-1} C^\top A C H_2^{-1}
+A &amp; -A C P_2 \\
+-P_2^\top C^\top A &amp;
+P_2 C^\top A C P_2^\top
 \end{pmatrix}.
 $$</p>
+<p>By default, \(P_2=H_2^{-1}\). If the current-step control contains
+<code>se_method = "KKT"</code> and active equality constraints are available,
+\(P_2\) is the parameter block of the inverse KKT matrix.</p>
 <p>The final joint covariance matrix is passed to <code><a href="vcov.latent.html">vcov.latent()</a></code>, which
 propagates it through all requested parameter transformations.</p>
     </div>

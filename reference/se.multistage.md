@@ -54,18 +54,23 @@ of models is ordered from the ultimate ancestor to the top-level model
 and processed iteratively.
 
 Let \\A\\ be the joint variance-covariance matrix of the parameters
-fixed from previous stages, \\H_2\\ the Hessian of the parameters
-estimated in the current stage, \\C\\ the cross-Hessian between
-previous-stage and current-stage parameters obtained from the
+fixed from previous stages, \\P_2\\ the inverse-Hessian operator of the
+parameters estimated in the current stage, \\C\\ the cross-Hessian
+between previous-stage and current-stage parameters obtained from the
 corresponding unrestricted model, and \\V_2\\ the conditional
 variance-covariance matrix of the current-stage estimator. At each stage
 the joint covariance matrix is enlarged as \$\$ V = \begin{pmatrix} A &
--A C H_2^{-1} \\ -H_2^{-1} C^\top A & V_2 + H_2^{-1} C^\top A C H_2^{-1}
+-A C P_2 \\ -P_2^\top C^\top A & V_2 + P_2 C^\top A C P_2^\top
 \end{pmatrix}. \$\$
+
+By default, \\P_2=H_2^{-1}\\. If the current-stage control contains
+`se_method = "KKT"` and active equality constraints are available,
+\\P_2\\ is the parameter block of the inverse KKT matrix.
 
 If `type = "robust"`, robust covariance matrices are used for \\V_2\\
 whenever a class-specific robust method is available. The ordinary
-Hessian \\H_2\\ is still used for propagation of uncertainty between
+objective Hessian and, when requested, its KKT-constrained inverse
+operator are still used for propagation of uncertainty between
 estimation stages.
 
 The top-level unrestricted model must contain all parameter labels

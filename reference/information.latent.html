@@ -112,6 +112,11 @@ models use the covariance propagated from preceding estimation steps. Source
 estimators such as <code><a href="lmean.html">lmean()</a></code>, <code><a href="lpearson.html">lpearson()</a></code>, <code><a href="lpoly.html">lpoly()</a></code>,
 <code><a href="lyule.html">lyule()</a></code>, and <code><a href="lmvnorm.html">lmvnorm()</a></code> use their analytic information
 covariance. Remaining latent models use the inverse Hessian.</p>
+<p>If <code>fit@modelInfo$control_optimizer$se_method = "KKT"</code>, the
+covariance of the freely estimated parameters is obtained from the parameter
+block of the inverse bordered KKT matrix. The upper-left block is the Hessian
+of the Lagrangian, including the second derivatives of active constraints.
+When no active constraint is found, the ordinary Hessian inverse is used.</p>
 <p>For ordinary CFA maximum-likelihood models, the Hessian is evaluated with the
 corresponding <code>cfa_ml</code> estimator because <code>cfa_fml</code> represents the
 fitted discrepancy function rather than the information contribution used
