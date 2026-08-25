@@ -108,7 +108,7 @@ invert_information_matrix <- function(H, labels = NULL,
 
 }
 
-#### Hessian or KKT inverse operator ####
+#### Hessian, KKT, or Riemannian inverse operator ####
 
 invert_hessian_latent <- function(fit, H,
                                   labels = fit@modelInfo$parameters_labels,
@@ -135,13 +135,63 @@ invert_hessian_latent <- function(fit, H,
   if(!is.character(se_method) ||
      length(se_method) != 1L ||
      is.na(se_method)) {
-    stop("se_method must be 'Hessian' or 'KKT'.")
+    stop("se_method must be 'Hessian', 'KKT', or 'RH'.")
   }
 
   se_method <- toupper(se_method)
 
-  if(!(se_method %in% c("HESSIAN", "KKT"))) {
-    stop("se_method must be 'Hessian' or 'KKT'.")
+  if(!(se_method %in% c("HESSIAN", "KKT", "RH"))) {
+    stop("se_method must be 'Hessian', 'KKT', or 'RH'.")
+  }
+
+  #### Riemannian inverse-Hessian operator ####
+
+  if(se_method == "RH") {
+
+    control_optimizer <- fit@modelInfo$control_optimizer
+    control_optimizer$parameters[[1L]] <- fit@Optim$parameters
+    control_optimizer$transparameters[[1L]] <-
+      fit@Optim$transparameters
+
+    RH <- get_rhess(
+      control_manifold = fit@modelInfo$control_manifold,
+      control_transform = fit@modelInfo$control_transform,
+      control_estimator = fit@modelInfo$control_estimator,
+      control_optimizer = control_optimizer
+    )
+
+    result <- RH$P
+
+    if(is.null(result)) {
+      stop("The Riemannian Hessian did not return the inverse operator P.")
+    }
+
+    if(!is.matrix(result)) {
+      result <- as.matrix(result)
+    }
+
+    free_labels <- fit@modelInfo$parameters_labels
+
+    if(nrow(result) != length(free_labels) ||
+       ncol(result) != length(free_labels) ||
+       any(!is.finite(result)) ||
+       !all(labels %in% free_labels)) {
+      stop("The Riemannian inverse-Hessian operator does not match ",
+           "the parameter coordinates.")
+    }
+
+    rownames(result) <- colnames(result) <- free_labels
+    result <- result[labels, labels, drop = FALSE]
+    result <- validate_covariance_matrix(
+      result,
+      labels = labels,
+      object_name = "Riemannian inverse-Hessian operator"
+    )
+
+    #### Result ####
+
+    return(result)
+
   }
 
   if(se_method == "KKT") {
