@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/08/2026
+ * Modification date: 25/08/2026
  */
 
 // Crossproduct transformation:
@@ -58,10 +58,17 @@ public:
 
   void jacobian(arguments_optim& x) {
 
-    arma::mat I(p, p, arma::fill::eye);
-    // arma::mat Dp = duplication(p, true, true); // If lower diagonal entries only
-    arma::mat Dp = duplication(p, true, false);
-    jacob = 2*Dp.t() * arma::kron(I, X.t());
+    jacob.zeros(p*p, p*p);
+    arma::mat E(p, p, arma::fill::zeros);
+
+    for(int k=0; k < p*p; ++k) {
+
+      E.zeros();
+      E[k] = 1.00;
+      jacob.col(k) =
+        arma::vectorise(E.t()*X+X.t()*E);
+
+    }
 
   }
 
