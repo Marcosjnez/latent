@@ -15,8 +15,8 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
      parameterization = NULL,
      likelihood = NULL, se = TRUE,
      message = FALSE, do.fit = TRUE,
-     mimic = "latent", control = NULL,
-     rotation.control = NULL, ...)
+     mimic = "latent", control.efa = NULL,
+     control.rotation = NULL, ...)
 }
 \arguments{
 \item{data}{Optional data frame or matrix containing the observed variables.
@@ -32,7 +32,10 @@ options are \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
 \item{rotation}{Rotation criterion passed to \code{lrotate()}.}
 
 \item{model}{Optional lavaan model syntax. If \code{NULL}, an exploratory
-lower-diagonal loading model is generated automatically.}
+loading model is generated automatically. By default, the loading matrix is
+lower triangular. If \code{control.efa$orth.lambda = TRUE}, it is dense and
+constrained to the Stiefel manifold. This option currently requires
+\code{positive = FALSE}.}
 
 \item{ordered}{Logical value indicating whether indicators are ordinal. The
 character value \code{"yule"} requests Yule correlations.}
@@ -55,7 +58,10 @@ by \code{lcfa()}.}
 
 \item{missing}{Missing-data method passed to \code{lcfa()}.}
 
-\item{std.lv}{Logical. Standardize latent variables in the unrotated model.}
+\item{std.lv}{Logical. Standardize latent variables in the lower-triangular
+unrotated model. When \code{control.efa$orth.lambda = TRUE}, factor
+variances are instead freely estimated to preserve the same effective model
+dimension.}
 
 \item{std.ov}{Logical. Standardize observed variables in the unrotated model.}
 
@@ -76,11 +82,13 @@ model specification without fitting or rotation.}
 \item{mimic}{Retained for backward compatibility. Only \code{"latent"} is
 currently supported.}
 
-\item{control}{Optional list of optimization controls passed to
-\code{lcfa()}.}
+\item{control.efa}{Optional list of controls passed to \code{lcfa()}. The
+defaults are \code{rstarts = 3L}, \code{se_method = "KKT"}, and
+\code{orth.lambda = FALSE}.}
 
-\item{rotation.control}{Optional list of optimization controls passed to
-\code{lrotate()}.}
+\item{control.rotation}{Optional list of controls passed to \code{lrotate()}.
+The defaults are \code{rstarts = 10L} and
+\code{se_method = "KKT"}.}
 
 \item{...}{Additional arguments. CFA/lavaan arguments are passed to
 \code{lcfa()}; arguments required by the selected rotation criterion or
@@ -96,11 +104,26 @@ Fit an exploratory factor analysis model by first estimating an orthogonal
 factor model with \code{lcfa()} and subsequently rotating the fitted model
 with \code{lrotate()}.
 }
+\details{
+Two equivalent identification schemes are available for the unrotated EFA
+model. The default uses a lower-triangular loading matrix and unit factor
+variances. With \code{control.efa$orth.lambda = TRUE}, every loading is free,
+the loading matrix satisfies \eqn{\Lambda^\top\Lambda=I}, and the diagonal
+factor variances are free. Both schemes impose \eqn{q^2} identifying
+restrictions and therefore have the same effective number of parameters.
+}
 \examples{
 \dontrun{
 fit <- lefa(data = HolzingerSwineford1939,
             nfactors = 3L,
             rotation = "oblimin")
+
+fit_orth_lambda <- lefa(
+  data = HolzingerSwineford1939,
+  nfactors = 3L,
+  rotation = "oblimin",
+  control.efa = list(orth.lambda = TRUE)
+)
 }
 
 }

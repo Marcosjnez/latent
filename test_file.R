@@ -56,7 +56,7 @@ jacob[labs1, labs2]
 
 dconstr <- constraints_derivs(fit, parameters = fit@modelInfo$trans[names(fit@modelInfo$param)])
 dim(dconstr$dconstr)
-labs1 <- c(fit@modelInfo$trans$PURPOSE)
+labs1 <- c(fit@modelInfo$trans$ACCURACY)
 dconstr$dconstr[labs1, , drop = FALSE]
 
 # Print model fit info:
@@ -957,9 +957,11 @@ fit <- lefa(data = df,
             orthogonal = TRUE,
             rotation = rotation,
             projection = projection,
-            control = list(rstarts = 10L),
+            # control.efa = list(rstarts = 10L, se_method = "KKT", orth.lambda = TRUE),
+            control.rotation = list(rstarts = 10L, se_method = "KKT"),
             se = TRUE)
-# fit@Optim$SE$table_se # FIX: standard errors for psi_rotated
+# fit@Optim$SE$table_se
+# fit@modelInfo$param$lambda
 
 fit_b <- bifactor::efast(as.matrix(df), nfactors = nfactors, estimator = estimator,
                          rotation = rotation, projection = projection,

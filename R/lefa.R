@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 23/08/2026
+# Modification date: 25/08/2026
 #'
 #' Exploratory Factor Analysis
 #'
@@ -20,8 +20,8 @@
 #'      parameterization = NULL,
 #'      likelihood = NULL, se = TRUE,
 #'      message = FALSE, do.fit = TRUE,
-#'      mimic = "latent", control = NULL,
-#'      rotation.control = NULL, ...)
+#'      mimic = "latent", control.efa = NULL,
+#'      control.rotation = NULL, ...)
 #'
 #' @param data Optional data frame or matrix containing the observed variables.
 #'   Alternatively, sample.cov can be supplied.
@@ -31,7 +31,10 @@
 #'   options are \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.
 #' @param rotation Rotation criterion passed to \code{lrotate()}.
 #' @param model Optional lavaan model syntax. If \code{NULL}, an exploratory
-#'   lower-diagonal loading model is generated automatically.
+#'   loading model is generated automatically. By default, the loading matrix is
+#'   lower triangular. If \code{control.efa$orth.lambda = TRUE}, it is dense and
+#'   constrained to the Stiefel manifold. This option currently requires
+#'   \code{positive = FALSE}.
 #' @param ordered Logical value indicating whether indicators are ordinal. The
 #'   character value \code{"yule"} requests Yule correlations.
 #' @param group Optional character string identifying the grouping variable.
@@ -45,7 +48,10 @@
 #' @param penalties Logical value or list controlling regularization in
 #'   \code{lcfa()}.
 #' @param missing Missing-data method passed to \code{lcfa()}.
-#' @param std.lv Logical. Standardize latent variables in the unrotated model.
+#' @param std.lv Logical. Standardize latent variables in the lower-triangular
+#'   unrotated model. When \code{control.efa$orth.lambda = TRUE}, factor
+#'   variances are instead freely estimated to preserve the same effective model
+#'   dimension.
 #' @param std.ov Logical. Standardize observed variables in the unrotated model.
 #' @param meanstructure Logical. Estimate the observed-variable mean structure.
 #' @param parameterization Optional parameterization passed to \code{lcfa()}.
@@ -57,13 +63,23 @@
 #'   model specification without fitting or rotation.
 #' @param mimic Retained for backward compatibility. Only \code{"latent"} is
 #'   currently supported.
-#' @param control Optional list of optimization controls passed to
-#'   \code{lcfa()}.
-#' @param rotation.control Optional list of optimization controls passed to
-#'   \code{lrotate()}.
+#' @param control.efa Optional list of controls passed to \code{lcfa()}. The
+#'   defaults are \code{rstarts = 3L}, \code{se_method = "KKT"}, and
+#'   \code{orth.lambda = FALSE}.
+#' @param control.rotation Optional list of controls passed to \code{lrotate()}.
+#'   The defaults are \code{rstarts = 10L} and
+#'   \code{se_method = "KKT"}.
 #' @param ... Additional arguments. CFA/lavaan arguments are passed to
 #'   \code{lcfa()}; arguments required by the selected rotation criterion or
 #'   projection are passed only to \code{lrotate()}.
+#'
+#' @details
+#' Two equivalent identification schemes are available for the unrotated EFA
+#' model. The default uses a lower-triangular loading matrix and unit factor
+#' variances. With \code{control.efa$orth.lambda = TRUE}, every loading is free,
+#' the loading matrix satisfies \eqn{\Lambda^\top\Lambda=I}, and the diagonal
+#' factor variances are free. Both schemes impose \eqn{q^2} identifying
+#' restrictions and therefore have the same effective number of parameters.
 #'
 #' @return A fitted object of class \code{"lefa"}. The unrotated
 #'   \code{lcfa} object is stored in its \code{extra} slot. If
@@ -74,6 +90,13 @@
 #' fit <- lefa(data = HolzingerSwineford1939,
 #'             nfactors = 3L,
 #'             rotation = "oblimin")
+#'
+#' fit_orth_lambda <- lefa(
+#'   data = HolzingerSwineford1939,
+#'   nfactors = 3L,
+#'   rotation = "oblimin",
+#'   control.efa = list(orth.lambda = TRUE)
+#' )
 #' }
 #'
 #' @export
@@ -88,8 +111,8 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                  parameterization = NULL,
                  likelihood = NULL, se = TRUE,
                  message = FALSE, do.fit = TRUE,
-                 mimic = "latent", control = NULL,
-                 rotation.control = NULL,
+                 mimic = "latent", control.efa = NULL,
+                 control.rotation = NULL,
                  ...) {
 
   #### Check input arguments ####
@@ -102,12 +125,12 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
     stop("data must be NULL, a data.frame, or a matrix")
   }
 
-  if(!is.null(control) && !is.list(control)) {
-    stop("control must be NULL or a list")
+  if(!is.null(control.efa) && !is.list(control.efa)) {
+    stop("control.efa must be NULL or a list")
   }
 
-  if(!is.null(rotation.control) && !is.list(rotation.control)) {
-    stop("rotation.control must be NULL or a list")
+  if(!is.null(control.rotation) && !is.list(control.rotation)) {
+    stop("control.rotation must be NULL or a list")
   }
 
   if(!is.null(model) &&
@@ -194,6 +217,48 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
 
   }
 
+  if(is.null(control.efa)) {
+    control.efa <- list()
+  }
+
+  if(is.null(control.rotation)) {
+    control.rotation <- list()
+  }
+
+  if(is.null(control.efa$orth.lambda)) {
+    control.efa$orth.lambda <- FALSE
+  }
+
+  if(length(control.efa$orth.lambda) != 1L ||
+     !is.logical(control.efa$orth.lambda) ||
+     is.na(control.efa$orth.lambda)) {
+    stop("control.efa$orth.lambda must be TRUE or FALSE")
+  }
+
+  if(is.null(control.efa$rstarts)) {
+    control.efa$rstarts <- 3L
+  }
+
+  if(is.null(control.efa$se_method)) {
+    control.efa$se_method <- "KKT"
+  }
+
+  if(is.null(control.rotation$rstarts)) {
+    control.rotation$rstarts <- 10L
+  }
+
+  if(is.null(control.rotation$se_method)) {
+    control.rotation$se_method <- "KKT"
+  }
+
+  orth.lambda <- control.efa$orth.lambda
+
+  if(orth.lambda && positive) {
+    stop("control.efa$orth.lambda = TRUE currently requires positive = FALSE")
+  }
+
+  std.lv.efa <- if(orth.lambda) FALSE else std.lv
+
   #### Store original call ####
 
   mc <- match.call()
@@ -216,6 +281,14 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
       stop("Arguments supplied through ... must have unique names")
     }
 
+    obsolete_controls <- intersect(dot_names,
+                                   c("control", "rotation.control"))
+
+    if(length(obsolete_controls) > 0L) {
+      stop("Use control.efa and control.rotation instead of ",
+           paste(obsolete_controls, collapse = " and "))
+    }
+
   }
 
   dots_split <- split_dots_lefa(dots = dots,
@@ -228,7 +301,8 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                                  sample.cov = sample.cov,
                                  nfactors = nfactors,
                                  model = model,
-                                 group = group)
+                                 group = group,
+                                 orth.lambda = orth.lambda)
 
   #### Fit the orthogonal factor model ####
 
@@ -243,7 +317,7 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                           positive = positive,
                           penalties = penalties,
                           missing = missing,
-                          std.lv = std.lv,
+                          std.lv = std.lv.efa,
                           std.ov = std.ov,
                           meanstructure = meanstructure,
                           parameterization = parameterization,
@@ -251,7 +325,7 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                           se = se,
                           message = message,
                           do.fit = do.fit,
-                          control = control,
+                          control.efa = control.efa,
                           dots = dots_split$cfa)
 
   #### Return the unfitted model ####
@@ -269,7 +343,7 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
   rotation_fit <- fit_lefa_rotation(fit = efa_fit,
                                     projection = projection,
                                     rotation = rotation,
-                                    control = rotation.control,
+                                    control.rotation = control.rotation,
                                     se = !isFALSE(se),
                                     dots = dots_split$rotation)
 
@@ -347,7 +421,8 @@ split_dots_lefa <- function(dots, projection, rotation) {
 
 #### Function to create the exploratory factor model ####
 
-create_lefa_model <- function(data, sample.cov, nfactors, model, group) {
+create_lefa_model <- function(data, sample.cov, nfactors, model, group,
+                              orth.lambda) {
 
   if(!is.null(model)) {
 
@@ -388,8 +463,17 @@ create_lefa_model <- function(data, sample.cov, nfactors, model, group) {
 
   }
 
-  model <- make_lowerdiag_lavaan(data = model_data,
-                                 nfactors = nfactors)
+  if(orth.lambda) {
+
+    model <- make_dense_lavaan(data = model_data,
+                               nfactors = nfactors)
+
+  } else {
+
+    model <- make_lowerdiag_lavaan(data = model_data,
+                                   nfactors = nfactors)
+
+  }
 
   #### Result ####
 
@@ -406,7 +490,7 @@ fit_lefa_cfa <- function(data, model, estimator,
                          missing, std.lv, std.ov,
                          meanstructure, parameterization,
                          likelihood, se, message,
-                         do.fit, control,
+                         do.fit, control.efa,
                          dots) {
 
   args <- list(
@@ -429,7 +513,7 @@ fit_lefa_cfa <- function(data, model, estimator,
     se = se,
     message = message,
     do.fit = do.fit,
-    control = control,
+    control = control.efa,
     orthogonal = TRUE
   )
 
@@ -461,7 +545,7 @@ rotate_lefa <- function(fit) {
 #### Function to fit the rotation ####
 
 fit_lefa_rotation <- function(fit, projection, rotation,
-                              control, se, dots) {
+                              control.rotation, se, dots) {
 
   args <- list(
     fit = fit,
@@ -469,7 +553,7 @@ fit_lefa_rotation <- function(fit, projection, rotation,
     rotation = rotation,
     se = se,
     do.fit = TRUE,
-    control = control
+    control = control.rotation
   )
 
   args <- c(args, dots)

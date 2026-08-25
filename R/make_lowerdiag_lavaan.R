@@ -38,3 +38,65 @@ make_lowerdiag_lavaan <- function(data, nfactors,
 
   paste(lines, collapse = "\n")
 }
+
+
+make_dense_lavaan <- function(data, nfactors,
+                              factor_prefix = "F",
+                              label_loadings = TRUE) {
+
+  if(is.null(dim(data))) {
+    stop("`data` must be a matrix/data.frame-like object.")
+  }
+
+  is_square <- nrow(data) == ncol(data)
+  vars <- colnames(data)
+
+  if(is.null(vars) && is_square) {
+    vars <- rownames(data)
+  }
+
+  if(is.null(vars)) {
+    vars <- paste0("V", seq_len(ncol(data)))
+  }
+
+  p <- length(vars)
+  q <- as.integer(nfactors)
+
+  if(q < 1L) {
+    stop("`nfactors` must be >= 1.")
+  }
+
+  if(q > p) {
+    stop("`nfactors` cannot exceed the number of items (columns).")
+  }
+
+  lines <- character(q)
+
+  for(j in seq_len(q)) {
+
+    terms <- character(p)
+
+    for(i in seq_len(p)) {
+
+      label <- if(label_loadings) paste0("l", i, "_", j, "*") else ""
+
+      if(i == 1L) {
+        terms[i] <- paste0("NA*", label, vars[i])
+      } else {
+        terms[i] <- paste0(label, vars[i])
+      }
+
+    }
+
+    lines[j] <- paste0(factor_prefix, j, " =~ ",
+                       paste(terms, collapse = " + "))
+
+  }
+
+  #### Result ####
+
+  result <- paste(lines, collapse = "\n")
+
+  return(result)
+
+}

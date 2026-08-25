@@ -60,4 +60,11 @@ By default, \eqn{P_2=H_2^{-1}}. If the current-step control contains
 
 The final joint covariance matrix is passed to \code{vcov.latent()}, which
 propagates it through all requested parameter transformations.
+
+For fitted rotation models, the stored \code{table} and \code{table_se}
+retain the complete estimate structure: rotated loadings, factor
+covariances, and factor means followed by the source model's remaining
+parameter blocks, including \code{theta} and \code{nu}. The returned
+\code{se} and \code{VCOV} components still correspond to the parameters
+requested by the caller.
 }

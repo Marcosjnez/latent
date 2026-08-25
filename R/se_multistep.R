@@ -45,6 +45,13 @@
 #' The final joint covariance matrix is passed to \code{vcov.latent()}, which
 #' propagates it through all requested parameter transformations.
 #'
+#' For fitted rotation models, the stored \code{table} and \code{table_se}
+#' retain the complete estimate structure: rotated loadings, factor
+#' covariances, and factor means followed by the source model's remaining
+#' parameter blocks, including \code{theta} and \code{nu}. The returned
+#' \code{se} and \code{VCOV} components still correspond to the parameters
+#' requested by the caller.
+#'
 #' @return A list containing parameter tables, standard errors, the selected
 #'   variance-covariance matrix, the final joint variance-covariance matrix, and
 #'   the Hessian and cross-derivative matrices used in the final step.
@@ -242,18 +249,80 @@ se.multistep <- function(fit, type = NULL, parameters = NULL,
 
   v <- v[final_labels, final_labels, drop = FALSE]
 
+  #### Parameter structures for rotation tables ####
+
+  table_parameters <- parameters
+  rotation_source <- fit@extra$efa
+
+  if(identical(fit@dataList$source, "lcfa") &&
+     inherits(rotation_source, "lcfa")) {
+
+    data_param <- fit@modelInfo$data_param
+    rotated_blocks <- unique(c(data_param$lambda_group,
+                               data_param$psi_group,
+                               data_param$alpha_group))
+    rotated_blocks <- intersect(rotated_blocks,
+                                names(fit_full@modelInfo$trans))
+
+    rotated_parameters <- fit_full@modelInfo$trans[rotated_blocks]
+    requested_labels <- unique(unlist(parameters))
+    rotated_labels <- unique(unlist(rotated_parameters))
+
+    complete_rotation_table <-
+      length(requested_labels) == length(rotated_labels) &&
+      setequal(requested_labels, rotated_labels)
+
+    if(complete_rotation_table) {
+
+      source_data_param <- rotation_source@dataList$data_param
+      source_blocks <- unique(c(source_data_param$lambda_group,
+                                source_data_param$alpha_group,
+                                source_data_param$theta_group,
+                                source_data_param$psi_group,
+                                source_data_param$nu_group,
+                                source_data_param$kappa_group,
+                                source_data_param$delta_group))
+      source_blocks <- intersect(source_blocks,
+                                 names(fit_full@modelInfo$trans))
+
+      unrotated_blocks <- unique(c(source_data_param$lambda_group,
+                                   source_data_param$psi_group,
+                                   source_data_param$alpha_group))
+      source_blocks <- setdiff(source_blocks, unrotated_blocks)
+
+      table_blocks <- unique(c(rotated_blocks, source_blocks))
+      table_parameters <- fit_full@modelInfo$trans[table_blocks]
+
+    }
+
+  }
+
+  #### Requested variance-covariance matrix ####
+
   VCOV <- vcov(fit_full,
                v = v,
                parameters = parameters)
 
   #### Parameter table ####
 
-  est <- fill_in(parameters,
+  if(identical(table_parameters, parameters)) {
+
+    table_VCOV <- VCOV
+
+  } else {
+
+    table_VCOV <- vcov(fit_full,
+                       v = v,
+                       parameters = table_parameters)
+
+  }
+
+  est <- fill_in(table_parameters,
                  fit_full@Optim$transparameters,
                  miss = NA)
 
-  table_se <- fill_in(parameters,
-                      VCOV$se,
+  table_se <- fill_in(table_parameters,
+                      table_VCOV$se,
                       miss = NA)
 
   table <- combine_est_se(est, table_se, digits = digits)
