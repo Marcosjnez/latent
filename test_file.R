@@ -957,7 +957,7 @@ fit <- lefa(data = df,
             orthogonal = TRUE,
             rotation = rotation,
             projection = projection,
-            # control.efa = list(rstarts = 10L, se_method = "KKT", orth.lambda = TRUE),
+            control.efa = list(rstarts = 10L, se_method = "KKT", orth.lambda = TRUE),
             control.rotation = list(rstarts = 10L, se_method = "KKT"),
             se = TRUE)
 # fit@Optim$SE$table_se

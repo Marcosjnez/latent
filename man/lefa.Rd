@@ -33,9 +33,9 @@ options are \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
 
 \item{model}{Optional lavaan model syntax. If \code{NULL}, an exploratory
 loading model is generated automatically. By default, the loading matrix is
-lower triangular. If \code{control.efa$orth.lambda = TRUE}, it is dense and
-constrained to the Stiefel manifold. This option currently requires
-\code{positive = FALSE}.}
+lower triangular. If \code{control.efa$orth.lambda = TRUE}, it is dense,
+its columns are mutually orthogonal, and their norms remain unrestricted.
+This option requires \code{std.lv = TRUE} and \code{positive = FALSE}.}
 
 \item{ordered}{Logical value indicating whether indicators are ordinal. The
 character value \code{"yule"} requests Yule correlations.}
@@ -58,10 +58,10 @@ by \code{lcfa()}.}
 
 \item{missing}{Missing-data method passed to \code{lcfa()}.}
 
-\item{std.lv}{Logical. Standardize latent variables in the lower-triangular
-unrotated model. When \code{control.efa$orth.lambda = TRUE}, factor
-variances are instead freely estimated to preserve the same effective model
-dimension.}
+\item{std.lv}{Logical. Standardize latent variables in the unrotated model.
+It must be \code{TRUE} when \code{control.efa$orth.lambda = TRUE}, so the
+factor covariance matrix is fixed to the identity and factor scale is
+represented by the unrestricted column norms of the loading matrix.}
 
 \item{std.ov}{Logical. Standardize observed variables in the unrotated model.}
 
@@ -106,11 +106,13 @@ with \code{lrotate()}.
 }
 \details{
 Two equivalent identification schemes are available for the unrotated EFA
-model. The default uses a lower-triangular loading matrix and unit factor
-variances. With \code{control.efa$orth.lambda = TRUE}, every loading is free,
-the loading matrix satisfies \eqn{\Lambda^\top\Lambda=I}, and the diagonal
-factor variances are free. Both schemes impose \eqn{q^2} identifying
-restrictions and therefore have the same effective number of parameters.
+model. The default uses a lower-triangular loading matrix and an identity
+factor covariance matrix. With \code{control.efa$orth.lambda = TRUE}, every
+loading is free, the factor covariance matrix remains the identity, and only
+the off-diagonal elements of \eqn{\Lambda^\top\Lambda} are constrained to
+zero. The column norms of \eqn{\Lambda} remain free. The \eqn{q(q-1)/2}
+orthogonality constraints replace the same number of lower-triangular zeros,
+so both schemes have the same effective number of parameters.
 }
 \examples{
 \dontrun{

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 24/08/2026
+ * Modification date: 26/08/2026
  */
 
 // Manifolds
@@ -71,6 +71,7 @@ inline arma::mat tangent_complement(const arma::vec& x) {
 #include "euclidean.h"
 #include "unit.h"
 #include "orth.h"
+#include "orthog.h"
 #include "oblq.h"
 #include "poblq.h"
 #include "simplex.h"
@@ -84,6 +85,7 @@ static const std::unordered_map<std::string, ManifoldFactory> manifold_factories
   { "unit",      choose_unit      },
   { "simplex",   choose_simplex   },
   { "orth",      choose_orth      },
+  { "orthog",    choose_orthog    },
   { "oblq",      choose_oblq      },
   { "poblq",     choose_poblq     }
 };
@@ -94,7 +96,7 @@ manifolds* choose_manifold(const Rcpp::List& manifold_setup) {
   if (it == manifold_factories.end()) {
     Rcpp::stop(
       "Unknown manifold ‘" + name +
-        "’. Available: euclidean, unit, simplex, orth, oblq, poblq"
+        "’. Available: euclidean, unit, simplex, orth, orthog, oblq, poblq"
     );
   }
   return it->second(manifold_setup);

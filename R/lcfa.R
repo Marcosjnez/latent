@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/08/2026
+# Modification date: 26/08/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -1169,7 +1169,7 @@ create_lcfa_modelInfo <- function(dataList, full_model, control) {
 
   lambda_constraints <- if(control$orth.lambda) {
     as.integer(sum(vapply(dataList$nfactors,
-                          FUN = \(q) q*(q+1L)/2L,
+                          FUN = \(q) q*(q-1L)/2L,
                           FUN.VALUE = numeric(1L))))
   } else {
     0L
@@ -1265,8 +1265,8 @@ lcfa_control <- function(control) {
     stop("orth.lambda must be TRUE or FALSE")
   }
 
-  if(control$orth.lambda && isTRUE(control$std.lv)) {
-    stop("orth.lambda = TRUE requires std.lv = FALSE")
+  if(control$orth.lambda && !isTRUE(control$std.lv)) {
+    stop("orth.lambda = TRUE requires std.lv = TRUE")
   }
 
   if(control$orth.lambda && isTRUE(control$positive)) {
@@ -2838,10 +2838,12 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
       if(control$orth.lambda) {
 
-        lambda <- eig$vectors[, seq_len(q), drop = FALSE]
+        lambda <- eig$vectors[, seq_len(q), drop = FALSE]%*%
+          diag(sqrt(values), nrow = q)
         lambda <- lambda+
           matrix(rnorm(p*q, sd = 0.01), nrow = p, ncol = q)
-        lambda <- orth(lambda)
+        lambda <- orth(lambda)%*%
+          diag(sqrt(colSums(lambda*lambda)), nrow = q)
 
       } else {
 
@@ -2866,12 +2868,7 @@ start_lcfa <- function(dataList, data_param, param, trans,
         dimnames(init_param[[rs]][[xtheta_group[i]]]) <-
           dimnames(trans[[xtheta_group[i]]])
 
-        if(control$orth.lambda) {
-          init_param[[rs]][[xpsi_group[i]]] <-
-            diag(sqrt(values), nrow = q)
-        } else {
-          init_param[[rs]][[xpsi_group[i]]] <- rorth(q, q)
-        }
+        init_param[[rs]][[xpsi_group[i]]] <- rorth(q, q)
 
         dimnames(init_param[[rs]][[xpsi_group[i]]]) <-
           dimnames(trans[[xpsi_group[i]]])
@@ -2888,8 +2885,7 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
       } else {
 
-        psi_diag <- if(control$orth.lambda) values else rep(1, q)
-        init_param[[rs]][[psi_group[i]]] <- diag(psi_diag, nrow = q)
+        init_param[[rs]][[psi_group[i]]] <- diag(q)
         dimnames(init_param[[rs]][[psi_group[i]]]) <-
           dimnames(trans[[psi_group[i]]])
         init_param[[rs]][[psi_group[i]]][fixed[[psi_group[i]]]] <-
@@ -3048,25 +3044,20 @@ manifolds_lcfa <- function(dataList, data_param, param,
         stop("orth.lambda = TRUE requires a completely free dense loading matrix.")
       }
 
-      if(!dataList$positive) {
+      psi <- param[[psi_group[i]]]
+      psi_numeric <- matrix(
+        suppressWarnings(as.numeric(psi)),
+        nrow = q,
+        ncol = q
+      )
 
-        psi <- param[[psi_group[i]]]
-        psi_numeric <- matrix(
-          suppressWarnings(as.numeric(psi)),
-          nrow = q,
-          ncol = q
-        )
-
-        if(any(!is.na(diag(psi_numeric))) ||
-           any(is.na(psi_numeric[row(psi_numeric) != col(psi_numeric)])) ||
-           any(psi_numeric[row(psi_numeric) != col(psi_numeric)] != 0)) {
-          stop("orth.lambda = TRUE requires free factor variances and zero factor covariances.")
-        }
-
+      if(anyNA(psi_numeric) ||
+         !isTRUE(all.equal(psi_numeric, diag(q)))) {
+        stop("orth.lambda = TRUE requires an identity factor covariance matrix.")
       }
 
       manifolds[[k]] <- list(
-        manifold = "orth",
+        manifold = "orthog",
         parameters = lambda_group[i],
         extra = list(p = p, q = q)
       )

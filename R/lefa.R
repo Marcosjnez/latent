@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/08/2026
+# Modification date: 26/08/2026
 #'
 #' Exploratory Factor Analysis
 #'
@@ -32,9 +32,9 @@
 #' @param rotation Rotation criterion passed to \code{lrotate()}.
 #' @param model Optional lavaan model syntax. If \code{NULL}, an exploratory
 #'   loading model is generated automatically. By default, the loading matrix is
-#'   lower triangular. If \code{control.efa$orth.lambda = TRUE}, it is dense and
-#'   constrained to the Stiefel manifold. This option currently requires
-#'   \code{positive = FALSE}.
+#'   lower triangular. If \code{control.efa$orth.lambda = TRUE}, it is dense,
+#'   its columns are mutually orthogonal, and their norms remain unrestricted.
+#'   This option requires \code{std.lv = TRUE} and \code{positive = FALSE}.
 #' @param ordered Logical value indicating whether indicators are ordinal. The
 #'   character value \code{"yule"} requests Yule correlations.
 #' @param group Optional character string identifying the grouping variable.
@@ -48,10 +48,10 @@
 #' @param penalties Logical value or list controlling regularization in
 #'   \code{lcfa()}.
 #' @param missing Missing-data method passed to \code{lcfa()}.
-#' @param std.lv Logical. Standardize latent variables in the lower-triangular
-#'   unrotated model. When \code{control.efa$orth.lambda = TRUE}, factor
-#'   variances are instead freely estimated to preserve the same effective model
-#'   dimension.
+#' @param std.lv Logical. Standardize latent variables in the unrotated model.
+#'   It must be \code{TRUE} when \code{control.efa$orth.lambda = TRUE}, so the
+#'   factor covariance matrix is fixed to the identity and factor scale is
+#'   represented by the unrestricted column norms of the loading matrix.
 #' @param std.ov Logical. Standardize observed variables in the unrotated model.
 #' @param meanstructure Logical. Estimate the observed-variable mean structure.
 #' @param parameterization Optional parameterization passed to \code{lcfa()}.
@@ -75,11 +75,13 @@
 #'
 #' @details
 #' Two equivalent identification schemes are available for the unrotated EFA
-#' model. The default uses a lower-triangular loading matrix and unit factor
-#' variances. With \code{control.efa$orth.lambda = TRUE}, every loading is free,
-#' the loading matrix satisfies \eqn{\Lambda^\top\Lambda=I}, and the diagonal
-#' factor variances are free. Both schemes impose \eqn{q^2} identifying
-#' restrictions and therefore have the same effective number of parameters.
+#' model. The default uses a lower-triangular loading matrix and an identity
+#' factor covariance matrix. With \code{control.efa$orth.lambda = TRUE}, every
+#' loading is free, the factor covariance matrix remains the identity, and only
+#' the off-diagonal elements of \eqn{\Lambda^\top\Lambda} are constrained to
+#' zero. The column norms of \eqn{\Lambda} remain free. The \eqn{q(q-1)/2}
+#' orthogonality constraints replace the same number of lower-triangular zeros,
+#' so both schemes have the same effective number of parameters.
 #'
 #' @return A fitted object of class \code{"lefa"}. The unrotated
 #'   \code{lcfa} object is stored in its \code{extra} slot. If
@@ -257,7 +259,9 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
     stop("control.efa$orth.lambda = TRUE currently requires positive = FALSE")
   }
 
-  std.lv.efa <- if(orth.lambda) FALSE else std.lv
+  if(orth.lambda && !std.lv) {
+    stop("control.efa$orth.lambda = TRUE requires std.lv = TRUE")
+  }
 
   #### Store original call ####
 
@@ -317,7 +321,7 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                           positive = positive,
                           penalties = penalties,
                           missing = missing,
-                          std.lv = std.lv.efa,
+                          std.lv = std.lv,
                           std.ov = std.ov,
                           meanstructure = meanstructure,
                           parameterization = parameterization,
