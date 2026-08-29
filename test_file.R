@@ -388,7 +388,7 @@ model <- 'visual  =~ x1 + x2 + x3
 # With latent:
 estimator <- "ml"
 std.ov <- FALSE
-std.lv <- FALSE
+std.lv <- TRUE
 meanstructure <- TRUE
 likelihood <- "normal"
 
@@ -403,12 +403,16 @@ fit <- lcfa(data = HolzingerSwineford1939,
             # penalties = TRUE,
             penalties = list(logdet = list(w = 0.001)),
             se = "standard",
-            do.fit = TRUE, control = NULL)
+            do.fit = TRUE,
+            control = list(rstarts = 10L, se_method = "RH", opt = "newton"))
 
 latInspect(fit, "loglik") # loglik           -3732.196
                           # penalized_loglik -3732.197
-                          # loglik_base      -4211.418
+                          # loglik_base      -4154.518
                           # loglik_sat       -3695.092
+fit@Optim$SE$table_se
+X <- se(fit, parameters = fit@modelInfo$trans[c("lambda", "psi", "theta")])
+lapply(X$table_se, FUN = round, digits = 3L)
 
 latInspect(fit, what = "est")
 
@@ -945,7 +949,10 @@ std.lv <- TRUE
 meanstructure <- FALSE
 likelihood <- "normal"
 rotation <- "oblimin"
-projection <- "oblq"
+projection <- "poblq"
+constraints <- matrix(0, nfactors, nfactors)
+constraints[1:2, 1:2] <- 1
+diag(constraints) <- 0
 
 fit <- lefa(data = df,
             nfactors = nfactors,
@@ -957,6 +964,7 @@ fit <- lefa(data = df,
             orthogonal = TRUE,
             rotation = rotation,
             projection = projection,
+            constraints = constraints,
             control.efa = list(rstarts = 10L, se_method = "KKT", orth.lambda = TRUE),
             control.rotation = list(rstarts = 10L, se_method = "KKT"),
             se = TRUE)
@@ -979,10 +987,21 @@ round(fit_b$rotation$phi, 3)
 round(fit@transformed_pars$lambda_rotated, 3)
 round(fit_b$rotation$lambda, 3)
 
-dconstr <- constraints_derivs(fit, parameters = fit@modelInfo$parameters_labels)
-dim(dconstr)
-labs1 <- c(fit@modelInfo$trans$X)
-dconstr[labs1, , drop = FALSE]
+# EFA constraints:
+parameters <- fit@extra$efa@modelInfo$param$lambda
+dconstr <- constraints_derivs(fit@extra$efa, parameters = parameters)
+dconstr$dconstr
+dim(dconstr$dconstr)
+dim(dconstr$d2constr)
+
+# Rotation constraints:
+parameters <- fit@modelInfo$trans$X
+dconstr <- constraints_derivs(fit, parameters = parameters)
+dconstr$dconstr
+dim(dconstr$dconstr)
+dim(dconstr$d2constr)
+# FIX THIS: a multistep model should return all the parameter constraints at once,
+# including those of latent objects in fit@extra
 
 # Exploratory factor analysis
 

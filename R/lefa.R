@@ -405,6 +405,11 @@ split_dots_lefa <- function(dots, projection, rotation) {
 
   rotation_names <- unique(rotation_names)
 
+  if(projection != "poblq" &&
+     is.matrix(dots[["constraints"]])) {
+    dots$constraints <- NULL
+  }
+
   rotation_dots <- dots[intersect(names(dots), rotation_names)]
 
   cfa_names <- setdiff(names(dots),
