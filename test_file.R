@@ -404,7 +404,7 @@ fit <- lcfa(data = HolzingerSwineford1939,
             penalties = list(logdet = list(w = 0.001)),
             se = "standard",
             do.fit = TRUE,
-            control = list(rstarts = 10L, se_method = "RH", opt = "newton"))
+            control = list(rstarts = 10L, se_method = "KKT", opt = "newton"))
 
 latInspect(fit, "loglik") # loglik           -3732.196
                           # penalized_loglik -3732.197

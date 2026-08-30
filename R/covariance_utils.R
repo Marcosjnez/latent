@@ -337,7 +337,8 @@ invert_hessian_latent <- function(fit, H,
   )
   KKT <- (KKT+t(KKT))/2
 
-  KKT_inv <- approx_inv(KKT) # KKT_inv may not be symmetric
+  KKT_inv <- approx_inv(KKT)
+  # KKT_inv <- approx_Hinv(KKT)
 
   if(!is.matrix(KKT_inv)) {
     KKT_inv <- as.matrix(KKT_inv)
@@ -400,7 +401,7 @@ standard_errors_from_vcov <- function(V,
 
   }
 
-  result <- sqrt(variances)
+  result <- suppressWarnings(sqrt(variances))
 
   if(!is.null(rownames(V))) {
     names(result) <- rownames(V)
