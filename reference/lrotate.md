@@ -74,6 +74,12 @@ factor means. The rotated quantities are
 \\X^{-T}=X\\. If \\\Psi_0\\ is a fixed identity matrix, \\\Psi_r\\ is
 computed as \\X^TX\\.
 
+With `projection = "poblq"`, either `constraints` or `oblique` must be
+supplied through `...`. The former uses arbitrary structural
+constraints, whereas the latter gives the sizes of consecutive oblique
+blocks; any remaining factors form one orthogonal block. They cannot be
+used together.
+
 When `fit` is supplied, the returned object inherits from `"multistep"`
 and the fitted `lcfa` object is stored in `extra`. When matrices are
 supplied directly, the returned object inherits only from `"latent"`;

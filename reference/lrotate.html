@@ -161,6 +161,11 @@ and
 $$\alpha_r=X^T\alpha_0.$$
 For an orthogonal projection, \(X^{-T}=X\). If \(\Psi_0\) is a fixed
 identity matrix, \(\Psi_r\) is computed as \(X^TX\).</p>
+<p>With <code>projection = "poblq"</code>, either <code>constraints</code> or <code>oblique</code>
+must be supplied through <code>...</code>. The former uses arbitrary structural
+constraints, whereas the latter gives the sizes of consecutive oblique
+blocks; any remaining factors form one orthogonal block. They cannot be used
+together.</p>
 <p>When <code>fit</code> is supplied, the returned object inherits from
 <code>"multistep"</code> and the fitted <code>lcfa</code> object is stored in
 <code>extra</code>. When matrices are supplied directly, the returned object

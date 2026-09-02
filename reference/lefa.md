@@ -182,6 +182,12 @@ norms of \\\Lambda\\ remain free. The \\q(q-1)/2\\ orthogonality
 constraints replace the same number of lower-triangular zeros, so both
 schemes have the same effective number of parameters.
 
+With `projection = "poblq"`, either `constraints` or `oblique` must be
+supplied through `...`. The former uses arbitrary structural
+constraints, whereas the latter gives the sizes of consecutive oblique
+blocks; any remaining factors form one orthogonal block. They cannot be
+used together.
+
 ## Examples
 
 ``` r
