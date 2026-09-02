@@ -118,7 +118,12 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   x.transparameters_init = x.transparameters;
 
   // Initial values for dparameters:
-  x.dparameters = arma::randu(x.nparam);
+  if(control_optimizer.containsElementNamed("dparameters")) {
+    arma::vec dparameters = control_optimizer["dparameters"];
+    x.dparameters = dparameters;
+  } else {
+    x.dparameters = arma::randu(x.nparam);
+  }
   x.dtransparameters.set_size(x.ntransparam);
   x.dtransparameters.zeros();
   x.dtransparameters(x.transparam2param) = x.dparameters;

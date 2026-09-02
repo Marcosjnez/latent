@@ -42,6 +42,7 @@
 #include "optimization/optim.h"
 #include "optimizer.h"
 #include "grad_comp.h"
+#include "get_f.h"
 #include "get_grad.h"
 #include "get_dgrad.h"
 #include "get_hess.h"
@@ -122,6 +123,12 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
                      Rcpp::List control_optimizer,
                      std::string compute = "all",
                      double eps = 1e-04);
+
+// [[Rcpp::export]]
+Rcpp::List get_f(Rcpp::List control_manifold,
+                 Rcpp::List control_transform,
+                 Rcpp::List control_estimator,
+                 Rcpp::List control_optimizer);
 
 // [[Rcpp::export]]
 Rcpp::List get_grad(Rcpp::List control_manifold,

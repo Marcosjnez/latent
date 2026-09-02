@@ -1,13 +1,13 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/10/2025
+ * Modification date: 03/09/2026
  */
 
-Rcpp::List get_dgrad(Rcpp::List control_manifold,
-                     Rcpp::List control_transform,
-                     Rcpp::List control_estimator,
-                     Rcpp::List control_optimizer) {
+Rcpp::List get_f(Rcpp::List control_manifold,
+                 Rcpp::List control_transform,
+                 Rcpp::List control_estimator,
+                 Rcpp::List control_optimizer) {
 
   Rcpp::List result;
   arguments_optim x;
@@ -44,22 +44,15 @@ Rcpp::List get_dgrad(Rcpp::List control_manifold,
 
   Rcpp::List computations;
 
-  final_manifold->param(x, xmanifolds);
-  final_manifold->retr(x, xmanifolds);
-  final_manifold->param(x, xmanifolds);
+  // final_manifold->param(x, xmanifolds);
+  // final_manifold->retr(x, xmanifolds);
+  // final_manifold->param(x, xmanifolds);
 
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
   final_estimator->F(x, xestimators);
-  final_estimator->G(x, xestimators);
-  final_transform->update_grad(x, xtransforms);
-  final_transform->dtransform(x, xtransforms);
-  final_estimator->dG(x, xestimators);
-  final_transform->update_dgrad(x, xtransforms);
 
   result["f"] = x.f;
-  result["dgrad"] = x.dgrad;
-  result["dg"] = x.dg;
 
   return result;
 

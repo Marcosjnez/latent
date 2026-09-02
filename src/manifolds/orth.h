@@ -51,6 +51,12 @@ public:
     arma::mat Q, R;
     arma::qr_econ(Q, R, X);
 
+    // arma::mat eigvec;
+    // arma::vec eigval;
+    // bool decomposed = arma::eig_sym(eigval, eigvec, X.t()*X);
+    // arma::mat Q = X;
+    // Q *= eigvec*arma::diagmat(1.00/arma::sqrt(eigval))*eigvec.t();
+
     x.parameters(indices) = arma::vectorise(Q);
 
   }

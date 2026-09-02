@@ -89,6 +89,10 @@ grad_comp <- function(control_manifold, control_transform, control_estimator, co
     .Call(`_latent_grad_comp`, control_manifold, control_transform, control_estimator, control_optimizer, compute, eps)
 }
 
+get_f <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
+    .Call(`_latent_get_f`, control_manifold, control_transform, control_estimator, control_optimizer)
+}
+
 get_grad <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
     .Call(`_latent_get_grad`, control_manifold, control_transform, control_estimator, control_optimizer)
 }

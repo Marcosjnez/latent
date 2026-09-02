@@ -292,6 +292,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// get_f
+Rcpp::List get_f(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
+RcppExport SEXP _latent_get_f(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_f(control_manifold, control_transform, control_estimator, control_optimizer));
+    return rcpp_result_gen;
+END_RCPP
+}
 // get_grad
 Rcpp::List get_grad(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
 RcppExport SEXP _latent_get_grad(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
@@ -517,6 +531,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_lyap_sym", (DL_FUNC) &_latent_lyap_sym, 2},
     {"_latent_rpoblq", (DL_FUNC) &_latent_rpoblq, 3},
     {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 6},
+    {"_latent_get_f", (DL_FUNC) &_latent_get_f, 4},
     {"_latent_get_grad", (DL_FUNC) &_latent_get_grad, 4},
     {"_latent_get_dgrad", (DL_FUNC) &_latent_get_dgrad, 4},
     {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 5},
