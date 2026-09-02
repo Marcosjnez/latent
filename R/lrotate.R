@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 23/08/2026
+# Modification date: 01/09/2026
 #'
 #' @title
 #' Rotate factor loading and covariance matrices
@@ -46,6 +46,12 @@
 #' \deqn{\alpha_r=X^T\alpha_0.}
 #' For an orthogonal projection, \eqn{X^{-T}=X}. If \eqn{\Psi_0} is a fixed
 #' identity matrix, \eqn{\Psi_r} is computed as \eqn{X^TX}.
+#'
+#' With \code{projection = "poblq"}, either \code{constraints} or \code{oblique}
+#' must be supplied through \code{...}. The former uses arbitrary structural
+#' constraints, whereas the latter gives the sizes of consecutive oblique
+#' blocks; any remaining factors form one orthogonal block. They cannot be used
+#' together.
 #'
 #' When \code{fit} is supplied, the returned object inherits from
 #' \code{"multistep"} and the fitted \code{lcfa} object is stored in
@@ -141,6 +147,9 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
   dots <- list(...)
   dots <- rotation_defaults_lrotate(rotation = rotation,
                                     dots = dots)
+
+  check_poblq_arguments_lrotate(projection = projection,
+                                dots = dots)
 
   #### Check control parameters ####
 
@@ -595,6 +604,31 @@ rotation_defaults_lrotate <- function(rotation, dots) {
   #### Result ####
 
   return(dots)
+
+}
+
+#### Function to check partially oblique projection arguments ####
+
+check_poblq_arguments_lrotate <- function(projection, dots) {
+
+  constraints <- !is.null(dots$constraints)
+  oblique <- !is.null(dots$oblique)
+
+  if(constraints && oblique) {
+    stop("constraints and oblique cannot be supplied together")
+  }
+
+  if(projection == "poblq" && !constraints && !oblique) {
+    stop("projection = 'poblq' requires either constraints or oblique")
+  }
+
+  if(projection != "poblq" && oblique) {
+    stop("oblique can only be used with projection = 'poblq'")
+  }
+
+  #### Result ####
+
+  return(invisible(NULL))
 
 }
 
@@ -1363,11 +1397,17 @@ manifolds_lrotate <- function(dataList, data_param, dots) {
                                 group_index = i,
                                 ngroups = dataList$ngroups)
 
+    manifold <- dataList$projection
+
+    if(manifold == "poblq" && !is.null(extra$oblique)) {
+      manifold <- "poblq_blocks"
+    }
+
     extra$p <- q
     extra$q <- q
 
     manifolds[[i]] <- list(
-      manifold = dataList$projection,
+      manifold = manifold,
       parameters = X_group[i],
       extra = extra
     )
@@ -1510,9 +1550,9 @@ group_dots_lrotate <- function(dots, group_index, ngroups) {
 
   extra <- dots
 
-  # Matrix-valued projection/criterion arguments may be supplied either once
+  # Group-specific projection/criterion arguments may be supplied either once
   # for every group or as a list with one object per group.
-  group_objects <- c("constraints", "target", "weight",
+  group_objects <- c("constraints", "oblique", "target", "weight",
                      "psitarget", "psiweight")
 
   for(nm in intersect(names(extra), group_objects)) {

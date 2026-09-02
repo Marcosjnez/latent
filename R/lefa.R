@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/08/2026
+# Modification date: 01/09/2026
 #'
 #' Exploratory Factor Analysis
 #'
@@ -82,6 +82,12 @@
 #' zero. The column norms of \eqn{\Lambda} remain free. The \eqn{q(q-1)/2}
 #' orthogonality constraints replace the same number of lower-triangular zeros,
 #' so both schemes have the same effective number of parameters.
+#'
+#' With \code{projection = "poblq"}, either \code{constraints} or \code{oblique}
+#' must be supplied through \code{...}. The former uses arbitrary structural
+#' constraints, whereas the latter gives the sizes of consecutive oblique
+#' blocks; any remaining factors form one orthogonal block. They cannot be used
+#' together.
 #'
 #' @return A fitted object of class \code{"lefa"}. The unrotated
 #'   \code{lcfa} object is stored in its \code{extra} slot. If
@@ -295,6 +301,9 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
 
   }
 
+  check_poblq_arguments_lrotate(projection = projection,
+                                dots = dots)
+
   dots_split <- split_dots_lefa(dots = dots,
                                 projection = projection,
                                 rotation = rotation)
@@ -400,7 +409,7 @@ split_dots_lefa <- function(dots, projection, rotation) {
   )
 
   if(projection == "poblq") {
-    rotation_names <- c(rotation_names, "constraints")
+    rotation_names <- c(rotation_names, "constraints", "oblique")
   }
 
   rotation_names <- unique(rotation_names)

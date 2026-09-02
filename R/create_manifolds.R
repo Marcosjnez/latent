@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/08/2026
+# Modification date: 01/09/2026
 
 create_manifolds <- function(manifolds, structures) {
 
@@ -40,6 +40,7 @@ create_manifolds <- function(manifolds, structures) {
                            orthog    = c("p", "q"),
                            oblq      = c("p", "q"),
                            poblq     = c("p", "q", "constraints"),
+                           poblq_blocks = c("p", "oblique"),
                            stop("Unknown manifold: ", manifold)
     )
 

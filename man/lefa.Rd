@@ -113,6 +113,12 @@ the off-diagonal elements of \eqn{\Lambda^\top\Lambda} are constrained to
 zero. The column norms of \eqn{\Lambda} remain free. The \eqn{q(q-1)/2}
 orthogonality constraints replace the same number of lower-triangular zeros,
 so both schemes have the same effective number of parameters.
+
+With \code{projection = "poblq"}, either \code{constraints} or \code{oblique}
+must be supplied through \code{...}. The former uses arbitrary structural
+constraints, whereas the latter gives the sizes of consecutive oblique
+blocks; any remaining factors form one orthogonal block. They cannot be used
+together.
 }
 \examples{
 \dontrun{

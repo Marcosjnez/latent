@@ -57,6 +57,12 @@ and
 For an orthogonal projection, \eqn{X^{-T}=X}. If \eqn{\Psi_0} is a fixed
 identity matrix, \eqn{\Psi_r} is computed as \eqn{X^TX}.
 
+With \code{projection = "poblq"}, either \code{constraints} or \code{oblique}
+must be supplied through \code{...}. The former uses arbitrary structural
+constraints, whereas the latter gives the sizes of consecutive oblique
+blocks; any remaining factors form one orthogonal block. They cannot be used
+together.
+
 When \code{fit} is supplied, the returned object inherits from
 \code{"multistep"} and the fitted \code{lcfa} object is stored in
 \code{extra}. When matrices are supplied directly, the returned object
