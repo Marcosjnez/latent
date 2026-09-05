@@ -1019,15 +1019,9 @@ compute_se_lpoly_one_step <- function(dataList, modelInfo, Optim, parameters) {
 
   #### Hessian ####
 
-  # modelInfo$control_optimizer$parameters[[1L]] <- Optim$parameters
-  # modelInfo$control_optimizer$transparameters[[1L]] <-
-  #   Optim$transparameters
-  #
-  # H <- get_hess(control_manifold = modelInfo$control_manifold,
-  #               control_transform = modelInfo$control_transform,
-  #               control_estimator = modelInfo$control_estimator,
-  #               control_optimizer = modelInfo$control_optimizer,
-  #               cores = 1L)$h
+  fit <- new("latent", call = match.call(), dataList = dataList,
+              modelInfo = modelInfo, Optim = Optim)
+
   H <- get_hess(fit, cores = 1L)$h
 
   rownames(H) <- colnames(H) <- modelInfo$parameters_labels

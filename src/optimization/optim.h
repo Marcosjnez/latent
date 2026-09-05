@@ -1,8 +1,11 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 24/08/2026
+ * Modification date: 05/09/2026
  */
+
+#include <memory>
+#include "../component_cleanup.h"
 
 #include "step_update/armijo.h"
 #include "step_update/wolfe.h"
@@ -18,6 +21,8 @@ typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat,
 class optim {
 
 public:
+
+  virtual ~optim() = default;
 
   virtual optim_result optimize(arguments_optim x,
                                 std::vector<transformations*>& xtransforms,
@@ -97,22 +102,29 @@ public:
 
 };
 
-optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
+optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
+                     const arma::vec& parameters,
+                     const arma::vec& transparameters,
+                     bool random_direction = true) {
 
   // Store the indices relating parameters and transformed parameters:
   arma::uvec transparam2param = control_optimizer["transparam2param"];
   x.transparam2param = transparam2param;
 
   // Store the parameters:
-  std::vector<arma::vec> params = control_optimizer["parameters"];
-  x.nparam = params[0].n_elem;
-  x.parameters = params[0];
+  x.nparam = parameters.n_elem;
+  x.parameters = parameters;
   x.dir.set_size(x.nparam); x.dir.zeros();
 
   // Store the transformed parameters:
-  std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
-  x.ntransparam = transparameters[0].n_elem;
-  x.transparameters = transparameters[0];
+  x.ntransparam = transparameters.n_elem;
+  x.transparameters = transparameters;
+
+  if(x.transparam2param.n_elem != parameters.n_elem ||
+     (x.transparam2param.n_elem > 0L &&
+      x.transparam2param.max() >= transparameters.n_elem)) {
+    Rcpp::stop("The parameter vectors do not match transparam2param.");
+  }
 
   x.transparameters(x.transparam2param) = x.parameters;
   x.transparameters_init = x.transparameters;
@@ -121,9 +133,15 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   if(control_optimizer.containsElementNamed("dparameters")) {
     arma::vec dparameters = control_optimizer["dparameters"];
     x.dparameters = dparameters;
-  } else {
+  } else if(random_direction) {
     x.dparameters = arma::randu(x.nparam);
+  } else {
+    x.dparameters.zeros(x.nparam);
   }
+  if(x.dparameters.n_elem != parameters.n_elem) {
+    Rcpp::stop("dparameters must have one element per free parameter.");
+  }
+
   x.dtransparameters.set_size(x.ntransparam);
   x.dtransparameters.zeros();
   x.dtransparameters(x.transparam2param) = x.dparameters;
@@ -281,5 +299,54 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
   }
 
   return algorithm;
+
+}
+
+// Starting values for model fitting:
+optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
+
+  std::vector<arma::vec> parameters = control_optimizer["parameters"];
+  std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
+
+  return choose_optim(x, control_optimizer, parameters[0], transparameters[0]);
+
+}
+
+// Fitted values for post-estimation computations:
+optim* choose_optim(arguments_optim& x, Rcpp::S4 fit,
+                     bool random_direction = true) {
+
+  Rcpp::List modelInfo = fit.slot("modelInfo");
+  Rcpp::List control_optimizer = modelInfo["control_optimizer"];
+  Rcpp::List control_transform = modelInfo["control_transform"];
+  Rcpp::List Optim = fit.slot("Optim");
+
+  arma::vec parameters = Optim["parameters"];
+  arma::vec transparameters = Optim["transparameters"];
+  Rcpp::List initial = control_optimizer["transparameters"];
+  arma::vec transparameters_init = initial[0];
+
+  if(transparameters.n_elem != transparameters_init.n_elem) {
+    Rcpp::stop("Optim$transparameters does not match the model coordinates.");
+  }
+
+  // Recompute outputs from their original seeds, not their fitted values.
+  // This is essential for transformations that accumulate log-likelihoods.
+  // All other values, including fixed inputs, are taken from Optim.
+  for(int i=0; i < control_transform.size(); ++i) {
+    Rcpp::List setup = control_transform[i];
+    std::vector<arma::uvec> indices_out = setup["indices_out"];
+    for(const arma::uvec& indices : indices_out) {
+      transparameters.elem(indices) = transparameters_init.elem(indices);
+    }
+  }
+
+  if(!control_optimizer.containsElementNamed("idx_transforms")) {
+    x.idx_transforms.set_size(x.ntransforms);
+    for(int i=0; i < x.ntransforms; ++i) x.idx_transforms[i] = i;
+  }
+
+  return choose_optim(x, control_optimizer, parameters, transparameters,
+                       random_direction);
 
 }

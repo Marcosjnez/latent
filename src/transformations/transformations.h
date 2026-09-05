@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 24/08/2026
+ * Modification date: 05/09/2026
  */
 
 // Transformations
@@ -9,6 +9,8 @@
 class transformations {
 
 public:
+
+  virtual ~transformations() = default;
 
   arma::uvec indices_in, indices_out;
 
@@ -154,21 +156,47 @@ public:
   void jacobian(arguments_optim& x,
                 std::vector<transformations*>& xtransformations) {
 
-    x.transparameters(x.transparam2param) = x.parameters;
-    x.jacob.set_size(x.transparameters.n_elem,
-                     x.transparameters.n_elem);
+    // Each coordinate retains its identity and all upstream dependencies.
+    x.jacob.eye(x.ntransparam, x.ntransparam);
 
-    for(arma::uword i : x.idx_transforms) {
+    for(arma::uword t : x.idx_transforms) {
 
-      arma::uvec indices_in = xtransformations[i]->indices_in;
-      arma::uvec indices_out = xtransformations[i]->indices_out;
-      xtransformations[i]->jacobian(x);
+      if(t >= xtransformations.size()) {
+        Rcpp::stop("A requested transformation index is outside the transformation list.");
+      }
 
-      for(arma::uword k = 0L; k < indices_in.n_elem; ++k) {
-        for(arma::uword j = 0L; j < indices_out.n_elem; ++j) {
-          x.jacob(indices_out[j], indices_in[k]) =
-            xtransformations[i]->jacob(j, k);
+      const arma::uvec& indices_in = xtransformations[t]->indices_in;
+      const arma::uvec& indices_out = xtransformations[t]->indices_out;
+      xtransformations[t]->jacobian(x);
+      const arma::mat& J = xtransformations[t]->jacob;
+
+      if(J.n_rows != indices_out.n_elem || J.n_cols != indices_in.n_elem ||
+         !J.is_finite()) {
+        Rcpp::stop("A transformation returned an invalid Jacobian.");
+      }
+
+      // Copy input rows before replacing outputs (inputs may repeat or overlap).
+      arma::mat input_jacobian(indices_in.n_elem, x.ntransparam,
+                                arma::fill::zeros);
+
+      for(arma::uword i=0L; i < indices_in.n_elem; ++i) {
+        for(arma::sp_mat::const_row_iterator it = x.jacob.begin_row(indices_in[i]);
+            it != x.jacob.end_row(indices_in[i]); ++it) {
+          input_jacobian(i, it.col()) = *it;
         }
+      }
+
+      arma::mat output_jacobian = J*input_jacobian;
+
+      for(arma::uword i=0L; i < indices_out.n_elem; ++i) {
+        arma::uword output = indices_out[i];
+        x.jacob.row(output).zeros();
+        for(arma::uword j=0L; j < output_jacobian.n_cols; ++j) {
+          if(j != output && output_jacobian(i, j) != 0.00) {
+            x.jacob(output, j) = output_jacobian(i, j);
+          }
+        }
+        x.jacob(output, output) = 1.00;
       }
 
     }

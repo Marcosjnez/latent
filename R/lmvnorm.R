@@ -867,18 +867,11 @@ fit_lmvnorm <- function(modelInfo) {
 
 compute_se_lmvnorm <- function(dataList, modelInfo, Optim) {
 
-  # control_optimizer <- modelInfo$control_optimizer
-  # control_optimizer$parameters[[1L]] <- Optim$parameters
-  # control_optimizer$transparameters[[1L]] <- Optim$transparameters
+  fit <- new("latent", call = match.call(), dataList = dataList,
+              modelInfo = modelInfo, Optim = Optim)
 
   labels <- modelInfo$parameters_labels
 
-  # H <- get_hess(
-  #   modelInfo$control_manifold,
-  #   modelInfo$control_transform,
-  #   modelInfo$control_estimator,
-  #   control_optimizer
-  # )$h
   H <- get_hess(fit)$h
   H <- validate_covariance_matrix(
     H,

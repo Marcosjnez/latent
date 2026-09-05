@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/08/2026
+ * Modification date: 05/09/2026
  */
 
 // factor_cor transformation:
@@ -102,6 +102,8 @@ public:
   }
 
   void jacobian(arguments_optim& x) {
+
+    lambda_psi = lambda * psi;
 
     arma::mat I_p = arma::eye(p, p);
     arma::mat comm = dxt(p, q); // Commutation matrix

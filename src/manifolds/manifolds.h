@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 01/09/2026
+ * Modification date: 05/09/2026
  */
 
 // Manifolds
@@ -9,6 +9,8 @@
 class manifolds {
 
 public:
+
+  virtual ~manifolds() = default;
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;

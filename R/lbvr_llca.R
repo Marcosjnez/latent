@@ -594,19 +594,17 @@ latentgold_cont_cont_bvr <- function(fit, v1, v2) {
   args$adjustment <- "none"
   args$control <- list(rstarts = 1L, cores = 1L, free_beta = FALSE)
   fit2 <- do.call(lca, args)
+  # All parameters in fit are fixed in fit2
 
-  fit2@modelInfo$control_optimizer$parameters[[1]][] <- 0
-  control_manifold <- fit2@modelInfo$control_manifold
-  control_transform <- fit2@modelInfo$control_transform
-  control_estimator <- fit2@modelInfo$control_estimator
-  control_optimizer <- fit2@modelInfo$control_optimizer
+  # Evaluate the added residual parameters at zero without refitting:
+  fit2@Optim$parameters <- fit2@modelInfo$control_optimizer$parameters[[1L]]
+  fit2@Optim$parameters[] <- 0
+  fit2@Optim$transparameters <- fit2@modelInfo$control_optimizer$transparameters[[1L]]
+  fit2@Optim$transparameters[fit2@modelInfo$control_optimizer$transparam2param+1L] <- fit2@Optim$parameters
 
-  # U <- get_grad(control_manifold, control_transform, control_estimator,
-  #               control_optimizer)$g
-  # I <- get_hess(control_manifold, control_transform, control_estimator,
-  #               control_optimizer)$h
-  U <- get_grad(fit)$g
-  I <- get_grad(fit)$h
+  computations <- get_hess(fit2)
+  U <- computations$g
+  I <- computations$h
 
   K <- length(U)
 

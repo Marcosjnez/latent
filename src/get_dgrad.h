@@ -20,15 +20,19 @@ Rcpp::List get_dgrad(Rcpp::S4 fit,
   x.ntransforms = control_transform.size();
   x.nestimators = control_estimator.size();
 
-  product_manifold* final_manifold;
-  product_transform* final_transform;
-  product_estimator* final_estimator;
+  product_manifold final_manifold;
+  product_transform final_transform;
+  product_estimator final_estimator;
 
   std::vector<manifolds*> xmanifolds(x.nmanifolds);
   std::vector<transformations*> xtransforms(x.ntransforms);
   std::vector<estimators*> xestimators(x.nestimators);
 
-  optim* algorithm = choose_optim(x, control_optimizer);
+  pointer_vector_guard<manifolds> manifold_guard(xmanifolds);
+  pointer_vector_guard<transformations> transform_guard(xtransforms);
+  pointer_vector_guard<estimators> estimator_guard(xestimators);
+
+  std::unique_ptr<optim> algorithm(choose_optim(x, fit));
 
   for(int i=0; i < x.nmanifolds; ++i) {
     xmanifolds[i] = choose_manifold(control_manifold[i]);
@@ -46,27 +50,25 @@ Rcpp::List get_dgrad(Rcpp::S4 fit,
    * Computations
    */
 
-  Rcpp::List Optim = fit.slot("Optim");
-  arma::vec parameters = Optim["parameters"];
-  arma::vec transparameters = Optim["transparameters"];
-  x.parameters = parameters;
-  x.transparameters = transparameters;
+  if(dparameters.n_elem != x.parameters.n_elem) {
+    Rcpp::stop("dparameters must have one element per free parameter.");
+  }
   x.dparameters = dparameters;
 
   Rcpp::List computations;
 
-  final_manifold->param(x, xmanifolds);
-  final_manifold->retr(x, xmanifolds);
-  final_manifold->param(x, xmanifolds);
+  final_manifold.param(x, xmanifolds);
+  final_manifold.retr(x, xmanifolds);
+  final_manifold.param(x, xmanifolds);
 
-  final_transform->transform(x, xtransforms);
-  final_estimator->param(x, xestimators);
-  final_estimator->F(x, xestimators);
-  final_estimator->G(x, xestimators);
-  final_transform->update_grad(x, xtransforms);
-  final_transform->dtransform(x, xtransforms);
-  final_estimator->dG(x, xestimators);
-  final_transform->update_dgrad(x, xtransforms);
+  final_transform.transform(x, xtransforms);
+  final_estimator.param(x, xestimators);
+  final_estimator.F(x, xestimators);
+  final_estimator.G(x, xestimators);
+  final_transform.update_grad(x, xtransforms);
+  final_transform.dtransform(x, xtransforms);
+  final_estimator.dG(x, xestimators);
+  final_transform.update_dgrad(x, xtransforms);
 
   result["f"] = x.f;
   result["g"] = x.g;

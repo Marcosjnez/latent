@@ -988,14 +988,14 @@ round(fit_b$rotation$phi, 3)
 round(fit@transformed_pars$lambda_rotated, 3)
 round(fit_b$rotation$lambda, 3)
 
-# EFA constraints:
+# EFA constraints derivatives:
 parameters <- fit@extra$efa@modelInfo$param$lambda
 dconstr <- constraints_derivs(fit@extra$efa, parameters = parameters)
 dconstr$dconstr
 dim(dconstr$dconstr)
 dim(dconstr$d2constr)
 
-# Rotation constraints:
+# Rotation constraints derivatives:
 parameters <- fit@modelInfo$trans$X
 dconstr <- constraints_derivs(fit, parameters = parameters)
 dconstr$dconstr
@@ -1003,63 +1003,6 @@ dim(dconstr$dconstr)
 dim(dconstr$d2constr)
 # FIX THIS: a multistep model should return all the parameter constraints at once,
 # including those of latent objects in fit@extra
-
-# Exploratory factor analysis
-
-library(latent)
-
-set.seed(2026)
-
-# Simulate data:
-nfactors <- 3L
-nitems <- 12
-sim <- simfactor(nfactors = 3, nitems = nitems/nfactors,
-                 correlations = 0.40, crossloadings = 0.30)
-scores <- MASS::mvrnorm(1e3, rep(0, nrow(sim$R)), Sigma = sim$R)
-s <- cor(scores)
-
-estimator <- "uls"
-rotation <- "oblimin"
-projection <- "poblq"
-# Fit efa with bifactor:
-fit_b <- bifactor::efast(s, nfactors = nfactors, estimator = estimator,
-                         rotation = rotation, projection = projection,
-                         oblq_factors = c(2),
-                         gamma = 0, random_starts = 10L, cores = 1L)
-fit_b$efa$f
-fit_b$rotation$f
-
-target <- matrix(0, nfactors, nfactors)
-target[1:2, 1:2] <- 1
-diag(target) <- 0
-
-estimator <- "ml"
-std.ov <- TRUE
-std.lv <- TRUE
-meanstructure <- FALSE
-likelihood <- "normal"
-
-fit <- lefa(data = scores, #std.ov = TRUE, #sample.cov = s,
-            nfactors = nfactors,
-            estimator = estimator,
-            rotation = rotation,
-            projection = projection,
-            std.ov = std.ov,
-            std.lv = std.lv,
-            meanstructure = meanstructure,
-            likelihood = likelihood,
-            orthogonal = TRUE,
-            constraints = target,
-            control = list(rstarts = 10L),
-            se = FALSE)
-fit@extra$efa@Optim$f
-fit@Optim$f
-
-round(fit@transformed_pars$lambda_rotated, 3)
-round(fit_b$rotation$lambda, 3)
-
-round(fit@transformed_pars$psi_rotated, 3)
-round(fit_b$rotation$phi, 3)
 
 #### Check derivatives ####
 

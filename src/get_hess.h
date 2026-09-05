@@ -20,14 +20,18 @@ Rcpp::List get_hess(Rcpp::S4 fit,
   x.ntransforms = control_transform.size();
   x.nestimators = control_estimator.size();
 
-  product_transform* final_transform;
-  product_estimator* final_estimator;
+  product_transform final_transform;
+  product_estimator final_estimator;
 
   std::vector<manifolds*> xmanifolds(x.nmanifolds);
   std::vector<transformations*> xtransforms(x.ntransforms);
   std::vector<estimators*> xestimators(x.nestimators);
 
-  optim* algorithm = choose_optim(x, control_optimizer);
+  pointer_vector_guard<manifolds> manifold_guard(xmanifolds);
+  pointer_vector_guard<transformations> transform_guard(xtransforms);
+  pointer_vector_guard<estimators> estimator_guard(xestimators);
+
+  std::unique_ptr<optim> algorithm(choose_optim(x, fit));
 
   for(int i=0; i < x.nmanifolds; ++i) {
     xmanifolds[i] = choose_manifold(control_manifold[i]);
@@ -45,16 +49,10 @@ Rcpp::List get_hess(Rcpp::S4 fit,
    * Computations
    */
 
-  Rcpp::List Optim = fit.slot("Optim");
-  arma::vec parameters = Optim["parameters"];
-  arma::vec transparameters = Optim["transparameters"];
-  x.parameters = parameters;
-  x.transparameters = transparameters;
-
-  final_transform->transform(x, xtransforms);
-  final_estimator->param(x, xestimators);
-  final_estimator->G(x, xestimators);
-  final_transform->update_grad(x, xtransforms);
+  final_transform.transform(x, xtransforms);
+  final_estimator.param(x, xestimators);
+  final_estimator.G(x, xestimators);
+  final_transform.update_grad(x, xtransforms);
 
   int npar = x.parameters.n_elem;
   arma::mat h(npar, npar, arma::fill::zeros);
@@ -64,9 +62,9 @@ Rcpp::List get_hess(Rcpp::S4 fit,
     x.dparameters.zeros();
     x.dparameters(i) = 1.00;
 
-    final_transform->dtransform(x, xtransforms);
-    final_estimator->dG(x, xestimators);
-    final_transform->update_dgrad(x, xtransforms);
+    final_transform.dtransform(x, xtransforms);
+    final_estimator.dG(x, xestimators);
+    final_transform.update_dgrad(x, xtransforms);
     h.col(i) = x.dg;
 
   }
@@ -81,9 +79,9 @@ Rcpp::List get_hess(Rcpp::S4 fit,
 //     x_local.dparameters.zeros();
 //     x_local.dparameters(i) = 1.0;
 //
-//     final_transform->dtransform(x_local, xtransforms);
-//     final_estimator->dG(x_local, xestimators);
-//     final_transform->update_dgrad(x_local, xtransforms);
+//     final_transform.dtransform(x_local, xtransforms);
+//     final_estimator.dG(x_local, xestimators);
+//     final_transform.update_dgrad(x_local, xtransforms);
 //
 //     std::copy_n(x_local.dg.memptr(),
 //                 x_local.dg.n_elem,
@@ -91,6 +89,9 @@ Rcpp::List get_hess(Rcpp::S4 fit,
 //   }
 // }
 
+  result["f"] = x.f;
+  result["g"] = x.g;
+  result["grad"] = x.grad;
   result["h"] = h;
 
   return result;

@@ -21,16 +21,20 @@ Rcpp::List grad_comp(Rcpp::S4 fit,
   x.ntransforms = control_transform.size();
   x.nestimators = control_estimator.size();
 
-  product_manifold* final_manifold;
-  product_transform* final_transform;
-  product_estimator* final_estimator;
+  product_manifold final_manifold;
+  product_transform final_transform;
+  product_estimator final_estimator;
 
   std::vector<manifolds*> xmanifolds(x.nmanifolds);
   std::vector<transformations*> xtransforms(x.ntransforms);
   std::vector<estimators*> xestimators(x.nestimators);
 
+  pointer_vector_guard<manifolds> manifold_guard(xmanifolds);
+  pointer_vector_guard<transformations> transform_guard(xtransforms);
+  pointer_vector_guard<estimators> estimator_guard(xestimators);
+
   if(compute == "pre_opt") return result;
-  optim* algorithm = choose_optim(x, control_optimizer);
+  std::unique_ptr<optim> algorithm(choose_optim(x, fit));
   if(compute == "choose_optim") return result;
 
   result["parameters"] = x.parameters;
@@ -69,75 +73,72 @@ Rcpp::List grad_comp(Rcpp::S4 fit,
    * Computations
    */
 
-  // Rcpp::List Optim = fit.slot("Optim");
-  // arma::vec parameters = Optim["parameters"];
-  // x.parameters = parameters;
-
   Rcpp::List computations;
 
   if(compute == "setup") return result;
 
-  final_manifold->param(x, xmanifolds);
+  final_manifold.param(x, xmanifolds);
   if(compute == "mani_param") return result;
 
-  final_manifold->retr(x, xmanifolds);
+  final_manifold.retr(x, xmanifolds);
+  parameters = x.parameters; // Use the same point for numerical derivatives.
   result["parameters"] = x.parameters;
   result["transparameters"] = x.transparameters;
   if(compute == "mani_retr") return result;
 
-  final_manifold->param(x, xmanifolds);
+  final_manifold.param(x, xmanifolds);
   result["parameters"] = x.parameters;
   result["transparameters"] = x.transparameters;
   if(compute == "mani") return result;
 
-  final_transform->transform(x, xtransforms);
+  final_transform.transform(x, xtransforms);
   result["parameters"] = x.parameters;
   result["transparameters"] = x.transparameters;
   if(compute == "trans") return result;
 
-  final_estimator->param(x, xestimators);
+  final_estimator.param(x, xestimators);
   result["parameters"] = x.parameters;
   result["transparameters"] = x.transparameters;
   if(compute == "param") return result;
 
-  final_estimator->F(x, xestimators);
+  final_estimator.F(x, xestimators);
   result["f"] = x.f;
   if(compute == "f") return result;
 
-  final_estimator->G(x, xestimators);
+  final_estimator.G(x, xestimators);
   result["grad"] = x.grad;
   if(compute == "grad") return result;
 
-  final_transform->update_grad(x, xtransforms);
+  final_transform.update_grad(x, xtransforms);
   result["grad"] = x.grad;
   result["g"] = x.g;
   if(compute == "g") return result;
 
-  final_manifold->proj(x, xmanifolds);
+  final_manifold.proj(x, xmanifolds);
   result["rg"] = x.rg;
   if(compute == "rg") return result;
 
-  final_transform->dtransform(x, xtransforms);
+  final_transform.dtransform(x, xtransforms);
   result["dtransparameters"] = x.dtransparameters;
   if(compute == "dtransform") return result;
 
-  final_estimator->dG(x, xestimators);
+  final_estimator.dG(x, xestimators);
   result["dgrad"] = x.dgrad;
   if(compute == "dgrad") return result;
 
-  final_transform->update_dgrad(x, xtransforms);
+  final_transform.update_dgrad(x, xtransforms);
   result["dg"] = x.dg;
   if(compute == "dg") return result;
 
-  final_manifold->hess(x, xmanifolds);
+  final_manifold.hess(x, xmanifolds);
   result["dH"] = x.dH;
   if(compute == "dH") return result;
 
-  // final_transform->dconstraints(x, xtransforms);
+  // final_transform.dconstraints(x, xtransforms);
   // result["dconstr"] = x.mat_dconstraints;
   // if(compute == "dconstr") return result;
 
-  final_estimator->outcomes(x, xestimators);
+  final_estimator.outcomes(x, xestimators);
   result["doubles"] = std::get<0>(x.outputs_estimator);
   result["vectors"] = std::get<1>(x.outputs_estimator);
   result["matrices"] = std::get<2>(x.outputs_estimator);
@@ -152,21 +153,21 @@ Rcpp::List grad_comp(Rcpp::S4 fit,
    * NUMERICAL DERIVATIVES
    */
 
-  product_transform* T1;
-  product_estimator* F1;
+  product_transform T1;
+  product_estimator F1;
 
   // Check the gradient:
   arma::vec numg(parameters.n_elem);
   for(int i = 0; i < parameters.n_elem; ++i) {
     x.parameters = parameters; x.parameters[i] += eps;
-    T1->transform(x, xtransforms);
-    F1->param(x, xestimators);
-    F1->F(x, xestimators);
+    T1.transform(x, xtransforms);
+    F1.param(x, xestimators);
+    F1.F(x, xestimators);
     double f1 = x.f;
     x.parameters = parameters; x.parameters[i] -= eps;
-    T1->transform(x, xtransforms);
-    F1->param(x, xestimators);
-    F1->F(x, xestimators);
+    T1.transform(x, xtransforms);
+    F1.param(x, xestimators);
+    F1.F(x, xestimators);
     double f0 = x.f;
     numg[i] = (f1-f0) / (2*eps);
   }
@@ -177,18 +178,18 @@ Rcpp::List grad_comp(Rcpp::S4 fit,
 
   // Check the differential of the gradient:
   x.parameters = parameters + eps*dparameters;
-  T1->transform(x, xtransforms);
-  F1->param(x, xestimators);
-  F1->F(x, xestimators);
-  F1->G(x, xestimators);
-  T1->update_grad(x, xtransforms);
+  T1.transform(x, xtransforms);
+  F1.param(x, xestimators);
+  F1.F(x, xestimators);
+  F1.G(x, xestimators);
+  T1.update_grad(x, xtransforms);
   arma::vec g1 = x.g;
   x.parameters = parameters - eps*dparameters;
-  T1->transform(x, xtransforms);
-  F1->param(x, xestimators);
-  F1->F(x, xestimators);
-  F1->G(x, xestimators);
-  T1->update_grad(x, xtransforms);
+  T1.transform(x, xtransforms);
+  F1.param(x, xestimators);
+  F1.F(x, xestimators);
+  F1.G(x, xestimators);
+  T1.update_grad(x, xtransforms);
   arma::vec g0 = x.g;
   arma::vec numdg = (g1-g0) / (2*eps);
 
