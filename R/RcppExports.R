@@ -85,40 +85,44 @@ rpoblq <- function(p, q, constraints) {
     .Call(`_latent_rpoblq`, p, q, constraints)
 }
 
-grad_comp <- function(control_manifold, control_transform, control_estimator, control_optimizer, compute = "all", eps = 1e-04) {
-    .Call(`_latent_grad_comp`, control_manifold, control_transform, control_estimator, control_optimizer, compute, eps)
+grad_comp <- function(fit, compute = "all", eps = 1e-04) {
+    .Call(`_latent_grad_comp`, fit, compute, eps)
 }
 
-get_f <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
-    .Call(`_latent_get_f`, control_manifold, control_transform, control_estimator, control_optimizer)
+get_f <- function(fit) {
+    .Call(`_latent_get_f`, fit)
 }
 
-get_grad <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
-    .Call(`_latent_get_grad`, control_manifold, control_transform, control_estimator, control_optimizer)
+get_df <- function(fit, dparameters, eps = 1e-04) {
+    .Call(`_latent_get_df`, fit, dparameters, eps)
 }
 
-get_dgrad <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
-    .Call(`_latent_get_dgrad`, control_manifold, control_transform, control_estimator, control_optimizer)
+get_grad <- function(fit) {
+    .Call(`_latent_get_grad`, fit)
 }
 
-get_hess <- function(control_manifold, control_transform, control_estimator, control_optimizer, cores = 1L) {
-    .Call(`_latent_get_hess`, control_manifold, control_transform, control_estimator, control_optimizer, cores)
+get_dgrad <- function(fit, dparameters) {
+    .Call(`_latent_get_dgrad`, fit, dparameters)
 }
 
-get_rhess <- function(control_manifold, control_transform, control_estimator, control_optimizer, cores = 1L) {
-    .Call(`_latent_get_rhess`, control_manifold, control_transform, control_estimator, control_optimizer, cores)
+get_hess <- function(fit, cores = 1L) {
+    .Call(`_latent_get_hess`, fit, cores)
 }
 
-get_vcov <- function(control_manifold, control_transform, control_estimator, control_optimizer, vcov, cores = 1L) {
-    .Call(`_latent_get_vcov`, control_manifold, control_transform, control_estimator, control_optimizer, vcov, cores)
+get_rhess <- function(fit, cores = 1L) {
+    .Call(`_latent_get_rhess`, fit, cores)
 }
 
-get_jacob <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
-    .Call(`_latent_get_jacob`, control_manifold, control_transform, control_estimator, control_optimizer)
+get_vcov <- function(fit, vcov, cores = 1L) {
+    .Call(`_latent_get_vcov`, fit, vcov, cores)
 }
 
-get_dconstr <- function(control_manifold, control_transform, control_estimator, control_optimizer) {
-    .Call(`_latent_get_dconstr`, control_manifold, control_transform, control_estimator, control_optimizer)
+get_jacob <- function(fit) {
+    .Call(`_latent_get_jacob`, fit)
+}
+
+get_dconstr <- function(fit) {
+    .Call(`_latent_get_dconstr`, fit)
 }
 
 yule_cor_full_rcpp <- function(X_df, ipfp_maxit = 2000L, ipfp_tol = 1e-12, pinv_tol = 1e-12) {

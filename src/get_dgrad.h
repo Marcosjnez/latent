@@ -1,13 +1,17 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/10/2025
+ * Modification date: 05/09/2026
  */
 
-Rcpp::List get_dgrad(Rcpp::List control_manifold,
-                     Rcpp::List control_transform,
-                     Rcpp::List control_estimator,
-                     Rcpp::List control_optimizer) {
+Rcpp::List get_dgrad(Rcpp::S4 fit,
+                     arma::vec dparameters) {
+
+  Rcpp::List modelInfo = fit.slot("modelInfo");
+  Rcpp::List control_manifold = modelInfo["control_manifold"];
+  Rcpp::List control_transform = modelInfo["control_transform"];
+  Rcpp::List control_estimator = modelInfo["control_estimator"];
+  Rcpp::List control_optimizer = modelInfo["control_optimizer"];
 
   Rcpp::List result;
   arguments_optim x;
@@ -42,6 +46,13 @@ Rcpp::List get_dgrad(Rcpp::List control_manifold,
    * Computations
    */
 
+  Rcpp::List Optim = fit.slot("Optim");
+  arma::vec parameters = Optim["parameters"];
+  arma::vec transparameters = Optim["transparameters"];
+  x.parameters = parameters;
+  x.transparameters = transparameters;
+  x.dparameters = dparameters;
+
   Rcpp::List computations;
 
   final_manifold->param(x, xmanifolds);
@@ -58,8 +69,10 @@ Rcpp::List get_dgrad(Rcpp::List control_manifold,
   final_transform->update_dgrad(x, xtransforms);
 
   result["f"] = x.f;
-  result["dgrad"] = x.dgrad;
+  result["g"] = x.g;
   result["dg"] = x.dg;
+  result["grad"] = x.grad;
+  result["dgrad"] = x.dgrad;
 
   return result;
 

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 17/08/2026
+# Modification date: 05/09/2026
 #'
 #' Polychoric Correlation Matrix
 #'
@@ -1019,15 +1019,16 @@ compute_se_lpoly_one_step <- function(dataList, modelInfo, Optim, parameters) {
 
   #### Hessian ####
 
-  modelInfo$control_optimizer$parameters[[1L]] <- Optim$parameters
-  modelInfo$control_optimizer$transparameters[[1L]] <-
-    Optim$transparameters
-
-  H <- get_hess(control_manifold = modelInfo$control_manifold,
-                control_transform = modelInfo$control_transform,
-                control_estimator = modelInfo$control_estimator,
-                control_optimizer = modelInfo$control_optimizer,
-                cores = 1L)$h
+  # modelInfo$control_optimizer$parameters[[1L]] <- Optim$parameters
+  # modelInfo$control_optimizer$transparameters[[1L]] <-
+  #   Optim$transparameters
+  #
+  # H <- get_hess(control_manifold = modelInfo$control_manifold,
+  #               control_transform = modelInfo$control_transform,
+  #               control_estimator = modelInfo$control_estimator,
+  #               control_optimizer = modelInfo$control_optimizer,
+  #               cores = 1L)$h
+  H <- get_hess(fit, cores = 1L)$h
 
   rownames(H) <- colnames(H) <- modelInfo$parameters_labels
 

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 22/08/2026
+ * Modification date: 05/09/2026
  */
 
 // #define ARMA_NO_DEBUG
@@ -43,6 +43,7 @@
 #include "optimizer.h"
 #include "grad_comp.h"
 #include "get_f.h"
+#include "get_df.h"
 #include "get_grad.h"
 #include "get_dgrad.h"
 #include "get_hess.h"
@@ -117,64 +118,43 @@ arma::mat lyap_sym(arma::mat Y, arma::mat Q);
 arma::mat rpoblq(int p, int q, arma::mat constraints);
 
 // [[Rcpp::export]]
-Rcpp::List grad_comp(Rcpp::List control_manifold,
-                     Rcpp::List control_transform,
-                     Rcpp::List control_estimator,
-                     Rcpp::List control_optimizer,
+Rcpp::List grad_comp(Rcpp::S4 fit,
                      std::string compute = "all",
                      double eps = 1e-04);
 
 // [[Rcpp::export]]
-Rcpp::List get_f(Rcpp::List control_manifold,
-                 Rcpp::List control_transform,
-                 Rcpp::List control_estimator,
-                 Rcpp::List control_optimizer);
+Rcpp::List get_f(Rcpp::S4 fit);
 
 // [[Rcpp::export]]
-Rcpp::List get_grad(Rcpp::List control_manifold,
-                    Rcpp::List control_transform,
-                    Rcpp::List control_estimator,
-                    Rcpp::List control_optimizer);
+Rcpp::List get_df(Rcpp::S4 fit,
+                  arma::vec dparameters,
+                  double eps = 1e-04);
 
 // [[Rcpp::export]]
-Rcpp::List get_dgrad(Rcpp::List control_manifold,
-                     Rcpp::List control_transform,
-                     Rcpp::List control_estimator,
-                     Rcpp::List control_optimizer);
+Rcpp::List get_grad(Rcpp::S4 fit);
 
 // [[Rcpp::export]]
-Rcpp::List get_hess(Rcpp::List control_manifold,
-                    Rcpp::List control_transform,
-                    Rcpp::List control_estimator,
-                    Rcpp::List control_optimizer,
+Rcpp::List get_dgrad(Rcpp::S4 fit,
+                     arma::vec dparameters);
+
+// [[Rcpp::export]]
+Rcpp::List get_hess(Rcpp::S4 fit,
                     int cores = 1L);
 
 // [[Rcpp::export]]
-Rcpp::List get_rhess(Rcpp::List control_manifold,
-                     Rcpp::List control_transform,
-                     Rcpp::List control_estimator,
-                     Rcpp::List control_optimizer,
+Rcpp::List get_rhess(Rcpp::S4 fit,
                      int cores = 1L);
 
 // [[Rcpp::export]]
-Rcpp::List get_vcov(Rcpp::List control_manifold,
-                    Rcpp::List control_transform,
-                    Rcpp::List control_estimator,
-                    Rcpp::List control_optimizer,
+Rcpp::List get_vcov(Rcpp::S4 fit,
                     arma::mat vcov,
                     int cores = 1L);
 
 // [[Rcpp::export]]
-Rcpp::List get_jacob(Rcpp::List control_manifold,
-                     Rcpp::List control_transform,
-                     Rcpp::List control_estimator,
-                     Rcpp::List control_optimizer);
+Rcpp::List get_jacob(Rcpp::S4 fit);
 
 // [[Rcpp::export]]
-Rcpp::List get_dconstr(Rcpp::List control_manifold,
-                       Rcpp::List control_transform,
-                       Rcpp::List control_estimator,
-                       Rcpp::List control_optimizer);
+Rcpp::List get_dconstr(Rcpp::S4 fit);
 
 // [[Rcpp::export]]
 Rcpp::List yule_cor_full_rcpp(const Rcpp::DataFrame& X_df,

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 05/09/2026
 #'
 #' Variance-Covariance Matrix for Latent Objects
 #'
@@ -53,22 +53,23 @@ vcov.latent <- function(fit, v, parameters = NULL) {
 
   #### Fitted parameter values ####
 
-  fit@modelInfo$control_optimizer$parameters[[1L]] <-
-    fit@Optim$parameters
-  fit@modelInfo$control_optimizer$transparameters[[1L]] <-
-    fit@Optim$transparameters
+  # fit@modelInfo$control_optimizer$parameters[[1L]] <-
+  #   fit@Optim$parameters
+  # fit@modelInfo$control_optimizer$transparameters[[1L]] <-
+  #   fit@Optim$transparameters
   fit@modelInfo$control_optimizer$idx_transforms <-
     trans_depends(fit@modelInfo, parameters)
 
   #### Delta-method covariance ####
 
-  VCOV <- get_vcov(
-    control_manifold = fit@modelInfo$control_manifold,
-    control_transform = fit@modelInfo$control_transform,
-    control_estimator = fit@modelInfo$control_estimator,
-    control_optimizer = fit@modelInfo$control_optimizer,
-    vcov = v
-  )
+  # VCOV <- get_vcov(
+  #   control_manifold = fit@modelInfo$control_manifold,
+  #   control_transform = fit@modelInfo$control_transform,
+  #   control_estimator = fit@modelInfo$control_estimator,
+  #   control_optimizer = fit@modelInfo$control_optimizer,
+  #   vcov = v
+  # )
+  VCOV <- get_vcov(fit, vcov = v)
 
   trans_labels <- fit@modelInfo$transparameters_labels
   rownames(VCOV$vcov) <- colnames(VCOV$vcov) <- trans_labels

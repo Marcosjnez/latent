@@ -1,15 +1,18 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/10/2025
+ * Modification date: 05/09/2026
  */
 
-Rcpp::List grad_comp(Rcpp::List control_manifold,
-                     Rcpp::List control_transform,
-                     Rcpp::List control_estimator,
-                     Rcpp::List control_optimizer,
+Rcpp::List grad_comp(Rcpp::S4 fit,
                      std::string compute,
                      double eps) {
+
+  Rcpp::List modelInfo = fit.slot("modelInfo");
+  Rcpp::List control_manifold = modelInfo["control_manifold"];
+  Rcpp::List control_transform = modelInfo["control_transform"];
+  Rcpp::List control_estimator = modelInfo["control_estimator"];
+  Rcpp::List control_optimizer = modelInfo["control_optimizer"];
 
   Rcpp::List result;
   arguments_optim x;
@@ -65,6 +68,10 @@ Rcpp::List grad_comp(Rcpp::List control_manifold,
   /*
    * Computations
    */
+
+  // Rcpp::List Optim = fit.slot("Optim");
+  // arma::vec parameters = Optim["parameters"];
+  // x.parameters = parameters;
 
   Rcpp::List computations;
 

@@ -46,16 +46,17 @@ fit <- lefa(data = scores,
 
 labels <- fit@modelInfo$parameters_labels
 
-control_optimizer <- fit@modelInfo$control_optimizer
-control_optimizer$parameters[[1L]] <- fit@Optim$parameters
-control_optimizer$transparameters[[1L]] <- fit@Optim$transparameters
+# control_optimizer <- fit@modelInfo$control_optimizer
+# control_optimizer$parameters[[1L]] <- fit@Optim$parameters
+# control_optimizer$transparameters[[1L]] <- fit@Optim$transparameters
 
-RH <- latent:::get_rhess(
-  control_manifold = fit@modelInfo$control_manifold,
-  control_transform = fit@modelInfo$control_transform,
-  control_estimator = fit@modelInfo$control_estimator,
-  control_optimizer = control_optimizer
-)
+# RH <- latent:::get_rhess(
+#   control_manifold = fit@modelInfo$control_manifold,
+#   control_transform = fit@modelInfo$control_transform,
+#   control_estimator = fit@modelInfo$control_estimator,
+#   control_optimizer = control_optimizer
+# )
+RH <- get_rhess(fit)
 
 P_Riemannian <- RH$P
 

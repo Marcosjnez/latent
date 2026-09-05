@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/08/2026
+# Modification date: 05/09/2026
 #'
 #' Jacobian Matrix for Latent Models
 #'
@@ -57,21 +57,22 @@ jacobian.latent <- function(fit, parameters = NULL) {
 
   #### Fitted parameter values ####
 
-  fit@modelInfo$control_optimizer$parameters[[1L]] <-
-    fit@Optim$parameters
-  fit@modelInfo$control_optimizer$transparameters[[1L]] <-
-    fit@Optim$transparameters
+  # fit@modelInfo$control_optimizer$parameters[[1L]] <-
+  #   fit@Optim$parameters
+  # fit@modelInfo$control_optimizer$transparameters[[1L]] <-
+  #   fit@Optim$transparameters
   fit@modelInfo$control_optimizer$idx_transforms <-
     trans_depends(fit@modelInfo, selected_parameters)
 
   #### Full dependency Jacobian ####
 
-  result <- get_jacob(
-    fit@modelInfo$control_manifold,
-    fit@modelInfo$control_transform,
-    fit@modelInfo$control_estimator,
-    fit@modelInfo$control_optimizer
-  )$jacob
+  # result <- get_jacob(
+  #   fit@modelInfo$control_manifold,
+  #   fit@modelInfo$control_transform,
+  #   fit@modelInfo$control_estimator,
+  #   fit@modelInfo$control_optimizer
+  # )$jacob
+  result <- get_jacob(fit)$jacob
 
   if(nrow(result) != length(trans_labels) ||
      ncol(result) != length(trans_labels)) {

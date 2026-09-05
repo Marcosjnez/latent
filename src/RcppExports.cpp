@@ -277,134 +277,121 @@ BEGIN_RCPP
 END_RCPP
 }
 // grad_comp
-Rcpp::List grad_comp(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, std::string compute, double eps);
-RcppExport SEXP _latent_grad_comp(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP computeSEXP, SEXP epsSEXP) {
+Rcpp::List grad_comp(Rcpp::S4 fit, std::string compute, double eps);
+RcppExport SEXP _latent_grad_comp(SEXP fitSEXP, SEXP computeSEXP, SEXP epsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
     Rcpp::traits::input_parameter< std::string >::type compute(computeSEXP);
     Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
-    rcpp_result_gen = Rcpp::wrap(grad_comp(control_manifold, control_transform, control_estimator, control_optimizer, compute, eps));
+    rcpp_result_gen = Rcpp::wrap(grad_comp(fit, compute, eps));
     return rcpp_result_gen;
 END_RCPP
 }
 // get_f
-Rcpp::List get_f(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
-RcppExport SEXP _latent_get_f(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+Rcpp::List get_f(Rcpp::S4 fit);
+RcppExport SEXP _latent_get_f(SEXP fitSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_f(control_manifold, control_transform, control_estimator, control_optimizer));
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_f(fit));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_df
+Rcpp::List get_df(Rcpp::S4 fit, arma::vec dparameters, double eps);
+RcppExport SEXP _latent_get_df(SEXP fitSEXP, SEXP dparametersSEXP, SEXP epsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type dparameters(dparametersSEXP);
+    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_df(fit, dparameters, eps));
     return rcpp_result_gen;
 END_RCPP
 }
 // get_grad
-Rcpp::List get_grad(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
-RcppExport SEXP _latent_get_grad(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+Rcpp::List get_grad(Rcpp::S4 fit);
+RcppExport SEXP _latent_get_grad(SEXP fitSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_grad(control_manifold, control_transform, control_estimator, control_optimizer));
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_grad(fit));
     return rcpp_result_gen;
 END_RCPP
 }
 // get_dgrad
-Rcpp::List get_dgrad(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
-RcppExport SEXP _latent_get_dgrad(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+Rcpp::List get_dgrad(Rcpp::S4 fit, arma::vec dparameters);
+RcppExport SEXP _latent_get_dgrad(SEXP fitSEXP, SEXP dparametersSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_dgrad(control_manifold, control_transform, control_estimator, control_optimizer));
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type dparameters(dparametersSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_dgrad(fit, dparameters));
     return rcpp_result_gen;
 END_RCPP
 }
 // get_hess
-Rcpp::List get_hess(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, int cores);
-RcppExport SEXP _latent_get_hess(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP coresSEXP) {
+Rcpp::List get_hess(Rcpp::S4 fit, int cores);
+RcppExport SEXP _latent_get_hess(SEXP fitSEXP, SEXP coresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
     Rcpp::traits::input_parameter< int >::type cores(coresSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_hess(control_manifold, control_transform, control_estimator, control_optimizer, cores));
+    rcpp_result_gen = Rcpp::wrap(get_hess(fit, cores));
     return rcpp_result_gen;
 END_RCPP
 }
 // get_rhess
-Rcpp::List get_rhess(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, int cores);
-RcppExport SEXP _latent_get_rhess(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP coresSEXP) {
+Rcpp::List get_rhess(Rcpp::S4 fit, int cores);
+RcppExport SEXP _latent_get_rhess(SEXP fitSEXP, SEXP coresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
     Rcpp::traits::input_parameter< int >::type cores(coresSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_rhess(control_manifold, control_transform, control_estimator, control_optimizer, cores));
+    rcpp_result_gen = Rcpp::wrap(get_rhess(fit, cores));
     return rcpp_result_gen;
 END_RCPP
 }
 // get_vcov
-Rcpp::List get_vcov(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer, arma::mat vcov, int cores);
-RcppExport SEXP _latent_get_vcov(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP, SEXP vcovSEXP, SEXP coresSEXP) {
+Rcpp::List get_vcov(Rcpp::S4 fit, arma::mat vcov, int cores);
+RcppExport SEXP _latent_get_vcov(SEXP fitSEXP, SEXP vcovSEXP, SEXP coresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type vcov(vcovSEXP);
     Rcpp::traits::input_parameter< int >::type cores(coresSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_vcov(control_manifold, control_transform, control_estimator, control_optimizer, vcov, cores));
+    rcpp_result_gen = Rcpp::wrap(get_vcov(fit, vcov, cores));
     return rcpp_result_gen;
 END_RCPP
 }
 // get_jacob
-Rcpp::List get_jacob(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
-RcppExport SEXP _latent_get_jacob(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+Rcpp::List get_jacob(Rcpp::S4 fit);
+RcppExport SEXP _latent_get_jacob(SEXP fitSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_jacob(control_manifold, control_transform, control_estimator, control_optimizer));
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_jacob(fit));
     return rcpp_result_gen;
 END_RCPP
 }
 // get_dconstr
-Rcpp::List get_dconstr(Rcpp::List control_manifold, Rcpp::List control_transform, Rcpp::List control_estimator, Rcpp::List control_optimizer);
-RcppExport SEXP _latent_get_dconstr(SEXP control_manifoldSEXP, SEXP control_transformSEXP, SEXP control_estimatorSEXP, SEXP control_optimizerSEXP) {
+Rcpp::List get_dconstr(Rcpp::S4 fit);
+RcppExport SEXP _latent_get_dconstr(SEXP fitSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_manifold(control_manifoldSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_transform(control_transformSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_estimator(control_estimatorSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_optimizer(control_optimizerSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_dconstr(control_manifold, control_transform, control_estimator, control_optimizer));
+    Rcpp::traits::input_parameter< Rcpp::S4 >::type fit(fitSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_dconstr(fit));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -530,15 +517,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_roblq", (DL_FUNC) &_latent_roblq, 2},
     {"_latent_lyap_sym", (DL_FUNC) &_latent_lyap_sym, 2},
     {"_latent_rpoblq", (DL_FUNC) &_latent_rpoblq, 3},
-    {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 6},
-    {"_latent_get_f", (DL_FUNC) &_latent_get_f, 4},
-    {"_latent_get_grad", (DL_FUNC) &_latent_get_grad, 4},
-    {"_latent_get_dgrad", (DL_FUNC) &_latent_get_dgrad, 4},
-    {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 5},
-    {"_latent_get_rhess", (DL_FUNC) &_latent_get_rhess, 5},
-    {"_latent_get_vcov", (DL_FUNC) &_latent_get_vcov, 6},
-    {"_latent_get_jacob", (DL_FUNC) &_latent_get_jacob, 4},
-    {"_latent_get_dconstr", (DL_FUNC) &_latent_get_dconstr, 4},
+    {"_latent_grad_comp", (DL_FUNC) &_latent_grad_comp, 3},
+    {"_latent_get_f", (DL_FUNC) &_latent_get_f, 1},
+    {"_latent_get_df", (DL_FUNC) &_latent_get_df, 3},
+    {"_latent_get_grad", (DL_FUNC) &_latent_get_grad, 1},
+    {"_latent_get_dgrad", (DL_FUNC) &_latent_get_dgrad, 2},
+    {"_latent_get_hess", (DL_FUNC) &_latent_get_hess, 2},
+    {"_latent_get_rhess", (DL_FUNC) &_latent_get_rhess, 2},
+    {"_latent_get_vcov", (DL_FUNC) &_latent_get_vcov, 3},
+    {"_latent_get_jacob", (DL_FUNC) &_latent_get_jacob, 1},
+    {"_latent_get_dconstr", (DL_FUNC) &_latent_get_dconstr, 1},
     {"_latent_yule_cor_full_rcpp", (DL_FUNC) &_latent_yule_cor_full_rcpp, 4},
     {"_latent_real_sqrtmat", (DL_FUNC) &_latent_real_sqrtmat, 1},
     {"_latent_count", (DL_FUNC) &_latent_count, 3},

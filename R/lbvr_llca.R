@@ -1,7 +1,6 @@
-# Author: Mauricio Garnier-Villarreal
-# Modified by: Marcos Jimenez
+# Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/07/2026
+# Modification date: 05/09/2026
 #'
 #' @title Local bivariate residuals for latent class analysis
 #'
@@ -602,10 +601,13 @@ latentgold_cont_cont_bvr <- function(fit, v1, v2) {
   control_estimator <- fit2@modelInfo$control_estimator
   control_optimizer <- fit2@modelInfo$control_optimizer
 
-  U <- get_grad(control_manifold, control_transform, control_estimator,
-                control_optimizer)$g
-  I <- get_hess(control_manifold, control_transform, control_estimator,
-                control_optimizer)$h
+  # U <- get_grad(control_manifold, control_transform, control_estimator,
+  #               control_optimizer)$g
+  # I <- get_hess(control_manifold, control_transform, control_estimator,
+  #               control_optimizer)$h
+  U <- get_grad(fit)$g
+  I <- get_grad(fit)$h
+
   K <- length(U)
 
   score_stat <- as.numeric(t(U) %*% solve(I) %*% U)

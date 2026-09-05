@@ -4,7 +4,9 @@
  * Modification date: 05/09/2026
  */
 
-Rcpp::List get_grad(Rcpp::S4 fit) {
+Rcpp::List get_df(Rcpp::S4 fit,
+                  arma::vec dparameters,
+                  double eps) {
 
   Rcpp::List modelInfo = fit.slot("modelInfo");
   Rcpp::List control_manifold = modelInfo["control_manifold"];
@@ -47,11 +49,10 @@ Rcpp::List get_grad(Rcpp::S4 fit) {
 
   Rcpp::List Optim = fit.slot("Optim");
   arma::vec parameters = Optim["parameters"];
-  arma::vec transparameters = Optim["transparameters"];
-  x.parameters = parameters;
-  x.transparameters = transparameters;
 
   Rcpp::List computations;
+
+  x.parameters = parameters + eps*dparameters;
 
   final_manifold->param(x, xmanifolds);
   final_manifold->retr(x, xmanifolds);
@@ -60,14 +61,22 @@ Rcpp::List get_grad(Rcpp::S4 fit) {
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
   final_estimator->F(x, xestimators);
-  final_estimator->G(x, xestimators);
-  final_transform->update_grad(x, xtransforms);
+  double f1 = x.f;
 
-  result["f"] = x.f;
-  result["grad"] = x.grad;
-  result["g"] = x.g;
-  result["parameters"] = x.parameters;
-  result["transparameters"] = x.transparameters;
+  x.parameters = parameters - eps*dparameters;
+
+  final_manifold->param(x, xmanifolds);
+  final_manifold->retr(x, xmanifolds);
+  final_manifold->param(x, xmanifolds);
+
+  final_transform->transform(x, xtransforms);
+  final_estimator->param(x, xestimators);
+  final_estimator->F(x, xestimators);
+  double f2 = x.f;
+
+  double df = (f1-f2)/(2*eps);
+
+  result["df"] = df;
 
   return result;
 

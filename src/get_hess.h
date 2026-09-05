@@ -1,14 +1,17 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 16/07/2026
+ * Modification date: 05/09/2026
  */
 
-Rcpp::List get_hess(Rcpp::List control_manifold,
-                    Rcpp::List control_transform,
-                    Rcpp::List control_estimator,
-                    Rcpp::List control_optimizer,
+Rcpp::List get_hess(Rcpp::S4 fit,
                     int cores) {
+
+  Rcpp::List modelInfo = fit.slot("modelInfo");
+  Rcpp::List control_manifold = modelInfo["control_manifold"];
+  Rcpp::List control_transform = modelInfo["control_transform"];
+  Rcpp::List control_estimator = modelInfo["control_estimator"];
+  Rcpp::List control_optimizer = modelInfo["control_optimizer"];
 
   Rcpp::List result;
   arguments_optim x;
@@ -26,13 +29,6 @@ Rcpp::List get_hess(Rcpp::List control_manifold,
 
   optim* algorithm = choose_optim(x, control_optimizer);
 
-  std::vector<arma::vec> parameters_list = control_optimizer["parameters"];
-  std::vector<arma::vec> transparameters_list = control_optimizer["transparameters"];
-  arma::vec parameters = parameters_list[0];
-  arma::vec transparameters = transparameters_list[0];
-  x.parameters = parameters;
-  x.transparameters = transparameters;
-
   for(int i=0; i < x.nmanifolds; ++i) {
     xmanifolds[i] = choose_manifold(control_manifold[i]);
   }
@@ -48,6 +44,12 @@ Rcpp::List get_hess(Rcpp::List control_manifold,
   /*
    * Computations
    */
+
+  Rcpp::List Optim = fit.slot("Optim");
+  arma::vec parameters = Optim["parameters"];
+  arma::vec transparameters = Optim["transparameters"];
+  x.parameters = parameters;
+  x.transparameters = transparameters;
 
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);

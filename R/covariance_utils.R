@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/08/2026
+# Modification date: 05/09/2026
 
 #### Validate and symmetrize a covariance matrix ####
 
@@ -148,17 +148,18 @@ invert_hessian_latent <- function(fit, H,
 
   if(se_method == "RH") {
 
-    control_optimizer <- fit@modelInfo$control_optimizer
-    control_optimizer$parameters[[1L]] <- fit@Optim$parameters
-    control_optimizer$transparameters[[1L]] <-
-      fit@Optim$transparameters
+    # control_optimizer <- fit@modelInfo$control_optimizer
+    # control_optimizer$parameters[[1L]] <- fit@Optim$parameters
+    # control_optimizer$transparameters[[1L]] <-
+    #   fit@Optim$transparameters
 
-    RH <- get_rhess(
-      control_manifold = fit@modelInfo$control_manifold,
-      control_transform = fit@modelInfo$control_transform,
-      control_estimator = fit@modelInfo$control_estimator,
-      control_optimizer = control_optimizer
-    )
+    # RH <- get_rhess(
+    #   control_manifold = fit@modelInfo$control_manifold,
+    #   control_transform = fit@modelInfo$control_transform,
+    #   control_estimator = fit@modelInfo$control_estimator,
+    #   control_optimizer = control_optimizer
+    # )
+    RH <- get_rhess(fit)
 
     result <- RH$P
 
@@ -271,16 +272,17 @@ invert_hessian_latent <- function(fit, H,
 
   #### Euclidean gradient and Lagrange multipliers ####
 
-  control_optimizer <- fit@modelInfo$control_optimizer
-  control_optimizer$parameters[[1L]] <- fit@Optim$parameters
-  control_optimizer$transparameters[[1L]] <- fit@Optim$transparameters
+  # control_optimizer <- fit@modelInfo$control_optimizer
+  # control_optimizer$parameters[[1L]] <- fit@Optim$parameters
+  # control_optimizer$transparameters[[1L]] <- fit@Optim$transparameters
 
-  gradient <- get_grad(
-    control_manifold = fit@modelInfo$control_manifold,
-    control_transform = fit@modelInfo$control_transform,
-    control_estimator = fit@modelInfo$control_estimator,
-    control_optimizer = control_optimizer
-  )$g
+  # gradient <- get_grad(
+  #   control_manifold = fit@modelInfo$control_manifold,
+  #   control_transform = fit@modelInfo$control_transform,
+  #   control_estimator = fit@modelInfo$control_estimator,
+  #   control_optimizer = control_optimizer
+  # )$g
+  gradient <- get_grad(fit)$g
   gradient <- c(gradient)
 
   free_labels <- fit@modelInfo$parameters_labels

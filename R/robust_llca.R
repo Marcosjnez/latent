@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/08/2026
+# Modification date: 05/09/2026
 #'
 #' LatentGold-Style Robust Variance-Covariance Matrix
 #'
@@ -21,10 +21,10 @@ robust.llca <- function(fit) {
 
   #### Compute the Hessian ####
 
-  fit@modelInfo$control_optimizer$parameters[[1L]] <-
-    fit@Optim$parameters
-  fit@modelInfo$control_optimizer$transparameters[[1L]] <-
-    fit@Optim$transparameters
+  # fit@modelInfo$control_optimizer$parameters[[1L]] <-
+  #   fit@Optim$parameters
+  # fit@modelInfo$control_optimizer$transparameters[[1L]] <-
+  #   fit@Optim$transparameters
 
   labels <- fit@modelInfo$parameters_labels
   H <- hessian(fit)
@@ -77,9 +77,10 @@ robust.llca <- function(fit) {
 
   #### Empirical score covariance ####
 
-  control_manifold <- fit@modelInfo$control_manifold
-  control_transform <- fit@modelInfo$control_transform
-  control_optimizer <- fit@modelInfo$control_optimizer
+  # control_manifold <- fit@modelInfo$control_manifold
+  # control_transform <- fit@modelInfo$control_transform
+  # control_optimizer <- fit@modelInfo$control_optimizer
+  # fit@modelInfo$control_estimator <- control_estimator[idx]
 
   B <- matrix(0,
               nrow = nparam,
@@ -88,16 +89,11 @@ robust.llca <- function(fit) {
 
   for(s in seq_len(npatterns)) {
 
+    # FIX: REMOVE FROM ESTIMATORS THE PENALTIES
     idx <- c(seq_len(K), K+s)
+    fit@modelInfo$control_estimator <- control_estimator[idx]
 
-    computations <- get_grad(
-      control_manifold = control_manifold,
-      control_transform = control_transform,
-      control_estimator = control_estimator[idx],
-      control_optimizer = control_optimizer
-    )
-
-    gradient <- computations$g/pattern_weights[s]
+    gradient <- get_grad(fit)$g/pattern_weights[s]
     B <- B + pattern_weights[s]*tcrossprod(gradient)
 
   }

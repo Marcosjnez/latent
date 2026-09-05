@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/08/2026
+# Modification date: 05/09/2026
 
 #### Store a dataset ####
 
@@ -1068,8 +1068,7 @@ control_transform <- fit@modelInfo$control_transform
 control_estimator <- fit@modelInfo$control_estimator
 control_optimizer <- fit@modelInfo$control_optimizer
 
-x <- grad_comp(control_manifold, control_transform,
-               control_estimator, control_optimizer,
+x <- grad_comp(fit,
                compute = "all",
                eps = 1e-07)
 x$f # 4362.65 # 13800.13
@@ -1083,8 +1082,7 @@ Optim <- optimizer(control_manifold, control_transform,
                    control_estimator, control_optimizer)
 Optim$f
 
-x2 <- get_grad(control_manifold, control_transform,
-               control_estimator, control_optimizer)
+x2 <- get_grad(fit)
 round(c(x2$g)-c(x$numg), 3)
 max(abs(c(x$g) - c(x$numg)))
 
@@ -1092,10 +1090,7 @@ max(abs(c(x$g) - c(x$numg)))
 G <- function(parameters) {
 
   control_optimizer$parameters[[1]] <- parameters
-  g <- get_grad(control_manifold = control_manifold,
-                control_transform = control_transform,
-                control_estimator = control_estimator,
-                control_optimizer = control_optimizer)$g
+  g <- get_grad(fit)$g
 
   return(g)
 
@@ -1104,33 +1099,15 @@ G <- function(parameters) {
 H <- numDeriv::jacobian(func = G, x = control_optimizer$parameters[[1]])
 H <- 0.5*(H + t(H)) # Force symmetry
 
-x <- get_hess(control_manifold, control_transform,
-              control_estimator, control_optimizer)
+x <- get_hess(fit)
 max(abs(H - x$h))
 
-VCOV <- get_vcov(control_manifold, control_transform, control_estimator,
-                 control_optimizer, x$h)
+VCOV <- get_vcov(fit, x$h)
 VCOV$vcov
 diag(VCOV$vcov)
 
-x <- get_jacob(control_manifold, control_transform,
-          control_estimator, control_optimizer)
+x <- get_jacob(fit)
 x
-
-# saveRDS(list(fit@modelInfo$control_manifold,
-#              fit@modelInfo$control_transform,
-#              fit@modelInfo$control_estimator,
-#              fit@modelInfo$control),
-#         file = "C:/Users/marco/OneDrive/Documentos/deletethis.rds")
-# X <- readRDS("C:/Users/marco/OneDrive/Documentos/deletethis.rds")
-# X[[3]][[1]][3] <- NULL; X[[3]][[2]][3] <- NULL
-# all.equal(fit@modelInfo$control_manifold, X[[1]])
-# all.equal(fit@modelInfo$control_transform, X[[2]])
-# all.equal(fit@modelInfo$control_estimator, X[[3]])
-# all.equal(fit@modelInfo$control, X[[4]])
-# fit@modelInfo$control$parameters
-# X[[4]]$parameters
-# fit@modelInfo$param
 
 #### To-do ####
 # Fix class ordering by size

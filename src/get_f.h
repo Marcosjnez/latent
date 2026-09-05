@@ -1,13 +1,16 @@
 /*
  * Author: Marcos Jiménez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 03/09/2026
+ * Modification date: 05/09/2026
  */
 
-Rcpp::List get_f(Rcpp::List control_manifold,
-                 Rcpp::List control_transform,
-                 Rcpp::List control_estimator,
-                 Rcpp::List control_optimizer) {
+Rcpp::List get_f(Rcpp::S4 fit) {
+
+  Rcpp::List modelInfo = fit.slot("modelInfo");
+  Rcpp::List control_manifold = modelInfo["control_manifold"];
+  Rcpp::List control_transform = modelInfo["control_transform"];
+  Rcpp::List control_estimator = modelInfo["control_estimator"];
+  Rcpp::List control_optimizer = modelInfo["control_optimizer"];
 
   Rcpp::List result;
   arguments_optim x;
@@ -44,9 +47,15 @@ Rcpp::List get_f(Rcpp::List control_manifold,
 
   Rcpp::List computations;
 
-  // final_manifold->param(x, xmanifolds);
-  // final_manifold->retr(x, xmanifolds);
-  // final_manifold->param(x, xmanifolds);
+  Rcpp::List Optim = fit.slot("Optim");
+  arma::vec parameters = Optim["parameters"];
+  arma::vec transparameters = Optim["transparameters"];
+  x.parameters = parameters;
+  x.transparameters = transparameters;
+
+  final_manifold->param(x, xmanifolds);
+  final_manifold->retr(x, xmanifolds);
+  final_manifold->param(x, xmanifolds);
 
   final_transform->transform(x, xtransforms);
   final_estimator->param(x, xestimators);
