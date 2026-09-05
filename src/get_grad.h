@@ -62,10 +62,10 @@ Rcpp::List get_grad(Rcpp::S4 fit) {
   final_transform.update_grad(x, xtransforms);
 
   result["f"] = x.f;
-  result["grad"] = x.grad;
-  result["g"] = x.g;
   result["parameters"] = x.parameters;
   result["transparameters"] = x.transparameters;
+  result["grad"] = x.grad;
+  result["g"] = x.g;
 
   return result;
 

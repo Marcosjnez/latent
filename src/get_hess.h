@@ -90,8 +90,11 @@ Rcpp::List get_hess(Rcpp::S4 fit,
 // }
 
   result["f"] = x.f;
-  result["g"] = x.g;
+  result["parameters"] = x.parameters;
+  result["transparameters"] = x.transparameters;
   result["grad"] = x.grad;
+  result["g"] = x.g;
+
   result["h"] = h;
 
   return result;

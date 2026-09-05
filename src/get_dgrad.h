@@ -71,9 +71,14 @@ Rcpp::List get_dgrad(Rcpp::S4 fit,
   final_transform.update_dgrad(x, xtransforms);
 
   result["f"] = x.f;
+  result["parameters"] = x.parameters;
+  result["transparameters"] = x.transparameters;
   result["g"] = x.g;
-  result["dg"] = x.dg;
   result["grad"] = x.grad;
+
+  result["dparameters"] = x.dparameters;
+  result["dtransparameters"] = x.dtransparameters;
+  result["dg"] = x.dg;
   result["dgrad"] = x.dgrad;
 
   return result;

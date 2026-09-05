@@ -60,6 +60,8 @@ Rcpp::List get_f(Rcpp::S4 fit) {
   final_estimator.F(x, xestimators);
 
   result["f"] = x.f;
+  result["parameters"] = x.parameters;
+  result["transparameters"] = x.transparameters;
 
   return result;
 
