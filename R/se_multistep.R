@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 25/08/2026
+# Modification date: 06/09/2026
 #'
 #' Standard Errors for Multistep Latent Models
 #'
@@ -95,6 +95,17 @@ se.multistep <- function(fit, type = NULL, parameters = NULL,
      (!is.numeric(digits) || length(digits) != 1L || !is.finite(digits) ||
       digits < 0L || digits != as.integer(digits))) {
     stop("digits must be NULL or a non-negative integer.")
+  }
+
+  #### Sorted reporting coordinates ####
+
+  if(!is.null(fit@modelInfo$sorting)) {
+    result <- se_sorted_multistep(fit, parameters = parameters,
+                                  digits = digits, type = type, ...)
+
+    #### Result ####
+
+    return(result)
   }
 
   #### Order model-estimation steps ####
@@ -495,6 +506,8 @@ initial_vcov_multistep <- function(stage, parameters) {
 
 stored_vcov_multistep <- function(fit) {
 
+  fit <- unsort_latent(fit)
+
   if(!isTRUE(fit@modelInfo$propagate_uncertainty)) {
     stop("The preceding object is not marked for uncertainty propagation.")
   }
@@ -802,6 +815,8 @@ unique_latent_models_multistep <- function(models) {
 #### Reconstruct an unrestricted model ####
 
 unrestricted_model_multistep <- function(fit) {
+
+  fit <- unsort_latent(fit)
 
   if(inherits(fit, "lcfa")) {
 

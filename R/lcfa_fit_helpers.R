@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/08/2026
+# Modification date: 06/09/2026
 
 #### Display labels for substantive groups ####
 
@@ -468,6 +468,15 @@ lcfa_residuals <- function(fit) {
 #### Parameter table ####
 
 lcfa_parameter_table <- function(fit) {
+
+  if(!is.null(fit@modelInfo$sorting)) {
+    native_table <- lcfa_parameter_table(unsort_latent(fit))
+    result <- sort_parameter_table_latent(fit, native_table)
+
+    #### Result ####
+
+    return(result)
+  }
 
   labels <- fit@modelInfo$parameters_labels
   estimates <- fit@Optim$parameters

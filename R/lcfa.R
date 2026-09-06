@@ -18,7 +18,7 @@
 #'      parameterization = NULL,
 #'      likelihood = NULL, se = TRUE,
 #'      control = NULL, message = FALSE,
-#'      do.fit = TRUE, control.moments = NULL, ...)
+#'      do.fit = TRUE, control.moments = NULL, sort = TRUE, ...)
 #'
 #' @param data Optional data frame or matrix containing the observed variables.
 #'   If NULL, sample.cov and sample.nobs must be supplied.
@@ -74,6 +74,10 @@
 #'   propagation are set internally. This argument has no effect when no
 #'   separate moment estimator is fitted (for example, supplied sample moments
 #'   or direct FIML).
+#' @param sort Logical. Sort factors by decreasing variance-adjusted sums of
+#'   squared loadings and make the largest absolute loading positive. The
+#'   default is TRUE. Factor identities and the native estimation constraints
+#'   are retained; see \code{sort_factors()}. FALSE leaves the output unchanged.
 #' @param ... Additional arguments passed to lavaan and the sample-statistic
 #'   estimators where applicable.
 #'
@@ -115,10 +119,12 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                  parameterization = NULL,
                  likelihood = NULL, se = TRUE,
                  control = NULL, message = FALSE,
-                 do.fit = TRUE, control.moments = NULL,
+                 do.fit = TRUE, control.moments = NULL, sort = TRUE,
                  ...) {
 
   #### Check input arguments ####
+
+  check_sort_flag(sort)
 
   if(is.null(data) && is.null(sample.cov)) {
     stop("Either data or sample.cov must be provided")
@@ -420,6 +426,10 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
     result@Optim$SE$sample_se <- sample_se
 
   }
+
+  #### Factor order and signs ####
+
+  if(sort) result <- sort_factors(result)
 
   #### Result ####
 

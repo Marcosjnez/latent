@@ -6,7 +6,7 @@
 \usage{
 lrotate(fit = NULL, lambda = NULL, psi = NULL,
         projection = "oblq", rotation = "oblimin",
-        se = TRUE, do.fit = TRUE, control = NULL, ...)
+        se = TRUE, do.fit = TRUE, control = NULL, sort = TRUE, ...)
 }
 \arguments{
 \item{fit}{Optional fitted object inheriting from class \code{"lcfa"}.}
@@ -34,8 +34,17 @@ unrestricted specification used for derivative calculations is returned.}
 
 \item{control}{List of optimization-control arguments.}
 
+\item{sort}{Logical. Sort the rotated factors by decreasing variance-adjusted
+sums of squared loadings, with the largest absolute loading positive.
+Defaults to TRUE; see \code{sort_factors()}. FALSE retains the fitted order
+and signs. The fitted criterion and its constraints retain their native
+coordinate system.}
+
 \item{...}{Additional arguments required by the selected projection or
-rotation criterion.}
+rotation criterion. If omitted (or NULL), \code{weight} defaults to
+\code{1-target} and \code{psiweight} to \code{1-psitarget}. Explicit
+weights, including zero matrices, are preserved. Group-specific lists
+are supported.}
 }
 \value{
 An object inheriting from class \code{"latent"}.

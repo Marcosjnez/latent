@@ -14,7 +14,7 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
      parameterization = NULL,
      likelihood = NULL, se = TRUE,
      control = NULL, message = FALSE,
-     do.fit = TRUE, control.moments = NULL, ...)
+     do.fit = TRUE, control.moments = NULL, sort = TRUE, ...)
 }
 \arguments{
 \item{data}{Optional data frame or matrix containing the observed variables.
@@ -91,6 +91,11 @@ of \code{control}. Group suffixes and uncertainty
 propagation are set internally. This argument has no effect when no
 separate moment estimator is fitted (for example, supplied sample moments
 or direct FIML).}
+
+\item{sort}{Logical. Sort factors by decreasing variance-adjusted sums of
+squared loadings and make the largest absolute loading positive. The
+default is TRUE. Factor identities and the native estimation constraints
+are retained; see \code{sort_factors()}. FALSE leaves the output unchanged.}
 
 \item{...}{Additional arguments passed to lavaan and the sample-statistic
 estimators where applicable.}

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 24/08/2026
+# Modification date: 06/09/2026
 #'
 #' Robust Variance-Covariance Matrix for Latent Models
 #'
@@ -29,6 +29,8 @@
 #' @method robust latent
 #' @export
 robust.latent <- function(fit) {
+
+  fit <- unsort_latent(fit)
 
   #### Check inputs ####
 

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 15/08/2026
+# Modification date: 06/09/2026
 #'
 #' Latent Class Analysis
 #'
@@ -22,7 +22,7 @@
 #'     covariates = NULL, outcomes = NULL, penalties = TRUE,
 #'     model = NULL, weights = NULL, start = NULL, adjustment = "bk",
 #'     classification = "modal", control = NULL, do.fit = TRUE,
-#'     verbose = TRUE)
+#'     verbose = TRUE, sort = TRUE)
 #'
 #' @param data A \code{data.frame} containing the observed variables. Variables
 #'   listed in \code{gaussian} and/or \code{multinomial} are used as indicators.
@@ -116,6 +116,12 @@
 #' @param verbose Logical. If \code{TRUE}, progress information is printed,
 #'   especially when fitting several values of \code{nclasses}.
 #'
+#' @param sort Logical. Order classes by frequency-weighted posterior size,
+#'   largest first. Defaults to TRUE. Original class names and the fitted
+#'   multinomial reference class are retained; see \code{sort_classes()}.
+#'   FALSE preserves the fitted order. Sorting is applied only to the final
+#'   result of a multistage analysis.
+#'
 #' @details
 #' The measurement model is defined by the variables supplied through
 #' \code{gaussian} and \code{multinomial}. Variables not listed there are ignored
@@ -134,8 +140,9 @@
 #'
 #' When \code{covariates} are supplied and \code{adjustment = "none"}, class
 #' probabilities are modeled in one step through multinomial-log coefficients
-#' stored in the \code{beta} parameter block. The first class is the reference
-#' class, so its coefficients are fixed to zero.
+#' stored in the \code{beta} parameter block. The original Class1 is the reference
+#' class, so its coefficients are fixed to zero. After sorting, Class1 need not
+#' occupy the first displayed column; the regression contrasts are unchanged.
 #'
 #' When \code{adjustment = "bk"}, the measurement model is first estimated
 #' without covariates. The structural model is then estimated with the
@@ -256,9 +263,12 @@ lca <- function(data,
                 start = NULL,
                 control = NULL,
                 do.fit = TRUE,
-                verbose = TRUE) {
+                verbose = TRUE, sort = TRUE) {
 
   #### Check input arguments ####
+
+  check_sort_flag(sort)
+  model <- unsort_model_arguments(model)
 
   # Check weights if available:
   if(!is.null(weights)) {
@@ -374,7 +384,8 @@ lca <- function(data,
                          model = model, weights = weights,
                          adjustment = adjustment, classification = classification,
                          penalties = penalties, start = start,
-                         control = control, do.fit = do.fit, verbose = verbose)
+                         control = control, do.fit = do.fit, verbose = verbose,
+                         sort = sort)
 
       names(result)[i] <- paste("nclasses=", nclasses[i], sep = "")
 
@@ -430,6 +441,10 @@ lca <- function(data,
     } else {
       stop("Unknown adjustment method")
     }
+
+    if(sort && do.fit) result <- sort_classes(result)
+
+    #### Result ####
 
     return(result)
 
@@ -557,6 +572,10 @@ lca <- function(data,
                 parameters         = parameters,
                 transformed_pars   = transformed_pars,
                 extra              = previous_models)
+
+  #### Class ordering ####
+
+  if(sort) result <- sort_classes(result)
 
   #### Result ####
 
@@ -1816,7 +1835,7 @@ lca_bakk_kuha <- function(data,
               adjustment = "none",
               control = control,
               do.fit = do.fit,
-              verbose = verbose)
+              verbose = verbose, sort = FALSE)
 
   #### Step 2: Fitting the structural part and fixing the measurement part ####
 
@@ -1833,7 +1852,7 @@ lca_bakk_kuha <- function(data,
               adjustment = "none",
               control = control,
               do.fit = do.fit,
-              verbose = verbose)
+              verbose = verbose, sort = FALSE)
 
   #### Result ####
 
@@ -1876,7 +1895,7 @@ lca_ml <- function(data,
               adjustment = "none",
               control = control,
               do.fit = do.fit,
-              verbose = verbose)
+              verbose = verbose, sort = FALSE)
 
   #### Step 2: Modal assignment ####
 
@@ -1928,7 +1947,7 @@ lca_ml <- function(data,
               adjustment = "none",
               control = control,
               do.fit = do.fit,
-              verbose = verbose)
+              verbose = verbose, sort = FALSE)
 
   #### Multistage object ####
 

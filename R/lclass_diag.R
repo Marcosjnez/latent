@@ -1,6 +1,6 @@
 # Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 27/06/2026 by Marcos Jimenez
+# Modification date: 06/09/2026
 
 #' Classification Diagnostics for Latent Class Analysis
 #'
@@ -46,6 +46,15 @@
 lclass_diag <- function(x, digits = 4,
                         type = c("Entropy", "AvePP", "Mostlikely.Class", "Sum.Mostlikely"),
                         ...) {
+
+  if(inherits(x, "latent") && identical(x@modelInfo$sorting$type, "classes")) {
+    native_diagnostics <- lclass_diag(unsort_latent(x), digits = digits, type = type, ...)
+    result <- sort_class_diagnostics_latent(x, native_diagnostics)
+
+    #### Result ####
+
+    return(result)
+  }
 
   # ---- Argument validation ----
   valid_types <- c("Entropy", "AvePP", "OCC", "Overall.Misclassification",
@@ -165,6 +174,7 @@ lclass_diag <- function(x, digits = 4,
 #' @method print lclassd
 #' @export
 print.lclassd <- function(x, ...) {
+  displayed_classes <- attr(x, "class_names", exact = TRUE)
   cat("\n——— Latent Class Classification Diagnostics ———\n")
   cat(rep("─", 50), "\n\n", sep = "")
 
@@ -187,14 +197,14 @@ print.lclassd <- function(x, ...) {
       cat("◆ Average posterior probabilities (AvePP) by true class:\n")
       df <- obj
       colnames(df) <- c("Mean", "SD", "Median", "Min", "Max")
-      rownames(df) <- paste("Class", seq_len(nrow(df)))
+      rownames(df) <- if(is.null(displayed_classes)) paste("Class", seq_len(nrow(df))) else displayed_classes
       print(df, ...)
       cat("\n")
 
     } else if (nm == "OCC") {
       cat("◆ Odds of Correct Classification (OCC):\n")
       occ_vec <- obj
-      names(occ_vec) <- paste("Class", seq_along(occ_vec))
+      names(occ_vec) <- if(is.null(displayed_classes)) paste("Class", seq_along(occ_vec)) else displayed_classes
       print(occ_vec, ...)
       cat("\n")
 
@@ -205,23 +215,23 @@ print.lclassd <- function(x, ...) {
     } else if (nm == "Misclassification.per.class") {
       cat("◆ Misclassification rate by true class:\n")
       mc_vec <- obj
-      names(mc_vec) <- paste("Class", seq_along(mc_vec))
+      names(mc_vec) <- if(is.null(displayed_classes)) paste("Class", seq_along(mc_vec)) else displayed_classes
       print(mc_vec, ...)
       cat("\n")
 
     } else if (nm == "Mostlikely.Class") {
       cat("◆ Classification probabilities (rows = true class, columns = assigned class):\n")
       mat <- obj
-      rownames(mat) <- paste("True class", seq_len(nrow(mat)))
-      colnames(mat) <- paste("Assigned", seq_len(ncol(mat)))
+      rownames(mat) <- if(is.null(displayed_classes)) paste("True class", seq_len(nrow(mat))) else paste("True", displayed_classes)
+      colnames(mat) <- if(is.null(displayed_classes)) paste("Assigned", seq_len(ncol(mat))) else paste("Assigned", displayed_classes)
       print(mat, ...)
       cat("\n")
 
     } else if (nm == "Avg.Mostlikely") {
       cat("◆ Average posterior probabilities by assigned class:\n")
       mat <- obj
-      rownames(mat) <- paste("Assigned class", seq_len(nrow(mat)))
-      colnames(mat) <- paste("Prob for class", seq_len(ncol(mat)))
+      rownames(mat) <- if(is.null(displayed_classes)) paste("Assigned class", seq_len(nrow(mat))) else paste("Assigned", displayed_classes)
+      colnames(mat) <- if(is.null(displayed_classes)) paste("Prob for class", seq_len(ncol(mat))) else paste("Prob for", displayed_classes)
       print(mat, ...)
       cat("\n")
 

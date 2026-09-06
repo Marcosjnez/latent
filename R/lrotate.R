@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 01/09/2026
+# Modification date: 06/09/2026
 #'
 #' @title
 #' Rotate factor loading and covariance matrices
@@ -13,7 +13,7 @@
 #' @usage
 #' lrotate(fit = NULL, lambda = NULL, psi = NULL,
 #'         projection = "oblq", rotation = "oblimin",
-#'         se = TRUE, do.fit = TRUE, control = NULL, ...)
+#'         se = TRUE, do.fit = TRUE, control = NULL, sort = TRUE, ...)
 #'
 #' @param fit Optional fitted object inheriting from class \code{"lcfa"}.
 #' @param lambda Optional loading matrix or list of loading matrices. This is an
@@ -32,8 +32,16 @@
 #'   return the model specification. With a fitted \code{lcfa} input, the
 #'   unrestricted specification used for derivative calculations is returned.
 #' @param control List of optimization-control arguments.
+#' @param sort Logical. Sort the rotated factors by decreasing variance-adjusted
+#'   sums of squared loadings, with the largest absolute loading positive.
+#'   Defaults to TRUE; see \code{sort_factors()}. FALSE retains the fitted order
+#'   and signs. The fitted criterion and its constraints retain their native
+#'   coordinate system.
 #' @param ... Additional arguments required by the selected projection or
-#'   rotation criterion.
+#'   rotation criterion. If omitted (or NULL), \code{weight} defaults to
+#'   \code{1-target} and \code{psiweight} to \code{1-psitarget}. Explicit
+#'   weights, including zero matrices, are preserved. Group-specific lists
+#'   are supported.
 #'
 #' @details
 #' Exactly one of \code{fit} and \code{lambda} must be supplied. Let \eqn{X}
@@ -79,9 +87,11 @@
 #' @export
 lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
                     projection = "oblq", rotation = "oblimin",
-                    se = TRUE, do.fit = TRUE, control = NULL, ...) {
+                    se = TRUE, do.fit = TRUE, control = NULL, sort = TRUE, ...) {
 
   #### Check input arguments ####
+
+  check_sort_flag(sort)
 
   fit_input <- !is.null(fit)
   matrix_input <- !is.null(lambda)
@@ -93,6 +103,8 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
   if(fit_input) {
 
     check_fit_lrotate(fit)
+    # Source constraints and propagation use the original fitting chart.
+    fit <- unsort_latent(fit)
 
     if(!is.null(psi)) {
       stop("psi cannot be supplied together with fit")
@@ -180,7 +192,8 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
                           rotation = rotation,
                           se = se,
                           do.fit = do.fit,
-                          control = control),
+                          control = control,
+                          sort = sort),
                      dots)
 
   #### Create the model ####
@@ -261,6 +274,10 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
     )
 
   }
+
+  #### Factor order and signs ####
+
+  if(sort) result <- sort_factors(result)
 
   #### Result ####
 
@@ -601,9 +618,38 @@ rotation_defaults_lrotate <- function(rotation, dots) {
     dots$epsilon <- 0.01
   }
 
+  if(rotation %in% c("target", "xtarget") && is.null(dots$weight) &&
+     !is.null(dots$target)) {
+    dots$weight <- complement_target_weights_lrotate(dots$target)
+  }
+
+  if(rotation == "xtarget" && is.null(dots$psiweight) &&
+     !is.null(dots$psitarget)) {
+    dots$psiweight <- complement_target_weights_lrotate(dots$psitarget)
+  }
+
   #### Result ####
 
   return(dots)
+
+}
+
+complement_target_weights_lrotate <- function(target) {
+
+  if(is.null(target)) {
+    result <- NULL
+  } else if(is.list(target) && !is.data.frame(target)) {
+    result <- lapply(target, complement_target_weights_lrotate)
+  } else {
+    if(!is.numeric(target) && !is.logical(target)) {
+      stop("Targets must be numeric/logical matrices or group-specific lists.")
+    }
+    result <- 1-target
+  }
+
+  #### Result ####
+
+  return(result)
 
 }
 
@@ -1527,6 +1573,7 @@ estimators_lrotate <- function(dataList, data_param, dots) {
                                 group_index = i,
                                 ngroups = dataList$ngroups)
 
+    extra <- rotation_defaults_lrotate(rotation = dataList$rotation, dots = extra)
     extra$p <- dataList$nitems[[i]]
     extra$q <- dataList$nfactors[[i]]
 

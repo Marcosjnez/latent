@@ -8,7 +8,7 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
     covariates = NULL, outcomes = NULL, penalties = TRUE,
     model = NULL, weights = NULL, start = NULL, adjustment = "bk",
     classification = "modal", control = NULL, do.fit = TRUE,
-    verbose = TRUE)
+    verbose = TRUE, sort = TRUE)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the observed variables. Variables
@@ -116,6 +116,12 @@ the optimizer.}
 
 \item{verbose}{Logical. If \code{TRUE}, progress information is printed,
 especially when fitting several values of \code{nclasses}.}
+
+\item{sort}{Logical. Order classes by frequency-weighted posterior size,
+largest first. Defaults to TRUE. Original class names and the fitted
+multinomial reference class are retained; see \code{sort_classes()}.
+FALSE preserves the fitted order. Sorting is applied only to the final
+result of a multistage analysis.}
 }
 \value{
 If \code{length(nclasses) == 1} and \code{adjustment = "none"}, an S4 object
@@ -183,8 +189,9 @@ identification.
 
 When \code{covariates} are supplied and \code{adjustment = "none"}, class
 probabilities are modeled in one step through multinomial-log coefficients
-stored in the \code{beta} parameter block. The first class is the reference
-class, so its coefficients are fixed to zero.
+stored in the \code{beta} parameter block. The original Class1 is the reference
+class, so its coefficients are fixed to zero. After sorting, Class1 need not
+occupy the first displayed column; the regression contrasts are unchanged.
 
 When \code{adjustment = "bk"}, the measurement model is first estimated
 without covariates. The structural model is then estimated with the

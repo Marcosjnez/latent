@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/09/2026
+# Modification date: 06/09/2026
 #'
 #' LatentGold-Style Robust Variance-Covariance Matrix
 #'
@@ -14,6 +14,8 @@
 #' @method robust llca
 #' @export
 robust.llca <- function(fit) {
+
+  fit <- unsort_latent(fit)
 
   if(fit@dataList$nobs <= 1L) {
     stop("Robust standard errors require more than one observation.")

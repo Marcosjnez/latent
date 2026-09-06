@@ -21,7 +21,7 @@
 #'      likelihood = NULL, se = TRUE,
 #'      message = FALSE, do.fit = TRUE,
 #'      mimic = "latent", control.efa = NULL,
-#'      control.rotation = NULL, control.moments = NULL, ...)
+#'      control.rotation = NULL, control.moments = NULL, sort = TRUE, ...)
 #'
 #' @param data Optional data frame or matrix containing the observed variables.
 #'   Alternatively, sample.cov can be supplied.
@@ -32,8 +32,9 @@
 #' @param rotation Rotation criterion passed to \code{lrotate()}.
 #' @param model Optional lavaan model syntax. If \code{NULL}, an exploratory
 #'   loading model is generated automatically. By default, the loading matrix is
-#'   lower triangular. If \code{control.efa$orth.lambda = TRUE}, it is dense,
-#'   its columns are mutually orthogonal, and their norms remain unrestricted.
+#'   dense, its columns are mutually orthogonal, and their norms are unrestricted
+#'   (\code{control.efa$orth.lambda = TRUE}). Set this control to FALSE to use
+#'   a lower-triangular loading matrix.
 #'   This option requires \code{std.lv = TRUE} and \code{positive = FALSE}.
 #' @param ordered Logical value indicating whether indicators are ordinal. The
 #'   character value \code{"yule"} requests Yule correlations.
@@ -65,7 +66,7 @@
 #'   currently supported.
 #' @param control.efa Optional list of controls passed to \code{lcfa()}. The
 #'   defaults are \code{rstarts = 3L}, \code{se_method = "KKT"}, and
-#'   \code{orth.lambda = FALSE}.
+#'   \code{orth.lambda = TRUE}.
 #' @param control.rotation Optional list of controls passed to \code{lrotate()}.
 #'   The defaults are \code{rstarts = 10L} and
 #'   \code{se_method = "KKT"}.
@@ -75,15 +76,19 @@
 #'   \code{polyfast()} polychoric estimation. The two-step ACOV does not use
 #'   \code{cores} or explicit OpenMP. NULL uses the moment estimators' defaults.
 #'   See \code{lcfa()} for details.
+#' @param sort Logical. Sort the final rotated factors and choose their signs
+#'   using \code{sort_factors()}. Defaults to TRUE. The intermediate unrotated
+#'   model retains its fitting coordinates.
 #' @param ... Additional arguments. CFA/lavaan arguments are passed to
 #'   \code{lcfa()}; arguments required by the selected rotation criterion or
 #'   projection are passed only to \code{lrotate()}.
 #'
 #' @details
 #' Two equivalent identification schemes are available for the unrotated EFA
-#' model. The default uses a lower-triangular loading matrix and an identity
-#' factor covariance matrix. With \code{control.efa$orth.lambda = TRUE}, every
-#' loading is free, the factor covariance matrix remains the identity, and only
+#' model. With \code{control.efa$orth.lambda = FALSE}, the model uses a
+#' lower-triangular loading matrix and an identity factor covariance matrix.
+#' The default, \code{control.efa$orth.lambda = TRUE}, makes every
+#' loading free. The factor covariance matrix remains the identity, and only
 #' the off-diagonal elements of \eqn{\Lambda^\top\Lambda} are constrained to
 #' zero. The column norms of \eqn{\Lambda} remain free. The \eqn{q(q-1)/2}
 #' orthogonality constraints replace the same number of lower-triangular zeros,
@@ -126,10 +131,12 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                  likelihood = NULL, se = TRUE,
                  message = FALSE, do.fit = TRUE,
                  mimic = "latent", control.efa = NULL,
-                 control.rotation = NULL, control.moments = NULL,
+                 control.rotation = NULL, control.moments = NULL, sort = TRUE,
                  ...) {
 
   #### Check input arguments ####
+
+  check_sort_flag(sort)
 
   if(is.null(data) && is.null(sample.cov)) {
     stop("Either data or sample.cov must be provided")
@@ -367,7 +374,7 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                                     rotation = rotation,
                                     control.rotation = control.rotation,
                                     se = !isFALSE(se),
-                                    dots = dots_split$rotation)
+                                    dots = dots_split$rotation, sort = sort)
 
   result <- as_lefa(rotation_fit, call = mc)
 
@@ -542,6 +549,7 @@ fit_lefa_cfa <- function(data, model, estimator,
     do.fit = do.fit,
     control = control.efa,
     control.moments = control.moments,
+    sort = FALSE,
     orthogonal = TRUE
   )
 
@@ -573,7 +581,7 @@ rotate_lefa <- function(fit) {
 #### Function to fit the rotation ####
 
 fit_lefa_rotation <- function(fit, projection, rotation,
-                              control.rotation, se, dots) {
+                              control.rotation, se, dots, sort = TRUE) {
 
   args <- list(
     fit = fit,
@@ -581,7 +589,8 @@ fit_lefa_rotation <- function(fit, projection, rotation,
     rotation = rotation,
     se = se,
     do.fit = TRUE,
-    control = control.rotation
+    control = control.rotation,
+    sort = sort
   )
 
   args <- c(args, dots)

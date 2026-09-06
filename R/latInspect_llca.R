@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/07/2026
+# Modification date: 06/09/2026
 #'
 #' Inspect fitted latent class models
 #'
@@ -118,6 +118,10 @@ latInspect.llca <- function(fit,
 
   nclasses <- ncol(trans$class)
   total_weight <- sum(pattern_weights)
+  class_names <- fit@dataList$class_names
+  if(length(class_names) != nclasses) class_names <- paste0("Class", seq_len(nclasses))
+  class_ids <- fit@dataList$class_order
+  if(length(class_ids) != nclasses) class_ids <- seq_len(nclasses)
 
   #### Pattern-level likelihood and posterior quantities ####
 
@@ -136,18 +140,23 @@ latInspect.llca <- function(fit,
   posterior_patterns <- exp(matrix(fit@Optim$outputs$estimators$matrices[[1]][[1]],
                                    nrow = npatterns, ncol = nclasses))
   rownames(posterior_patterns) <- pattern_names
-  colnames(posterior_patterns) <- paste0("P(Class", seq_len(nclasses), "|data)")
+  colnames(posterior_patterns) <- paste0("P(", class_names, "|data)")
 
   # Modal posterior class by response pattern:
-  state_patterns <- max.col(posterior_patterns, ties.method = "first")
+  native_columns <- order(class_ids)
+  native_state <- max.col(posterior_patterns[, native_columns, drop = FALSE],
+                           ties.method = "first")
+  state_patterns <- native_columns[native_state]
   names(state_patterns) <- pattern_names
+  # Report original class identities, not positions in the reordered columns.
+  reported_states <- setNames(class_ids[state_patterns], pattern_names)
 
   #### Response-pattern summary ####
 
   patterns <- data[full2short, variables, drop = FALSE]
 
   summary_table <- cbind(patterns, Observed = pattern_weights,
-                         Estimated = estimated, State = state_patterns,
+                         Estimated = estimated, State = reported_states,
                          Posterior = posterior_patterns,
                          loglik_case = loglik_case_patterns,
                          loglik_patterns = loglik_patterns)
@@ -164,7 +173,7 @@ latInspect.llca <- function(fit,
 
   loglik_case <- loglik_case_patterns[short2full]
   posterior <- posterior_patterns[short2full, , drop = FALSE]
-  state <- state_patterns[short2full]
+  state <- reported_states[short2full]
 
   rownames(posterior) <- rownames(data)
   names(state) <- rownames(data)
@@ -457,8 +466,7 @@ latInspect.llca <- function(fit,
     class_error_prop[!is.finite(class_error_prop)] <- NA_real_
     class_error_modal[!is.finite(class_error_modal)] <- NA_real_
 
-    class_names <- paste0("Class", seq_len(nclasses))
-    assigned_names <- paste0("Assigned", seq_len(nclasses))
+    assigned_names <- paste0("Assigned", class_ids)
 
     rownames(class_error_prop) <- class_names
     colnames(class_error_prop) <- assigned_names
