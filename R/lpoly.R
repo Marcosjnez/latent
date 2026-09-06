@@ -39,9 +39,9 @@
 #'   \code{"latent"} object.
 #' @param message Logical. Print progress messages during estimation.
 #' @param control Optional list of optimization controls. \code{cores} is a
-#'   positive integer (default 1) controlling OpenMP threads for the initial
-#'   polychoric estimates and the two-step ACOV. One-step optimization remains
-#'   single-start; the ACOV still uses the requested core count.
+#'   positive integer (default 1) controlling OpenMP threads for \code{polyfast()}
+#'   when obtaining the initial/two-step polychoric estimates. The two-step
+#'   ACOV itself is not OpenMP-parallelized.
 #' @param ... Additional arguments reserved for future extensions.
 #'
 #' @details
@@ -579,7 +579,7 @@ lpoly_control <- function(control) {
     stop("ss must be a positive number")
   }
 
-  # Keep the single-start optimizer; do not restrict preprocessing or ACOV cores.
+  # Keep the single-start optimizer; retain cores for polyfast preprocessing.
   control$rstarts <- 1L
   if(is.null(control$cores)) {
     control$cores <- 1L
@@ -1103,13 +1103,13 @@ compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
     return_scores = FALSE,
     probability_floor = 1e-12,
     inversion_tolerance = 1e-10,
-    polyfast_object = dataList$polychorics,
-    cores = modelInfo$control_optimizer$cores
+    polyfast_object = dataList$polychorics
   )
 
+  H <- NULL
   # H <- solve(ACOV$VCOV)
-  H <- approx_Hinv(ACOV$VCOV)
-  rownames(H) <- colnames(H) <- modelInfo$parameters_labels
+  # H <- approx_Hinv(ACOV$VCOV)
+  # rownames(H) <- colnames(H) <- modelInfo$parameters_labels
 
   rownames(ACOV$VCOV) <- colnames(ACOV$VCOV) <-
     modelInfo$parameters_labels
@@ -1120,10 +1120,7 @@ compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
 
   result <- list(H = H,
                  VCOV = ACOV$VCOV,
-                 se = se,
-                 cores_requested = ACOV$cores_requested,
-                 cores_used = ACOV$cores_used,
-                 openmp_available = ACOV$openmp_available)
+                 se = se)
 
   return(result)
 

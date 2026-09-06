@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include <map>
-#include "poly_acov_parallel.h"
 
 arma::vec diagcov(arma::mat X) {
 
@@ -567,22 +566,11 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
                            bool return_scores,
                            double probability_floor,
                            double inversion_tolerance,
-                           Rcpp::Nullable<Rcpp::List> polyfast_object,
-                           const int cores) {
+                           Rcpp::Nullable<Rcpp::List> polyfast_object) {
 
   using namespace latent_asymptotic_poly;
 
   // Check inputs
-
-  if(cores < 1) {
-    Rcpp::stop("cores must be a positive integer.");
-  }
-
-#ifndef _OPENMP
-  if(cores > 1) {
-    Rcpp::warning("OpenMP is not available in this build; ACOV OpenMP regions will run serially.");
-  }
-#endif
 
   const arma::uword nobs = data.n_rows;
   const arma::uword nitems = data.n_cols;
@@ -869,8 +857,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   std::vector<arma::mat> correlation_scores(ncorrelations);
   std::vector<arma::umat> correlation_floored(ncorrelations);
 
-  int cores_used = acov_parallel_for(ncorrelations, cores,
-    [&](const arma::uword q) {
+  for(arma::uword q = 0L; q < ncorrelations; ++q) {
 
     const arma::uword j = pairs(q, 0L);
     const arma::uword k = pairs(q, 1L);
@@ -1010,7 +997,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     }
 
-  });
+  }
 
   // Casewise estimating functions by unique response pattern
 
@@ -1018,10 +1005,9 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   arma::uvec marginal_floored_counts(nitems, arma::fill::zeros);
   arma::uvec correlation_floored_counts(ncorrelations, arma::fill::zeros);
 
-  // Fill threshold-score columns contiguously. Each worker owns all columns
-  // for one variable, so there is no shared write region.
-  const int threshold_score_cores = acov_parallel_for(nitems, cores,
-    [&](const arma::uword j) {
+  // Fill threshold-score columns contiguously to follow Armadillo's
+  // column-major storage.
+  for(arma::uword j = 0L; j < nitems; ++j) {
 
     const arma::uword first = threshold_offsets[j];
 
@@ -1044,15 +1030,12 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     marginal_floored_counts[j] = floored;
 
-  });
+  }
 
-  cores_used = std::max(cores_used, threshold_score_cores);
 
-  // Correlation scores are naturally independent by pair. Writing one full
-  // column per worker follows Armadillo's column-major storage and avoids the
-  // cache-unfriendly row-wise traversal used previously.
-  const int correlation_score_cores = acov_parallel_for(ncorrelations, cores,
-    [&](const arma::uword q) {
+  // Write one complete correlation-score column at a time to preserve
+  // contiguous memory access.
+  for(arma::uword q = 0L; q < ncorrelations; ++q) {
 
     const arma::uword j = pairs(q, 0L);
     const arma::uword k = pairs(q, 1L);
@@ -1073,9 +1056,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     correlation_floored_counts[q] = floored;
 
-  });
+  }
 
-  cores_used = std::max(cores_used, correlation_score_cores);
 
   const arma::uword floored_probabilities =
     arma::accu(marginal_floored_counts)+
@@ -1092,7 +1074,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
   // Dense crossproducts are intentionally left to Armadillo/BLAS. A tuned
   // GEMM is substantially more cache-efficient and vectorized than a custom
-  // OpenMP dot-product kernel, and may use its own BLAS thread pool.
+  // dot-product kernel.
   arma::mat INNER = weighted_scores.t()*weighted_scores;
   INNER = 0.5*(INNER+INNER.t());
 
@@ -1223,14 +1205,6 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   result["generalized_A11"] = generalized_A11;
   result["generalized_A22"] = generalized_A22;
   result["polyfast_reused"] = use_polyfast;
-  // Maximum actual OpenMP team size (not the BLAS/LAPACK thread count).
-  result["cores_requested"] = cores;
-  result["cores_used"] = cores_used;
-#ifdef _OPENMP
-  result["openmp_available"] = true;
-#else
-  result["openmp_available"] = false;
-#endif
   result["parameter_order"] =
     "finite thresholds by variable, followed by strict-lower-triangle correlations";
 

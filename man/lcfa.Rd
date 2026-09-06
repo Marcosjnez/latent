@@ -84,9 +84,10 @@ separate from \code{control.moments}.}
 \item{control.moments}{Optional named list passed as \code{control} to
 the sample-moment estimators (\code{lpoly()}, \code{lpearson()},
 \code{lmean()}, \code{lyule()}, or \code{lmvnorm()}). For example,
-\code{list(cores = 4L)} requests four OpenMP threads for polychoric
-estimation and its two-step ACOV. NULL uses the moment estimators' own
-defaults, independently of \code{control}. Group suffixes and uncertainty
+\code{list(cores = 4L)} requests four OpenMP threads for \code{polyfast()}
+polychoric estimation. The two-step ACOV does not use \code{cores} or
+explicit OpenMP. NULL uses the moment estimators' own defaults, independently
+of \code{control}. Group suffixes and uncertainty
 propagation are set internally. This argument has no effect when no
 separate moment estimator is fitted (for example, supplied sample moments
 or direct FIML).}

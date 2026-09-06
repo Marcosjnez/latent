@@ -93,8 +93,9 @@ The defaults are \code{rstarts = 10L} and
 \item{control.moments}{Optional named list passed to \code{lcfa()}'s
 sample-moment estimators, independently of \code{control.efa} and
 \code{control.rotation}. For example, \code{list(cores = 4L)} controls
-polychoric estimation and the two-step ACOV. NULL uses the moment
-estimators' defaults. See \code{lcfa()} for details.}
+\code{polyfast()} polychoric estimation. The two-step ACOV does not use
+\code{cores} or explicit OpenMP. NULL uses the moment estimators' defaults.
+See \code{lcfa()} for details.}
 
 \item{...}{Additional arguments. CFA/lavaan arguments are passed to
 \code{lcfa()}; arguments required by the selected rotation criterion or
