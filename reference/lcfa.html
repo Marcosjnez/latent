@@ -212,9 +212,10 @@ separate from <code>control.moments</code>.</p></dd>
 <dd><p>Optional named list passed as <code>control</code> to
 the sample-moment estimators (<code><a href="lpoly.html">lpoly()</a></code>, <code><a href="lpearson.html">lpearson()</a></code>,
 <code><a href="lmean.html">lmean()</a></code>, <code><a href="lyule.html">lyule()</a></code>, or <code><a href="lmvnorm.html">lmvnorm()</a></code>). For example,
-<code>list(cores = 4L)</code> requests four OpenMP threads for polychoric
-estimation and its two-step ACOV. NULL uses the moment estimators' own
-defaults, independently of <code>control</code>. Group suffixes and uncertainty
+<code>list(cores = 4L)</code> requests four OpenMP threads for <code>polyfast()</code>
+polychoric estimation. The two-step ACOV does not use <code>cores</code> or
+explicit OpenMP. NULL uses the moment estimators' own defaults, independently
+of <code>control</code>. Group suffixes and uncertainty
 propagation are set internally. This argument has no effect when no
 separate moment estimator is fitted (for example, supplied sample moments
 or direct FIML).</p></dd>

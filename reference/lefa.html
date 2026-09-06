@@ -234,8 +234,9 @@ The defaults are <code>rstarts = 10L</code> and
 <dd><p>Optional named list passed to <code><a href="lcfa.html">lcfa()</a></code>'s
 sample-moment estimators, independently of <code>control.efa</code> and
 <code>control.rotation</code>. For example, <code>list(cores = 4L)</code> controls
-polychoric estimation and the two-step ACOV. NULL uses the moment
-estimators' defaults. See <code><a href="lcfa.html">lcfa()</a></code> for details.</p></dd>
+<code>polyfast()</code> polychoric estimation. The two-step ACOV does not use
+<code>cores</code> or explicit OpenMP. NULL uses the moment estimators' defaults.
+See <code><a href="lcfa.html">lcfa()</a></code> for details.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
