@@ -16,7 +16,7 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
      parameterization = NULL,
      likelihood = NULL, se = TRUE,
      control = NULL, message = FALSE,
-     do.fit = TRUE, control.moments = NULL, ...)
+     do.fit = TRUE, control.moments = NULL, sort = TRUE, ...)
 ```
 
 ## Arguments
@@ -141,6 +141,15 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
   propagation are set internally. This argument has no effect when no
   separate moment estimator is fitted (for example, supplied sample
   moments or direct FIML).
+
+- sort:
+
+  Logical. Sort factors by decreasing variance-adjusted sums of squared
+  loadings and make the largest absolute loading positive. The default
+  is TRUE. Factor identities and the native estimation constraints are
+  retained; see
+  [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
+  FALSE leaves the output unchanged.
 
 - ...:
 

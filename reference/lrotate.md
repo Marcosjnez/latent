@@ -9,7 +9,7 @@ orthogonal or oblique projection and a selected rotation criterion.
 ``` r
 lrotate(fit = NULL, lambda = NULL, psi = NULL,
         projection = "oblq", rotation = "oblimin",
-        se = TRUE, do.fit = TRUE, control = NULL, ...)
+        se = TRUE, do.fit = TRUE, control = NULL, sort = TRUE, ...)
 ```
 
 ## Arguments
@@ -54,10 +54,21 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
 
   List of optimization-control arguments.
 
+- sort:
+
+  Logical. Sort the rotated factors by decreasing variance-adjusted sums
+  of squared loadings, with the largest absolute loading positive.
+  Defaults to TRUE; see
+  [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
+  FALSE retains the fitted order and signs. The fitted criterion and its
+  constraints retain their native coordinate system.
+
 - ...:
 
   Additional arguments required by the selected projection or rotation
-  criterion.
+  criterion. If omitted (or NULL), `weight` defaults to `1-target` and
+  `psiweight` to `1-psitarget`. Explicit weights, including zero
+  matrices, are preserved. Group-specific lists are supported.
 
 ## Value
 

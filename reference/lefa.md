@@ -21,7 +21,7 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
      likelihood = NULL, se = TRUE,
      message = FALSE, do.fit = TRUE,
      mimic = "latent", control.efa = NULL,
-     control.rotation = NULL, control.moments = NULL, ...)
+     control.rotation = NULL, control.moments = NULL, sort = TRUE, ...)
 ```
 
 ## Arguments
@@ -54,10 +54,11 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 - model:
 
   Optional lavaan model syntax. If `NULL`, an exploratory loading model
-  is generated automatically. By default, the loading matrix is lower
-  triangular. If `control.efa$orth.lambda = TRUE`, it is dense, its
-  columns are mutually orthogonal, and their norms remain unrestricted.
-  This option requires `std.lv = TRUE` and `positive = FALSE`.
+  is generated automatically. By default, the loading matrix is dense,
+  its columns are mutually orthogonal, and their norms are unrestricted
+  (`control.efa$orth.lambda = TRUE`). Set this control to FALSE to use a
+  lower-triangular loading matrix. This option requires `std.lv = TRUE`
+  and `positive = FALSE`.
 
 - ordered:
 
@@ -148,7 +149,7 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
   Optional list of controls passed to
   [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md). The
   defaults are `rstarts = 3L`, `se_method = "KKT"`, and
-  `orth.lambda = FALSE`.
+  `orth.lambda = TRUE`.
 
 - control.rotation:
 
@@ -167,6 +168,13 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
   See [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md)
   for details.
 
+- sort:
+
+  Logical. Sort the final rotated factors and choose their signs using
+  [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
+  Defaults to TRUE. The intermediate unrotated model retains its fitting
+  coordinates.
+
 - ...:
 
   Additional arguments. CFA/lavaan arguments are passed to
@@ -184,14 +192,15 @@ specification is returned.
 ## Details
 
 Two equivalent identification schemes are available for the unrotated
-EFA model. The default uses a lower-triangular loading matrix and an
-identity factor covariance matrix. With
-`control.efa$orth.lambda = TRUE`, every loading is free, the factor
-covariance matrix remains the identity, and only the off-diagonal
-elements of \\\Lambda^\top\Lambda\\ are constrained to zero. The column
-norms of \\\Lambda\\ remain free. The \\q(q-1)/2\\ orthogonality
-constraints replace the same number of lower-triangular zeros, so both
-schemes have the same effective number of parameters.
+EFA model. With `control.efa$orth.lambda = FALSE`, the model uses a
+lower-triangular loading matrix and an identity factor covariance
+matrix. The default, `control.efa$orth.lambda = TRUE`, makes every
+loading free. The factor covariance matrix remains the identity, and
+only the off-diagonal elements of \\\Lambda^\top\Lambda\\ are
+constrained to zero. The column norms of \\\Lambda\\ remain free. The
+\\q(q-1)/2\\ orthogonality constraints replace the same number of
+lower-triangular zeros, so both schemes have the same effective number
+of parameters.
 
 With `projection = "poblq"`, either `constraints` or `oblique` must be
 supplied through `...`. The former uses arbitrary structural

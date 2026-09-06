@@ -18,12 +18,14 @@ vcov(fit, v, parameters = NULL)
 - v:
 
   Variance-covariance matrix of the freely estimated, untransformed
-  parameters.
+  parameters, in the original fitting coordinates even when fit is
+  sorted.
 
 - parameters:
 
   Optional parameter specification identifying the parameters or
-  transformed parameters to return.
+  transformed parameters to return. For sorted fits, the default follows
+  the reporting order/sign of the free parameters.
 
 ## Value
 

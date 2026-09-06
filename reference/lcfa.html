@@ -97,7 +97,7 @@ optimization infrastructure of <span class="pkg">latent</span>.</p>
 <span>     parameterization <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>     likelihood <span class="op">=</span> <span class="cn">NULL</span>, se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>     control <span class="op">=</span> <span class="cn">NULL</span>, message <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>     do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control.moments <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span>     do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control.moments <span class="op">=</span> <span class="cn">NULL</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -219,6 +219,13 @@ of <code>control</code>. Group suffixes and uncertainty
 propagation are set internally. This argument has no effect when no
 separate moment estimator is fitted (for example, supplied sample moments
 or direct FIML).</p></dd>
+
+
+<dt id="arg-sort">sort<a class="anchor" aria-label="anchor" href="#arg-sort"></a></dt>
+<dd><p>Logical. Sort factors by decreasing variance-adjusted sums of
+squared loadings and make the largest absolute loading positive. The
+default is TRUE. Factor identities and the native estimation constraints
+are retained; see <code><a href="sort_latent.html">sort_factors()</a></code>. FALSE leaves the output unchanged.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

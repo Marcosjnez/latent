@@ -181,6 +181,10 @@ The package development is supported by two projects:
   : Standard Errors for Multistep Latent Models
 - [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
   : Simulate factor structures with misspecification errors.
+- [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md)
+  [`sort_classes()`](https://marcosjnez.github.io/latent/reference/sort_latent.md)
+  [`unsort_latent()`](https://marcosjnez.github.io/latent/reference/sort_latent.md)
+  : Sort Factors or Latent Classes in a Fitted Model
 - [`summary(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)
   : Summarize a Fitted CFA Model
 - [`summary(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/summary.lefa.md)

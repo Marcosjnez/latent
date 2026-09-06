@@ -16,7 +16,7 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
     covariates = NULL, outcomes = NULL, penalties = TRUE,
     model = NULL, weights = NULL, start = NULL, adjustment = "bk",
     classification = "modal", control = NULL, do.fit = TRUE,
-    verbose = TRUE)
+    verbose = TRUE, sort = TRUE)
 ```
 
 ## Arguments
@@ -157,6 +157,15 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
   Logical. If `TRUE`, progress information is printed, especially when
   fitting several values of `nclasses`.
 
+- sort:
+
+  Logical. Order classes by frequency-weighted posterior size, largest
+  first. Defaults to TRUE. Original class names and the fitted
+  multinomial reference class are retained; see
+  [`sort_classes()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
+  FALSE preserves the fitted order. Sorting is applied only to the final
+  result of a multistage analysis.
+
 ## Value
 
 If `length(nclasses) == 1` and `adjustment = "none"`, an S4 object of
@@ -239,8 +248,10 @@ for identification.
 
 When `covariates` are supplied and `adjustment = "none"`, class
 probabilities are modeled in one step through multinomial-log
-coefficients stored in the `beta` parameter block. The first class is
-the reference class, so its coefficients are fixed to zero.
+coefficients stored in the `beta` parameter block. The original Class1
+is the reference class, so its coefficients are fixed to zero. After
+sorting, Class1 need not occupy the first displayed column; the
+regression contrasts are unchanged.
 
 When `adjustment = "bk"`, the measurement model is first estimated
 without covariates. The structural model is then estimated with the
