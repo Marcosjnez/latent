@@ -90,7 +90,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
                            bool return_scores = false,
                            double probability_floor = 1e-12,
                            double inversion_tolerance = 1e-10,
-                           Rcpp::Nullable<Rcpp::List> polyfast_object = R_NilValue);
+                           Rcpp::Nullable<Rcpp::List> polyfast_object = R_NilValue,
+                           const int cores = 1L);
 
 // [[Rcpp::export]]
 arma::mat composite_poly_scores(const arma::mat& data,

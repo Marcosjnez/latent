@@ -40,7 +40,10 @@ same way as in \code{lca()}.}
 
 \item{message}{Logical. Print progress messages during estimation.}
 
-\item{control}{Optional list of optimization controls.}
+\item{control}{Optional list of optimization controls. \code{cores} is a
+positive integer (default 1) controlling OpenMP threads for the initial
+polychoric estimates and the two-step ACOV. One-step optimization remains
+single-start; the ACOV still uses the requested core count.}
 
 \item{...}{Additional arguments reserved for future extensions.}
 }

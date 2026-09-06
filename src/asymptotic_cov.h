@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <map>
+#include "poly_acov_parallel.h"
 
 arma::vec diagcov(arma::mat X) {
 
@@ -566,11 +567,22 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
                            bool return_scores,
                            double probability_floor,
                            double inversion_tolerance,
-                           Rcpp::Nullable<Rcpp::List> polyfast_object) {
+                           Rcpp::Nullable<Rcpp::List> polyfast_object,
+                           const int cores) {
 
   using namespace latent_asymptotic_poly;
 
   // Check inputs
+
+  if(cores < 1) {
+    Rcpp::stop("cores must be a positive integer.");
+  }
+
+#ifndef _OPENMP
+  if(cores > 1) {
+    Rcpp::warning("OpenMP is not available in this build; ACOV OpenMP regions will run serially.");
+  }
+#endif
 
   const arma::uword nobs = data.n_rows;
   const arma::uword nitems = data.n_cols;
@@ -801,11 +813,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
   }
 
-  // Pairwise cell scores and threshold cross-derivatives
-
-  arma::mat A21(ncorrelations, nthresholds, arma::fill::zeros);
-  std::vector<arma::mat> correlation_scores(ncorrelations);
-  std::vector<arma::umat> correlation_floored(ncorrelations);
+  // Validate the entire pair cache before starting any worker. Rcpp error
+  // reporting and access to R objects must remain on the main thread.
 
   for(arma::uword q = 0L; q < ncorrelations; ++q) {
 
@@ -813,13 +822,10 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
     const arma::uword k = pairs(q, 1L);
     const arma::uword ncategories_j = tau[j].n_elem+1L;
     const arma::uword ncategories_k = tau[k].n_elem+1L;
-    const double rho = correlation(j, k);
 
-    if(std::abs(rho) >= 1.0-1e-10) {
+    if(std::abs(correlation(j, k)) >= 1.0-1e-10) {
       Rcpp::stop("Every polychoric correlation must lie strictly inside (-1, 1).");
     }
-
-    arma::umat counts(ncategories_j, ncategories_k, arma::fill::zeros);
 
     if(use_polyfast) {
 
@@ -840,21 +846,51 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
         for(arma::uword category_k = 0L;
             category_k < ncategories_k; ++category_k) {
-
-          if(table[category_j][category_k] < 0) {
+          const int count = table[category_j][category_k];
+          if(count < 0) {
             Rcpp::stop("polyfast contingency tables cannot contain negative counts.");
           }
-
-          counts(category_j, category_k) =
-            static_cast<arma::uword>(table[category_j][category_k]);
-          total += counts(category_j, category_k);
-
+          total += static_cast<arma::uword>(count);
         }
 
       }
 
       if(total != nobs) {
         Rcpp::stop("A polyfast contingency table does not match the sample size.");
+      }
+
+    }
+
+  }
+
+  // Pairwise cell scores and threshold cross-derivatives
+
+  arma::mat A21(ncorrelations, nthresholds, arma::fill::zeros);
+  std::vector<arma::mat> correlation_scores(ncorrelations);
+  std::vector<arma::umat> correlation_floored(ncorrelations);
+
+  int cores_used = acov_parallel_for(ncorrelations, cores,
+    [&](const arma::uword q) {
+
+    const arma::uword j = pairs(q, 0L);
+    const arma::uword k = pairs(q, 1L);
+    const arma::uword ncategories_j = tau[j].n_elem+1L;
+    const arma::uword ncategories_k = tau[k].n_elem+1L;
+    const double rho = correlation(j, k);
+
+    arma::umat counts(ncategories_j, ncategories_k, arma::fill::zeros);
+
+    if(use_polyfast) {
+
+      const std::vector<std::vector<int>>& table = cached_tables[q];
+
+      for(arma::uword category_j = 0L;
+          category_j < ncategories_j; ++category_j) {
+        for(arma::uword category_k = 0L;
+            category_k < ncategories_k; ++category_k) {
+          counts(category_j, category_k) =
+            static_cast<arma::uword>(table[category_j][category_k]);
+        }
       }
 
     } else {
@@ -974,44 +1010,58 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     }
 
-  }
+  });
 
   // Casewise estimating functions by unique response pattern
 
   arma::mat pattern_scores(npatterns, nparameters, arma::fill::zeros);
-  arma::uword floored_probabilities = 0L;
+  arma::uvec pattern_floored(npatterns, arma::fill::zeros);
 
-  for(arma::uword r = 0L; r < npatterns; ++r) {
+  // Chunk adjacent rows to reduce scheduling overhead and false sharing
+  // when filling a column-major score matrix.
+  const arma::uword pattern_chunk = 64L;
+  const arma::uword pattern_tasks = (npatterns-1L)/pattern_chunk+1L;
+  const int pattern_cores = acov_parallel_for(pattern_tasks, cores,
+    [&](const arma::uword task) {
 
-    for(arma::uword j = 0L; j < nitems; ++j) {
+    const arma::uword first_pattern = task*pattern_chunk;
+    const arma::uword last_pattern = std::min(npatterns, first_pattern+pattern_chunk);
 
-      const arma::uword category = pattern_values(r, j);
-      const arma::uword first = threshold_offsets[j];
-      const arma::uword last = first+threshold_counts[j]-1L;
+    for(arma::uword r = first_pattern; r < last_pattern; ++r) {
 
-      pattern_scores.submat(r, first, r, last) =
-        marginal_scores[j].row(category);
+      for(arma::uword j = 0L; j < nitems; ++j) {
 
-      floored_probabilities += marginal_floored[j][category];
+        const arma::uword category = pattern_values(r, j);
+        const arma::uword first = threshold_offsets[j];
+        const arma::uword last = first+threshold_counts[j]-1L;
 
+        pattern_scores.submat(r, first, r, last) =
+          marginal_scores[j].row(category);
+
+        pattern_floored[r] += marginal_floored[j][category];
+
+      }
+
+      for(arma::uword q = 0L; q < ncorrelations; ++q) {
+
+        const arma::uword j = pairs(q, 0L);
+        const arma::uword k = pairs(q, 1L);
+        const arma::uword category_j = pattern_values(r, j);
+        const arma::uword category_k = pattern_values(r, k);
+
+        pattern_scores(r, nthresholds+q) =
+          correlation_scores[q](category_j, category_k);
+
+        pattern_floored[r] +=
+          correlation_floored[q](category_j, category_k);
+
+      }
     }
 
-    for(arma::uword q = 0L; q < ncorrelations; ++q) {
+  });
 
-      const arma::uword j = pairs(q, 0L);
-      const arma::uword k = pairs(q, 1L);
-      const arma::uword category_j = pattern_values(r, j);
-      const arma::uword category_k = pattern_values(r, k);
-
-      pattern_scores(r, nthresholds+q) =
-        correlation_scores[q](category_j, category_k);
-
-      floored_probabilities +=
-        correlation_floored[q](category_j, category_k);
-
-    }
-
-  }
+  cores_used = std::max(cores_used, pattern_cores);
+  const arma::uword floored_probabilities = arma::accu(pattern_floored);
 
   arma::vec pattern_probabilities =
     arma::conv_to<arma::vec>::from(pattern_weights);
@@ -1022,7 +1072,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   arma::mat weighted_scores = pattern_scores;
   weighted_scores.each_col() %= arma::sqrt(pattern_probabilities);
 
-  arma::mat INNER = weighted_scores.t()*weighted_scores;
+  arma::mat INNER = acov_crossprod(weighted_scores, cores, &cores_used);
   INNER = 0.5*(INNER+INNER.t());
 
   // Lower-triangular sensitivity matrix
@@ -1117,7 +1167,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   arma::mat influence_scores =
     arma::join_rows(influence_thresholds, influence_correlations);
 
-  arma::mat NVCOV = influence_scores.t()*influence_scores;
+  arma::mat NVCOV = acov_crossprod(influence_scores, cores, &cores_used);
   NVCOV = 0.5*(NVCOV+NVCOV.t());
 
   arma::mat VCOV = NVCOV/static_cast<double>(nobs);
@@ -1152,6 +1202,14 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   result["generalized_A11"] = generalized_A11;
   result["generalized_A22"] = generalized_A22;
   result["polyfast_reused"] = use_polyfast;
+  // Maximum actual OpenMP team size (not the BLAS/LAPACK thread count).
+  result["cores_requested"] = cores;
+  result["cores_used"] = cores_used;
+#ifdef _OPENMP
+  result["openmp_available"] = true;
+#else
+  result["openmp_available"] = false;
+#endif
   result["parameter_order"] =
     "finite thresholds by variable, followed by strict-lower-triangle correlations";
 

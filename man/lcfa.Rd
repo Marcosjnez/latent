@@ -14,7 +14,7 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
      parameterization = NULL,
      likelihood = NULL, se = TRUE,
      control = NULL, message = FALSE,
-     do.fit = TRUE, ...)
+     do.fit = TRUE, control.moments = NULL, ...)
 }
 \arguments{
 \item{data}{Optional data frame or matrix containing the observed variables.
@@ -73,12 +73,23 @@ CFA standard errors. Ordinary ML and direct FIML use information from the
 likelihood; multistep analyses propagate the covariance of their parent
 statistics with \code{se.multistep()}.}
 
-\item{control}{Optional list of optimization controls.}
+\item{control}{Optional list of CFA optimization controls. These are
+separate from \code{control.moments}.}
 
 \item{message}{Logical. Print progress messages.}
 
 \item{do.fit}{Logical. If \code{FALSE}, return the prepared but unfitted
 \code{"lcfa"} or \code{"multistep_lcfa"} object.}
+
+\item{control.moments}{Optional named list passed as \code{control} to
+the sample-moment estimators (\code{lpoly()}, \code{lpearson()},
+\code{lmean()}, \code{lyule()}, or \code{lmvnorm()}). For example,
+\code{list(cores = 4L)} requests four OpenMP threads for polychoric
+estimation and its two-step ACOV. NULL uses the moment estimators' own
+defaults, independently of \code{control}. Group suffixes and uncertainty
+propagation are set internally. This argument has no effect when no
+separate moment estimator is fitted (for example, supplied sample moments
+or direct FIML).}
 
 \item{...}{Additional arguments passed to lavaan and the sample-statistic
 estimators where applicable.}

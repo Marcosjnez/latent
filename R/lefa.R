@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 01/09/2026
+# Modification date: 06/09/2026
 #'
 #' Exploratory Factor Analysis
 #'
@@ -21,7 +21,7 @@
 #'      likelihood = NULL, se = TRUE,
 #'      message = FALSE, do.fit = TRUE,
 #'      mimic = "latent", control.efa = NULL,
-#'      control.rotation = NULL, ...)
+#'      control.rotation = NULL, control.moments = NULL, ...)
 #'
 #' @param data Optional data frame or matrix containing the observed variables.
 #'   Alternatively, sample.cov can be supplied.
@@ -69,6 +69,11 @@
 #' @param control.rotation Optional list of controls passed to \code{lrotate()}.
 #'   The defaults are \code{rstarts = 10L} and
 #'   \code{se_method = "KKT"}.
+#' @param control.moments Optional named list passed to \code{lcfa()}'s
+#'   sample-moment estimators, independently of \code{control.efa} and
+#'   \code{control.rotation}. For example, \code{list(cores = 4L)} controls
+#'   polychoric estimation and the two-step ACOV. NULL uses the moment
+#'   estimators' defaults. See \code{lcfa()} for details.
 #' @param ... Additional arguments. CFA/lavaan arguments are passed to
 #'   \code{lcfa()}; arguments required by the selected rotation criterion or
 #'   projection are passed only to \code{lrotate()}.
@@ -120,7 +125,7 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                  likelihood = NULL, se = TRUE,
                  message = FALSE, do.fit = TRUE,
                  mimic = "latent", control.efa = NULL,
-                 control.rotation = NULL,
+                 control.rotation = NULL, control.moments = NULL,
                  ...) {
 
   #### Check input arguments ####
@@ -140,6 +145,8 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
   if(!is.null(control.rotation) && !is.list(control.rotation)) {
     stop("control.rotation must be NULL or a list")
   }
+
+  control.moments <- normalize_control_moments(control.moments)
 
   if(!is.null(model) &&
      (!is.character(model) || length(model) < 1L)) {
@@ -339,7 +346,8 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                           message = message,
                           do.fit = do.fit,
                           control.efa = control.efa,
-                          dots = dots_split$cfa)
+                          dots = dots_split$cfa,
+                          control.moments = control.moments)
 
   #### Return the unfitted model ####
 
@@ -509,7 +517,7 @@ fit_lefa_cfa <- function(data, model, estimator,
                          meanstructure, parameterization,
                          likelihood, se, message,
                          do.fit, control.efa,
-                         dots) {
+                         dots, control.moments = NULL) {
 
   args <- list(
     data = data,
@@ -532,6 +540,7 @@ fit_lefa_cfa <- function(data, model, estimator,
     message = message,
     do.fit = do.fit,
     control = control.efa,
+    control.moments = control.moments,
     orthogonal = TRUE
   )
 

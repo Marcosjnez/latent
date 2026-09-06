@@ -16,7 +16,7 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
      likelihood = NULL, se = TRUE,
      message = FALSE, do.fit = TRUE,
      mimic = "latent", control.efa = NULL,
-     control.rotation = NULL, ...)
+     control.rotation = NULL, control.moments = NULL, ...)
 }
 \arguments{
 \item{data}{Optional data frame or matrix containing the observed variables.
@@ -89,6 +89,12 @@ defaults are \code{rstarts = 3L}, \code{se_method = "KKT"}, and
 \item{control.rotation}{Optional list of controls passed to \code{lrotate()}.
 The defaults are \code{rstarts = 10L} and
 \code{se_method = "KKT"}.}
+
+\item{control.moments}{Optional named list passed to \code{lcfa()}'s
+sample-moment estimators, independently of \code{control.efa} and
+\code{control.rotation}. For example, \code{list(cores = 4L)} controls
+polychoric estimation and the two-step ACOV. NULL uses the moment
+estimators' defaults. See \code{lcfa()} for details.}
 
 \item{...}{Additional arguments. CFA/lavaan arguments are passed to
 \code{lcfa()}; arguments required by the selected rotation criterion or

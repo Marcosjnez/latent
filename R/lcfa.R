@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 26/08/2026
+# Modification date: 06/09/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -18,7 +18,7 @@
 #'      parameterization = NULL,
 #'      likelihood = NULL, se = TRUE,
 #'      control = NULL, message = FALSE,
-#'      do.fit = TRUE, ...)
+#'      do.fit = TRUE, control.moments = NULL, ...)
 #'
 #' @param data Optional data frame or matrix containing the observed variables.
 #'   If NULL, sample.cov and sample.nobs must be supplied.
@@ -59,10 +59,20 @@
 #'   CFA standard errors. Ordinary ML and direct FIML use information from the
 #'   likelihood; multistep analyses propagate the covariance of their parent
 #'   statistics with \code{se.multistep()}.
-#' @param control Optional list of optimization controls.
+#' @param control Optional list of CFA optimization controls. These are
+#'   separate from \code{control.moments}.
 #' @param message Logical. Print progress messages.
 #' @param do.fit Logical. If \code{FALSE}, return the prepared but unfitted
 #'   \code{"lcfa"} or \code{"multistep_lcfa"} object.
+#' @param control.moments Optional named list passed as \code{control} to
+#'   the sample-moment estimators (\code{lpoly()}, \code{lpearson()},
+#'   \code{lmean()}, \code{lyule()}, or \code{lmvnorm()}). For example,
+#'   \code{list(cores = 4L)} requests four OpenMP threads for polychoric
+#'   estimation and its two-step ACOV. NULL uses the moment estimators' own
+#'   defaults, independently of \code{control}. Group suffixes and uncertainty
+#'   propagation are set internally. This argument has no effect when no
+#'   separate moment estimator is fitted (for example, supplied sample moments
+#'   or direct FIML).
 #' @param ... Additional arguments passed to lavaan and the sample-statistic
 #'   estimators where applicable.
 #'
@@ -104,7 +114,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                  parameterization = NULL,
                  likelihood = NULL, se = TRUE,
                  control = NULL, message = FALSE,
-                 do.fit = TRUE,
+                 do.fit = TRUE, control.moments = NULL,
                  ...) {
 
   #### Check input arguments ####
@@ -132,6 +142,8 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
   if(is.null(control)) {
     control <- list()
   }
+
+  control.moments <- normalize_control_moments(control.moments)
 
   missing_was_supplied <- !missing(missing)
   estimator <- tolower(estimator)
@@ -275,6 +287,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                                    meanstructure = meanstructure,
                                    args = args,
                                    control = control,
+                                   control.moments = control.moments,
                                    ...)
 
   #### Create the model ####
@@ -425,12 +438,15 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                                  se = "standard", message = FALSE,
                                  likelihood = NULL, meanstructure = TRUE,
                                  args = NULL, control = NULL,
+                                 control.moments = NULL,
                                  ...) {
 
   cor <- tolower(cor)
   estimator <- tolower(estimator)
   se_type <- match.arg(tolower(se), c("standard", "robust"))
   missing <- tolower(missing)
+
+  control.moments <- normalize_control_moments(control.moments)
 
   sample_stats_only <- is.null(data)
 
@@ -653,10 +669,9 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
       #### Saturated incomplete-data moments ####
 
-      control_moments <- control
-      control_moments$start <- NULL
-      control_moments$rstarts <- 1L
-      control_moments$cores <- 1L
+      control_moments <- control.moments
+      if(is.null(control_moments$rstarts)) control_moments$rstarts <- 1L
+      if(is.null(control_moments$cores)) control_moments$cores <- 1L
 
       if(ngroups < 2L) {
         data_moments <- X[[1L]]
@@ -746,7 +761,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
       for(i in seq_len(ngroups)) {
 
-        control_i <- control
+        control_i <- control.moments
 
         if(ngroups < 2L) {
           control_i$subfix <- ""
@@ -1038,6 +1053,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                    likelihood = likelihood,
                    cor = cor,
                    se_type = se_type,
+                   control.moments = control.moments,
                    meanstructure = meanstructure,
                    missing = missing,
                    group = group,

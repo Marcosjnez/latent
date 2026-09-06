@@ -35,7 +35,10 @@
 #' @param do.fit Logical. If \code{FALSE}, return the prepared but unfitted
 #'   \code{"latent"} object.
 #' @param message Logical. Print progress messages during estimation.
-#' @param control Optional list of optimization controls.
+#' @param control Optional list of optimization controls. \code{cores} is a
+#'   positive integer (default 1) controlling OpenMP threads for the initial
+#'   polychoric estimates and the two-step ACOV. One-step optimization remains
+#'   single-start; the ACOV still uses the requested core count.
 #' @param ... Additional arguments reserved for future extensions.
 #'
 #' @details
@@ -266,7 +269,7 @@ create_lpoly_dataList <- function(data, control) {
 
   #### Polychoric sample statistics ####
 
-  polychorics <- polyfast(as.matrix(data), cores = 1L)
+  polychorics <- polyfast(as.matrix(data), cores = control$cores)
 
   S <- polychorics$correlation
   taus <- polychorics$thresholds
@@ -560,9 +563,17 @@ lpoly_control <- function(control) {
     stop("ss must be a positive number")
   }
 
-  # lpoly currently uses a single start and a single optimizer core.
+  # Keep the single-start optimizer; do not restrict preprocessing or ACOV cores.
   control$rstarts <- 1L
-  control$cores <- 1L
+  if(is.null(control$cores)) {
+    control$cores <- 1L
+  } else if(!is.numeric(control$cores) || length(control$cores) != 1L ||
+            !is.finite(control$cores) || control$cores < 1 ||
+            control$cores > .Machine$integer.max ||
+            control$cores != floor(control$cores)) {
+    stop("cores must be a positive integer")
+  }
+  control$cores <- as.integer(control$cores)
 
   #### Result ####
 
@@ -965,10 +976,8 @@ fit_lpoly <- function(dataList, modelInfo, method) {
 
   } else {
 
-    cores <- parallel::detectCores()
-    if(is.na(cores) || cores < 1L) cores <- 1L
-
-    Optim <- polyfast(as.matrix(dataList$data), cores = cores)
+    Optim <- polyfast(as.matrix(dataList$data),
+                      cores = modelInfo$control_optimizer$cores)
 
     rownames(Optim$correlation) <- colnames(Optim$correlation) <-
       dataList$item_label
@@ -1077,10 +1086,12 @@ compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
     return_scores = FALSE,
     probability_floor = 1e-12,
     inversion_tolerance = 1e-10,
-    polyfast_object = dataList$polychorics
+    polyfast_object = dataList$polychorics,
+    cores = modelInfo$control_optimizer$cores
   )
 
-  H <- solve(ACOV$VCOV)
+  # H <- solve(ACOV$VCOV)
+  H <- approx_Hinv(ACOV$VCOV)
   rownames(H) <- colnames(H) <- modelInfo$parameters_labels
 
   rownames(ACOV$VCOV) <- colnames(ACOV$VCOV) <-
@@ -1092,7 +1103,10 @@ compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
 
   result <- list(H = H,
                  VCOV = ACOV$VCOV,
-                 se = se)
+                 se = se,
+                 cores_requested = ACOV$cores_requested,
+                 cores_used = ACOV$cores_used,
+                 openmp_available = ACOV$openmp_available)
 
   return(result)
 
