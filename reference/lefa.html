@@ -102,7 +102,7 @@ with <code><a href="lrotate.html">lrotate()</a></code>.</p>
 <span>     likelihood <span class="op">=</span> <span class="cn">NULL</span>, se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>     message <span class="op">=</span> <span class="cn">FALSE</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>     mimic <span class="op">=</span> <span class="st">"latent"</span>, control.efa <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>     control.rotation <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span>     control.rotation <span class="op">=</span> <span class="cn">NULL</span>, control.moments <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -228,6 +228,14 @@ defaults are <code>rstarts = 3L</code>, <code>se_method = "KKT"</code>, and
 <dd><p>Optional list of controls passed to <code><a href="lrotate.html">lrotate()</a></code>.
 The defaults are <code>rstarts = 10L</code> and
 <code>se_method = "KKT"</code>.</p></dd>
+
+
+<dt id="arg-control-moments">control.moments<a class="anchor" aria-label="anchor" href="#arg-control-moments"></a></dt>
+<dd><p>Optional named list passed to <code><a href="lcfa.html">lcfa()</a></code>'s
+sample-moment estimators, independently of <code>control.efa</code> and
+<code>control.rotation</code>. For example, <code>list(cores = 4L)</code> controls
+polychoric estimation and the two-step ACOV. NULL uses the moment
+estimators' defaults. See <code><a href="lcfa.html">lcfa()</a></code> for details.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

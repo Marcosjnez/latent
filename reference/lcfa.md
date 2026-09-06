@@ -16,7 +16,7 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
      parameterization = NULL,
      likelihood = NULL, se = TRUE,
      control = NULL, message = FALSE,
-     do.fit = TRUE, ...)
+     do.fit = TRUE, control.moments = NULL, ...)
 ```
 
 ## Arguments
@@ -112,7 +112,8 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 - control:
 
-  Optional list of optimization controls.
+  Optional list of CFA optimization controls. These are separate from
+  `control.moments`.
 
 - message:
 
@@ -122,6 +123,23 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
   Logical. If `FALSE`, return the prepared but unfitted `"lcfa"` or
   `"multistep_lcfa"` object.
+
+- control.moments:
+
+  Optional named list passed as `control` to the sample-moment
+  estimators
+  ([`lpoly()`](https://marcosjnez.github.io/latent/reference/lpoly.md),
+  [`lpearson()`](https://marcosjnez.github.io/latent/reference/lpearson.md),
+  [`lmean()`](https://marcosjnez.github.io/latent/reference/lmean.md),
+  [`lyule()`](https://marcosjnez.github.io/latent/reference/lyule.md),
+  or
+  [`lmvnorm()`](https://marcosjnez.github.io/latent/reference/lmvnorm.md)).
+  For example, `list(cores = 4L)` requests four OpenMP threads for
+  polychoric estimation and its two-step ACOV. NULL uses the moment
+  estimators' own defaults, independently of `control`. Group suffixes
+  and uncertainty propagation are set internally. This argument has no
+  effect when no separate moment estimator is fitted (for example,
+  supplied sample moments or direct FIML).
 
 - ...:
 

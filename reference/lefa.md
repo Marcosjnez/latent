@@ -21,7 +21,7 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
      likelihood = NULL, se = TRUE,
      message = FALSE, do.fit = TRUE,
      mimic = "latent", control.efa = NULL,
-     control.rotation = NULL, ...)
+     control.rotation = NULL, control.moments = NULL, ...)
 ```
 
 ## Arguments
@@ -155,6 +155,17 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
   Optional list of controls passed to
   [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
   The defaults are `rstarts = 10L` and `se_method = "KKT"`.
+
+- control.moments:
+
+  Optional named list passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md)'s
+  sample-moment estimators, independently of `control.efa` and
+  `control.rotation`. For example, `list(cores = 4L)` controls
+  polychoric estimation and the two-step ACOV. NULL uses the moment
+  estimators' defaults. See
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) for
+  details.
 
 - ...:
 

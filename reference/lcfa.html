@@ -97,7 +97,7 @@ optimization infrastructure of <span class="pkg">latent</span>.</p>
 <span>     parameterization <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>     likelihood <span class="op">=</span> <span class="cn">NULL</span>, se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>     control <span class="op">=</span> <span class="cn">NULL</span>, message <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>     do.fit <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span>     do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control.moments <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -195,7 +195,8 @@ statistics with <code><a href="se.multistep.html">se.multistep()</a></code>.</p>
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
-<dd><p>Optional list of optimization controls.</p></dd>
+<dd><p>Optional list of CFA optimization controls. These are
+separate from <code>control.moments</code>.</p></dd>
 
 
 <dt id="arg-message">message<a class="anchor" aria-label="anchor" href="#arg-message"></a></dt>
@@ -205,6 +206,18 @@ statistics with <code><a href="se.multistep.html">se.multistep()</a></code>.</p>
 <dt id="arg-do-fit">do.fit<a class="anchor" aria-label="anchor" href="#arg-do-fit"></a></dt>
 <dd><p>Logical. If <code>FALSE</code>, return the prepared but unfitted
 <code>"lcfa"</code> or <code>"multistep_lcfa"</code> object.</p></dd>
+
+
+<dt id="arg-control-moments">control.moments<a class="anchor" aria-label="anchor" href="#arg-control-moments"></a></dt>
+<dd><p>Optional named list passed as <code>control</code> to
+the sample-moment estimators (<code><a href="lpoly.html">lpoly()</a></code>, <code><a href="lpearson.html">lpearson()</a></code>,
+<code><a href="lmean.html">lmean()</a></code>, <code><a href="lyule.html">lyule()</a></code>, or <code><a href="lmvnorm.html">lmvnorm()</a></code>). For example,
+<code>list(cores = 4L)</code> requests four OpenMP threads for polychoric
+estimation and its two-step ACOV. NULL uses the moment estimators' own
+defaults, independently of <code>control</code>. Group suffixes and uncertainty
+propagation are set internally. This argument has no effect when no
+separate moment estimator is fitted (for example, supplied sample moments
+or direct FIML).</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

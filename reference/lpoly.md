@@ -62,7 +62,10 @@ lpoly(data, method = "two-step", model = NULL,
 
 - control:
 
-  Optional list of optimization controls.
+  Optional list of optimization controls. `cores` is a positive integer
+  (default 1) controlling OpenMP threads for the initial polychoric
+  estimates and the two-step ACOV. One-step optimization remains
+  single-start; the ACOV still uses the requested core count.
 
 - ...:
 

@@ -144,7 +144,10 @@ same way as in <code><a href="lca.html">lca()</a></code>.</p></dd>
 
 
 <dt id="arg-control">control<a class="anchor" aria-label="anchor" href="#arg-control"></a></dt>
-<dd><p>Optional list of optimization controls.</p></dd>
+<dd><p>Optional list of optimization controls. <code>cores</code> is a
+positive integer (default 1) controlling OpenMP threads for the initial
+polychoric estimates and the two-step ACOV. One-step optimization remains
+single-start; the ACOV still uses the requested core count.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
