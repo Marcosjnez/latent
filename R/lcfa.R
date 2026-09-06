@@ -76,8 +76,11 @@
 #'   or direct FIML).
 #' @param sort Logical. Sort factors by decreasing variance-adjusted sums of
 #'   squared loadings and make the largest absolute loading positive. The
-#'   default is TRUE. Factor identities and the native estimation constraints
-#'   are retained; see \code{sort_factors()}. FALSE leaves the output unchanged.
+#'   default is TRUE. If any modeled loading is fixed, including a loading fixed
+#'   for factor-scale identification, sorting is automatically disabled so the
+#'   fitted factor order and loading signs remain exactly as specified. Factor
+#'   identities and the native estimation constraints are retained; see
+#'   \code{sort_factors()}. FALSE leaves the output unchanged.
 #' @param ... Additional arguments passed to lavaan and the sample-statistic
 #'   estimators where applicable.
 #'
@@ -296,6 +299,14 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                                    control = control,
                                    control.moments = control.moments,
                                    ...)
+
+  # Fixed modeled loadings define factor order/sign conventions that should be
+  # visible in the reported solution. Structural zero cross-loadings are absent
+  # from lavaan's parameter table and therefore do not disable sorting.
+  if(sort && fixed_loadings_lcfa(dataList$LAV)) {
+    sort <- FALSE
+  }
+  dataList$args$sort <- sort
 
   #### Create the model ####
 
@@ -1398,6 +1409,29 @@ lcfa_control <- function(control) {
 }
 
 #### Auxiliary functions for create_lcfa_dataList ####
+
+fixed_loadings_lcfa <- function(LAV) {
+
+  if(!inherits(LAV, "lavaan")) {
+    stop("LAV must be a lavaan model object.")
+  }
+
+  partable <- lavaan::parTable(LAV)
+  required <- c("op", "free")
+
+  if(!all(required %in% names(partable))) {
+    stop("The lavaan parameter table does not contain loading/free metadata.")
+  }
+
+  loading <- partable$op == "=~"
+  fixed <- loading & !is.na(partable$free) & partable$free == 0L
+  result <- any(fixed)
+
+  #### Result ####
+
+  return(result)
+
+}
 
 print_lcfa_message <- function(msg) {
 

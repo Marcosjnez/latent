@@ -10,14 +10,20 @@
 #'
 #' @param fit A fitted lcfa/lrotate/lefa object for sort_factors(), a fitted
 #'   llca object for sort_classes(), or a sorted latent object for unsort_latent().
+#' @param reorder Logical. For \code{sort_factors()}, reorder factors by their
+#'   variance-adjusted sums of squared loadings. If FALSE, preserve the fitted
+#'   factor order and only orient signs so the largest absolute loading of each
+#'   factor is positive. Defaults to TRUE.
 #'
 #' @details
 #' sort_factors() ranks factors within each group by
-#' colSums(lambda^2)*diag(psi), in decreasing order. With unit factor variances
-#' this is the sum of squared loadings. For oblique factors it is a ranking
-#' criterion, not an additive allocation of common variance. The largest
-#' absolute loading in each factor is made positive; ties retain the first
-#' item or factor in the original order. Factor names are retained.
+#' colSums(lambda^2)*diag(psi), in decreasing order when \code{reorder = TRUE}.
+#' With unit factor variances this is the sum of squared loadings. For oblique
+#' factors it is a ranking criterion, not an additive allocation of common
+#' variance. With \code{reorder = FALSE}, the fitted factor order is retained.
+#' In both cases the largest absolute loading in each factor is made positive;
+#' ties retain the first item or factor in the original order. Factor names are
+#' retained.
 #'
 #' sort_classes() ranks classes by their frequency-weighted expected posterior
 #' sizes. Class names and the original multinomial reference class are retained:
@@ -42,15 +48,25 @@ NULL
 
 #' @rdname sort_latent
 #' @export
-sort_factors <- function(fit) {
+sort_factors <- function(fit, reorder = TRUE) {
 
   #### Check inputs ####
 
+  check_sort_flag(reorder)
   check_fitted_sort_latent(fit)
-  if(identical(fit@modelInfo$sorting$type, "factors")) {
+
+  sorting <- fit@modelInfo$sorting
+  current_reorder <- sorting$reorder
+  if(is.null(current_reorder) && identical(sorting$type, "factors")) {
+    current_reorder <- TRUE
+  }
+
+  if(identical(sorting$type, "factors") &&
+     identical(current_reorder, reorder)) {
     #### Result ####
     return(fit)
   }
+
   native <- unsort_latent(fit)
   rotation <- is_rotation_sort_latent(native)
 
@@ -91,7 +107,12 @@ sort_factors <- function(fit) {
     if(any(!is.finite(contribution))) {
       stop("Factor variance contributions are non-finite.")
     }
-    index <- order(-contribution, seq_len(q))
+    index <- if(reorder) {
+      order(-contribution, seq_len(q))
+    } else {
+      seq_len(q)
+    }
+
     direction <- vapply(seq_len(q), FUN = function(j) {
       value <- lambda[which.max(abs(lambda[, j])), j]
       result <- if(value < 0) -1 else 1
@@ -133,7 +154,7 @@ sort_factors <- function(fit) {
 
   specification <- list(type = "factors", blocks = maps, block_order = NULL,
                          order = orderings, signs = signs, importance = importance,
-                         rotation = rotation)
+                         rotation = rotation, reorder = reorder)
   result <- apply_sort_latent(native, specification)
 
   #### Result ####

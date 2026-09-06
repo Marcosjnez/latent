@@ -99,8 +99,10 @@ sample-moment estimators, independently of \code{control.efa} and
 See \code{lcfa()} for details.}
 
 \item{sort}{Logical. Sort the final rotated factors and choose their signs
-using \code{sort_factors()}. Defaults to TRUE. The intermediate unrotated
-model retains its fitting coordinates.}
+using \code{sort_factors()}. Defaults to TRUE. For target and extended
+target rotations, the target-defined factor order is retained and only the
+signs are oriented. The intermediate unrotated model retains its fitting
+coordinates.}
 
 \item{...}{Additional arguments. CFA/lavaan arguments are passed to
 \code{lcfa()}; arguments required by the selected rotation criterion or

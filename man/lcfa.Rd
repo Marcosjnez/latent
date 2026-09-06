@@ -94,8 +94,11 @@ or direct FIML).}
 
 \item{sort}{Logical. Sort factors by decreasing variance-adjusted sums of
 squared loadings and make the largest absolute loading positive. The
-default is TRUE. Factor identities and the native estimation constraints
-are retained; see \code{sort_factors()}. FALSE leaves the output unchanged.}
+default is TRUE. If any modeled loading is fixed, including a loading fixed
+for factor-scale identification, sorting is automatically disabled so the
+fitted factor order and loading signs remain exactly as specified. Factor
+identities and the native estimation constraints are retained; see
+\code{sort_factors()}. FALSE leaves the output unchanged.}
 
 \item{...}{Additional arguments passed to lavaan and the sample-statistic
 estimators where applicable.}

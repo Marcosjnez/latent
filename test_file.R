@@ -4,7 +4,7 @@
 
 #### Store a dataset ####
 
-# usethis::use_data(gss82, overwrite = TRUE)
+# usethis::use_data(dataset, overwrite = TRUE)
 
 #### Build the package ####
 

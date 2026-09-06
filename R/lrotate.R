@@ -32,11 +32,14 @@
 #'   return the model specification. With a fitted \code{lcfa} input, the
 #'   unrestricted specification used for derivative calculations is returned.
 #' @param control List of optimization-control arguments.
-#' @param sort Logical. Sort the rotated factors by decreasing variance-adjusted
-#'   sums of squared loadings, with the largest absolute loading positive.
-#'   Defaults to TRUE; see \code{sort_factors()}. FALSE retains the fitted order
-#'   and signs. The fitted criterion and its constraints retain their native
-#'   coordinate system.
+#' @param sort Logical. By default, orient every factor so its largest absolute
+#'   loading is positive and, except for target rotations, sort factors by
+#'   decreasing variance-adjusted sums of squared loadings. With
+#'   \code{rotation = "target"} or \code{"xtarget"}, factor order is always
+#'   retained because the target defines the intended factor positions; signs
+#'   are still oriented when \code{sort = TRUE}. See \code{sort_factors()}.
+#'   FALSE retains both the fitted order and signs. The fitted criterion and its
+#'   constraints retain their native coordinate system.
 #' @param ... Additional arguments required by the selected projection or
 #'   rotation criterion. If omitted (or NULL), \code{weight} defaults to
 #'   \code{1-target} and \code{psiweight} to \code{1-psitarget}. Explicit
@@ -277,7 +280,10 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
 
   #### Factor order and signs ####
 
-  if(sort) result <- sort_factors(result)
+  if(sort) {
+    reorder <- !(rotation %in% c("target", "xtarget"))
+    result <- sort_factors(result, reorder = reorder)
+  }
 
   #### Result ####
 

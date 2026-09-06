@@ -34,11 +34,14 @@ unrestricted specification used for derivative calculations is returned.}
 
 \item{control}{List of optimization-control arguments.}
 
-\item{sort}{Logical. Sort the rotated factors by decreasing variance-adjusted
-sums of squared loadings, with the largest absolute loading positive.
-Defaults to TRUE; see \code{sort_factors()}. FALSE retains the fitted order
-and signs. The fitted criterion and its constraints retain their native
-coordinate system.}
+\item{sort}{Logical. By default, orient every factor so its largest absolute
+loading is positive and, except for target rotations, sort factors by
+decreasing variance-adjusted sums of squared loadings. With
+\code{rotation = "target"} or \code{"xtarget"}, factor order is always
+retained because the target defines the intended factor positions; signs
+are still oriented when \code{sort = TRUE}. See \code{sort_factors()}.
+FALSE retains both the fitted order and signs. The fitted criterion and its
+constraints retain their native coordinate system.}
 
 \item{...}{Additional arguments required by the selected projection or
 rotation criterion. If omitted (or NULL), \code{weight} defaults to
