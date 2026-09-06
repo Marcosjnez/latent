@@ -242,7 +242,7 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
   }
 
   if(is.null(control.efa$orth.lambda)) {
-    control.efa$orth.lambda <- FALSE
+    control.efa$orth.lambda <- TRUE
   }
 
   if(length(control.efa$orth.lambda) != 1L ||

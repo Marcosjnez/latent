@@ -1106,11 +1106,6 @@ compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
     polyfast_object = dataList$polychorics
   )
 
-  H <- NULL
-  # H <- solve(ACOV$VCOV)
-  # H <- approx_Hinv(ACOV$VCOV)
-  # rownames(H) <- colnames(H) <- modelInfo$parameters_labels
-
   rownames(ACOV$VCOV) <- colnames(ACOV$VCOV) <-
     modelInfo$parameters_labels
   se <- sqrt(diag(ACOV$VCOV))
@@ -1118,8 +1113,7 @@ compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
 
   #### Result ####
 
-  result <- list(H = H,
-                 VCOV = ACOV$VCOV,
+  result <- list(VCOV = ACOV$VCOV,
                  se = se)
 
   return(result)
