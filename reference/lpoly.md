@@ -8,7 +8,7 @@ one-step or two-step estimation.
 ``` r
 lpoly(data, method = "two-step", model = NULL,
       positive = FALSE, penalties = FALSE,
-      start = NULL, do.fit = TRUE, message = FALSE,
+      start = NULL, se = TRUE, do.fit = TRUE, message = FALSE,
       control = NULL, ...)
 ```
 
@@ -50,6 +50,12 @@ lpoly(data, method = "two-step", model = NULL,
   the model. Partial matrices/vectors and `NA` values are handled in the
   same way as in
   [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md).
+
+- se:
+
+  Logical. If `TRUE`, compute the two-step ACOV currently used by
+  `lpoly()`. If `FALSE`, return the estimates without ACOV or standard
+  errors.
 
 - do.fit:
 
