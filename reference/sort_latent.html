@@ -84,7 +84,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sort_factors</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">sort_factors</span><span class="op">(</span><span class="va">fit</span>, reorder <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">sort_classes</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span></span>
@@ -99,6 +99,13 @@
 <dd><p>A fitted lcfa/lrotate/lefa object for sort_factors(), a fitted
 llca object for sort_classes(), or a sorted latent object for unsort_latent().</p></dd>
 
+
+<dt id="arg-reorder">reorder<a class="anchor" aria-label="anchor" href="#arg-reorder"></a></dt>
+<dd><p>Logical. For <code>sort_factors()</code>, reorder factors by their
+variance-adjusted sums of squared loadings. If FALSE, preserve the fitted
+factor order and only orient signs so the largest absolute loading of each
+factor is positive. Defaults to TRUE.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -107,11 +114,13 @@ llca object for sort_classes(), or a sorted latent object for unsort_latent().</
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>sort_factors() ranks factors within each group by
-colSums(lambda^2)*diag(psi), in decreasing order. With unit factor variances
-this is the sum of squared loadings. For oblique factors it is a ranking
-criterion, not an additive allocation of common variance. The largest
-absolute loading in each factor is made positive; ties retain the first
-item or factor in the original order. Factor names are retained.</p>
+colSums(lambda^2)*diag(psi), in decreasing order when <code>reorder = TRUE</code>.
+With unit factor variances this is the sum of squared loadings. For oblique
+factors it is a ranking criterion, not an additive allocation of common
+variance. With <code>reorder = FALSE</code>, the fitted factor order is retained.
+In both cases the largest absolute loading in each factor is made positive;
+ties retain the first item or factor in the original order. Factor names are
+retained.</p>
 <p>sort_classes() ranks classes by their frequency-weighted expected posterior
 sizes. Class names and the original multinomial reference class are retained:
 the reference class need not occupy the first displayed column. Sorting does

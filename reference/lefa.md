@@ -172,7 +172,9 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 
   Logical. Sort the final rotated factors and choose their signs using
   [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
-  Defaults to TRUE. The intermediate unrotated model retains its fitting
+  Defaults to TRUE. For target and extended target rotations, the
+  target-defined factor order is retained and only the signs are
+  oriented. The intermediate unrotated model retains its fitting
   coordinates.
 
 - ...:

@@ -5,7 +5,7 @@ Sort Factors or Latent Classes in a Fitted Model
 ## Usage
 
 ``` r
-sort_factors(fit)
+sort_factors(fit, reorder = TRUE)
 
 sort_classes(fit)
 
@@ -20,6 +20,13 @@ unsort_latent(fit)
   object for sort_classes(), or a sorted latent object for
   unsort_latent().
 
+- reorder:
+
+  Logical. For `sort_factors()`, reorder factors by their
+  variance-adjusted sums of squared loadings. If FALSE, preserve the
+  fitted factor order and only orient signs so the largest absolute
+  loading of each factor is positive. Defaults to TRUE.
+
 ## Value
 
 An object with the same S4 class as fit.
@@ -27,12 +34,13 @@ An object with the same S4 class as fit.
 ## Details
 
 sort_factors() ranks factors within each group by
-colSums(lambda^2)\*diag(psi), in decreasing order. With unit factor
-variances this is the sum of squared loadings. For oblique factors it is
-a ranking criterion, not an additive allocation of common variance. The
-largest absolute loading in each factor is made positive; ties retain
-the first item or factor in the original order. Factor names are
-retained.
+colSums(lambda^2)\*diag(psi), in decreasing order when `reorder = TRUE`.
+With unit factor variances this is the sum of squared loadings. For
+oblique factors it is a ranking criterion, not an additive allocation of
+common variance. With `reorder = FALSE`, the fitted factor order is
+retained. In both cases the largest absolute loading in each factor is
+made positive; ties retain the first item or factor in the original
+order. Factor names are retained.
 
 sort_classes() ranks classes by their frequency-weighted expected
 posterior sizes. Class names and the original multinomial reference

@@ -56,12 +56,15 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
 
 - sort:
 
-  Logical. Sort the rotated factors by decreasing variance-adjusted sums
-  of squared loadings, with the largest absolute loading positive.
-  Defaults to TRUE; see
+  Logical. By default, orient every factor so its largest absolute
+  loading is positive and, except for target rotations, sort factors by
+  decreasing variance-adjusted sums of squared loadings. With
+  `rotation = "target"` or `"xtarget"`, factor order is always retained
+  because the target defines the intended factor positions; signs are
+  still oriented when `sort = TRUE`. See
   [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
-  FALSE retains the fitted order and signs. The fitted criterion and its
-  constraints retain their native coordinate system.
+  FALSE retains both the fitted order and signs. The fitted criterion
+  and its constraints retain their native coordinate system.
 
 - ...:
 

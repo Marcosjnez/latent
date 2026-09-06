@@ -146,8 +146,11 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
   Logical. Sort factors by decreasing variance-adjusted sums of squared
   loadings and make the largest absolute loading positive. The default
-  is TRUE. Factor identities and the native estimation constraints are
-  retained; see
+  is TRUE. If any modeled loading is fixed, including a loading fixed
+  for factor-scale identification, sorting is automatically disabled so
+  the fitted factor order and loading signs remain exactly as specified.
+  Factor identities and the native estimation constraints are retained;
+  see
   [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
   FALSE leaves the output unchanged.
 

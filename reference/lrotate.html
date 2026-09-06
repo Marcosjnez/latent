@@ -141,11 +141,14 @@ unrestricted specification used for derivative calculations is returned.</p></dd
 
 
 <dt id="arg-sort">sort<a class="anchor" aria-label="anchor" href="#arg-sort"></a></dt>
-<dd><p>Logical. Sort the rotated factors by decreasing variance-adjusted
-sums of squared loadings, with the largest absolute loading positive.
-Defaults to TRUE; see <code><a href="sort_latent.html">sort_factors()</a></code>. FALSE retains the fitted order
-and signs. The fitted criterion and its constraints retain their native
-coordinate system.</p></dd>
+<dd><p>Logical. By default, orient every factor so its largest absolute
+loading is positive and, except for target rotations, sort factors by
+decreasing variance-adjusted sums of squared loadings. With
+<code>rotation = "target"</code> or <code>"xtarget"</code>, factor order is always
+retained because the target defines the intended factor positions; signs
+are still oriented when <code>sort = TRUE</code>. See <code><a href="sort_latent.html">sort_factors()</a></code>.
+FALSE retains both the fitted order and signs. The fitted criterion and its
+constraints retain their native coordinate system.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
