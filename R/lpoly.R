@@ -10,7 +10,7 @@
 #' @usage
 #' lpoly(data, method = "two-step", model = NULL,
 #'       positive = FALSE, penalties = FALSE,
-#'       start = NULL, do.fit = TRUE, message = FALSE,
+#'       start = NULL, se = TRUE, do.fit = TRUE, message = FALSE,
 #'       control = NULL, ...)
 #'
 #' @param data A data frame or matrix containing ordinal variables coded
@@ -32,6 +32,9 @@
 #'   \code{method = "one-step"}. Names should correspond to parameter blocks in
 #'   the model. Partial matrices/vectors and \code{NA} values are handled in the
 #'   same way as in \code{lca()}.
+#' @param se Logical. If \code{TRUE}, compute the two-step ACOV currently used
+#'   by \code{lpoly()}. If \code{FALSE}, return the estimates without ACOV or
+#'   standard errors.
 #' @param do.fit Logical. If \code{FALSE}, return the prepared but unfitted
 #'   \code{"latent"} object.
 #' @param message Logical. Print progress messages during estimation.
@@ -71,6 +74,7 @@ lpoly <- function(data,
                   positive = FALSE,
                   penalties = FALSE,
                   start = NULL,
+                  se = TRUE,
                   do.fit = TRUE,
                   message = FALSE,
                   control = NULL,
@@ -113,6 +117,10 @@ lpoly <- function(data,
 
   if(!is.logical(positive) || length(positive) != 1L || is.na(positive)) {
     stop("positive must be TRUE or FALSE")
+  }
+
+  if(!is.logical(se) || length(se) != 1L || is.na(se)) {
+    stop("se must be TRUE or FALSE")
   }
 
   if(!is.logical(do.fit) || length(do.fit) != 1L || is.na(do.fit)) {
@@ -234,15 +242,23 @@ lpoly <- function(data,
 
   #### Standard errors ####
 
-  # ACOV for the composite pairwise likelihood:
-  # Optim$SE <- compute_se_lpoly_one_step(dataList = dataList,
-  #                                       modelInfo = modelInfo,
-  #                                       Optim = Optim,
-  #                                       parameters = parameters)
-  # For now, we use always the ACOV of the two-steps method:
-  Optim$SE <- compute_se_lpoly_two_step(dataList = dataList,
-                                        modelInfo = modelInfo,
-                                        parameters = parameters)
+  if(se) {
+
+    # ACOV for the composite pairwise likelihood:
+    # Optim$SE <- compute_se_lpoly_one_step(dataList = dataList,
+    #                                       modelInfo = modelInfo,
+    #                                       Optim = Optim,
+    #                                       parameters = parameters)
+    # For now, we use always the ACOV of the two-step method:
+    Optim$SE <- compute_se_lpoly_two_step(dataList = dataList,
+                                          modelInfo = modelInfo,
+                                          parameters = parameters)
+
+  } else {
+
+    Optim$SE <- list()
+
+  }
 
   #### latent object ####
 
@@ -976,8 +992,9 @@ fit_lpoly <- function(dataList, modelInfo, method) {
 
   } else {
 
-    Optim <- polyfast(as.matrix(dataList$data),
-                      cores = modelInfo$control_optimizer$cores)
+    # The two-step estimates were already computed by create_lpoly_dataList().
+    # Reuse them instead of running polyfast() a second time.
+    Optim <- dataList$polychorics
 
     rownames(Optim$correlation) <- colnames(Optim$correlation) <-
       dataList$item_label

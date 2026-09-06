@@ -6,7 +6,7 @@
 \usage{
 lpoly(data, method = "two-step", model = NULL,
       positive = FALSE, penalties = FALSE,
-      start = NULL, do.fit = TRUE, message = FALSE,
+      start = NULL, se = TRUE, do.fit = TRUE, message = FALSE,
       control = NULL, ...)
 }
 \arguments{
@@ -34,6 +34,10 @@ estimation does not use penalties.}
 \code{method = "one-step"}. Names should correspond to parameter blocks in
 the model. Partial matrices/vectors and \code{NA} values are handled in the
 same way as in \code{lca()}.}
+
+\item{se}{Logical. If \code{TRUE}, compute the two-step ACOV currently used
+by \code{lpoly()}. If \code{FALSE}, return the estimates without ACOV or
+standard errors.}
 
 \item{do.fit}{Logical. If \code{FALSE}, return the prepared but unfitted
 \code{"latent"} object.}

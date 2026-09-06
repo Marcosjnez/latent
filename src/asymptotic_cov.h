@@ -1015,53 +1015,71 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   // Casewise estimating functions by unique response pattern
 
   arma::mat pattern_scores(npatterns, nparameters, arma::fill::zeros);
-  arma::uvec pattern_floored(npatterns, arma::fill::zeros);
+  arma::uvec marginal_floored_counts(nitems, arma::fill::zeros);
+  arma::uvec correlation_floored_counts(ncorrelations, arma::fill::zeros);
 
-  // Chunk adjacent rows to reduce scheduling overhead and false sharing
-  // when filling a column-major score matrix.
-  const arma::uword pattern_chunk = 64L;
-  const arma::uword pattern_tasks = (npatterns-1L)/pattern_chunk+1L;
-  const int pattern_cores = acov_parallel_for(pattern_tasks, cores,
-    [&](const arma::uword task) {
+  // Fill threshold-score columns contiguously. Each worker owns all columns
+  // for one variable, so there is no shared write region.
+  const int threshold_score_cores = acov_parallel_for(nitems, cores,
+    [&](const arma::uword j) {
 
-    const arma::uword first_pattern = task*pattern_chunk;
-    const arma::uword last_pattern = std::min(npatterns, first_pattern+pattern_chunk);
+    const arma::uword first = threshold_offsets[j];
 
-    for(arma::uword r = first_pattern; r < last_pattern; ++r) {
+    for(arma::uword h = 0L; h < threshold_counts[j]; ++h) {
 
-      for(arma::uword j = 0L; j < nitems; ++j) {
+      double* score_column = pattern_scores.colptr(first+h);
 
+      for(arma::uword r = 0L; r < npatterns; ++r) {
         const arma::uword category = pattern_values(r, j);
-        const arma::uword first = threshold_offsets[j];
-        const arma::uword last = first+threshold_counts[j]-1L;
-
-        pattern_scores.submat(r, first, r, last) =
-          marginal_scores[j].row(category);
-
-        pattern_floored[r] += marginal_floored[j][category];
-
+        score_column[r] = marginal_scores[j](category, h);
       }
 
-      for(arma::uword q = 0L; q < ncorrelations; ++q) {
-
-        const arma::uword j = pairs(q, 0L);
-        const arma::uword k = pairs(q, 1L);
-        const arma::uword category_j = pattern_values(r, j);
-        const arma::uword category_k = pattern_values(r, k);
-
-        pattern_scores(r, nthresholds+q) =
-          correlation_scores[q](category_j, category_k);
-
-        pattern_floored[r] +=
-          correlation_floored[q](category_j, category_k);
-
-      }
     }
+
+    arma::uword floored = 0L;
+
+    for(arma::uword r = 0L; r < npatterns; ++r) {
+      floored += marginal_floored[j][pattern_values(r, j)];
+    }
+
+    marginal_floored_counts[j] = floored;
 
   });
 
-  cores_used = std::max(cores_used, pattern_cores);
-  const arma::uword floored_probabilities = arma::accu(pattern_floored);
+  cores_used = std::max(cores_used, threshold_score_cores);
+
+  // Correlation scores are naturally independent by pair. Writing one full
+  // column per worker follows Armadillo's column-major storage and avoids the
+  // cache-unfriendly row-wise traversal used previously.
+  const int correlation_score_cores = acov_parallel_for(ncorrelations, cores,
+    [&](const arma::uword q) {
+
+    const arma::uword j = pairs(q, 0L);
+    const arma::uword k = pairs(q, 1L);
+    double* score_column = pattern_scores.colptr(nthresholds+q);
+    arma::uword floored = 0L;
+
+    for(arma::uword r = 0L; r < npatterns; ++r) {
+
+      const arma::uword category_j = pattern_values(r, j);
+      const arma::uword category_k = pattern_values(r, k);
+
+      score_column[r] =
+        correlation_scores[q](category_j, category_k);
+
+      floored += correlation_floored[q](category_j, category_k);
+
+    }
+
+    correlation_floored_counts[q] = floored;
+
+  });
+
+  cores_used = std::max(cores_used, correlation_score_cores);
+
+  const arma::uword floored_probabilities =
+    arma::accu(marginal_floored_counts)+
+    arma::accu(correlation_floored_counts);
 
   arma::vec pattern_probabilities =
     arma::conv_to<arma::vec>::from(pattern_weights);
@@ -1072,7 +1090,10 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   arma::mat weighted_scores = pattern_scores;
   weighted_scores.each_col() %= arma::sqrt(pattern_probabilities);
 
-  arma::mat INNER = acov_crossprod(weighted_scores, cores, &cores_used);
+  // Dense crossproducts are intentionally left to Armadillo/BLAS. A tuned
+  // GEMM is substantially more cache-efficient and vectorized than a custom
+  // OpenMP dot-product kernel, and may use its own BLAS thread pool.
+  arma::mat INNER = weighted_scores.t()*weighted_scores;
   INNER = 0.5*(INNER+INNER.t());
 
   // Lower-triangular sensitivity matrix
@@ -1167,7 +1188,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   arma::mat influence_scores =
     arma::join_rows(influence_thresholds, influence_correlations);
 
-  arma::mat NVCOV = acov_crossprod(influence_scores, cores, &cores_used);
+  arma::mat NVCOV = influence_scores.t()*influence_scores;
   NVCOV = 0.5*(NVCOV+NVCOV.t());
 
   arma::mat VCOV = NVCOV/static_cast<double>(nobs);
