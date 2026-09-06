@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 22/08/2026
+ * Modification date: 06/09/2026
  *
  */
 
@@ -565,7 +565,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
                            const Rcpp::List& thresholds,
                            bool return_scores,
                            double probability_floor,
-                           double inversion_tolerance) {
+                           double inversion_tolerance,
+                           Rcpp::Nullable<Rcpp::List> polyfast_object) {
 
   using namespace latent_asymptotic_poly;
 
@@ -610,6 +611,36 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
     Rcpp::stop("inversion_tolerance must be a positive finite number.");
   }
 
+  // Reusable polyfast information
+
+  const bool use_polyfast = polyfast_object.isNotNull();
+  std::vector<double> category_min;
+  std::vector<int> category_count;
+  std::vector<std::vector<std::vector<int>>> cached_tables;
+
+  if(use_polyfast) {
+
+    Rcpp::List cache(polyfast_object.get());
+
+    if(!cache.containsElementNamed("category_min") ||
+       !cache.containsElementNamed("category_count") ||
+       !cache.containsElementNamed("contingency_tables")) {
+      Rcpp::stop("polyfast_object must contain category_min, category_count, and contingency_tables.");
+    }
+
+    category_min = Rcpp::as<std::vector<double>>(cache["category_min"]);
+    category_count = Rcpp::as<std::vector<int>>(cache["category_count"]);
+    cached_tables =
+      Rcpp::as<std::vector<std::vector<std::vector<int>>>>(
+        cache["contingency_tables"]
+      );
+
+    if(category_min.size() != nitems || category_count.size() != nitems) {
+      Rcpp::stop("The polyfast category metadata does not match data.");
+    }
+
+  }
+
   // Thresholds and ordinal categories
 
   std::vector<arma::vec> tau(nitems);
@@ -617,6 +648,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   std::vector<arma::vec> bounds(nitems);
   std::vector<arma::vec> bounds_cdf(nitems);
   std::vector<arma::vec> category_probabilities(nitems);
+  std::vector<arma::mat> marginal_scores(nitems);
+  std::vector<arma::uvec> marginal_floored(nitems);
 
   arma::uvec threshold_counts(nitems, arma::fill::zeros);
   arma::uvec threshold_offsets(nitems, arma::fill::zeros);
@@ -631,17 +664,50 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
     threshold_offsets[j] = nthresholds;
     nthresholds += tau[j].n_elem;
 
-    levels[j] = arma::sort(arma::unique(data.col(j)));
+    if(use_polyfast) {
 
-    if(levels[j].n_elem != tau[j].n_elem+1L) {
-      Rcpp::stop("The number of thresholds for variable " +
-        std::to_string(j+1L) +
-        " does not match its observed categories. The threshold representation "
-        "cannot contain empty internal categories.");
-    }
+      if(category_count[j] < 2) {
+        Rcpp::stop("Every variable in polyfast_object must contain at least two categories.");
+      }
 
-    for(arma::uword i = 0L; i < nobs; ++i) {
-      categories(i, j) = category_index(levels[j], data(i, j));
+      const arma::uword ncategories =
+        static_cast<arma::uword>(category_count[j]);
+
+      if(ncategories != tau[j].n_elem+1L) {
+        Rcpp::stop("The number of thresholds for variable " +
+          std::to_string(j+1L) +
+          " does not match the polyfast category metadata.");
+      }
+
+      for(arma::uword i = 0L; i < nobs; ++i) {
+
+        const double shifted = data(i, j)-category_min[j];
+        const double rounded = std::round(shifted);
+
+        if(std::abs(shifted-rounded) > 1e-08 ||
+           rounded < 0.0 || rounded >= category_count[j]) {
+          Rcpp::stop("The data do not match the categories stored in polyfast_object.");
+        }
+
+        categories(i, j) = static_cast<arma::uword>(rounded);
+
+      }
+
+    } else {
+
+      levels[j] = arma::sort(arma::unique(data.col(j)));
+
+      if(levels[j].n_elem != tau[j].n_elem+1L) {
+        Rcpp::stop("The number of thresholds for variable " +
+          std::to_string(j+1L) +
+          " does not match its observed categories. The threshold representation "
+          "cannot contain empty internal categories.");
+      }
+
+      for(arma::uword i = 0L; i < nobs; ++i) {
+        categories(i, j) = category_index(levels[j], data(i, j));
+      }
+
     }
 
     bounds[j].set_size(tau[j].n_elem+2L);
@@ -657,9 +723,34 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     category_probabilities[j] = arma::diff(bounds_cdf[j]);
 
+    const arma::uword ncategories = tau[j].n_elem+1L;
+    marginal_scores[j].zeros(ncategories, tau[j].n_elem);
+    marginal_floored[j].zeros(ncategories);
+
+    for(arma::uword category = 0L; category < ncategories; ++category) {
+
+      double probability = category_probabilities[j][category];
+
+      if(!std::isfinite(probability) || probability < probability_floor) {
+        probability = probability_floor;
+        marginal_floored[j][category] = 1L;
+      }
+
+      if(category > 0L) {
+        marginal_scores[j](category, category-1L) -=
+          Dnorm(tau[j][category-1L])/probability;
+      }
+
+      if(category < tau[j].n_elem) {
+        marginal_scores[j](category, category) +=
+          Dnorm(tau[j][category])/probability;
+      }
+
+    }
+
   }
 
-  // Correlation pairs
+  // Correlation pairs and response patterns
 
   const arma::uword ncorrelations = nitems*(nitems-1L)/2L;
   const arma::uword nparameters = nthresholds+ncorrelations;
@@ -668,24 +759,16 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   arma::uword pair_index = 0L;
 
   for(arma::uword j = 0L; j < nitems-1L; ++j) {
-
     for(arma::uword k = j+1L; k < nitems; ++k) {
-
-      const double rho = correlation(j, k);
-
-      if(std::abs(rho) >= 1.0-1e-10) {
-        Rcpp::stop("Every polychoric correlation must lie strictly inside (-1, 1).");
-      }
-
       pairs(pair_index, 0L) = j;
       pairs(pair_index, 1L) = k;
       ++pair_index;
-
     }
-
   }
 
-  // Response patterns
+  if(use_polyfast && cached_tables.size() != ncorrelations) {
+    Rcpp::stop("The number of polyfast contingency tables does not match data.");
+  }
 
   std::map<std::vector<arma::uword>, arma::uword> pattern_map;
 
@@ -704,7 +787,6 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   const arma::uword npatterns = pattern_map.size();
   arma::umat pattern_values(npatterns, nitems, arma::fill::zeros);
   arma::uvec pattern_weights(npatterns, arma::fill::zeros);
-  arma::mat pattern_scores(npatterns, nparameters, arma::fill::zeros);
 
   arma::uword pattern_index = 0L;
 
@@ -719,155 +801,228 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
   }
 
-  // Casewise estimating functions
+  // Pairwise cell scores and threshold cross-derivatives
 
-  arma::mat INNER(nparameters, nparameters, arma::fill::zeros);
   arma::mat A21(ncorrelations, nthresholds, arma::fill::zeros);
-  arma::vec score_mean(nparameters, arma::fill::zeros);
-  arma::uword floored_probabilities = 0L;
+  std::vector<arma::mat> correlation_scores(ncorrelations);
+  std::vector<arma::umat> correlation_floored(ncorrelations);
 
-  for(arma::uword r = 0L; r < npatterns; ++r) {
+  for(arma::uword q = 0L; q < ncorrelations; ++q) {
 
-    arma::vec score(nparameters, arma::fill::zeros);
-    const double weight = static_cast<double>(pattern_weights[r])/
-      static_cast<double>(nobs);
+    const arma::uword j = pairs(q, 0L);
+    const arma::uword k = pairs(q, 1L);
+    const arma::uword ncategories_j = tau[j].n_elem+1L;
+    const arma::uword ncategories_k = tau[k].n_elem+1L;
+    const double rho = correlation(j, k);
 
-    // Marginal univariate likelihood scores for thresholds.
-    for(arma::uword j = 0L; j < nitems; ++j) {
+    if(std::abs(rho) >= 1.0-1e-10) {
+      Rcpp::stop("Every polychoric correlation must lie strictly inside (-1, 1).");
+    }
 
-      const arma::uword category = pattern_values(r, j);
-      double probability = category_probabilities[j][category];
+    arma::umat counts(ncategories_j, ncategories_k, arma::fill::zeros);
 
-      if(!std::isfinite(probability) || probability < probability_floor) {
-        probability = probability_floor;
-        ++floored_probabilities;
+    if(use_polyfast) {
+
+      const std::vector<std::vector<int>>& table = cached_tables[q];
+
+      if(table.size() != ncategories_j) {
+        Rcpp::stop("A polyfast contingency table has an invalid number of rows.");
       }
 
-      if(category > 0L) {
+      arma::uword total = 0L;
 
-        const arma::uword threshold = category-1L;
-        const arma::uword parameter = threshold_offsets[j]+threshold;
-        score[parameter] -= Dnorm(tau[j][threshold])/probability;
+      for(arma::uword category_j = 0L;
+          category_j < ncategories_j; ++category_j) {
+
+        if(table[category_j].size() != ncategories_k) {
+          Rcpp::stop("A polyfast contingency table has an invalid number of columns.");
+        }
+
+        for(arma::uword category_k = 0L;
+            category_k < ncategories_k; ++category_k) {
+
+          if(table[category_j][category_k] < 0) {
+            Rcpp::stop("polyfast contingency tables cannot contain negative counts.");
+          }
+
+          counts(category_j, category_k) =
+            static_cast<arma::uword>(table[category_j][category_k]);
+          total += counts(category_j, category_k);
+
+        }
 
       }
 
-      if(category < tau[j].n_elem) {
+      if(total != nobs) {
+        Rcpp::stop("A polyfast contingency table does not match the sample size.");
+      }
 
-        const arma::uword threshold = category;
-        const arma::uword parameter = threshold_offsets[j]+threshold;
-        score[parameter] += Dnorm(tau[j][threshold])/probability;
+    } else {
+
+      for(arma::uword i = 0L; i < nobs; ++i) {
+        ++counts(categories(i, j), categories(i, k));
+      }
+
+    }
+
+    correlation_scores[q].zeros(ncategories_j, ncategories_k);
+    correlation_floored[q].zeros(ncategories_j, ncategories_k);
+
+    for(arma::uword category_j = 0L;
+        category_j < ncategories_j; ++category_j) {
+
+      const double lower_j = bounds[j][category_j];
+      const double upper_j = bounds[j][category_j+1L];
+
+      for(arma::uword category_k = 0L;
+          category_k < ncategories_k; ++category_k) {
+
+        const arma::uword count = counts(category_j, category_k);
+        if(count == 0L) continue;
+
+        const double lower_k = bounds[k][category_k];
+        const double upper_k = bounds[k][category_k+1L];
+
+        double probability = pbinorm(
+          rho,
+          lower_j, lower_k,
+          upper_j, upper_k,
+          bounds_cdf[j][category_j],
+          bounds_cdf[k][category_k],
+          bounds_cdf[j][category_j+1L],
+          bounds_cdf[k][category_k+1L]
+        );
+
+        if(!std::isfinite(probability) || probability < probability_floor) {
+          probability = probability_floor;
+          correlation_floored[q](category_j, category_k) = 1L;
+        }
+
+        const double probability_rho =
+          dbinorm(rho, upper_j, upper_k)-
+          dbinorm(rho, lower_j, upper_k)-
+          dbinorm(rho, upper_j, lower_k)+
+          dbinorm(rho, lower_j, lower_k);
+
+        correlation_scores[q](category_j, category_k) =
+          probability_rho/probability;
+
+        const double weight = static_cast<double>(count)/
+          static_cast<double>(nobs);
+
+        auto add_first_derivative = [&](const arma::uword threshold,
+                                        const double sign) {
+
+          double probability_threshold = 0.0;
+          double rho_threshold = 0.0;
+
+          first_threshold_derivatives(
+            rho, tau[j][threshold], sign,
+            lower_k, upper_k,
+            probability_threshold, rho_threshold
+          );
+
+          const double score_derivative =
+            rho_threshold/probability-
+            probability_rho*probability_threshold/
+              (probability*probability);
+
+          A21(q, threshold_offsets[j]+threshold) -=
+            weight*score_derivative;
+
+        };
+
+        auto add_second_derivative = [&](const arma::uword threshold,
+                                         const double sign) {
+
+          double probability_threshold = 0.0;
+          double rho_threshold = 0.0;
+
+          second_threshold_derivatives(
+            rho, tau[k][threshold], sign,
+            lower_j, upper_j,
+            probability_threshold, rho_threshold
+          );
+
+          const double score_derivative =
+            rho_threshold/probability-
+            probability_rho*probability_threshold/
+              (probability*probability);
+
+          A21(q, threshold_offsets[k]+threshold) -=
+            weight*score_derivative;
+
+        };
+
+        if(category_j > 0L) {
+          add_first_derivative(category_j-1L, -1.0);
+        }
+
+        if(category_j < tau[j].n_elem) {
+          add_first_derivative(category_j, 1.0);
+        }
+
+        if(category_k > 0L) {
+          add_second_derivative(category_k-1L, -1.0);
+        }
+
+        if(category_k < tau[k].n_elem) {
+          add_second_derivative(category_k, 1.0);
+        }
 
       }
 
     }
 
-    // Pairwise likelihood scores for polychoric correlations and the A21
-    // cross-derivative block with respect to the marginal thresholds.
+  }
+
+  // Casewise estimating functions by unique response pattern
+
+  arma::mat pattern_scores(npatterns, nparameters, arma::fill::zeros);
+  arma::uword floored_probabilities = 0L;
+
+  for(arma::uword r = 0L; r < npatterns; ++r) {
+
+    for(arma::uword j = 0L; j < nitems; ++j) {
+
+      const arma::uword category = pattern_values(r, j);
+      const arma::uword first = threshold_offsets[j];
+      const arma::uword last = first+threshold_counts[j]-1L;
+
+      pattern_scores.submat(r, first, r, last) =
+        marginal_scores[j].row(category);
+
+      floored_probabilities += marginal_floored[j][category];
+
+    }
+
     for(arma::uword q = 0L; q < ncorrelations; ++q) {
 
       const arma::uword j = pairs(q, 0L);
       const arma::uword k = pairs(q, 1L);
       const arma::uword category_j = pattern_values(r, j);
       const arma::uword category_k = pattern_values(r, k);
-      const double rho = correlation(j, k);
 
-      const double lower_j = bounds[j][category_j];
-      const double upper_j = bounds[j][category_j+1L];
-      const double lower_k = bounds[k][category_k];
-      const double upper_k = bounds[k][category_k+1L];
+      pattern_scores(r, nthresholds+q) =
+        correlation_scores[q](category_j, category_k);
 
-      double probability = pbinorm(
-        rho,
-        lower_j, lower_k,
-        upper_j, upper_k,
-        bounds_cdf[j][category_j],
-        bounds_cdf[k][category_k],
-        bounds_cdf[j][category_j+1L],
-        bounds_cdf[k][category_k+1L]
-      );
-
-      if(!std::isfinite(probability) || probability < probability_floor) {
-        probability = probability_floor;
-        ++floored_probabilities;
-      }
-
-      const double probability_rho =
-        dbinorm(rho, upper_j, upper_k)-
-        dbinorm(rho, lower_j, upper_k)-
-        dbinorm(rho, upper_j, lower_k)+
-        dbinorm(rho, lower_j, lower_k);
-
-      const double correlation_score = probability_rho/probability;
-      score[nthresholds+q] = correlation_score;
-
-      auto add_first_derivative = [&](const arma::uword threshold,
-                                      const double sign) {
-
-        double probability_threshold = 0.0;
-        double rho_threshold = 0.0;
-
-        first_threshold_derivatives(
-          rho, tau[j][threshold], sign,
-          lower_k, upper_k,
-          probability_threshold, rho_threshold
-        );
-
-        const double score_derivative =
-          rho_threshold/probability-
-          probability_rho*probability_threshold/
-            (probability*probability);
-
-        A21(q, threshold_offsets[j]+threshold) -=
-          weight*score_derivative;
-
-      };
-
-      auto add_second_derivative = [&](const arma::uword threshold,
-                                       const double sign) {
-
-        double probability_threshold = 0.0;
-        double rho_threshold = 0.0;
-
-        second_threshold_derivatives(
-          rho, tau[k][threshold], sign,
-          lower_j, upper_j,
-          probability_threshold, rho_threshold
-        );
-
-        const double score_derivative =
-          rho_threshold/probability-
-          probability_rho*probability_threshold/
-            (probability*probability);
-
-        A21(q, threshold_offsets[k]+threshold) -=
-          weight*score_derivative;
-
-      };
-
-      if(category_j > 0L) {
-        add_first_derivative(category_j-1L, -1.0);
-      }
-
-      if(category_j < tau[j].n_elem) {
-        add_first_derivative(category_j, 1.0);
-      }
-
-      if(category_k > 0L) {
-        add_second_derivative(category_k-1L, -1.0);
-      }
-
-      if(category_k < tau[k].n_elem) {
-        add_second_derivative(category_k, 1.0);
-      }
+      floored_probabilities +=
+        correlation_floored[q](category_j, category_k);
 
     }
 
-    pattern_scores.row(r) = score.t();
-    score_mean += weight*score;
-    INNER += weight*(score*score.t());
-
   }
 
+  arma::vec pattern_probabilities =
+    arma::conv_to<arma::vec>::from(pattern_weights);
+  pattern_probabilities /= static_cast<double>(nobs);
+
+  arma::vec score_mean = pattern_scores.t()*pattern_probabilities;
+
+  arma::mat weighted_scores = pattern_scores;
+  weighted_scores.each_col() %= arma::sqrt(pattern_probabilities);
+
+  arma::mat INNER = weighted_scores.t()*weighted_scores;
   INNER = 0.5*(INNER+INNER.t());
 
   // Lower-triangular sensitivity matrix
@@ -898,7 +1053,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   B.submat(nthresholds, nthresholds,
            nparameters-1L, nparameters-1L) = A22;
 
-  // Block inverse and two-step sandwich
+  // Block inverse
 
   arma::mat A11_inverse;
   bool generalized_A11 = !arma::inv_sympd(A11_inverse, A11);
@@ -932,11 +1087,37 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
                    nthresholds-1L, nthresholds-1L) = A11_inverse;
   B_inverse.submat(nthresholds, nthresholds,
                    nparameters-1L, nparameters-1L) = A22_inverse;
-  B_inverse.submat(nthresholds, 0L,
-                   nparameters-1L, nthresholds-1L) =
-    -A22_inverse*A21*A11_inverse;
 
-  arma::mat NVCOV = B_inverse*INNER*B_inverse.t();
+  arma::mat B_inverse_lower = A21*A11_inverse;
+
+  if(generalized_A22) {
+    B_inverse_lower = -A22_inverse*B_inverse_lower;
+  } else {
+    B_inverse_lower.each_col() %= -A22_inverse.diag();
+  }
+
+  B_inverse.submat(nthresholds, 0L,
+                   nparameters-1L, nthresholds-1L) = B_inverse_lower;
+
+  // Influence scores and two-step sandwich
+
+  arma::mat influence_thresholds =
+    weighted_scores.cols(0L, nthresholds-1L)*A11_inverse.t();
+
+  arma::mat influence_correlations =
+    weighted_scores.cols(nthresholds, nparameters-1L)-
+    influence_thresholds*A21.t();
+
+  if(generalized_A22) {
+    influence_correlations = influence_correlations*A22_inverse.t();
+  } else {
+    influence_correlations.each_row() %= A22_inverse.diag().t();
+  }
+
+  arma::mat influence_scores =
+    arma::join_rows(influence_thresholds, influence_correlations);
+
+  arma::mat NVCOV = influence_scores.t()*influence_scores;
   NVCOV = 0.5*(NVCOV+NVCOV.t());
 
   arma::mat VCOV = NVCOV/static_cast<double>(nobs);
@@ -970,6 +1151,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   result["floored_probabilities"] = floored_probabilities;
   result["generalized_A11"] = generalized_A11;
   result["generalized_A22"] = generalized_A22;
+  result["polyfast_reused"] = use_polyfast;
   result["parameter_order"] =
     "finite thresholds by variable, followed by strict-lower-triangle correlations";
 

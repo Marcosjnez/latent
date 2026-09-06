@@ -165,8 +165,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // asymptotic_poly
-Rcpp::List asymptotic_poly(const arma::mat& data, const arma::mat& correlation, const Rcpp::List& thresholds, bool return_scores, double probability_floor, double inversion_tolerance);
-RcppExport SEXP _latent_asymptotic_poly(SEXP dataSEXP, SEXP correlationSEXP, SEXP thresholdsSEXP, SEXP return_scoresSEXP, SEXP probability_floorSEXP, SEXP inversion_toleranceSEXP) {
+Rcpp::List asymptotic_poly(const arma::mat& data, const arma::mat& correlation, const Rcpp::List& thresholds, bool return_scores, double probability_floor, double inversion_tolerance, Rcpp::Nullable<Rcpp::List> polyfast_object);
+RcppExport SEXP _latent_asymptotic_poly(SEXP dataSEXP, SEXP correlationSEXP, SEXP thresholdsSEXP, SEXP return_scoresSEXP, SEXP probability_floorSEXP, SEXP inversion_toleranceSEXP, SEXP polyfast_objectSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -176,7 +176,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type return_scores(return_scoresSEXP);
     Rcpp::traits::input_parameter< double >::type probability_floor(probability_floorSEXP);
     Rcpp::traits::input_parameter< double >::type inversion_tolerance(inversion_toleranceSEXP);
-    rcpp_result_gen = Rcpp::wrap(asymptotic_poly(data, correlation, thresholds, return_scores, probability_floor, inversion_tolerance));
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type polyfast_object(polyfast_objectSEXP);
+    rcpp_result_gen = Rcpp::wrap(asymptotic_poly(data, correlation, thresholds, return_scores, probability_floor, inversion_tolerance, polyfast_object));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -508,7 +509,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latent_asymptotic_normal", (DL_FUNC) &_latent_asymptotic_normal, 3},
     {"_latent_asymptotic_elliptical", (DL_FUNC) &_latent_asymptotic_elliptical, 4},
     {"_latent_asymptotic_general", (DL_FUNC) &_latent_asymptotic_general, 3},
-    {"_latent_asymptotic_poly", (DL_FUNC) &_latent_asymptotic_poly, 6},
+    {"_latent_asymptotic_poly", (DL_FUNC) &_latent_asymptotic_poly, 7},
     {"_latent_composite_poly_scores", (DL_FUNC) &_latent_composite_poly_scores, 3},
     {"_latent_orth", (DL_FUNC) &_latent_orth, 1},
     {"_latent_oblq", (DL_FUNC) &_latent_oblq, 1},

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/09/2026
+# Modification date: 06/09/2026
 #'
 #' Polychoric Correlation Matrix
 #'
@@ -1076,7 +1076,8 @@ compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
     thresholds = parameters[taus_item],
     return_scores = FALSE,
     probability_floor = 1e-12,
-    inversion_tolerance = 1e-10
+    inversion_tolerance = 1e-10,
+    polyfast_object = dataList$polychorics
   )
 
   H <- solve(ACOV$VCOV)

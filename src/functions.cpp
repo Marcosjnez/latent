@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jiménez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 05/09/2026
+ * Modification date: 06/09/2026
  */
 
 // #define ARMA_NO_DEBUG
@@ -89,7 +89,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
                            const Rcpp::List& thresholds,
                            bool return_scores = false,
                            double probability_floor = 1e-12,
-                           double inversion_tolerance = 1e-10);
+                           double inversion_tolerance = 1e-10,
+                           Rcpp::Nullable<Rcpp::List> polyfast_object = R_NilValue);
 
 // [[Rcpp::export]]
 arma::mat composite_poly_scores(const arma::mat& data,

@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 04/07/2025
+ * Modification date: 06/09/2026
  */
 
 typedef std::tuple<arma::mat,
@@ -10,7 +10,9 @@ typedef std::tuple<arma::mat,
                    std::vector<std::vector<std::vector<int>>>,
                    arma::mat,
                    arma::vec,
-                   arma::vec> polyfast_object;
+                   arma::vec,
+                   std::vector<double>,
+                   std::vector<int>> polyfast_object;
 
 std::vector<double> cumsum(const std::vector<int> input) {
   std::vector<double> output(input.size());
@@ -39,6 +41,7 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
   std::vector<std::vector<int>> cols(q);
   std::vector<int> maxs(q);
   std::vector<int> mins(q);
+  std::vector<double> category_min(q);
   std::vector<std::vector<double>> taus(q);
   std::vector<size_t> s(q);
   std::vector<std::vector<double>> pnorm_tau(q);
@@ -46,7 +49,8 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
 
   for(size_t i = 0; i < q; ++i) {
 
-    mins[i] = X2.col(i).min();
+    category_min[i] = X2.col(i).min();
+    mins[i] = category_min[i];
     X2.col(i) -= mins[i];
     cols[i] = arma::conv_to<std::vector<int>>::from(X2.col(i));
     maxs[i] = *max_element(cols[i].begin(), cols[i].end());
@@ -94,7 +98,7 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
   }
 
   polyfast_object result = std::make_tuple(polys, taus, pnorm_tau, tabs, iters,
-                                           grad, hess);
+                                           grad, hess, category_min, maxs);
 
   return result;
 
@@ -121,6 +125,12 @@ Rcpp::List polyfast(arma::mat X, std::string missing, const std::string smooth,
   arma::mat iters = std::get<4>(x);
   arma::vec grad = std::get<5>(x);
   arma::vec hess = std::get<6>(x);
+  std::vector<double> category_min = std::get<7>(x);
+  std::vector<int> category_count = std::get<8>(x);
+
+  for(size_t i = 0L; i < category_count.size(); ++i) {
+    category_count[i] += 1L;
+  }
 
   Rcpp::List result;
   result["type"] = "polychorics";
@@ -128,6 +138,8 @@ Rcpp::List polyfast(arma::mat X, std::string missing, const std::string smooth,
   result["thresholds"] = taus;
   result["contingency_tables"] = tabs;
   result["cumulative_freqs"] = pnorm_taus;
+  result["category_min"] = category_min;
+  result["category_count"] = category_count;
   result["iters"] = iters;
   result["grad"] = grad;
   result["hess"] = hess;
