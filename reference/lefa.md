@@ -48,8 +48,13 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 
 - rotation:
 
-  Rotation criterion passed to
+  A criterion name, character vector, or named list of component
+  parameter lists passed to
   [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
+  Multiple components are summed. Each list component can select `items`
+  and `factors`; repeated criterion names are supported. See
+  [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md)
+  for details.
 
 - model:
 
@@ -172,10 +177,9 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 
   Logical. Sort the final rotated factors and choose their signs using
   [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
-  Defaults to TRUE. For target and extended target rotations, the
-  target-defined factor order is retained and only the signs are
-  oriented. The intermediate unrotated model retains its fitting
-  coordinates.
+  Defaults to TRUE. When any component is a target criterion or selects
+  `factors`, factor order is retained and only signs are oriented. The
+  intermediate unrotated model retains its fitting coordinates.
 
 - ...:
 

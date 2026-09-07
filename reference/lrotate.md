@@ -2,7 +2,8 @@
 
 `lrotate` rotates the factor loading and factor covariance matrices
 supplied directly or extracted from a fitted `lcfa` object using an
-orthogonal or oblique projection and a selected rotation criterion.
+orthogonal, oblique, or orthoblique projection and one or more rotation
+criteria.
 
 ## Usage
 
@@ -36,7 +37,14 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
 
 - rotation:
 
-  Character string identifying the rotation criterion.
+  A criterion name, a character vector of criterion names, or a named
+  list of parameter lists. Vector entries apply to the full rotated
+  loading matrix by default and their losses are summed. For a named
+  list, names identify the criteria (duplicate names are allowed), and
+  each list contains that component's arguments, optionally including
+  `items` and `factors` to select rows and columns. Missing selectors
+  use all rows or columns. See Details for defaults and target
+  subsetting.
 
 - se:
 
@@ -57,20 +65,19 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
 - sort:
 
   Logical. By default, orient every factor so its largest absolute
-  loading is positive and, except for target rotations, sort factors by
-  decreasing variance-adjusted sums of squared loadings. With
-  `rotation = "target"` or `"xtarget"`, factor order is always retained
-  because the target defines the intended factor positions; signs are
-  still oriented when `sort = TRUE`. See
+  loading is positive. Also sort factors by decreasing variance-adjusted
+  sums of squared loadings unless any component is `target`/`xtarget` or
+  specifies `factors`. In those cases, retain the factor positions used
+  by the criterion. FALSE retains both order and signs. The criterion
+  and its constraints retain their native fitting coordinates. See
   [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
-  FALSE retains both the fitted order and signs. The fitted criterion
-  and its constraints retain their native coordinate system.
 
 - ...:
 
-  Additional arguments required by the selected projection or rotation
-  criterion. If omitted (or NULL), `weight` defaults to `1-target` and
-  `psiweight` to `1-psitarget`. Explicit weights, including zero
+  Additional projection or rotation arguments shared by the components
+  to which they apply. Component-specific arguments take precedence.
+  Missing (or NULL) loading weights default to `1-target`, and
+  covariance weights to `1-psitarget`. Explicit weights, including zero
   matrices, are preserved. Group-specific lists are supported.
 
 ## Value
@@ -78,6 +85,48 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
 An object inheriting from class `"latent"`.
 
 ## Details
+
+All components are optimized simultaneously over the same rotation
+matrix. With row sets \\I_s\\ and factor sets \\J_s\\, the total
+criterion is \$\$Q(\Lambda,\Psi)=\sum_s
+Q_s(\Lambda\_{I_s,J_s},\Psi\_{J_s,J_s}).\$\$ Only `xtarget` uses the
+selected factor covariance matrix; other criteria use the loading
+submatrix only. Overlapping selections are allowed and their objective,
+gradient, and Hessian contributions are added. There is no automatic
+rescaling or averaging of the component criteria.
+
+`items` and `factors` accept positive integer positions, matrix
+row/column names, or logical vectors of the full corresponding length.
+Duplicated or empty selections are rejected. Selector order is retained.
+A target or weight matrix may have full loading-matrix dimensions, in
+which case it is subset automatically, or the selected submatrix's
+dimensions, in which case it is used in the supplied selector order.
+When both sizes coincide, it is treated as a full matrix. For `xtarget`,
+the same rule applies to the principal factor submatrices of `psitarget`
+and `psiweight`; `items` affects only the loading part.
+
+Defaults are resolved independently for each component and group.
+`geomin` defaults to `epsilon = 0.01`; `oblimin` defaults to
+`gamma = 0`. `alpha` is an alias for oblimin's `gamma`, not a component
+weight. Conflicting values supplied at the same level are rejected. The
+existing required arguments of other criteria remain required, including
+`k` for `cf`, `epsilon` for `lclf`, and `w` for `xtarget`. A local NULL
+requests the criterion default rather than inheriting a shared value.
+Group-specific selectors or parameters may be supplied as lists with one
+entry per group, in the input group order.
+
+For target criteria the loss uses squared weighted residuals. To
+multiply a target loss by \\c\\, multiply its weight matrix by
+\\\sqrt{c}\\. For `xtarget`, scale both weight matrices to scale the
+entire term; its `w` remains the relative covariance-target weight.
+Sparse selections must jointly provide a sufficiently identified
+rotation for standard errors; selecting a submatrix alone does not
+guarantee this.
+
+`dataList$rotation` is a printable criterion label, while
+`dataList$rotation_spec` retains the vector or named-list specification.
+`modelInfo$rotation_components` records the resolved row/factor
+positions and parameters for each component in each group.
 
 Exactly one of `fit` and `lambda` must be supplied. Let \\X\\ be the
 rotation matrix and let \\\Lambda_0\\, \\\Psi_0\\, and \\\alpha_0\\
@@ -115,5 +164,16 @@ direct_rotation <- lrotate(lambda = lambda,
                            psi = psi,
                            projection = "oblq",
                            rotation = "oblimin")
+
+mixed_rotation <- lrotate(lambda = lambda,
+                           rotation = c("oblimin", "target", "geomin"),
+                           target = target, weight = 1-target)
+
+subset_rotation <- lrotate(lambda = lambda,
+                            rotation = list(
+                              oblimin = list(alpha = 0, items = 1:5, factors = 1:3),
+                              oblimin = list(alpha = 0.5, items = 6:15, factors = 4:5),
+                              target = list(target = target, weight = 1-target),
+                              geomin = list(items = 16:20)))
 } # }
 ```

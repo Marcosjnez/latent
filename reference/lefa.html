@@ -128,7 +128,10 @@ options are <code>"orth"</code>, <code>"oblq"</code>, and <code>"poblq"</code>.<
 
 
 <dt id="arg-rotation">rotation<a class="anchor" aria-label="anchor" href="#arg-rotation"></a></dt>
-<dd><p>Rotation criterion passed to <code><a href="lrotate.html">lrotate()</a></code>.</p></dd>
+<dd><p>A criterion name, character vector, or named list of
+component parameter lists passed to <code><a href="lrotate.html">lrotate()</a></code>. Multiple components
+are summed. Each list component can select <code>items</code> and <code>factors</code>;
+repeated criterion names are supported. See <code><a href="lrotate.html">lrotate()</a></code> for details.</p></dd>
 
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
@@ -242,10 +245,10 @@ See <code><a href="lcfa.html">lcfa()</a></code> for details.</p></dd>
 
 <dt id="arg-sort">sort<a class="anchor" aria-label="anchor" href="#arg-sort"></a></dt>
 <dd><p>Logical. Sort the final rotated factors and choose their signs
-using <code><a href="sort_latent.html">sort_factors()</a></code>. Defaults to TRUE. For target and extended
-target rotations, the target-defined factor order is retained and only the
-signs are oriented. The intermediate unrotated model retains its fitting
-coordinates.</p></dd>
+using <code><a href="sort_latent.html">sort_factors()</a></code>. Defaults to TRUE. When any component is a
+target criterion or selects <code>factors</code>, factor order is retained and
+only signs are oriented. The intermediate unrotated model retains its
+fitting coordinates.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
