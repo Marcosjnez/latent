@@ -29,7 +29,10 @@ Alternatively, sample.cov can be supplied.}
 \item{projection}{Rotation projection passed to \code{lrotate()}. Available
 options are \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
 
-\item{rotation}{Rotation criterion passed to \code{lrotate()}.}
+\item{rotation}{A criterion name, character vector, or named list of
+component parameter lists passed to \code{lrotate()}. Multiple components
+are summed. Each list component can select \code{items} and \code{factors};
+repeated criterion names are supported. See \code{lrotate()} for details.}
 
 \item{model}{Optional lavaan model syntax. If \code{NULL}, an exploratory
 loading model is generated automatically. By default, the loading matrix is
@@ -99,10 +102,10 @@ sample-moment estimators, independently of \code{control.efa} and
 See \code{lcfa()} for details.}
 
 \item{sort}{Logical. Sort the final rotated factors and choose their signs
-using \code{sort_factors()}. Defaults to TRUE. For target and extended
-target rotations, the target-defined factor order is retained and only the
-signs are oriented. The intermediate unrotated model retains its fitting
-coordinates.}
+using \code{sort_factors()}. Defaults to TRUE. When any component is a
+target criterion or selects \code{factors}, factor order is retained and
+only signs are oriented. The intermediate unrotated model retains its
+fitting coordinates.}
 
 \item{...}{Additional arguments. CFA/lavaan arguments are passed to
 \code{lcfa()}; arguments required by the selected rotation criterion or

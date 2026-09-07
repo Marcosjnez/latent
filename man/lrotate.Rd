@@ -21,7 +21,13 @@ used. This argument cannot be used together with \code{fit}.}
 \item{projection}{Character string. Available projections are
 \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
 
-\item{rotation}{Character string identifying the rotation criterion.}
+\item{rotation}{A criterion name, a character vector of criterion names, or
+a named list of parameter lists. Vector entries apply to the full rotated
+loading matrix by default and their losses are summed. For a named list,
+names identify the criteria (duplicate names are allowed), and each list
+contains that component's arguments, optionally including \code{items}
+and \code{factors} to select rows and columns. Missing selectors use all
+rows or columns. See Details for defaults and target subsetting.}
 
 \item{se}{Logical. If \code{TRUE} and \code{fit} is supplied, propagate
 standard errors from the fitted \code{lcfa} model to the rotated
@@ -35,19 +41,18 @@ unrestricted specification used for derivative calculations is returned.}
 \item{control}{List of optimization-control arguments.}
 
 \item{sort}{Logical. By default, orient every factor so its largest absolute
-loading is positive and, except for target rotations, sort factors by
-decreasing variance-adjusted sums of squared loadings. With
-\code{rotation = "target"} or \code{"xtarget"}, factor order is always
-retained because the target defines the intended factor positions; signs
-are still oriented when \code{sort = TRUE}. See \code{sort_factors()}.
-FALSE retains both the fitted order and signs. The fitted criterion and its
-constraints retain their native coordinate system.}
+loading is positive. Also sort factors by decreasing variance-adjusted sums
+of squared loadings unless any component is \code{target}/\code{xtarget}
+or specifies \code{factors}. In those cases, retain the factor positions
+used by the criterion. FALSE retains both order and signs. The criterion
+and its constraints retain their native fitting coordinates. See
+\code{sort_factors()}.}
 
-\item{...}{Additional arguments required by the selected projection or
-rotation criterion. If omitted (or NULL), \code{weight} defaults to
-\code{1-target} and \code{psiweight} to \code{1-psitarget}. Explicit
-weights, including zero matrices, are preserved. Group-specific lists
-are supported.}
+\item{...}{Additional projection or rotation arguments shared by the
+components to which they apply. Component-specific arguments take
+precedence. Missing (or NULL) loading weights default to \code{1-target},
+and covariance weights to \code{1-psitarget}. Explicit weights, including
+zero matrices, are preserved. Group-specific lists are supported.}
 }
 \value{
 An object inheriting from class \code{"latent"}.
@@ -55,9 +60,50 @@ An object inheriting from class \code{"latent"}.
 \description{
 \code{lrotate} rotates the factor loading and factor covariance matrices
 supplied directly or extracted from a fitted \code{lcfa} object using an
-orthogonal or oblique projection and a selected rotation criterion.
+orthogonal, oblique, or orthoblique projection and one or more rotation criteria.
 }
 \details{
+All components are optimized simultaneously over the same rotation matrix.
+  With row sets \eqn{I_s} and factor sets \eqn{J_s}, the total criterion is
+  \deqn{Q(\Lambda,\Psi)=\sum_s Q_s(\Lambda_{I_s,J_s},\Psi_{J_s,J_s}).}
+  Only \code{xtarget} uses the selected factor covariance matrix; other
+  criteria use the loading submatrix only. Overlapping selections are
+  allowed and their objective, gradient, and Hessian contributions are added.
+  There is no automatic rescaling or averaging of the component criteria.
+
+\code{items} and \code{factors} accept positive integer positions, matrix
+  row/column names, or logical vectors of the full corresponding length.
+  Duplicated or empty selections are rejected. Selector order is retained.
+  A target or weight matrix may have full loading-matrix dimensions, in which
+  case it is subset automatically, or the selected submatrix's dimensions,
+  in which case it is used in the supplied selector order. When both sizes
+  coincide, it is treated as a full matrix. For \code{xtarget}, the same rule
+  applies to the principal factor submatrices of \code{psitarget} and
+  \code{psiweight}; \code{items} affects only the loading part.
+
+Defaults are resolved independently for each component and group.
+  \code{geomin} defaults to \code{epsilon = 0.01}; \code{oblimin}
+  defaults to \code{gamma = 0}. \code{alpha} is an alias for oblimin's
+  \code{gamma}, not a component weight. Conflicting values supplied at the
+  same level are rejected. The existing required arguments of other
+  criteria remain required, including \code{k} for \code{cf},
+  \code{epsilon} for \code{lclf}, and \code{w} for \code{xtarget}.
+  A local NULL requests the criterion default rather than inheriting a
+  shared value. Group-specific selectors or parameters may be supplied as
+  lists with one entry per group, in the input group order.
+
+For target criteria the loss uses squared weighted residuals. To multiply a
+  target loss by \eqn{c}, multiply its weight matrix by \eqn{\sqrt{c}}.
+  For \code{xtarget}, scale both weight matrices to scale the entire term;
+  its \code{w} remains the relative covariance-target weight. Sparse
+  selections must jointly provide a sufficiently identified rotation for
+  standard errors; selecting a submatrix alone does not guarantee this.
+
+\code{dataList$rotation} is a printable criterion label, while
+  \code{dataList$rotation_spec} retains the vector or named-list
+  specification. \code{modelInfo$rotation_components} records the resolved
+  row/factor positions and parameters for each component in each group.
+
 Exactly one of \code{fit} and \code{lambda} must be supplied. Let \eqn{X}
 be the rotation matrix and let \eqn{\Lambda_0}, \eqn{\Psi_0}, and
 \eqn{\alpha_0} denote the unrotated factor loadings, factor covariance
@@ -94,6 +140,17 @@ direct_rotation <- lrotate(lambda = lambda,
                            psi = psi,
                            projection = "oblq",
                            rotation = "oblimin")
+
+mixed_rotation <- lrotate(lambda = lambda,
+                           rotation = c("oblimin", "target", "geomin"),
+                           target = target, weight = 1-target)
+
+subset_rotation <- lrotate(lambda = lambda,
+                            rotation = list(
+                              oblimin = list(alpha = 0, items = 1:5, factors = 1:3),
+                              oblimin = list(alpha = 0.5, items = 6:15, factors = 4:5),
+                              target = list(target = target, weight = 1-target),
+                              geomin = list(items = 16:20)))
 }
 
 }

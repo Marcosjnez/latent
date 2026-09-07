@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/09/2026
+# Modification date: 07/09/2026
 #'
 #' @title
 #' Rotate factor loading and covariance matrices
@@ -8,7 +8,7 @@
 #' @description
 #' \code{lrotate} rotates the factor loading and factor covariance matrices
 #' supplied directly or extracted from a fitted \code{lcfa} object using an
-#' orthogonal or oblique projection and a selected rotation criterion.
+#' orthogonal, oblique, or orthoblique projection and one or more rotation criteria.
 #'
 #' @usage
 #' lrotate(fit = NULL, lambda = NULL, psi = NULL,
@@ -23,7 +23,13 @@
 #'   used. This argument cannot be used together with \code{fit}.
 #' @param projection Character string. Available projections are
 #'   \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.
-#' @param rotation Character string identifying the rotation criterion.
+#' @param rotation A criterion name, a character vector of criterion names, or
+#'   a named list of parameter lists. Vector entries apply to the full rotated
+#'   loading matrix by default and their losses are summed. For a named list,
+#'   names identify the criteria (duplicate names are allowed), and each list
+#'   contains that component's arguments, optionally including \code{items}
+#'   and \code{factors} to select rows and columns. Missing selectors use all
+#'   rows or columns. See Details for defaults and target subsetting.
 #' @param se Logical. If \code{TRUE} and \code{fit} is supplied, propagate
 #'   standard errors from the fitted \code{lcfa} model to the rotated
 #'   parameters. Standard errors are not available when matrices are supplied
@@ -33,20 +39,60 @@
 #'   unrestricted specification used for derivative calculations is returned.
 #' @param control List of optimization-control arguments.
 #' @param sort Logical. By default, orient every factor so its largest absolute
-#'   loading is positive and, except for target rotations, sort factors by
-#'   decreasing variance-adjusted sums of squared loadings. With
-#'   \code{rotation = "target"} or \code{"xtarget"}, factor order is always
-#'   retained because the target defines the intended factor positions; signs
-#'   are still oriented when \code{sort = TRUE}. See \code{sort_factors()}.
-#'   FALSE retains both the fitted order and signs. The fitted criterion and its
-#'   constraints retain their native coordinate system.
-#' @param ... Additional arguments required by the selected projection or
-#'   rotation criterion. If omitted (or NULL), \code{weight} defaults to
-#'   \code{1-target} and \code{psiweight} to \code{1-psitarget}. Explicit
-#'   weights, including zero matrices, are preserved. Group-specific lists
-#'   are supported.
+#'   loading is positive. Also sort factors by decreasing variance-adjusted sums
+#'   of squared loadings unless any component is \code{target}/\code{xtarget}
+#'   or specifies \code{factors}. In those cases, retain the factor positions
+#'   used by the criterion. FALSE retains both order and signs. The criterion
+#'   and its constraints retain their native fitting coordinates. See
+#'   \code{sort_factors()}.
+#' @param ... Additional projection or rotation arguments shared by the
+#'   components to which they apply. Component-specific arguments take
+#'   precedence. Missing (or NULL) loading weights default to \code{1-target},
+#'   and covariance weights to \code{1-psitarget}. Explicit weights, including
+#'   zero matrices, are preserved. Group-specific lists are supported.
 #'
 #' @details
+#' All components are optimized simultaneously over the same rotation matrix.
+#'   With row sets \eqn{I_s} and factor sets \eqn{J_s}, the total criterion is
+#'   \deqn{Q(\Lambda,\Psi)=\sum_s Q_s(\Lambda_{I_s,J_s},\Psi_{J_s,J_s}).}
+#'   Only \code{xtarget} uses the selected factor covariance matrix; other
+#'   criteria use the loading submatrix only. Overlapping selections are
+#'   allowed and their objective, gradient, and Hessian contributions are added.
+#'   There is no automatic rescaling or averaging of the component criteria.
+#'
+#' \code{items} and \code{factors} accept positive integer positions, matrix
+#'   row/column names, or logical vectors of the full corresponding length.
+#'   Duplicated or empty selections are rejected. Selector order is retained.
+#'   A target or weight matrix may have full loading-matrix dimensions, in which
+#'   case it is subset automatically, or the selected submatrix's dimensions,
+#'   in which case it is used in the supplied selector order. When both sizes
+#'   coincide, it is treated as a full matrix. For \code{xtarget}, the same rule
+#'   applies to the principal factor submatrices of \code{psitarget} and
+#'   \code{psiweight}; \code{items} affects only the loading part.
+#'
+#' Defaults are resolved independently for each component and group.
+#'   \code{geomin} defaults to \code{epsilon = 0.01}; \code{oblimin}
+#'   defaults to \code{gamma = 0}. \code{alpha} is an alias for oblimin's
+#'   \code{gamma}, not a component weight. Conflicting values supplied at the
+#'   same level are rejected. The existing required arguments of other
+#'   criteria remain required, including \code{k} for \code{cf},
+#'   \code{epsilon} for \code{lclf}, and \code{w} for \code{xtarget}.
+#'   A local NULL requests the criterion default rather than inheriting a
+#'   shared value. Group-specific selectors or parameters may be supplied as
+#'   lists with one entry per group, in the input group order.
+#'
+#' For target criteria the loss uses squared weighted residuals. To multiply a
+#'   target loss by \eqn{c}, multiply its weight matrix by \eqn{\sqrt{c}}.
+#'   For \code{xtarget}, scale both weight matrices to scale the entire term;
+#'   its \code{w} remains the relative covariance-target weight. Sparse
+#'   selections must jointly provide a sufficiently identified rotation for
+#'   standard errors; selecting a submatrix alone does not guarantee this.
+#'
+#' \code{dataList$rotation} is a printable criterion label, while
+#'   \code{dataList$rotation_spec} retains the vector or named-list
+#'   specification. \code{modelInfo$rotation_components} records the resolved
+#'   row/factor positions and parameters for each component in each group.
+#'
 #' Exactly one of \code{fit} and \code{lambda} must be supplied. Let \eqn{X}
 #' be the rotation matrix and let \eqn{\Lambda_0}, \eqn{\Psi_0}, and
 #' \eqn{\alpha_0} denote the unrotated factor loadings, factor covariance
@@ -85,6 +131,17 @@
 #'                            psi = psi,
 #'                            projection = "oblq",
 #'                            rotation = "oblimin")
+#'
+#' mixed_rotation <- lrotate(lambda = lambda,
+#'                            rotation = c("oblimin", "target", "geomin"),
+#'                            target = target, weight = 1-target)
+#'
+#' subset_rotation <- lrotate(lambda = lambda,
+#'                             rotation = list(
+#'                               oblimin = list(alpha = 0, items = 1:5, factors = 1:3),
+#'                               oblimin = list(alpha = 0.5, items = 6:15, factors = 4:5),
+#'                               target = list(target = target, weight = 1-target),
+#'                               geomin = list(items = 16:20)))
 #' }
 #'
 #' @export
@@ -122,19 +179,14 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
   }
 
   projection <- tolower(projection)
-  rotation <- tolower(rotation)
+  rotation <- check_rotation_lrotate(rotation)
+  rotation_names <- rotation_names_lrotate(rotation)
+  rotation_label <- paste(rotation_names, collapse = " + ")
 
   supported_projection <- c("orth", "oblq", "poblq")
 
   if(!(projection %in% supported_projection)) {
     stop("Unknown projection: ", projection)
-  }
-
-  supported_rotation <- c("cf", "geomin", "lclf", "oblimin",
-                          "target", "varimax", "varimin", "xtarget")
-
-  if(!(rotation %in% supported_rotation)) {
-    stop("Unknown rotation criterion: ", rotation)
   }
 
   if(length(se) != 1L || !is.logical(se) || is.na(se)) {
@@ -160,8 +212,11 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
   #### Rotation-specific arguments ####
 
   dots <- list(...)
-  dots <- rotation_defaults_lrotate(rotation = rotation,
-                                    dots = dots)
+  check_rotation_dots_lrotate(dots)
+
+  # Defaults are applied separately after resolving each component and group.
+  # In particular, a component's target must not inherit weights calculated
+  # from a different target supplied through ... .
 
   check_poblq_arguments_lrotate(projection = projection,
                                 dots = dots)
@@ -170,7 +225,7 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
 
   control$penalties <- FALSE
   control$positive <- FALSE
-  control$estimator <- rotation
+  control$estimator <- rotation_label
   control$projection <- projection
   control <- lrotate_control(control)
   control$free_previous <- fit_input && !do.fit
@@ -181,7 +236,8 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
                                       lambda = lambda,
                                       psi = psi,
                                       projection = projection,
-                                      rotation = rotation)
+                                      rotation = rotation_label)
+  dataList$rotation_spec <- rotation
 
   input_args <- if(fit_input) {
     list(fit = fit)
@@ -281,7 +337,7 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
   #### Factor order and signs ####
 
   if(sort) {
-    reorder <- !(rotation %in% c("target", "xtarget"))
+    reorder <- reorder_rotation_lrotate(rotation, dots)
     result <- sort_factors(result, reorder = reorder)
   }
 
@@ -609,6 +665,242 @@ identity_psi_lrotate <- function(fit, psi_name, psi) {
 
 }
 
+#### Functions to describe and validate rotation components ####
+
+rotation_parameters_lrotate <- function(rotation) {
+
+  parameters <- switch(rotation,
+                        cf = "k",
+                        geomin = "epsilon",
+                        lclf = "epsilon",
+                        oblimin = c("gamma", "alpha"),
+                        target = c("target", "weight"),
+                        varimax = character(0L),
+                        varimin = character(0L),
+                        xtarget = c("target", "weight", "w", "psitarget", "psiweight"),
+                        stop("Unknown rotation criterion: ", rotation))
+  result <- c(parameters, "items", "factors")
+
+  #### Result ####
+
+  return(result)
+
+}
+
+check_rotation_dots_lrotate <- function(dots) {
+
+  if(length(dots) > 0L &&
+     (is.null(names(dots)) || anyNA(names(dots)) || any(names(dots) == "") ||
+      anyDuplicated(names(dots)))) {
+    stop("Rotation parameters must have unique, non-empty names")
+  }
+
+  #### Result ####
+
+  return(invisible(NULL))
+
+}
+
+check_rotation_lrotate <- function(rotation) {
+
+  if(is.character(rotation) && is.null(dim(rotation))) {
+
+    if(length(rotation) == 0L || anyNA(rotation) || any(rotation == "")) {
+      stop("rotation must contain at least one non-missing criterion name")
+    }
+    rotation <- tolower(rotation)
+    criteria <- unname(rotation)
+
+  } else if(is.list(rotation) && !is.data.frame(rotation) && is.null(dim(rotation))) {
+
+    criteria <- names(rotation)
+    if(length(rotation) == 0L || is.null(criteria) || anyNA(criteria) ||
+       any(criteria == "")) {
+      stop("rotation must be a non-empty named list of criterion parameter lists")
+    }
+    criteria <- tolower(criteria)
+    names(rotation) <- criteria
+
+    for(i in seq_along(rotation)) {
+      component <- rotation[[i]]
+      if(!is.list(component) || is.data.frame(component) || !is.null(dim(component))) {
+        stop("Every rotation component must be a parameter list; use list() for defaults")
+      }
+      check_rotation_dots_lrotate(component)
+      unknown <- setdiff(names(component), rotation_parameters_lrotate(criteria[i]))
+      if(length(unknown) > 0L) {
+        stop("Unknown parameter(s) for rotation component ", i, " ('", criteria[i],
+             "'): ", paste(unknown, collapse = ", "))
+      }
+    }
+
+  } else {
+
+    stop("rotation must be a character vector or a named list of parameter lists")
+
+  }
+
+  supported <- c("cf", "geomin", "lclf", "oblimin",
+                 "target", "varimax", "varimin", "xtarget")
+  unknown <- setdiff(criteria, supported)
+  if(length(unknown) > 0L) {
+    stop("Unknown rotation criterion: ", paste(unknown, collapse = ", "))
+  }
+
+  #### Result ####
+
+  return(rotation)
+
+}
+
+rotation_names_lrotate <- function(rotation) {
+
+  result <- if(is.character(rotation)) unname(rotation) else names(rotation)
+
+  #### Result ####
+
+  return(result)
+
+}
+
+rotation_components_lrotate <- function(rotation) {
+
+  if(is.character(rotation)) {
+    result <- rep(list(list()), length(rotation))
+    names(result) <- unname(rotation)
+  } else {
+    result <- rotation
+  }
+
+  #### Result ####
+
+  return(result)
+
+}
+
+rotation_component_dots_lrotate <- function(criterion, component, dots) {
+
+  allowed <- rotation_parameters_lrotate(criterion)
+  extra <- dots[intersect(names(dots), allowed)]
+
+  # Treat the oblimin aliases at the same precedence level. A local alpha
+  # overrides a shared gamma (and vice versa), rather than silently losing it.
+  if(criterion == "oblimin" && any(c("alpha", "gamma") %in% names(component))) {
+    extra$alpha <- extra$gamma <- NULL
+  }
+  for(nm in names(component)) extra[nm] <- component[nm]
+
+  #### Result ####
+
+  return(extra)
+
+}
+
+rotation_indices_lrotate <- function(index, size, labels, argument) {
+
+  if(is.null(index)) {
+    result <- seq_len(size)
+  } else if(is.character(index) && is.null(dim(index))) {
+    if(anyNA(index) || any(index == "") || is.null(labels)) {
+      stop(argument, " must contain valid matrix names")
+    }
+    result <- match(index, labels)
+    if(anyNA(result)) stop("Unknown ", argument, ": ", paste(index[is.na(result)], collapse = ", "))
+  } else if(is.logical(index) && is.null(dim(index))) {
+    if(length(index) != size || anyNA(index)) {
+      stop("Logical ", argument, " must have length ", size, " and no missing values")
+    }
+    result <- which(index)
+  } else if(is.numeric(index) && !is.complex(index) && is.null(dim(index))) {
+    if(any(!is.finite(index)) || any(index < 1 | index > size | index != trunc(index))) {
+      stop(argument, " must contain integer positions between 1 and ", size)
+    }
+    result <- as.integer(index)
+  } else {
+    stop(argument, " must be NULL, positive integer positions, names, or a logical vector")
+  }
+
+  if(length(result) == 0L || anyDuplicated(result)) {
+    stop(argument, " must select at least one entry without duplicates")
+  }
+
+  #### Result ####
+
+  return(result)
+
+}
+
+rotation_matrix_lrotate <- function(x, rows, columns, p, q, argument) {
+
+  if(!is.matrix(x) || !(is.numeric(x) || is.logical(x)) || is.complex(x) ||
+     any(!is.finite(x))) {
+    stop(argument, " must be a finite numeric or logical matrix")
+  }
+
+  if(identical(dim(x), c(p, q))) {
+    result <- x[rows, columns, drop = FALSE]
+  } else if(identical(dim(x), c(length(rows), length(columns)))) {
+    result <- x
+  } else {
+    stop(argument, " must have full dimensions ", p, " by ", q,
+         " or selected dimensions ", length(rows), " by ", length(columns))
+  }
+  storage.mode(result) <- "double"
+
+  #### Result ####
+
+  return(result)
+
+}
+
+rotation_extra_lrotate <- function(criterion, extra, items, factors, p, q) {
+
+  scalar <- switch(criterion, cf = "k", geomin = "epsilon", lclf = "epsilon",
+                    oblimin = "gamma", xtarget = "w", character(0L))
+  for(nm in scalar) {
+    value <- extra[[nm]]
+    if(length(value) != 1L || !is.numeric(value) || is.complex(value) ||
+       !is.finite(value)) {
+      stop("Rotation '", criterion, "' requires one finite numeric '", nm, "'")
+    }
+    if(nm == "epsilon" && value <= 0) stop("epsilon must be strictly positive")
+  }
+
+  if(criterion %in% c("target", "xtarget")) {
+    for(nm in c("target", "weight")) {
+      extra[[nm]] <- rotation_matrix_lrotate(extra[[nm]], items, factors, p, q, nm)
+    }
+  }
+  if(criterion == "xtarget") {
+    for(nm in c("psitarget", "psiweight")) {
+      extra[[nm]] <- rotation_matrix_lrotate(extra[[nm]], factors, factors, q, q, nm)
+    }
+  }
+
+  #### Result ####
+
+  return(extra)
+
+}
+
+reorder_rotation_lrotate <- function(rotation, dots) {
+
+  components <- rotation_components_lrotate(rotation)
+  has_target <- any(names(components) %in% c("target", "xtarget"))
+  has_factors <- any(vapply(seq_along(components), FUN = function(i) {
+    extra <- rotation_component_dots_lrotate(names(components)[i], components[[i]], dots)
+    result <- !is.null(extra$factors)
+    #### Result ####
+    return(result)
+  }, FUN.VALUE = logical(1L)))
+  result <- !has_target && !has_factors
+
+  #### Result ####
+
+  return(result)
+
+}
+
 #### Function to create defaults for rotation-specific arguments ####
 
 rotation_defaults_lrotate <- function(rotation, dots) {
@@ -616,8 +908,19 @@ rotation_defaults_lrotate <- function(rotation, dots) {
   # These defaults make the two commonly used criteria directly usable from
   # lrotate()/lefa() without requiring an otherwise undocumented argument.
 
-  if(rotation == "oblimin" && is.null(dots$gamma)) {
-    dots$gamma <- 0
+  if(rotation == "oblimin") {
+
+    # alpha is accepted as an alias; the native criterion uses gamma.
+    if(!is.null(dots$alpha)) {
+      if(!is.null(dots$gamma) &&
+         !isTRUE(all.equal(dots$alpha, dots$gamma, check.attributes = FALSE))) {
+        stop("Supply only one of alpha and gamma for an oblimin component")
+      }
+      dots$gamma <- dots$alpha
+    }
+    dots$alpha <- NULL
+    if(is.null(dots$gamma)) dots$gamma <- 0
+
   }
 
   if(rotation == "geomin" && is.null(dots$epsilon)) {
@@ -1390,7 +1693,7 @@ create_lrotate_modelInfo <- function(dataList, full_model,
 
   estimators <- estimators_lrotate(dataList = dataList,
                                    data_param = data_param,
-                                   dots = dots)
+                                   dots = dots, trans = trans)
 
   control_estimator <- create_estimators(estimators = estimators,
                                          structures = trans)
@@ -1421,6 +1724,8 @@ create_lrotate_modelInfo <- function(dataList, full_model,
     transparameters_labels = transparameters_labels,
     dof = dataList$source_dof,
     rotation = dataList$rotation,
+    rotation_spec = dataList$rotation_spec,
+    rotation_components = lapply(estimators, FUN = \(x) x$component),
     projection = dataList$projection,
     data_param = data_param,
     source_nparam = dataList$source_nparam,
@@ -1566,28 +1871,56 @@ transformations_lrotate <- function(dataList, data_param) {
 
 #### Function to create the estimators ####
 
-estimators_lrotate <- function(dataList, data_param, dots) {
+estimators_lrotate <- function(dataList, data_param, dots, trans) {
 
   lambda_group <- data_param$lambda_group
   psi_group <- data_param$psi_group
+  rotation <- dataList$rotation_spec
+  if(is.null(rotation)) rotation <- dataList$rotation
+  components <- rotation_components_lrotate(rotation)
 
-  estimators <- vector("list", length = dataList$ngroups)
+  estimators <- vector("list", length = dataList$ngroups*length(components))
+  k <- 1L
 
   for(i in seq_len(dataList$ngroups)) {
 
-    extra <- group_dots_lrotate(dots = dots,
-                                group_index = i,
-                                ngroups = dataList$ngroups)
+    p <- dataList$nitems[[i]]
+    q <- dataList$nfactors[[i]]
 
-    extra <- rotation_defaults_lrotate(rotation = dataList$rotation, dots = extra)
-    extra$p <- dataList$nitems[[i]]
-    extra$q <- dataList$nfactors[[i]]
+    for(j in seq_along(components)) {
 
-    estimators[[i]] <- list(
-      estimator = dataList$rotation,
-      parameters = c(lambda_group[i], psi_group[i]),
-      extra = extra
-    )
+      criterion <- names(components)[j]
+      extra <- rotation_component_dots_lrotate(criterion, components[[j]], dots)
+      extra <- group_dots_lrotate(dots = extra, group_index = i,
+                                  ngroups = dataList$ngroups)
+      extra <- rotation_defaults_lrotate(rotation = criterion, dots = extra)
+
+      items <- rotation_indices_lrotate(extra$items, p, dataList$item_label[[i]],
+                                         "items")
+      factors <- rotation_indices_lrotate(extra$factors, q,
+                                           dataList$factor_label[[i]], "factors")
+      extra$items <- extra$factors <- NULL
+      extra$p <- length(items)
+      extra$q <- length(factors)
+      extra <- rotation_extra_lrotate(criterion, extra, items, factors, p, q)
+
+      # Supply label submatrices to the existing estimator-index machinery.
+      # No additional parameters or transformations are introduced. Overlapping
+      # components contribute additively to the same gradient/Hessian entries.
+      parameters <- list(trans[[lambda_group[i]]][items, factors, drop = FALSE],
+                          trans[[psi_group[i]]][factors, factors, drop = FALSE])
+
+      estimators[[k]] <- list(
+        estimator = criterion,
+        parameters = parameters,
+        extra = extra,
+        component = list(group_index = i, group_label = dataList$group_label[i],
+                          component_index = j, criterion = criterion,
+                          items = items, factors = factors, extra = extra)
+      )
+      k <- k+1L
+
+    }
 
   }
 
@@ -1606,16 +1939,18 @@ group_dots_lrotate <- function(dots, group_index, ngroups) {
   # Group-specific projection/criterion arguments may be supplied either once
   # for every group or as a list with one object per group.
   group_objects <- c("constraints", "oblique", "target", "weight",
-                     "psitarget", "psiweight")
+                     "psitarget", "psiweight", "items", "factors",
+                     "gamma", "alpha", "epsilon", "k", "w")
 
   for(nm in intersect(names(extra), group_objects)) {
 
     object <- extra[[nm]]
 
-    if(is.list(object) &&
-       !is.data.frame(object) &&
-       length(object) == ngroups) {
-      extra[[nm]] <- object[[group_index]]
+    if(is.list(object) && !is.data.frame(object)) {
+      if(length(object) != ngroups) {
+        stop("Group-specific '", nm, "' must have one entry per group")
+      }
+      extra[nm] <- list(object[[group_index]])
     }
 
   }

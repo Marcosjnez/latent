@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/09/2026
+# Modification date: 07/09/2026
 #'
 #' Exploratory Factor Analysis
 #'
@@ -29,7 +29,10 @@
 #' @param estimator Estimation method passed to \code{lcfa()}.
 #' @param projection Rotation projection passed to \code{lrotate()}. Available
 #'   options are \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.
-#' @param rotation Rotation criterion passed to \code{lrotate()}.
+#' @param rotation A criterion name, character vector, or named list of
+#'   component parameter lists passed to \code{lrotate()}. Multiple components
+#'   are summed. Each list component can select \code{items} and \code{factors};
+#'   repeated criterion names are supported. See \code{lrotate()} for details.
 #' @param model Optional lavaan model syntax. If \code{NULL}, an exploratory
 #'   loading model is generated automatically. By default, the loading matrix is
 #'   dense, its columns are mutually orthogonal, and their norms are unrestricted
@@ -77,10 +80,10 @@
 #'   \code{cores} or explicit OpenMP. NULL uses the moment estimators' defaults.
 #'   See \code{lcfa()} for details.
 #' @param sort Logical. Sort the final rotated factors and choose their signs
-#'   using \code{sort_factors()}. Defaults to TRUE. For target and extended
-#'   target rotations, the target-defined factor order is retained and only the
-#'   signs are oriented. The intermediate unrotated model retains its fitting
-#'   coordinates.
+#'   using \code{sort_factors()}. Defaults to TRUE. When any component is a
+#'   target criterion or selects \code{factors}, factor order is retained and
+#'   only signs are oriented. The intermediate unrotated model retains its
+#'   fitting coordinates.
 #' @param ... Additional arguments. CFA/lavaan arguments are passed to
 #'   \code{lcfa()}; arguments required by the selected rotation criterion or
 #'   projection are passed only to \code{lrotate()}.
@@ -206,19 +209,13 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
 
   estimator <- tolower(estimator)
   projection <- tolower(projection)
-  rotation <- tolower(rotation)
+  rotation <- check_rotation_lrotate(rotation)
   missing <- tolower(missing)
 
   supported_projection <- c("orth", "oblq", "poblq")
-  supported_rotation <- c("cf", "geomin", "lclf", "oblimin",
-                          "target", "varimax", "varimin", "xtarget")
 
   if(!(projection %in% supported_projection)) {
     stop("Unknown projection: ", projection)
-  }
-
-  if(!(rotation %in% supported_rotation)) {
-    stop("Unknown rotation criterion: ", rotation)
   }
 
   if(length(mimic) != 1L ||
@@ -413,18 +410,9 @@ as_lefa <- function(fit, call) {
 
 split_dots_lefa <- function(dots, projection, rotation) {
 
-  rotation_names <- switch(
-    rotation,
-    cf      = "k",
-    geomin  = "epsilon",
-    lclf    = "epsilon",
-    oblimin = "gamma",
-    target  = c("target", "weight"),
-    varimax = character(0L),
-    varimin = character(0L),
-    xtarget = c("target", "weight", "w", "psitarget", "psiweight"),
-    character(0L)
-  )
+  rotation_names <- unique(unlist(lapply(rotation_names_lrotate(rotation),
+                                         rotation_parameters_lrotate),
+                                  use.names = FALSE))
 
   if(projection == "poblq") {
     rotation_names <- c(rotation_names, "constraints", "oblique")

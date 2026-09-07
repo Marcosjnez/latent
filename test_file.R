@@ -1004,6 +1004,22 @@ dim(dconstr$d2constr)
 # FIX THIS: a multistep model should return all the parameter constraints at once,
 # including those of latent objects in fit@extra
 
+#### Bi-geomin ####
+
+library(latent)
+library(GPArotation)
+
+ulambda <- rorth(9, 4)
+rot <- bigeominQ(ulambda, delta = 0.01, randomStarts = 10L)
+fit <- lrotate(lambda = ulambda, projection = "oblq",
+               rotation = list(geomin = list(factors = 2:4, epsilon = 0.01)),
+               control = list(rstarts = 10L))
+fit@Optim$iterations
+fit@Optim$f
+round(fit@transformed_pars$lambda_rotated, 3)
+round(fit@transformed_pars$psi_rotated, 3)
+rot
+
 #### Check derivatives ####
 
 control_manifold <- fit@modelInfo$control_manifold
