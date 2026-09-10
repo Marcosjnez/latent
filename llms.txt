@@ -102,6 +102,8 @@ The package development is supported by two projects:
   : Jacobian Matrix
 - [`jacobian(`*`<latent>`*`)`](https://marcosjnez.github.io/latent/reference/jacobian.latent.md)
   : Jacobian Matrix for Latent Models
+- [`latInspect()`](https://marcosjnez.github.io/latent/reference/latInspect.md)
+  : Inspect Latent Model Results
 - [`latInspect(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.lcfa.md)
   : Inspect Fitted CFA Objects
 - [`latInspect(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.lefa.md)
@@ -181,10 +183,8 @@ The package development is supported by two projects:
   : Standard Errors for Multistep Latent Models
 - [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
   : Simulate factor structures with misspecification errors.
-- [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md)
-  [`sort_classes()`](https://marcosjnez.github.io/latent/reference/sort_latent.md)
-  [`unsort_latent()`](https://marcosjnez.github.io/latent/reference/sort_latent.md)
-  : Sort Factors or Latent Classes in a Fitted Model
+- [`sort_latent()`](https://marcosjnez.github.io/latent/reference/sort_latent.md)
+  : Sorted Parameter Structures for Inspection
 - [`summary(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)
   : Summarize a Fitted CFA Model
 - [`summary(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/summary.lefa.md)

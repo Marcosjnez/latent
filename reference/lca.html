@@ -109,7 +109,7 @@ values to <code>nclasses</code>.</p>
 <span>    covariates <span class="op">=</span> <span class="cn">NULL</span>, outcomes <span class="op">=</span> <span class="cn">NULL</span>, penalties <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>    model <span class="op">=</span> <span class="cn">NULL</span>, weights <span class="op">=</span> <span class="cn">NULL</span>, start <span class="op">=</span> <span class="cn">NULL</span>, adjustment <span class="op">=</span> <span class="st">"bk"</span>,</span>
 <span>    classification <span class="op">=</span> <span class="st">"modal"</span>, control <span class="op">=</span> <span class="cn">NULL</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -251,14 +251,6 @@ the optimizer.</p></dd>
 <dd><p>Logical. If <code>TRUE</code>, progress information is printed,
 especially when fitting several values of <code>nclasses</code>.</p></dd>
 
-
-<dt id="arg-sort">sort<a class="anchor" aria-label="anchor" href="#arg-sort"></a></dt>
-<dd><p>Logical. Order classes by frequency-weighted posterior size,
-largest first. Defaults to TRUE. Original class names and the fitted
-multinomial reference class are retained; see <code><a href="sort_latent.html">sort_classes()</a></code>.
-FALSE preserves the fitted order. Sorting is applied only to the final
-result of a multistage analysis.</p></dd>
-
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -329,8 +321,9 @@ identification.</p>
 <p>When <code>covariates</code> are supplied and <code>adjustment = "none"</code>, class
 probabilities are modeled in one step through multinomial-log coefficients
 stored in the <code>beta</code> parameter block. The original Class1 is the reference
-class, so its coefficients are fixed to zero. After sorting, Class1 need not
-occupy the first displayed column; the regression contrasts are unchanged.</p>
+class, so its coefficients are fixed to zero. The fitted object retains
+its native class order. Use <code>latInspect(fit, sort = TRUE)</code> for sorted
+output without changing the reference class or the fitted object.</p>
 <p>When <code>adjustment = "bk"</code>, the measurement model is first estimated
 without covariates. The structural model is then estimated with the
 measurement parameters fixed. When <code>adjustment = "ml"</code>, the measurement
@@ -378,9 +371,9 @@ latent class likelihood.</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">getfit</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">latInspect</span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"coefs"</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">latInspect</span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"profile"</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">latInspect</span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"posterior"</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="latInspect.html">latInspect</a></span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"coefs"</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="latInspect.html">latInspect</a></span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"profile"</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="latInspect.html">latInspect</a></span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"posterior"</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Class enumeration</span></span></span>
 <span class="r-in"><span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu">lca</span><span class="op">(</span></span></span>

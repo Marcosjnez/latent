@@ -21,7 +21,7 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
      likelihood = NULL, se = TRUE,
      message = FALSE, do.fit = TRUE,
      mimic = "latent", control.efa = NULL,
-     control.rotation = NULL, control.moments = NULL, sort = TRUE, ...)
+     control.rotation = NULL, control.moments = NULL, ...)
 ```
 
 ## Arguments
@@ -173,14 +173,6 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
   See [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md)
   for details.
 
-- sort:
-
-  Logical. Sort the final rotated factors and choose their signs using
-  [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
-  Defaults to TRUE. When any component is a target criterion or selects
-  `factors`, factor order is retained and only signs are oriented. The
-  intermediate unrotated model retains its fitting coordinates.
-
 - ...:
 
   Additional arguments. CFA/lavaan arguments are passed to
@@ -196,6 +188,10 @@ in its `extra` slot. If `do.fit = FALSE`, the unfitted `lcfa`
 specification is returned.
 
 ## Details
+
+Fitted objects retain the estimated factor order and signs. Sorting is
+available only through `latInspect(fit, sort = TRUE)` and does not
+modify the fitted object or its standard-error calculations.
 
 Two equivalent identification schemes are available for the unrotated
 EFA model. With `control.efa$orth.lambda = FALSE`, the model uses a

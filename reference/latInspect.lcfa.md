@@ -6,7 +6,7 @@ Inspect Fitted CFA Objects
 
 ``` r
 # S3 method for class 'lcfa'
-latInspect(fit, what = "est")
+latInspect(fit, what = "est", sort = TRUE)
 ```
 
 ## Arguments
@@ -18,6 +18,10 @@ latInspect(fit, what = "est")
 - what:
 
   Character string identifying the requested component.
+
+- sort:
+
+  Logical. Sort/orient only the requested output; defaults to TRUE.
 
 ## Value
 

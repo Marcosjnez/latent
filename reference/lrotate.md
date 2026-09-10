@@ -10,7 +10,7 @@ criteria.
 ``` r
 lrotate(fit = NULL, lambda = NULL, psi = NULL,
         projection = "oblq", rotation = "oblimin",
-        se = TRUE, do.fit = TRUE, control = NULL, sort = TRUE, ...)
+        se = TRUE, do.fit = TRUE, control = NULL, ...)
 ```
 
 ## Arguments
@@ -62,16 +62,6 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
 
   List of optimization-control arguments.
 
-- sort:
-
-  Logical. By default, orient every factor so its largest absolute
-  loading is positive. Also sort factors by decreasing variance-adjusted
-  sums of squared loadings unless any component is `target`/`xtarget` or
-  specifies `factors`. In those cases, retain the factor positions used
-  by the criterion. FALSE retains both order and signs. The criterion
-  and its constraints retain their native fitting coordinates. See
-  [`sort_factors()`](https://marcosjnez.github.io/latent/reference/sort_latent.md).
-
 - ...:
 
   Additional projection or rotation arguments shared by the components
@@ -85,6 +75,15 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
 An object inheriting from class `"latent"`.
 
 ## Details
+
+Parameter labels are generated from their block names, just as in the
+CFA parameter constructor. Single-group labels have no group suffix, for
+example `X[1,1]` and `lambda_rotated[1,1]`. Multiple groups use the
+corresponding group names to keep parameter labels distinct.
+
+Fitted objects retain the estimated factor order and signs. Sorting is
+available only through `latInspect(fit, sort = TRUE)` and does not
+modify the fitted object or its standard-error calculations.
 
 All components are optimized simultaneously over the same rotation
 matrix. With row sets \\I_s\\ and factor sets \\J_s\\, the total

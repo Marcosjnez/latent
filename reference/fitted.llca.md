@@ -56,4 +56,4 @@ None yet.
 ## See also
 
 [`predict.llca`](https://marcosjnez.github.io/latent/reference/predict.llca.md),
-`latInspect`
+[`latInspect`](https://marcosjnez.github.io/latent/reference/latInspect.md)

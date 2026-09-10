@@ -97,7 +97,7 @@ optimization infrastructure of <span class="pkg">latent</span>.</p>
 <span>     parameterization <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>     likelihood <span class="op">=</span> <span class="cn">NULL</span>, se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>     control <span class="op">=</span> <span class="cn">NULL</span>, message <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>     do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control.moments <span class="op">=</span> <span class="cn">NULL</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span>     do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control.moments <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -221,16 +221,6 @@ separate moment estimator is fitted (for example, supplied sample moments
 or direct FIML).</p></dd>
 
 
-<dt id="arg-sort">sort<a class="anchor" aria-label="anchor" href="#arg-sort"></a></dt>
-<dd><p>Logical. Sort factors by decreasing variance-adjusted sums of
-squared loadings and make the largest absolute loading positive. The
-default is TRUE. If any modeled loading is fixed, including a loading fixed
-for factor-scale identification, sorting is automatically disabled so the
-fitted factor order and loading signs remain exactly as specified. Factor
-identities and the native estimation constraints are retained; see
-<code><a href="sort_latent.html">sort_factors()</a></code>. FALSE leaves the output unchanged.</p></dd>
-
-
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed to lavaan and the sample-statistic
 estimators where applicable.</p></dd>
@@ -244,7 +234,10 @@ estimators where applicable.</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The model-implied observed means are computed as
+    <p>Fitted objects retain the estimated factor order and signs. Sorting is
+available only through <code>latInspect(fit, sort = TRUE)</code> and does not
+modify the fitted object or its standard-error calculations.</p>
+<p>The model-implied observed means are computed as
 $$\widehat{\mu}=\nu+\Lambda\alpha,$$
 where \(\nu\) contains observed-variable intercepts and \(\alpha\)
 contains latent-factor means. For ordinal models, standardized model

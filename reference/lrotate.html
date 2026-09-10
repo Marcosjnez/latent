@@ -92,7 +92,7 @@ orthogonal, oblique, or orthoblique projection and one or more rotation criteria
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">lrotate</span><span class="op">(</span>fit <span class="op">=</span> <span class="cn">NULL</span>, lambda <span class="op">=</span> <span class="cn">NULL</span>, psi <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>        projection <span class="op">=</span> <span class="st">"oblq"</span>, rotation <span class="op">=</span> <span class="st">"oblimin"</span>,</span>
-<span>        se <span class="op">=</span> <span class="cn">TRUE</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control <span class="op">=</span> <span class="cn">NULL</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span>        se <span class="op">=</span> <span class="cn">TRUE</span>, do.fit <span class="op">=</span> <span class="cn">TRUE</span>, control <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -146,16 +146,6 @@ unrestricted specification used for derivative calculations is returned.</p></dd
 <dd><p>List of optimization-control arguments.</p></dd>
 
 
-<dt id="arg-sort">sort<a class="anchor" aria-label="anchor" href="#arg-sort"></a></dt>
-<dd><p>Logical. By default, orient every factor so its largest absolute
-loading is positive. Also sort factors by decreasing variance-adjusted sums
-of squared loadings unless any component is <code>target</code>/<code>xtarget</code>
-or specifies <code>factors</code>. In those cases, retain the factor positions
-used by the criterion. FALSE retains both order and signs. The criterion
-and its constraints retain their native fitting coordinates. See
-<code><a href="sort_latent.html">sort_factors()</a></code>.</p></dd>
-
-
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional projection or rotation arguments shared by the
 components to which they apply. Component-specific arguments take
@@ -170,7 +160,14 @@ zero matrices, are preserved. Group-specific lists are supported.</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>All components are optimized simultaneously over the same rotation matrix.
+    <p>Parameter labels are generated from their block names, just as in the CFA
+parameter constructor. Single-group labels have no group suffix, for example
+<code>X[1,1]</code> and <code>lambda_rotated[1,1]</code>. Multiple groups use the
+corresponding group names to keep parameter labels distinct.</p>
+<p>Fitted objects retain the estimated factor order and signs. Sorting is
+available only through <code>latInspect(fit, sort = TRUE)</code> and does not
+modify the fitted object or its standard-error calculations.</p>
+<p>All components are optimized simultaneously over the same rotation matrix.
   With row sets \(I_s\) and factor sets \(J_s\), the total criterion is
   $$Q(\Lambda,\Psi)=\sum_s Q_s(\Lambda_{I_s,J_s},\Psi_{J_s,J_s}).$$
   Only <code>xtarget</code> uses the selected factor covariance matrix; other

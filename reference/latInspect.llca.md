@@ -9,7 +9,7 @@ from fitted `"llca"` objects.
 
 ``` r
 # S3 method for class 'llca'
-latInspect(fit, what = "profile", digits = 4L)
+latInspect(fit, what = "profile", digits = 4L, sort = TRUE)
 ```
 
 ## Arguments
@@ -124,6 +124,12 @@ latInspect(fit, what = "profile", digits = 4L)
   Non-negative integer retained for compatibility with other inspection
   methods. Numeric results are returned without rounding so they can
   safely be used in subsequent computations.
+
+- sort:
+
+  Logical. Sort only inspection outputs by decreasing weighted posterior
+  size. Defaults to TRUE. Class identities and the original reference
+  class are retained, including in modal assignments.
 
 ## Value
 
