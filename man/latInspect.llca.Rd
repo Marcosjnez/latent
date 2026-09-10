@@ -4,7 +4,7 @@
 \alias{latInspect.llca}
 \title{Inspect fitted latent class models}
 \usage{
-\method{latInspect}{llca}(fit, what = "profile", digits = 4L)
+\method{latInspect}{llca}(fit, what = "profile", digits = 4L, sort = TRUE)
 }
 \arguments{
 \item{fit}{An object of class \code{"llca"} returned by \code{\link{lca}}.}
@@ -55,6 +55,10 @@ Matching is case-insensitive.}
 \item{digits}{Non-negative integer retained for compatibility with other
 inspection methods. Numeric results are returned without rounding so they
 can safely be used in subsequent computations.}
+
+\item{sort}{Logical. Sort only inspection outputs by decreasing weighted
+posterior size. Defaults to TRUE. Class identities and the original
+reference class are retained, including in modal assignments.}
 }
 \value{
 The object requested through \code{what}. See the description of

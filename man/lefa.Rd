@@ -16,7 +16,7 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
      likelihood = NULL, se = TRUE,
      message = FALSE, do.fit = TRUE,
      mimic = "latent", control.efa = NULL,
-     control.rotation = NULL, control.moments = NULL, sort = TRUE, ...)
+     control.rotation = NULL, control.moments = NULL, ...)
 }
 \arguments{
 \item{data}{Optional data frame or matrix containing the observed variables.
@@ -101,12 +101,6 @@ sample-moment estimators, independently of \code{control.efa} and
 \code{cores} or explicit OpenMP. NULL uses the moment estimators' defaults.
 See \code{lcfa()} for details.}
 
-\item{sort}{Logical. Sort the final rotated factors and choose their signs
-using \code{sort_factors()}. Defaults to TRUE. When any component is a
-target criterion or selects \code{factors}, factor order is retained and
-only signs are oriented. The intermediate unrotated model retains its
-fitting coordinates.}
-
 \item{...}{Additional arguments. CFA/lavaan arguments are passed to
 \code{lcfa()}; arguments required by the selected rotation criterion or
 projection are passed only to \code{lrotate()}.}
@@ -122,6 +116,10 @@ factor model with \code{lcfa()} and subsequently rotating the fitted model
 with \code{lrotate()}.
 }
 \details{
+Fitted objects retain the estimated factor order and signs. Sorting is
+available only through \code{latInspect(fit, sort = TRUE)} and does not
+modify the fitted object or its standard-error calculations.
+
 Two equivalent identification schemes are available for the unrotated EFA
 model. With \code{control.efa$orth.lambda = FALSE}, the model uses a
 lower-triangular loading matrix and an identity factor covariance matrix.

@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/09/2026
+# Modification date: 10/09/2026
 #'
 #' Inspect fitted latent class models
 #'
@@ -53,6 +53,9 @@
 #'     \item{\code{"timing"}, \code{"elapsed"}}{Elapsed optimization time.}
 #'   }
 #'   Matching is case-insensitive.
+#' @param sort Logical. Sort only inspection outputs by decreasing weighted
+#'   posterior size. Defaults to TRUE. Class identities and the original
+#'   reference class are retained, including in modal assignments.
 #' @param digits Non-negative integer retained for compatibility with other
 #'   inspection methods. Numeric results are returned without rounding so they
 #'   can safely be used in subsequent computations.
@@ -81,7 +84,7 @@
 #' @export
 latInspect.llca <- function(fit,
                             what = "profile",
-                            digits = 4L) {
+                            digits = 4L, sort = TRUE) {
 
   #### Check inputs ####
 
@@ -107,9 +110,22 @@ latInspect.llca <- function(fit,
   }
 
   what <- tolower(what)
+  if(what %in% c("est", "estimates", "parameters", "fixed", "structures", "param",
+                 "trans", "labels", "transparameters", "transformed_pars", "se",
+                 "standard.errors", "standard_errors", "vcov", "covariance")) {
+    result <- latInspect.latent(fit, what = what, sort = sort)
+    #### Result ####
+    return(result)
+  }
+
+  output <- latInspect.latent(fit, what = "structures", sort = sort)
 
   list2env(fit@dataList, envir = environment())
   list2env(fit@modelInfo, envir = environment())
+  param <- output$param
+  trans <- output$trans
+  parameters <- output$parameters
+  transformed_pars <- output$transformed_pars
 
   # Older and outcome-free llca objects may not contain outcomes_names.
   # Always create it explicitly before extracting conditional parameters.
@@ -120,8 +136,9 @@ latInspect.llca <- function(fit,
   total_weight <- sum(pattern_weights)
   class_names <- fit@dataList$class_names
   if(length(class_names) != nclasses) class_names <- paste0("Class", seq_len(nclasses))
-  class_ids <- fit@dataList$class_order
+  class_ids <- attr(output, "order", exact = TRUE)
   if(length(class_ids) != nclasses) class_ids <- seq_len(nclasses)
+  class_names <- class_names[class_ids]
 
   #### Pattern-level likelihood and posterior quantities ####
 
@@ -139,6 +156,7 @@ latInspect.llca <- function(fit,
   # Posterior class probabilities by response pattern:
   posterior_patterns <- exp(matrix(fit@Optim$outputs$estimators$matrices[[1]][[1]],
                                    nrow = npatterns, ncol = nclasses))
+  posterior_patterns <- posterior_patterns[, class_ids, drop = FALSE]
   rownames(posterior_patterns) <- pattern_names
   colnames(posterior_patterns) <- paste0("P(", class_names, "|data)")
 
@@ -181,7 +199,7 @@ latInspect.llca <- function(fit,
 
   #### Average class probabilities ####
 
-  weighted_classes <- sweep(fit@transformed_pars$class, MARGIN = 1L,
+  weighted_classes <- sweep(transformed_pars$class, MARGIN = 1L,
                             STATS = pattern_weights, FUN = "*")
   classes <- colSums(weighted_classes) / total_weight
 
@@ -193,8 +211,8 @@ latInspect.llca <- function(fit,
 
   extract_conditional <- function(variable_names) {
 
-    variable_names <- intersect(variable_names, names(fit@transformed_pars))
-    result <- fit@transformed_pars[variable_names]
+    variable_names <- intersect(variable_names, names(transformed_pars))
+    result <- transformed_pars[variable_names]
 
     gaussian_names_all <- c(gaussian$gaussian_names, mvgaussian$mvgaussian_names)
 
@@ -279,12 +297,12 @@ latInspect.llca <- function(fit,
   profile$dependencies <- list()
 
   # Gaussian dependencies:
-  idx <- grepl("Sigma", names(fit@parameters))
-  profile$dependencies$gaussian <- fit@parameters[idx]
+  idx <- grepl("Sigma", names(parameters))
+  profile$dependencies$gaussian <- parameters[idx]
 
   # Multinomial dependencies:
-  idx <- grepl("log_", names(fit@parameters))
-  profile$dependencies$multinomial <- fit@parameters[idx]
+  idx <- grepl("log_", names(parameters))
+  profile$dependencies$multinomial <- parameters[idx]
 
   #### Fit components ####
 
@@ -366,12 +384,12 @@ latInspect.llca <- function(fit,
 
   } else if(what == "fullclasses") {
 
-    result <- fit@transformed_pars$class
+    result <- transformed_pars$class
 
   } else if(what %in% c("beta", "betas", "coef", "coefs",
                         "coefficient", "coefficients")) {
 
-    result <- fit@transformed_pars$beta
+    result <- transformed_pars$beta
 
   } else if(what == "respconditional") {
 
@@ -479,6 +497,22 @@ latInspect.llca <- function(fit,
   } else if(what == "diagnosis") {
 
     result <- lclass_diag(fit, type = "all", digits = digits)
+    if(sort) {
+      for(nm in intersect(names(result), c("Mostlikely.Class", "Avg.Mostlikely"))) {
+        result[[nm]] <- result[[nm]][class_ids, class_ids, drop = FALSE]
+        dimnames(result[[nm]]) <- list(class_names, class_names)
+      }
+      for(nm in intersect(names(result), c("AvePP", "Sum.Posterior", "Sum.Mostlikely"))) {
+        if(nrow(result[[nm]]) == nclasses) {
+          result[[nm]] <- result[[nm]][class_ids, , drop = FALSE]
+          rownames(result[[nm]]) <- class_names
+        }
+      }
+      for(nm in intersect(names(result), c("OCC", "Misclassification.per.class"))) {
+        result[[nm]] <- setNames(result[[nm]][class_ids], class_names)
+      }
+      attr(result, "class_names") <- class_names
+    }
 
   } else if(what %in% c("timing", "elapsed")) {
 
@@ -493,7 +527,7 @@ latInspect.llca <- function(fit,
 
   }
 
-  #### Return ####
+  #### Result ####
 
   return(result)
 
@@ -505,15 +539,21 @@ latInspect.llca <- function(fit,
 #' @export
 latInspect.llcalist <- function(model,
                                 what = "profile",
-                                digits = 4L) {
+                                digits = 4L, sort = TRUE) {
 
   if(!inherits(model, "llcalist")) {
     stop("model must inherit from class 'llcalist'.")
   }
 
-  result <- lapply(model, FUN = latInspect, what = what, digits = digits)
+  if(!is.logical(sort) || length(sort) != 1L || is.na(sort)) {
+    stop("sort must be TRUE or FALSE.")
+  }
+
+  result <- lapply(model, FUN = latInspect, what = what, digits = digits, sort = sort)
 
   class(result) <- "latInspect.llcalist"
+
+  #### Result ####
 
   return(result)
 

@@ -1,15 +1,15 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/09/2026
+# Modification date: 10/09/2026
 #'
 #' Variance-Covariance Matrix for Latent Objects
 #'
 #' @param fit A fitted object inheriting from class \code{"latent"}.
 #' @param v Variance-covariance matrix of the freely estimated, untransformed
-#'   parameters, in the original fitting coordinates even when fit is sorted.
+#'   parameters, in the original fitting coordinates.
 #' @param parameters Optional parameter specification identifying the parameters
-#'   or transformed parameters to return. For sorted fits, the default follows
-#'   the reporting order/sign of the free parameters.
+#'   or transformed parameters to return. The default follows the original
+#'   order of the freely estimated parameters.
 #'
 #' @return A list containing the selected variance-covariance matrix and
 #'   standard errors.
@@ -39,7 +39,7 @@ vcov.latent <- function(fit, v, parameters = NULL) {
 
   if(is.null(parameters)) {
 
-    parameters <- if(is.null(fit@modelInfo$sorting)) labels else sort_free_labels_latent(fit)
+    parameters <- labels
 
   } else {
 

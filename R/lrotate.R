@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/09/2026
+# Modification date: 10/09/2026
 #'
 #' @title
 #' Rotate factor loading and covariance matrices
@@ -13,7 +13,7 @@
 #' @usage
 #' lrotate(fit = NULL, lambda = NULL, psi = NULL,
 #'         projection = "oblq", rotation = "oblimin",
-#'         se = TRUE, do.fit = TRUE, control = NULL, sort = TRUE, ...)
+#'         se = TRUE, do.fit = TRUE, control = NULL, ...)
 #'
 #' @param fit Optional fitted object inheriting from class \code{"lcfa"}.
 #' @param lambda Optional loading matrix or list of loading matrices. This is an
@@ -38,13 +38,6 @@
 #'   return the model specification. With a fitted \code{lcfa} input, the
 #'   unrestricted specification used for derivative calculations is returned.
 #' @param control List of optimization-control arguments.
-#' @param sort Logical. By default, orient every factor so its largest absolute
-#'   loading is positive. Also sort factors by decreasing variance-adjusted sums
-#'   of squared loadings unless any component is \code{target}/\code{xtarget}
-#'   or specifies \code{factors}. In those cases, retain the factor positions
-#'   used by the criterion. FALSE retains both order and signs. The criterion
-#'   and its constraints retain their native fitting coordinates. See
-#'   \code{sort_factors()}.
 #' @param ... Additional projection or rotation arguments shared by the
 #'   components to which they apply. Component-specific arguments take
 #'   precedence. Missing (or NULL) loading weights default to \code{1-target},
@@ -52,6 +45,15 @@
 #'   zero matrices, are preserved. Group-specific lists are supported.
 #'
 #' @details
+#' Parameter labels are generated from their block names, just as in the CFA
+#' parameter constructor. Single-group labels have no group suffix, for example
+#' \code{X[1,1]} and \code{lambda_rotated[1,1]}. Multiple groups use the
+#' corresponding group names to keep parameter labels distinct.
+#'
+#' Fitted objects retain the estimated factor order and signs. Sorting is
+#' available only through \code{latInspect(fit, sort = TRUE)} and does not
+#' modify the fitted object or its standard-error calculations.
+#'
 #' All components are optimized simultaneously over the same rotation matrix.
 #'   With row sets \eqn{I_s} and factor sets \eqn{J_s}, the total criterion is
 #'   \deqn{Q(\Lambda,\Psi)=\sum_s Q_s(\Lambda_{I_s,J_s},\Psi_{J_s,J_s}).}
@@ -147,11 +149,9 @@
 #' @export
 lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
                     projection = "oblq", rotation = "oblimin",
-                    se = TRUE, do.fit = TRUE, control = NULL, sort = TRUE, ...) {
+                    se = TRUE, do.fit = TRUE, control = NULL, ...) {
 
   #### Check input arguments ####
-
-  check_sort_flag(sort)
 
   fit_input <- !is.null(fit)
   matrix_input <- !is.null(lambda)
@@ -163,8 +163,6 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
   if(fit_input) {
 
     check_fit_lrotate(fit)
-    # Source constraints and propagation use the original fitting chart.
-    fit <- unsort_latent(fit)
 
     if(!is.null(psi)) {
       stop("psi cannot be supplied together with fit")
@@ -212,6 +210,10 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
   #### Rotation-specific arguments ####
 
   dots <- list(...)
+
+  if("sort" %in% names(dots)) {
+    stop("sort is only available in latInspect().")
+  }
   check_rotation_dots_lrotate(dots)
 
   # Defaults are applied separately after resolving each component and group.
@@ -251,8 +253,7 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
                           rotation = rotation,
                           se = se,
                           do.fit = do.fit,
-                          control = control,
-                          sort = sort),
+                          control = control),
                      dots)
 
   #### Create the model ####
@@ -332,13 +333,6 @@ lrotate <- function(fit = NULL, lambda = NULL, psi = NULL,
       parameters = rotated_parameters
     )
 
-  }
-
-  #### Factor order and signs ####
-
-  if(sort) {
-    reorder <- reorder_rotation_lrotate(rotation, dots)
-    result <- sort_factors(result, reorder = reorder)
   }
 
   #### Result ####
@@ -883,24 +877,6 @@ rotation_extra_lrotate <- function(criterion, extra, items, factors, p, q) {
 
 }
 
-reorder_rotation_lrotate <- function(rotation, dots) {
-
-  components <- rotation_components_lrotate(rotation)
-  has_target <- any(names(components) %in% c("target", "xtarget"))
-  has_factors <- any(vapply(seq_along(components), FUN = function(i) {
-    extra <- rotation_component_dots_lrotate(names(components)[i], components[[i]], dots)
-    result <- !is.null(extra$factors)
-    #### Result ####
-    return(result)
-  }, FUN.VALUE = logical(1L)))
-  result <- !has_target && !has_factors
-
-  #### Result ####
-
-  return(result)
-
-}
-
 #### Function to create defaults for rotation-specific arguments ####
 
 rotation_defaults_lrotate <- function(rotation, dots) {
@@ -1225,8 +1201,7 @@ create_lrotate_source_model <- function(lambda, psi, alpha,
       type = "matrix",
       dim = c(p, q),
       rownames = item_label,
-      colnames = factor_label,
-      labels = labels_lrotate(i, "lambda_unrotated", p, q)
+      colnames = factor_label
     )
     k <- k+1L
 
@@ -1236,8 +1211,7 @@ create_lrotate_source_model <- function(lambda, psi, alpha,
       dim = c(q, q),
       rownames = factor_label,
       colnames = factor_label,
-      symmetric = TRUE,
-      labels = labels_lrotate(i, "psi_unrotated", q, q)
+      symmetric = TRUE
     )
     k <- k+1L
 
@@ -1246,8 +1220,7 @@ create_lrotate_source_model <- function(lambda, psi, alpha,
       type = "matrix",
       dim = c(q, 1L),
       rownames = factor_label,
-      colnames = "intrcp",
-      labels = labels_lrotate(i, "alpha_unrotated", q, 1L)
+      colnames = "intrcp"
     )
     k <- k+1L
 
@@ -1352,23 +1325,6 @@ create_lrotate_data_param <- function(dataList) {
 
 }
 
-#### Function to create matrix parameter labels ####
-
-labels_lrotate <- function(group, object, nrow, ncol) {
-
-  labels <- paste("rotation.g", group, ".", object, "[",
-                  rep(seq_len(nrow), times = ncol), ",",
-                  rep(seq_len(ncol), each = nrow), "]",
-                  sep = "")
-
-  result <- matrix(labels, nrow = nrow, ncol = ncol)
-
-  #### Result ####
-
-  return(result)
-
-}
-
 #### Function to create the transformed-parameter model ####
 
 model_lrotate <- function(dataList, data_param) {
@@ -1392,8 +1348,7 @@ model_lrotate <- function(dataList, data_param) {
       type = "matrix",
       dim = c(q, q),
       rownames = factor_names,
-      colnames = factor_names,
-      labels = labels_lrotate(i, "X", q, q)
+      colnames = factor_names
     )
     k <- k+1L
 
@@ -1406,8 +1361,7 @@ model_lrotate <- function(dataList, data_param) {
         type = "matrix",
         dim = c(q, q),
         rownames = factor_names,
-        colnames = factor_names,
-        labels = labels_lrotate(i, "Xinv", q, q)
+        colnames = factor_names
       )
       k <- k+1L
 
@@ -1420,8 +1374,7 @@ model_lrotate <- function(dataList, data_param) {
       type = "matrix",
       dim = c(p, q),
       rownames = item_names,
-      colnames = factor_names,
-      labels = labels_lrotate(i, "lambda", p, q)
+      colnames = factor_names
     )
     k <- k+1L
 
@@ -1433,8 +1386,7 @@ model_lrotate <- function(dataList, data_param) {
       dim = c(q, q),
       rownames = factor_names,
       colnames = factor_names,
-      symmetric = TRUE,
-      labels = labels_lrotate(i, "psi", q, q)
+      symmetric = TRUE
     )
     k <- k+1L
 
@@ -1445,8 +1397,7 @@ model_lrotate <- function(dataList, data_param) {
       type = "matrix",
       dim = c(q, 1L),
       rownames = factor_names,
-      colnames = "intrcp",
-      labels = labels_lrotate(i, "alpha", q, 1L)
+      colnames = "intrcp"
     )
     k <- k+1L
 

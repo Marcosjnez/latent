@@ -4,12 +4,14 @@
 \alias{latInspect.lcfa}
 \title{Inspect Fitted CFA Objects}
 \usage{
-\method{latInspect}{lcfa}(fit, what = "est")
+\method{latInspect}{lcfa}(fit, what = "est", sort = TRUE)
 }
 \arguments{
 \item{fit}{A fitted object inheriting from class \code{"lcfa"}.}
 
 \item{what}{Character string identifying the requested component.}
+
+\item{sort}{Logical. Sort/orient only the requested output; defaults to TRUE.}
 }
 \value{
 A parameter list, residual list, fit matrix, or estimator-specific

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/09/2026
+# Modification date: 10/09/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -18,7 +18,7 @@
 #'      parameterization = NULL,
 #'      likelihood = NULL, se = TRUE,
 #'      control = NULL, message = FALSE,
-#'      do.fit = TRUE, control.moments = NULL, sort = TRUE, ...)
+#'      do.fit = TRUE, control.moments = NULL, ...)
 #'
 #' @param data Optional data frame or matrix containing the observed variables.
 #'   If NULL, sample.cov and sample.nobs must be supplied.
@@ -74,17 +74,14 @@
 #'   propagation are set internally. This argument has no effect when no
 #'   separate moment estimator is fitted (for example, supplied sample moments
 #'   or direct FIML).
-#' @param sort Logical. Sort factors by decreasing variance-adjusted sums of
-#'   squared loadings and make the largest absolute loading positive. The
-#'   default is TRUE. If any modeled loading is fixed, including a loading fixed
-#'   for factor-scale identification, sorting is automatically disabled so the
-#'   fitted factor order and loading signs remain exactly as specified. Factor
-#'   identities and the native estimation constraints are retained; see
-#'   \code{sort_factors()}. FALSE leaves the output unchanged.
 #' @param ... Additional arguments passed to lavaan and the sample-statistic
 #'   estimators where applicable.
 #'
 #' @details
+#' Fitted objects retain the estimated factor order and signs. Sorting is
+#' available only through \code{latInspect(fit, sort = TRUE)} and does not
+#' modify the fitted object or its standard-error calculations.
+#'
 #' The model-implied observed means are computed as
 #' \deqn{\widehat{\mu}=\nu+\Lambda\alpha,}
 #' where \eqn{\nu} contains observed-variable intercepts and \eqn{\alpha}
@@ -122,12 +119,14 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                  parameterization = NULL,
                  likelihood = NULL, se = TRUE,
                  control = NULL, message = FALSE,
-                 do.fit = TRUE, control.moments = NULL, sort = TRUE,
+                 do.fit = TRUE, control.moments = NULL,
                  ...) {
 
   #### Check input arguments ####
 
-  check_sort_flag(sort)
+  if("sort" %in% names(list(...))) {
+    stop("sort is only available in latInspect().")
+  }
 
   if(is.null(data) && is.null(sample.cov)) {
     stop("Either data or sample.cov must be provided")
@@ -300,14 +299,6 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                                    control.moments = control.moments,
                                    ...)
 
-  # Fixed modeled loadings define factor order/sign conventions that should be
-  # visible in the reported solution. Structural zero cross-loadings are absent
-  # from lavaan's parameter table and therefore do not disable sorting.
-  if(sort && fixed_loadings_lcfa(dataList$LAV)) {
-    sort <- FALSE
-  }
-  dataList$args$sort <- sort
-
   #### Create the model ####
 
   full_model <- create_lcfa_model(dataList = dataList,
@@ -437,10 +428,6 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
     result@Optim$SE$sample_se <- sample_se
 
   }
-
-  #### Factor order and signs ####
-
-  if(sort) result <- sort_factors(result)
 
   #### Result ####
 
@@ -1409,29 +1396,6 @@ lcfa_control <- function(control) {
 }
 
 #### Auxiliary functions for create_lcfa_dataList ####
-
-fixed_loadings_lcfa <- function(LAV) {
-
-  if(!inherits(LAV, "lavaan")) {
-    stop("LAV must be a lavaan model object.")
-  }
-
-  partable <- lavaan::parTable(LAV)
-  required <- c("op", "free")
-
-  if(!all(required %in% names(partable))) {
-    stop("The lavaan parameter table does not contain loading/free metadata.")
-  }
-
-  loading <- partable$op == "=~"
-  fixed <- loading & !is.na(partable$free) & partable$free == 0L
-  result <- any(fixed)
-
-  #### Result ####
-
-  return(result)
-
-}
 
 print_lcfa_message <- function(msg) {
 

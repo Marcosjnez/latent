@@ -1,6 +1,6 @@
 # Author: Mauricio Garnier-Villarreal
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 06/09/2026
+# Modification date: 10/09/2026
 
 #' Classification Diagnostics for Latent Class Analysis
 #'
@@ -47,15 +47,6 @@ lclass_diag <- function(x, digits = 4,
                         type = c("Entropy", "AvePP", "Mostlikely.Class", "Sum.Mostlikely"),
                         ...) {
 
-  if(inherits(x, "latent") && identical(x@modelInfo$sorting$type, "classes")) {
-    native_diagnostics <- lclass_diag(unsort_latent(x), digits = digits, type = type, ...)
-    result <- sort_class_diagnostics_latent(x, native_diagnostics)
-
-    #### Result ####
-
-    return(result)
-  }
-
   # ---- Argument validation ----
   valid_types <- c("Entropy", "AvePP", "OCC", "Overall.Misclassification",
                    "Misclassification.per.class", "Sum.Posterior",
@@ -68,9 +59,9 @@ lclass_diag <- function(x, digits = 4,
   type <- match.arg(type, choices = valid_types, several.ok = TRUE)
 
   # ---- Extract basic quantities from model ----
-  post_probs <- latInspect(x, what = "posterior", ...)
-  state      <- latInspect(x, what = "state", ...)
-  class_prop <- latInspect(x, what = "classes", ...)
+  post_probs <- latInspect(x, what = "posterior", sort = FALSE, ...)
+  state      <- latInspect(x, what = "state", sort = FALSE, ...)
+  class_prop <- latInspect(x, what = "classes", sort = FALSE, ...)
 
   # ---- Helper functions (kept inside for portability) ----
   avgprobs_mostlikely <- function(post_prob, class = NULL) {

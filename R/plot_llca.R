@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/07/2026
+# Modification date: 10/09/2026
 
 #' Determine a panel layout
 #'
@@ -1085,7 +1085,7 @@ plot.llca <- function(x,
     }
     result <- plot_lca_coefficients(fit = x, ...)
   } else {
-    item_output <- latInspect(x, what = "item")
+    item_output <- latInspect(x, what = "item", sort = FALSE)
     item_types <- list(multinomial = x@dataList$multinomial$multinomial_names,
                        gaussian = c(x@dataList$gaussian$gaussian_names,
                                     x@dataList$mvgaussian$mvgaussian_names))

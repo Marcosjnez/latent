@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 21/08/2026
+# Modification date: 10/09/2026
 #'
 #' Summary of a Latent Class Model
 #'
@@ -118,7 +118,7 @@ summary.llca <- function(fit, digits = 3L, ...) {
 
   #### Latent class profile ####
 
-  profile <- latInspect(fit, what = "profile", digits = digits)
+  profile <- latInspect(fit, what = "profile", sort = FALSE, digits = digits)
 
   cat("\nLatent class profile:\n")
   cat(strrep("-", 72L), "\n", sep = "")

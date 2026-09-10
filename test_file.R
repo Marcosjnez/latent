@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/09/2026
+# Modification date: 10/09/2026
 
 #### Store a dataset ####
 
@@ -949,7 +949,7 @@ std.lv <- TRUE
 meanstructure <- FALSE
 likelihood <- "normal"
 rotation <- "oblimin"
-projection <- "poblq"
+projection <- "oblq"
 constraints <- matrix(0, nfactors, nfactors)
 constraints[1:2, 1:2] <- 1
 diag(constraints) <- 0
@@ -965,12 +965,13 @@ fit <- lefa(data = df,
             rotation = rotation,
             projection = projection,
             # constraints = constraints,
-            oblique = c(2),
+            # oblique = c(2),
             control.efa = list(rstarts = 10L, se_method = "KKT", orth.lambda = TRUE),
             control.rotation = list(rstarts = 10L, se_method = "KKT"),
             se = TRUE)
 # fit@Optim$SE$table_se
 # fit@modelInfo$param$lambda
+latInspect(fit, what = "est")
 
 fit_b <- bifactor::efast(as.matrix(df), nfactors = nfactors, estimator = estimator,
                          rotation = rotation, projection = projection,
@@ -995,21 +996,33 @@ dconstr$dconstr
 dim(dconstr$dconstr)
 dim(dconstr$d2constr)
 
+# Constraints in rotated parameters:
+gradient <- get_grad(fit)$grad
+names(gradient) <- fit@modelInfo$transparameters_labels
+L <- fit@transformed_pars$lambda_rotated
+P <- fit@transformed_pars$psi_rotated
+L_labels <- fit@modelInfo$trans$lambda_rotated
+P_labels <- fit@modelInfo$trans$psi_rotated
+GL <- matrix(gradient[L_labels], nrow = 9, ncol = 3)
+GP <- matrix(gradient[P_labels], nrow = 3, ncol = 3)
+2*GP - solve(P) %*% t(GL) %*% L # diagonal
+
 # Rotation constraints derivatives:
 parameters <- fit@modelInfo$trans$X
 dconstr <- constraints_derivs(fit, parameters = parameters)
 dconstr$dconstr
 dim(dconstr$dconstr)
 dim(dconstr$d2constr)
-# FIX THIS: a multistep model should return all the parameter constraints at once,
-# including those of latent objects in fit@extra
 
-#### Bi-geomin ####
+#### Exploratory bifactor ####
 
 library(latent)
 library(GPArotation)
 
 ulambda <- rorth(9, 4)
+
+# Bi-geomin:
+
 rot <- bigeominQ(ulambda, delta = 0.01, randomStarts = 10L)
 fit <- lrotate(lambda = ulambda, projection = "oblq",
                rotation = list(geomin = list(factors = 2:4, epsilon = 0.01)),
@@ -1018,7 +1031,21 @@ fit@Optim$iterations
 fit@Optim$f
 round(fit@transformed_pars$lambda_rotated, 3)
 round(fit@transformed_pars$psi_rotated, 3)
-rot
+round(rot$loadings, 3)
+round(rot$Phi, 3)
+
+# Bi-quartimin:
+
+rot <- bifactorQ(ulambda, randomStarts = 10L)
+fit <- lrotate(lambda = ulambda, projection = "oblq",
+               rotation = list(oblimin = list(factors = 2:4)),
+               control = list(rstarts = 10L))
+fit@Optim$iterations
+fit@Optim$f
+round(fit@transformed_pars$lambda_rotated, 3)
+round(fit@transformed_pars$psi_rotated, 3)
+round(rot$loadings, 3)
+round(rot$Phi, 3)
 
 #### Check derivatives ####
 
@@ -1069,5 +1096,4 @@ x <- get_jacob(fit)
 x
 
 #### To-do ####
-# Fix class ordering by size
 # SE for ML-modal-prop

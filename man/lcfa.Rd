@@ -14,7 +14,7 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
      parameterization = NULL,
      likelihood = NULL, se = TRUE,
      control = NULL, message = FALSE,
-     do.fit = TRUE, control.moments = NULL, sort = TRUE, ...)
+     do.fit = TRUE, control.moments = NULL, ...)
 }
 \arguments{
 \item{data}{Optional data frame or matrix containing the observed variables.
@@ -92,14 +92,6 @@ propagation are set internally. This argument has no effect when no
 separate moment estimator is fitted (for example, supplied sample moments
 or direct FIML).}
 
-\item{sort}{Logical. Sort factors by decreasing variance-adjusted sums of
-squared loadings and make the largest absolute loading positive. The
-default is TRUE. If any modeled loading is fixed, including a loading fixed
-for factor-scale identification, sorting is automatically disabled so the
-fitted factor order and loading signs remain exactly as specified. Factor
-identities and the native estimation constraints are retained; see
-\code{sort_factors()}. FALSE leaves the output unchanged.}
-
 \item{...}{Additional arguments passed to lavaan and the sample-statistic
 estimators where applicable.}
 }
@@ -113,6 +105,10 @@ Fit confirmatory factor analysis models using lavaan model syntax and the
 optimization infrastructure of \pkg{latent}.
 }
 \details{
+Fitted objects retain the estimated factor order and signs. Sorting is
+available only through \code{latInspect(fit, sort = TRUE)} and does not
+modify the fitted object or its standard-error calculations.
+
 The model-implied observed means are computed as
 \deqn{\widehat{\mu}=\nu+\Lambda\alpha,}
 where \eqn{\nu} contains observed-variable intercepts and \eqn{\alpha}

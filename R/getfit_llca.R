@@ -1,7 +1,7 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/07/2026
+# Modification date: 10/09/2026
 #'
 #' Fit indices for latent class models
 #'
@@ -165,9 +165,9 @@ getfit.llca <- function(model, digits = 4L) {
   #### Extract model information ####
 
   penalized <- model@modelInfo$control_optimizer$reg
-  posterior <- latInspect(model, what = "posterior")
-  summary_table <- latInspect(model, what = "summary")
-  fit_loglik <- latInspect(model, what = "loglik")
+  posterior <- latInspect(model, what = "posterior", sort = FALSE)
+  summary_table <- latInspect(model, what = "summary", sort = FALSE)
+  fit_loglik <- latInspect(model, what = "loglik", sort = FALSE)
 
   nclasses <- ncol(posterior)
   k <- model@modelInfo$nparam

@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 05/09/2026
+# Modification date: 10/09/2026
 #'
 #' @title Local bivariate residuals for latent class analysis
 #'
@@ -102,7 +102,7 @@ lbvr.llca <- function(x, digits = 4L, ...) {
     stop("At least two indicators are required to compute bivariate residuals")
   }
 
-  posterior <- latInspect(model, what = "posterior")
+  posterior <- latInspect(model, what = "posterior", sort = FALSE)
   K <- ncol(posterior)
   short2full <- model@dataList$short2full
 
@@ -136,7 +136,7 @@ lbvr.llca <- function(x, digits = 4L, ...) {
                             dimnames = list(NULL, character(0L)))
   }
 
-  profile <- latInspect(model, what = "item")
+  profile <- latInspect(model, what = "item", sort = FALSE)
 
   class_means <- matrix(numeric(0L), nrow = K, ncol = 0L,
                         dimnames = list(colnames(posterior), character(0L)))
@@ -170,7 +170,7 @@ lbvr.llca <- function(x, digits = 4L, ...) {
     }
   }
 
-  pi <- as.numeric(latInspect(model, what = "class"))
+  pi <- as.numeric(latInspect(model, what = "class", sort = FALSE))
   if(length(pi) != K) {
     stop("The estimated class proportions do not match the number of latent classes")
   }

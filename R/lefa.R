@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 07/09/2026
+# Modification date: 10/09/2026
 #'
 #' Exploratory Factor Analysis
 #'
@@ -21,7 +21,7 @@
 #'      likelihood = NULL, se = TRUE,
 #'      message = FALSE, do.fit = TRUE,
 #'      mimic = "latent", control.efa = NULL,
-#'      control.rotation = NULL, control.moments = NULL, sort = TRUE, ...)
+#'      control.rotation = NULL, control.moments = NULL, ...)
 #'
 #' @param data Optional data frame or matrix containing the observed variables.
 #'   Alternatively, sample.cov can be supplied.
@@ -79,16 +79,15 @@
 #'   \code{polyfast()} polychoric estimation. The two-step ACOV does not use
 #'   \code{cores} or explicit OpenMP. NULL uses the moment estimators' defaults.
 #'   See \code{lcfa()} for details.
-#' @param sort Logical. Sort the final rotated factors and choose their signs
-#'   using \code{sort_factors()}. Defaults to TRUE. When any component is a
-#'   target criterion or selects \code{factors}, factor order is retained and
-#'   only signs are oriented. The intermediate unrotated model retains its
-#'   fitting coordinates.
 #' @param ... Additional arguments. CFA/lavaan arguments are passed to
 #'   \code{lcfa()}; arguments required by the selected rotation criterion or
 #'   projection are passed only to \code{lrotate()}.
 #'
 #' @details
+#' Fitted objects retain the estimated factor order and signs. Sorting is
+#' available only through \code{latInspect(fit, sort = TRUE)} and does not
+#' modify the fitted object or its standard-error calculations.
+#'
 #' Two equivalent identification schemes are available for the unrotated EFA
 #' model. With \code{control.efa$orth.lambda = FALSE}, the model uses a
 #' lower-triangular loading matrix and an identity factor covariance matrix.
@@ -136,12 +135,10 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                  likelihood = NULL, se = TRUE,
                  message = FALSE, do.fit = TRUE,
                  mimic = "latent", control.efa = NULL,
-                 control.rotation = NULL, control.moments = NULL, sort = TRUE,
+                 control.rotation = NULL, control.moments = NULL,
                  ...) {
 
   #### Check input arguments ####
-
-  check_sort_flag(sort)
 
   if(is.null(data) && is.null(sample.cov)) {
     stop("Either data or sample.cov must be provided")
@@ -291,6 +288,10 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
 
   dots <- list(...)
 
+  if("sort" %in% names(dots)) {
+    stop("sort is only available in latInspect().")
+  }
+
   if(length(dots) > 0L) {
 
     dot_names <- names(dots)
@@ -373,7 +374,7 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
                                     rotation = rotation,
                                     control.rotation = control.rotation,
                                     se = !isFALSE(se),
-                                    dots = dots_split$rotation, sort = sort)
+                                    dots = dots_split$rotation)
 
   result <- as_lefa(rotation_fit, call = mc)
 
@@ -539,7 +540,6 @@ fit_lefa_cfa <- function(data, model, estimator,
     do.fit = do.fit,
     control = control.efa,
     control.moments = control.moments,
-    sort = FALSE,
     orthogonal = TRUE
   )
 
@@ -571,7 +571,7 @@ rotate_lefa <- function(fit) {
 #### Function to fit the rotation ####
 
 fit_lefa_rotation <- function(fit, projection, rotation,
-                              control.rotation, se, dots, sort = TRUE) {
+                              control.rotation, se, dots) {
 
   args <- list(
     fit = fit,
@@ -579,8 +579,7 @@ fit_lefa_rotation <- function(fit, projection, rotation,
     rotation = rotation,
     se = se,
     do.fit = TRUE,
-    control = control.rotation,
-    sort = sort
+    control = control.rotation
   )
 
   args <- c(args, dots)

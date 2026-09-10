@@ -6,7 +6,7 @@
 \usage{
 lrotate(fit = NULL, lambda = NULL, psi = NULL,
         projection = "oblq", rotation = "oblimin",
-        se = TRUE, do.fit = TRUE, control = NULL, sort = TRUE, ...)
+        se = TRUE, do.fit = TRUE, control = NULL, ...)
 }
 \arguments{
 \item{fit}{Optional fitted object inheriting from class \code{"lcfa"}.}
@@ -40,14 +40,6 @@ unrestricted specification used for derivative calculations is returned.}
 
 \item{control}{List of optimization-control arguments.}
 
-\item{sort}{Logical. By default, orient every factor so its largest absolute
-loading is positive. Also sort factors by decreasing variance-adjusted sums
-of squared loadings unless any component is \code{target}/\code{xtarget}
-or specifies \code{factors}. In those cases, retain the factor positions
-used by the criterion. FALSE retains both order and signs. The criterion
-and its constraints retain their native fitting coordinates. See
-\code{sort_factors()}.}
-
 \item{...}{Additional projection or rotation arguments shared by the
 components to which they apply. Component-specific arguments take
 precedence. Missing (or NULL) loading weights default to \code{1-target},
@@ -63,6 +55,15 @@ supplied directly or extracted from a fitted \code{lcfa} object using an
 orthogonal, oblique, or orthoblique projection and one or more rotation criteria.
 }
 \details{
+Parameter labels are generated from their block names, just as in the CFA
+parameter constructor. Single-group labels have no group suffix, for example
+\code{X[1,1]} and \code{lambda_rotated[1,1]}. Multiple groups use the
+corresponding group names to keep parameter labels distinct.
+
+Fitted objects retain the estimated factor order and signs. Sorting is
+available only through \code{latInspect(fit, sort = TRUE)} and does not
+modify the fitted object or its standard-error calculations.
+
 All components are optimized simultaneously over the same rotation matrix.
   With row sets \eqn{I_s} and factor sets \eqn{J_s}, the total criterion is
   \deqn{Q(\Lambda,\Psi)=\sum_s Q_s(\Lambda_{I_s,J_s},\Psi_{J_s,J_s}).}

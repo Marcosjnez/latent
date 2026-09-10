@@ -10,11 +10,11 @@
 \item{fit}{A fitted object inheriting from class \code{"latent"}.}
 
 \item{v}{Variance-covariance matrix of the freely estimated, untransformed
-parameters, in the original fitting coordinates even when fit is sorted.}
+parameters, in the original fitting coordinates.}
 
 \item{parameters}{Optional parameter specification identifying the parameters
-or transformed parameters to return. For sorted fits, the default follows
-the reporting order/sign of the free parameters.}
+or transformed parameters to return. The default follows the original
+order of the freely estimated parameters.}
 }
 \value{
 A list containing the selected variance-covariance matrix and

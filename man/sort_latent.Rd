@@ -2,56 +2,29 @@
 % Please edit documentation in R/sort_latent.R
 \name{sort_latent}
 \alias{sort_latent}
-\alias{sort_factors}
-\alias{sort_classes}
-\alias{unsort_latent}
-\title{Sort Factors or Latent Classes in a Fitted Model}
+\title{Sorted Parameter Structures for Inspection}
 \usage{
-sort_factors(fit, reorder = TRUE)
-
-sort_classes(fit)
-
-unsort_latent(fit)
+sort_latent(fit)
 }
 \arguments{
-\item{fit}{A fitted lcfa/lrotate/lefa object for sort_factors(), a fitted
-llca object for sort_classes(), or a sorted latent object for unsort_latent().}
-
-\item{reorder}{Logical. For \code{sort_factors()}, reorder factors by their
-variance-adjusted sums of squared loadings. If FALSE, preserve the fitted
-factor order and only orient signs so the largest absolute loading of each
-factor is positive. Defaults to TRUE.}
+\item{fit}{A fitted llca, lcfa, lefa, or lrotate result.}
 }
 \value{
-An object with the same S4 class as fit.
+A list with four elements: \code{parameters},
+  \code{transformed_pars}, \code{param}, and \code{trans}. These are copies
+  of the corresponding estimate and label structures, not a fitted object.
+  Original labels and factor/class names travel with their entries. The
+  \code{order} and \code{signs} attributes describe the display permutation
+  and signs for use by \code{latInspect()}; nothing is stored in fit.
 }
 \description{
-Sort Factors or Latent Classes in a Fitted Model
+Sorted Parameter Structures for Inspection
 }
 \details{
-sort_factors() ranks factors within each group by
-colSums(lambda^2)*diag(psi), in decreasing order when \code{reorder = TRUE}.
-With unit factor variances this is the sum of squared loadings. For oblique
-factors it is a ranking criterion, not an additive allocation of common
-variance. With \code{reorder = FALSE}, the fitted factor order is retained.
-In both cases the largest absolute loading in each factor is made positive;
-ties retain the first item or factor in the original order. Factor names are
-retained.
-
-sort_classes() ranks classes by their frequency-weighted expected posterior
-sizes. Class names and the original multinomial reference class are retained:
-the reference class need not occupy the first displayed column. Sorting does
-not change regression contrasts, penalties, likelihoods, or fitted values.
-
-Public parameter matrices, their label templates, and stored sampling
-covariances use the reported order/sign. Raw optimizer coordinates, Hessians,
-and free-parameter covariance matrices retain the original fitting chart.
-Negative factor coordinates are also registered as exact linear transformed
-parameters, so subsequent delta-method standard errors include the signs.
-The original fitted object and the reporting map are stored in
-modelInfo$sorting; unsort_latent() restores the original coordinates without
-refitting. The sorting functions are idempotent.
-
-Standard errors condition on the selected permutation and signs. They do not
-measure uncertainty about which factor or class ranks first near a tie.
+Classes are ordered by decreasing frequency-weighted posterior size.
+Factors are ordered by decreasing \code{colSums(lambda^2)*diag(psi)} and
+oriented so their largest absolute loading is positive. Ties retain the
+original order. Fixed modeled CFA loadings retain their specified order and
+signs. Target rotations and components selecting factors retain factor order.
+The original multinomial reference class and all parameter labels are kept.
 }

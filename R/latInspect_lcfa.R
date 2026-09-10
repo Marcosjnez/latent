@@ -1,18 +1,19 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/08/2026
+# Modification date: 10/09/2026
 #'
 #' Inspect Fitted CFA Objects
 #'
 #' @param fit A fitted object inheriting from class \code{"lcfa"}.
 #' @param what Character string identifying the requested component.
+#' @param sort Logical. Sort/orient only the requested output; defaults to TRUE.
 #'
 #' @return A parameter list, residual list, fit matrix, or estimator-specific
 #'   control component, depending on \code{what}.
 #'
 #' @method latInspect lcfa
 #' @export
-latInspect.lcfa <- function(fit, what = "est") {
+latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
 
   #### Check inputs ####
 
@@ -28,6 +29,8 @@ latInspect.lcfa <- function(fit, what = "est") {
 
   what <- tolower(what)
   data_param <- fit@dataList$data_param
+  output <- latInspect.latent(fit, what = "structures", sort = sort)
+  transformed_pars <- output$transformed_pars
 
   #### Parameter blocks ####
 
@@ -41,12 +44,12 @@ latInspect.lcfa <- function(fit, what = "est") {
     data_param$delta_group
   ))
   block_names <- intersect(block_names,
-                           names(fit@transformed_pars))
+                           names(transformed_pars))
 
   if(what %in% c("est", "estimates", "parameters",
                  "fixed")) {
 
-    result <- fit@transformed_pars[block_names]
+    result <- transformed_pars[block_names]
 
   } else if(what == "items") {
 
@@ -58,9 +61,9 @@ latInspect.lcfa <- function(fit, what = "est") {
 
     names_model <- intersect(
       data_param$model_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
-    result <- fit@transformed_pars[names_model]
+    result <- transformed_pars[names_model]
 
   } else if(what %in% c("resid", "residuals")) {
 
@@ -70,51 +73,51 @@ latInspect.lcfa <- function(fit, what = "est") {
 
     names_lambda <- intersect(
       data_param$lambda_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
-    result <- fit@transformed_pars[names_lambda]
+    result <- transformed_pars[names_lambda]
 
   } else if(what == "psi") {
 
     names_psi <- intersect(
       data_param$psi_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
-    result <- fit@transformed_pars[names_psi]
+    result <- transformed_pars[names_psi]
 
   } else if(what == "theta") {
 
     names_theta <- intersect(
       data_param$theta_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
-    result <- fit@transformed_pars[names_theta]
+    result <- transformed_pars[names_theta]
 
   } else if(what %in% c("alpha", "latent.means",
                         "latent_means")) {
 
     names_alpha <- intersect(
       data_param$alpha_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
-    result <- fit@transformed_pars[names_alpha]
+    result <- transformed_pars[names_alpha]
 
   } else if(what %in% c("nu", "intercepts")) {
 
     names_nu <- intersect(
       data_param$nu_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
-    result <- fit@transformed_pars[names_nu]
+    result <- transformed_pars[names_nu]
 
   } else if(what %in% c("means", "meanshat",
                         "implied.means", "implied_means")) {
 
     names_meanshat <- intersect(
       data_param$meanshat_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
-    result <- fit@transformed_pars[names_meanshat]
+    result <- transformed_pars[names_meanshat]
 
   } else if(what %in% c("kappa", "kappas",
                         "unstandardized.thresholds",
@@ -122,27 +125,27 @@ latInspect.lcfa <- function(fit, what = "est") {
 
     names_kappa <- intersect(
       data_param$kappa_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
-    result <- fit@transformed_pars[names_kappa]
+    result <- transformed_pars[names_kappa]
 
   } else if(what %in% c("tauhat", "implied.thresholds",
                         "implied_thresholds")) {
 
     names_tauhat <- intersect(
       data_param$tauhat_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
-    result <- fit@transformed_pars[names_tauhat]
+    result <- transformed_pars[names_tauhat]
 
   } else if(what == "uniquenesses") {
 
     names_theta <- intersect(
       data_param$theta_group,
-      names(fit@transformed_pars)
+      names(transformed_pars)
     )
     result <- lapply(
-      fit@transformed_pars[names_theta],
+      transformed_pars[names_theta],
       FUN = diag
     )
 
@@ -196,32 +199,9 @@ latInspect.lcfa <- function(fit, what = "est") {
 
     result <- lcfa_fit_components(fit)
 
-  } else if(what %in% c("vcov", "covariance")) {
-
-    result <- tryCatch(
-      fit@Optim$SE$VCOV,
-      error = function(e) NULL
-    )
-
-    if(is.null(result)) {
-      stop("No variance-covariance matrix is stored in the fitted object.")
-    }
-
-  } else if(what %in% c("se", "standard.errors",
-                        "standard_errors")) {
-
-    result <- tryCatch(
-      fit@Optim$SE$se,
-      error = function(e) NULL
-    )
-
-    if(is.null(result)) {
-      stop("No standard errors are stored in the fitted object.")
-    }
-
   } else {
 
-    stop("Unknown request: ", what)
+    result <- latInspect.latent(fit, what = what, sort = sort)
 
   }
 
