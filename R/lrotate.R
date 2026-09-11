@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/09/2026
+# Modification date: 11/09/2026
 #'
 #' @title
 #' Rotate factor loading and covariance matrices
@@ -108,9 +108,23 @@
 #'
 #' With \code{projection = "poblq"}, either \code{constraints} or \code{oblique}
 #' must be supplied through \code{...}. The former uses arbitrary structural
-#' constraints, whereas the latter gives the sizes of consecutive oblique
-#' blocks; any remaining factors form one orthogonal block. They cannot be used
-#' together.
+#' constraints. A numeric \code{oblique} vector gives the sizes of consecutive
+#' oblique blocks. Alternatively, a list gives their explicit one-based factor
+#' positions, for example \code{list(c(1, 3, 5, 9), c(2, 4, 6, 7, 8))}.
+#' Blocks must be non-empty and disjoint; singleton blocks are allowed.
+#' Unlisted factors are mutually orthogonal and orthogonal to all listed blocks.
+#' The factor order, parameter labels, and target/weight indexing are unchanged.
+#' These constraints apply to \eqn{X^TX}; the formula for \eqn{\Psi_r} above
+#' remains unchanged when the input factor covariance is not the identity.
+#' \code{constraints} and \code{oblique} cannot be used together.
+#'
+#' A flat list of \code{oblique} position vectors specifies blocks shared by
+#' all groups, even when its length equals the number of groups. Group-specific
+#' blocks require an outer list with one block list per group, in input group
+#' order: for example \code{list(list(c(1, 3), c(2, 4)), list(1:2, 3:4))}.
+#' Previously used flat lists of group-specific block-size vectors must instead
+#' be expressed as nested lists of explicit positions. A numeric size vector
+#' shared by all groups retains its existing meaning.
 #'
 #' When \code{fit} is supplied, the returned object inherits from
 #' \code{"multistep"} and the fitted \code{lcfa} object is stored in
@@ -963,6 +977,48 @@ check_poblq_arguments_lrotate <- function(projection, dots) {
 
 }
 
+#### Function to check one group's oblique block specification ####
+
+check_oblique_lrotate <- function(oblique, q) {
+
+  if(is.numeric(oblique) && !is.complex(oblique) && is.null(dim(oblique))) {
+
+    if(length(oblique) == 0L || any(!is.finite(oblique)) ||
+       any(oblique < 1 | oblique != trunc(oblique)) || sum(oblique) > q) {
+      stop("oblique block sizes must be positive integers with sum <= ", q)
+    }
+
+  } else if(is.list(oblique) && !is.data.frame(oblique) && is.null(dim(oblique))) {
+
+    valid <- vapply(oblique, FUN = \(block) {
+      result <- is.numeric(block) && !is.complex(block) && is.null(dim(block)) &&
+        length(block) > 0L && all(is.finite(block)) &&
+        all(block >= 1 & block <= q & block == trunc(block))
+
+      #### Result ####
+
+      return(result)
+    }, FUN.VALUE = logical(1L))
+
+    if(length(oblique) == 0L || !all(valid)) {
+      stop("Each oblique block must contain integer factor positions between 1 and ", q)
+    }
+    if(anyDuplicated(unlist(oblique, use.names = FALSE))) {
+      stop("A factor cannot appear more than once within or across oblique blocks")
+    }
+
+  } else {
+
+    stop("oblique must be a numeric vector of block sizes or a list of factor-position vectors")
+
+  }
+
+  #### Result ####
+
+  return(oblique)
+
+}
+
 #### Function to create group-specific parameter-block names ####
 
 group_names_lrotate <- function(name, group_label) {
@@ -1708,6 +1764,7 @@ manifolds_lrotate <- function(dataList, data_param, dots) {
     manifold <- dataList$projection
 
     if(manifold == "poblq" && !is.null(extra$oblique)) {
+      extra$oblique <- check_oblique_lrotate(extra$oblique, q)
       manifold <- "poblq_blocks"
     }
 
@@ -1898,6 +1955,13 @@ group_dots_lrotate <- function(dots, group_index, ngroups) {
     object <- extra[[nm]]
 
     if(is.list(object) && !is.data.frame(object)) {
+
+      # A flat oblique list contains factor positions, not group entries.
+      # Group-specific blocks use an additional (outer) list level.
+      if(nm == "oblique" && !any(vapply(object, is.list, logical(1L)))) {
+        next
+      }
+
       if(length(object) != ngroups) {
         stop("Group-specific '", nm, "' must have one entry per group")
       }

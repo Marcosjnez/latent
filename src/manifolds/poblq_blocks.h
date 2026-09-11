@@ -1,38 +1,79 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 01/09/2026
+ * Modification date: 11/09/2026
  */
 
-arma::uvec check_poblq_blocks_oblique(SEXP oblique_input,
-                                      arma::uword p) {
+// Normalize block sizes or explicit one-based factor positions. The column
+// order is private to the manifold; public parameter coordinates never move.
+arma::uvec check_poblq_blocks_oblique(SEXP input, arma::uword p,
+                                      arma::uvec& column_order) {
 
-  Rcpp::NumericVector input(oblique_input);
+  const bool indexed = TYPEOF(input) == VECSXP;
 
-  if(input.size() == 0L) {
-    Rcpp::stop("The poblq_blocks manifold requires at least one oblique block.");
+  if((!indexed && TYPEOF(input) != INTSXP && TYPEOF(input) != REALSXP) ||
+     OBJECT(input) || !Rf_isNull(Rf_getAttrib(input, R_DimSymbol))) {
+    Rf_error("oblique must be a numeric vector of block sizes or a list of factor-position vectors.");
   }
 
-  arma::uvec oblique(input.size());
+  const R_xlen_t nblocks = Rf_xlength(input);
+  if(nblocks == 0L || nblocks > static_cast<R_xlen_t>(p)) {
+    Rf_error("The poblq_blocks manifold requires between 1 and p non-empty oblique blocks.");
+  }
+
+  arma::uvec oblique(nblocks);
+  column_order = arma::regspace<arma::uvec>(0L, p-1L);
+  arma::uvec used(p, arma::fill::zeros);
   arma::uword total = 0L;
 
-  for(R_xlen_t i=0L; i < input.size(); ++i) {
+  for(R_xlen_t i=0L; i < nblocks; ++i) {
 
-    double value = input[i];
+    if(!indexed) {
 
-    if(!std::isfinite(value) ||
-       value <= 0.00 ||
-       value != std::floor(value)) {
-      Rcpp::stop("The poblq_blocks oblique block sizes must be positive integers.");
+      double value = TYPEOF(input) == INTSXP ? INTEGER(input)[i] : REAL(input)[i];
+      if(!std::isfinite(value) || value < 1.00 || value != std::floor(value) ||
+         value > static_cast<double>(p-total)) {
+        Rf_error("The poblq_blocks block sizes must be positive integers with sum <= p.");
+      }
+      oblique[i] = static_cast<arma::uword>(value);
+      total += oblique[i];
+
+    } else {
+
+      SEXP block = VECTOR_ELT(input, i);
+      if((TYPEOF(block) != INTSXP && TYPEOF(block) != REALSXP) ||
+         OBJECT(block) || !Rf_isNull(Rf_getAttrib(block, R_DimSymbol))) {
+        Rf_error("Each oblique block must be a numeric vector of factor positions.");
+      }
+      const R_xlen_t size = Rf_xlength(block);
+      if(size == 0L || size > static_cast<R_xlen_t>(p-total)) {
+        Rf_error("Oblique blocks must be non-empty and contain at most p factors in total.");
+      }
+      oblique[i] = static_cast<arma::uword>(size);
+
+      for(R_xlen_t j=0L; j < size; ++j) {
+        double value = TYPEOF(block) == INTSXP ? INTEGER(block)[j] : REAL(block)[j];
+        if(!std::isfinite(value) || value < 1.00 || value > static_cast<double>(p) ||
+           value != std::floor(value)) {
+          Rf_error("Oblique factor positions must be integers between 1 and p.");
+        }
+        arma::uword column = static_cast<arma::uword>(value)-1L;
+        if(used[column]) {
+          Rf_error("A factor cannot appear more than once within or across oblique blocks.");
+        }
+        used[column] = 1L;
+        column_order[total++] = column;
+      }
+
     }
 
-    if(value > static_cast<double>(p-total)) {
-      Rcpp::stop("The poblq_blocks oblique block sizes cannot sum to more than p.");
+  }
+
+  if(indexed) {
+    // Unlisted factors retain their original order in the orthogonal block.
+    for(arma::uword j=0L; j < p; ++j) {
+      if(!used[j]) column_order[total++] = j;
     }
-
-    oblique[i] = static_cast<arma::uword>(value);
-    total += oblique[i];
-
   }
 
   return oblique;
@@ -68,7 +109,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
   if(X.n_rows == 0L ||
      X.n_rows != X.n_cols ||
      !X.is_finite()) {
-    Rcpp::stop("The poblq_blocks manifold requires a non-empty finite square matrix.");
+    Rf_error("The poblq_blocks manifold requires a non-empty finite square matrix.");
   }
 
   const arma::uword p = X.n_cols;
@@ -84,7 +125,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
     arma::rowvec norms = arma::sqrt(arma::sum(R % R, 0));
 
     if(!norms.is_finite() || arma::any(norms <= tolerance)) {
-      Rcpp::stop("The poblq_blocks retraction produced a zero column in an oblique block.");
+      Rf_error("The poblq_blocks retraction produced a zero column in an oblique block.");
     }
 
     R.each_row() /= norms;
@@ -94,7 +135,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
     bool inverted = arma::inv_sympd(gram_inverse, R.t()*R);
 
     if(!inverted || !gram_inverse.is_finite()) {
-      Rcpp::stop("The poblq_blocks retraction requires full-rank oblique blocks.");
+      Rf_error("The poblq_blocks retraction requires full-rank oblique blocks.");
     }
 
     projector += R*gram_inverse*R.t();
@@ -114,7 +155,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
        !eigval.is_finite() ||
        !eigvec.is_finite() ||
        eigval.min() <= tolerance*std::max(1.00, eigval.max())) {
-      Rcpp::stop("The poblq_blocks retraction requires a full-rank orthogonal block.");
+      Rf_error("The poblq_blocks retraction requires a full-rank orthogonal block.");
     }
 
     R *= eigvec*arma::diagmat(1.00/arma::sqrt(eigval))*eigvec.t();
@@ -123,7 +164,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
   }
 
   if(!result.is_finite()) {
-    Rcpp::stop("The poblq_blocks retraction produced non-finite values.");
+    Rf_error("The poblq_blocks retraction produced non-finite values.");
   }
 
   return result;
@@ -157,7 +198,7 @@ public:
 
     if(!denominator.is_finite() ||
        arma::any(arma::vectorise(denominator) <= tolerance)) {
-      Rcpp::stop("The poblq_blocks Sylvester equation is not uniquely defined.");
+      Rf_error("The poblq_blocks Sylvester equation is not uniquely defined.");
     }
 
     arma::mat solution =
@@ -166,7 +207,7 @@ public:
       right_vectors.t();
 
     if(!solution.is_finite()) {
-      Rcpp::stop("The poblq_blocks Sylvester equation could not be solved.");
+      Rf_error("The poblq_blocks Sylvester equation could not be solved.");
     }
 
     return solution;
@@ -272,7 +313,7 @@ public:
          !block_eigvec[i].is_finite() ||
          block_eigval[i].min() <=
          tolerance*std::max(1.00, block_eigval[i].max())) {
-        Rcpp::stop("The poblq_blocks projection requires full-rank oblique blocks.");
+        Rf_error("The poblq_blocks projection requires full-rank oblique blocks.");
       }
 
     }
@@ -314,19 +355,27 @@ public:
 
 poblq_blocks* choose_poblq_blocks(Rcpp::List manifold_setup) {
 
-  poblq_blocks* mymanifold = new poblq_blocks();
-
   arma::uvec indices = manifold_setup["indices"];
   std::size_t p = manifold_setup["p"];
 
   if(p == 0L) {
-    Rcpp::stop("The poblq_blocks manifold requires a positive p dimension.");
+    Rf_error("The poblq_blocks manifold requires a positive p dimension.");
   }
 
+  if(indices.n_elem != p*p) {
+    Rf_error("The poblq_blocks manifold requires p*p parameters.");
+  }
+
+  arma::uvec column_order;
   arma::uvec oblique = check_poblq_blocks_oblique(
-    manifold_setup["oblique"],
-    static_cast<arma::uword>(p)
+    manifold_setup["oblique"], static_cast<arma::uword>(p), column_order
   );
+
+  // Group columns only in the manifold's index map. All existing numerical
+  // methods (including inherited tangent/constraint derivatives) gather and
+  // scatter through these indices, so results retain their external order.
+  arma::umat index_matrix = arma::reshape(indices, p, p);
+  indices = arma::vectorise(index_matrix.cols(column_order));
   arma::mat constraints = poblq_blocks_constraints(
     oblique,
     static_cast<arma::uword>(p)
@@ -345,6 +394,8 @@ poblq_blocks* choose_poblq_blocks(Rcpp::List manifold_setup) {
     block_starts[i] = start;
     start += oblique[i];
   }
+
+  poblq_blocks* mymanifold = new poblq_blocks();
 
   mymanifold->indices = indices;
   mymanifold->constraints = constraints;
