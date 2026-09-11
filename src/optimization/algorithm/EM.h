@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 09/08/2026
+ * Modification date: 11/09/2026
  */
 
 // Expectation-Maximization:
@@ -69,7 +69,7 @@ optim_result em(arguments_optim x,
     // E step
     // ------------------------------------------------------------
 
-    // param() above calculated the current posterior probabilities.
+    // observed_F() above calculated the current posterior probabilities.
     // Freeze them throughout the following M step:
     final_estimator.E(x, xestimators);
 
