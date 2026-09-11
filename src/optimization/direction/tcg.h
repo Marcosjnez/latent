@@ -4,16 +4,20 @@
  * Modification date: 11/09/2026
  */
 
-// Conjugate-gradient method to solve the Riemannian Newton equation:
+#ifndef LATENT_NEWTON_TCG_H
+#define LATENT_NEWTON_TCG_H
+
+// Liu's CG subsolver: a bounded trust-region step or an unbounded Newton direction.
 
 void tcg(arguments_optim& x,
          std::vector<transformations*>& xtransforms,
          std::vector<manifolds*>& xmanifolds,
          std::vector<estimators*>& xestimators,
-         bool& att_bnd, arma::vec c, double rad) {
+         bool& att_bnd, const arma::vec& c, double rad,
+         bool constrained = true) {
 
   /*
-   * Truncated conjugate gradient sub-solver for the trust-region sub-problem
+   * Truncated conjugate gradient subsolver for both Newton variants
    * From Liu (Algorithm 4; 2020)
    */
 
@@ -22,6 +26,7 @@ void tcg(arguments_optim& x,
   product_estimator final_estimator;
 
   x.dir.zeros();
+  att_bnd = false;
   arma::vec dir0;
 
   double alpha, rr0, tau, beta, dHd;
@@ -32,12 +37,14 @@ void tcg(arguments_optim& x,
 
   int iter = 0;
 
-  // In x, g should be already computed
-  // final_estimator.param(x, xestimators); // Unnecessary
-  // final_estimator.G(x, xestimators); // Unnecessary
+  // Avoid the zero-gradient boundary equation (0/0) at a stationary point.
+  if(x.ng == 0.0) {
+    x.dparameters = x.dir;
+    return;
+  }
 
-  // final_manifold.param(x, xmanifolds); // Unnecessary
-  // final_estimator.param(x, xestimators); // Unnecessary
+  // The gradient is already available at the current point.
+
   final_transform.dtransform(x, xtransforms);
   final_estimator.dG(x, xestimators);
   final_transform.update_dgrad(x, xtransforms);
@@ -48,13 +55,27 @@ void tcg(arguments_optim& x,
 
     dHd = arma::accu(x.dparameters % x.dH);
 
+    if(!std::isfinite(dHd)) {
+      if(!constrained && iter == 0L) x.dir = -x.rg;
+      break;
+    }
+
     if(dHd <= 0) {
 
-      tau = root_quad(arma::accu(x.dparameters % x.dparameters),
-                      2 * arma::accu(x.dir % x.dparameters),
-                      arma::accu(x.dir % x.dir) - rad * rad); // Solve equation 39
-      x.dir += tau * x.dparameters;
-      att_bnd = true;
+      if(constrained) {
+
+        tau = root_quad(arma::accu(x.dparameters % x.dparameters),
+                        2 * arma::accu(x.dir % x.dparameters),
+                        arma::accu(x.dir % x.dir) - rad * rad);
+        x.dir += tau * x.dparameters;
+        att_bnd = true;
+
+      } else if(iter == 0L) {
+
+        // Liu's unbounded negative-curvature fallback.
+        x.dir = x.dparameters;
+
+      }
 
       break;
 
@@ -65,7 +86,7 @@ void tcg(arguments_optim& x,
     dir0 = x.dir;
     x.dir += alpha * x.dparameters; // update proposal
 
-    if (sqrt(arma::accu(x.dir % x.dir)) >= rad) {
+    if(constrained && sqrt(arma::accu(x.dir % x.dir)) >= rad) {
 
       tau = root_quad(arma::accu(x.dparameters % x.dparameters),
                       2 * arma::accu(dir0 % x.dparameters),
@@ -102,3 +123,17 @@ void tcg(arguments_optim& x,
   x.dparameters = x.dir;
 
 }
+
+// Unbounded CG for Newton with an Armijo or Wolfe line search.
+void tcg(arguments_optim& x,
+         std::vector<transformations*>& xtransforms,
+         std::vector<manifolds*>& xmanifolds,
+         std::vector<estimators*>& xestimators) {
+
+  bool att_bnd = false;
+  const arma::vec c = {1.0, 0.01};
+  tcg(x, xtransforms, xmanifolds, xestimators, att_bnd, c, 0.0, false);
+
+}
+
+#endif

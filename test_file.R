@@ -967,6 +967,7 @@ constraints <- matrix(0, nfactors, nfactors)
 constraints[1:2, 1:2] <- 1
 diag(constraints) <- 0
 
+set.seed(10)
 fit <- lefa(data = df,
             nfactors = nfactors,
             estimator = estimator,
@@ -980,16 +981,21 @@ fit <- lefa(data = df,
             # constraints = constraints,
             # oblique = c(2),
             control.efa = list(rstarts = 10L, se_method = "KKT", orth.lambda = TRUE),
-            control.rotation = list(rstarts = 10L, se_method = "KKT"),
+            control.rotation = list(rstarts = 10L, se_method = "KKT",
+                                    opt = "newton", step = "trust"),
             se = TRUE)
 # fit@Optim$SE$table_se
 # fit@modelInfo$param$lambda
 latInspect(fit, what = "est")
+latInspect(fit, what = "convergence")
+fit@Optim$iterations
+fit@Optim$elapsed
 
 fit_b <- bifactor::efast(as.matrix(df), nfactors = nfactors, estimator = estimator,
                          rotation = rotation, projection = projection,
                          oblq_factors = c(2),
                          gamma = 0, random_starts = 10L, cores = 1L)
+fit_b$elapsed/1e9
 fit@extra$efa@Optim$f
 fit_b$efa$f
 

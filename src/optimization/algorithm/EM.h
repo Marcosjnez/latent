@@ -23,7 +23,7 @@ optim_result moptim(arguments_optim x,
 
   } else if(x.mopt == "newton") {
 
-    return ntr(x, xtransforms, xmanifolds, xestimators);
+    return newton(x, xtransforms, xmanifolds, xestimators);
 
   } else {
 

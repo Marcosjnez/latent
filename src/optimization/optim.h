@@ -14,7 +14,7 @@ typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat,
 
 #include "algorithm/gradient_descent.h"
 #include "algorithm/lbfgs.h"
-#include "algorithm/newtonTR.h"
+#include "algorithm/newton.h"
 
 class optim {
 
@@ -66,9 +66,9 @@ public:
 
 };
 
-// Riemannian Newton Trust-Region:
+// Riemannian Newton-CG:
 
-class RNTR:public optim {
+class RNEWTON:public optim {
 
 public:
 
@@ -77,7 +77,7 @@ public:
                         std::vector<manifolds*>& xmanifolds,
                         std::vector<estimators*>& xestimators) {
 
-    return ntr(x, xtransforms, xmanifolds, xestimators);
+    return newton(x, xtransforms, xmanifolds, xestimators);
 
   }
 
@@ -255,69 +255,46 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
 
       if(TYPEOF(step) != STRSXP || Rf_xlength(step) != 1L ||
          STRING_ELT(step, 0L) == NA_STRING) {
-        Rf_error("control$step must be one of 'armijo', 'wolfe', or 'tcg'.");
+        Rf_error("control$step must be one of 'armijo', 'wolfe', or 'trust'.");
       }
 
-      x.step = Rcpp::as<std::string>(step);
+      x.step = CHAR(STRING_ELT(step, 0L));
       step_supplied = true;
 
     }
 
   }
 
-  // TCG is a trust-region subsolver, not a line search. Preserve Newton's
-  // existing subsolver when no explicit step-size method was requested.
+  // Preserve trust-region Newton when no explicit step method was requested.
   if(step_optimizer == "newton" && !step_supplied) {
-    x.step = "tcg";
+    x.step = "trust";
   }
 
+  if(x.step == "tcg") x.step = "trust"; // Backward-compatible control spelling.
   validate_stepsize(x.step, step_optimizer == "newton");
+
+  // Respect c1 for Newton line searches and for the optimizer inside EM, too.
+  if(control_optimizer.containsElementNamed("c1")) {
+    double c1 = control_optimizer["c1"];
+    x.c1 = c1;
+  } else if(x.optimizer == "grad" || x.optimizer == "lbfgs") {
+    x.c1 = 0.5;
+  }
 
   // Select the optimization algorithm and set defaults:
 
   optim* algorithm;
   if(x.optimizer == "grad") {
 
-    if(control_optimizer.containsElementNamed("c1")) {
-
-      double c1 = control_optimizer["c1"];
-      x.c1 = c1;
-
-    } else {
-
-      x.c1 = 0.5;
-
-    }
-
     algorithm = new RGD();
 
   } else if(x.optimizer == "lbfgs") {
-
-    if(control_optimizer.containsElementNamed("c1")) {
-
-      double c1 = control_optimizer["c1"];
-      x.c1 = c1;
-
-    } else {
-
-      // x.c1 = 10e-04;
-      x.c1 = 0.5;
-
-    }
 
     algorithm = new LBFGS();
 
   } else if(x.optimizer == "newton") {
 
-    algorithm = new RNTR();
-
-  // } else if(x.optimizer == "em") {
-  //
-  //   algorithm = new EM();
-  //
-  // } else if(x.optimizer == "em-lbfgs") {
-  //
-  //   algorithm = new EM();
+    algorithm = new RNEWTON();
 
   } else if(x.optimizer == "em") {
 
