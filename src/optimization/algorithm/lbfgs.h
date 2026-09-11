@@ -73,16 +73,9 @@ optim_result lbfgs(arguments_optim x,
       x.dir = -x.rg;
     }
 
-    // Start the L-BFGS line search with a safe parameter displacement:
-    x.ss = 1;
-    double max_dir = arma::abs(x.dir).max();
-    if(max_dir > 1.0) {
-      x.ss /= max_dir;
-    }
-
     step->update(x, xtransforms, xmanifolds, xestimators);
 
-    final_estimator.param(x, xestimators); // Necessary¿?
+    // final_estimator.param(x, xestimators); // Necessary¿?
     final_estimator.G(x, xestimators);
     final_transform.update_grad(x, xtransforms);
     // Refresh manifold parameters after the line-search retraction:

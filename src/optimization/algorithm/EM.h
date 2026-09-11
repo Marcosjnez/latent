@@ -82,13 +82,11 @@ optim_result em(arguments_optim x,
     // Use separate convergence controls for the numerical M step:
     x_mstep.maxit = x.mstep_maxit;
     x_mstep.eps = x.mstep_eps;
-
     x_mstep.iterations = 0L;
     x_mstep.convergence = false;
     // Avoid printing the inner iterations:
     x_mstep.print = false;
 
-    // optim_result mstep = lbfgs(x_mstep, xtransforms, xmanifolds, xestimators);
     optim_result mstep = moptim(x_mstep, xtransforms, xmanifolds, xestimators);
 
     // Retain the M-step parameter estimates:

@@ -45,12 +45,9 @@ optim_result gd(arguments_optim x,
 
   do {
 
-    // x.ss *= 2;
-
     step->update(x, xtransforms, xmanifolds, xestimators);
 
     // update gradient
-    // final_estimator.param(x, xestimators); // param() was called by the step-size method
     final_estimator.G(x, xestimators);
     final_transform.update_grad(x, xtransforms);
     // Riemannian gradient

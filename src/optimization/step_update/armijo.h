@@ -15,14 +15,6 @@ void armijo(arguments_optim& x,
   product_transform final_transform;
   product_estimator final_estimator;
 
-  if(!std::isfinite(x.c1) || x.c1 <= 0.0 || x.c1 >= 1.0 ||
-     !std::isfinite(x.c2) || x.c2 <= 0.0 || x.c2 >= 1.0 ||
-     !std::isfinite(x.step_eps) || x.step_eps < 0.0 ||
-     x.step_maxit < 1L) {
-    Rf_error("Armijo requires 0 < c1, c2 < 1, a finite nonnegative "
-               "step_eps, and step_maxit >= 1.");
-  }
-
   const double f0 = x.f;
   const arma::vec parameters = x.parameters;
   x.inprod = arma::dot(x.dir, x.rg);
@@ -46,6 +38,10 @@ void armijo(arguments_optim& x,
 
   // Retain the existing Armijo initial-step convention.
   x.ss = std::max(x.ss_min, x.ss * x.ss_fac);
+  double max_dir = arma::abs(x.dir).max();
+  if(max_dir > 1.0) {
+    x.ss = std::min(x.ss, 1.0/max_dir);
+  }
 
   if(!std::isfinite(x.ss) || x.ss <= 0.0) {
     Rf_error("Armijo requires a finite positive initial step size.");

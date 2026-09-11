@@ -15,13 +15,15 @@ void wolfe(arguments_optim& x,
   product_transform final_transform;
   product_estimator final_estimator;
 
-  // x.ss = std::max(x.ss_min, x.ss * x.ss_fac);
-  // x.ss = x.ss*2;
+  x.ss = 1;
+  double max_dir = arma::abs(x.dir).max();
+  if(max_dir > 1.0) {
+    x.ss /= max_dir;
+  }
+
   double f0 = x.f;
   arma::vec parameters = x.parameters;
   x.inprod = arma::dot(x.dir, x.rg);
-  // x.inprod = arma::dot(-x.dir, x.rg);
-  // x.inprod = arma::accu(x.dir % x.dir);
 
   x.step_iteration = 0L;
 
@@ -33,7 +35,6 @@ void wolfe(arguments_optim& x,
     // Projection onto the manifold
     final_manifold.param(x, xmanifolds);
     final_manifold.retr(x, xmanifolds);
-    // final_manifold.param(x, xmanifolds); // Unnecessary
     // Parameterization
     final_transform.transform(x, xtransforms);
     final_estimator.param(x, xestimators);
@@ -58,6 +59,5 @@ void wolfe(arguments_optim& x,
   if (x.ss < std::numeric_limits<double>::epsilon()) {
     x.ss = std::numeric_limits<double>::epsilon();
   }
-  // Rcpp::Rcout << "Armijo =" << iteration << std::endl;
 
 }
