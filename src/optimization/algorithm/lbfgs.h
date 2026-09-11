@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 24/08/2026
+ * Modification date: 11/09/2026
  */
 
 // L-BFGS algorithm:
@@ -11,27 +11,29 @@ optim_result lbfgs(arguments_optim x,
                    std::vector<manifolds*>& xmanifolds,
                    std::vector<estimators*>& xestimators) {
 
-  product_manifold* final_manifold;
-  product_transform* final_transform;
-  product_estimator* final_estimator;
+  product_manifold final_manifold;
+  product_transform final_transform;
+  product_estimator final_estimator;
+
+  std::unique_ptr<stepsize> step(choose_stepsize(x.step));
 
   // Ensure initial parameters are ok:
-  final_manifold->param(x, xmanifolds);
-  final_manifold->retr(x, xmanifolds);
-  final_manifold->param(x, xmanifolds);
-  final_transform->transform(x, xtransforms);
-  final_estimator->param(x, xestimators);
+  final_manifold.param(x, xmanifolds);
+  final_manifold.retr(x, xmanifolds);
+  final_manifold.param(x, xmanifolds);
+  final_transform.transform(x, xtransforms);
+  final_estimator.param(x, xestimators);
   x.iterations = 0L;
 
   // Parameterization
-  // final_estimator->param(x, xestimators);
-  final_estimator->F(x, xestimators);
+  // final_estimator.param(x, xestimators);
+  final_estimator.F(x, xestimators);
   // update the gradient
-  final_estimator->G(x, xestimators);
-  final_transform->update_grad(x, xtransforms);
+  final_estimator.G(x, xestimators);
+  final_transform.update_grad(x, xtransforms);
   // Riemannian gradient
-  // final_manifold->param(x, xmanifolds);
-  final_manifold->proj(x, xmanifolds);
+  // final_manifold.param(x, xmanifolds);
+  final_manifold.proj(x, xmanifolds);
   x.dir = -x.rg;
   x.inprod = arma::dot(-x.dir, x.rg);
   x.ng = sqrt(x.inprod);
@@ -78,15 +80,14 @@ optim_result lbfgs(arguments_optim x,
       x.ss /= max_dir;
     }
 
-    // armijo(x, final_manifold, final_estimator, xmanifolds, xestimators);
-    wolfe(x, xtransforms, xmanifolds, xestimators);
+    step->update(x, xtransforms, xmanifolds, xestimators);
 
-    final_estimator->param(x, xestimators); // Necessary¿?
-    final_estimator->G(x, xestimators);
-    final_transform->update_grad(x, xtransforms);
-    // After the retraction in armijo you need to param the manifolds:
-    final_manifold->param(x, xmanifolds);
-    final_manifold->proj(x, xmanifolds);
+    final_estimator.param(x, xestimators); // Necessary¿?
+    final_estimator.G(x, xestimators);
+    final_transform.update_grad(x, xtransforms);
+    // Refresh manifold parameters after the line-search retraction:
+    final_manifold.param(x, xmanifolds);
+    final_manifold.proj(x, xmanifolds);
 
     // Find a new direction:
     arma::vec q = arma::vectorise(x.rg);

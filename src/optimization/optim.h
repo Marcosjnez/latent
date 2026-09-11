@@ -1,15 +1,13 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/09/2026
+ * Modification date: 11/09/2026
  */
 
 #include <memory>
 #include "../component_cleanup.h"
 
-#include "step_update/armijo.h"
-#include "step_update/wolfe.h"
-#include "step_update/tcg.h"
+#include "stepsize.h"
 
 typedef std::tuple<arma::vec, arma::vec, double, int, bool, double, arma::mat,
                    arma::vec, arma::vec> optim_result;
@@ -123,7 +121,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
   if(x.transparam2param.n_elem != parameters.n_elem ||
      (x.transparam2param.n_elem > 0L &&
       x.transparam2param.max() >= transparameters.n_elem)) {
-    Rcpp::stop("The parameter vectors do not match transparam2param.");
+    Rf_error("The parameter vectors do not match transparam2param.");
   }
 
   x.transparameters(x.transparam2param) = x.parameters;
@@ -139,7 +137,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
     x.dparameters.zeros(x.nparam);
   }
   if(x.dparameters.n_elem != parameters.n_elem) {
-    Rcpp::stop("dparameters must have one element per free parameter.");
+    Rf_error("dparameters must have one element per free parameter.");
   }
 
   x.dtransparameters.set_size(x.ntransparam);
@@ -242,6 +240,39 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
     x.mopt = mopt;
   }
 
+  // Select the step-size method. EM uses the method of its M-step optimizer.
+  const std::string step_optimizer =
+    (x.optimizer == "em") ? x.mopt : x.optimizer;
+
+  x.step = "wolfe";
+  bool step_supplied = false;
+
+  if(control_optimizer.containsElementNamed("step")) {
+
+    SEXP step = control_optimizer["step"];
+
+    if(!Rf_isNull(step)) {
+
+      if(TYPEOF(step) != STRSXP || Rf_xlength(step) != 1L ||
+         STRING_ELT(step, 0L) == NA_STRING) {
+        Rf_error("control$step must be one of 'armijo', 'wolfe', or 'tcg'.");
+      }
+
+      x.step = Rcpp::as<std::string>(step);
+      step_supplied = true;
+
+    }
+
+  }
+
+  // TCG is a trust-region subsolver, not a line search. Preserve Newton's
+  // existing subsolver when no explicit step-size method was requested.
+  if(step_optimizer == "newton" && !step_supplied) {
+    x.step = "tcg";
+  }
+
+  validate_stepsize(x.step, step_optimizer == "newton");
+
   // Select the optimization algorithm and set defaults:
 
   optim* algorithm;
@@ -327,7 +358,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::S4 fit,
   arma::vec transparameters_init = initial[0];
 
   if(transparameters.n_elem != transparameters_init.n_elem) {
-    Rcpp::stop("Optim$transparameters does not match the model coordinates.");
+    Rf_error("Optim$transparameters does not match the model coordinates.");
   }
 
   // Recompute outputs from their original seeds, not their fitted values.

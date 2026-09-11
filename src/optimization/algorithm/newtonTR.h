@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2026
+ * Modification date: 11/09/2026
  */
 
 // Newton Trust-region algorithm:
@@ -11,23 +11,25 @@ optim_result ntr(arguments_optim x,
                  std::vector<manifolds*>& xmanifolds,
                  std::vector<estimators*>& xestimators) {
 
-  product_manifold* final_manifold;
-  product_transform* final_transform;
-  product_estimator* final_estimator;
+  product_manifold final_manifold;
+  product_transform final_transform;
+  product_estimator final_estimator;
+
+  std::unique_ptr<stepsize> step(choose_stepsize(x.step, true));
 
   // Ensure initial parameters are ok:
-  final_manifold->param(x, xmanifolds);
-  final_manifold->retr(x, xmanifolds);
-  final_transform->transform(x, xtransforms);
-  final_estimator->param(x, xestimators);
+  final_manifold.param(x, xmanifolds);
+  final_manifold.retr(x, xmanifolds);
+  final_transform.transform(x, xtransforms);
+  final_estimator.param(x, xestimators);
 
   // Objective
-  final_estimator->F(x, xestimators);
+  final_estimator.F(x, xestimators);
   // Gradient
-  final_estimator->G(x, xestimators);
-  final_transform->update_grad(x, xtransforms);
+  final_estimator.G(x, xestimators);
+  final_transform.update_grad(x, xtransforms);
   // Riemannian gradient
-  final_manifold->proj(x, xmanifolds);
+  final_manifold.proj(x, xmanifolds);
 
   /*
    * Riemannian newton trust-region algorithm
@@ -65,27 +67,28 @@ optim_result ntr(arguments_optim x,
   do {
 
     // subsolver
-    tcg(x, xtransforms, xmanifolds, xestimators, att_bnd, c, rad); // Update x.dparameters, x.dg, and x.dH
+    step->update(x, xtransforms, xmanifolds, xestimators,
+                   att_bnd, c, rad); // Update x.dparameters, x.dg, and x.dH
 
-    final_transform->dtransform(x, xtransforms);
-    final_estimator->dG(x, xestimators);
-    final_transform->update_dgrad(x, xtransforms);
-    final_manifold->param(x, xmanifolds);
-    final_manifold->proj(x, xmanifolds); // REMOVE
-    final_manifold->hess(x, xmanifolds);
+    final_transform.dtransform(x, xtransforms);
+    final_estimator.dG(x, xestimators);
+    final_transform.update_dgrad(x, xtransforms);
+    final_manifold.param(x, xmanifolds);
+    final_manifold.proj(x, xmanifolds); // REMOVE
+    final_manifold.hess(x, xmanifolds);
 
     preddiff = - arma::accu(x.dparameters % ( x.rg + 0.5 * x.dH) );
 
     arguments_optim new_x = x;
     new_x.parameters += x.dir;
     // Projection onto the manifold
-    final_manifold->param(new_x, xmanifolds);
-    final_manifold->retr(new_x, xmanifolds);
-    final_manifold->param(new_x, xmanifolds);
+    final_manifold.param(new_x, xmanifolds);
+    final_manifold.retr(new_x, xmanifolds);
+    final_manifold.param(new_x, xmanifolds);
     // Parameterization
-    final_transform->transform(new_x, xtransforms);
-    final_estimator->param(new_x, xestimators);
-    final_estimator->F(new_x, xestimators);
+    final_transform.transform(new_x, xtransforms);
+    final_estimator.param(new_x, xestimators);
+    final_estimator.F(new_x, xestimators);
 
     x.df = x.f - new_x.f; // New stopping criteria
 
@@ -115,10 +118,10 @@ optim_result ntr(arguments_optim x,
       x = new_x;
 
       // update gradient
-      final_estimator->G(x, xestimators);
-      final_transform->update_grad(x, xtransforms);
+      final_estimator.G(x, xestimators);
+      final_transform.update_grad(x, xtransforms);
       // Riemannian gradient
-      final_manifold->proj(x, xmanifolds);
+      final_manifold.proj(x, xmanifolds);
 
       // x.inprod = arma::accu(arma::abs(x.dir % x.rg));
       // x.inprod = arma::accu(x.dir % x.dir);

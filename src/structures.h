@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 24/08/2026
+ * Modification date: 11/09/2026
  */
 
 #include <tuple>
@@ -31,6 +31,7 @@ struct arguments_optim{
   arma::vec dir = {1};
 
   std::string search = "back";
+  std::string step = "wolfe";
   bool convergence = false;
   arma::vec parameters, dparameters, g, dg, rg, drg, dH;
   arma::vec transparameters, transparameters_init, dtransparameters, grad,

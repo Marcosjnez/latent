@@ -37,9 +37,11 @@ fit <- lca(data = gss82,
            # start = start,
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
-           # control = list(opt = "em", rstarts = 30, cores = 30,
-           #                maxit = 50L, eps = 1e-05, step_maxit = 30L,
-           #                mopt = "grad", mstep_maxit = 20L, mstep_eps = 1e-05),
+           # control = list(opt = "lbfgs", step = "armijo",
+           #                rstarts = 30, cores = 30),
+           control = list(opt = "em", rstarts = 30, cores = 30, step = "armijo",
+                          maxit = 50L, eps = 1e-05, step_maxit = 30L,
+                          mopt = "grad", mstep_maxit = 1L, mstep_eps = 1e-05),
            do.fit = TRUE)
 latInspect(fit, what = "loglik")
 latInspect(fit, what = "convergence")

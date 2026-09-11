@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2026
+ * Modification date: 11/09/2026
  */
 
 // Conjugate-gradient method to solve the Riemannian Newton equation:
@@ -17,9 +17,9 @@ void tcg(arguments_optim& x,
    * From Liu (Algorithm 4; 2020)
    */
 
-  product_manifold* final_manifold;
-  product_transform* final_transform;
-  product_estimator* final_estimator;
+  product_manifold final_manifold;
+  product_transform final_transform;
+  product_estimator final_estimator;
 
   x.dir.zeros();
   arma::vec dir0;
@@ -33,16 +33,16 @@ void tcg(arguments_optim& x,
   int iter = 0;
 
   // In x, g should be already computed
-  // final_estimator->param(x, xestimators); // Unnecessary
-  // final_estimator->G(x, xestimators); // Unnecessary
+  // final_estimator.param(x, xestimators); // Unnecessary
+  // final_estimator.G(x, xestimators); // Unnecessary
 
-  // final_manifold->param(x, xmanifolds); // Unnecessary
-  // final_estimator->param(x, xestimators); // Unnecessary
-  final_transform->dtransform(x, xtransforms);
-  final_estimator->dG(x, xestimators);
-  final_transform->update_dgrad(x, xtransforms);
-  final_manifold->param(x, xmanifolds);
-  final_manifold->hess(x, xmanifolds);
+  // final_manifold.param(x, xmanifolds); // Unnecessary
+  // final_estimator.param(x, xestimators); // Unnecessary
+  final_transform.dtransform(x, xtransforms);
+  final_estimator.dG(x, xestimators);
+  final_transform.update_dgrad(x, xtransforms);
+  final_manifold.param(x, xmanifolds);
+  final_manifold.hess(x, xmanifolds);
 
   do {
 
@@ -91,11 +91,11 @@ void tcg(arguments_optim& x,
     x.dparameters = r + beta * x.dparameters;
     iter += 1;
 
-    final_transform->dtransform(x, xtransforms);
-    final_estimator->dG(x, xestimators);
-    final_transform->update_dgrad(x, xtransforms);
-    final_manifold->param(x, xmanifolds);
-    final_manifold->hess(x, xmanifolds);
+    final_transform.dtransform(x, xtransforms);
+    final_estimator.dG(x, xestimators);
+    final_transform.update_dgrad(x, xtransforms);
+    final_manifold.param(x, xmanifolds);
+    final_manifold.hess(x, xmanifolds);
 
   } while (iter < x.tcg_maxit);
 

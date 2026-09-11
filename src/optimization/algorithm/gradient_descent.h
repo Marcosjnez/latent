@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 13/07/2026
+ * Modification date: 11/09/2026
  */
 
 // Gradient descent algorithm:
@@ -11,16 +11,18 @@ optim_result gd(arguments_optim x,
                 std::vector<manifolds*>& xmanifolds,
                 std::vector<estimators*>& xestimators) {
 
-  product_manifold* final_manifold;
-  product_transform* final_transform;
-  product_estimator* final_estimator;
+  product_manifold final_manifold;
+  product_transform final_transform;
+  product_estimator final_estimator;
+
+  std::unique_ptr<stepsize> step(choose_stepsize(x.step));
 
   // Ensure initial parameters are ok:
-  final_manifold->param(x, xmanifolds);
-  final_manifold->retr(x, xmanifolds);
-  final_manifold->param(x, xmanifolds);
-  final_transform->transform(x, xtransforms);
-  final_estimator->param(x, xestimators);
+  final_manifold.param(x, xmanifolds);
+  final_manifold.retr(x, xmanifolds);
+  final_manifold.param(x, xmanifolds);
+  final_transform.transform(x, xtransforms);
+  final_estimator.param(x, xestimators);
 
   // double ss_fac = 2, ss_min = 0.1;
   // x.c1 = 0.5; x.c2 = 0.5;
@@ -28,14 +30,14 @@ optim_result gd(arguments_optim x,
 
   // Parameterization
 
-  // final_estimator->param(x, xestimators);
-  final_estimator->F(x, xestimators);
+  // final_estimator.param(x, xestimators);
+  final_estimator.F(x, xestimators);
   // update gradient
-  final_estimator->G(x, xestimators);
-  final_transform->update_grad(x, xtransforms);
+  final_estimator.G(x, xestimators);
+  final_transform.update_grad(x, xtransforms);
   // Riemannian gradient
-  // final_manifold->param(x, xmanifolds);
-  final_manifold->proj(x, xmanifolds);
+  // final_manifold.param(x, xmanifolds);
+  final_manifold.proj(x, xmanifolds);
 
   x.dir = -x.rg;
   x.inprod = arma::accu(-x.dir % x.rg);
@@ -45,16 +47,15 @@ optim_result gd(arguments_optim x,
 
     // x.ss *= 2;
 
-    // armijo(x, final_manifold, final_estimator, xmanifolds, xestimators);
-    wolfe(x, xtransforms, xmanifolds, xestimators);
+    step->update(x, xtransforms, xmanifolds, xestimators);
 
     // update gradient
-    // final_estimator->param(x, xestimators); // param() was called in armijo
-    final_estimator->G(x, xestimators);
-    final_transform->update_grad(x, xtransforms);
+    // final_estimator.param(x, xestimators); // param() was called by the step-size method
+    final_estimator.G(x, xestimators);
+    final_transform.update_grad(x, xtransforms);
     // Riemannian gradient
-    final_manifold->param(x, xmanifolds);
-    final_manifold->proj(x, xmanifolds);
+    final_manifold.param(x, xmanifolds);
+    final_manifold.proj(x, xmanifolds);
 
     x.dir = -x.rg;
     x.inprod = arma::accu(-x.dir % x.rg);
