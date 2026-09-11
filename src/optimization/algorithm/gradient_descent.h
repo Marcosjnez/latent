@@ -24,19 +24,13 @@ optim_result gd(arguments_optim x,
   final_transform.transform(x, xtransforms);
   final_estimator.param(x, xestimators);
 
-  // double ss_fac = 2, ss_min = 0.1;
-  // x.c1 = 0.5; x.c2 = 0.5;
-  // x.step_maxit = 10L;
-
   // Parameterization
 
-  // final_estimator.param(x, xestimators);
   final_estimator.F(x, xestimators);
   // update gradient
   final_estimator.G(x, xestimators);
   final_transform.update_grad(x, xtransforms);
   // Riemannian gradient
-  // final_manifold.param(x, xmanifolds);
   final_manifold.proj(x, xmanifolds);
 
   x.dir = -x.rg;

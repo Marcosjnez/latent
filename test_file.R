@@ -37,12 +37,12 @@ fit <- lca(data = gss82,
            # start = start,
            penalties = list(class = list(alpha=1),
                             prob  = list(alpha=0)),
-           # control = list(opt = "lbfgs", step = "wolfe",
-           #                rstarts = 30, cores = 30),
-           control = list(opt = "em", maxit = 50L, eps = 1e-05,
-                          mopt = "grad", mstep_maxit = 1L, mstep_eps = 1e-05,
-                          step = "armijo", step_maxit = 30L,
+           control = list(opt = "lbfgs", step = "armijo",
                           rstarts = 30, cores = 30),
+           # control = list(opt = "em", maxit = 50L, eps = 1e-05,
+           #                mopt = "grad", mstep_maxit = 1L, mstep_eps = 1e-05,
+           #                step = "armijo", step_maxit = 30L,
+           #                rstarts = 30, cores = 30),
            do.fit = TRUE)
 latInspect(fit, what = "loglik")
 latInspect(fit, what = "convergence")
@@ -287,7 +287,10 @@ fit <- lcfa(model = model,
             meanstructure = meanstructure,
             likelihood = likelihood,
             se = "standard",
+            # control = list(opt = "lbfgs", step = "armijo"),
             do.fit = TRUE)
+latInspect(fit, what = "convergence")
+fit@Optim$elapsed
 
 # fit@modelInfo$param
 

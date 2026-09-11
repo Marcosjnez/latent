@@ -199,6 +199,21 @@ latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
 
     result <- lcfa_fit_components(fit)
 
+  } else if(what == "convergence") {
+
+    result <- data.frame(Iterations = fit@Optim$iterations,
+                         convergence = fit@Optim$convergence,
+                         grad.norm = fit@Optim$ng)
+
+  } else if(what == "gradient") {
+
+    gradient_info <- data.frame(name = fit@modelInfo$parameters_labels,
+                                gradient = fit@Optim$g,
+                                rgradient = fit@Optim$rg,
+                                dir = fit@Optim$dir)
+
+    result <- list(grad.norm = fit@Optim$ng, gradient.info = gradient_info)
+
   } else {
 
     result <- latInspect.latent(fit, what = what, sort = sort)
