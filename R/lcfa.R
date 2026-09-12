@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/09/2026
+# Modification date: 13/09/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -83,11 +83,12 @@
 #' modify the fitted object or its standard-error calculations.
 #'
 #' The model-implied observed means are computed as
-#' \deqn{\widehat{\mu}=\nu+\Lambda\alpha,}
-#' where \eqn{\nu} contains observed-variable intercepts and \eqn{\alpha}
-#' contains latent-factor means. For ordinal models, standardized model
-#' thresholds are computed from the unstandardized thresholds, model-implied
-#' means, and model-implied variances.
+#' \deqn{\widehat{\mu}_y=\nu+\Lambda\mu_\eta,}
+#' where \eqn{\nu} contains observed-variable intercepts and \eqn{\mu_\eta}
+#' contains latent-factor means. In CFA, \eqn{\mu_\eta=\alpha}, where
+#' \eqn{\alpha} contains latent-factor intercepts. For ordinal models,
+#' standardized model thresholds are computed from the unstandardized
+#' thresholds, model-implied means, and model-implied variances.
 #'
 #' Direct FIML creates one likelihood contribution for every missingness
 #' pattern and substantive group. Saturated-moment FIML instead stores one
@@ -2183,6 +2184,7 @@ create_lcfa_data_param <- function(dataList, control) {
 
   lambda_group <- paste("lambda", dataList$group_label, sep = sep)
   alpha_group <- paste("alpha", dataList$group_label, sep = sep)
+  mu_group <- paste("mu", dataList$group_label, sep = sep)
   psi_group <- paste("psi", dataList$group_label, sep = sep)
   theta_group <- paste("theta", dataList$group_label, sep = sep)
   logvars_group <- paste("logvars", dataList$group_label, sep = sep)
@@ -2414,6 +2416,7 @@ create_lcfa_data_param <- function(dataList, control) {
 
   result <- list(lambda_group = lambda_group,
                  alpha_group = alpha_group,
+                 mu_group = mu_group,
                  theta_group = theta_group,
                  logvars_group = logvars_group,
                  psi_group = psi_group,
@@ -2468,6 +2471,13 @@ model_lcfa <- function(dataList, data_param, control) {
                              dim = c(q, 1L),
                              rownames = factors,
                              colnames = "intrcp")
+    k <- k+1L
+
+    list_struct[[k]] <- list(name = mu_group[i],
+                             type = "matrix",
+                             dim = c(q, 1L),
+                             rownames = factors,
+                             colnames = "mean")
     k <- k+1L
 
     if(dataList$positive) {
@@ -2739,7 +2749,7 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
       param[M_group[[i]]] <- means_params[[i]][M_group[[i]]]
     }
 
-    #### Observed intercepts and latent means ####
+    #### Observed and latent intercepts ####
 
     if(!control$meanstructure && !fiml_missing) {
 
@@ -2949,7 +2959,7 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
       }
 
-      #### Observed intercepts and latent means ####
+      #### Observed and latent intercepts ####
 
       if(dataList$cor == "pearson") {
 
@@ -3210,12 +3220,19 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
                                          q = dataList$nfactors[[i]]))
     k <- k+1L
 
+    #### Latent means ####
+
+    transforms[[k]] <- list(transform = "identity",
+                            parameters_in = alpha_group[i],
+                            parameters_out = mu_group[i])
+    k <- k+1L
+
     #### Model-implied observed means ####
 
-    transforms[[k]] <- list(transform = "cfa_means_model",
+    transforms[[k]] <- list(transform = "sem_means_model",
                             parameters_in = c(nu_group[i],
                                               lambda_group[i],
-                                              alpha_group[i]),
+                                              mu_group[i]),
                             parameters_out = meanshat_group[i],
                             extra = list(p = dataList$nitems[[i]],
                                          q = dataList$nfactors[[i]]))

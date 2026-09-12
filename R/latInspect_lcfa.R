@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/09/2026
+# Modification date: 13/09/2026
 #'
 #' Inspect Fitted CFA Objects
 #'
@@ -93,14 +93,24 @@ latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
     )
     result <- transformed_pars[names_theta]
 
-  } else if(what %in% c("alpha", "latent.means",
-                        "latent_means")) {
+  } else if(what == "alpha") {
 
     names_alpha <- intersect(
       data_param$alpha_group,
       names(transformed_pars)
     )
     result <- transformed_pars[names_alpha]
+
+  } else if(what %in% c("mu", "latent.means",
+                        "latent_means")) {
+
+    mu_group <- data_param$mu_group
+    if(is.null(mu_group)) mu_group <- data_param$alpha_group
+    names_mu <- intersect(
+      mu_group,
+      names(transformed_pars)
+    )
+    result <- transformed_pars[names_mu]
 
   } else if(what %in% c("nu", "intercepts")) {
 

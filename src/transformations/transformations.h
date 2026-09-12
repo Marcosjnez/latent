@@ -45,7 +45,6 @@ public:
 #include "column_space.h"
 #include "sem_cov_model.h"
 #include "sem_means_model.h"
-#include "cfa_means_model.h"
 #include "inverse_of_I_minusX.h"
 #include "tau_param.h"
 #include "matrix_inverse.h"
@@ -79,7 +78,6 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "column_space",    choose_column_space    },
   { "sem_cov_model",   choose_sem_cov_model   },
   { "sem_means_model", choose_sem_means_model },
-  { "cfa_means_model", choose_cfa_means_model },
   { "tau_param",       choose_tau_param       },
   { "matrix_inverse",  choose_matrix_inverse  },
   { "XY",              choose_XY              },

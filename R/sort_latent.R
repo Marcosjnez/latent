@@ -1,5 +1,5 @@
 # Author: Marcos Jimenez
-# Modification date: 10/09/2026
+# Modification date: 13/09/2026
 
 #' Sorted Parameter Structures for Inspection
 #'
@@ -113,6 +113,7 @@ sort_latent <- function(fit) {
       lambda_name <- data_param$lambda_group[i]
       psi_name <- data_param$psi_group[i]
       alpha_name <- data_param$alpha_group[i]
+      mu_name <- data_param$mu_group[i]
       lambda <- fit@transformed_pars[[lambda_name]]
       psi <- fit@transformed_pars[[psi_name]]
       q <- ncol(lambda)
@@ -132,14 +133,23 @@ sort_latent <- function(fit) {
       orderings[[i]] <- index
       X_name <- if(rotation) data_param$X_group[i] else data_param$xpsi_group[i]
       Xinv_name <- if(rotation) data_param$Xinv_group[i] else character(0L)
-      blocks <- intersect(c(lambda_name, psi_name, alpha_name, X_name, Xinv_name),
-                           names(result$transformed_pars))
+      blocks <- intersect(c(lambda_name, psi_name, alpha_name, mu_name,
+                            X_name, Xinv_name),
+                          names(result$transformed_pars))
 
       for(nm in blocks) {
         x <- result$transformed_pars[[nm]]
-        rows <- if(nm %in% c(psi_name, alpha_name, Xinv_name)) index else seq_len(nrow(x))
+        rows <- if(nm %in% c(psi_name, alpha_name, mu_name, Xinv_name)) {
+          index
+        } else {
+          seq_len(nrow(x))
+        }
         columns <- if(nm %in% c(lambda_name, psi_name, X_name)) index else seq_len(ncol(x))
-        row_sign <- if(nm %in% c(psi_name, alpha_name, Xinv_name)) direction else rep(1, length(rows))
+        row_sign <- if(nm %in% c(psi_name, alpha_name, mu_name, Xinv_name)) {
+          direction
+        } else {
+          rep(1, length(rows))
+        }
         column_sign <- if(nm %in% c(lambda_name, psi_name, X_name)) direction else rep(1, length(columns))
         multiplier <- outer(row_sign, column_sign)
         signs[[nm]] <- multiplier

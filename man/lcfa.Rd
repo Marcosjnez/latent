@@ -110,11 +110,12 @@ available only through \code{latInspect(fit, sort = TRUE)} and does not
 modify the fitted object or its standard-error calculations.
 
 The model-implied observed means are computed as
-\deqn{\widehat{\mu}=\nu+\Lambda\alpha,}
-where \eqn{\nu} contains observed-variable intercepts and \eqn{\alpha}
-contains latent-factor means. For ordinal models, standardized model
-thresholds are computed from the unstandardized thresholds, model-implied
-means, and model-implied variances.
+\deqn{\widehat{\mu}_y=\nu+\Lambda\mu_\eta,}
+where \eqn{\nu} contains observed-variable intercepts and \eqn{\mu_\eta}
+contains latent-factor means. In CFA, \eqn{\mu_\eta=\alpha}, where
+\eqn{\alpha} contains latent-factor intercepts. For ordinal models,
+standardized model thresholds are computed from the unstandardized
+thresholds, model-implied means, and model-implied variances.
 
 Direct FIML creates one likelihood contribution for every missingness
 pattern and substantive group. Saturated-moment FIML instead stores one

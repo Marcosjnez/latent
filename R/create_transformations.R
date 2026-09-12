@@ -40,7 +40,6 @@ create_transforms <- function(transforms, structures) {
       logarithm = character(0L),
       identity = character(0L),
       sem_cov_model = c("p", "q"),
-      cfa_means_model = c("p", "q"),
       sem_cov_model = c("p", "q"),
       sem_means_model = c("p", "q"),
       tau_param = c("p", "threshold_items"),
