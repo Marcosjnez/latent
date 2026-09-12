@@ -138,9 +138,23 @@ computed as \\X^TX\\.
 
 With `projection = "poblq"`, either `constraints` or `oblique` must be
 supplied through `...`. The former uses arbitrary structural
-constraints, whereas the latter gives the sizes of consecutive oblique
-blocks; any remaining factors form one orthogonal block. They cannot be
-used together.
+constraints. A numeric `oblique` vector gives the sizes of consecutive
+oblique blocks. Alternatively, a list gives their explicit one-based
+factor positions, for example `list(c(1, 3, 5, 9), c(2, 4, 6, 7, 8))`.
+Blocks must be non-empty and disjoint; singleton blocks are allowed.
+Unlisted factors are mutually orthogonal and orthogonal to all listed
+blocks. The factor order, parameter labels, and target/weight indexing
+are unchanged. These constraints apply to \\X^TX\\; the formula for
+\\\Psi_r\\ above remains unchanged when the input factor covariance is
+not the identity. `constraints` and `oblique` cannot be used together.
+
+A flat list of `oblique` position vectors specifies blocks shared by all
+groups, even when its length equals the number of groups. Group-specific
+blocks require an outer list with one block list per group, in input
+group order: for example `list(list(c(1, 3), c(2, 4)), list(1:2, 3:4))`.
+Previously used flat lists of group-specific block-size vectors must
+instead be expressed as nested lists of explicit positions. A numeric
+size vector shared by all groups retains its existing meaning.
 
 When `fit` is supplied, the returned object inherits from `"multistep"`
 and the fitted `lcfa` object is stored in `extra`. When matrices are
