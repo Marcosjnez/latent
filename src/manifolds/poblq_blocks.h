@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 11/09/2026
+ * Modification date: 13/09/2026
  */
 
 // Normalize block sizes or explicit one-based factor positions. The column
@@ -12,7 +12,7 @@ arma::uvec check_poblq_blocks_oblique(SEXP input, arma::uword p,
   const bool indexed = TYPEOF(input) == VECSXP;
 
   if((!indexed && TYPEOF(input) != INTSXP && TYPEOF(input) != REALSXP) ||
-     OBJECT(input) || !Rf_isNull(Rf_getAttrib(input, R_DimSymbol))) {
+     Rf_isObject(input) || !Rf_isNull(Rf_getAttrib(input, R_DimSymbol))) {
     Rf_error("oblique must be a numeric vector of block sizes or a list of factor-position vectors.");
   }
 
@@ -42,7 +42,7 @@ arma::uvec check_poblq_blocks_oblique(SEXP input, arma::uword p,
 
       SEXP block = VECTOR_ELT(input, i);
       if((TYPEOF(block) != INTSXP && TYPEOF(block) != REALSXP) ||
-         OBJECT(block) || !Rf_isNull(Rf_getAttrib(block, R_DimSymbol))) {
+         Rf_isObject(block) || !Rf_isNull(Rf_getAttrib(block, R_DimSymbol))) {
         Rf_error("Each oblique block must be a numeric vector of factor positions.");
       }
       const R_xlen_t size = Rf_xlength(block);
