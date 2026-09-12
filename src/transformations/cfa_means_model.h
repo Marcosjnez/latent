@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 22/08/2026
+ * Modification date: 12/09/2026
  */
 
 /*
@@ -15,7 +15,7 @@
  * meanshat : p model-implied observed means
  */
 
-class meanstructure: public transformations {
+class cfa_means_model: public transformations {
 
 public:
 
@@ -30,7 +30,7 @@ public:
     lambda = arma::reshape(x.transparameters.elem(indices_lambda), p, q);
     alpha = x.transparameters.elem(indices_alpha);
 
-    meanshat = nu+lambda*alpha;
+    meanshat = nu + lambda * alpha;
     x.transparameters.elem(indices_out) = meanshat;
 
   }
@@ -117,9 +117,9 @@ public:
 
 };
 
-meanstructure* choose_meanstructure(const Rcpp::List& trans_setup) {
+cfa_means_model* choose_cfa_means_model(const Rcpp::List& trans_setup) {
 
-  meanstructure* mytrans = new meanstructure();
+  cfa_means_model* mytrans = new cfa_means_model();
 
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
@@ -127,11 +127,11 @@ meanstructure* choose_meanstructure(const Rcpp::List& trans_setup) {
   int q = trans_setup["q"];
 
   if(p < 1 || q < 1) {
-    Rcpp::stop("meanstructure requires positive p and q dimensions.");
+    Rcpp::stop("cfa_means_model requires positive p and q dimensions.");
   }
 
   if(indices_in.size() != 3L || indices_out.size() != 1L) {
-    Rcpp::stop("meanstructure requires nu, lambda, and alpha inputs and one meanshat output.");
+    Rcpp::stop("cfa_means_model requires nu, lambda, and alpha inputs and one meanshat output.");
   }
 
   arma::uvec indices_nu = indices_in[0];
@@ -143,7 +143,7 @@ meanstructure* choose_meanstructure(const Rcpp::List& trans_setup) {
      indices_lambda.n_elem != static_cast<arma::uword>(p*q) ||
      indices_alpha.n_elem != static_cast<arma::uword>(q) ||
      indices_meanshat.n_elem != static_cast<arma::uword>(p)) {
-    Rcpp::stop("The meanstructure parameter indices have incompatible dimensions.");
+    Rcpp::stop("The cfa_means_model parameter indices have incompatible dimensions.");
   }
 
   mytrans->indices_nu = indices_nu;

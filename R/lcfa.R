@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/09/2026
+# Modification date: 12/09/2026
 #'
 #' Confirmatory Factor Analysis
 #'
@@ -3201,7 +3201,7 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
 
     #### Model-implied covariance matrix ####
 
-    transforms[[k]] <- list(transform = "factor_cor",
+    transforms[[k]] <- list(transform = "sem_cov_model",
                             parameters_in = c(lambda_group[i],
                                               psi_group[i],
                                               theta_group[i]),
@@ -3212,7 +3212,7 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
 
     #### Model-implied observed means ####
 
-    transforms[[k]] <- list(transform = "meanstructure",
+    transforms[[k]] <- list(transform = "cfa_means_model",
                             parameters_in = c(nu_group[i],
                                               lambda_group[i],
                                               alpha_group[i]),

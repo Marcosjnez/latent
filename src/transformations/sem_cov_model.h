@@ -1,12 +1,12 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/09/2026
+ * Modification date: 12/09/2026
  */
 
-// factor_cor transformation:
+// sem_cov_model transformation:
 
-class factor_cor:public transformations {
+class sem_cov_model:public transformations {
 
 public:
 
@@ -14,8 +14,8 @@ public:
   int p, q;
   arma::uvec indices_lambda, indices_psi, indices_theta,
   diag_psi, diag_theta, lower_psi, lower_theta, lower_diag;
-  arma::mat R, Rhat, lambda, psi, theta, lambda_psi, glambda, gpsi, gtheta,
-  dlambda, dglambda, dpsi, dRhat, dgpsi, dtheta, dgtheta, grad_out;
+  arma::mat R, Shat, lambda, psi, theta, lambda_psi, glambda, gpsi, gtheta,
+  dlambda, dglambda, dpsi, dShat, dgpsi, dtheta, dgtheta, grad_out;
 
   void transform(arguments_optim& x) {
 
@@ -23,8 +23,8 @@ public:
     psi = arma::reshape(x.transparameters(indices_psi), q, q);
     theta = arma::reshape(x.transparameters(indices_theta), p, p);
 
-    Rhat = lambda * psi * lambda.t() + theta;
-    x.transparameters(indices_out) = arma::vectorise(Rhat);
+    Shat = lambda * psi * lambda.t() + theta;
+    x.transparameters(indices_out) = arma::vectorise(Shat);
 
   }
 
@@ -69,12 +69,12 @@ public:
     dpsi = arma::reshape(x.dtransparameters(indices_psi), q, q);
     dtheta = arma::reshape(x.dtransparameters(indices_theta), p, p);
 
-    dRhat = dlambda * psi * lambda.t() +
+    dShat = dlambda * psi * lambda.t() +
             lambda * psi * dlambda.t() +
             lambda * dpsi * lambda.t() +
             dtheta;
 
-    x.dtransparameters(indices_out) = arma::vectorise(dRhat);
+    x.dtransparameters(indices_out) = arma::vectorise(dShat);
 
   }
 
@@ -129,9 +129,9 @@ public:
 
 };
 
-factor_cor* choose_factor_cor(const Rcpp::List& trans_setup) {
+sem_cov_model* choose_sem_cov_model(const Rcpp::List& trans_setup) {
 
-  factor_cor* mytrans = new factor_cor();
+  sem_cov_model* mytrans = new sem_cov_model();
 
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];

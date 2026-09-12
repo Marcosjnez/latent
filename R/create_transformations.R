@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 22/08/2026
+# Modification date: 12/09/2026
 
 create_transforms <- function(transforms, structures) {
 
@@ -30,12 +30,19 @@ create_transforms <- function(transforms, structures) {
       XY = c("p", "q"),
       XtY = c("p", "q", "r"),
       XtYX = c("p", "q"),
+      XYXt = c("p", "q"),
+      XYz = c("p", "q", "r"),
+      invAx = c("p"),
+      invA_X_invAt = c("p"),
       softmax = character(0L),
       matrix_inverse = "p",
+      inverse_of_I_minusX = "p",
       logarithm = character(0L),
       identity = character(0L),
-      factor_cor = c("p", "q"),
-      meanstructure = c("p", "q"),
+      sem_cov_model = c("p", "q"),
+      cfa_means_model = c("p", "q"),
+      sem_cov_model = c("p", "q"),
+      sem_means_model = c("p", "q"),
       tau_param = c("p", "threshold_items"),
       exponential = character(0L),
       crossprod = "p",

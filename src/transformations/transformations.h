@@ -43,14 +43,20 @@ public:
 #include "logarithm.h"
 #include "crossprod.h"
 #include "column_space.h"
-#include "factor_cor.h"
-#include "meanstructure.h"
+#include "sem_cov_model.h"
+#include "sem_means_model.h"
+#include "cfa_means_model.h"
+#include "inverse_of_I_minusX.h"
 #include "tau_param.h"
 #include "matrix_inverse.h"
 #include "XY.h"
 #include "XYt.h"
 #include "XtY.h"
 #include "XtYX.h"
+#include "XYXt.h"
+#include "XYz.h"
+#include "invAx.h"
+#include "invA_X_invAt.h"
 #include "deltaparam.h"
 #include "mvnormal.h"
 #include "normal.h"
@@ -63,27 +69,32 @@ using TransformFactory =
   std::function<transformations*(const Rcpp::List&)>;
 
 static const std::unordered_map<std::string, TransformFactory> transform_factories = {
-  { "identity",       choose_identity       },
-  { "softmax",       choose_softmax       },
-  { "exponential",   choose_exponential   },
-  { "logarithm",     choose_logarithm     },
-  { "normal",        choose_normal        },
-  { "crossprod",     choose_crossprod     },
-  { "multinomial",   choose_multinomial   },
-  { "column_space",  choose_column_space  },
-  { "factor_cor",    choose_factor_cor    },
-  { "meanstructure", choose_meanstructure },
-  { "tau_param",     choose_tau_param     },
-  { "matrix_inverse",choose_matrix_inverse},
-  { "XY",            choose_XY            },
-  { "XYt",           choose_XYt           },
-  { "XtY",           choose_XtY           },
-  { "XtYX",          choose_XtYX          },
-  { "deltaparam",    choose_deltaparam    },
-  { "mvnormal",      choose_mvnormal      },
-  { "sum_vectors",   choose_sum_vectors   },
-  { "sqrt_vector",   choose_sqrt_vector   },
-  { "pos_incrsng",   choose_pos_incrsng   }
+  { "identity",        choose_identity        },
+  { "softmax",         choose_softmax         },
+  { "exponential",     choose_exponential     },
+  { "logarithm",       choose_logarithm       },
+  { "normal",          choose_normal          },
+  { "crossprod",       choose_crossprod       },
+  { "multinomial",     choose_multinomial     },
+  { "column_space",    choose_column_space    },
+  { "sem_cov_model",   choose_sem_cov_model   },
+  { "sem_means_model", choose_sem_means_model },
+  { "cfa_means_model", choose_cfa_means_model },
+  { "tau_param",       choose_tau_param       },
+  { "matrix_inverse",  choose_matrix_inverse  },
+  { "XY",              choose_XY              },
+  { "XYt",             choose_XYt             },
+  { "XtY",             choose_XtY             },
+  { "XtYX",            choose_XtYX            },
+  { "XYXt",            choose_XYXt            },
+  { "XYz",             choose_XYz             },
+  { "invAx",           choose_invAx           },
+  { "invA_X_invAt",    choose_invA_X_invAt    },
+  { "deltaparam",      choose_deltaparam      },
+  { "mvnormal",        choose_mvnormal        },
+  { "sum_vectors",     choose_sum_vectors     },
+  { "sqrt_vector",     choose_sqrt_vector     },
+  { "pos_incrsng",     choose_pos_incrsng     }
 };
 
 transformations* choose_transform(const Rcpp::List& trans_setup) {
