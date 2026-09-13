@@ -7,11 +7,11 @@
 /*
  * Model-implied observed mean transformation:
  *
- * meanshat = nu + lambda*mu
+ * meanshat = nu + lambda*latent_means
  *
  * nu       : p observed-variable intercepts
  * lambda   : p by q factor-loading matrix
- * mu    : q latent-factor means
+ * latent_means    : q latent-factor means
  * meanshat : p model-implied observed means
  */
 
@@ -20,17 +20,17 @@ class sem_means_model: public transformations {
 public:
 
   int p, q;
-  arma::uvec indices_nu, indices_lambda, indices_mu;
-  arma::vec nu, mu, meanshat, dnu, dmu, dmeanshat, grad_out;
+  arma::uvec indices_nu, indices_lambda, indices_latent_means;
+  arma::vec nu, latent_means, meanshat, dnu, dlatent_means, dmeanshat, grad_out;
   arma::mat lambda, dlambda;
 
   void transform(arguments_optim& x) {
 
     nu = x.transparameters.elem(indices_nu);
     lambda = arma::reshape(x.transparameters.elem(indices_lambda), p, q);
-    mu = x.transparameters.elem(indices_mu);
+    latent_means = x.transparameters.elem(indices_latent_means);
 
-    meanshat = nu + lambda * mu;
+    meanshat = nu + lambda * latent_means;
     x.transparameters.elem(indices_out) = meanshat;
 
   }
@@ -38,28 +38,28 @@ public:
   void update_grad(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters.elem(indices_lambda), p, q);
-    mu = x.transparameters.elem(indices_mu);
+    latent_means = x.transparameters.elem(indices_latent_means);
     grad_out = x.grad.elem(indices_out);
 
     arma::vec grad_nu = grad_out;
-    arma::mat grad_lambda = grad_out*mu.t();
-    arma::vec grad_mu = lambda.t()*grad_out;
+    arma::mat grad_lambda = grad_out*latent_means.t();
+    arma::vec grad_latent_means = lambda.t()*grad_out;
 
     x.grad.elem(indices_nu) += grad_nu;
     x.grad.elem(indices_lambda) += arma::vectorise(grad_lambda);
-    x.grad.elem(indices_mu) += grad_mu;
+    x.grad.elem(indices_latent_means) += grad_latent_means;
 
   }
 
   void dtransform(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters.elem(indices_lambda), p, q);
-    mu = x.transparameters.elem(indices_mu);
+    latent_means = x.transparameters.elem(indices_latent_means);
     dnu = x.dtransparameters.elem(indices_nu);
     dlambda = arma::reshape(x.dtransparameters.elem(indices_lambda), p, q);
-    dmu = x.dtransparameters.elem(indices_mu);
+    dlatent_means = x.dtransparameters.elem(indices_latent_means);
 
-    dmeanshat = dnu+dlambda*mu+lambda*dmu;
+    dmeanshat = dnu+dlambda*latent_means+lambda*dlatent_means;
     x.dtransparameters.elem(indices_out) = dmeanshat;
 
   }
@@ -67,35 +67,35 @@ public:
   void update_dgrad(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters.elem(indices_lambda), p, q);
-    mu = x.transparameters.elem(indices_mu);
+    latent_means = x.transparameters.elem(indices_latent_means);
     dlambda = arma::reshape(x.dtransparameters.elem(indices_lambda), p, q);
-    dmu = x.dtransparameters.elem(indices_mu);
+    dlatent_means = x.dtransparameters.elem(indices_latent_means);
     grad_out = x.grad.elem(indices_out);
     arma::vec dgrad_out = x.dgrad.elem(indices_out);
 
     arma::vec dgrad_nu = dgrad_out;
     arma::mat dgrad_lambda =
-      dgrad_out*mu.t()+grad_out*dmu.t();
-    arma::vec dgrad_mu =
+      dgrad_out*latent_means.t()+grad_out*dlatent_means.t();
+    arma::vec dgrad_latent_means =
       dlambda.t()*grad_out+lambda.t()*dgrad_out;
 
     x.dgrad.elem(indices_nu) += dgrad_nu;
     x.dgrad.elem(indices_lambda) += arma::vectorise(dgrad_lambda);
-    x.dgrad.elem(indices_mu) += dgrad_mu;
+    x.dgrad.elem(indices_latent_means) += dgrad_latent_means;
 
   }
 
   void jacobian(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters.elem(indices_lambda), p, q);
-    mu = x.transparameters.elem(indices_mu);
+    latent_means = x.transparameters.elem(indices_latent_means);
 
     arma::mat J_nu = arma::eye(p, p);
-    arma::mat J_lambda = arma::kron(mu.t(), arma::eye(p, p));
-    arma::mat J_mu = lambda;
+    arma::mat J_lambda = arma::kron(latent_means.t(), arma::eye(p, p));
+    arma::mat J_latent_means = lambda;
 
     jacob = arma::join_rows(J_nu,
-                            arma::join_rows(J_lambda, J_mu));
+                            arma::join_rows(J_lambda, J_latent_means));
 
   }
 
@@ -131,27 +131,27 @@ sem_means_model* choose_sem_means_model(const Rcpp::List& trans_setup) {
   }
 
   if(indices_in.size() != 3L || indices_out.size() != 1L) {
-    Rcpp::stop("sem_means_model requires nu, lambda, and mu inputs and one meanshat output.");
+    Rcpp::stop("sem_means_model requires nu, lambda, and latent_means inputs and one meanshat output.");
   }
 
   arma::uvec indices_nu = indices_in[0];
   arma::uvec indices_lambda = indices_in[1];
-  arma::uvec indices_mu = indices_in[2];
+  arma::uvec indices_latent_means = indices_in[2];
   arma::uvec indices_meanshat = indices_out[0];
 
   if(indices_nu.n_elem != static_cast<arma::uword>(p) ||
      indices_lambda.n_elem != static_cast<arma::uword>(p*q) ||
-     indices_mu.n_elem != static_cast<arma::uword>(q) ||
+     indices_latent_means.n_elem != static_cast<arma::uword>(q) ||
      indices_meanshat.n_elem != static_cast<arma::uword>(p)) {
     Rcpp::stop("The sem_means_model parameter indices have incompatible dimensions.");
   }
 
   mytrans->indices_nu = indices_nu;
   mytrans->indices_lambda = indices_lambda;
-  mytrans->indices_mu = indices_mu;
+  mytrans->indices_latent_means = indices_latent_means;
   mytrans->indices_in = arma::join_cols(
     indices_nu,
-    arma::join_cols(indices_lambda, indices_mu)
+    arma::join_cols(indices_lambda, indices_latent_means)
   );
   mytrans->indices_out = indices_meanshat;
   mytrans->p = p;

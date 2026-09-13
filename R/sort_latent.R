@@ -14,8 +14,8 @@
 #'
 #' @details
 #' Classes are ordered by decreasing frequency-weighted posterior size.
-#' Factors are ordered by decreasing \code{colSums(lambda^2)*diag(psi)} and
-#' oriented so their largest absolute loading is positive. Ties retain the
+#' Factors are ordered by decreasing \code{colSums(lambda^2)*diag(latent_cov)}
+#' and oriented so their largest absolute loading is positive. Ties retain the
 #' original order. Fixed modeled CFA loadings retain their specified order and
 #' signs. Target rotations and components selecting factors retain factor order.
 #' The original multinomial reference class and all parameter labels are kept.
@@ -55,10 +55,10 @@ sort_latent <- function(fit) {
     index <- order(-colSums(posterior*weights), seq_len(q))
     orderings <- index
     blocks <- unique(c("beta", "theta", "class", "loglik",
-                        fit@dataList$gaussian$gaussian_names,
-                        fit@dataList$mvgaussian$mvgaussian_names,
-                        fit@dataList$multinomial$multinomial_names,
-                        names(fit@dataList$mvmultinomial$indep_pairs_list)))
+                       fit@dataList$gaussian$gaussian_names,
+                       fit@dataList$mvgaussian$mvgaussian_names,
+                       fit@dataList$multinomial$multinomial_names,
+                       names(fit@dataList$mvmultinomial$indep_pairs_list)))
 
     for(part in names(result)) {
       for(nm in intersect(blocks, names(result[[part]]))) {
@@ -112,20 +112,30 @@ sort_latent <- function(fit) {
     for(i in seq_along(data_param$lambda_group)) {
       lambda_name <- data_param$lambda_group[i]
       psi_name <- data_param$psi_group[i]
+      latent_cov_name <- if(is.null(data_param$latent_cov_group)) {
+        psi_name
+      } else {
+        data_param$latent_cov_group[i]
+      }
       alpha_name <- data_param$alpha_group[i]
-      mu_name <- data_param$mu_group[i]
+      latent_means_name <- if(is.null(data_param$latent_means_group)) {
+        alpha_name
+      } else {
+        data_param$latent_means_group[i]
+      }
       lambda <- fit@transformed_pars[[lambda_name]]
-      psi <- fit@transformed_pars[[psi_name]]
+      latent_cov <- fit@transformed_pars[[latent_cov_name]]
       q <- ncol(lambda)
       if(!is.matrix(lambda) || !is.numeric(lambda) || any(!is.finite(lambda)) ||
-         !is.matrix(psi) || !is.numeric(psi) || any(!is.finite(psi)) ||
-         length(q) != 1L || q < 1L || !identical(dim(psi), c(q, q))) {
+         !is.matrix(latent_cov) || !is.numeric(latent_cov) ||
+         any(!is.finite(latent_cov)) || length(q) != 1L || q < 1L ||
+         !identical(dim(latent_cov), c(q, q))) {
         stop("Invalid factor loading/covariance blocks for sorting.")
       }
-      if(any(diag(psi) < 0)) {
+      if(any(diag(latent_cov) < 0)) {
         warning("A negative factor variance was found; sorting does not repair the solution.")
       }
-      contribution <- colSums(lambda^2)*diag(psi)
+      contribution <- colSums(lambda^2)*diag(latent_cov)
       if(any(!is.finite(contribution))) stop("Non-finite factor contributions.")
       index <- if(reorder) order(-contribution, seq_len(q)) else seq_len(q)
       largest <- lambda[cbind(max.col(t(abs(lambda)), ties.method = "first"), seq_len(q))]
@@ -133,24 +143,28 @@ sort_latent <- function(fit) {
       orderings[[i]] <- index
       X_name <- if(rotation) data_param$X_group[i] else data_param$xpsi_group[i]
       Xinv_name <- if(rotation) data_param$Xinv_group[i] else character(0L)
-      blocks <- intersect(c(lambda_name, psi_name, alpha_name, mu_name,
-                            X_name, Xinv_name),
+      covariance_names <- unique(c(psi_name, latent_cov_name))
+      means_names <- unique(c(alpha_name, latent_means_name))
+      row_factor_names <- unique(c(covariance_names, means_names, Xinv_name))
+      column_factor_names <- unique(c(lambda_name, covariance_names, X_name))
+      blocks <- intersect(unique(c(lambda_name, covariance_names, means_names,
+                                   X_name, Xinv_name)),
                           names(result$transformed_pars))
 
       for(nm in blocks) {
         x <- result$transformed_pars[[nm]]
-        rows <- if(nm %in% c(psi_name, alpha_name, mu_name, Xinv_name)) {
-          index
-        } else {
-          seq_len(nrow(x))
-        }
-        columns <- if(nm %in% c(lambda_name, psi_name, X_name)) index else seq_len(ncol(x))
-        row_sign <- if(nm %in% c(psi_name, alpha_name, mu_name, Xinv_name)) {
+        rows <- if(nm %in% row_factor_names) index else seq_len(nrow(x))
+        columns <- if(nm %in% column_factor_names) index else seq_len(ncol(x))
+        row_sign <- if(nm %in% row_factor_names) {
           direction
         } else {
           rep(1, length(rows))
         }
-        column_sign <- if(nm %in% c(lambda_name, psi_name, X_name)) direction else rep(1, length(columns))
+        column_sign <- if(nm %in% column_factor_names) {
+          direction
+        } else {
+          rep(1, length(columns))
+        }
         multiplier <- outer(row_sign, column_sign)
         signs[[nm]] <- multiplier
 

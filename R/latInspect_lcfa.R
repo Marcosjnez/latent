@@ -36,10 +36,12 @@ latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
 
   block_names <- unique(c(
     data_param$lambda_group,
-    data_param$alpha_group,
     data_param$theta_group,
     data_param$psi_group,
+    data_param$alpha_group,
     data_param$nu_group,
+    data_param$latent_cov_group,
+    data_param$latent_means_group,
     data_param$kappa_group,
     data_param$delta_group
   ))
@@ -85,6 +87,16 @@ latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
     )
     result <- transformed_pars[names_psi]
 
+  } else if(what %in% c("latent.cov", "latent_cov")) {
+
+    latent_cov_group <- data_param$latent_cov_group
+    if(is.null(latent_cov_group)) latent_cov_group <- data_param$psi_group
+    names_latent_cov <- intersect(
+      latent_cov_group,
+      names(transformed_pars)
+    )
+    result <- transformed_pars[names_latent_cov]
+
   } else if(what == "theta") {
 
     names_theta <- intersect(
@@ -101,16 +113,15 @@ latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
     )
     result <- transformed_pars[names_alpha]
 
-  } else if(what %in% c("mu", "latent.means",
-                        "latent_means")) {
+  } else if(what %in% c("latent.means", "latent_means")) {
 
-    mu_group <- data_param$mu_group
-    if(is.null(mu_group)) mu_group <- data_param$alpha_group
-    names_mu <- intersect(
-      mu_group,
+    latent_means_group <- data_param$latent_means_group
+    if(is.null(latent_means_group)) latent_means_group <- data_param$alpha_group
+    names_latent_means <- intersect(
+      latent_means_group,
       names(transformed_pars)
     )
-    result <- transformed_pars[names_mu]
+    result <- transformed_pars[names_latent_means]
 
   } else if(what %in% c("nu", "intercepts")) {
 

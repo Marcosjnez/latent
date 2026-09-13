@@ -1444,7 +1444,7 @@ unwrap_lcfa_group_input <- function(x, ngroups) {
 }
 
 normalize_lcfa_sample_nobs <- function(sample.nobs, ngroups,
-                                        group_label = NULL) {
+                                       group_label = NULL) {
 
   input_names <- names(sample.nobs)
 
@@ -2184,8 +2184,9 @@ create_lcfa_data_param <- function(dataList, control) {
 
   lambda_group <- paste("lambda", dataList$group_label, sep = sep)
   alpha_group <- paste("alpha", dataList$group_label, sep = sep)
-  mu_group <- paste("mu", dataList$group_label, sep = sep)
+  latent_means_group <- paste("latent_means", dataList$group_label, sep = sep)
   psi_group <- paste("psi", dataList$group_label, sep = sep)
+  latent_cov_group <- paste("latent_cov", dataList$group_label, sep = sep)
   theta_group <- paste("theta", dataList$group_label, sep = sep)
   logvars_group <- paste("logvars", dataList$group_label, sep = sep)
   xpsi_group <- paste("xpsi", dataList$group_label, sep = sep)
@@ -2373,7 +2374,7 @@ create_lcfa_data_param <- function(dataList, control) {
       ]
 
       VCOV_means[[i]] <- list(moment_VCOV[mean_labels, mean_labels,
-                                                    drop = FALSE])
+                                          drop = FALSE])
       VCOV_cov[[i]] <- list(moment_VCOV[S_labels, S_labels, drop = FALSE])
       NVCOV_means[[i]] <- list(VCOV_means[[i]][[1L]]*dataList$nobs[[i]])
       NVCOV_cov[[i]] <- list(VCOV_cov[[i]][[1L]]*dataList$nobs[[i]])
@@ -2416,10 +2417,11 @@ create_lcfa_data_param <- function(dataList, control) {
 
   result <- list(lambda_group = lambda_group,
                  alpha_group = alpha_group,
-                 mu_group = mu_group,
+                 latent_means_group = latent_means_group,
                  theta_group = theta_group,
                  logvars_group = logvars_group,
                  psi_group = psi_group,
+                 latent_cov_group = latent_cov_group,
                  xtheta_group = xtheta_group,
                  xpsi_group = xpsi_group,
                  model_group = model_group,
@@ -2473,7 +2475,7 @@ model_lcfa <- function(dataList, data_param, control) {
                              colnames = "intrcp")
     k <- k+1L
 
-    list_struct[[k]] <- list(name = mu_group[i],
+    list_struct[[k]] <- list(name = latent_means_group[i],
                              type = "matrix",
                              dim = c(q, 1L),
                              rownames = factors,
@@ -2517,6 +2519,14 @@ model_lcfa <- function(dataList, data_param, control) {
     }
 
     list_struct[[k]] <- list(name = psi_group[i],
+                             type = "matrix",
+                             dim = c(q, q),
+                             rownames = factors,
+                             colnames = factors,
+                             symmetric = TRUE)
+    k <- k+1L
+
+    list_struct[[k]] <- list(name = latent_cov_group[i],
                              type = "matrix",
                              dim = c(q, q),
                              rownames = factors,
@@ -3176,15 +3186,23 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
 
     }
 
+    #### Latent covariance matrix ####
+
+    lower_latent_cov <- lower.tri(trans[[latent_cov_group[i]]], diag = TRUE)
+    transforms[[k]] <- list(transform = "identity",
+                            parameters_in = list(trans[[psi_group[i]]][lower_latent_cov]),
+                            parameters_out = list(trans[[latent_cov_group[i]]][lower_latent_cov]))
+    k <- k+1L
+
     if(control$deltaparam) {
 
       transforms[[k]] <- list(transform = "deltaparam",
                               parameters_in = c(delta_group[i],
                                                 lambda_group[i],
-                                                psi_group[i]),
+                                                latent_cov_group[i]),
                               parameters_out = list(diag(trans[[theta_group[i]]])),
                               extra = list(p = nrow(trans[[theta_group[i]]]),
-                                           q = nrow(trans[[psi_group[i]]])))
+                                           q = nrow(trans[[latent_cov_group[i]]])))
       k <- k+1L
 
     } else if(!dataList$positive) {
@@ -3213,7 +3231,7 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
 
     transforms[[k]] <- list(transform = "sem_cov_model",
                             parameters_in = c(lambda_group[i],
-                                              psi_group[i],
+                                              latent_cov_group[i],
                                               theta_group[i]),
                             parameters_out = model_group[i],
                             extra = list(p = dataList$nitems[[i]],
@@ -3224,7 +3242,7 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
 
     transforms[[k]] <- list(transform = "identity",
                             parameters_in = alpha_group[i],
-                            parameters_out = mu_group[i])
+                            parameters_out = latent_means_group[i])
     k <- k+1L
 
     #### Model-implied observed means ####
@@ -3232,7 +3250,7 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
     transforms[[k]] <- list(transform = "sem_means_model",
                             parameters_in = c(nu_group[i],
                                               lambda_group[i],
-                                              mu_group[i]),
+                                              latent_means_group[i]),
                             parameters_out = meanshat_group[i],
                             extra = list(p = dataList$nitems[[i]],
                                          q = dataList$nfactors[[i]]))

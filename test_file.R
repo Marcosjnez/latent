@@ -363,6 +363,7 @@ fit <- lcfa(HolzingerSwineford1939,
             control = NULL,
             do.fit = TRUE)
 
+latInspect(fit, "est")
 # fit@modelInfo$param
 
 # With lavaan:

@@ -22,8 +22,8 @@ Sorted Parameter Structures for Inspection
 }
 \details{
 Classes are ordered by decreasing frequency-weighted posterior size.
-Factors are ordered by decreasing \code{colSums(lambda^2)*diag(psi)} and
-oriented so their largest absolute loading is positive. Ties retain the
+Factors are ordered by decreasing \code{colSums(lambda^2)*diag(latent_cov)}
+and oriented so their largest absolute loading is positive. Ties retain the
 original order. Fixed modeled CFA loadings retain their specified order and
 signs. Target rotations and components selecting factors retain factor order.
 The original multinomial reference class and all parameter labels are kept.
