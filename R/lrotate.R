@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 11/09/2026
+# Modification date: 13/09/2026
 #'
 #' @title
 #' Rotate factor loading and covariance matrices
@@ -103,6 +103,12 @@
 #' \deqn{\Psi_r=X^T\Psi_0X,}
 #' and
 #' \deqn{\alpha_r=X^T\alpha_0.}
+#' The derived rotated latent moments are represented separately as
+#' \code{latent_cov_rotated} and \code{latent_means_rotated}. At present,
+#' before structural regressions are introduced into the rotated model,
+#' these are identity transformations of \eqn{\Psi_r} and \eqn{\alpha_r},
+#' respectively. This separation prepares the rotation model for ESEM, where
+#' total latent moments can later differ from disturbance moments.
 #' For an orthogonal projection, \eqn{X^{-T}=X}. If \eqn{\Psi_0} is a fixed
 #' identity matrix, \eqn{\Psi_r} is computed as \eqn{X^TX}.
 #'
@@ -678,15 +684,15 @@ identity_psi_lrotate <- function(fit, psi_name, psi) {
 rotation_parameters_lrotate <- function(rotation) {
 
   parameters <- switch(rotation,
-                        cf = "k",
-                        geomin = "epsilon",
-                        lclf = "epsilon",
-                        oblimin = c("gamma", "alpha"),
-                        target = c("target", "weight"),
-                        varimax = character(0L),
-                        varimin = character(0L),
-                        xtarget = c("target", "weight", "w", "psitarget", "psiweight"),
-                        stop("Unknown rotation criterion: ", rotation))
+                       cf = "k",
+                       geomin = "epsilon",
+                       lclf = "epsilon",
+                       oblimin = c("gamma", "alpha"),
+                       target = c("target", "weight"),
+                       varimax = character(0L),
+                       varimin = character(0L),
+                       xtarget = c("target", "weight", "w", "psitarget", "psiweight"),
+                       stop("Unknown rotation criterion: ", rotation))
   result <- c(parameters, "items", "factors")
 
   #### Result ####
@@ -864,7 +870,7 @@ rotation_matrix_lrotate <- function(x, rows, columns, p, q, argument) {
 rotation_extra_lrotate <- function(criterion, extra, items, factors, p, q) {
 
   scalar <- switch(criterion, cf = "k", geomin = "epsilon", lclf = "epsilon",
-                    oblimin = "gamma", xtarget = "w", character(0L))
+                   oblimin = "gamma", xtarget = "w", character(0L))
   for(nm in scalar) {
     value <- extra[[nm]]
     if(length(value) != 1L || !is.numeric(value) || is.complex(value) ||
@@ -1372,7 +1378,9 @@ create_lrotate_data_param <- function(dataList) {
     Xinv_group = group_names_lrotate("Xinv", group_label),
     lambda_group = group_names_lrotate("lambda_rotated", group_label),
     psi_group = group_names_lrotate("psi_rotated", group_label),
-    alpha_group = group_names_lrotate("alpha_rotated", group_label)
+    latent_cov_group = group_names_lrotate("latent_cov_rotated", group_label),
+    alpha_group = group_names_lrotate("alpha_rotated", group_label),
+    latent_means_group = group_names_lrotate("latent_means_rotated", group_label)
   )
 
   #### Result ####
@@ -1434,7 +1442,7 @@ model_lrotate <- function(dataList, data_param) {
     )
     k <- k+1L
 
-    #### Rotated factor covariance matrix ####
+    #### Rotated disturbance/factor covariance matrix ####
 
     list_struct[[k]] <- list(
       name = psi_group[i],
@@ -1446,7 +1454,19 @@ model_lrotate <- function(dataList, data_param) {
     )
     k <- k+1L
 
-    #### Rotated factor means ####
+    #### Rotated total latent covariance matrix ####
+
+    list_struct[[k]] <- list(
+      name = latent_cov_group[i],
+      type = "matrix",
+      dim = c(q, q),
+      rownames = factor_names,
+      colnames = factor_names,
+      symmetric = TRUE
+    )
+    k <- k+1L
+
+    #### Rotated structural intercepts/factor means ####
 
     list_struct[[k]] <- list(
       name = alpha_group[i],
@@ -1454,6 +1474,17 @@ model_lrotate <- function(dataList, data_param) {
       dim = c(q, 1L),
       rownames = factor_names,
       colnames = "intrcp"
+    )
+    k <- k+1L
+
+    #### Rotated total latent means ####
+
+    list_struct[[k]] <- list(
+      name = latent_means_group[i],
+      type = "matrix",
+      dim = c(q, 1L),
+      rownames = factor_names,
+      colnames = "mean"
     )
     k <- k+1L
 
@@ -1650,9 +1681,17 @@ update_rotation_lrotate <- function(x, group_index, trans,
   dimnames(rotated_psi) <- dimnames(trans[[psi_group[i]]])
   x[[psi_group[i]]] <- rotated_psi
 
+  rotated_latent_cov <- rotated_psi
+  dimnames(rotated_latent_cov) <- dimnames(trans[[latent_cov_group[i]]])
+  x[[latent_cov_group[i]]] <- rotated_latent_cov
+
   rotated_alpha <- t(X)%*%alpha_0
   dimnames(rotated_alpha) <- dimnames(trans[[alpha_group[i]]])
   x[[alpha_group[i]]] <- rotated_alpha
+
+  rotated_latent_means <- rotated_alpha
+  dimnames(rotated_latent_means) <- dimnames(trans[[latent_means_group[i]]])
+  x[[latent_means_group[i]]] <- rotated_latent_means
 
   #### Result ####
 
@@ -1687,7 +1726,8 @@ create_lrotate_modelInfo <- function(dataList, full_model,
   #### Transformations ####
 
   transforms <- transformations_lrotate(dataList = dataList,
-                                        data_param = data_param)
+                                        data_param = data_param,
+                                        trans = trans)
 
   control_transform_rotation <-
     create_transforms(transforms = transforms,
@@ -1787,7 +1827,7 @@ manifolds_lrotate <- function(dataList, data_param, dots) {
 
 #### Function to create the transformations ####
 
-transformations_lrotate <- function(dataList, data_param) {
+transformations_lrotate <- function(dataList, data_param, trans) {
 
   list2env(data_param, envir = environment())
 
@@ -1835,7 +1875,7 @@ transformations_lrotate <- function(dataList, data_param) {
 
     }
 
-    #### Rotated factor covariance matrix ####
+    #### Rotated disturbance/factor covariance matrix ####
 
     if(dataList$identity_psi[i]) {
 
@@ -1859,13 +1899,32 @@ transformations_lrotate <- function(dataList, data_param) {
 
     k <- k+1L
 
-    #### Rotated factor means ####
+    #### Rotated total latent covariance matrix ####
+
+    lower_latent_cov <- lower.tri(trans[[latent_cov_group[i]]], diag = TRUE)
+    transforms[[k]] <- list(
+      transform = "identity",
+      parameters_in = list(trans[[psi_group[i]]][lower_latent_cov]),
+      parameters_out = list(trans[[latent_cov_group[i]]][lower_latent_cov])
+    )
+    k <- k+1L
+
+    #### Rotated structural intercepts/factor means ####
 
     transforms[[k]] <- list(
       transform = "XtY",
       parameters_in = c(X_group[i], ualpha_group[i]),
       parameters_out = alpha_group[i],
       extra = list(p = q, q = q, r = 1L)
+    )
+    k <- k+1L
+
+    #### Rotated total latent means ####
+
+    transforms[[k]] <- list(
+      transform = "identity",
+      parameters_in = alpha_group[i],
+      parameters_out = latent_means_group[i]
     )
     k <- k+1L
 
@@ -1916,15 +1975,15 @@ estimators_lrotate <- function(dataList, data_param, dots, trans) {
       # No additional parameters or transformations are introduced. Overlapping
       # components contribute additively to the same gradient/Hessian entries.
       parameters <- list(trans[[lambda_group[i]]][items, factors, drop = FALSE],
-                          trans[[psi_group[i]]][factors, factors, drop = FALSE])
+                         trans[[psi_group[i]]][factors, factors, drop = FALSE])
 
       estimators[[k]] <- list(
         estimator = criterion,
         parameters = parameters,
         extra = extra,
         component = list(group_index = i, group_label = dataList$group_label[i],
-                          component_index = j, criterion = criterion,
-                          items = items, factors = factors, extra = extra)
+                         component_index = j, criterion = criterion,
+                         items = items, factors = factors, extra = extra)
       )
       k <- k+1L
 

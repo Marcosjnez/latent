@@ -1,6 +1,6 @@
 # Author: Mauricio Garnier-Villarreal
 # Modified by: Marcos Jimenez
-# Modification date: 10/09/2026
+# Modification date: 13/09/2026
 
 #' Inspect Latent Model Results
 #'
@@ -59,21 +59,41 @@ latInspect.latent <- function(fit, what = "est", sort = TRUE) {
   source_blocks <- character(0L)
 
   if(rotation) {
-    blocks <- unique(c(data_param$lambda_group, data_param$psi_group,
-                        data_param$alpha_group))
+
+    latent_cov_group <- if(is.null(data_param$latent_cov_group)) {
+      data_param$psi_group
+    } else {
+      data_param$latent_cov_group
+    }
+    latent_means_group <- if(is.null(data_param$latent_means_group)) {
+      data_param$alpha_group
+    } else {
+      data_param$latent_means_group
+    }
+
+    blocks <- unique(c(data_param$lambda_group,
+                       data_param$psi_group,
+                       latent_cov_group,
+                       data_param$alpha_group,
+                       latent_means_group))
+
     if(inherits(source, "lcfa")) {
       source_data <- source@dataList$data_param
+      source_excluded <- unique(c(source_data$lambda_group,
+                                  source_data$psi_group,
+                                  source_data$latent_cov_group,
+                                  source_data$alpha_group,
+                                  source_data$latent_means_group))
       source_blocks <- setdiff(names(latInspect(source, what = "est", sort = FALSE)),
-                               c(source_data$lambda_group, source_data$psi_group,
-                                 source_data$alpha_group))
+                               source_excluded)
     }
     blocks <- c(blocks, source_blocks)
   } else if(inherits(fit, "lcfa")) {
     data_param <- fit@dataList$data_param
     blocks <- unique(c(data_param$lambda_group, data_param$alpha_group,
-                        data_param$theta_group, data_param$psi_group,
-                        data_param$nu_group, data_param$kappa_group,
-                        data_param$delta_group))
+                       data_param$theta_group, data_param$psi_group,
+                       data_param$nu_group, data_param$kappa_group,
+                       data_param$delta_group))
   } else {
     blocks <- names(output$parameters)
   }
@@ -95,9 +115,13 @@ latInspect.latent <- function(fit, what = "est", sort = TRUE) {
     # Obtain uncertainty from the original object before changing presentation.
     SE <- fit@Optim$SE
     if(is.null(SE) && rotation && inherits(fit, "multistep")) {
-      parameters <- fit@modelInfo$trans[unique(c(data_param$lambda_group,
-                                                 data_param$psi_group,
-                                                 data_param$alpha_group))]
+      parameters <- fit@modelInfo$trans[
+        unique(c(data_param$lambda_group,
+                 data_param$psi_group,
+                 latent_cov_group,
+                 data_param$alpha_group,
+                 latent_means_group))
+      ]
       SE <- se.multistep(fit, parameters = parameters, digits = NULL)
     } else if(is.null(SE) && inherits(fit, "llca")) {
       SE <- se(fit, digits = NULL)
@@ -111,7 +135,7 @@ latInspect.latent <- function(fit, what = "est", sort = TRUE) {
       labels <- if(covariance) rownames(result) else names(result)
       if(is.null(labels)) stop("Standard-error outputs must have parameter labels.")
       templates <- output$trans[unique(c(intersect(blocks, names(output$trans)),
-                                         names(output$trans)))]
+                                        names(output$trans)))]
       signs <- attr(output, "signs", exact = TRUE)
       mapping <- vector("list", length(templates))
       for(i in seq_along(templates)) {
@@ -133,13 +157,22 @@ latInspect.latent <- function(fit, what = "est", sort = TRUE) {
       }
     }
 
-  } else if(rotation && what %in% c("lambda", "loadings", "psi", "alpha", "latent.means",
-                                     "latent_means", "x", "rotation", "rotation.matrix",
+  } else if(rotation && what %in% c("lambda", "loadings",
+                                     "psi", "latent.cov", "latent_cov", "cov.lv", "cov_lv",
+                                     "alpha", "latent.means", "latent_means", "mean.lv", "mean_lv",
+                                     "x", "rotation", "rotation.matrix",
                                      "rotation_matrix", "xinv")) {
-    selected <- switch(what, lambda =, loadings = data_param$lambda_group,
-                        psi = data_param$psi_group, alpha =, latent.means =,
-                        latent_means = data_param$alpha_group, xinv = data_param$Xinv_group,
-                        data_param$X_group)
+
+    selected <- switch(
+      what,
+      lambda =, loadings = data_param$lambda_group,
+      psi = data_param$psi_group,
+      latent.cov =, latent_cov =, cov.lv =, cov_lv = latent_cov_group,
+      alpha = data_param$alpha_group,
+      latent.means =, latent_means =, mean.lv =, mean_lv = latent_means_group,
+      xinv = data_param$Xinv_group,
+      data_param$X_group
+    )
     result <- output$transformed_pars[intersect(selected, names(output$transformed_pars))]
   } else if(rotation && what %in% c("efa", "unrotated.fit", "unrotated_fit")) {
     if(is.null(source)) stop("No fitted source model was supplied to lrotate().")

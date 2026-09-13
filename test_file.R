@@ -1106,7 +1106,7 @@ fit <- lcfa(model = model,
             meanstructure = meanstructure,
             likelihood = likelihood,
             se = FALSE,
-            control = list(opt = "newton"),
+            control = list(opt = "newton", step = "wolfe"),
             do.fit = TRUE)
 fit@modelInfo$param
 latInspect(fit, what = "convergence")

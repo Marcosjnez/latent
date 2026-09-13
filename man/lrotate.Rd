@@ -113,6 +113,12 @@ matrix, and factor means. The rotated quantities are
 \deqn{\Psi_r=X^T\Psi_0X,}
 and
 \deqn{\alpha_r=X^T\alpha_0.}
+The derived rotated latent moments are represented separately as
+\code{latent_cov_rotated} and \code{latent_means_rotated}. At present,
+before structural regressions are introduced into the rotated model,
+these are identity transformations of \eqn{\Psi_r} and \eqn{\alpha_r},
+respectively. This separation prepares the rotation model for ESEM, where
+total latent moments can later differ from disturbance moments.
 For an orthogonal projection, \eqn{X^{-T}=X}. If \eqn{\Psi_0} is a fixed
 identity matrix, \eqn{\Psi_r} is computed as \eqn{X^TX}.
 
