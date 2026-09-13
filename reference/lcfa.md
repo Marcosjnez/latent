@@ -1,7 +1,8 @@
-# Confirmatory Factor Analysis
+# Confirmatory Factor Analysis and Structural Equation Modeling
 
-Fit confirmatory factor analysis models using lavaan model syntax and
-the optimization infrastructure of latent.
+Fit confirmatory factor analysis and latent-variable structural equation
+models using lavaan model syntax and the optimization infrastructure of
+latent.
 
 ## Usage
 
@@ -28,7 +29,8 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 
 - model:
 
-  Confirmatory factor model specified using lavaan syntax.
+  Confirmatory factor or latent structural equation model specified
+  using lavaan syntax.
 
 - estimator:
 
@@ -162,10 +164,15 @@ modify the fitted object or its standard-error calculations.
 The model-implied observed means are computed as
 \$\$\widehat{\mu}\_y=\nu+\Lambda\mu\_\eta,\$\$ where \\\nu\\ contains
 observed-variable intercepts and \\\mu\_\eta\\ contains latent-factor
-means. In CFA, \\\mu\_\eta=\alpha\\, where \\\alpha\\ contains
-latent-factor intercepts. For ordinal models, standardized model
-thresholds are computed from the unstandardized thresholds,
-model-implied means, and model-implied variances.
+means. With latent structural regressions,
+\$\$\eta=\alpha+B\eta+\zeta,\$\$ define \\A=(I-B)^{-1}\\. The total
+latent moments are then \$\$\mu\_\eta=A\alpha\$\$ and
+\$\$\Sigma\_\eta=A\Psi A^T.\$\$ Thus, \\\alpha\\ contains structural
+intercepts and \\\Psi\\ contains latent disturbance covariances whenever
+\\B\\ is nonzero. In CFA, \\B=0\\, so \\A=I\\, \\\mu\_\eta=\alpha\\, and
+\\\Sigma\_\eta=\Psi\\. For ordinal models, standardized model thresholds
+are computed from the unstandardized thresholds, model-implied means,
+and model-implied variances.
 
 Direct FIML creates one likelihood contribution for every missingness
 pattern and substantive group. Saturated-moment FIML instead stores one

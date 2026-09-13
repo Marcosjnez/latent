@@ -46,7 +46,7 @@
 - [`latInspect()`](https://marcosjnez.github.io/latent/reference/latInspect.md)
   : Inspect Latent Model Results
 - [`latInspect(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.lcfa.md)
-  : Inspect Fitted CFA Objects
+  : Inspect Fitted CFA and SEM Objects
 - [`latInspect(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.lefa.md)
   : Inspect Fitted Exploratory Factor Analysis Objects
 - [`latInspect(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
@@ -63,7 +63,7 @@
 - [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md) :
   Latent Class Analysis
 - [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
-  Confirmatory Factor Analysis
+  Confirmatory Factor Analysis and Structural Equation Modeling
 - [`lcfa_to_lavaan()`](https://marcosjnez.github.io/latent/reference/lcfa_to_lavaan.md)
   : Convert a Fitted lcfa Object to lavaan
 - [`lclass_diag()`](https://marcosjnez.github.io/latent/reference/lclass_diag.md)

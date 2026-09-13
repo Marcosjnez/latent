@@ -1,6 +1,6 @@
-# Inspect Fitted CFA Objects
+# Inspect Fitted CFA and SEM Objects
 
-Inspect Fitted CFA Objects
+Inspect Fitted CFA and SEM Objects
 
 ## Usage
 
