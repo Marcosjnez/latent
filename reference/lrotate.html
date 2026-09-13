@@ -211,6 +211,12 @@ $$\Lambda_r=\Lambda_0X^{-T},$$
 $$\Psi_r=X^T\Psi_0X,$$
 and
 $$\alpha_r=X^T\alpha_0.$$
+The derived rotated latent moments are represented separately as
+<code>latent_cov_rotated</code> and <code>latent_means_rotated</code>. At present,
+before structural regressions are introduced into the rotated model,
+these are identity transformations of \(\Psi_r\) and \(\alpha_r\),
+respectively. This separation prepares the rotation model for ESEM, where
+total latent moments can later differ from disturbance moments.
 For an orthogonal projection, \(X^{-T}=X\). If \(\Psi_0\) is a fixed
 identity matrix, \(\Psi_r\) is computed as \(X^TX\).</p>
 <p>With <code>projection = "poblq"</code>, either <code>constraints</code> or <code>oblique</code>

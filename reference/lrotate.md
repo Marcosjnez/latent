@@ -132,9 +132,15 @@ rotation matrix and let \\\Lambda_0\\, \\\Psi_0\\, and \\\alpha_0\\
 denote the unrotated factor loadings, factor covariance matrix, and
 factor means. The rotated quantities are
 \$\$\Lambda_r=\Lambda_0X^{-T},\$\$ \$\$\Psi_r=X^T\Psi_0X,\$\$ and
-\$\$\alpha_r=X^T\alpha_0.\$\$ For an orthogonal projection,
-\\X^{-T}=X\\. If \\\Psi_0\\ is a fixed identity matrix, \\\Psi_r\\ is
-computed as \\X^TX\\.
+\$\$\alpha_r=X^T\alpha_0.\$\$ The derived rotated latent moments are
+represented separately as `latent_cov_rotated` and
+`latent_means_rotated`. At present, before structural regressions are
+introduced into the rotated model, these are identity transformations of
+\\\Psi_r\\ and \\\alpha_r\\, respectively. This separation prepares the
+rotation model for ESEM, where total latent moments can later differ
+from disturbance moments. For an orthogonal projection, \\X^{-T}=X\\. If
+\\\Psi_0\\ is a fixed identity matrix, \\\Psi_r\\ is computed as
+\\X^TX\\.
 
 With `projection = "poblq"`, either `constraints` or `oblique` must be
 supplied through `...`. The former uses arbitrary structural
