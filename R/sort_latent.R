@@ -123,6 +123,18 @@ sort_latent <- function(fit) {
       } else {
         data_param$latent_means_group[i]
       }
+      B_name <- if(!is.null(data_param$B_group) &&
+                   data_param$B_group[i] %in% names(fit@transformed_pars)) {
+        data_param$B_group[i]
+      } else {
+        character(0L)
+      }
+      A_name <- if(!is.null(data_param$A_group) &&
+                   data_param$A_group[i] %in% names(fit@transformed_pars)) {
+        data_param$A_group[i]
+      } else {
+        character(0L)
+      }
       lambda <- fit@transformed_pars[[lambda_name]]
       latent_cov <- fit@transformed_pars[[latent_cov_name]]
       q <- ncol(lambda)
@@ -145,10 +157,13 @@ sort_latent <- function(fit) {
       Xinv_name <- if(rotation) data_param$Xinv_group[i] else character(0L)
       covariance_names <- unique(c(psi_name, latent_cov_name))
       means_names <- unique(c(alpha_name, latent_means_name))
-      row_factor_names <- unique(c(covariance_names, means_names, Xinv_name))
-      column_factor_names <- unique(c(lambda_name, covariance_names, X_name))
+      structural_names <- unique(c(B_name, A_name))
+      row_factor_names <- unique(c(covariance_names, means_names,
+                                   structural_names, Xinv_name))
+      column_factor_names <- unique(c(lambda_name, covariance_names,
+                                      structural_names, X_name))
       blocks <- intersect(unique(c(lambda_name, covariance_names, means_names,
-                                   X_name, Xinv_name)),
+                                   structural_names, X_name, Xinv_name)),
                           names(result$transformed_pars))
 
       for(nm in blocks) {

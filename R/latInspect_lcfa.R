@@ -2,7 +2,7 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 13/09/2026
 #'
-#' Inspect Fitted CFA Objects
+#' Inspect Fitted CFA and SEM Objects
 #'
 #' @param fit A fitted object inheriting from class \code{"lcfa"}.
 #' @param what Character string identifying the requested component.
@@ -40,6 +40,8 @@ latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
     data_param$psi_group,
     data_param$alpha_group,
     data_param$nu_group,
+    data_param$B_group,
+    data_param$A_group,
     data_param$latent_cov_group,
     data_param$latent_means_group,
     data_param$kappa_group,
@@ -48,8 +50,12 @@ latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
   block_names <- intersect(block_names,
                            names(transformed_pars))
 
-  if(what %in% c("est", "estimates", "parameters",
-                 "fixed")) {
+  if(what == "labels") {
+
+    result <- output$trans[block_names]
+
+  } else if(what %in% c("est", "estimates", "parameters",
+                        "fixed")) {
 
     result <- transformed_pars[block_names]
 
@@ -87,7 +93,25 @@ latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
     )
     result <- transformed_pars[names_psi]
 
-  } else if(what %in% c("latent.cov", "latent_cov")) {
+  } else if(what %in% c("b", "beta", "structural.coefficients",
+                        "structural_coefficients")) {
+
+    names_B <- intersect(
+      data_param$B_group,
+      names(transformed_pars)
+    )
+    result <- transformed_pars[names_B]
+
+  } else if(what %in% c("a", "structural.inverse",
+                        "structural_inverse")) {
+
+    names_A <- intersect(
+      data_param$A_group,
+      names(transformed_pars)
+    )
+    result <- transformed_pars[names_A]
+
+  } else if(what %in% c("latent.cov", "latent_cov", "cov.lv", "cov_lv")) {
 
     latent_cov_group <- data_param$latent_cov_group
     if(is.null(latent_cov_group)) latent_cov_group <- data_param$psi_group
@@ -113,7 +137,7 @@ latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
     )
     result <- transformed_pars[names_alpha]
 
-  } else if(what %in% c("latent.means", "latent_means")) {
+  } else if(what %in% c("latent.means", "latent_means", "mean.lv", "mean_lv")) {
 
     latent_means_group <- data_param$latent_means_group
     if(is.null(latent_means_group)) latent_means_group <- data_param$alpha_group

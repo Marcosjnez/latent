@@ -2,7 +2,7 @@
 % Please edit documentation in R/lcfa.R
 \name{lcfa}
 \alias{lcfa}
-\title{Confirmatory Factor Analysis}
+\title{Confirmatory Factor Analysis and Structural Equation Modeling}
 \usage{
 lcfa(data = NULL, model = NULL, estimator = "ml",
      ordered = FALSE, group = NULL,
@@ -20,7 +20,8 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
 \item{data}{Optional data frame or matrix containing the observed variables.
 If NULL, sample.cov and sample.nobs must be supplied.}
 
-\item{model}{Confirmatory factor model specified using lavaan syntax.}
+\item{model}{Confirmatory factor or latent structural equation model specified
+using lavaan syntax.}
 
 \item{estimator}{Estimation method. Available options include \code{"ml"},
 \code{"uls"}, and \code{"dwls"}. The value \code{"fiml"} requests
@@ -101,8 +102,9 @@ An S4 object of class \code{"lcfa"} for ordinary likelihood
   marked for uncertainty propagation.
 }
 \description{
-Fit confirmatory factor analysis models using lavaan model syntax and the
-optimization infrastructure of \pkg{latent}.
+Fit confirmatory factor analysis and latent-variable structural equation
+models using lavaan model syntax and the optimization infrastructure of
+\pkg{latent}.
 }
 \details{
 Fitted objects retain the estimated factor order and signs. Sorting is
@@ -112,10 +114,18 @@ modify the fitted object or its standard-error calculations.
 The model-implied observed means are computed as
 \deqn{\widehat{\mu}_y=\nu+\Lambda\mu_\eta,}
 where \eqn{\nu} contains observed-variable intercepts and \eqn{\mu_\eta}
-contains latent-factor means. In CFA, \eqn{\mu_\eta=\alpha}, where
-\eqn{\alpha} contains latent-factor intercepts. For ordinal models,
-standardized model thresholds are computed from the unstandardized
-thresholds, model-implied means, and model-implied variances.
+contains latent-factor means. With latent structural regressions,
+\deqn{\eta=\alpha+B\eta+\zeta,}
+define \eqn{A=(I-B)^{-1}}. The total latent moments are then
+\deqn{\mu_\eta=A\alpha}
+and
+\deqn{\Sigma_\eta=A\Psi A^T.}
+Thus, \eqn{\alpha} contains structural intercepts and \eqn{\Psi}
+contains latent disturbance covariances whenever \eqn{B} is nonzero.
+In CFA, \eqn{B=0}, so \eqn{A=I}, \eqn{\mu_\eta=\alpha}, and
+\eqn{\Sigma_\eta=\Psi}. For ordinal models, standardized model
+thresholds are computed from the unstandardized thresholds, model-implied
+means, and model-implied variances.
 
 Direct FIML creates one likelihood contribution for every missingness
 pattern and substantive group. Saturated-moment FIML instead stores one

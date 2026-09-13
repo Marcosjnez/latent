@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 12/09/2026
+# Modification date: 13/09/2026
 
 create_transforms <- function(transforms, structures) {
 
@@ -28,6 +28,7 @@ create_transforms <- function(transforms, structures) {
       transform,
       XYt = c("p", "q"),
       XY = c("p", "q"),
+      matrix_vector = c("p", "q"),
       XtY = c("p", "q", "r"),
       XtYX = c("p", "q"),
       XYXt = c("p", "q"),

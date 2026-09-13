@@ -2,7 +2,7 @@
 % Please edit documentation in R/latInspect_lcfa.R
 \name{latInspect.lcfa}
 \alias{latInspect.lcfa}
-\title{Inspect Fitted CFA Objects}
+\title{Inspect Fitted CFA and SEM Objects}
 \usage{
 \method{latInspect}{lcfa}(fit, what = "est", sort = TRUE)
 }
@@ -18,5 +18,5 @@ A parameter list, residual list, fit matrix, or estimator-specific
   control component, depending on \code{what}.
 }
 \description{
-Inspect Fitted CFA Objects
+Inspect Fitted CFA and SEM Objects
 }

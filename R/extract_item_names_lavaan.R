@@ -1,55 +1,64 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 13/03/2026
+# Modification date: 13/09/2026
 
 extract_item_names_lavaan <- function(x, ngroups = NULL) {
-  # x can be:
-  # - a lavaan model syntax string
-  # - a fitted lavaan object
-  #
-  # ngroups:
-  # - NULL or 1: default behavior
-  # - >1: replicate the same item names for each group slot
 
-  if (inherits(x, "lavaan")) {
-    pt <- parTable(x)
-    items <- unique(pt[pt$op == "=~", c("group", "rhs")])
+  if(inherits(x, "lavaan")) {
 
-    if (is.null(ngroups) || ngroups == 1L) {
-      item_names <- split(items$rhs, items$group)
+    partable <- lavaan::parTable(x)
 
-      group_labels <- tryCatch(lavInspect(x, "group.label"), error = function(e) NULL)
-      if (!is.null(group_labels) && length(group_labels) == length(item_names)) {
-        names(item_names) <- group_labels
-      } else {
-        names(item_names) <- paste0("group", seq_along(item_names))
-      }
-
-    } else if (ngroups > 1L) {
-      base_items <- unique(items$rhs)
-      item_names <- replicate(ngroups, base_items, simplify = FALSE)
-      names(item_names) <- paste0("group", seq_len(ngroups))
-
-    } else {
-      stop("ngroups must be NULL or a positive integer.")
+    if(is.null(ngroups)) {
+      groups <- unique(partable$group[partable$group > 0L])
+      ngroups <- length(groups)
+      if(ngroups == 0L) ngroups <- 1L
     }
 
-  } else if (is.character(x) && length(x) == 1L) {
-    pt <- lavaan::lavaanify(x)
-    base_items <- unique(pt[pt$op == "=~", "rhs"])
+    group_labels <- tryCatch(lavaan::lavInspect(x, "group.label"),
+                             error = function(e) NULL)
 
-    if (is.null(ngroups) || ngroups == 1L) {
-      item_names <- list(group1 = base_items)
-    } else if (ngroups > 1L) {
-      item_names <- replicate(ngroups, base_items, simplify = FALSE)
-      names(item_names) <- paste0("group", seq_len(ngroups))
-    } else {
-      stop("ngroups must be NULL or a positive integer.")
-    }
+  } else if(is.character(x) && length(x) == 1L) {
+
+    if(is.null(ngroups)) ngroups <- 1L
+    partable <- lavaan::lavaanify(x, ngroups = ngroups)
+    group_labels <- NULL
 
   } else {
+
     stop("x must be either a lavaan model syntax string or a fitted lavaan object.")
+
   }
 
-  item_names
+  if(!is.numeric(ngroups) || length(ngroups) != 1L ||
+     !is.finite(ngroups) || ngroups < 1L ||
+     ngroups != as.integer(ngroups)) {
+    stop("ngroups must be NULL or a positive integer.")
+  }
+
+  ngroups <- as.integer(ngroups)
+  item_names <- vector("list", ngroups)
+
+  for(i in seq_len(ngroups)) {
+
+    group_table <- partable[partable$group == i, , drop = FALSE]
+    latent_names <- unique(group_table$lhs[group_table$op == "=~"])
+    indicators <- unique(group_table$rhs[group_table$op == "=~"])
+
+    # Latent indicators belong to the beta matrix in lavaan's LISREL
+    # representation (for example, higher-order factor loadings), not to the
+    # observed-variable covariance matrix used by lcfa.
+    item_names[[i]] <- indicators[!(indicators %in% latent_names)]
+
+  }
+
+  if(!is.null(group_labels) && length(group_labels) == ngroups) {
+    names(item_names) <- group_labels
+  } else {
+    names(item_names) <- paste0("group", seq_len(ngroups))
+  }
+
+  #### Result ####
+
+  return(item_names)
+
 }

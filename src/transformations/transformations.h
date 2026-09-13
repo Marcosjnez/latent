@@ -1,7 +1,7 @@
 /*
  * Author: Marcos Jimenez
  * email: m.j.jimenezhenriquez@vu.nl
- * Modification date: 05/09/2026
+ * Modification date: 13/09/2026
  */
 
 // Transformations
@@ -49,6 +49,7 @@ public:
 #include "tau_param.h"
 #include "matrix_inverse.h"
 #include "XY.h"
+#include "matrix_vector.h"
 #include "XYt.h"
 #include "XtY.h"
 #include "XtYX.h"
@@ -78,9 +79,11 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "column_space",    choose_column_space    },
   { "sem_cov_model",   choose_sem_cov_model   },
   { "sem_means_model", choose_sem_means_model },
+  { "inverse_of_I_minusX", choose_inverse_of_I_minusX },
   { "tau_param",       choose_tau_param       },
   { "matrix_inverse",  choose_matrix_inverse  },
   { "XY",              choose_XY              },
+  { "matrix_vector",   choose_matrix_vector   },
   { "XYt",             choose_XYt             },
   { "XtY",             choose_XtY             },
   { "XtYX",            choose_XtYX            },

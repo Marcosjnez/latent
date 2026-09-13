@@ -2,10 +2,11 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 13/09/2026
 #'
-#' Confirmatory Factor Analysis
+#' Confirmatory Factor Analysis and Structural Equation Modeling
 #'
-#' Fit confirmatory factor analysis models using lavaan model syntax and the
-#' optimization infrastructure of \pkg{latent}.
+#' Fit confirmatory factor analysis and latent-variable structural equation
+#' models using lavaan model syntax and the optimization infrastructure of
+#' \pkg{latent}.
 #'
 #' @usage
 #' lcfa(data = NULL, model = NULL, estimator = "ml",
@@ -22,7 +23,8 @@
 #'
 #' @param data Optional data frame or matrix containing the observed variables.
 #'   If NULL, sample.cov and sample.nobs must be supplied.
-#' @param model Confirmatory factor model specified using lavaan syntax.
+#' @param model Confirmatory factor or latent structural equation model specified
+#'   using lavaan syntax.
 #' @param estimator Estimation method. Available options include \code{"ml"},
 #'   \code{"uls"}, and \code{"dwls"}. The value \code{"fiml"} requests
 #'   direct pattern-likelihood FIML unless \code{missing = "fiml"} is
@@ -85,10 +87,18 @@
 #' The model-implied observed means are computed as
 #' \deqn{\widehat{\mu}_y=\nu+\Lambda\mu_\eta,}
 #' where \eqn{\nu} contains observed-variable intercepts and \eqn{\mu_\eta}
-#' contains latent-factor means. In CFA, \eqn{\mu_\eta=\alpha}, where
-#' \eqn{\alpha} contains latent-factor intercepts. For ordinal models,
-#' standardized model thresholds are computed from the unstandardized
-#' thresholds, model-implied means, and model-implied variances.
+#' contains latent-factor means. With latent structural regressions,
+#' \deqn{\eta=\alpha+B\eta+\zeta,}
+#' define \eqn{A=(I-B)^{-1}}. The total latent moments are then
+#' \deqn{\mu_\eta=A\alpha}
+#' and
+#' \deqn{\Sigma_\eta=A\Psi A^T.}
+#' Thus, \eqn{\alpha} contains structural intercepts and \eqn{\Psi}
+#' contains latent disturbance covariances whenever \eqn{B} is nonzero.
+#' In CFA, \eqn{B=0}, so \eqn{A=I}, \eqn{\mu_\eta=\alpha}, and
+#' \eqn{\Sigma_\eta=\Psi}. For ordinal models, standardized model
+#' thresholds are computed from the unstandardized thresholds, model-implied
+#' means, and model-implied variances.
 #'
 #' Direct FIML creates one likelihood contribution for every missingness
 #' pattern and substantive group. Saturated-moment FIML instead stores one
@@ -142,7 +152,7 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
   }
 
   if(is.null(model)) {
-    stop("model must contain a confirmatory factor model specified with lavaan syntax")
+    stop("model must contain a factor or latent structural equation model specified with lavaan syntax")
   }
 
   if(!is.null(control) && !is.list(control)) {
@@ -436,6 +446,40 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
 
 }
 
+#### Function to check latent structural relations ####
+
+lcfa_structural_regressions <- function(model, ngroups = 1L) {
+
+  partable <- lavaan::lavaanify(model, ngroups = ngroups)
+  latent_variables <- unique(partable$lhs[partable$op == "=~"])
+  regression_rows <- which(partable$op == "~")
+
+  if(length(regression_rows) > 0L) {
+
+    regressions <- partable[regression_rows, , drop = FALSE]
+    latent_regressions <- regressions$lhs %in% latent_variables &
+      regressions$rhs %in% latent_variables
+
+    if(any(!latent_regressions)) {
+      unsupported <- paste0(regressions$lhs[!latent_regressions], " ~ ",
+                            regressions$rhs[!latent_regressions])
+      stop("lcfa currently supports structural regressions among latent ",
+           "variables only. Observed-variable regressions/covariates require ",
+           "a separate structural parameterization. Unsupported regression(s): ",
+           paste(unsupported, collapse = ", "))
+    }
+
+  }
+
+  higher_order <- partable$op == "=~" &
+    partable$rhs %in% latent_variables
+
+  #### Result ####
+
+  return(length(regression_rows) > 0L || any(higher_order))
+
+}
+
 #### Function to create the dataList ####
 
 create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
@@ -530,6 +574,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
 
   }
 
+  structural_model <- lcfa_structural_regressions(model, ngroups = ngroups)
   item_names <- extract_item_names_lavaan(model, ngroups = ngroups)
 
   for(i in seq_len(ngroups)) {
@@ -919,33 +964,35 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
     names(nobs_list) <- group_label
   }
 
-  LAV <- lavaan::cfa(model = model,
-                     sample.cov = unwrap_lcfa_group_input(sample.cov_lav, ngroups),
-                     sample.mean = if(meanstructure) {
-                       unwrap_lcfa_group_input(sample.mean_list, ngroups)
-                     } else {
-                       NULL
-                     },
-                     sample.th = sample.th_lav,
-                     sample.nobs = unwrap_lcfa_group_input(nobs_list, ngroups),
-                     group = group,
-                     NACOV = if(sample_stats_only) {
-                       NULL
-                     } else {
-                       unwrap_lcfa_group_input(NVCOV, ngroups)
-                     },
-                     WLS.V = if(sample_stats_only) {
-                       NULL
-                     } else {
-                       unwrap_lcfa_group_input(WLS.V, ngroups)
-                     },
-                     ordered = ordered,
-                     std.lv = std.lv,
-                     std.ov = std.ov,
-                     meanstructure = meanstructure,
-                     do.fit = FALSE,
-                     warn = FALSE,
-                     ...)
+  lavaan_model <- if(structural_model) lavaan::sem else lavaan::cfa
+
+  LAV <- lavaan_model(model = model,
+                      sample.cov = unwrap_lcfa_group_input(sample.cov_lav, ngroups),
+                      sample.mean = if(meanstructure) {
+                        unwrap_lcfa_group_input(sample.mean_list, ngroups)
+                      } else {
+                        NULL
+                      },
+                      sample.th = sample.th_lav,
+                      sample.nobs = unwrap_lcfa_group_input(nobs_list, ngroups),
+                      group = group,
+                      NACOV = if(sample_stats_only) {
+                        NULL
+                      } else {
+                        unwrap_lcfa_group_input(NVCOV, ngroups)
+                      },
+                      WLS.V = if(sample_stats_only) {
+                        NULL
+                      } else {
+                        unwrap_lcfa_group_input(WLS.V, ngroups)
+                      },
+                      ordered = ordered,
+                      std.lv = std.lv,
+                      std.ov = std.ov,
+                      meanstructure = meanstructure,
+                      do.fit = FALSE,
+                      warn = FALSE,
+                      ...)
 
   LAV@Options$positive <- positive
 
@@ -992,6 +1039,43 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
     if(is.null(model_out[[i]]$alpha) || length(model_out[[i]]$alpha) == 0L) {
       model_out[[i]]$alpha <- matrix(0, nrow = q, ncol = 1L,
                                      dimnames = list(factors, "intrcp"))
+    }
+
+    missing_beta <- is.null(model_out[[i]]$beta) ||
+      length(model_out[[i]]$beta) == 0L
+
+    if(structural_model && missing_beta) {
+      stop("lavaan did not provide the LISREL beta matrix required for the ",
+           "latent structural regressions.")
+    }
+
+    if(missing_beta) {
+
+      model_out[[i]]$beta <- matrix(
+        0, nrow = q, ncol = q,
+        dimnames = list(factors, factors)
+      )
+
+    } else {
+
+      beta <- as.matrix(model_out[[i]]$beta)
+
+      if(!identical(dim(beta), c(q, q))) {
+        stop("The lavaan structural regression matrix has incompatible dimensions.")
+      }
+
+      if(is.null(rownames(beta)) || is.null(colnames(beta))) {
+        dimnames(beta) <- list(factors, factors)
+      } else {
+        if(!setequal(rownames(beta), factors) ||
+           !setequal(colnames(beta), factors)) {
+          stop("The lavaan structural regression matrix does not match the latent factors.")
+        }
+        beta <- beta[factors, factors, drop = FALSE]
+      }
+
+      model_out[[i]]$beta <- beta
+
     }
 
     if(cor == "poly") {
@@ -1065,6 +1149,7 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                    se_type = se_type,
                    control.moments = control.moments,
                    meanstructure = meanstructure,
+                   structural_model = structural_model,
                    missing = missing,
                    group = group,
                    group_label = group_label,
@@ -2185,8 +2270,15 @@ create_lcfa_data_param <- function(dataList, control) {
   lambda_group <- paste("lambda", dataList$group_label, sep = sep)
   alpha_group <- paste("alpha", dataList$group_label, sep = sep)
   latent_means_group <- paste("latent_means", dataList$group_label, sep = sep)
+  B_group <- paste("B", dataList$group_label, sep = sep)
+  A_group <- paste("A", dataList$group_label, sep = sep)
   psi_group <- paste("psi", dataList$group_label, sep = sep)
   latent_cov_group <- paste("latent_cov", dataList$group_label, sep = sep)
+
+  structural_group <- vapply(dataList$model, FUN = \(x) {
+    beta <- suppressWarnings(as.numeric(x$beta))
+    any(is.na(beta) | beta != 0)
+  }, FUN.VALUE = logical(1L))
   theta_group <- paste("theta", dataList$group_label, sep = sep)
   logvars_group <- paste("logvars", dataList$group_label, sep = sep)
   xpsi_group <- paste("xpsi", dataList$group_label, sep = sep)
@@ -2418,6 +2510,9 @@ create_lcfa_data_param <- function(dataList, control) {
   result <- list(lambda_group = lambda_group,
                  alpha_group = alpha_group,
                  latent_means_group = latent_means_group,
+                 B_group = B_group,
+                 A_group = A_group,
+                 structural_group = structural_group,
                  theta_group = theta_group,
                  logvars_group = logvars_group,
                  psi_group = psi_group,
@@ -2481,6 +2576,24 @@ model_lcfa <- function(dataList, data_param, control) {
                              rownames = factors,
                              colnames = "mean")
     k <- k+1L
+
+    if(structural_group[i]) {
+
+      list_struct[[k]] <- list(name = B_group[i],
+                               type = "matrix",
+                               dim = c(q, q),
+                               rownames = factors,
+                               colnames = factors)
+      k <- k+1L
+
+      list_struct[[k]] <- list(name = A_group[i],
+                               type = "matrix",
+                               dim = c(q, q),
+                               rownames = factors,
+                               colnames = factors)
+      k <- k+1L
+
+    }
 
     if(dataList$positive) {
 
@@ -2621,6 +2734,13 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
                          dataList$model[[i]]$nu,
                          dataList$model[[i]]$alpha)
 
+    if(structural_group[i]) {
+      # getmodel_fromlavaan() already places lavaan's user label, or its
+      # automatically generated plabel, in every free beta entry.
+      group_names <- c(group_names, B_group[i])
+      model_blocks <- c(model_blocks, list(dataList$model[[i]]$beta))
+    }
+
     if(dataList$cor == "poly") {
       group_names <- c(group_names, kappa_group[i])
       model_blocks <- c(model_blocks, list(dataList$model[[i]]$tau))
@@ -2672,6 +2792,12 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
     param[[lambda_group[i]]] <- trans[[lambda_group[i]]]
     param[[lambda_group[i]]][fixed[[lambda_group[i]]]] <-
       fixed_values_list[[lambda_group[i]]]
+
+    if(structural_group[i]) {
+      param[[B_group[i]]] <- trans[[B_group[i]]]
+      param[[B_group[i]]][fixed[[B_group[i]]]] <-
+        fixed_values_list[[B_group[i]]]
+    }
 
     if(dataList$positive) {
 
@@ -2905,6 +3031,27 @@ start_lcfa <- function(dataList, data_param, param, trans,
       init_param[[rs]][[lambda_group[i]]][fixed[[lambda_group[i]]]] <-
         fixed_values_list[[lambda_group[i]]]
 
+      A_start <- NULL
+
+      if(structural_group[i]) {
+        init_param[[rs]][[B_group[i]]] <-
+          matrix(0, nrow = q, ncol = q,
+                 dimnames = dimnames(trans[[B_group[i]]]))
+        init_param[[rs]][[B_group[i]]][fixed[[B_group[i]]]] <-
+          fixed_values_list[[B_group[i]]]
+
+        B_start <- init_param[[rs]][[B_group[i]]]
+        A_start <- tryCatch(
+          solve(diag(q)-B_start),
+          error = function(e) NULL
+        )
+
+        if(is.null(A_start) || any(!is.finite(A_start))) {
+          stop("The initial structural coefficient matrix produces a ",
+               "singular I-B matrix.")
+        }
+      }
+
       #### Covariance matrices ####
 
       if(dataList$positive) {
@@ -2938,7 +3085,13 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
         lambda <- init_param[[rs]][[lambda_group[i]]]
         psi <- init_param[[rs]][[psi_group[i]]]
-        common_variance <- rowSums((lambda%*%psi)*lambda)
+        latent_cov <- psi
+
+        if(structural_group[i]) {
+          latent_cov <- A_start%*%psi%*%t(A_start)
+        }
+
+        common_variance <- rowSums((lambda%*%latent_cov)*lambda)
 
         init_param[[rs]][[theta_group[i]]] <-
           diag(diag(S)-common_variance)
@@ -3116,6 +3269,7 @@ manifolds_lcfa <- function(dataList, data_param, param,
 
     add_euclidean(nu_group[i])
     add_euclidean(alpha_group[i])
+    add_euclidean(B_group[i])
     add_euclidean(kappa_group[i])
     add_euclidean(delta_group[i])
     add_euclidean(logvars_group[i])
@@ -3186,13 +3340,32 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
 
     }
 
-    #### Latent covariance matrix ####
+    #### Latent structural inverse and covariance matrix ####
 
-    lower_latent_cov <- lower.tri(trans[[latent_cov_group[i]]], diag = TRUE)
-    transforms[[k]] <- list(transform = "identity",
-                            parameters_in = list(trans[[psi_group[i]]][lower_latent_cov]),
-                            parameters_out = list(trans[[latent_cov_group[i]]][lower_latent_cov]))
-    k <- k+1L
+    if(structural_group[i]) {
+
+      transforms[[k]] <- list(transform = "inverse_of_I_minusX",
+                              parameters_in = B_group[i],
+                              parameters_out = A_group[i],
+                              extra = list(p = dataList$nfactors[[i]]))
+      k <- k+1L
+
+      transforms[[k]] <- list(transform = "XYXt",
+                              parameters_in = c(A_group[i], psi_group[i]),
+                              parameters_out = latent_cov_group[i],
+                              extra = list(p = dataList$nfactors[[i]],
+                                           q = dataList$nfactors[[i]]))
+      k <- k+1L
+
+    } else {
+
+      lower_latent_cov <- lower.tri(trans[[latent_cov_group[i]]], diag = TRUE)
+      transforms[[k]] <- list(transform = "identity",
+                              parameters_in = list(trans[[psi_group[i]]][lower_latent_cov]),
+                              parameters_out = list(trans[[latent_cov_group[i]]][lower_latent_cov]))
+      k <- k+1L
+
+    }
 
     if(control$deltaparam) {
 
@@ -3240,10 +3413,23 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
 
     #### Latent means ####
 
-    transforms[[k]] <- list(transform = "identity",
-                            parameters_in = alpha_group[i],
-                            parameters_out = latent_means_group[i])
-    k <- k+1L
+    if(structural_group[i]) {
+
+      transforms[[k]] <- list(transform = "matrix_vector",
+                              parameters_in = c(A_group[i], alpha_group[i]),
+                              parameters_out = latent_means_group[i],
+                              extra = list(p = dataList$nfactors[[i]],
+                                           q = dataList$nfactors[[i]]))
+      k <- k+1L
+
+    } else {
+
+      transforms[[k]] <- list(transform = "identity",
+                              parameters_in = alpha_group[i],
+                              parameters_out = latent_means_group[i])
+      k <- k+1L
+
+    }
 
     #### Model-implied observed means ####
 

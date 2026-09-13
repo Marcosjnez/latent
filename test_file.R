@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/09/2026
+# Modification date: 13/09/2026
 
 #### Store a dataset ####
 
@@ -1067,6 +1067,67 @@ round(fit@transformed_pars$lambda_rotated, 3)
 round(fit@transformed_pars$psi_rotated, 3)
 round(rot$loadings, 3)
 round(rot$Phi, 3)
+
+#### SEM ####
+
+library(latent)
+library(lavaan)
+
+model <- '
+  # latent variable definitions
+     ind60 =~ x1 + x2 + x3
+     dem60 =~ y1 + a*y2 + b*y3 + c*y4
+     dem65 =~ y5 + a*y6 + b*y7 + c*y8
+
+  # regressions
+    dem60 ~ ind60
+    dem65 ~ ind60 + dem60
+
+  # residual correlations
+    y1 ~~ y5
+    y2 ~~ y4 + y6
+    y3 ~~ y7
+    y4 ~~ y8
+    y6 ~~ y8
+'
+set.seed(2026)
+estimator <- "ml"
+std.ov <- FALSE
+std.lv <- FALSE
+meanstructure <- TRUE
+likelihood <- "normal"
+
+fit <- lcfa(model = model,
+            data = PoliticalDemocracy,
+            estimator = estimator,
+            std.ov = std.ov,
+            std.lv = std.lv,
+            meanstructure = meanstructure,
+            likelihood = likelihood,
+            se = "standard",
+            # control = list(opt = "lbfgs", step = "armijo"),
+            do.fit = TRUE)
+latInspect(fit, what = "convergence")
+fit@Optim$elapsed
+fit@transformed_pars$B
+
+fit2 <- sem(model, data = PoliticalDemocracy,
+            estimator = estimator,
+            std.ov = std.ov,
+            std.lv = std.lv,
+            meanstructure = meanstructure,
+            likelihood = likelihood)
+# Same loss value: OK
+fit2@Fit@fx*2      # 0.283407
+fit2@loglik$loglik # -3737.745
+latInspect(fit, "loss")
+latInspect(fit, "loglik") # loglik           -3737.745
+# penalized_loglik -3737.745
+# loglik_base      -4211.418
+# loglik_sat       -3695.092
+
+inspect(fit2, "est")
+latInspect(fit, "est")$B
 
 #### Check derivatives ####
 
