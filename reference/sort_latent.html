@@ -107,8 +107,8 @@
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Classes are ordered by decreasing frequency-weighted posterior size.
-Factors are ordered by decreasing <code>colSums(lambda^2)*diag(psi)</code> and
-oriented so their largest absolute loading is positive. Ties retain the
+Factors are ordered by decreasing <code>colSums(lambda^2)*diag(latent_cov)</code>
+and oriented so their largest absolute loading is positive. Ties retain the
 original order. Fixed modeled CFA loadings retain their specified order and
 signs. Target rotations and components selecting factors retain factor order.
 The original multinomial reference class and all parameter labels are kept.</p>
