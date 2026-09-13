@@ -3025,6 +3025,75 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
       }
 
+      #### Scale-aware latent variances ####
+
+      latent_variance_start <- rep(1, q)
+
+      if(!dataList$positive) {
+
+        lambda_numeric <- matrix(
+          suppressWarnings(as.numeric(dataList$model[[i]]$lambda)),
+          nrow = p, ncol = q
+        )
+        psi_numeric <- matrix(
+          suppressWarnings(as.numeric(dataList$model[[i]]$psi)),
+          nrow = q, ncol = q
+        )
+
+        for(k in seq_len(q)) {
+
+          fixed_psi_variance <- psi_numeric[k, k]
+
+          if(is.finite(fixed_psi_variance) &&
+             fixed_psi_variance > 0) {
+            latent_variance_start[k] <- fixed_psi_variance
+          }
+
+          free_psi_variance <- !is.finite(fixed_psi_variance)
+          fixed_nonzero_loadings <- which(
+            is.finite(lambda_numeric[, k]) &
+              lambda_numeric[, k] != 0
+          )
+
+          if(free_psi_variance &&
+             length(fixed_nonzero_loadings) > 0L) {
+
+            marker <- fixed_nonzero_loadings[1L]
+            marker_loading <- lambda_numeric[marker, k]
+            marker_variance <- S[marker, marker]
+            marker_common_variance <- smc[marker]
+
+            if(!is.finite(marker_common_variance)) {
+              marker_common_variance <- 0.5*marker_variance
+            }
+
+            marker_common_variance <- min(
+              max(marker_common_variance, 0.05*marker_variance),
+              0.95*marker_variance
+            )
+
+            latent_variance_start[k] <-
+              marker_common_variance/(marker_loading^2)
+
+            if(is.finite(lambda[marker, k]) &&
+               lambda[marker, k]*marker_loading < 0) {
+              lambda[, k] <- -lambda[, k]
+            }
+
+          }
+
+          if(!is.finite(latent_variance_start[k]) ||
+             latent_variance_start[k] <= 0) {
+            latent_variance_start[k] <- 1
+          }
+
+          lambda[, k] <-
+            lambda[, k]/sqrt(latent_variance_start[k])
+
+        }
+
+      }
+
       init_param[[rs]][[lambda_group[i]]] <- lambda
       dimnames(init_param[[rs]][[lambda_group[i]]]) <-
         dimnames(trans[[lambda_group[i]]])
@@ -3077,7 +3146,17 @@ start_lcfa <- function(dataList, data_param, param, trans,
 
       } else {
 
-        init_param[[rs]][[psi_group[i]]] <- diag(q)
+        latent_cov_start <- diag(latent_variance_start, nrow = q)
+
+        if(structural_group[i]) {
+          I_minus_B <- diag(q)-B_start
+          psi_start <-
+            I_minus_B%*%latent_cov_start%*%t(I_minus_B)
+        } else {
+          psi_start <- latent_cov_start
+        }
+
+        init_param[[rs]][[psi_group[i]]] <- psi_start
         dimnames(init_param[[rs]][[psi_group[i]]]) <-
           dimnames(trans[[psi_group[i]]])
         init_param[[rs]][[psi_group[i]]][fixed[[psi_group[i]]]] <-

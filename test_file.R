@@ -277,7 +277,7 @@ S <- cov(HolzingerSwineford1939[, paste("x", 1:9, sep = "")])
 means <- colMeans(HolzingerSwineford1939[, paste("x", 1:9, sep = "")])
 
 set.seed(2026)
-estimator <- "ml"
+estimator <- "uls"
 std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
@@ -298,6 +298,7 @@ fit <- lcfa(model = model,
             do.fit = TRUE)
 latInspect(fit, what = "convergence")
 fit@Optim$elapsed
+fit@modelInfo$param
 
 # fit@modelInfo$param
 
@@ -1091,11 +1092,11 @@ model <- '
     y6 ~~ y8
 '
 set.seed(2026)
-estimator <- "ml"
+estimator <- "uls"
 std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
-likelihood <- "normal"
+likelihood <- "wishart"
 
 fit <- lcfa(model = model,
             data = PoliticalDemocracy,
@@ -1104,12 +1105,15 @@ fit <- lcfa(model = model,
             std.lv = std.lv,
             meanstructure = meanstructure,
             likelihood = likelihood,
-            se = "standard",
-            # control = list(opt = "lbfgs", step = "armijo"),
+            se = FALSE,
+            # control = list(opt = "newton"),
             do.fit = TRUE)
+fit@modelInfo$param
 latInspect(fit, what = "convergence")
 fit@Optim$elapsed
 fit@transformed_pars$B
+fit@modelInfo$control_optimizer$deltaparam
+fit@parameters
 
 fit2 <- sem(model, data = PoliticalDemocracy,
             estimator = estimator,
@@ -1126,10 +1130,13 @@ latInspect(fit, "loglik") # loglik           -3737.745
 # loglik_base      -4211.418
 # loglik_sat       -3695.092
 
-inspect(fit2, "est")
-latInspect(fit, "est")$B
+inspect(fit2, "est")$beta
+round(latInspect(fit, "est")$B, 3)
 
 #### Check derivatives ####
+
+G <- c(get_grad(fit)$g)
+names(G) <- fit@modelInfo$parameters_labels
 
 control_manifold <- fit@modelInfo$control_manifold
 control_transform <- fit@modelInfo$control_transform
