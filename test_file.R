@@ -1106,7 +1106,7 @@ fit <- lcfa(model = model,
             meanstructure = meanstructure,
             likelihood = likelihood,
             se = FALSE,
-            # control = list(opt = "newton"),
+            control = list(opt = "newton"),
             do.fit = TRUE)
 fit@modelInfo$param
 latInspect(fit, what = "convergence")
@@ -1132,6 +1132,7 @@ latInspect(fit, "loglik") # loglik           -3737.745
 
 inspect(fit2, "est")$beta
 round(latInspect(fit, "est")$B, 3)
+fit2
 
 #### Check derivatives ####
 

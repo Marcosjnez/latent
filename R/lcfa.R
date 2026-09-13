@@ -2280,7 +2280,7 @@ create_lcfa_data_param <- function(dataList, control) {
     any(is.na(beta) | beta != 0)
   }, FUN.VALUE = logical(1L))
   theta_group <- paste("theta", dataList$group_label, sep = sep)
-  logvars_group <- paste("logvars", dataList$group_label, sep = sep)
+  sqrtvars_group <- paste("sqrtvars", dataList$group_label, sep = sep)
   xpsi_group <- paste("xpsi", dataList$group_label, sep = sep)
   xtheta_group <- paste("xtheta", dataList$group_label, sep = sep)
   model_group <- paste("model", dataList$group_label, sep = sep)
@@ -2514,7 +2514,7 @@ create_lcfa_data_param <- function(dataList, control) {
                  A_group = A_group,
                  structural_group = structural_group,
                  theta_group = theta_group,
-                 logvars_group = logvars_group,
+                 sqrtvars_group = sqrtvars_group,
                  psi_group = psi_group,
                  latent_cov_group = latent_cov_group,
                  xtheta_group = xtheta_group,
@@ -2623,7 +2623,7 @@ model_lcfa <- function(dataList, data_param, control) {
 
     if(!dataList$positive && !control$deltaparam) {
 
-      list_struct[[k]] <- list(name = logvars_group[i],
+      list_struct[[k]] <- list(name = sqrtvars_group[i],
                                type = "vector",
                                dim = p,
                                rownames = items)
@@ -2771,8 +2771,8 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
       free_diag <- diag_indices %in% nonfixed[[theta_group[i]]]
       theta_diag_labels <- diag(trans[[theta_group[i]]])
 
-      trans[[logvars_group[i]]][free_diag] <-
-        paste0("log(", theta_diag_labels[free_diag], ")")
+      trans[[sqrtvars_group[i]]][free_diag] <-
+        paste0("sqrt(", theta_diag_labels[free_diag], ")")
 
     }
 
@@ -2822,12 +2822,12 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
         theta_diag[free_diag] <- "1"
         diag(param[[theta_group[i]]]) <- theta_diag
 
-        param[[logvars_group[i]]] <- setNames(
+        param[[sqrtvars_group[i]]] <- setNames(
           rep(0, p),
-          names(trans[[logvars_group[i]]])
+          names(trans[[sqrtvars_group[i]]])
         )
-        param[[logvars_group[i]]][free_diag] <-
-          trans[[logvars_group[i]]][free_diag]
+        param[[sqrtvars_group[i]]][free_diag] <-
+          trans[[sqrtvars_group[i]]][free_diag]
 
       }
 
@@ -3190,12 +3190,12 @@ start_lcfa <- function(dataList, data_param, param, trans,
                                         minimum_variance[free_diag])
           diag(init_param[[rs]][[theta_group[i]]]) <- theta_diag
 
-          init_param[[rs]][[logvars_group[i]]] <- setNames(
+          init_param[[rs]][[sqrtvars_group[i]]] <- setNames(
             rep(0, p),
-            names(trans[[logvars_group[i]]])
+            names(trans[[sqrtvars_group[i]]])
           )
-          init_param[[rs]][[logvars_group[i]]][free_diag] <-
-            log(theta_diag[free_diag])
+          init_param[[rs]][[sqrtvars_group[i]]][free_diag] <-
+            sqrt(theta_diag[free_diag])
 
         }
 
@@ -3351,7 +3351,7 @@ manifolds_lcfa <- function(dataList, data_param, param,
     add_euclidean(B_group[i])
     add_euclidean(kappa_group[i])
     add_euclidean(delta_group[i])
-    add_euclidean(logvars_group[i])
+    add_euclidean(sqrtvars_group[i])
     add_euclidean(M_group[[i]])
     add_euclidean(S_group[[i]])
     add_euclidean(taus_group[[i]])
@@ -3469,8 +3469,9 @@ transformations_lcfa <- function(dataList, data_param, trans, control) {
       if(any(free_diag)) {
 
         transforms[[k]] <- list(
-          transform = "exponential",
-          parameters_in = list(trans[[logvars_group[i]]][free_diag]),
+          # transform = "exponential",
+          transform = "square_vector",
+          parameters_in = list(trans[[sqrtvars_group[i]]][free_diag]),
           parameters_out = list(diag(trans[[theta_group[i]]])[free_diag])
         )
         k <- k+1L

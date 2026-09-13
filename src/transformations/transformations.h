@@ -63,6 +63,7 @@ public:
 #include "multinomial.h"
 #include "sum_vectors.h"
 #include "sqrt_vector.h"
+#include "square_vector.h"
 #include "pos_incrsng.h"
 
 using TransformFactory =
@@ -95,6 +96,7 @@ static const std::unordered_map<std::string, TransformFactory> transform_factori
   { "mvnormal",        choose_mvnormal        },
   { "sum_vectors",     choose_sum_vectors     },
   { "sqrt_vector",     choose_sqrt_vector     },
+  { "square_vector",   choose_square_vector   },
   { "pos_incrsng",     choose_pos_incrsng     }
 };
 
