@@ -368,12 +368,6 @@ lcfa_fit_matrix <- function(fit, compute_h1 = TRUE) {
 
     }
 
-  } else if(likelihood_model && !normal_likelihood) {
-
-    warning("Likelihood-based lcfa fit indices are currently available only ",
-            "for likelihood = 'normal'.")
-    result[c("loglik", "loglik_base", "loglik_sat"), ] <- NA_real_
-
   }
 
   result <- rbind(

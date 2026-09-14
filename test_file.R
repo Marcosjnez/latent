@@ -1092,11 +1092,11 @@ model <- '
     y6 ~~ y8
 '
 set.seed(2026)
-estimator <- "uls"
+estimator <- "ml"
 std.ov <- FALSE
 std.lv <- FALSE
 meanstructure <- TRUE
-likelihood <- "wishart"
+likelihood <- "normal"
 
 fit <- lcfa(model = model,
             data = PoliticalDemocracy,
@@ -1106,7 +1106,6 @@ fit <- lcfa(model = model,
             meanstructure = meanstructure,
             likelihood = likelihood,
             se = FALSE,
-            control = list(opt = "newton", step = "wolfe"),
             do.fit = TRUE)
 fit@modelInfo$param
 latInspect(fit, what = "convergence")
