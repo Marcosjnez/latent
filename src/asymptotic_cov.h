@@ -1,12 +1,15 @@
 /*
  * Author: Marcos Jimenez
  * email: marcosjnezhquez@gmail.com
- * Modification date: 06/09/2026
+ * Modification date: 17/09/2026
  *
  */
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <map>
+#include <vector>
 
 arma::vec diagcov(arma::mat X) {
 
@@ -240,6 +243,10 @@ arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov,
 
 namespace latent_asymptotic_poly {
 
+// Never convert a missing double to an unsigned category index. Missing
+// categories remain separate from every observed category, including zero.
+const arma::uword missing_category = std::numeric_limits<arma::uword>::max();
+
 inline double normal_cdf_bound(const double x) {
 
   if(x == neg_inf) return 0.0;
@@ -340,10 +347,8 @@ inline arma::vec finite_thresholds(const Rcpp::RObject& object,
     Rcpp::stop("All internal thresholds must be finite.");
   }
 
-  if(result.n_elem > 1L &&
-     arma::any(arma::diff(result) <= 0.0)) {
-    Rcpp::stop("Thresholds must be strictly increasing within variables.");
-  }
+  // Zeros, ties, and non-increasing input are accepted here. Any necessary
+  // working-threshold repair is performed after the categories are mapped.
 
   return result;
 
@@ -364,6 +369,94 @@ inline arma::uword category_index(const arma::vec& levels,
 
 }
 
+inline arma::vec observed_levels(const arma::vec& values,
+                                  const arma::uword ncategories,
+                                  const arma::uword variable) {
+
+  const arma::uvec observed = arma::find_finite(values);
+
+  if(observed.n_elem == 0L) {
+    Rcpp::stop("Variable " + std::to_string(variable+1L) +
+      " has no observed ordinal values.");
+  }
+
+  arma::vec finite_values = values.elem(observed);
+  arma::vec levels = arma::sort(arma::unique(finite_values));
+
+  if(levels.n_elem == ncategories) return levels;
+
+  // Preserve empty internal categories in consecutive integer coding.
+  // For example, observed levels {1, 3, 4} with three thresholds still
+  // represent four categories; do not shift levels 3 and 4 to the left.
+  if(levels.n_elem < ncategories &&
+     std::abs((levels.max()-levels.min())-
+       static_cast<double>(ncategories-1L)) <= 1e-08) {
+
+    bool consecutive = true;
+    const double first = levels.min();
+
+    for(arma::uword h = 0L; h < levels.n_elem; ++h) {
+      const double shifted = levels[h]-first;
+      if(std::abs(shifted-std::round(shifted)) > 1e-08) {
+        consecutive = false;
+        break;
+      }
+    }
+
+    if(consecutive) {
+      levels.set_size(ncategories);
+      for(arma::uword h = 0L; h < ncategories; ++h) {
+        levels[h] = first+static_cast<double>(h);
+      }
+      return levels;
+    }
+
+  }
+
+  Rcpp::stop("The thresholds and observed category labels for variable " +
+    std::to_string(variable+1L) +
+    " cannot be matched unambiguously. For unobserved endpoint categories, "
+    "asymptotic_poly() requires matching category metadata in polyfast_object.");
+
+  return levels;
+
+}
+
+inline bool regularize_thresholds(arma::vec& tau,
+                                  const arma::uvec& counts) {
+
+  // A single threshold equal to zero is perfectly valid. Repair only
+  // non-increasing thresholds or an observed category with numerically
+  // zero probability. Keep every threshold in its original parameter slot.
+  bool repair = tau.n_elem > 1L && arma::any(arma::diff(tau) <= 0.0);
+  double previous = 0.0;
+
+  for(arma::uword h = 0L; h < counts.n_elem; ++h) {
+    const double current = h < tau.n_elem ? Pnorm(tau[h]) : 1.0;
+    if(counts[h] > 0L && !(current > previous)) repair = true;
+    previous = current;
+  }
+
+  if(!repair) return false;
+
+  // A half-observation per category gives finite, ordered working
+  // thresholds even when some categories are empty. This is an explicit
+  // approximation for the covariance/score calculation, not a refit or
+  // a modification of the supplied thresholds or correlation matrix.
+  const double pseudocount = 0.5;
+  const double denominator = static_cast<double>(arma::accu(counts))+
+    pseudocount*static_cast<double>(counts.n_elem);
+  double cumulative = 0.0;
+
+  for(arma::uword h = 0L; h < tau.n_elem; ++h) {
+    cumulative += static_cast<double>(counts[h])+pseudocount;
+    tau[h] = Qnorm(cumulative/denominator);
+  }
+
+  return true;
+
+}
+
 } // namespace latent_asymptotic_poly
 
 arma::mat composite_poly_scores(const arma::mat& data,
@@ -378,10 +471,6 @@ arma::mat composite_poly_scores(const arma::mat& data,
 
   if(nobs < 1L || nitems < 2L) {
     Rcpp::stop("data must contain at least one observation and two variables.");
-  }
-
-  if(!data.is_finite()) {
-    Rcpp::stop("composite_poly_scores() currently requires complete ordinal data.");
   }
 
   if(correlation.n_rows != nitems ||
@@ -409,7 +498,10 @@ arma::mat composite_poly_scores(const arma::mat& data,
   std::vector<arma::vec> bounds_cdf(nitems);
 
   arma::uvec threshold_offsets(nitems, arma::fill::zeros);
-  arma::umat categories(nobs, nitems, arma::fill::zeros);
+  arma::umat categories(nobs, nitems);
+  categories.fill(missing_category);
+  arma::uvec thresholds_regularized(nitems, arma::fill::zeros);
+  arma::uvec nobs_by_variable(nitems, arma::fill::zeros);
 
   arma::uword nthresholds = 0L;
 
@@ -419,18 +511,26 @@ arma::mat composite_poly_scores(const arma::mat& data,
     threshold_offsets[j] = nthresholds;
     nthresholds += tau[j].n_elem;
 
-    levels[j] = arma::sort(arma::unique(data.col(j)));
-
-    if(levels[j].n_elem != tau[j].n_elem+1L) {
-      Rcpp::stop("The number of thresholds for variable " +
-        std::to_string(j+1L) +
-        " does not match its observed categories. The threshold representation "
-        "cannot contain empty internal categories.");
-    }
+    levels[j] = observed_levels(data.col(j), tau[j].n_elem+1L, j);
 
     for(arma::uword i = 0L; i < nobs; ++i) {
+      if(!std::isfinite(data(i, j))) continue;
       categories(i, j) = category_index(levels[j], data(i, j));
     }
+
+    arma::uvec counts(tau[j].n_elem+1L, arma::fill::zeros);
+
+    for(arma::uword i = 0L; i < nobs; ++i) {
+      const arma::uword category = categories(i, j);
+      if(category != missing_category) ++counts[category];
+    }
+
+    nobs_by_variable[j] = arma::accu(counts);
+    if(nobs_by_variable[j] == 0L) {
+      Rcpp::stop("Variable " + std::to_string(j+1L) +
+        " has no observed ordinal values.");
+    }
+    thresholds_regularized[j] = regularize_thresholds(tau[j], counts);
 
     bounds[j].set_size(tau[j].n_elem+2L);
     bounds[j][0L] = neg_inf;
@@ -466,6 +566,7 @@ arma::mat composite_poly_scores(const arma::mat& data,
 
         const arma::uword category_j = categories(i, j);
         const arma::uword category_k = categories(i, k);
+        if(category_j == missing_category || category_k == missing_category) continue;
 
         const double lower_j = bounds[j][category_j];
         const double upper_j = bounds[j][category_j+1L];
@@ -551,6 +652,13 @@ arma::mat composite_poly_scores(const arma::mat& data,
 
   }
 
+  if(arma::accu(thresholds_regularized) > 0L) {
+    Rcpp::warning(std::to_string(arma::accu(thresholds_regularized)) +
+      " threshold vectors were non-increasing or numerically degenerate; "
+      "smoothed marginal working thresholds were used internally. "
+      "Supplied estimates were not modified.");
+  }
+
   if(floored_probabilities > 0L) {
     Rcpp::warning(std::to_string(floored_probabilities) +
       " bivariate probabilities were replaced by 1e-16.");
@@ -577,10 +685,6 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
   if(nobs < 2L || nitems < 2L) {
     Rcpp::stop("data must contain at least two observations and two variables.");
-  }
-
-  if(!data.is_finite()) {
-    Rcpp::stop("asymptotic_poly() currently requires complete ordinal data.");
   }
 
   if(correlation.n_rows != nitems ||
@@ -614,6 +718,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   // Reusable polyfast information
 
   const bool use_polyfast = polyfast_object.isNotNull();
+  const bool has_missing = !data.is_finite();
+  const bool reuse_tables = use_polyfast && !has_missing;
   std::vector<double> category_min;
   std::vector<int> category_count;
   std::vector<std::vector<std::vector<int>>> cached_tables;
@@ -630,10 +736,12 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     category_min = Rcpp::as<std::vector<double>>(cache["category_min"]);
     category_count = Rcpp::as<std::vector<int>>(cache["category_count"]);
-    cached_tables =
-      Rcpp::as<std::vector<std::vector<std::vector<int>>>>(
-        cache["contingency_tables"]
-      );
+    if(reuse_tables) {
+      cached_tables =
+        Rcpp::as<std::vector<std::vector<std::vector<int>>>>(
+          cache["contingency_tables"]
+        );
+    }
 
     if(category_min.size() != nitems || category_count.size() != nitems) {
       Rcpp::stop("The polyfast category metadata does not match data.");
@@ -653,7 +761,10 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
   arma::uvec threshold_counts(nitems, arma::fill::zeros);
   arma::uvec threshold_offsets(nitems, arma::fill::zeros);
-  arma::umat categories(nobs, nitems, arma::fill::zeros);
+  arma::umat categories(nobs, nitems);
+  categories.fill(missing_category);
+  arma::uvec thresholds_regularized(nitems, arma::fill::zeros);
+  arma::uvec nobs_by_variable(nitems, arma::fill::zeros);
 
   arma::uword nthresholds = 0L;
 
@@ -666,8 +777,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     if(use_polyfast) {
 
-      if(category_count[j] < 2) {
-        Rcpp::stop("Every variable in polyfast_object must contain at least two categories.");
+      if(category_count[j] < 2 || !std::isfinite(category_min[j])) {
+        Rcpp::stop("polyfast_object must contain finite category minima and at least two categories per variable.");
       }
 
       const arma::uword ncategories =
@@ -681,10 +792,13 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
       for(arma::uword i = 0L; i < nobs; ++i) {
 
+        if(!std::isfinite(data(i, j))) continue;
+
         const double shifted = data(i, j)-category_min[j];
         const double rounded = std::round(shifted);
 
-        if(std::abs(shifted-rounded) > 1e-08 ||
+        if(!std::isfinite(shifted) || !std::isfinite(rounded) ||
+           std::abs(shifted-rounded) > 1e-08 ||
            rounded < 0.0 || rounded >= category_count[j]) {
           Rcpp::stop("The data do not match the categories stored in polyfast_object.");
         }
@@ -695,20 +809,28 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     } else {
 
-      levels[j] = arma::sort(arma::unique(data.col(j)));
-
-      if(levels[j].n_elem != tau[j].n_elem+1L) {
-        Rcpp::stop("The number of thresholds for variable " +
-          std::to_string(j+1L) +
-          " does not match its observed categories. The threshold representation "
-          "cannot contain empty internal categories.");
-      }
+      levels[j] = observed_levels(data.col(j), tau[j].n_elem+1L, j);
 
       for(arma::uword i = 0L; i < nobs; ++i) {
+        if(!std::isfinite(data(i, j))) continue;
         categories(i, j) = category_index(levels[j], data(i, j));
       }
 
     }
+
+    arma::uvec counts(tau[j].n_elem+1L, arma::fill::zeros);
+
+    for(arma::uword i = 0L; i < nobs; ++i) {
+      const arma::uword category = categories(i, j);
+      if(category != missing_category) ++counts[category];
+    }
+
+    nobs_by_variable[j] = arma::accu(counts);
+    if(nobs_by_variable[j] == 0L) {
+      Rcpp::stop("Variable " + std::to_string(j+1L) +
+        " has no observed ordinal values.");
+    }
+    thresholds_regularized[j] = regularize_thresholds(tau[j], counts);
 
     bounds[j].set_size(tau[j].n_elem+2L);
     bounds[j][0L] = neg_inf;
@@ -766,7 +888,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
     }
   }
 
-  if(use_polyfast && cached_tables.size() != ncorrelations) {
+  if(reuse_tables && cached_tables.size() != ncorrelations) {
     Rcpp::stop("The number of polyfast contingency tables does not match data.");
   }
 
@@ -801,8 +923,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
   }
 
-  // Validate the entire pair cache before starting any worker. Rcpp error
-  // reporting and access to R objects must remain on the main thread.
+  // Validate complete-data caches before reusing them. With missing data,
+  // reconstruct pairwise tables below from the observed category indices.
 
   for(arma::uword q = 0L; q < ncorrelations; ++q) {
 
@@ -815,7 +937,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
       Rcpp::stop("Every polychoric correlation must lie strictly inside (-1, 1).");
     }
 
-    if(use_polyfast) {
+    if(reuse_tables) {
 
       const std::vector<std::vector<int>>& table = cached_tables[q];
 
@@ -856,6 +978,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   arma::mat A21(ncorrelations, nthresholds, arma::fill::zeros);
   std::vector<arma::mat> correlation_scores(ncorrelations);
   std::vector<arma::umat> correlation_floored(ncorrelations);
+  arma::uvec pairwise_nobs(ncorrelations, arma::fill::zeros);
 
   for(arma::uword q = 0L; q < ncorrelations; ++q) {
 
@@ -867,7 +990,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     arma::umat counts(ncategories_j, ncategories_k, arma::fill::zeros);
 
-    if(use_polyfast) {
+    if(reuse_tables) {
 
       const std::vector<std::vector<int>>& table = cached_tables[q];
 
@@ -883,10 +1006,15 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
     } else {
 
       for(arma::uword i = 0L; i < nobs; ++i) {
-        ++counts(categories(i, j), categories(i, k));
+        const arma::uword category_j = categories(i, j);
+        const arma::uword category_k = categories(i, k);
+        if(category_j == missing_category || category_k == missing_category) continue;
+        ++counts(category_j, category_k);
       }
 
     }
+
+    pairwise_nobs[q] = arma::accu(counts);
 
     correlation_scores[q].zeros(ncategories_j, ncategories_k);
     correlation_floored[q].zeros(ncategories_j, ncategories_k);
@@ -930,6 +1058,9 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
         correlation_scores[q](category_j, category_k) =
           probability_rho/probability;
 
+        // Use the same total-N normalization as the zero-filled casewise
+        // scores. The observed fractions then enter A11/A22 automatically;
+        // using pairwise N here alone would mis-scale the sandwich.
         const double weight = static_cast<double>(count)/
           static_cast<double>(nobs);
 
@@ -1017,6 +1148,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
       for(arma::uword r = 0L; r < npatterns; ++r) {
         const arma::uword category = pattern_values(r, j);
+        if(category == missing_category) continue;
         score_column[r] = marginal_scores[j](category, h);
       }
 
@@ -1025,7 +1157,8 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
     arma::uword floored = 0L;
 
     for(arma::uword r = 0L; r < npatterns; ++r) {
-      floored += marginal_floored[j][pattern_values(r, j)];
+      const arma::uword category = pattern_values(r, j);
+      if(category != missing_category) floored += marginal_floored[j][category];
     }
 
     marginal_floored_counts[j] = floored;
@@ -1046,6 +1179,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
       const arma::uword category_j = pattern_values(r, j);
       const arma::uword category_k = pattern_values(r, k);
+      if(category_j == missing_category || category_k == missing_category) continue;
 
       score_column[r] =
         correlation_scores[q](category_j, category_k);
@@ -1069,6 +1203,9 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
   arma::vec score_mean = pattern_scores.t()*pattern_probabilities;
 
+  // Missing marginal/pair contributions are zero estimating functions,
+  // not imputed category-zero observations. All blocks use denominator N.
+  // This retains NVCOV = N*VCOV, including unequal pairwise sample sizes.
   arma::mat weighted_scores = pattern_scores;
   weighted_scores.each_col() %= arma::sqrt(pattern_probabilities);
 
@@ -1173,8 +1310,64 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   arma::mat NVCOV = influence_scores.t()*influence_scores;
   NVCOV = 0.5*(NVCOV+NVCOV.t());
 
+  arma::uvec regularized_mask(nparameters, arma::fill::zeros);
+  double variance_reference = 1.0;
+
+  for(arma::uword h = 0L; h < nparameters; ++h) {
+    const double variance = NVCOV(h, h);
+    if(std::isfinite(variance) && variance > inversion_tolerance) {
+      variance_reference = std::max(variance_reference, variance);
+    }
+    if(!std::isfinite(variance) || variance <= inversion_tolerance ||
+       !NVCOV.row(h).is_finite()) regularized_mask[h] = 1L;
+  }
+
+  for(arma::uword j = 0L; j < nitems; ++j) {
+    if(nobs_by_variable[j] < 2L) {
+      const arma::uword first = threshold_offsets[j];
+      regularized_mask.subvec(first, first+threshold_counts[j]-1L).ones();
+    }
+  }
+
+  for(arma::uword q = 0L; q < ncorrelations; ++q) {
+    if(pairwise_nobs[q] < 2L || A22_inverse(q, q) == 0.0) {
+      regularized_mask[nthresholds+q] = 1L;
+    }
+  }
+
+  arma::uvec regularized_parameters = arma::find(regularized_mask);
+
+  if(regularized_parameters.n_elem > 0L) {
+    // A numerical working weight, not evidence of identification: give
+    // unusable statistics a very large variance, hence a negligible DWLS
+    // weight. Removing their cross-covariances preserves the PSD principal
+    // block for all remaining statistics. No correlation is estimated here.
+    const double fallback_variance =
+      std::min(variance_reference, std::numeric_limits<double>::max()/1e07)*1e06;
+
+    for(arma::uword h = 0L; h < regularized_parameters.n_elem; ++h) {
+      const arma::uword index = regularized_parameters[h];
+      NVCOV.row(index).zeros();
+      NVCOV.col(index).zeros();
+      NVCOV(index, index) = fallback_variance;
+    }
+
+    Rcpp::warning(std::to_string(regularized_parameters.n_elem) +
+      " statistics had insufficient information or unusable variances; "
+      "large working variances were assigned for negligible DWLS weights. "
+      "See regularized_parameters and pairwise_nobs; these are not valid "
+      "sampling variances for unidentified statistics.");
+  }
+
   arma::mat VCOV = NVCOV/static_cast<double>(nobs);
   VCOV = 0.5*(VCOV+VCOV.t());
+
+  if(arma::accu(thresholds_regularized) > 0L) {
+    Rcpp::warning(std::to_string(arma::accu(thresholds_regularized)) +
+      " threshold vectors were non-increasing or numerically degenerate; "
+      "smoothed marginal working thresholds were used internally. "
+      "Supplied estimates were not modified.");
+  }
 
   if(floored_probabilities > 0L) {
     Rcpp::warning(std::to_string(floored_probabilities) +
@@ -1185,6 +1378,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
   arma::uvec threshold_offsets_output = threshold_offsets+1L;
   arma::umat pairs_output = pairs+1L;
+  arma::uvec regularized_parameters_output = regularized_parameters+1L;
 
   Rcpp::List result;
   result["VCOV"] = VCOV;
@@ -1200,16 +1394,32 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   result["threshold_offsets"] = threshold_offsets_output;
   result["pairs"] = pairs_output;
   result["nobs"] = nobs;
+  result["nobs_by_variable"] = nobs_by_variable;
+  result["pairwise_nobs"] = pairwise_nobs;
+  result["has_missing"] = has_missing;
+  result["missing_method"] = "available univariate and pairwise observations";
+  result["thresholds_used"] = Rcpp::wrap(tau);
+  result["thresholds_regularized"] = thresholds_regularized;
+  result["regularized_parameters"] = regularized_parameters_output;
   result["npatterns"] = npatterns;
   result["floored_probabilities"] = floored_probabilities;
   result["generalized_A11"] = generalized_A11;
   result["generalized_A22"] = generalized_A22;
-  result["polyfast_reused"] = use_polyfast;
+  result["polyfast_reused"] = reuse_tables;
+  result["polyfast_metadata_reused"] = use_polyfast;
   result["parameter_order"] =
     "finite thresholds by variable, followed by strict-lower-triangle correlations";
 
   if(return_scores) {
-    arma::umat patterns_output = pattern_values+1L;
+    // Retain one-based observed category indices; zero denotes missing.
+    arma::umat patterns_output(npatterns, nitems, arma::fill::zeros);
+    for(arma::uword j = 0L; j < nitems; ++j) {
+      for(arma::uword r = 0L; r < npatterns; ++r) {
+        const arma::uword category = pattern_values(r, j);
+        if(category != missing_category) patterns_output(r, j) = category+1L;
+      }
+    }
+    result["pattern_missing_code"] = 0L;
     result["patterns"] = patterns_output;
     result["pattern_weights"] = pattern_weights;
     result["pattern_scores"] = pattern_scores;
