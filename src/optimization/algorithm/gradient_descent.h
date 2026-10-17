@@ -33,11 +33,9 @@ optim_result gd(arguments_optim x,
   // Riemannian gradient
   final_manifold.proj(x, xmanifolds);
 
-  x.dir = -x.rg;
-  x.inprod = arma::accu(-x.dir % x.rg);
-  x.ng = sqrt(x.inprod);
-
   do {
+
+    x.dir = -x.rg;
 
     step->update(x, xtransforms, xmanifolds, xestimators);
 
@@ -48,21 +46,11 @@ optim_result gd(arguments_optim x,
     final_manifold.param(x, xmanifolds);
     final_manifold.proj(x, xmanifolds);
 
-    x.dir = -x.rg;
-    x.inprod = arma::accu(-x.dir % x.rg);
+    x.inprod = arma::accu(x.rg % x.rg);
     x.ng = sqrt(x.inprod);
 
     ++x.iterations;
 
-    if(x.print) {
-      Rcpp::Rcout << "Iteration = " << x.iterations << std::endl;
-      Rcpp::Rcout << "f = " << x.f << std::endl;
-      Rcpp::Rcout << "step size = " << x.ss << std::endl;
-      Rcpp::Rcout << "step iters = " << x.step_iteration << std::endl;
-      Rcpp::Rcout << "ng = " << x.ng << std::endl;
-      Rcpp::Rcout << "dif = " << std::sqrt(x.df*x.df) << std::endl;
-      Rcpp::Rcout << "" << std::endl;
-    }
     if ((x.ng < x.eps) | (std::sqrt(x.df*x.df) < x.df_eps)) {
       x.convergence = true;
       break;
