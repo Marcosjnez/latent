@@ -56,6 +56,11 @@
 - [`latent-package`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   : An R Package for Latent Variable Modeling
+- [`latscores()`](https://marcosjnez.github.io/latent/reference/latscores.md)
+  [`se(`*`<latscores>`*`)`](https://marcosjnez.github.io/latent/reference/latscores.md)
+  [`vcov(`*`<latscores>`*`)`](https://marcosjnez.github.io/latent/reference/latscores.md)
+  [`latInspect(`*`<latscores>`*`)`](https://marcosjnez.github.io/latent/reference/latscores.md)
+  : Factor Scores and Their Prediction Errors
 - [`lbvr(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llca.md)
   : Local bivariate residuals for latent class analysis
 - [`lbvr(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llcalist.md)
