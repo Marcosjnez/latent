@@ -33,7 +33,10 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
 - projection:
 
   Character string. Available projections are `"orth"`, `"oblq"`, and
-  `"poblq"`.
+  `"poblq"`. With `"oblq"` (the default), supplying a non-NULL `oblique`
+  block specification through `...` selects `"poblq"` internally. If
+  `oblique` is omitted or NULL, the fully oblique projection is
+  retained.
 
 - rotation:
 
@@ -68,7 +71,9 @@ lrotate(fit = NULL, lambda = NULL, psi = NULL,
   to which they apply. Component-specific arguments take precedence.
   Missing (or NULL) loading weights default to `1-target`, and
   covariance weights to `1-psitarget`. Explicit weights, including zero
-  matrices, are preserved. Group-specific lists are supported.
+  matrices, are preserved. Group-specific lists are supported. The
+  optional `oblique` argument specifies consecutive block sizes or lists
+  of factor positions; see Details for its forms and validation.
 
 ## Value
 
@@ -142,17 +147,31 @@ from disturbance moments. For an orthogonal projection, \\X^{-T}=X\\. If
 \\\Psi_0\\ is a fixed identity matrix, \\\Psi_r\\ is computed as
 \\X^TX\\.
 
-With `projection = "poblq"`, either `constraints` or `oblique` must be
-supplied through `...`. The former uses arbitrary structural
-constraints. A numeric `oblique` vector gives the sizes of consecutive
-oblique blocks. Alternatively, a list gives their explicit one-based
-factor positions, for example `list(c(1, 3, 5, 9), c(2, 4, 6, 7, 8))`.
-Blocks must be non-empty and disjoint; singleton blocks are allowed.
-Unlisted factors are mutually orthogonal and orthogonal to all listed
-blocks. The factor order, parameter labels, and target/weight indexing
-are unchanged. These constraints apply to \\X^TX\\; the formula for
-\\\Psi_r\\ above remains unchanged when the input factor covariance is
-not the identity. `constraints` and `oblique` cannot be used together.
+**The oblique argument.** Supply `oblique` through `...`. With
+`projection = "oblq"` (the default), omitting `oblique` or setting it to
+NULL allows all factors to be oblique. A non-NULL block specification
+changes the effective projection to `"poblq"` before model construction,
+using the same validation and manifold as an explicit
+`projection = "poblq"` call. Invalid block specifications are rejected
+when the rotation model is constructed, not ignored.
+
+A numeric `oblique` vector gives the sizes of consecutive oblique
+blocks. Each size must be a positive integer and their sum cannot exceed
+the number of factors. For example, `oblique = c(2, 2)` specifies blocks
+1–2 and 3–4. Alternatively, a list gives explicit one-based factor
+positions, for example `oblique = list(c(1, 3), c(2, 4))`. Blocks must
+be non-empty and disjoint, and positions must lie within the factor
+range; singleton blocks are allowed. Unlisted factors are mutually
+orthogonal and orthogonal to all listed blocks. The factor order,
+parameter labels, and target/weight indexing are unchanged. These
+constraints apply to \\X^TX\\; the formula for \\\Psi_r\\ above remains
+unchanged when the input factor covariance is not the identity.
+
+Explicit `projection = "poblq"` still requires either `oblique` or a
+`constraints` matrix supplied through `...`. To use a `constraints`
+matrix, select `"poblq"` explicitly. The arguments `constraints` and
+`oblique` cannot be used together, and a non-NULL `oblique` is not
+allowed with `projection = "orth"`.
 
 A flat list of `oblique` position vectors specifies blocks shared by all
 groups, even when its length equals the number of groups. Group-specific
@@ -183,6 +202,14 @@ direct_rotation <- lrotate(lambda = lambda,
                            psi = psi,
                            projection = "oblq",
                            rotation = "oblimin")
+
+# For a loading matrix with at least four factors:
+# The default projection = "oblq" is changed to "poblq" internally.
+block_rotation <- lrotate(lambda = lambda, oblique = c(2, 2))
+
+nonconsecutive_rotation <- lrotate(
+  lambda = lambda, projection = "oblq",
+  oblique = list(c(1, 3), c(2, 4)))
 
 mixed_rotation <- lrotate(lambda = lambda,
                            rotation = c("oblimin", "target", "geomin"),

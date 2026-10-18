@@ -44,7 +44,10 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
 
   Rotation projection passed to
   [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
-  Available options are `"orth"`, `"oblq"`, and `"poblq"`.
+  Available options are `"orth"`, `"oblq"`, and `"poblq"`. With `"oblq"`
+  (the default), a non-NULL `oblique` argument supplied through `...`
+  selects `"poblq"` internally. If `oblique` is omitted or NULL, all
+  factors are allowed to be oblique.
 
 - rotation:
 
@@ -180,6 +183,9 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
   arguments required by the selected rotation criterion or projection
   are passed only to
   [`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md).
+  This includes the optional `oblique` block specification described in
+  Details, which is never passed to
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md).
 
 ## Value
 
@@ -204,11 +210,39 @@ constrained to zero. The column norms of \\\Lambda\\ remain free. The
 lower-triangular zeros, so both schemes have the same effective number
 of parameters.
 
-With `projection = "poblq"`, either `constraints` or `oblique` must be
-supplied through `...`. The former uses arbitrary structural
-constraints, whereas the latter gives the sizes of consecutive oblique
-blocks; any remaining factors form one orthogonal block. They cannot be
-used together.
+**The oblique argument.** Supply `oblique` through `...`. With
+`projection = "oblq"` (the default), an omitted or NULL `oblique`
+retains the fully oblique projection. A non-NULL block specification
+selects `"poblq"` internally before CFA and rotation arguments are
+separated. The resulting rotation is the same as explicitly requesting
+`projection = "poblq"` with that block specification.
+
+A numeric vector specifies the sizes of consecutive oblique blocks; each
+size must be a positive integer and their sum cannot exceed the number
+of factors. For example, `oblique = c(2, 2)` defines blocks 1–2 and 3–4.
+A list instead gives explicit one-based factor positions, such as
+`oblique = list(c(1, 3), c(2, 4))`. Blocks must be non-empty and
+disjoint, and positions must lie within the factor range; singleton
+blocks are allowed. Any unlisted factors are mutually orthogonal and
+orthogonal to every listed block. Factor order and target/weight
+indexing are unchanged. Invalid block specifications are rejected when
+the rotation model is constructed, rather than reverting to a fully
+oblique rotation.
+
+Numeric block-size vectors and flat lists of factor-position vectors are
+shared by all groups. For group-specific blocks, use an outer list with
+one block list per group, in input group order; for example,
+`list(list(c(1, 3), c(2, 4)), list(1:2, 3:4))` for two groups. See
+[`lrotate()`](https://marcosjnez.github.io/latent/reference/lrotate.md)
+for further details about group-specific arguments.
+
+Explicit `projection = "poblq"` still requires either `oblique` or a
+`constraints` matrix supplied through `...`. To use a `constraints`
+matrix for rotation, select `"poblq"` explicitly. These two arguments
+cannot be used together. A non-NULL `oblique` is not allowed with
+`projection = "orth"`. As before, `do.fit = FALSE` returns only the
+unrotated CFA specification; no rotation model is constructed in that
+case.
 
 ## Examples
 
@@ -217,6 +251,16 @@ if (FALSE) { # \dontrun{
 fit <- lefa(data = HolzingerSwineford1939,
             nfactors = 3L,
             rotation = "oblimin")
+
+# Factors 1 and 2 are oblique; factor 3 is orthogonal to both.
+# projection = "poblq" is selected internally.
+block_fit <- lefa(data = HolzingerSwineford1939,
+                  nfactors = 3L, oblique = 2)
+
+# Nonconsecutive positions: factors 1 and 3 may correlate.
+position_fit <- lefa(data = HolzingerSwineford1939,
+                     nfactors = 3L, projection = "oblq",
+                     oblique = list(c(1, 3)))
 
 fit_orth_lambda <- lefa(
   data = HolzingerSwineford1939,

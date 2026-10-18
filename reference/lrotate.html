@@ -116,7 +116,10 @@ used. This argument cannot be used together with <code>fit</code>.</p></dd>
 
 <dt id="arg-projection">projection<a class="anchor" aria-label="anchor" href="#arg-projection"></a></dt>
 <dd><p>Character string. Available projections are
-<code>"orth"</code>, <code>"oblq"</code>, and <code>"poblq"</code>.</p></dd>
+<code>"orth"</code>, <code>"oblq"</code>, and <code>"poblq"</code>. With <code>"oblq"</code>
+(the default), supplying a non-NULL <code>oblique</code> block specification
+through <code>...</code> selects <code>"poblq"</code> internally. If <code>oblique</code>
+is omitted or NULL, the fully oblique projection is retained.</p></dd>
 
 
 <dt id="arg-rotation">rotation<a class="anchor" aria-label="anchor" href="#arg-rotation"></a></dt>
@@ -151,7 +154,9 @@ unrestricted specification used for derivative calculations is returned.</p></dd
 components to which they apply. Component-specific arguments take
 precedence. Missing (or NULL) loading weights default to <code>1-target</code>,
 and covariance weights to <code>1-psitarget</code>. Explicit weights, including
-zero matrices, are preserved. Group-specific lists are supported.</p></dd>
+zero matrices, are preserved. Group-specific lists are supported.
+The optional <code>oblique</code> argument specifies consecutive block sizes
+or lists of factor positions; see Details for its forms and validation.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -219,17 +224,29 @@ respectively. This separation prepares the rotation model for ESEM, where
 total latent moments can later differ from disturbance moments.
 For an orthogonal projection, \(X^{-T}=X\). If \(\Psi_0\) is a fixed
 identity matrix, \(\Psi_r\) is computed as \(X^TX\).</p>
-<p>With <code>projection = "poblq"</code>, either <code>constraints</code> or <code>oblique</code>
-must be supplied through <code>...</code>. The former uses arbitrary structural
-constraints. A numeric <code>oblique</code> vector gives the sizes of consecutive
-oblique blocks. Alternatively, a list gives their explicit one-based factor
-positions, for example <code>list(c(1, 3, 5, 9), c(2, 4, 6, 7, 8))</code>.
-Blocks must be non-empty and disjoint; singleton blocks are allowed.
-Unlisted factors are mutually orthogonal and orthogonal to all listed blocks.
-The factor order, parameter labels, and target/weight indexing are unchanged.
-These constraints apply to \(X^TX\); the formula for \(\Psi_r\) above
-remains unchanged when the input factor covariance is not the identity.
-<code>constraints</code> and <code>oblique</code> cannot be used together.</p>
+<p><strong>The oblique argument.</strong> Supply <code>oblique</code> through <code>...</code>.
+With <code>projection = "oblq"</code> (the default), omitting <code>oblique</code> or
+setting it to NULL allows all factors to be oblique. A non-NULL block
+specification changes the effective projection to <code>"poblq"</code> before
+model construction, using the same validation and manifold as an explicit
+<code>projection = "poblq"</code> call. Invalid block specifications are rejected
+when the rotation model is constructed, not ignored.</p>
+<p>A numeric <code>oblique</code> vector gives the sizes of consecutive oblique
+blocks. Each size must be a positive integer and their sum cannot exceed
+the number of factors. For example, <code>oblique = c(2, 2)</code> specifies
+blocks 1–2 and 3–4. Alternatively, a list gives explicit one-based factor
+positions, for example <code>oblique = list(c(1, 3), c(2, 4))</code>.
+Blocks must be non-empty and disjoint, and positions must lie within the
+factor range; singleton blocks are allowed. Unlisted factors are mutually
+orthogonal and orthogonal to all listed blocks. The factor order, parameter
+labels, and target/weight indexing are unchanged. These constraints apply
+to \(X^TX\); the formula for \(\Psi_r\) above remains unchanged when
+the input factor covariance is not the identity.</p>
+<p>Explicit <code>projection = "poblq"</code> still requires either <code>oblique</code>
+or a <code>constraints</code> matrix supplied through <code>...</code>. To use a
+<code>constraints</code> matrix, select <code>"poblq"</code> explicitly. The arguments
+<code>constraints</code> and <code>oblique</code> cannot be used together, and a
+non-NULL <code>oblique</code> is not allowed with <code>projection = "orth"</code>.</p>
 <p>A flat list of <code>oblique</code> position vectors specifies blocks shared by
 all groups, even when its length equals the number of groups. Group-specific
 blocks require an outer list with one block list per group, in input group
@@ -258,6 +275,14 @@ because no fitted source model is available.</p>
 <span class="r-in"><span>                           psi <span class="op">=</span> <span class="va">psi</span>,</span></span>
 <span class="r-in"><span>                           projection <span class="op">=</span> <span class="st">"oblq"</span>,</span></span>
 <span class="r-in"><span>                           rotation <span class="op">=</span> <span class="st">"oblimin"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># For a loading matrix with at least four factors:</span></span></span>
+<span class="r-in"><span><span class="co"># The default projection = "oblq" is changed to "poblq" internally.</span></span></span>
+<span class="r-in"><span><span class="va">block_rotation</span> <span class="op">&lt;-</span> <span class="fu">lrotate</span><span class="op">(</span>lambda <span class="op">=</span> <span class="va">lambda</span>, oblique <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">nonconsecutive_rotation</span> <span class="op">&lt;-</span> <span class="fu">lrotate</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  lambda <span class="op">=</span> <span class="va">lambda</span>, projection <span class="op">=</span> <span class="st">"oblq"</span>,</span></span>
+<span class="r-in"><span>  oblique <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">mixed_rotation</span> <span class="op">&lt;-</span> <span class="fu">lrotate</span><span class="op">(</span>lambda <span class="op">=</span> <span class="va">lambda</span>,</span></span>
 <span class="r-in"><span>                           rotation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"oblimin"</span>, <span class="st">"target"</span>, <span class="st">"geomin"</span><span class="op">)</span>,</span></span>
