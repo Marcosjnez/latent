@@ -19,7 +19,10 @@ matrices corresponding to \code{lambda}. If omitted, identity matrices are
 used. This argument cannot be used together with \code{fit}.}
 
 \item{projection}{Character string. Available projections are
-\code{"orth"}, \code{"oblq"}, and \code{"poblq"}.}
+\code{"orth"}, \code{"oblq"}, and \code{"poblq"}. With \code{"oblq"}
+(the default), supplying a non-NULL \code{oblique} block specification
+through \code{...} selects \code{"poblq"} internally. If \code{oblique}
+is omitted or NULL, the fully oblique projection is retained.}
 
 \item{rotation}{A criterion name, a character vector of criterion names, or
 a named list of parameter lists. Vector entries apply to the full rotated
@@ -44,7 +47,9 @@ unrestricted specification used for derivative calculations is returned.}
 components to which they apply. Component-specific arguments take
 precedence. Missing (or NULL) loading weights default to \code{1-target},
 and covariance weights to \code{1-psitarget}. Explicit weights, including
-zero matrices, are preserved. Group-specific lists are supported.}
+zero matrices, are preserved. Group-specific lists are supported.
+The optional \code{oblique} argument specifies consecutive block sizes
+or lists of factor positions; see Details for its forms and validation.}
 }
 \value{
 An object inheriting from class \code{"latent"}.
@@ -122,17 +127,31 @@ total latent moments can later differ from disturbance moments.
 For an orthogonal projection, \eqn{X^{-T}=X}. If \eqn{\Psi_0} is a fixed
 identity matrix, \eqn{\Psi_r} is computed as \eqn{X^TX}.
 
-With \code{projection = "poblq"}, either \code{constraints} or \code{oblique}
-must be supplied through \code{...}. The former uses arbitrary structural
-constraints. A numeric \code{oblique} vector gives the sizes of consecutive
-oblique blocks. Alternatively, a list gives their explicit one-based factor
-positions, for example \code{list(c(1, 3, 5, 9), c(2, 4, 6, 7, 8))}.
-Blocks must be non-empty and disjoint; singleton blocks are allowed.
-Unlisted factors are mutually orthogonal and orthogonal to all listed blocks.
-The factor order, parameter labels, and target/weight indexing are unchanged.
-These constraints apply to \eqn{X^TX}; the formula for \eqn{\Psi_r} above
-remains unchanged when the input factor covariance is not the identity.
-\code{constraints} and \code{oblique} cannot be used together.
+\strong{The oblique argument.} Supply \code{oblique} through \code{...}.
+With \code{projection = "oblq"} (the default), omitting \code{oblique} or
+setting it to NULL allows all factors to be oblique. A non-NULL block
+specification changes the effective projection to \code{"poblq"} before
+model construction, using the same validation and manifold as an explicit
+\code{projection = "poblq"} call. Invalid block specifications are rejected
+when the rotation model is constructed, not ignored.
+
+A numeric \code{oblique} vector gives the sizes of consecutive oblique
+blocks. Each size must be a positive integer and their sum cannot exceed
+the number of factors. For example, \code{oblique = c(2, 2)} specifies
+blocks 1--2 and 3--4. Alternatively, a list gives explicit one-based factor
+positions, for example \code{oblique = list(c(1, 3), c(2, 4))}.
+Blocks must be non-empty and disjoint, and positions must lie within the
+factor range; singleton blocks are allowed. Unlisted factors are mutually
+orthogonal and orthogonal to all listed blocks. The factor order, parameter
+labels, and target/weight indexing are unchanged. These constraints apply
+to \eqn{X^TX}; the formula for \eqn{\Psi_r} above remains unchanged when
+the input factor covariance is not the identity.
+
+Explicit \code{projection = "poblq"} still requires either \code{oblique}
+or a \code{constraints} matrix supplied through \code{...}. To use a
+\code{constraints} matrix, select \code{"poblq"} explicitly. The arguments
+\code{constraints} and \code{oblique} cannot be used together, and a
+non-NULL \code{oblique} is not allowed with \code{projection = "orth"}.
 
 A flat list of \code{oblique} position vectors specifies blocks shared by
 all groups, even when its length equals the number of groups. Group-specific
@@ -161,6 +180,14 @@ direct_rotation <- lrotate(lambda = lambda,
                            psi = psi,
                            projection = "oblq",
                            rotation = "oblimin")
+
+# For a loading matrix with at least four factors:
+# The default projection = "oblq" is changed to "poblq" internally.
+block_rotation <- lrotate(lambda = lambda, oblique = c(2, 2))
+
+nonconsecutive_rotation <- lrotate(
+  lambda = lambda, projection = "oblq",
+  oblique = list(c(1, 3), c(2, 4)))
 
 mixed_rotation <- lrotate(lambda = lambda,
                            rotation = c("oblimin", "target", "geomin"),

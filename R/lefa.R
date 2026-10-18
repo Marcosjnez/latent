@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 10/09/2026
+# Modification date: 18/10/2026
 #'
 #' Exploratory Factor Analysis
 #'
@@ -28,7 +28,10 @@
 #' @param nfactors Integer. Number of factors used when \code{model = NULL}.
 #' @param estimator Estimation method passed to \code{lcfa()}.
 #' @param projection Rotation projection passed to \code{lrotate()}. Available
-#'   options are \code{"orth"}, \code{"oblq"}, and \code{"poblq"}.
+#'   options are \code{"orth"}, \code{"oblq"}, and \code{"poblq"}. With
+#'   \code{"oblq"} (the default), a non-NULL \code{oblique} argument supplied
+#'   through \code{...} selects \code{"poblq"} internally. If \code{oblique}
+#'   is omitted or NULL, all factors are allowed to be oblique.
 #' @param rotation A criterion name, character vector, or named list of
 #'   component parameter lists passed to \code{lrotate()}. Multiple components
 #'   are summed. Each list component can select \code{items} and \code{factors};
@@ -81,7 +84,9 @@
 #'   See \code{lcfa()} for details.
 #' @param ... Additional arguments. CFA/lavaan arguments are passed to
 #'   \code{lcfa()}; arguments required by the selected rotation criterion or
-#'   projection are passed only to \code{lrotate()}.
+#'   projection are passed only to \code{lrotate()}. This includes the optional
+#'   \code{oblique} block specification described in Details, which is never
+#'   passed to \code{lcfa()}.
 #'
 #' @details
 #' Fitted objects retain the estimated factor order and signs. Sorting is
@@ -98,11 +103,37 @@
 #' orthogonality constraints replace the same number of lower-triangular zeros,
 #' so both schemes have the same effective number of parameters.
 #'
-#' With \code{projection = "poblq"}, either \code{constraints} or \code{oblique}
-#' must be supplied through \code{...}. The former uses arbitrary structural
-#' constraints, whereas the latter gives the sizes of consecutive oblique
-#' blocks; any remaining factors form one orthogonal block. They cannot be used
-#' together.
+#' \strong{The oblique argument.} Supply \code{oblique} through \code{...}.
+#' With \code{projection = "oblq"} (the default), an omitted or NULL
+#' \code{oblique} retains the fully oblique projection. A non-NULL block
+#' specification selects \code{"poblq"} internally before CFA and rotation
+#' arguments are separated. The resulting rotation is the same as explicitly
+#' requesting \code{projection = "poblq"} with that block specification.
+#'
+#' A numeric vector specifies the sizes of consecutive oblique blocks; each
+#' size must be a positive integer and their sum cannot exceed the number of
+#' factors. For example, \code{oblique = c(2, 2)} defines blocks 1--2 and 3--4.
+#' A list instead gives explicit one-based factor positions, such as
+#' \code{oblique = list(c(1, 3), c(2, 4))}. Blocks must be non-empty and
+#' disjoint, and positions must lie within the factor range; singleton blocks
+#' are allowed. Any unlisted factors are mutually orthogonal and orthogonal
+#' to every listed block. Factor order and target/weight indexing are unchanged.
+#' Invalid block specifications are rejected when the rotation model is
+#' constructed, rather than reverting to a fully oblique rotation.
+#'
+#' Numeric block-size vectors and flat lists of factor-position vectors are
+#' shared by all groups. For group-specific blocks, use an outer list with one
+#' block list per group, in input group order; for example,
+#' \code{list(list(c(1, 3), c(2, 4)), list(1:2, 3:4))} for two groups.
+#' See \code{lrotate()} for further details about group-specific arguments.
+#'
+#' Explicit \code{projection = "poblq"} still requires either \code{oblique}
+#' or a \code{constraints} matrix supplied through \code{...}. To use a
+#' \code{constraints} matrix for rotation, select \code{"poblq"} explicitly.
+#' These two arguments cannot be used together. A non-NULL \code{oblique}
+#' is not allowed with \code{projection = "orth"}. As before,
+#' \code{do.fit = FALSE} returns only the unrotated CFA specification; no
+#' rotation model is constructed in that case.
 #'
 #' @return A fitted object of class \code{"lefa"}. The unrotated
 #'   \code{lcfa} object is stored in its \code{extra} slot. If
@@ -113,6 +144,16 @@
 #' fit <- lefa(data = HolzingerSwineford1939,
 #'             nfactors = 3L,
 #'             rotation = "oblimin")
+#'
+#' # Factors 1 and 2 are oblique; factor 3 is orthogonal to both.
+#' # projection = "poblq" is selected internally.
+#' block_fit <- lefa(data = HolzingerSwineford1939,
+#'                   nfactors = 3L, oblique = 2)
+#'
+#' # Nonconsecutive positions: factors 1 and 3 may correlate.
+#' position_fit <- lefa(data = HolzingerSwineford1939,
+#'                      nfactors = 3L, projection = "oblq",
+#'                      oblique = list(c(1, 3)))
 #'
 #' fit_orth_lambda <- lefa(
 #'   data = HolzingerSwineford1939,
@@ -316,8 +357,8 @@ lefa <- function(data = NULL, nfactors = 1L, estimator = "ml",
 
   }
 
-  check_poblq_arguments_lrotate(projection = projection,
-                                dots = dots)
+  projection <- resolve_projection_lrotate(projection = projection,
+                                            dots = dots)
 
   dots_split <- split_dots_lefa(dots = dots,
                                 projection = projection,
@@ -419,7 +460,9 @@ split_dots_lefa <- function(dots, projection, rotation) {
     rotation_names <- c(rotation_names, "constraints", "oblique")
   }
 
-  rotation_names <- unique(rotation_names)
+  # oblique is always a rotation argument, including an explicit NULL.
+  # Never pass it to lcfa() when the fully oblique projection is retained.
+  rotation_names <- unique(c(rotation_names, "oblique"))
 
   if(projection != "poblq" &&
      is.matrix(dots[["constraints"]])) {
