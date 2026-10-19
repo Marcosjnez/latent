@@ -384,8 +384,15 @@ lbvr.llca <- function(x, digits = 4L, ...) {
           eta <- NA_real_
         }
 
+        P <- length(levs) - 1L
+        if(P > 0L && is.finite(eta)) {
+          raw_resid <- (sum(comp) * eta^2) / P
+        } else {
+          raw_resid <- NA_real_
+        }
+
         result <- list(resid = resid_val, pval = pval, rlike = eta,
-                       raw_resid = NA_real_)
+                       raw_resid = raw_resid)
       }
     }
 
@@ -442,7 +449,7 @@ lbvr.llca <- function(x, digits = 4L, ...) {
   rmsr <- sqrt(mean(upper_tris^2))
 
   res_tab <- data.frame(pair = names_mat[upper.tri(names_mat)],
-                        residual = round(raw_resid_mat[upper.tri(raw_resid_mat)],
+                        raw_residual = round(raw_resid_mat[upper.tri(raw_resid_mat)],
                                          digits),
                         statistic = round(resid_mat[upper.tri(resid_mat)], digits),
                         p_value = round(pval_mat[upper.tri(pval_mat)], digits),
@@ -451,8 +458,8 @@ lbvr.llca <- function(x, digits = 4L, ...) {
 
   test_labels <- c("gaussian-gaussian" = "Pearson r",
                    "multinomial-multinomial" = "Pearson chi2",
-                   "gaussian-multinomial" = "Z-score",
-                   "multinomial-gaussian" = "Z-score")
+                   "gaussian-multinomial" = "ANOVA",
+                   "multinomial-gaussian" = "ANOVA")
   res_tab$test <- unname(test_labels[res_tab$var_types])
   res_tab <- res_tab[order(abs(res_tab$r), decreasing = TRUE), , drop = FALSE]
   rownames(res_tab) <- NULL
