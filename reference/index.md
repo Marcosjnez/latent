@@ -77,6 +77,8 @@
   : Exploratory Factor Analysis Class
 - [`lefa()`](https://marcosjnez.github.io/latent/reference/lefa.md) :
   Exploratory Factor Analysis
+- [`lhmm()`](https://marcosjnez.github.io/latent/reference/lhmm.md) :
+  Hidden Markov Models
 - [`lmean()`](https://marcosjnez.github.io/latent/reference/lmean.md) :
   Sample Means
 - [`lmvnorm()`](https://marcosjnez.github.io/latent/reference/lmvnorm.md)
