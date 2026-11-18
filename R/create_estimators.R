@@ -65,6 +65,7 @@ create_estimators <- function(estimators, structures) {
       lreg               = c("y", "X"),
       polycor            = c("p", "n", "N"),
       lca                = c("S", "I", "weights"),
+      lhmm               = c("S", "I", "lengths", "weights"),
       lcaEM              = c("S", "I", "weights"),
       bayesconst1        = c("K", "alpha", "N", "U"),
       bayesconst2        = c("K", "alpha", "N", "pihat"),

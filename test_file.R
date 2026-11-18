@@ -1133,6 +1133,68 @@ inspect(fit2, "est")$beta
 round(latInspect(fit, "est")$B, 3)
 fit2
 
+#### latscores ####
+
+library(latent)
+fit <- lcfa(HolzingerSwineford1939[, paste("x", 1:9, sep = "")],
+            model = 'visual =~ x1 + x2 + x3
+                     textual =~ x4 + x5 + x6
+                     speed =~ x7 + x8 + x9')
+fs <- latscores(fit, method = "Green")
+fs@parameters$scores
+fs@Optim$SE$table_se$scores
+latInspect(fs, "scores")               # Display order and signs.
+se(fs)$table_se                        # Native order and signs.
+vcov(fs, person = 1)                   # Small error covariance for person 1.
+fs_new <- latscores(fit,
+                    data = HolzingerSwineford1939[, paste("x", 1:9, sep = "")],
+                    method = "regression")
+
+#### Hidden Markov Model ####
+
+library(latent)
+library(depmixS4)
+
+# Data: 120 consecutive observations
+data("speed", package = "depmixS4")
+dat <- head(speed, 120)
+dat$time <- seq_len(nrow(dat))
+
+# 1. latent
+set.seed(123)
+fit_latent <- lhmm(
+  data = dat,
+  nclasses = 2,
+  gaussian = "rt",
+  time = "time",
+  penalties = FALSE,
+  control = list(opt = "lbfgs", rstarts = 10)
+)
+
+# 2. depmixS4
+mod <- depmix(
+  rt ~ 1,
+  data = dat,
+  nstates = 2,
+  family = gaussian()
+)
+
+fit_depmix <- fit(mod, verbose = FALSE)
+
+# 3. Compare log-likelihoods
+ll_latent <- -fit_latent@Optim$f
+ll_depmix <- as.numeric(logLik(fit_depmix))
+
+c(
+  latent = ll_latent,
+  depmixS4 = ll_depmix,
+  difference = ll_latent - ll_depmix
+)
+
+# 4. Compare transition matrices
+fit_latent@transformed_pars$transition
+summary(fit_depmix, which = "transition")
+
 #### Check derivatives ####
 
 G <- c(get_grad(fit)$g)

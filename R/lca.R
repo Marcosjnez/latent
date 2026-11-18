@@ -578,7 +578,8 @@ create_lca_dataList <- function(data = NULL,
                                 gaussian = NULL,
                                 multinomial = NULL,
                                 model = NULL,
-                                weights = NULL) {
+                                weights = NULL,
+                                collapse = TRUE) {
 
   #### Out covariates, indicators, and outcomes names ####
 
@@ -717,7 +718,7 @@ create_lca_dataList <- function(data = NULL,
   if(length(gaussian) > 0L) any_continuous <- TRUE
   patterns <- make_patterns(data = data[, variables, drop = FALSE],
                             weights = weights,
-                            any_continuous = any_continuous)
+                            any_continuous = any_continuous || !collapse)
 
   design_patterns <- design[patterns$full2short, , drop = FALSE]
 
@@ -819,6 +820,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   class_names <- dataList$class_names
   control$class_names <- class_names
+  initial_names <- if(nrow(cov_patterns) == npatterns) pattern_names else rownames(cov_patterns)
 
   #### Separate llca objects from ordinary model specifications ####
 
@@ -862,15 +864,15 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   list_struct[[k]] <- list(name = "theta",
                            type = "matrix",
-                           dim = c(npatterns, nclasses),
-                           rownames = pattern_names,
+                           dim = c(nrow(cov_patterns), nclasses),
+                           rownames = initial_names,
                            colnames = class_names)
   k <- k+1L
 
   list_struct[[k]] <- list(name = "class",
                            type = "matrix",
-                           dim = c(npatterns, nclasses),
-                           rownames = pattern_names,
+                           dim = c(nrow(cov_patterns), nclasses),
+                           rownames = initial_names,
                            colnames = class_names)
   k <- k+1L
 
@@ -981,6 +983,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   list2env(full_model, envir = environment())
 
   nclasses <- ncol(trans$class)
+  temporal <- identical(control$estimator, "lhmm")
 
   #### Manifolds ####
 
@@ -1004,7 +1007,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   k <- k+1L
 
   # thetas to classes with softmax:
-  for(s in 1:npatterns) {
+  for(s in seq_len(nrow(trans$class))) {
 
     transforms[[k]] <- list(transform = "softmax",
                             parameters_in = list(trans$theta[s, ]),
@@ -1014,6 +1017,15 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   }
 
   # Conditional likelihoods:
+  if(temporal) {
+    for(j in seq_len(nclasses)) {
+      transforms[[k]] <- list(transform = "softmax",
+                              parameters_in = list(trans$logtransition[, j]),
+                              parameters_out = list(trans$transition[, j]))
+      k <- k + 1L
+    }
+  }
+
   transforms <- c(transforms,
                   transformations_multinomial_lca(trans, dataList),
                   transformations_gaussian_lca(trans, dataList),
@@ -1027,12 +1039,19 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   estimators <- list()
   G <- 1L
 
+  likelihood_parameters <- c("class", "loglik")
+  likelihood_extra <- list(S = npatterns, I = nclasses,
+                            weights = pattern_weights, double_names = "lca")
+  if(temporal) {
+    likelihood_parameters <- c(likelihood_parameters, "transition")
+    likelihood_extra$lengths <- lengths
+    likelihood_extra$weights <- trajectory_weights
+    likelihood_extra$double_names <- "lhmm"
+  }
+
   estimators[[G]] <- list(estimator = control$estimator,
-                          parameters = c("class", "loglik"),
-                          extra = list(S = npatterns,
-                                       I = nclasses,
-                                       weights = pattern_weights,
-                                       double_names = "lca"))
+                          parameters = likelihood_parameters,
+                          extra = likelihood_extra)
   G <- G + 1L
 
   # Choose whether using Bayes constants:

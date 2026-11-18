@@ -48,6 +48,7 @@ public:
 #include "rotation/lclf.h"
 
 #include "lca/lca.h"
+#include "lca/lhmm.h"
 #include "lca/lcaEM.h"
 #include "lca/bayesconst1.h"
 #include "lca/bayesconst2.h"
@@ -85,6 +86,7 @@ static const std::unordered_map<std::string, EstimatorFactory> estimator_factori
   { "xtarget",                     choose_xtarget                   },
   { "lclf",                        choose_lclf                      },
   { "lca",                         choose_lca                       },
+  { "lhmm",                        choose_lhmm                      },
   { "lcaEM",                       choose_lcaEM                     },
   { "bayesconst1",                 choose_bayesconst1               },
   { "bayesconst2",                 choose_bayesconst2               },
