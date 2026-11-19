@@ -8,33 +8,35 @@ fitted latent class model.
 ``` r
 # S3 method for class 'llca'
 ci(
-  fit,
+  x,
   type = "information",
   confidence = 0.95,
   parameters = NULL,
   digits = 3L,
-  ...
+  ...,
+  fit = x
 )
 
 # S3 method for class 'llca_sam'
-ci(object, ...)
+ci(x, ..., object = x)
 
 # S3 method for class 'llcalist'
 ci(
-  model,
+  x,
   type = "information",
   confidence = 0.95,
   parameters = NULL,
   digits = 3L,
-  ...
+  ...,
+  model = x
 )
 ```
 
 ## Arguments
 
-- fit:
+- x:
 
-  A fitted object inheriting from class `"llca"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - type:
 
@@ -59,7 +61,12 @@ ci(
 
 - ...:
 
-  Additional arguments passed to `se()`.
+  Additional arguments passed to
+  [`se()`](https://marcosjnez.github.io/latent/reference/se.latent.md).
+
+- fit:
+
+  A fitted object inheriting from class `"llca"`.
 
 - object:
 

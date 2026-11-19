@@ -29,7 +29,8 @@ plot_lca_multinomial(
 
 - data:
 
-  Data frame produced by `reshape_lca_multinomial()`.
+  Data frame produced by
+  [`reshape_lca_multinomial()`](https://marcosjnez.github.io/latent/reference/latent-internal.md).
 
 - variables:
 

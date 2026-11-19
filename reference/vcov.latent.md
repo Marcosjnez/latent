@@ -6,14 +6,14 @@ Variance-Covariance Matrix for Latent Objects
 
 ``` r
 # S3 method for class 'latent'
-vcov(fit, v, parameters = NULL)
+vcov(object, v, parameters = NULL, ..., fit = object)
 ```
 
 ## Arguments
 
-- fit:
+- object:
 
-  A fitted object inheriting from class `"latent"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - v:
 
@@ -25,6 +25,14 @@ vcov(fit, v, parameters = NULL)
   Optional parameter specification identifying the parameters or
   transformed parameters to return. The default follows the original
   order of the freely estimated parameters.
+
+- ...:
+
+  Additional arguments to the generic.
+
+- fit:
+
+  A fitted object inheriting from class `"latent"`.
 
 ## Value
 

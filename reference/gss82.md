@@ -1,6 +1,6 @@
 # Example dataset: gss82
 
-A dataset from the poLCA R package with 1202 rows and 4 columns. Items
+A dataset from the poLCA R package with 1,644 rows and 10 columns. Items
 are dichotomous and polytomous.
 
 ## Usage
@@ -11,15 +11,19 @@ gss82
 
 ## Format
 
-A data frame with 1202 rows and 4 variables:
+A data frame with 1,644 rows and 10 variables:
 
-- x:
+- ID:
 
-  An integer from 1 to 5
+  Respondent identifier.
 
-- y:
+- ACCURACY, COOPERAT, UNDERSTA, PURPOSE:
 
-  A lowercase letter
+  Interview items on accuracy, cooperation, understanding, and purpose.
+
+- RACE, SEX, EDUCR, MARITAL, AGE:
+
+  Race, sex, education category, marital status, and age.
 
 ## Source
 

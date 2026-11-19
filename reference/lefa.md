@@ -171,10 +171,11 @@ lefa(data = NULL, nfactors = 1L, estimator = "ml",
   [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md)'s
   sample-moment estimators, independently of `control.efa` and
   `control.rotation`. For example, `list(cores = 4L)` controls
-  `polyfast()` polychoric estimation. The two-step ACOV does not use
-  `cores` or explicit OpenMP. NULL uses the moment estimators' defaults.
-  See [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md)
-  for details.
+  [`polyfast()`](https://marcosjnez.github.io/latent/reference/latent-internal.md)
+  polychoric estimation. The two-step ACOV does not use `cores` or
+  explicit OpenMP. NULL uses the moment estimators' defaults. See
+  [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) for
+  details.
 
 - ...:
 

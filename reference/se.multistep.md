@@ -8,17 +8,17 @@ in previous steps.
 
 ``` r
 # S3 method for class 'multistep'
-se(fit, type = NULL, parameters = NULL, digits = 4L, ...)
+se(x, type = NULL, parameters = NULL, digits = 4L, ..., fit = x)
 
 # S3 method for class 'multistep_lcfa'
-se(fit, ...)
+se(x, ..., fit = x)
 ```
 
 ## Arguments
 
-- fit:
+- x:
 
-  A fitted object inheriting from class `"multistep"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - type:
 
@@ -40,6 +40,10 @@ se(fit, ...)
 - ...:
 
   Additional arguments reserved for future multistep methods.
+
+- fit:
+
+  A fitted object inheriting from class `"multistep"`.
 
 ## Value
 

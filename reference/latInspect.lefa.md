@@ -6,14 +6,14 @@ Inspect Fitted Exploratory Factor Analysis Objects
 
 ``` r
 # S3 method for class 'lefa'
-latInspect(fit, what = "est", sort = TRUE)
+latInspect(x, what = "est", sort = TRUE, ..., fit = x)
 ```
 
 ## Arguments
 
-- fit:
+- x:
 
-  A fitted object inheriting from class `"lefa"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - what:
 
@@ -22,6 +22,14 @@ latInspect(fit, what = "est", sort = TRUE)
 - sort:
 
   Logical. Sort/orient only the requested output; defaults to TRUE.
+
+- ...:
+
+  Additional arguments to the generic.
+
+- fit:
+
+  A fitted object inheriting from class `"lefa"`.
 
 ## Value
 

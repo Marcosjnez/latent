@@ -26,7 +26,8 @@ plot(
 - x:
 
   An object of class `"getfit.llcalist"`, normally returned by
-  `getfit()` for an `llcalist` object.
+  [`getfit()`](https://marcosjnez.github.io/latent/reference/getfit.llca.md)
+  for an `llcalist` object.
 
 - indices:
 

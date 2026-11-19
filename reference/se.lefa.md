@@ -6,14 +6,14 @@ Standard Errors for Exploratory Factor Analysis
 
 ``` r
 # S3 method for class 'lefa'
-se(fit, type = NULL, parameters = NULL, digits = 4L, ...)
+se(x, type = NULL, parameters = NULL, digits = 4L, ..., fit = x)
 ```
 
 ## Arguments
 
-- fit:
+- x:
 
-  A fitted object inheriting from class `"lefa"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - type:
 
@@ -35,6 +35,10 @@ se(fit, type = NULL, parameters = NULL, digits = 4L, ...)
 
   Additional arguments passed to
   [`se.multistep()`](https://marcosjnez.github.io/latent/reference/se.multistep.md).
+
+- fit:
+
+  A fitted object inheriting from class `"lefa"`.
 
 ## Value
 

@@ -7,10 +7,18 @@ parameters of a fitted latent-variable model.
 
 ``` r
 # S3 method for class 'latent'
-information(fit)
+information(x, ..., fit = x)
 ```
 
 ## Arguments
+
+- x:
+
+  Fitted model or collection of fitted models passed to the method.
+
+- ...:
+
+  Additional arguments to the generic.
 
 - fit:
 

@@ -79,27 +79,32 @@ for a fitted latent class model or for a list of fitted latent class models.</p>
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'llca'</span></span>
-<span><span class="fu">getfit</span><span class="op">(</span><span class="va">model</span>, digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="fu">getfit</span><span class="op">(</span><span class="va">x</span>, digits <span class="op">=</span> <span class="fl">4L</span>, <span class="va">...</span>, model <span class="op">=</span> <span class="va">x</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'llcalist'</span></span>
-<span><span class="fu">getfit</span><span class="op">(</span><span class="va">model</span>, digits <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># S3 method for class 'llcalist'</span></span>
-<span><span class="fu">getfit</span><span class="op">(</span><span class="va">model</span>, digits <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">getfit</span><span class="op">(</span><span class="va">x</span>, digits <span class="op">=</span> <span class="fl">4L</span>, <span class="va">...</span>, model <span class="op">=</span> <span class="va">x</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
-<dd><p>An object of class <code>"llcalist"</code> containing fitted
-<code>"llca"</code> or <code>"llca_sam"</code> objects.</p></dd>
+<dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
+<dd><p>Fitted model or collection of fitted models passed to the method.</p></dd>
 
 
 <dt id="arg-digits">digits<a class="anchor" aria-label="anchor" href="#arg-digits"></a></dt>
 <dd><p>Integer giving the number of decimal places used to round the
 output. Use <code>NULL</code> to return the unrounded values.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Additional arguments to the generic.</p></dd>
+
+
+<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
+<dd><p>An object of class <code>"llcalist"</code> containing fitted
+<code>"llca"</code> or <code>"llca_sam"</code> objects.</p></dd>
 
 </dl></div>
     <div class="section level2">

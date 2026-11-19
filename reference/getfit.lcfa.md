@@ -6,14 +6,14 @@ Fit Indices for CFA Models
 
 ``` r
 # S3 method for class 'lcfa'
-getfit(model, digits = 3L, fit_matrix = NULL)
+getfit(x, digits = 3L, fit_matrix = NULL, ..., model = x)
 ```
 
 ## Arguments
 
-- model:
+- x:
 
-  A fitted object inheriting from class `"lcfa"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - digits:
 
@@ -24,6 +24,14 @@ getfit(model, digits = 3L, fit_matrix = NULL)
   Optional precomputed internal fit matrix. This argument is used by
   package post-processing methods to avoid refitting the direct-FIML
   saturated model more than once.
+
+- ...:
+
+  Additional arguments to the generic.
+
+- model:
+
+  A fitted object inheriting from class `"lcfa"`.
 
 ## Value
 

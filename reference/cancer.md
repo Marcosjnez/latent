@@ -12,13 +12,29 @@ cancer
 
 A data frame with 475 rows and 13 variables:
 
-- x:
+- Age, WeightIndex, PerformanceRating:
 
-  An integer from 1 to 5
+  Patient age, weight index, and performance rating.
 
-- y:
+- CardiovascularDiseaseHistory, ElectrocardiogramCode:
 
-  A lowercase letter
+  Cardiovascular history and electrocardiogram code.
+
+- SystolicBloodPressure, DiastolicBloodPressure:
+
+  Blood pressure measurements.
+
+- SerumHaemoglobin, SerumProstaticAcidPhosphatase:
+
+  Serum measurements.
+
+- SizePrimaryTumor, TumorStage:
+
+  Primary tumor size and stage.
+
+- BoneMethasatases, Covariate_BoneMethasatases:
+
+  Bone metastasis indicator and corresponding covariate.
 
 ## Source
 

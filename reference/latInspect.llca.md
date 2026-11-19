@@ -9,15 +9,17 @@ from fitted `"llca"` objects.
 
 ``` r
 # S3 method for class 'llca'
-latInspect(fit, what = "profile", digits = 4L, sort = TRUE)
+latInspect(x, what = "profile", digits = 4L, sort = TRUE, ..., fit = x)
+
+# S3 method for class 'llcalist'
+latInspect(x, what = "profile", digits = 4L, sort = TRUE, ..., model = x)
 ```
 
 ## Arguments
 
-- fit:
+- x:
 
-  An object of class `"llca"` returned by
-  [`lca`](https://marcosjnez.github.io/latent/reference/lca.md).
+  Fitted model or collection of fitted models passed to the method.
 
 - what:
 
@@ -130,6 +132,20 @@ latInspect(fit, what = "profile", digits = 4L, sort = TRUE)
   Logical. Sort only inspection outputs by decreasing weighted posterior
   size. Defaults to TRUE. Class identities and the original reference
   class are retained, including in modal assignments.
+
+- ...:
+
+  Additional arguments to the generic.
+
+- fit:
+
+  An object of class `"llca"` returned by
+  [`lca`](https://marcosjnez.github.io/latent/reference/lca.md).
+
+- model:
+
+  For the `"llcalist"` method, a collection containing `"llca"` and/or
+  `"llca_sam"` model fits.
 
 ## Value
 

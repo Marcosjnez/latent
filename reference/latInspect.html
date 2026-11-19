@@ -78,7 +78,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">latInspect</span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'latent'</span></span>
-<span><span class="fu">latInspect</span><span class="op">(</span><span class="va">fit</span>, what <span class="op">=</span> <span class="st">"est"</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">latInspect</span><span class="op">(</span><span class="va">x</span>, what <span class="op">=</span> <span class="st">"est"</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span>, fit <span class="op">=</span> <span class="va">x</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -98,13 +98,13 @@
 to the requested output. Defaults to TRUE. FALSE returns native outputs.</p></dd>
 
 
+<dt id="arg-what">what<a class="anchor" aria-label="anchor" href="#arg-what"></a></dt>
+<dd><p>Character string identifying the requested component.</p></dd>
+
+
 <dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
 <dd><p>A fitted latent model. This method also handles lrotate results,
 which inherit from <code>"latent"</code> or <code>"multistep"</code>.</p></dd>
-
-
-<dt id="arg-what">what<a class="anchor" aria-label="anchor" href="#arg-what"></a></dt>
-<dd><p>Character string identifying the requested component.</p></dd>
 
 </dl></div>
     <div class="section level2">

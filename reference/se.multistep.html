@@ -82,18 +82,18 @@ steps.</p>
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'multistep'</span></span>
-<span><span class="fu">se</span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="cn">NULL</span>, parameters <span class="op">=</span> <span class="cn">NULL</span>, digits <span class="op">=</span> <span class="fl">4L</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu"><a href="se.latent.html">se</a></span><span class="op">(</span><span class="va">x</span>, type <span class="op">=</span> <span class="cn">NULL</span>, parameters <span class="op">=</span> <span class="cn">NULL</span>, digits <span class="op">=</span> <span class="fl">4L</span>, <span class="va">...</span>, fit <span class="op">=</span> <span class="va">x</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'multistep_lcfa'</span></span>
-<span><span class="fu">se</span><span class="op">(</span><span class="va">fit</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="se.latent.html">se</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span>, fit <span class="op">=</span> <span class="va">x</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>A fitted object inheriting from class <code>"multistep"</code>.</p></dd>
+<dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
+<dd><p>Fitted model or collection of fitted models passed to the method.</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
@@ -115,6 +115,10 @@ used in formatted parameter tables. If <code>NULL</code>, values are not rounded
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments reserved for future multistep methods.</p></dd>
+
+
+<dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
+<dd><p>A fitted object inheriting from class <code>"multistep"</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

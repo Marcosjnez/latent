@@ -10,14 +10,14 @@ associated with such constraints for selected transformed parameters.
 
 ``` r
 # S3 method for class 'latent'
-constraints_derivs(fit, parameters = NULL)
+constraints_derivs(x, parameters = NULL, ..., fit = x)
 ```
 
 ## Arguments
 
-- fit:
+- x:
 
-  A fitted object inheriting from class `"latent"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - parameters:
 
@@ -26,6 +26,14 @@ constraints_derivs(fit, parameters = NULL)
   Parameter labels must occur in `fit@modelInfo$transparameters_labels`.
   If `NULL`, the parameter blocks corresponding to the fitted model
   parameters are used.
+
+- ...:
+
+  Additional arguments to the generic.
+
+- fit:
+
+  A fitted object inheriting from class `"latent"`.
 
 ## Value
 

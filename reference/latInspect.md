@@ -8,7 +8,7 @@ Inspect Latent Model Results
 latInspect(x, ..., sort = TRUE)
 
 # S3 method for class 'latent'
-latInspect(fit, what = "est", sort = TRUE)
+latInspect(x, what = "est", sort = TRUE, ..., fit = x)
 ```
 
 ## Arguments
@@ -26,14 +26,14 @@ latInspect(fit, what = "est", sort = TRUE)
   Logical. Apply factor ordering/sign orientation or class ordering to
   the requested output. Defaults to TRUE. FALSE returns native outputs.
 
+- what:
+
+  Character string identifying the requested component.
+
 - fit:
 
   A fitted latent model. This method also handles lrotate results, which
   inherit from `"latent"` or `"multistep"`.
-
-- what:
-
-  Character string identifying the requested component.
 
 ## Value
 

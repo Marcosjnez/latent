@@ -13,20 +13,17 @@ structural fits, only predictions from the structural fit are returned.
 
 ``` r
 # S3 method for class 'llca'
-predict(model, new = NULL, ...)
+predict(object, new = NULL, ..., model = object)
 
 # S3 method for class 'llcalist'
-predict(model, new = NULL, ...)
-
-# S3 method for class 'llcalist'
-predict(model, new = NULL, ...)
+predict(object, new = NULL, ..., model = object)
 ```
 
 ## Arguments
 
-- model:
+- object:
 
-  A fitted object of class \`"llca"\` or \`"llcalist"\`.
+  Fitted model or collection of fitted models passed to the method.
 
 - new:
 
@@ -40,6 +37,10 @@ predict(model, new = NULL, ...)
 - ...:
 
   Additional arguments. Currently not used.
+
+- model:
+
+  A fitted object of class \`"llca"\` or \`"llcalist"\`.
 
 ## Value
 

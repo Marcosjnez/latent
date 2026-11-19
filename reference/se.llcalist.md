@@ -1,24 +1,30 @@
 # Standard errors for a collection of latent class models
 
-Applies `se()` to every fitted model in an `"llcalist"` object.
+Applies
+[`se()`](https://marcosjnez.github.io/latent/reference/se.latent.md) to
+every fitted model in an `"llcalist"` object.
 
 ## Usage
 
 ``` r
 # S3 method for class 'llcalist'
-se(model, type = "information", parameters = NULL, digits = 4L, ...)
+se(x, type = "information", parameters = NULL, digits = 4L, ..., model = x)
 ```
 
 ## Arguments
 
-- model:
+- x:
 
-  An object of class `"llcalist"` containing fitted `"llca"` objects.
+  Fitted model or collection of fitted models passed to the method.
 
 - type:
 
   Character string indicating the standard-error estimator. See
   `se.llca()`.
+
+- parameters:
+
+  Optional parameter specification passed to each model.
 
 - digits:
 
@@ -28,6 +34,10 @@ se(model, type = "information", parameters = NULL, digits = 4L, ...)
 - ...:
 
   Additional arguments passed to `se.llca()`.
+
+- model:
+
+  An object of class `"llcalist"` containing fitted `"llca"` objects.
 
 ## Value
 

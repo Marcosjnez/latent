@@ -6,14 +6,14 @@ Fit Indices for Exploratory Factor Analysis
 
 ``` r
 # S3 method for class 'lefa'
-getfit(model, digits = 3L, fit_matrix = NULL)
+getfit(x, digits = 3L, fit_matrix = NULL, ..., model = x)
 ```
 
 ## Arguments
 
-- model:
+- x:
 
-  A fitted object inheriting from class `"lefa"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - digits:
 
@@ -23,6 +23,14 @@ getfit(model, digits = 3L, fit_matrix = NULL)
 
   Optional precomputed internal fit matrix passed to
   [`getfit.lcfa()`](https://marcosjnez.github.io/latent/reference/getfit.lcfa.md).
+
+- ...:
+
+  Additional arguments to the generic.
+
+- model:
+
+  A fitted object inheriting from class `"lefa"`.
 
 ## Value
 

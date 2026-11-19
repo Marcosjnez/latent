@@ -7,10 +7,18 @@ estimated parameters of a fitted latent-variable model.
 
 ``` r
 # S3 method for class 'latent'
-robust(fit)
+robust(x, ..., fit = x)
 ```
 
 ## Arguments
+
+- x:
+
+  Fitted model or collection of fitted models passed to the method.
+
+- ...:
+
+  Additional arguments to the generic.
 
 - fit:
 
@@ -25,8 +33,9 @@ errors, and covariance-method metadata.
 ## Details
 
 Deterministic multistep models use the same propagated covariance for
-`information()` and `robust()` because the covariance method of every
-preceding statistic is fixed when the multistep model is fitted.
+[`information()`](https://marcosjnez.github.io/latent/reference/information.latent.md)
+and `robust()` because the covariance method of every preceding
+statistic is fixed when the multistep model is fitted.
 
 Pearson covariance and correlation estimators compute their robust
 covariance directly from the observed data. Other latent models reuse a

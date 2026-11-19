@@ -1,4 +1,4 @@
-# Simulate factor structures with misspecification errors.
+# Simulate factor structures with misspecification errors
 
 Simulate factor and bifactor structures with crossloadings, correlated
 factors, and more.
@@ -6,11 +6,11 @@ factors, and more.
 ## Usage
 
 ``` r
-simfactor(nfactors = 5, nitems = 6, loadings = "medium",
-crossloadings = 0, correlations = 0,
-estimator = "minres", fit = "rmsr", misfit = 0,
+simfactor(nfactors = 3, nitems = 4, loadings = "medium",
+crossloadings = 0, correlations_g = 0.3, correlations = 0,
+estimator = "uls", fit = "rmsr", misfit = "close",
 error_method = "cudeck", efa = FALSE,
-ngenerals = 0, loadings_g = "medium", correlations_g = 0,
+ngenerals = 0, loadings_g = "medium",
 pure = FALSE,
 lambda = NULL, Phi = NULL, Psi = NULL)
 ```
@@ -37,7 +37,7 @@ lambda = NULL, Phi = NULL, Psi = NULL)
 
 - correlations_g:
 
-  Correlation among the general factors. Defaults to 0.
+  Correlation among the general factors. Defaults to 0.3.
 
 - correlations:
 
@@ -45,7 +45,7 @@ lambda = NULL, Phi = NULL, Psi = NULL)
 
 - estimator:
 
-  estimator used to generate population error: "minres" or "ml".
+  Estimator used to generate population error. Defaults to "uls".
 
 - fit:
 

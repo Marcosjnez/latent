@@ -21,13 +21,13 @@ latscores(
 )
 
 # S3 method for class 'latscores'
-se(fit, type = "prediction", digits = NULL, ...)
+se(x, type = "prediction", digits = NULL, ..., fit = x)
 
 # S3 method for class 'latscores'
 vcov(object, person = NULL, group = NULL, ...)
 
 # S3 method for class 'latscores'
-latInspect(fit, what = "est", sort = TRUE)
+latInspect(x, what = "est", sort = TRUE, ..., fit = x)
 ```
 
 ## Arguments
@@ -88,6 +88,10 @@ latInspect(fit, what = "est", sort = TRUE)
 
   Optional list; tol (default 1e-10) controls relative matrix
   rank/positive-definiteness checks. No optimizer settings are needed.
+
+- x:
+
+  Fitted model or collection of fitted models passed to the method.
 
 - type:
 

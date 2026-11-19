@@ -4,6 +4,13 @@ The `"latent"` class provides the common representation used by fitted
 latent-variable models that share the generic derivative and covariance
 infrastructure of latent.
 
+## Details
+
+The model-specific subclasses inherit the slots of this class. Multistep
+models propagate uncertainty from earlier fits through deterministic
+steps. Multistage models also account for sampling variation from the
+new estimation stage.
+
 ## Slots
 
 - `version`:

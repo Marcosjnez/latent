@@ -76,15 +76,15 @@
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'latent'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">v</span>, parameters <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">object</span>, <span class="va">v</span>, parameters <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span>, fit <span class="op">=</span> <span class="va">object</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>A fitted object inheriting from class <code>"latent"</code>.</p></dd>
+<dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
+<dd><p>Fitted model or collection of fitted models passed to the method.</p></dd>
 
 
 <dt id="arg-v">v<a class="anchor" aria-label="anchor" href="#arg-v"></a></dt>
@@ -96,6 +96,14 @@ parameters, in the original fitting coordinates.</p></dd>
 <dd><p>Optional parameter specification identifying the parameters
 or transformed parameters to return. The default follows the original
 order of the freely estimated parameters.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Additional arguments to the generic.</p></dd>
+
+
+<dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
+<dd><p>A fitted object inheriting from class <code>"latent"</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -8,14 +8,14 @@ stages.
 
 ``` r
 # S3 method for class 'multistage'
-se(fit, type = "information", parameters = NULL, digits = 4L, ...)
+se(x, type = "information", parameters = NULL, digits = 4L, ..., fit = x)
 ```
 
 ## Arguments
 
-- fit:
+- x:
 
-  A fitted object inheriting from class `"multistage"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - type:
 
@@ -38,6 +38,10 @@ se(fit, type = "information", parameters = NULL, digits = 4L, ...)
 - ...:
 
   Additional arguments reserved for future extensions.
+
+- fit:
+
+  A fitted object inheriting from class `"multistage"`.
 
 ## Value
 

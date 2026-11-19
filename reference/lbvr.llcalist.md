@@ -1,8 +1,10 @@
 # Local bivariate residuals for a collection of latent class models
 
-Applies `lbvr()` to every fitted `"llca"` object contained in an object
-of class `"llcalist"`. Model names are preserved. Unnamed models are
-labelled according to their number of latent classes.
+Applies
+[`lbvr()`](https://marcosjnez.github.io/latent/reference/lbvr.llca.md)
+to every fitted `"llca"` object contained in an object of class
+`"llcalist"`. Model names are preserved. Unnamed models are labelled
+according to their number of latent classes.
 
 ## Usage
 

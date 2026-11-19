@@ -12,13 +12,21 @@ HolzingerSwineford1939
 
 A data frame with 301 rows and 15 variables:
 
-- x:
+- id:
 
-  An integer from 1 to 5
+  Student identifier.
 
-- y:
+- sex, school, grade:
 
-  A lowercase letter
+  Sex, school, and grade level.
+
+- ageyr, agemo:
+
+  Age in years and additional months.
+
+- x1, x2, x3, x4, x5, x6, x7, x8, x9:
+
+  Scores on the nine cognitive tests.
 
 ## Source
 

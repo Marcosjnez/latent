@@ -109,9 +109,24 @@ The package development is supported by two projects:
 - [`latInspect(`*`<lefa>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.lefa.md)
   : Inspect Fitted Exploratory Factor Analysis Objects
 - [`latInspect(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
+  [`latInspect(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
   : Inspect fitted latent class models
 - [`latent-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
+  [`lcfa-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
+  [`llca-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
+  [`llhmm-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
+  [`latscores-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
+  [`multistep-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
+  [`multistep_lcfa-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
+  [`multistage-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
+  [`multistage_lcfa-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
+  [`multistage_llca-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
   : Base Class for Fitted Latent Models
+- [`ESS_datLCA`](https://marcosjnez.github.io/latent/reference/latent-data.md)
+  [`hs_academic`](https://marcosjnez.github.io/latent/reference/latent-data.md)
+  [`icases`](https://marcosjnez.github.io/latent/reference/latent-data.md)
+  [`mtmm`](https://marcosjnez.github.io/latent/reference/latent-data.md)
+  : Example data for latent variable models
 - [`latent-package`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   [`latent`](https://marcosjnez.github.io/latent/reference/latent-package.md)
   : An R Package for Latent Variable Modeling
@@ -189,7 +204,7 @@ The package development is supported by two projects:
   [`se(`*`<multistep_lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/se.multistep.md)
   : Standard Errors for Multistep Latent Models
 - [`simfactor()`](https://marcosjnez.github.io/latent/reference/simfactor.md)
-  : Simulate factor structures with misspecification errors.
+  : Simulate factor structures with misspecification errors
 - [`sort_latent()`](https://marcosjnez.github.io/latent/reference/sort_latent.md)
   : Sorted Parameter Structures for Inspection
 - [`summary(`*`<lcfa>`*`)`](https://marcosjnez.github.io/latent/reference/summary.lcfa.md)

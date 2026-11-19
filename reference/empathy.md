@@ -13,13 +13,17 @@ empathy
 
 A data frame with 467 rows and 13 variables:
 
-- x:
+- ec1, ec2, ec3, ec4, ec5, ec6:
 
-  An integer from 1 to 5
+  Empathic concern measures.
 
-- y:
+- pt1, pt2, pt3, pt4, pt5, pt6:
 
-  A lowercase letter
+  Perspective taking measures.
+
+- sex:
+
+  Sex.
 
 ## Source
 

@@ -8,26 +8,31 @@ class models.
 
 ``` r
 # S3 method for class 'llca'
-getfit(model, digits = 4)
+getfit(x, digits = 4L, ..., model = x)
 
 # S3 method for class 'llcalist'
-getfit(model, digits = 4)
-
-# S3 method for class 'llcalist'
-getfit(model, digits = 4L)
+getfit(x, digits = 4L, ..., model = x)
 ```
 
 ## Arguments
 
-- model:
+- x:
 
-  An object of class `"llcalist"` containing fitted `"llca"` or
-  `"llca_sam"` objects.
+  Fitted model or collection of fitted models passed to the method.
 
 - digits:
 
   Integer giving the number of decimal places used to round the output.
   Use `NULL` to return the unrounded values.
+
+- ...:
+
+  Additional arguments to the generic.
+
+- model:
+
+  An object of class `"llcalist"` containing fitted `"llca"` or
+  `"llca_sam"` objects.
 
 ## Value
 

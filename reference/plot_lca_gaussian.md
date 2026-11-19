@@ -27,7 +27,8 @@ plot_lca_gaussian(
 
 - data:
 
-  Data frame produced by `reshape_lca_continuous()`.
+  Data frame produced by
+  [`reshape_lca_continuous()`](https://marcosjnez.github.io/latent/reference/latent-internal.md).
 
 - variables:
 

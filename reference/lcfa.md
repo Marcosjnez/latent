@@ -137,12 +137,13 @@ lcfa(data = NULL, model = NULL, estimator = "ml",
   or
   [`lmvnorm()`](https://marcosjnez.github.io/latent/reference/lmvnorm.md)).
   For example, `list(cores = 4L)` requests four OpenMP threads for
-  `polyfast()` polychoric estimation. The two-step ACOV does not use
-  `cores` or explicit OpenMP. NULL uses the moment estimators' own
-  defaults, independently of `control`. Group suffixes and uncertainty
-  propagation are set internally. This argument has no effect when no
-  separate moment estimator is fitted (for example, supplied sample
-  moments or direct FIML).
+  [`polyfast()`](https://marcosjnez.github.io/latent/reference/latent-internal.md)
+  polychoric estimation. The two-step ACOV does not use `cores` or
+  explicit OpenMP. NULL uses the moment estimators' own defaults,
+  independently of `control`. Group suffixes and uncertainty propagation
+  are set internally. This argument has no effect when no separate
+  moment estimator is fitted (for example, supplied sample moments or
+  direct FIML).
 
 - ...:
 

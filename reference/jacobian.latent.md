@@ -6,20 +6,28 @@ Compute the dependency Jacobian among transformed parameters.
 
 ``` r
 # S3 method for class 'latent'
-jacobian(fit, parameters = NULL)
+jacobian(x, parameters = NULL, ..., fit = x)
 ```
 
 ## Arguments
 
-- fit:
+- x:
 
-  A fitted object inheriting from class `"latent"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - parameters:
 
   Optional parameter specification identifying the transformed
   parameters whose Jacobian submatrix should be returned. If `NULL`, the
   complete transformed-parameter Jacobian is returned.
+
+- ...:
+
+  Additional arguments to the generic.
+
+- fit:
+
+  A fitted object inheriting from class `"latent"`.
 
 ## Value
 

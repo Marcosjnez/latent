@@ -7,17 +7,17 @@ estimated latent class profile of a fitted latent class model.
 
 ``` r
 # S3 method for class 'llca'
-summary(fit, digits = 3L, ...)
+summary(object, digits = 3L, ..., fit = object)
 
 # S3 method for class 'llcalist'
-summary(model, digits = 3L, ...)
+summary(object, digits = 3L, ..., model = object)
 ```
 
 ## Arguments
 
-- fit:
+- object:
 
-  A fitted object inheriting from class `"llca"`.
+  Fitted model or collection of fitted models passed to the method.
 
 - digits:
 
@@ -27,6 +27,10 @@ summary(model, digits = 3L, ...)
 - ...:
 
   Additional arguments reserved for future summary options.
+
+- fit:
+
+  A fitted object inheriting from class `"llca"`.
 
 - model:
 
