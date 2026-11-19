@@ -5,11 +5,10 @@
 \alias{hexaco}
 \title{Example dataset: hexaco}
 \format{
-A data frame with 5 different samples (28143 rows) and 100 HEXACO items:
-\describe{
-  \item{x}{An integer from 1 to 5}
-  \item{y}{A lowercase letter}
-}
+A data frame with 28,143 rows and 136 variables from five samples.
+The first four columns identify the sample and study participant and give age and sex.
+Columns 5 to 104 contain the 100 HEXACO items. The remaining columns contain
+intelligence, facet scores, and domain scores.
 }
 \source{
 Generated example

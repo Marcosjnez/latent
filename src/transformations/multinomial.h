@@ -26,7 +26,7 @@ public:
     int l = 0;
     for (int j = 0; j < J; ++j) {
       for (int i = 0; i < I; ++i) {
-        for (int k = 0; k < K[j]; ++k, ++l) {
+        for (arma::uword k = 0; k < K[j]; ++k, ++l) {
           peta[j](k,i) = trans(l);
           eta[j](k,i) = logtrans(l);
         }
@@ -91,7 +91,7 @@ public:
     int l = 0;
     for (int j = 0; j < J; ++j) {
       for (int i = 0; i < I; ++i) {
-        for (int k = 0; k < K[j]; ++k, ++l) {
+        for (arma::uword k = 0; k < K[j]; ++k, ++l) {
           dpeta[j](k,i) = dtrans_in(l);
           deta[j](k,i) = dtrans_in(l) / trans(l);
         }
@@ -218,7 +218,7 @@ multinomial* choose_multinomial(const Rcpp::List& trans_setup) {
   int l = 0;
   for (int j = 0; j < J; ++j) {
     for (int i = 0; i < I; ++i) {
-      for (int k = 0; k < K[j]; ++k, ++l) {
+      for (arma::uword k = 0; k < K[j]; ++k, ++l) {
         indices[j](k,i) = l;
       }
     }

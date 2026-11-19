@@ -13,7 +13,7 @@
 #' A numeric matrix containing derivatives of transformed model parameters.
 #'
 #' @seealso
-#' \code{\link{hessian}}, \code{\link{vcov}},
+#' \code{\link{hessian}}, \code{\link[stats]{vcov}},
 #' \code{\link{constraints_derivs}}
 #'
 #' @export

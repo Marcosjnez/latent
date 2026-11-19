@@ -15,10 +15,13 @@
 #' @return A list containing parameter tables, standard errors, covariance
 #'   matrices, and derivative information.
 #'
+#' @aliases se
+#' @param x Fitted model or collection of fitted models passed to the method.
 #' @method se latent
 #' @export
-se.latent <- function(fit, type = "information", parameters = NULL,
-                      digits = 4L, ...) {
+se.latent <- function(x, type = "information", parameters = NULL,
+                      digits = 4L, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
 

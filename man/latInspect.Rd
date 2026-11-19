@@ -7,7 +7,7 @@
 \usage{
 latInspect(x, ..., sort = TRUE)
 
-\method{latInspect}{latent}(fit, what = "est", sort = TRUE)
+\method{latInspect}{latent}(x, what = "est", sort = TRUE, ..., fit = x)
 }
 \arguments{
 \item{x}{A fitted latent model or collection of latent class models.}
@@ -17,10 +17,10 @@ latInspect(x, ..., sort = TRUE)
 \item{sort}{Logical. Apply factor ordering/sign orientation or class ordering
 to the requested output. Defaults to TRUE. FALSE returns native outputs.}
 
+\item{what}{Character string identifying the requested component.}
+
 \item{fit}{A fitted latent model. This method also handles lrotate results,
 which inherit from \code{"latent"} or \code{"multistep"}.}
-
-\item{what}{Character string identifying the requested component.}
 }
 \value{
 The requested model component, without altering \code{x}.

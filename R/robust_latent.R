@@ -26,9 +26,12 @@
 #' Direct robust likelihood scores are not yet available for ordinary
 #' \code{"lcfa"} likelihood models.
 #'
+#' @aliases robust
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method robust latent
 #' @export
-robust.latent <- function(fit) {
+robust.latent <- function(x, ..., fit = x) {
 
   #### Check inputs ####
 

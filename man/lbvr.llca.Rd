@@ -2,6 +2,7 @@
 % Please edit documentation in R/lbvr_llca.R
 \name{lbvr.llca}
 \alias{lbvr.llca}
+\alias{lbvr}
 \title{Local bivariate residuals for latent class analysis}
 \usage{
 \method{lbvr}{llca}(x, digits = 4L, ...)

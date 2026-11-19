@@ -4,14 +4,18 @@
 \alias{jacobian.latent}
 \title{Jacobian Matrix for Latent Models}
 \usage{
-\method{jacobian}{latent}(fit, parameters = NULL)
+\method{jacobian}{latent}(x, parameters = NULL, ..., fit = x)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"latent"}.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{parameters}{Optional parameter specification identifying the transformed
 parameters whose Jacobian submatrix should be returned. If \code{NULL}, the
 complete transformed-parameter Jacobian is returned.}
+
+\item{...}{Additional arguments to the generic.}
+
+\item{fit}{A fitted object inheriting from class \code{"latent"}.}
 }
 \value{
 A sparse square matrix. Rows and columns correspond to the selected

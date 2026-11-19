@@ -4,14 +4,18 @@
 \alias{latInspect.lefa}
 \title{Inspect Fitted Exploratory Factor Analysis Objects}
 \usage{
-\method{latInspect}{lefa}(fit, what = "est", sort = TRUE)
+\method{latInspect}{lefa}(x, what = "est", sort = TRUE, ..., fit = x)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"lefa"}.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{what}{Character string identifying the requested component.}
 
 \item{sort}{Logical. Sort/orient only the requested output; defaults to TRUE.}
+
+\item{...}{Additional arguments to the generic.}
+
+\item{fit}{A fitted object inheriting from class \code{"lefa"}.}
 }
 \value{
 A rotated parameter list, the unrotated \code{lcfa} object, or a

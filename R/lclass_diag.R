@@ -166,8 +166,8 @@ lclass_diag <- function(x, digits = 4,
 #' @export
 print.lclassd <- function(x, ...) {
   displayed_classes <- attr(x, "class_names", exact = TRUE)
-  cat("\n——— Latent Class Classification Diagnostics ———\n")
-  cat(rep("─", 50), "\n\n", sep = "")
+  cat("\n\u2014\u2014\u2014 Latent Class Classification Diagnostics \u2014\u2014\u2014\n")
+  cat(rep("\u2500", 50), "\n\n", sep = "")
 
   # If "Mostlikely.Class" is present, display number of classes
   if (!is.null(x[["Mostlikely.Class"]])) {
@@ -181,11 +181,11 @@ print.lclassd <- function(x, ...) {
 
     # ---- Custom formatting for each known component ----
     if (nm == "Entropy") {
-      cat("◆ Entropy R²:\n")
+      cat("\u25c6 Entropy R\u00b2:\n")
       cat("  ", obj, "\n\n")
 
     } else if (nm == "AvePP") {
-      cat("◆ Average posterior probabilities (AvePP) by true class:\n")
+      cat("\u25c6 Average posterior probabilities (AvePP) by true class:\n")
       df <- obj
       colnames(df) <- c("Mean", "SD", "Median", "Min", "Max")
       rownames(df) <- if(is.null(displayed_classes)) paste("Class", seq_len(nrow(df))) else displayed_classes
@@ -193,25 +193,25 @@ print.lclassd <- function(x, ...) {
       cat("\n")
 
     } else if (nm == "OCC") {
-      cat("◆ Odds of Correct Classification (OCC):\n")
+      cat("\u25c6 Odds of Correct Classification (OCC):\n")
       occ_vec <- obj
       names(occ_vec) <- if(is.null(displayed_classes)) paste("Class", seq_along(occ_vec)) else displayed_classes
       print(occ_vec, ...)
       cat("\n")
 
     } else if (nm == "Overall.Misclassification") {
-      cat("◆ Overall misclassification rate:\n")
+      cat("\u25c6 Overall misclassification rate:\n")
       cat("  ", obj, "\n\n")
 
     } else if (nm == "Misclassification.per.class") {
-      cat("◆ Misclassification rate by true class:\n")
+      cat("\u25c6 Misclassification rate by true class:\n")
       mc_vec <- obj
       names(mc_vec) <- if(is.null(displayed_classes)) paste("Class", seq_along(mc_vec)) else displayed_classes
       print(mc_vec, ...)
       cat("\n")
 
     } else if (nm == "Mostlikely.Class") {
-      cat("◆ Classification probabilities (rows = true class, columns = assigned class):\n")
+      cat("\u25c6 Classification probabilities (rows = true class, columns = assigned class):\n")
       mat <- obj
       rownames(mat) <- if(is.null(displayed_classes)) paste("True class", seq_len(nrow(mat))) else paste("True", displayed_classes)
       colnames(mat) <- if(is.null(displayed_classes)) paste("Assigned", seq_len(ncol(mat))) else paste("Assigned", displayed_classes)
@@ -219,7 +219,7 @@ print.lclassd <- function(x, ...) {
       cat("\n")
 
     } else if (nm == "Avg.Mostlikely") {
-      cat("◆ Average posterior probabilities by assigned class:\n")
+      cat("\u25c6 Average posterior probabilities by assigned class:\n")
       mat <- obj
       rownames(mat) <- if(is.null(displayed_classes)) paste("Assigned class", seq_len(nrow(mat))) else paste("Assigned", displayed_classes)
       colnames(mat) <- if(is.null(displayed_classes)) paste("Prob for class", seq_len(ncol(mat))) else paste("Prob for", displayed_classes)
@@ -227,13 +227,13 @@ print.lclassd <- function(x, ...) {
       cat("\n")
 
     } else if (nm == "Sum.Posterior") {
-      cat("◆ Class proportions based on posterior sums:\n")
+      cat("\u25c6 Class proportions based on posterior sums:\n")
       df <- obj
       print(df, row.names = FALSE, ...)
       cat("\n")
 
     } else if (nm == "Sum.Mostlikely") {
-      cat("◆ Class proportions based on modal assignment:\n")
+      cat("\u25c6 Class proportions based on modal assignment:\n")
       df <- obj
       print(df, row.names = FALSE, ...)
       cat("\n")
@@ -241,7 +241,7 @@ print.lclassd <- function(x, ...) {
     } else {
       # Fallback for any unknown components
       cat("[[", i, "]] ", nm, ":\n", sep = "")
-      cat(rep("─", nchar(nm) + 6), "\n", sep = "")
+      cat(rep("\u2500", nchar(nm) + 6), "\n", sep = "")
       if (is.matrix(obj) || is.data.frame(obj)) {
         print(obj, ...)
       } else {

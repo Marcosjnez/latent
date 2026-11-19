@@ -19,9 +19,12 @@
 #' Jacobian workspace used by that computation is not returned because it is not
 #' the cumulative Jacobian exposed by \code{jacobian.latent()}.
 #'
+#' @param object Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method vcov latent
 #' @export
-vcov.latent <- function(fit, v, parameters = NULL) {
+vcov.latent <- function(object, v, parameters = NULL, ..., fit = object) {
+  if(!missing(fit) && !missing(object)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
 

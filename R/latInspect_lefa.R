@@ -11,9 +11,12 @@
 #' @return A rotated parameter list, the unrotated \code{lcfa} object, or a
 #'   component delegated to \code{latInspect.lcfa()}.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method latInspect lefa
 #' @export
-latInspect.lefa <- function(fit, what = "est", sort = TRUE) {
+latInspect.lefa <- function(x, what = "est", sort = TRUE, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   if(!inherits(fit, "lefa")) {
     stop("fit must inherit from class 'lefa'.")

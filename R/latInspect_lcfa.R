@@ -11,9 +11,12 @@
 #' @return A parameter list, residual list, fit matrix, or estimator-specific
 #'   control component, depending on \code{what}.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method latInspect lcfa
 #' @export
-latInspect.lcfa <- function(fit, what = "est", sort = TRUE) {
+latInspect.lcfa <- function(x, what = "est", sort = TRUE, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
 

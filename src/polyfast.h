@@ -47,7 +47,7 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
   std::vector<std::vector<double>> pnorm_tau(q);
   arma::mat X2 = X;
 
-  for(size_t i = 0; i < q; ++i) {
+  for(int i = 0; i < q; ++i) {
 
     category_min[i] = X2.col(i).min();
     mins[i] = category_min[i];
@@ -59,7 +59,7 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
     pnorm_tau[i] = cumsum(frequencies); // Cumulative frequencies
     taus[i] = pnorm_tau[i];
 
-    for (size_t j = 0; j < maxs[i]; ++j) {
+    for (int j = 0; j < maxs[i]; ++j) {
       pnorm_tau[i][j] /= n;
       taus[i][j] = Qnorm(pnorm_tau[i][j]);
     }
@@ -84,8 +84,8 @@ polyfast_object poly(const arma::mat& X, const std::string smooth, double min_ei
   omp_set_num_threads(cores);
 #pragma omp parallel for
 #endif
-  for(size_t i=0; i < (q-1L); ++i) {
-    for(size_t j=(i+1L); j < q; ++j) {
+  for(int i=0; i < (q-1L); ++i) {
+    for(int j=(i+1L); j < q; ++j) {
       int k = I[i+1] + j;
       tabs[k] = joint_frequency_table(cols[i], n, maxs[i], cols[j], maxs[j]);
       std::vector<double> rho = optimize(taus[i], taus[j], tabs[k], s[i], s[j],

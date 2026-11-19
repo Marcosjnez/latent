@@ -45,9 +45,12 @@
 #' \code{\link{constraints_derivs}}, \code{\link{jacobian.latent}},
 #' \code{\link{vcov.latent}}
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method constraints_derivs latent
 #' @export
-constraints_derivs.latent <- function(fit, parameters = NULL) {
+constraints_derivs.latent <- function(x, parameters = NULL, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   if(is.null(parameters)) {
     parameters <- fit@modelInfo$parameters_labels

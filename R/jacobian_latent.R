@@ -25,9 +25,12 @@
 #' among transformed parameters. It differs from the conventional delta-method
 #' Jacobian, whose columns contain only freely estimated parameters.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method jacobian latent
 #' @export
-jacobian.latent <- function(fit, parameters = NULL) {
+jacobian.latent <- function(x, parameters = NULL, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
 

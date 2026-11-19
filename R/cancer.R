@@ -4,8 +4,12 @@
 #'
 #' @format A data frame with 475 rows and 13 variables:
 #' \describe{
-#'   \item{x}{An integer from 1 to 5}
-#'   \item{y}{A lowercase letter}
+#'   \item{Age, WeightIndex, PerformanceRating}{Patient age, weight index, and performance rating.}
+#'   \item{CardiovascularDiseaseHistory, ElectrocardiogramCode}{Cardiovascular history and electrocardiogram code.}
+#'   \item{SystolicBloodPressure, DiastolicBloodPressure}{Blood pressure measurements.}
+#'   \item{SerumHaemoglobin, SerumProstaticAcidPhosphatase}{Serum measurements.}
+#'   \item{SizePrimaryTumor, TumorStage}{Primary tumor size and stage.}
+#'   \item{BoneMethasatases, Covariate_BoneMethasatases}{Bone metastasis indicator and corresponding covariate.}
 #' }
 #' @source Generated example
 "cancer"

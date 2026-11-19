@@ -5,14 +5,12 @@
 \alias{predict.llcalist}
 \title{Predict latent class membership probabilities}
 \usage{
-\method{predict}{llca}(model, new = NULL, ...)
+\method{predict}{llca}(object, new = NULL, ..., model = object)
 
-\method{predict}{llcalist}(model, new = NULL, ...)
-
-\method{predict}{llcalist}(model, new = NULL, ...)
+\method{predict}{llcalist}(object, new = NULL, ..., model = object)
 }
 \arguments{
-\item{model}{A fitted object of class `"llca"` or `"llcalist"`.}
+\item{object}{Fitted model or collection of fitted models passed to the method.}
 
 \item{new}{Optional `data.frame` or matrix containing new values for all
 covariates used in the fitted model. Column names must match the original
@@ -21,6 +19,8 @@ fit the model. For a model without covariates, `new` only determines the
 number and row names of the returned predictions.}
 
 \item{...}{Additional arguments. Currently not used.}
+
+\item{model}{A fitted object of class `"llca"` or `"llcalist"`.}
 }
 \value{
 For an `"llca"` object, a `data.frame` containing the non-intercept columns

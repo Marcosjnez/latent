@@ -12,9 +12,12 @@
 #' @return A named numeric vector containing model dimensions and fit
 #'   statistics from the unrotated model. Rotation does not change model fit.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method getfit lefa
 #' @export
-getfit.lefa <- function(model, digits = 3L, fit_matrix = NULL) {
+getfit.lefa <- function(x, digits = 3L, fit_matrix = NULL, ..., model = x) {
+  if(!missing(model) && !missing(x)) return(.match_legacy_model("model"))
 
   #### Check inputs ####
 

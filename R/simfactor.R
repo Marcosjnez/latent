@@ -677,18 +677,18 @@ yuan <- function(R, lambda, Phi, Psi,
 }
 
 #' @title
-#' Simulate factor structures with misspecification errors.
+#' Simulate factor structures with misspecification errors
 #' @description
 #'
 #' Simulate factor and bifactor structures with crossloadings, correlated factors, and more.
 #'
 #' @usage
 #'
-#' simfactor(nfactors = 5, nitems = 6, loadings = "medium",
-#' crossloadings = 0, correlations = 0,
-#' estimator = "minres", fit = "rmsr", misfit = 0,
+#' simfactor(nfactors = 3, nitems = 4, loadings = "medium",
+#' crossloadings = 0, correlations_g = 0.3, correlations = 0,
+#' estimator = "uls", fit = "rmsr", misfit = "close",
 #' error_method = "cudeck", efa = FALSE,
-#' ngenerals = 0, loadings_g = "medium", correlations_g = 0,
+#' ngenerals = 0, loadings_g = "medium",
 #' pure = FALSE,
 #' lambda = NULL, Phi = NULL, Psi = NULL)
 #'
@@ -697,14 +697,14 @@ yuan <- function(R, lambda, Phi, Psi,
 #' @param loadings Loadings' magnitude on the factors: "low", "medium" or "high". Defaults to "medium".
 #' @param crossloadings Magnitude of the cross-loadings among the group factors. Defaults to 0.
 #' @param correlations Correlation among the factors. Defaults to 0.
-#' @param estimator estimator used to generate population error: "minres" or "ml".
+#' @param estimator Estimator used to generate population error. Defaults to "uls".
 #' @param fit Fit index to control the population error.
 #' @param misfit Misfit value to generate population error.
 #' @param error_method Method used to control population error: c("yuan", "cudeck"). Defaults to "cudeck".
 #' @param efa Reproduce the error with EFA or CFA. Defaults to FALSE (CFA).
 #' @param ngenerals Number of general factors.
 #' @param loadings_g Loadings' magnitude on the general factors: "low", "medium" or "high". Defaults to "medium".
-#' @param correlations_g Correlation among the general factors. Defaults to 0.
+#' @param correlations_g Correlation among the general factors. Defaults to 0.3.
 #' @param pure Fix a pure item on each general factor. Defaults to FALSE.
 #' @param lambda Custom loading matrix. If Phi is NULL, then all the factors will be correlated at the value given in correlations.
 #' @param Phi Custom Phi matrix. If lambda is NULL, then Phi should be conformable to the loading matrix specified with the above arguments.

@@ -15,7 +15,7 @@
 #' respect to the freely estimated parameters.
 #'
 #' @seealso
-#' \code{\link{vcov}}, \code{\link{jacobian}},
+#' \code{\link[stats]{vcov}}, \code{\link{jacobian}},
 #' \code{\link{constraints_derivs}}
 #'
 #' @export

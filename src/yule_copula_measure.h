@@ -314,7 +314,6 @@ Rcpp::List yule_cor_full_rcpp(const Rcpp::DataFrame& X_df,
     double ipfp_tol,
     double pinv_tol) {
     int P = X_df.size();
-    int N = X_df.nrows();
 
     arma::mat cor_mat = arma::eye<arma::mat>(P, P);
     arma::mat se_mat = arma::eye<arma::mat>(P, P);

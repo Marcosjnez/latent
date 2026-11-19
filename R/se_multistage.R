@@ -61,10 +61,12 @@
 #'   joint variance-covariance matrix before propagation to transformed
 #'   parameters.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
 #' @method se multistage
 #' @export
-se.multistage <- function(fit, type = "information", parameters = NULL,
-                          digits = 4L, ...) {
+se.multistage <- function(x, type = "information", parameters = NULL,
+                          digits = 4L, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
 

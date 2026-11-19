@@ -2,13 +2,13 @@
 % Please edit documentation in R/simfactor.R
 \name{simfactor}
 \alias{simfactor}
-\title{Simulate factor structures with misspecification errors.}
+\title{Simulate factor structures with misspecification errors}
 \usage{
-simfactor(nfactors = 5, nitems = 6, loadings = "medium",
-crossloadings = 0, correlations = 0,
-estimator = "minres", fit = "rmsr", misfit = 0,
+simfactor(nfactors = 3, nitems = 4, loadings = "medium",
+crossloadings = 0, correlations_g = 0.3, correlations = 0,
+estimator = "uls", fit = "rmsr", misfit = "close",
 error_method = "cudeck", efa = FALSE,
-ngenerals = 0, loadings_g = "medium", correlations_g = 0,
+ngenerals = 0, loadings_g = "medium",
 pure = FALSE,
 lambda = NULL, Phi = NULL, Psi = NULL)
 }
@@ -21,11 +21,11 @@ lambda = NULL, Phi = NULL, Psi = NULL)
 
 \item{crossloadings}{Magnitude of the cross-loadings among the group factors. Defaults to 0.}
 
-\item{correlations_g}{Correlation among the general factors. Defaults to 0.}
+\item{correlations_g}{Correlation among the general factors. Defaults to 0.3.}
 
 \item{correlations}{Correlation among the factors. Defaults to 0.}
 
-\item{estimator}{estimator used to generate population error: "minres" or "ml".}
+\item{estimator}{Estimator used to generate population error. Defaults to "uls".}
 
 \item{fit}{Fit index to control the population error.}
 

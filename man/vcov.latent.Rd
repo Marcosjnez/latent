@@ -4,10 +4,10 @@
 \alias{vcov.latent}
 \title{Variance-Covariance Matrix for Latent Objects}
 \usage{
-\method{vcov}{latent}(fit, v, parameters = NULL)
+\method{vcov}{latent}(object, v, parameters = NULL, ..., fit = object)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"latent"}.}
+\item{object}{Fitted model or collection of fitted models passed to the method.}
 
 \item{v}{Variance-covariance matrix of the freely estimated, untransformed
 parameters, in the original fitting coordinates.}
@@ -15,6 +15,10 @@ parameters, in the original fitting coordinates.}
 \item{parameters}{Optional parameter specification identifying the parameters
 or transformed parameters to return. The default follows the original
 order of the freely estimated parameters.}
+
+\item{...}{Additional arguments to the generic.}
+
+\item{fit}{A fitted object inheriting from class \code{"latent"}.}
 }
 \value{
 A list containing the selected variance-covariance matrix and

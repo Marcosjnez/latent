@@ -1,6 +1,6 @@
 # Author: Marcos Jimenez
 # email: m.j.jimenezhenriquez@vu.nl
-# Modification date: 18/10/2026
+# Modification date: 19/11/2026
 
 #### Store a dataset ####
 
@@ -21,11 +21,10 @@
 #### LCA (multinomial) ####
 
 library(latent)
-set.seed(2026)
-
-gss82$EDUCR <- as.integer(gss82$EDUCR)-1L
+gss <- latent::gss82
+gss$EDUCR <- as.integer(gss$EDUCR)-1L
 set.seed(20216)
-fit <- lca(data = gss82,
+fit <- lca(data = gss,
            nclasses = 3L,
            multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"),
            # covariates = c("RACE", "SEX", "EDUCR", "AGE"),
@@ -39,8 +38,8 @@ fit <- lca(data = gss82,
                             prob  = list(alpha=0)),
            # control = list(opt = "lbfgs", step = "armijo",
            #                rstarts = 30, cores = 30),
-           control = list(opt = "em", maxit = 50L, eps = 1e-05,
-                          mopt = "grad", mstep_maxit = 1L, mstep_eps = 1e-05,
+           control = list(opt = "em", maxit = 1000L, eps = 1e-10,
+                          mopt = "lbfgs", mstep_maxit = 50L, mstep_eps = 1e-05,
                           step = "armijo", step_maxit = 30L,
                           rstarts = 30, cores = 30),
            do.fit = TRUE)
@@ -48,8 +47,8 @@ latInspect(fit, what = "loglik")
 latInspect(fit, what = "convergence")
 latInspect(fit, what = "elapsed")
 # loglik: -3891.252 # penalized_loglik: -3892.478
-# loglik: -3879.167 # penalized_loglik: -3880.371 ("UNDERSTA ~~ COOPERAT
-#                                                   PURPOSE ~~ COOPERAT")
+# With both residual dependencies and direct L-BFGS:
+# loglik: -3879.167 # penalized_loglik: -3880.371
 
 jacob <- jacobian(fit, parameters = fit@modelInfo$trans[names(fit@modelInfo$param)])
 dim(jacob)
@@ -76,14 +75,18 @@ lbvr(fit)
 
 # Plot:
 plot(fit)
-plot(fit, type = "coefficients", what = "OR")
+plot(fit, type = "coefficients", what = "OR", se_type = "information")
 
-# Predictions if there are covariates:
-df <- data.frame(RACE = c("BLACK", "WHITE"),
-                 SEX = c("MALE", "MALE"),
-                 EDUCR = c(3, 3),
-                 AGE = c(35, 35))
-predict(fit, new = df)
+# With the covariates above, predict class membership for two respondents:
+if(length(fit@dataList$covariates_names)) {
+  df <- data.frame(RACE = c("BLACK", "WHITE"),
+                   SEX = c("MALE", "MALE"),
+                   EDUCR = c(3, 3),
+                   AGE = c(35, 35))
+  predict(fit, new = df)
+} else {
+  head(predict(fit)) # Common class probabilities in the intercept-only model
+}
 
 # Inspect model objects:
 latInspect(fit, what = "convergence")
@@ -150,21 +153,21 @@ SE <- se(fit, type = "information", digits = 4)
 SE$table
 
 # Get confidence intervals:
-CI <- ci(fit, type = "information", confidence = 0.95, digits = 2) # FIX THIS
+CI <- ci(fit, type = "information", confidence = 0.95, digits = 2)
 CI$table
+stopifnot(isTRUE(all.equal(CI$upper-CI$lower, 2*qnorm(0.975)*SE$se)))
 
 #### Mixed LCA (multinomial and gaussian) ####
 
 library(latent)
 set.seed(2026)
 penalties <- list(
-  # beta  = list(alpha = 0, lambda = 0, power = 0),
-  # beta  = list(alpha = 0),
+  beta  = list(alpha = 0),
   class = list(alpha = 1),
   prob  = list(alpha = 1),
   var   = list(alpha = 1),
   Sigma = list(alpha = 1)
-) # FIX defaults in penalties
+) # The same defaults are used with penalties = TRUE.
 fit <- lca(data = cancer,
            nclasses = 3L,
            gaussian = c("Age", "WeightIndex", "SystolicBloodPressure",
@@ -201,13 +204,19 @@ SE$table
 CI <- ci(fit, type = "information", confidence = 0.95, digits = 2)
 CI$table
 
-# hypothesis(fit, "b1|2 - b1|3 = 0")
+# Wald test for equality of the Class 2 and Class 3 intercepts:
+labels <- fit@modelInfo$trans$beta[1, 2:3]
+contrast <- c(1, -1)
+delta <- sum(contrast*fit@Optim$transparameters[labels])
+wald <- delta^2/drop(contrast %*% SE$vcov[labels, labels] %*% contrast)
+pchisq(wald, df = 1, lower.tail = FALSE)
 
 plot(fit)
 
 #### LCA with covariates (gaussian) ####
 
 library(latent)
+set.seed(2026)
 
 fit <- lca(data = empathy,
             nclasses = 4L,
@@ -222,19 +231,7 @@ fit <- lca(data = empathy,
 latInspect(fit, what = "loglik")
 # loglik: -1747.135 # penalized_loglik: -1750.566
 # loglik: -2049.840 # penalized_loglik: -2053.322 (outcomes = list(gaussian = c("pt5")))
-# SE <- se(fit, type = "standard", digits = 4)
-# SE$se
 latInspect(fit, what = "convergence")
-
-# # Effects-coding parameterization:
-# new_se <- effects_coding(fit$structural@parameters$beta, SE$vcov)
-# new_se$beta
-# new_se$table_se
-# new_se$se
-
-# new_se <- move_intercept(beta, vcov)
-# new_se$beta_new
-# matrix(new_se$se_new, 3, 3)
 
 # Print model fit:
 fit
@@ -242,12 +239,11 @@ fit
 # Get fit indices:
 getfit(fit)
 
-plot.llcalist(fit)
-plot.llcalist(fit, type = "coefficients", what = "OR")
+plot(fit)
+plot(fit, type = "coefficients", what = "OR", se_type = "information")
 
 # Inspect model objects:
 latInspect(fit, what = "loglik")
-# loglik: -2049.840 # penalized_loglik: -2053.322
 latInspect(fit, what = "coefs")
 latInspect(fit, what = "classes")
 latInspect(fit, what = "profile")
@@ -260,6 +256,13 @@ fitted(fit)
 # Get standard errors:
 SE <- se(fit, type = "information", digits = 4)
 SE$table
+
+# Effects coding and changing the reference to Class 2:
+beta <- fit@transformed_pars$beta
+labels <- fit@modelInfo$trans$beta
+effects_coding(beta, SE$vcov[c(labels), c(labels)])$table_se
+free <- c(labels[, -1L, drop = FALSE])
+move_intercept(beta, SE$vcov[free, free], column = 2L)$table_se
 
 # Get confidence intervals:
 CI <- ci(fit, type = "information", confidence = 0.95, digits = 2)
@@ -314,26 +317,33 @@ fit2 <- lavaan::cfa(model = model,
                     meanstructure = meanstructure,
                     likelihood = likelihood,
                     do.fit = TRUE)
-# Same loss value: OK
-fit2@Fit@fx*2      # 0.283407
-fit2@loglik$loglik # -3737.745
-latInspect(fit, "loss")
-latInspect(fit, "loglik") # loglik           -3737.745
-                          # penalized_loglik -3737.745
-                          # loglik_base      -4211.418
-                          # loglik_sat       -3695.092
+# The default ULS criteria use different covariance divisors and weights.
+# latent uses S * (n-1)/n and counts both triangles in its squared residuals.
+latent_loss <- latInspect(fit, "loss")["loss", "overall"]
+c(latent = latent_loss, lavaan_twice_fmin = 2 * unname(fitMeasures(fit2, "fmin")))
 
-inspect(fit2, "est")
-latInspect(fit, "est")
+# Supply the same sample moments and weights for a direct comparison.
+# lavaan stacks the means followed by the unique entries of the covariance.
+n <- nrow(HolzingerSwineford1939)
+W <- matrix(1, nrow(S), ncol(S))
+diag(W) <- 0.5
+WLS.V <- diag(c(rep(0.5, length(means)), W[lower.tri(W, diag = TRUE)]))
+fit2_matched <- lavaan::cfa(model, sample.cov = S * (n-1)/n, sample.mean = means,
+                            sample.nobs = n, sample.cov.rescale = FALSE,
+                            ordered = FALSE, estimator = "DWLS", WLS.V = WLS.V,
+                            std.lv = std.lv, std.ov = std.ov,
+                            meanstructure = meanstructure, se = "none")
+# lavaan's least-squares test statistic uses n-1 observations.
+lavaan_loss <- lavaan::lavInspect(fit2_matched, "test")$standard$stat/(n-1)
+c(latent = latent_loss, lavaan_matched = lavaan_loss)
+stopifnot(abs(latent_loss - lavaan_loss) < 1e-7)
+
+lavaan::lavInspect(fit2, "est")
+latInspect(fit, "est", sort = FALSE)
 fit@Optim$SE$se
-fit2@ParTable$se
-
-fitmeasures(fit2)
+lavaan::lavInspect(fit2, "se")
+fitMeasures(fit2, c("baseline.chisq", "rmr"))
 getfit(fit)
-latInspect(fit, "loss")
-fitMeasures(fit2, "unrestricted.logl")
-fitMeasures(fit2, "baseline.chisq")
-fitmeasures(fit2, "rmr")
 
 # NACOV <- lavTech(fit2, "gamma")
 # lapply(NACOV, FUN = dim)
@@ -377,15 +387,13 @@ fit2 <- lavaan::cfa(data = HolzingerSwineford1939,
                     meanstructure = meanstructure,
                     likelihood = likelihood,
                     do.fit = TRUE)
-fit2@Fit@fx*2      # 0.3848882
-fit2@loglik$loglik # -3682.198
-latInspect(fit, "loss")
-latInspect(fit, "loglik") # loglik           -3682.198
-                          # penalized_loglik -3682.198
-                          # loglik_base      -4150.500
-                          # loglik_sat       -3624.272
-
-lavaan::fitMeasures(fit2, "unrestricted.logl")
+loss <- latInspect(fit, "loss")["loss", "overall"]
+ll <- latInspect(fit, "loglik")
+c(latent = loss, lavaan = 2 * unname(fitMeasures(fit2, "fmin")))
+c(latent = ll["loglik", "overall"], lavaan = as.numeric(logLik(fit2)))
+stopifnot(abs(loss - 2 * fitMeasures(fit2, "fmin")) < 1e-7,
+          abs(ll["loglik", "overall"] - as.numeric(logLik(fit2))) < 1e-5,
+          abs(ll["loglik_sat", "overall"] - fitMeasures(fit2, "unrestricted.logl")) < 1e-5)
 
 #### CFA (nonpositive definite) ####
 
@@ -407,9 +415,11 @@ std.lv <- TRUE
 meanstructure <- TRUE
 likelihood <- "normal"
 
+set.seed(2026)
 fit <- lcfa(data = HolzingerSwineford1939,
             model = model,
             estimator = estimator,
+            meanstructure = meanstructure,
             ordered = FALSE,
             positive = TRUE,
             std.lv = std.lv,
@@ -421,11 +431,11 @@ fit <- lcfa(data = HolzingerSwineford1939,
             do.fit = TRUE,
             control = list(rstarts = 10L, se_method = "KKT", opt = "newton"))
 
-latInspect(fit, "loglik") # loglik           -3732.196
-                          # penalized_loglik -3732.197
-                          # loglik_base      -4154.518
-                          # loglik_sat       -3695.092
-fit@Optim$SE$table_se
+# The positivity constraint and log-determinant penalty change the optimum.
+latInspect(fit, "loglik")
+# Different Gram factors give the same covariance matrix. The information
+# calculation can warn about variances of their individual coordinates.
+# Inspect the reported model-parameter SEs separately from those coordinates.
 X <- se(fit, parameters = fit@modelInfo$trans[c("lambda", "psi", "theta")])
 lapply(X$table_se, FUN = round, digits = 3L)
 
@@ -438,12 +448,12 @@ det(fit@transformed_pars$psi)
 # With lavaan:
 fit2 <- cfa(model, data = HolzingerSwineford1939,
             estimator = estimator, std.lv = std.lv, std.ov = std.ov,
-            likelihood = likelihood)
+            meanstructure = meanstructure, likelihood = likelihood)
 fitMeasures(fit2, "logl")
 fitMeasures(fit2, "unrestricted.logl")
 fitMeasures(fit2, "baseline.chisq")
 
-inspect(fit2, what = "est") # NEGATIVE VARIANCE
+diag(lavaan::lavInspect(fit2, "est")$theta) # The unconstrained fit has a negative variance.
 det(inspect(fit2, what = "est")$theta)
 
 #### Multigroup CFA (nonpositive definite) ####
@@ -466,6 +476,24 @@ std.lv <- FALSE
 meanstructure <- TRUE
 likelihood <- "normal"
 
+# Obtain starting values from the unrestricted covariance fit. lavaan
+# warns about a negative residual variance in this example.
+fit2 <- lavaan::cfa(model, data = HolzingerSwineford1939,
+                    group = "school", estimator = estimator,
+                    std.lv = std.lv, std.ov = std.ov,
+                    meanstructure = meanstructure, likelihood = likelihood)
+est <- lavaan::lavInspect(fit2, "est")
+start <- list()
+for(g in names(est)) {
+  theta <- est[[g]]$theta
+  smallest <- min(eigen(theta, symmetric = TRUE, only.values = TRUE)$values)
+  diag(theta) <- diag(theta) + max(0, 0.1 - smallest)
+  start[[paste0("xtheta.", g)]] <- chol(theta)
+  start[[paste0("xpsi.", g)]] <- chol(est[[g]]$psi)
+  start[[paste0("lambda.", g)]] <- est[[g]]$lambda
+}
+
+set.seed(2026)
 fit <- lcfa(data = HolzingerSwineford1939,
             model = model,
             group = "school",
@@ -478,28 +506,25 @@ fit <- lcfa(data = HolzingerSwineford1939,
             meanstructure = meanstructure,
             likelihood = likelihood,
             se = "standard",
-            do.fit = TRUE, control = NULL)
-latInspect(fit, "loglik") # loglik           -3674.300
-                          # penalized_loglik -3674.302
-                          # loglik_base      -4150.500
-                          # loglik_sat       -3624.272
+            do.fit = TRUE,
+            control = list(opt = "newton", step = "trust", tcg_maxit = 100L,
+                           start = start, rstarts = 1L, se_method = "RH"))
+stopifnot(fit@Optim$convergence)
+# Expected log likelihood is about -3674.300. Redundant Gram coordinates
+# can produce variance warnings even at a converged fit.
+latInspect(fit, "loglik")
 
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 
-# With lavaan:
-fit2 <- cfa(model, data = HolzingerSwineford1939,
-            group = "school", estimator = estimator,
-            std.lv = std.lv, std.ov = std.ov,
-            meanstructure = meanstructure,
-            likelihood = likelihood,)
+# Compare the unconstrained fit:
 fitmeasures(fit2, fit.measures = c("cfi", "tli", "rmsea", "srmr"))
 fitMeasures(fit2, "logl")
 fitMeasures(fit2, "unrestricted.logl")
 fitMeasures(fit2, "baseline.chisq")
 
-inspect(fit2, what = "est")$Pasteur$theta # NEGATIVE VARIANCE
+diag(lavaan::lavInspect(fit2, "est")$Pasteur$theta) # Unconstrained residual variances
 det(inspect(fit2, what = "est")$Pasteur$theta)
 
 #### CFA (polychorics) ####
@@ -514,7 +539,7 @@ names(Ns) <- samples
 # Subset the items pertaining to the HEXACO-100
 selection <- 5:104
 full <- hexaco[, selection]
-mooc <- full[hexaco$sample == samples[2], ]
+mooc <- full[hexaco$sample == "mooc", ]
 dim(mooc)
 
 model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
@@ -543,25 +568,32 @@ fit <- lcfa(data = mooc,
 fit2 <- lavaan::cfa(data = mooc,
                     model = model.EM,
                     ordered = TRUE,
-                    estimator = "dwls",
-                    meanstructure = FALSE,
-                    std.ov = FALSE,
-                    std.lv = FALSE,
-                    # parameterization = "theta",
+                    estimator = estimator,
+                    meanstructure = meanstructure,
+                    std.ov = std.ov,
+                    std.lv = std.lv,
                     parameterization = "delta",
                     do.fit = TRUE)
 
-fit2@Fit@fx*2      # 0.4663271
-latInspect(fit, "loss") # loss           0.4883727
-                        # penalized_loss 0.4883727
-                        # loss_base      9.9220011
-                        # loss_sat       0.0000000
+# The two-step polychoric weight estimates differ between the packages.
+latent_loss <- latInspect(fit, "loss")["loss", "overall"]
+n <- nrow(mooc)
+c(latent = latent_loss, lavaan_default = lavaan::lavInspect(fit2, "test")$standard$stat/(n-1))
 
-diag(inspect(fit2, "est")$theta)
-diag(latInspect(fit, "est")$theta)
+# latent sums both halves of the correlation matrix and half-weights the
+# threshold residuals. Use those weights in lavaan's unique-statistic order.
+est <- fit@modelInfo$control_estimator[[1L]]
+WLS.V <- diag(c(est$w_thresholds/2, est$W[lower.tri(est$W)]))
+fit2_matched <- lavaan::cfa(model.EM, data = mooc, ordered = TRUE,
+                            estimator = estimator, meanstructure = meanstructure,
+                            std.lv = std.lv, std.ov = std.ov,
+                            parameterization = "delta", WLS.V = WLS.V)
+lavaan_loss <- lavaan::lavInspect(fit2_matched, "test")$standard$stat/(n-1)
+c(latent = latent_loss, lavaan_matched = lavaan_loss)
+stopifnot(abs(latent_loss - lavaan_loss) < 1e-6)
 
-# fit@Optim$SE$se
-# fit2@ParTable$se
+diag(lavaan::lavInspect(fit2_matched, "est")$theta)
+diag(latInspect(fit, "est", sort = FALSE)$theta)
 
 #### CFA (Yule correlation) ####
 
@@ -576,7 +608,7 @@ names(Ns) <- samples
 selection <- 5:104
 full <- hexaco[, selection]
 
-mooc <- full[hexaco$sample == samples[2], ]
+mooc <- full[hexaco$sample == "mooc", ]
 dim(mooc)
 
 model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
@@ -602,15 +634,14 @@ fit <- lcfa(model = model.EM,
             se = "standard",
             do.fit = TRUE,
             control = NULL)
-latInspect(fit, "loss") # loss           0.1159708
-                        # penalized_loss 0.1159708
-                        # loss_base      2.6771636
-                        # loss_sat       0.0000000
+latInspect(fit, "loss")
 fit@Optim$iterations
 fit@Optim$convergence
 fit@timing
 
 latInspect(fit, what = "lambda")
+# This Yule example uses an approximate inverse for the first-stage Hessian
+# when propagating the sampling uncertainty into the factor parameters.
 fit@Optim$SE$se
 
 #### Multigroup CFA (polychorics) ####
@@ -626,9 +657,9 @@ names(Ns) <- samples
 selection <- 5:104
 full <- hexaco[, selection]
 
-mooc <- full[hexaco$sample == samples[2], ]
+mooc <- full[hexaco$sample == "mooc", ]
 dim(mooc)
-mooc$school <- rep(c("s1", "s2"), times = c(2000, 2286))
+mooc$school <- rep(c("s1", "s2"), times = c(2000L, nrow(mooc) - 2000L))
 
 model.EM <- "FEA =~ hexemfea146 + hexemfea170 + hexemfea74 + hexemfea2
              ANX =~ hexemanx128 + hexemanx8 + hexemanx80 + hexemanx176
@@ -643,35 +674,44 @@ fit <- lcfa(model = model.EM,
             se = "standard",
             do.fit = TRUE,
             control = NULL)
-latInspect(fit, "loss") # loss           0.7875589
-                        # penalized_loss 0.7875589
-                        # loss_base      14.9698079
-                        # loss_sat       0.0000000
+loss <- latInspect(fit, "loss")["loss", ]
 
-# With lavaan:
-fit2 <- lavaan::cfa(model = model.EM, data = mooc,
-                    ordered = TRUE,
-                    estimator = "dwls",
-                    group = "school",
-                    # likelihood = "wishart",
-                    std.lv = TRUE, std.ov = TRUE,
-                    parameterization = "theta")
-# Same loss value: OK
-fit2@Fit@fx*2
+# With lavaan, use the same marker indicators and delta parameterization.
+fit2 <- lavaan::cfa(model = model.EM, data = mooc, ordered = TRUE,
+                    estimator = "dwls", group = "school", std.lv = FALSE,
+                    meanstructure = TRUE, parameterization = "delta")
+n <- as.numeric(lavaan::lavInspect(fit2, "nobs"))
+default_loss <- lavaan::lavInspect(fit2, "test")$standard$stat.group/(n-1)
+c(latent = unname(loss["overall"]), lavaan_default = weighted.mean(default_loss, n))
 
-lavaan::inspect(fit2, what = "se")$lambda
-round(fit@Optim$SE$table_se$lambda.group1, 3)
-diag(lavaan::inspect(fit2, what = "se")$theta)
-round(diag(fit@Optim$SE$table_se$theta.group1), 3)
-lavaan::inspect(fit2, what = "se")$psi
-round(fit@Optim$SE$table_se$psi.group1, 3)
+WLS.V <- lapply(fit@modelInfo$control_estimator, function(est) {
+  diag(c(est$w_thresholds/2, est$W[lower.tri(est$W)]))
+})
+fit2_matched <- lavaan::cfa(model.EM, data = mooc, ordered = TRUE,
+                            estimator = "dwls", group = "school", std.lv = FALSE,
+                            meanstructure = TRUE, parameterization = "delta",
+                            WLS.V = WLS.V)
+group_loss <- lavaan::lavInspect(fit2_matched, "test")$standard$stat.group/(n-1)
+# latent reports each group's contribution weighted by its sample fraction.
+comparison <- cbind(latent = loss[-length(loss)], lavaan_matched = group_loss*n/sum(n))
+comparison
+stopifnot(max(abs(comparison[, 1L] - comparison[, 2L])) < 1e-6)
 
-W <- lavInspect(fit2, "wls.v")
-W2 <- matrix(0, 16, 16)
-W2[lower.tri(W2, diag = TRUE)] <- diag(W)
-W2 <- (W2+t(W2))/2
-round(W2, 2)
-round(fit@data_list$correl[[1]]$W, 2)
+# Inspect sampling uncertainty using the group-specific parameter structures.
+blocks <- with(fit@dataList$data_param, c(lambda_group, theta_group, psi_group))
+latent_se <- se(fit, parameters = fit@modelInfo$trans[blocks], digits = NULL)$table_se
+lavaan_se <- lavaan::lavInspect(fit2, "se")
+latent_se[c("lambda.s1", "theta.s1", "psi.s1")]
+lavaan_se$s1[c("lambda", "theta", "psi")]
+
+# Compare correlation weights separately from thresholds, in the same pair order.
+W <- lavaan::lavInspect(fit2, "wls.v")
+lapply(seq_along(W), function(g) {
+  native <- fit@modelInfo$control_estimator[[g]]$W
+  weights <- diag(W[[g]])
+  pairs <- grepl("~~", names(weights), fixed = TRUE)
+  cbind(latent = native[lower.tri(native)], lavaan = weights[pairs])
+})
 
 #### CFA (FIML) ####
 
@@ -726,24 +766,20 @@ fit2 <- cfa(model = model,
             std.ov = std.ov,
             likelihood = likelihood)
 
-fit2@Fit@fx
-fit2@loglik$loglik
-latInspect(fit, "loss") # loss           0.3951155
-                        # penalized_loss 0.3951155
-                        # loss_base      3.5408549
-                        # loss_sat
+# The direct pattern likelihood has a different additive constant in its
+# optimization loss. Compare the observed-data log likelihood on the same cases.
+# The saturated model is a separate fit; its estimator is unavailable here.
+ll <- lcfa_fit_matrix(fit, compute_h1 = FALSE)["loglik", "overall"]
+c(latent = ll, lavaan = as.numeric(logLik(fit2)))
+stopifnot(abs(ll - as.numeric(logLik(fit2))) < 1e-5)
 
-latInspect(fit, "loglik") # loglik           -3733.769
-                          # penalized_loglik -3733.769
-                          # loglik_base      -4207.203
-                          # loglik_sat
-
-latInspect(fit, "est")
+latInspect(fit, "est", sort = FALSE)
 lavInspect(fit2, "est")
 
 lavInspect(fit2, "se")
 fit2@ParTable$se
-x <- se(fit, parameters = fit@modelInfo$trans[c("lambda", "theta", "psi")])
+blocks <- with(fit@dataList$data_param, c(lambda_group, theta_group, psi_group))
+x <- se(fit, parameters = fit@modelInfo$trans[blocks])
 x$table_se
 
 #### lmean ####
@@ -758,25 +794,26 @@ std.ov <- FALSE
 fit <- lmean(data = df, model = NULL, std.ov = std.ov)
 fit@parameters$means
 fit@Optim$SE$se
-# colMeans(df)
-# sqrt(apply(df, MARGIN = 2, var)/nrow(df))
+stopifnot(all.equal(c(fit@parameters$means), unname(colMeans(df))),
+          all.equal(unname(fit@Optim$SE$se), sqrt(unname(diag(cov(df)))/nrow(df))))
 
 #### lpearson ####
 
-# Pearson correlations
+# Pearson covariances (normal likelihood uses denominator N)
 
 library(latent)
 
 df <- HolzingerSwineford1939[, paste("x", 1:9, sep = "")]
 std.ov <- FALSE
 likelihood <- "normal"
-acov <- "standard"
+VCOV_type <- "standard"
 fit <- lpearson(data = df, std.ov = std.ov,
-                acov = acov, likelihood = likelihood,
+                VCOV = VCOV_type, likelihood = likelihood,
                 missing = "pairwise.complete.obs",
                 do.fit = TRUE)
 fit@parameters
 fit@Optim$SE$se
+stopifnot(all.equal(unname(fit@parameters$S), unname(cov(df))*(nrow(df)-1L)/nrow(df)))
 
 #### lpoly ####
 
@@ -787,12 +824,11 @@ samples <- unique(hexaco$sample) # industry mooc fire student dutch
 Ns <- sapply(samples, FUN = function(x) sum(hexaco$sample == x))
 names(Ns) <- samples
 
-# Subset the items pertaining to the HEXACO-100
-selection <- 5:104
+# First six HEXACO-100 items in the MOOC sample
 selection <- 5:10
 full <- hexaco[, selection]
 
-mooc <- full[hexaco$sample == samples[2], ]
+mooc <- full[hexaco$sample == "mooc", ]
 # dim(mooc)
 # POLY <- polyfast(as.matrix(mooc))
 # taus <- lapply(POLY$thresholds, FUN = \(x) matrix(x[-c(1, length(x))],
@@ -809,8 +845,7 @@ fit <- lpoly(data = mooc,
              method = "one-step",
              positive = FALSE,
              penalties = FALSE,
-             # model = fit@parameters[-7],
-             # start = fit@parameters,
+             # start = taus, # Optional thresholds computed above
              do.fit = TRUE,
              control = list(opt = "grad",
                             # subfix = ".group1",
@@ -819,25 +854,28 @@ fit <- lpoly(data = mooc,
                             tcg_maxit = 30,
                             ss = 0.001,
                             eps = 1e-06))
-# fit@loglik # -176520.8
-# fit@penalized_loglik # -176520.8
+# The composite log-likelihood is summed over cases; the objective is per case.
+loglik <- fit@Optim$outputs$estimators$doubles[[1L]][2L] # -176520.8
+stopifnot(all.equal(fit@Optim$f, -loglik/nrow(mooc)))
 fit@Optim$iterations
 fit@Optim$ng
 fit@Optim$convergence
-fit@Optim$f # 41.18545 # 41.18626
-max(fit@Optim$rg)
-max(fit@Optim$g)
+fit@Optim$f # 41.18545
+max(abs(fit@Optim$rg))
+max(abs(fit@Optim$g))
 fit@timing
 fit@modelInfo$param
 fit@modelInfo$parameters_labels
 
 fit@parameters
 fit@Optim$SE$se
-VCOV <- vcov(fit)
+taus <- fit@modelInfo$trans[paste0("taus", names(mooc))]
+# lpoly() stores the two-step ACOV, including the thresholds.
+VCOV <- vcov(fit, v = fit@Optim$SE$VCOV, parameters = taus)
 VCOV$se
-# FIX: get standard errors for taus
+stopifnot(all.equal(VCOV$se, fit@Optim$SE$se[unlist(taus, use.names = FALSE)]))
 
-# Tur <- Turbofuns:::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)
+# Tur <- Turbofuns::PolychoricRM(as.matrix(mooc), estimate.acm = TRUE)
 
 #### lyule ####
 
@@ -849,17 +887,16 @@ samples <- unique(hexaco$sample) # industry mooc fire student dutch
 Ns <- sapply(samples, FUN = function(x) sum(hexaco$sample == x))
 names(Ns) <- samples
 
-# Subset the items pertaining to the HEXACO-100
-selection <- 5:104
+# First six HEXACO-100 items in the MOOC sample
 selection <- 5:10
 full <- hexaco[, selection]
 
-mooc <- full[hexaco$sample == samples[2], ]
+mooc <- full[hexaco$sample == "mooc", ]
 dim(mooc)
 
-fit <- lyule(data = as.matrix(mooc), do.fit = TRUE)
-fit@parameters
-fit@Optim$SE$se
+fit_yule <- lyule(data = as.matrix(mooc), do.fit = TRUE)
+fit_yule@parameters
+fit_yule@Optim$SE$se
 
 # Compare with lpoly
 fit <- lpoly(data = mooc,
@@ -873,6 +910,20 @@ fit@Optim$SE$se
 #### lrotate ####
 
 library(latent)
+
+# Compare rotated loadings and factor correlations after matching columns and signs.
+rotation_differences <- function(fit, lambda, phi) {
+  L <- fit@transformed_pars$lambda_rotated
+  P <- fit@transformed_pars$psi_rotated
+  congruence <- psych::factor.congruence(L, lambda, digits = 10)
+  index <- max.col(abs(congruence), ties.method = "first")
+  stopifnot(!anyDuplicated(index))
+  signs <- sign(congruence[cbind(seq_along(index), index)])
+  errors <- c(loadings = max(abs(L - sweep(lambda[, index, drop = FALSE], 2, signs, "*"))),
+              correlations = max(abs(P - phi[index, index, drop = FALSE]*outer(signs, signs))))
+  stopifnot(max(errors) < 2e-4)
+  errors
+}
 
 model <- 'visual  =~ x1 + x2 + x3
           textual =~ x4 + x5 + x6
@@ -895,6 +946,7 @@ fit_cfa <- lcfa(data = HolzingerSwineford1939,
 fit_rotation <- lrotate(fit = fit_cfa,
                         projection = "oblq",
                         rotation = "oblimin",
+                        control = list(se_method = "KKT"),
                         se = TRUE)
 fit_rotation@Optim$f
 fit_rotation@parameters
@@ -920,32 +972,20 @@ estimator <- "uls"
 rotation <- "oblimin"
 projection <- "poblq"
 # Fit efa with bifactor:
-fit <- bifactor::efast(s, nfactors = nfactors, estimator = estimator,
-                       rotation = rotation, projection = projection,
-                       oblq_factors = c(2),
-                       gamma = 0, random_starts = 10L, cores = 1L)
-fit$rotation$f
-rownames(fit$efa$lambda) <- paste("X", 1:nitems, sep = "")
-colnames(fit$efa$lambda) <- paste("F", 1:nfactors, sep = "")
-lambda <- list(fit$efa$lambda)
+fit_b <- bifactor::efast(s, nfactors = nfactors, estimator = estimator,
+                         rotation = rotation, projection = projection,
+                         oblq_factors = 2L,
+                         gamma = 0, random_starts = 10L, cores = 1L)
+lambda <- fit_b$efa$lambda
+rownames(lambda) <- paste0("X", seq_len(nitems))
+colnames(lambda) <- paste0("F", seq_len(nfactors))
 
 set.seed(2028)
-p <- nitems
-q <- nfactors
-target <- diag(nfactors) %x% rep(1, nitems/nfactors)
-weight <- 1-target
-psitarget <- matrix(1, q, q)
-psitarget[1:2, 1:2] <- 0
-psiweight <- 1-psitarget; diag(weight) <- 0
-constraints <- matrix(0, nfactors, nfactors)
-constraints[1:2, 1:2] <- 1; diag(constraints) <- 0
-fit <- lrotate(lambda, rotation = rotation, projection = projection,
-               target = target, weight = weight,
-               psitarget = psitarget, psiweight = psiweight, w = 1,
-               gamma = 0.00, epsilon = 0.01, k = 0, a = 1, b = 0.5,
-               constraints = constraints,
+fit <- lrotate(lambda = lambda, rotation = rotation, projection = projection,
+               oblique = 2L, gamma = 0,
                do.fit = TRUE, control = list(opt = "newton", rstarts = 100L))
-fit@Optim$f
+c(latent = fit@Optim$f, bifactor = fit_b$rotation$f)
+rotation_differences(fit, fit_b$rotation$lambda, fit_b$rotation$phi)
 fit@Optim$iterations
 fit@Optim$convergence
 fit@Optim$ng
@@ -994,9 +1034,10 @@ latInspect(fit, what = "convergence")
 fit@Optim$iterations
 fit@Optim$elapsed
 
-fit_b <- bifactor::efast(as.matrix(df), nfactors = nfactors, estimator = estimator,
+# Use the same ML covariance matrix. efast() would standardize raw data to unit variance.
+S <- fit@extra$efa@dataList$sample.cov[[1L]]
+fit_b <- bifactor::efast(S, nfactors = nfactors, nobs = nrow(df), estimator = estimator,
                          rotation = rotation, projection = projection,
-                         oblq_factors = c(2),
                          gamma = 0, random_starts = 10L, cores = 1L)
 fit_b$elapsed/1e9
 fit@extra$efa@Optim$f
@@ -1005,11 +1046,7 @@ fit_b$efa$f
 fit@Optim$f
 fit_b$rotation$f
 
-round(fit@transformed_pars$psi_rotated, 3)
-round(fit_b$rotation$phi, 3)
-
-round(fit@transformed_pars$lambda_rotated, 3)
-round(fit_b$rotation$lambda, 3)
+rotation_differences(fit, fit_b$rotation$lambda, fit_b$rotation$phi)
 
 # EFA constraints derivatives:
 parameters <- fit@extra$efa@modelInfo$param$lambda
@@ -1025,9 +1062,10 @@ L <- fit@transformed_pars$lambda_rotated
 P <- fit@transformed_pars$psi_rotated
 L_labels <- fit@modelInfo$trans$lambda_rotated
 P_labels <- fit@modelInfo$trans$psi_rotated
-GL <- matrix(gradient[L_labels], nrow = 9, ncol = 3)
-GP <- matrix(gradient[P_labels], nrow = 3, ncol = 3)
-2*GP - solve(P) %*% t(GL) %*% L # diagonal
+GL <- matrix(gradient[L_labels], nrow = nrow(L), ncol = ncol(L))
+GP <- matrix(gradient[P_labels], nrow = nrow(P), ncol = ncol(P))
+stationarity <- 2*GP - solve(P, crossprod(GL, L))
+stopifnot(max(abs(stationarity[row(P) != col(P)])) < 1e-6)
 
 # Rotation constraints derivatives:
 parameters <- fit@modelInfo$trans$X
@@ -1041,6 +1079,7 @@ dim(dconstr$d2constr)
 library(latent)
 library(GPArotation)
 
+set.seed(2026)
 ulambda <- rorth(9, 4)
 
 # Bi-geomin:
@@ -1051,10 +1090,7 @@ fit <- lrotate(lambda = ulambda, projection = "oblq",
                control = list(rstarts = 10L))
 fit@Optim$iterations
 fit@Optim$f
-round(fit@transformed_pars$lambda_rotated, 3)
-round(fit@transformed_pars$psi_rotated, 3)
-round(rot$loadings, 3)
-round(rot$Phi, 3)
+rotation_differences(fit, rot$loadings, rot$Phi)
 
 # Bi-quartimin:
 
@@ -1064,10 +1100,7 @@ fit <- lrotate(lambda = ulambda, projection = "oblq",
                control = list(rstarts = 10L))
 fit@Optim$iterations
 fit@Optim$f
-round(fit@transformed_pars$lambda_rotated, 3)
-round(fit@transformed_pars$psi_rotated, 3)
-round(rot$loadings, 3)
-round(rot$Phi, 3)
+rotation_differences(fit, rot$loadings, rot$Phi)
 
 #### SEM ####
 
@@ -1120,17 +1153,22 @@ fit2 <- sem(model, data = PoliticalDemocracy,
             std.lv = std.lv,
             meanstructure = meanstructure,
             likelihood = likelihood)
-# Same loss value: OK
-fit2@Fit@fx*2      # 0.283407
-fit2@loglik$loglik # -3737.745
-latInspect(fit, "loss")
-latInspect(fit, "loglik") # loglik           -3737.745
-# penalized_loglik -3737.745
-# loglik_base      -4211.418
-# loglik_sat       -3695.092
+# Compare the ML discrepancy and the log likelihoods of the same three models.
+reference <- lavaan::fitMeasures(fit2, c("fmin", "logl", "unrestricted.logl",
+                                         "baseline.chisq"))
+ll <- latent::latInspect(fit, "loglik")[, "overall"]
+comparison <- rbind(
+  latent = c(latent::latInspect(fit, "loss")["loss", "overall"],
+             ll["loglik"], ll["loglik_base"], ll["loglik_sat"]),
+  lavaan = c(2*reference["fmin"], reference["logl"],
+             reference["unrestricted.logl"] - reference["baseline.chisq"]/2,
+             reference["unrestricted.logl"]))
+colnames(comparison) <- c("loss", "loglik", "loglik_base", "loglik_sat")
+comparison
+stopifnot(max(abs(comparison[1L, ] - comparison[2L, ])) < 1e-5)
 
-inspect(fit2, "est")$beta
-round(latInspect(fit, "est")$B, 3)
+lavaan::lavInspect(fit2, "est")$beta
+round(latent::latInspect(fit, "est", sort = FALSE)$B, 3)
 fit2
 
 #### latscores ####
@@ -1153,7 +1191,6 @@ fs_new <- latscores(fit,
 #### Hidden Markov Model ####
 
 library(latent)
-library(depmixS4)
 
 # Data: 120 consecutive observations
 data("speed", package = "depmixS4")
@@ -1172,18 +1209,19 @@ fit_latent <- lhmm(
 )
 
 # 2. depmixS4
-mod <- depmix(
+mod <- depmixS4::depmix(
   rt ~ 1,
   data = dat,
   nstates = 2,
   family = gaussian()
 )
 
-fit_depmix <- fit(mod, verbose = FALSE)
+set.seed(123)
+fit_depmix <- depmixS4::fit(mod, verbose = FALSE)
 
 # 3. Compare log-likelihoods
 ll_latent <- -fit_latent@Optim$f
-ll_depmix <- as.numeric(logLik(fit_depmix))
+ll_depmix <- as.numeric(depmixS4::logLik(fit_depmix))
 
 c(
   latent = ll_latent,
@@ -1191,60 +1229,60 @@ c(
   difference = ll_latent - ll_depmix
 )
 
-# 4. Compare transition matrices
-fit_latent@transformed_pars$transition
-summary(fit_depmix, which = "transition")
+# 4. Order states by mean response time. Each column is a previous state.
+latent_order <- order(fit_latent@transformed_pars$rt["mean", ])
+states <- seq_along(latent_order)
+depmix_order <- order(vapply(states, function(k) {
+  depmixS4::getpars(depmixS4::getmodel(fit_depmix, "response", k, 1L))[1L]
+}, numeric(1L)))
+depmix_transition <- vapply(states, function(k) {
+  depmixS4::getpars(depmixS4::getmodel(fit_depmix, "transition", k))
+}, numeric(length(states)))
+A_latent <- fit_latent@transformed_pars$transition[latent_order, latent_order]
+A_depmix <- depmix_transition[depmix_order, depmix_order]
+A_latent-A_depmix
+stopifnot(abs(ll_latent-ll_depmix) < 1e-5, max(abs(A_latent-A_depmix)) < 1e-4)
 
 #### Check derivatives ####
 
-G <- c(get_grad(fit)$g)
-names(G) <- fit@modelInfo$parameters_labels
+library(latent)
+model <- 'visual =~ x1 + x2 + x3
+          textual =~ x4 + x5 + x6'
+fit <- lcfa(data = HolzingerSwineford1939, model = model, positive = FALSE)
 
-control_manifold <- fit@modelInfo$control_manifold
-control_transform <- fit@modelInfo$control_transform
-control_estimator <- fit@modelInfo$control_estimator
-control_optimizer <- fit@modelInfo$control_optimizer
-
-x <- grad_comp(fit,
-               compute = "all",
-               eps = 1e-07)
-x$f # 4362.65 # 13800.13
-
-round(c(x$g) - c(x$numg), 5)
-max(abs(c(x$g) - c(x$numg)))
-round(c(x$dg) - c(x$numdg), 5)
-max(abs(c(x$dg) - c(x$numdg)))
-
-Optim <- optimizer(control_manifold, control_transform,
-                   control_estimator, control_optimizer)
-Optim$f
-
-x2 <- get_grad(fit)
-round(c(x2$g)-c(x$numg), 3)
-max(abs(c(x$g) - c(x$numg)))
+# Check the free coordinates slightly away from the optimum.
+point <- fit
+parameters <- c(fit@Optim$parameters)
+direction <- seq_along(parameters)/length(parameters)
+point@Optim$parameters <- parameters + 0.01*direction
+point@modelInfo$control_optimizer$dparameters <- direction
+x <- grad_comp(point, compute = "all", eps = 1e-5)
+stopifnot(max(abs(x$g - x$numg)) < 1e-6,
+          max(abs(x$dg - x$numdg)) < 1e-6)
 
 # Calculate the Hessian matrix using numerical approximations:
 G <- function(parameters) {
 
-  control_optimizer$parameters[[1]] <- parameters
-  g <- get_grad(fit)$g
+  point@Optim$parameters <- parameters
+  g <- c(get_grad(point)$g)
 
   return(g)
 
 }
 
-H <- numDeriv::jacobian(func = G, x = control_optimizer$parameters[[1]])
-H <- 0.5*(H + t(H)) # Force symmetry
+H <- numDeriv::jacobian(func = G, x = point@Optim$parameters)
+stopifnot(max(abs(H - get_hess(point)$h)) < 1e-6)
 
-x <- get_hess(fit)
-max(abs(H - x$h))
-
-VCOV <- get_vcov(fit, x$h)
+# Propagate the free-parameter covariance at the fitted solution.
+v <- information(fit)$VCOV
+VCOV <- get_vcov(fit, vcov = v)
 VCOV$vcov
-diag(VCOV$vcov)
+Matrix::diag(VCOV$vcov)
 
-x <- get_jacob(fit)
-x
+J <- get_jacob(fit)$jacob[, match(fit@modelInfo$parameters_labels,
+                                   fit@modelInfo$transparameters_labels), drop = FALSE]
+stopifnot(max(abs(VCOV$vcov - J %*% v %*% Matrix::t(J))) < 1e-8)
 
 #### To-do ####
-# SE for ML-modal-prop
+# ML three-step SEs still need to propagate uncertainty in the estimated
+# classification-error matrix for both modal and proportional assignment.

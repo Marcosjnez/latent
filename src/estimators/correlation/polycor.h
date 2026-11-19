@@ -31,8 +31,8 @@ void poly_derivs(double& df_dp, arma::vec& df_dtau1, arma::vec& df_dtau2,
   arma::mat pbi(s, r); pbi.fill(1e-16);
   arma::mat dpbi_dp(s, r);
   double denominator = std::sqrt(1-rho*rho);
-  for (size_t i = 0; i < s; ++i) { // Loop over the thresholds of first variable
-    for (size_t j = 0; j < r; ++j) { // Loop over the thresholds of second variable
+  for (int i = 0; i < s; ++i) { // Loop over the thresholds of first variable
+    for (int j = 0; j < r; ++j) { // Loop over the thresholds of second variable
       double nij = n[i][j];
       if (nij < 1e-16) continue;
       // CDF of the bivariate normal:
@@ -413,7 +413,7 @@ public:
   void G(arguments_optim& x) {
 
     std::vector<arma::vec> dfdtaus(p);
-    for (size_t i = 0; i < p; ++i) {
+    for (int i = 0; i < p; ++i) {
       dfdtaus[i].set_size(taus[i].n_elem-2L);
       dfdtaus[i].zeros();
     }
@@ -459,7 +459,7 @@ public:
 
     // compute the differentials:
     std::vector<arma::vec> ddfdtaus(p);
-    for (size_t i = 0; i < p; ++i) {
+    for (int i = 0; i < p; ++i) {
       ddfdtaus[i].set_size(taus[i].n_elem-2L);
       ddfdtaus[i].zeros();
     }
@@ -497,7 +497,6 @@ public:
   void outcomes(arguments_optim& x) {
 
     double loglik = -loss;
-    double loglik_indep = 0.00;
 
     doubles.resize(5);
     doubles[0] =  loss;          // loss   actual model

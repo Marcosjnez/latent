@@ -9,6 +9,10 @@
 #' latent-variable models that share the generic derivative and covariance
 #' infrastructure of \pkg{latent}.
 #'
+#' The model-specific subclasses inherit the slots of this class. Multistep models
+#' propagate uncertainty from earlier fits through deterministic steps. Multistage
+#' models also account for sampling variation from the new estimation stage.
+#'
 #' @slot version Character string containing the package version used to fit
 #'   the model.
 #' @slot call Original model-fitting call.
@@ -24,9 +28,10 @@
 #'
 #' @seealso
 #' \code{\link{hessian}}, \code{\link{jacobian}},
-#' \code{\link{constraints_derivs}}, \code{\link{vcov}}
+#' \code{\link{constraints_derivs}}, \code{\link[stats]{vcov}}
 #'
 #' @name latent-class
+#' @aliases lcfa-class llca-class llhmm-class latscores-class multistep-class multistep_lcfa-class multistage-class multistage_lcfa-class multistage_llca-class
 #' @rdname latent-class
 setClass("latent",
          slots = c(

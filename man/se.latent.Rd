@@ -2,12 +2,13 @@
 % Please edit documentation in R/se_latent.R
 \name{se.latent}
 \alias{se.latent}
+\alias{se}
 \title{Standard Errors for Latent Objects}
 \usage{
-\method{se}{latent}(fit, type = "information", parameters = NULL, digits = 4L, ...)
+\method{se}{latent}(x, type = "information", parameters = NULL, digits = 4L, ..., fit = x)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"latent"}.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{type}{Character string selecting \code{"information"} or
 \code{"robust"} covariance estimation.}
@@ -18,6 +19,8 @@
 \code{NULL} to avoid rounding.}
 
 \item{...}{Additional arguments.}
+
+\item{fit}{A fitted object inheriting from class \code{"latent"}.}
 }
 \value{
 A list containing parameter tables, standard errors, covariance

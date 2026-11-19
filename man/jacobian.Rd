@@ -22,6 +22,6 @@ associated with parameter transformations in fitted latent variable models.
 Compute Jacobian matrices for transformed model parameters.
 }
 \seealso{
-\code{\link{hessian}}, \code{\link{vcov}},
+\code{\link{hessian}}, \code{\link[stats]{vcov}},
 \code{\link{constraints_derivs}}
 }

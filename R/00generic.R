@@ -3,6 +3,16 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 22/08/2026
 
+# A named legacy model argument leaves the first positional argument for
+# the next formal. Rename it to the generic's model argument before matching.
+.match_legacy_model <- function(name) {
+  method <- sys.function(-1L)
+  call <- sys.call(-1L)
+  names(call)[names(call) == name] <- names(formals(method))[[1L]]
+  call[[1L]] <- method
+  eval(call, parent.frame(2L))
+}
+
 .show_latent_row <- function(label, value) {
 
   cat(sprintf("  %-45s %s\n", label, value))

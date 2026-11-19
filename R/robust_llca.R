@@ -11,9 +11,11 @@
 #' @return A list containing the Hessian, empirical score covariance, robust
 #'   variance-covariance matrix, standard errors, and method label.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method robust llca
 #' @export
-robust.llca <- function(fit) {
+robust.llca <- function(x, ..., fit = x) {
 
   if(fit@dataList$nobs <= 1L) {
     stop("Robust standard errors require more than one observation.")

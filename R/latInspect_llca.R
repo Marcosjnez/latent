@@ -80,11 +80,14 @@
 #' @references
 #' None yet.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method latInspect llca
 #' @export
-latInspect.llca <- function(fit,
+latInspect.llca <- function(x,
                             what = "profile",
-                            digits = 4L, sort = TRUE) {
+                            digits = 4L, sort = TRUE, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
 
@@ -533,13 +536,15 @@ latInspect.llca <- function(fit,
 
 }
 
+#' @rdname latInspect.llca
 #' @param model For the \code{"llcalist"} method, a collection containing
 #'   \code{"llca"} and/or \code{"llca_sam"} model fits.
 #' @method latInspect llcalist
 #' @export
-latInspect.llcalist <- function(model,
+latInspect.llcalist <- function(x,
                                 what = "profile",
-                                digits = 4L, sort = TRUE) {
+                                digits = 4L, sort = TRUE, ..., model = x) {
+  if(!missing(model) && !missing(x)) return(.match_legacy_model("model"))
 
   if(!inherits(model, "llcalist")) {
     stop("model must inherit from class 'llcalist'.")

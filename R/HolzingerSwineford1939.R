@@ -4,8 +4,10 @@
 #'
 #' @format A data frame with 301 rows and 15 variables:
 #' \describe{
-#'   \item{x}{An integer from 1 to 5}
-#'   \item{y}{A lowercase letter}
+#'   \item{id}{Student identifier.}
+#'   \item{sex, school, grade}{Sex, school, and grade level.}
+#'   \item{ageyr, agemo}{Age in years and additional months.}
+#'   \item{x1, x2, x3, x4, x5, x6, x7, x8, x9}{Scores on the nine cognitive tests.}
 #' }
 #' @source Generated example
 "HolzingerSwineford1939"

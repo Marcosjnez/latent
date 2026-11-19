@@ -508,9 +508,11 @@ compute_se_latscores <- function(fit) {
 #' @param digits Optional rounding of the displayed SE matrices, not the
 #'   stored SE vector or covariance blocks. NULL returns full precision.
 #' @param ... Reserved; unsupported arguments produce an error.
+#' @param x Fitted model or collection of fitted models passed to the method.
 #' @method se latscores
 #' @export
-se.latscores <- function(fit, type = "prediction", digits = NULL, ...) {
+se.latscores <- function(x, type = "prediction", digits = NULL, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
   if (length(list(...))) stop("Unsupported arguments to se.latscores().")
   if (!identical(type, "prediction")) stop("Use type = 'prediction'; model-parameter uncertainty is not included.")
   out <- if (length(fit@Optim$SE)) fit@Optim$SE else compute_se_latscores(fit)
@@ -556,7 +558,8 @@ vcov.latscores <- function(object, person = NULL, group = NULL, ...) {
 #' @param sort Apply the input model's display ordering and signs.
 #' @method latInspect latscores
 #' @export
-latInspect.latscores <- function(fit, what = "est", sort = TRUE) {
+latInspect.latscores <- function(x, what = "est", sort = TRUE, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
   if (!is.logical(sort) || length(sort) != 1L || is.na(sort)) stop("sort must be TRUE or FALSE.")
   if (!is.character(what) || length(what) != 1L || is.na(what)) stop("what must be one character string.")
   what <- tolower(what)

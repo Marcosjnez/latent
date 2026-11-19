@@ -2,21 +2,24 @@
 % Please edit documentation in R/getfit_llca.R
 \name{getfit.llca}
 \alias{getfit.llca}
+\alias{getfit}
 \alias{getfit.llcalist}
 \title{Fit indices for latent class models}
 \usage{
-\method{getfit}{llca}(model, digits = 4)
+\method{getfit}{llca}(x, digits = 4L, ..., model = x)
 
-\method{getfit}{llcalist}(model, digits = 4)
-
-\method{getfit}{llcalist}(model, digits = 4L)
+\method{getfit}{llcalist}(x, digits = 4L, ..., model = x)
 }
 \arguments{
-\item{model}{An object of class \code{"llcalist"} containing fitted
-\code{"llca"} or \code{"llca_sam"} objects.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{digits}{Integer giving the number of decimal places used to round the
 output. Use \code{NULL} to return the unrounded values.}
+
+\item{...}{Additional arguments to the generic.}
+
+\item{model}{An object of class \code{"llcalist"} containing fitted
+\code{"llca"} or \code{"llca_sam"} objects.}
 }
 \value{
 For an object of class \code{"llca"}, a named numeric vector of class

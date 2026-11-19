@@ -15,16 +15,17 @@ Authors@R: c(
 Maintainer: Marcos Jiménez <m.j.jimenezhenriquez@vu.nl>
 License: GPL-3
 Imports:
-    car,
     data.table,
-    ggplot2,
     grid,
     lavaan,
     Matrix,
+    methods,
+    openxlsx,
     png,
     psych,
     Rcpp (>= 1.0.11)
 Suggests:
+    MASS,
     testthat (>= 3.0.0)
 LinkingTo:
     Rcpp,
@@ -35,6 +36,7 @@ BugReports: https://github.com/Marcosjnez/latent/issues
 NeedsCompilation: yes
 LazyData: true
 Depends:
-    R (>= 3.5)
+    R (>= 4.1.0)
 Config/roxygen2/version: 8.1.1
+Config/build/copy-method: copy
 Config/testthat/edition: 3

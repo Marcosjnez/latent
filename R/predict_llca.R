@@ -18,11 +18,6 @@
 #' class models. When the object contains named measurement and structural fits,
 #' only predictions from the structural fit are returned.
 #'
-#' @usage
-#' \method{predict}{llca}(model, new = NULL, ...)
-#'
-#' \method{predict}{llcalist}(model, new = NULL, ...)
-#'
 #' @param model A fitted object of class `"llca"` or `"llcalist"`.
 #' @param new Optional `data.frame` or matrix containing new values for all
 #'   covariates used in the fitted model. Column names must match the original
@@ -81,9 +76,11 @@
 #'                                   pt1 = c(2.1, 3.4)))
 #' }
 #'
+#' @param object Fitted model or collection of fitted models passed to the method.
 #' @method predict llca
 #' @export
-predict.llca <- function(model, new = NULL, ...) {
+predict.llca <- function(object, new = NULL, ..., model = object) {
+  if(!missing(model) && !missing(object)) return(.match_legacy_model("model"))
 
   if(!inherits(model, "llca")) {
     stop("model must inherit from class 'llca'.")
@@ -232,7 +229,8 @@ predict.llca <- function(model, new = NULL, ...) {
 #' @rdname predict.llca
 #' @method predict llcalist
 #' @export
-predict.llcalist <- function(model, new = NULL, ...) {
+predict.llcalist <- function(object, new = NULL, ..., model = object) {
+  if(!missing(model) && !missing(object)) return(.match_legacy_model("model"))
 
   if(!inherits(model, "llcalist")) {
     stop("model must inherit from class 'llcalist'.")

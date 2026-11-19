@@ -24,6 +24,6 @@ freely estimated model parameters.
 Compute the Hessian matrix of a fitted latent variable model.
 }
 \seealso{
-\code{\link{vcov}}, \code{\link{jacobian}},
+\code{\link[stats]{vcov}}, \code{\link{jacobian}},
 \code{\link{constraints_derivs}}
 }

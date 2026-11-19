@@ -2,11 +2,16 @@
 % Please edit documentation in R/robust_latent.R
 \name{robust.latent}
 \alias{robust.latent}
+\alias{robust}
 \title{Robust Variance-Covariance Matrix for Latent Models}
 \usage{
-\method{robust}{latent}(fit)
+\method{robust}{latent}(x, ..., fit = x)
 }
 \arguments{
+\item{x}{Fitted model or collection of fitted models passed to the method.}
+
+\item{...}{Additional arguments to the generic.}
+
 \item{fit}{A fitted object inheriting from class \code{"latent"}.}
 }
 \value{

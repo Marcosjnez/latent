@@ -4,10 +4,10 @@
 \alias{se.multistage}
 \title{Standard Errors for Multistage Latent Models}
 \usage{
-\method{se}{multistage}(fit, type = "information", parameters = NULL, digits = 4L, ...)
+\method{se}{multistage}(x, type = "information", parameters = NULL, digits = 4L, ..., fit = x)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"multistage"}.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{type}{Character string specifying the covariance estimator used at each
 estimation stage. Available options are \code{"information"} and
@@ -23,6 +23,8 @@ used in the formatted parameter tables. If \code{NULL}, values are not
 rounded.}
 
 \item{...}{Additional arguments reserved for future extensions.}
+
+\item{fit}{A fitted object inheriting from class \code{"multistage"}.}
 }
 \value{
 A list containing the formatted estimates and standard errors,

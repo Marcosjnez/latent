@@ -104,10 +104,12 @@ setMethod("show", "lefa", function(object) {
 #'
 #' @return The result of \code{se.multistep()}.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
 #' @method se lefa
 #' @export
-se.lefa <- function(fit, type = NULL, parameters = NULL,
-                    digits = 4L, ...) {
+se.lefa <- function(x, type = NULL, parameters = NULL,
+                    digits = 4L, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   if(is.null(parameters)) {
     parameters <- lefa_rotated_parameters(fit)

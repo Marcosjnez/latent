@@ -5,12 +5,12 @@
 \alias{se.multistep_lcfa}
 \title{Standard Errors for Multistep Latent Models}
 \usage{
-\method{se}{multistep}(fit, type = NULL, parameters = NULL, digits = 4L, ...)
+\method{se}{multistep}(x, type = NULL, parameters = NULL, digits = 4L, ..., fit = x)
 
-\method{se}{multistep_lcfa}(fit, ...)
+\method{se}{multistep_lcfa}(x, ..., fit = x)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"multistep"}.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{type}{Optional compatibility argument. If supplied, it is validated but
 does not replace the sample-statistic covariance method selected when the
@@ -24,6 +24,8 @@ or transformed parameters for which standard errors should be returned. If
 used in formatted parameter tables. If \code{NULL}, values are not rounded.}
 
 \item{...}{Additional arguments reserved for future multistep methods.}
+
+\item{fit}{A fitted object inheriting from class \code{"multistep"}.}
 }
 \value{
 A list containing parameter tables, standard errors, the selected

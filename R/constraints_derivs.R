@@ -17,7 +17,7 @@
 #'
 #' @seealso
 #' \code{\link{jacobian}}, \code{\link{hessian}},
-#' \code{\link{vcov}}
+#' \code{\link[stats]{vcov}}
 #'
 #' @export
 constraints_derivs <- function(x, ...) {

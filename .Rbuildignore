@@ -7,3 +7,10 @@
 ^\.positai$
 ^\.claude$
 ^\.posit/assistant$
+^projects_settings$
+^workshop$
+^vignettes$
+^KKT_and_RH\.R$
+^test_file\.R$
+^latent_0\.1\.0\.pdf$
+^README\.html$

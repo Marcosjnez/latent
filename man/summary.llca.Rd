@@ -5,17 +5,19 @@
 \alias{summary.llcalist}
 \title{Summary of a Latent Class Model}
 \usage{
-\method{summary}{llca}(fit, digits = 3L, ...)
+\method{summary}{llca}(object, digits = 3L, ..., fit = object)
 
-\method{summary}{llcalist}(model, digits = 3L, ...)
+\method{summary}{llcalist}(object, digits = 3L, ..., model = object)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"llca"}.}
+\item{object}{Fitted model or collection of fitted models passed to the method.}
 
 \item{digits}{Non-negative integer giving the number of decimal places used
 in printed numeric results.}
 
 \item{...}{Additional arguments reserved for future summary options.}
+
+\item{fit}{A fitted object inheriting from class \code{"llca"}.}
 
 \item{model}{For the \code{"llcalist"} method, a collection of fitted
 \code{"llca"} models.}

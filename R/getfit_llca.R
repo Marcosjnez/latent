@@ -9,11 +9,6 @@
 #' Computes likelihood-based fit indices, classification measures, and entropy
 #' for a fitted latent class model or for a list of fitted latent class models.
 #'
-#' @usage
-#' \method{getfit}{llca}(model, digits = 4)
-#'
-#' \method{getfit}{llcalist}(model, digits = 4)
-#'
 #' @param model An object of class \code{"llca"} fitted with \code{lca()}, or an
 #'   object of class \code{"llcalist"} containing several fitted
 #'   \code{"llca"} models.
@@ -87,9 +82,13 @@
 #' getfit(fits)
 #' }
 #'
+#' @aliases getfit
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method getfit llca
 #' @export
-getfit.llca <- function(model, digits = 4L) {
+getfit.llca <- function(x, digits = 4L, ..., model = x) {
+  if(!missing(model) && !missing(x)) return(.match_legacy_model("model"))
 
   #### Check inputs ####
 
@@ -269,7 +268,8 @@ getfit.llca <- function(model, digits = 4L) {
 #'   \code{"llca"} or \code{"llca_sam"} objects.
 #' @method getfit llcalist
 #' @export
-getfit.llcalist <- function(model, digits = 4L) {
+getfit.llcalist <- function(x, digits = 4L, ..., model = x) {
+  if(!missing(model) && !missing(x)) return(.match_legacy_model("model"))
 
   #### Check inputs ####
 

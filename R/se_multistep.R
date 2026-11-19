@@ -56,10 +56,12 @@
 #'   variance-covariance matrix, the final joint variance-covariance matrix, and
 #'   the Hessian and cross-derivative matrices used in the final step.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
 #' @method se multistep
 #' @export
-se.multistep <- function(fit, type = NULL, parameters = NULL,
-                         digits = 4L, ...) {
+se.multistep <- function(x, type = NULL, parameters = NULL,
+                         digits = 4L, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
 
@@ -364,7 +366,8 @@ se.multistep <- function(fit, type = NULL, parameters = NULL,
 #' @rdname se.multistep
 #' @method se multistep_lcfa
 #' @export
-se.multistep_lcfa <- function(fit, ...) {
+se.multistep_lcfa <- function(x, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   result <- se.multistep(fit, ...)
 

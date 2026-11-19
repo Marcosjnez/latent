@@ -16,9 +16,11 @@
 #' @return The latent class profile returned by
 #'   \code{latInspect(fit, what = "profile")}, invisibly.
 #'
+#' @param object Fitted model or collection of fitted models passed to the method.
 #' @method summary llca
 #' @export
-summary.llca <- function(fit, digits = 3L, ...) {
+summary.llca <- function(object, digits = 3L, ..., fit = object) {
+  if(!missing(fit) && !missing(object)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
 
@@ -136,7 +138,8 @@ summary.llca <- function(fit, digits = 3L, ...) {
 #'   \code{"llca"} models.
 #' @method summary llcalist
 #' @export
-summary.llcalist <- function(model, digits = 3L, ...) {
+summary.llcalist <- function(object, digits = 3L, ..., model = object) {
+  if(!missing(model) && !missing(object)) return(.match_legacy_model("model"))
 
   if(!inherits(model, "llcalist")) {
     stop("model must inherit from class 'llcalist'.")

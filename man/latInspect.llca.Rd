@@ -2,12 +2,15 @@
 % Please edit documentation in R/latInspect_llca.R
 \name{latInspect.llca}
 \alias{latInspect.llca}
+\alias{latInspect.llcalist}
 \title{Inspect fitted latent class models}
 \usage{
-\method{latInspect}{llca}(fit, what = "profile", digits = 4L, sort = TRUE)
+\method{latInspect}{llca}(x, what = "profile", digits = 4L, sort = TRUE, ..., fit = x)
+
+\method{latInspect}{llcalist}(x, what = "profile", digits = 4L, sort = TRUE, ..., model = x)
 }
 \arguments{
-\item{fit}{An object of class \code{"llca"} returned by \code{\link{lca}}.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{what}{Character string indicating the object to extract. Available
 values and aliases include:
@@ -59,6 +62,13 @@ can safely be used in subsequent computations.}
 \item{sort}{Logical. Sort only inspection outputs by decreasing weighted
 posterior size. Defaults to TRUE. Class identities and the original
 reference class are retained, including in modal assignments.}
+
+\item{...}{Additional arguments to the generic.}
+
+\item{fit}{An object of class \code{"llca"} returned by \code{\link{lca}}.}
+
+\item{model}{For the \code{"llcalist"} method, a collection containing
+\code{"llca"} and/or \code{"llca_sam"} model fits.}
 }
 \value{
 The object requested through \code{what}. See the description of

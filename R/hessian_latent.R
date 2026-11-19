@@ -13,17 +13,11 @@
 #' as separate rows or columns.
 #'
 #' @param fit A fitted object inheriting from class \code{"latent"}.
-#' @param riemannian Logical. If \code{FALSE}, return the Euclidean Hessian. If
-#'   \code{TRUE}, return the ambient constrained inverse operator
-#'   \eqn{P=T H_R^{-1}T^\top}, where \eqn{H_R} is the tangent-coordinate
-#'   Riemannian Hessian and \eqn{T} is the tangent-space basis.
 #'
 #' @return
 #' A symmetric numeric matrix with one row and one column for each freely
 #' estimated parameter. Row and column names correspond to
-#' \code{fit@modelInfo$parameters_labels}. When \code{riemannian = FALSE}, the
-#' matrix is the Euclidean Hessian. When \code{riemannian = TRUE}, it is the
-#' ambient constrained inverse operator \eqn{P}.
+#' \code{fit@modelInfo$parameters_labels}.
 #'
 #' @details
 #' The Hessian is evaluated at the parameter estimates stored in
@@ -38,9 +32,11 @@
 #' \code{\link{hessian}}, \code{\link{vcov.latent}},
 #' \code{\link{jacobian.latent}}
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method hessian latent
 #' @export
-hessian.latent <- function(fit) {
+hessian.latent <- function(x, ..., fit = x) {
 
   # fit@modelInfo$control_optimizer$parameters[[1]] <- fit@Optim$parameters
   # fit@modelInfo$control_optimizer$transparameters[[1]] <- fit@Optim$transparameters

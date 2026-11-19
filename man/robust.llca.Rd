@@ -4,9 +4,13 @@
 \alias{robust.llca}
 \title{LatentGold-Style Robust Variance-Covariance Matrix}
 \usage{
-\method{robust}{llca}(fit)
+\method{robust}{llca}(x, ..., fit = x)
 }
 \arguments{
+\item{x}{Fitted model or collection of fitted models passed to the method.}
+
+\item{...}{Additional arguments to the generic.}
+
 \item{fit}{A fitted object of class \code{"llca"}.}
 }
 \value{

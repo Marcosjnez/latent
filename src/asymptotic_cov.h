@@ -219,7 +219,6 @@ arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov,
   }
 
   int q = S.n_rows;
-  int qq = q*q;
 
   arma::mat Ms = dxt(q, q)*0.5;
   Ms.diag() += 0.5;

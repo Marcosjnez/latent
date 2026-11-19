@@ -4,10 +4,10 @@
 \alias{se.lefa}
 \title{Standard Errors for Exploratory Factor Analysis}
 \usage{
-\method{se}{lefa}(fit, type = NULL, parameters = NULL, digits = 4L, ...)
+\method{se}{lefa}(x, type = NULL, parameters = NULL, digits = 4L, ..., fit = x)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"lefa"}.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{type}{Optional compatibility argument passed to
 \code{se.multistep()}.}
@@ -20,6 +20,8 @@ and factor means.}
 \code{NULL}, values are not rounded.}
 
 \item{...}{Additional arguments passed to \code{se.multistep()}.}
+
+\item{fit}{A fitted object inheriting from class \code{"lefa"}.}
 }
 \value{
 The result of \code{se.multistep()}.

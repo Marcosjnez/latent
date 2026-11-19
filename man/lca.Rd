@@ -5,10 +5,9 @@
 \title{Latent Class Analysis}
 \usage{
 lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
-    covariates = NULL, outcomes = NULL, penalties = TRUE,
-    model = NULL, weights = NULL, start = NULL, adjustment = "bk",
-    classification = "modal", control = NULL, do.fit = TRUE,
-    verbose = TRUE)
+    covariates = NULL, outcomes = NULL, model = NULL, weights = NULL,
+    adjustment = "bk", classification = "modal", penalties = TRUE,
+    start = NULL, control = NULL, do.fit = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the observed variables. Variables

@@ -1,12 +1,13 @@
 #' Example dataset: gss82
 #'
-#' A dataset from the poLCA R package with 1202 rows and 4 columns. Items are
+#' A dataset from the poLCA R package with 1,644 rows and 10 columns. Items are
 #' dichotomous and polytomous.
 #'
-#' @format A data frame with 1202 rows and 4 variables:
+#' @format A data frame with 1,644 rows and 10 variables:
 #' \describe{
-#'   \item{x}{An integer from 1 to 5}
-#'   \item{y}{A lowercase letter}
+#'   \item{ID}{Respondent identifier.}
+#'   \item{ACCURACY, COOPERAT, UNDERSTA, PURPOSE}{Interview items on accuracy, cooperation, understanding, and purpose.}
+#'   \item{RACE, SEX, EDUCR, MARITAL, AGE}{Race, sex, education category, marital status, and age.}
 #' }
 #' @source Generated example
 "gss82"

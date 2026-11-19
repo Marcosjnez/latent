@@ -4,19 +4,23 @@
 \alias{se.llcalist}
 \title{Standard errors for a collection of latent class models}
 \usage{
-\method{se}{llcalist}(model, type = "information", parameters = NULL, digits = 4L, ...)
+\method{se}{llcalist}(x, type = "information", parameters = NULL, digits = 4L, ..., model = x)
 }
 \arguments{
-\item{model}{An object of class \code{"llcalist"} containing fitted
-\code{"llca"} objects.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{type}{Character string indicating the standard-error estimator. See
 \code{se.llca()}.}
+
+\item{parameters}{Optional parameter specification passed to each model.}
 
 \item{digits}{Non-negative integer indicating the number of decimal places used
 in the formatted tables, or \code{NULL} to avoid rounding.}
 
 \item{...}{Additional arguments passed to \code{se.llca()}.}
+
+\item{model}{An object of class \code{"llcalist"} containing fitted
+\code{"llca"} objects.}
 }
 \value{
 A named list with one standard-error result per fitted model and class

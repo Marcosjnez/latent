@@ -37,7 +37,8 @@ latInspect <- function(x, ..., sort = TRUE) {
 #' @param what Character string identifying the requested component.
 #' @method latInspect latent
 #' @export
-latInspect.latent <- function(fit, what = "est", sort = TRUE) {
+latInspect.latent <- function(x, what = "est", sort = TRUE, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   if(!inherits(fit, "latent")) stop("fit must inherit from class 'latent'.")
   if(!is.character(what) || length(what) != 1L || is.na(what)) {

@@ -26,5 +26,5 @@ parameters and transformed parameters.
 }
 \seealso{
 \code{\link{jacobian}}, \code{\link{hessian}},
-\code{\link{vcov}}
+\code{\link[stats]{vcov}}
 }

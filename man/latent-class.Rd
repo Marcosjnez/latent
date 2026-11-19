@@ -3,11 +3,25 @@
 \docType{class}
 \name{latent-class}
 \alias{latent-class}
+\alias{lcfa-class}
+\alias{llca-class}
+\alias{llhmm-class}
+\alias{latscores-class}
+\alias{multistep-class}
+\alias{multistep_lcfa-class}
+\alias{multistage-class}
+\alias{multistage_lcfa-class}
+\alias{multistage_llca-class}
 \title{Base Class for Fitted Latent Models}
 \description{
 The \code{"latent"} class provides the common representation used by fitted
 latent-variable models that share the generic derivative and covariance
 infrastructure of \pkg{latent}.
+}
+\details{
+The model-specific subclasses inherit the slots of this class. Multistep models
+propagate uncertainty from earlier fits through deterministic steps. Multistage
+models also account for sampling variation from the new estimation stage.
 }
 \section{Slots}{
 
@@ -36,5 +50,5 @@ other model-specific information.}
 
 \seealso{
 \code{\link{hessian}}, \code{\link{jacobian}},
-\code{\link{constraints_derivs}}, \code{\link{vcov}}
+\code{\link{constraints_derivs}}, \code{\link[stats]{vcov}}
 }

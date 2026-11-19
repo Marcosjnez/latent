@@ -2,11 +2,16 @@
 % Please edit documentation in R/information_latent.R
 \name{information.latent}
 \alias{information.latent}
+\alias{information}
 \title{Information Variance-Covariance Matrix for Latent Models}
 \usage{
-\method{information}{latent}(fit)
+\method{information}{latent}(x, ..., fit = x)
 }
 \arguments{
+\item{x}{Fitted model or collection of fitted models passed to the method.}
+
+\item{...}{Additional arguments to the generic.}
+
 \item{fit}{A fitted object inheriting from class \code{"latent"}.}
 }
 \value{

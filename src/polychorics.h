@@ -256,8 +256,8 @@ Rcpp::List poly_deriv(double rho, std::vector<double> tau1, std::vector<double> 
   arma::mat dppidp(s, r);
   double denominator = std::sqrt(1-rho*rho);
   double dldp = 0.0;
-  for (size_t i = 0; i < s; ++i) {
-    for (size_t j = 0; j < r; ++j) {
+  for (int i = 0; i < s; ++i) {
+    for (int j = 0; j < r; ++j) {
       // CDF of the bivariate normal:
       ppi(i, j) = pbinorm(rho, tau1[i], tau2[j], tau1[i+1], tau2[j+1],
           pnorm_tau1[i], pnorm_tau2[j], pnorm_tau1[i+1], pnorm_tau2[j+1]);
@@ -351,7 +351,7 @@ double fpoly2(arma::mat R, const std::vector<arma::vec>& tau,
   double f = 0.0;
   for(size_t l=0; l < (q-1L); ++l) {
     const size_t s1 = tau[l].size()-1L;
-    for(int k=(l+1L); k < q; ++k) {
+    for(size_t k=(l+1L); k < q; ++k) {
       const size_t s2 = tau[k].size()-1L;
       for (size_t i = 0; i < s1; ++i) {
         for (size_t j = 0; j < s2; ++j) {

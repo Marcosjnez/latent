@@ -4,16 +4,20 @@
 \alias{constraints_derivs.latent}
 \title{Constraint Derivatives for Latent Models}
 \usage{
-\method{constraints_derivs}{latent}(fit, parameters = NULL)
+\method{constraints_derivs}{latent}(x, parameters = NULL, ..., fit = x)
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"latent"}.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{parameters}{Optional parameter specification identifying the transformed
 parameters for which constraint derivatives should be returned. Parameter
 labels must occur in \code{fit@modelInfo$transparameters_labels}. If
 \code{NULL}, the parameter blocks corresponding to the fitted model
 parameters are used.}
+
+\item{...}{Additional arguments to the generic.}
+
+\item{fit}{A fitted object inheriting from class \code{"latent"}.}
 }
 \value{
 A list with two sparse matrices:

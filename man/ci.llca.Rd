@@ -2,32 +2,35 @@
 % Please edit documentation in R/ci_llca.R
 \name{ci.llca}
 \alias{ci.llca}
+\alias{ci}
 \alias{ci.llca_sam}
 \alias{ci.llcalist}
 \title{Confidence Intervals for Latent Class Models}
 \usage{
 \method{ci}{llca}(
-  fit,
+  x,
   type = "information",
   confidence = 0.95,
   parameters = NULL,
   digits = 3L,
-  ...
+  ...,
+  fit = x
 )
 
-\method{ci}{llca_sam}(object, ...)
+\method{ci}{llca_sam}(x, ..., object = x)
 
 \method{ci}{llcalist}(
-  model,
+  x,
   type = "information",
   confidence = 0.95,
   parameters = NULL,
   digits = 3L,
-  ...
+  ...,
+  model = x
 )
 }
 \arguments{
-\item{fit}{A fitted object inheriting from class \code{"llca"}.}
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{type}{Character string selecting the standard-error estimator.
 Available options are \code{"information"} and \code{"robust"}.
@@ -43,6 +46,8 @@ or transformed parameters for which intervals should be returned.}
 used in the formatted confidence-interval table.}
 
 \item{...}{Additional arguments passed to \code{se()}.}
+
+\item{fit}{A fitted object inheriting from class \code{"llca"}.}
 
 \item{object}{A legacy structural-after-measurement object containing a
 fitted structural \code{"llca"} component.}

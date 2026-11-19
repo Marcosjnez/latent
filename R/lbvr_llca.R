@@ -67,6 +67,7 @@
 #' }
 #'
 #' @importFrom stats aov chisq.test complete.cases cor.test pchisq sd
+#' @aliases lbvr
 #' @method lbvr llca
 #' @export
 lbvr.llca <- function(x, digits = 4L, ...) {
@@ -553,10 +554,10 @@ lbvr.llcalist <- function(x, digits = 4L, ...) {
 #' @export
 print.lbvr <- function(x, ...) {
 
-  cat("\n——— Residual diagnostics ———\n")
-  cat(rep("─", 50L), "\n\n", sep = "")
-  cat("◆ Root Mean Square Residual (RMSR):", x$rmsr, "\n\n")
-  cat("◆ Bivariate Residuals (BVR) Table:\n")
+  cat("\n\u2014\u2014\u2014 Residual diagnostics \u2014\u2014\u2014\n")
+  cat(rep("\u2500", 50L), "\n\n", sep = "")
+  cat("\u25c6 Root Mean Square Residual (RMSR):", x$rmsr, "\n\n")
+  cat("\u25c6 Bivariate Residuals (BVR) Table:\n")
   print(x$res_tab, row.names = FALSE, ...)
   cat("\n")
 

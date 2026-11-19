@@ -31,9 +31,12 @@
 #' fitted discrepancy function rather than the information contribution used
 #' for the covariance matrix.
 #'
+#' @aliases information
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method information latent
 #' @export
-information.latent <- function(fit) {
+information.latent <- function(x, ..., fit = x) {
 
   #### Check inputs ####
 
@@ -123,10 +126,10 @@ information.latent <- function(fit) {
       )
 
     },
-    lpoly = compute_se_lpoly(
+    lpoly = compute_se_lpoly_two_step(
       dataList = fit@dataList,
       modelInfo = fit@modelInfo,
-      Optim = fit@Optim
+      parameters = fit@parameters
     ),
     lyule = {
 

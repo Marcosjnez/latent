@@ -22,10 +22,13 @@
 #' @return A list containing formatted and numeric confidence limits and the
 #'   standard-error result used to construct them.
 #'
+#' @aliases ci
+#' @param x Fitted model or collection of fitted models passed to the method.
 #' @method ci llca
 #' @export
-ci.llca <- function(fit, type = "information", confidence = 0.95,
-                    parameters = NULL, digits = 3L, ...) {
+ci.llca <- function(x, type = "information", confidence = 0.95,
+                    parameters = NULL, digits = 3L, ..., fit = x) {
+  if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
 
@@ -130,7 +133,8 @@ ci.llca <- function(fit, type = "information", confidence = 0.95,
 #'   fitted structural \code{"llca"} component.
 #' @method ci llca_sam
 #' @export
-ci.llca_sam <- function(object, ...) {
+ci.llca_sam <- function(x, ..., object = x) {
+  if(!missing(object) && !missing(x)) return(.match_legacy_model("object"))
 
   result <- ci(object$structural, ...)
 
@@ -146,8 +150,9 @@ ci.llca_sam <- function(object, ...) {
 #'   \code{"llca"} models.
 #' @method ci llcalist
 #' @export
-ci.llcalist <- function(model, type = "information", confidence = 0.95,
-                        parameters = NULL, digits = 3L, ...) {
+ci.llcalist <- function(x, type = "information", confidence = 0.95,
+                        parameters = NULL, digits = 3L, ..., model = x) {
+  if(!missing(model) && !missing(x)) return(.match_legacy_model("model"))
 
   #### Check inputs ####
 

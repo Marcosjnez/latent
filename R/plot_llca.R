@@ -387,8 +387,8 @@ reshape_lca_continuous <- function(object) {
 #'
 #' @export
 plot_lca_gaussian <- function(data, variables = NULL, title = NULL,
-                              ylab = "Mean score (±1 SD)",
-                              caption = "Error bars indicate ±1 standard deviation",
+                              ylab = "Mean score (\u00b11 SD)",
+                              caption = "Error bars indicate \u00b11 standard deviation",
                               nrow = NULL, ncol = NULL, point_size = 1.2,
                               err_width = 0.12, base_size = 12, angle = 45,
                               color = "steelblue", ...) {
@@ -919,6 +919,7 @@ plot_lca_coefficients <- function(fit, se_type = "standard",
       stop("Dummy-coded coefficients require at least two latent classes")
     }
     betas <- fit@transformed_pars$beta[, -1L, drop = FALSE]
+    select_betas <- as.vector(fit@modelInfo$trans$beta[, -1L, drop = FALSE])
     vcov <- SE$vcov[select_betas, select_betas, drop = FALSE]
   }
 

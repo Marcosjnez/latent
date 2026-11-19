@@ -20,11 +20,11 @@ latscores(
   control = NULL
 )
 
-\method{se}{latscores}(fit, type = "prediction", digits = NULL, ...)
+\method{se}{latscores}(x, type = "prediction", digits = NULL, ..., fit = x)
 
 \method{vcov}{latscores}(object, person = NULL, group = NULL, ...)
 
-\method{latInspect}{latscores}(fit, what = "est", sort = TRUE)
+\method{latInspect}{latscores}(x, what = "est", sort = TRUE, ..., fit = x)
 }
 \arguments{
 \item{fit}{A fitted lcfa or lefa object.}
@@ -62,6 +62,8 @@ fit without recorded means, supply center (0 for already centered data).}
 
 \item{control}{Optional list; tol (default 1e-10) controls relative matrix
 rank/positive-definiteness checks. No optimizer settings are needed.}
+
+\item{x}{Fitted model or collection of fitted models passed to the method.}
 
 \item{type}{Only "prediction" is supported for score uncertainty.}
 

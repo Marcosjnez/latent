@@ -13,9 +13,12 @@
 #' @return A named numeric vector containing model dimensions and available fit
 #'   statistics.
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
+#' @param ... Additional arguments to the generic.
 #' @method getfit lcfa
 #' @export
-getfit.lcfa <- function(model, digits = 3L, fit_matrix = NULL) {
+getfit.lcfa <- function(x, digits = 3L, fit_matrix = NULL, ..., model = x) {
+  if(!missing(model) && !missing(x)) return(.match_legacy_model("model"))
 
   #### Check inputs ####
 

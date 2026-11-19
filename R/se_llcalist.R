@@ -10,6 +10,7 @@
 #'   \code{"llca"} objects.
 #' @param type Character string indicating the standard-error estimator. See
 #'   \code{se.llca()}.
+#' @param parameters Optional parameter specification passed to each model.
 #' @param digits Non-negative integer indicating the number of decimal places used
 #'   in the formatted tables, or \code{NULL} to avoid rounding.
 #' @param ... Additional arguments passed to \code{se.llca()}.
@@ -30,10 +31,12 @@
 #' se(fits)
 #' }
 #'
+#' @param x Fitted model or collection of fitted models passed to the method.
 #' @method se llcalist
 #' @export
-se.llcalist <- function(model, type = "information", parameters = NULL,
-                        digits = 4L, ...) {
+se.llcalist <- function(x, type = "information", parameters = NULL,
+                        digits = 4L, ..., model = x) {
+  if(!missing(model) && !missing(x)) return(.match_legacy_model("model"))
 
   if(!inherits(model, "llcalist")) {
     stop("model must inherit from class 'llcalist'.")

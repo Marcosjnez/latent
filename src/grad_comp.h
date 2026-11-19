@@ -158,7 +158,7 @@ Rcpp::List grad_comp(Rcpp::S4 fit,
 
   // Check the gradient:
   arma::vec numg(parameters.n_elem);
-  for(int i = 0; i < parameters.n_elem; ++i) {
+  for(arma::uword i = 0; i < parameters.n_elem; ++i) {
     x.parameters = parameters; x.parameters[i] += eps;
     T1.transform(x, xtransforms);
     F1.param(x, xestimators);
