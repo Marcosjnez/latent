@@ -64,7 +64,6 @@
 \alias{create_lcfa_model}
 \alias{create_lcfa_modelInfo}
 \alias{create_lefa_model}
-\alias{create_lhmm_model}
 \alias{create_lmean_data_param}
 \alias{create_lmean_dataList}
 \alias{create_lmean_model}

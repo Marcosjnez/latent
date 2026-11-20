@@ -2,12 +2,13 @@
 % Please edit documentation in R/lca.R
 \name{lca}
 \alias{lca}
-\title{Latent Class Analysis}
+\title{Latent Class and Hidden Markov Models}
 \usage{
 lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
     covariates = NULL, outcomes = NULL, model = NULL, weights = NULL,
     adjustment = "bk", classification = "modal", penalties = TRUE,
-    start = NULL, control = NULL, do.fit = TRUE, verbose = TRUE)
+    start = NULL, control = NULL, do.fit = TRUE, verbose = TRUE,
+    time = NULL, id = NULL)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the observed variables. Variables
@@ -17,8 +18,7 @@ Variables listed in \code{outcomes} are treated as distal outcomes.}
 
 \item{nclasses}{A positive integer giving the number of latent classes. If a
 vector of positive integers is supplied, one model is fitted for each value
-and the result is returned as an object of class \code{"llcalist"}. This
-is usually termed as "class enumeration".}
+and the result is returned as a list of fitted models (class enumeration).}
 
 \item{gaussian}{Optional character vector with the names of variables in
 \code{data} to be modeled as Gaussian indicators. These variables are
@@ -38,7 +38,9 @@ unreliable.}
 \code{data} used to predict latent class membership. Internally, an intercept
 is always included. Character covariates are converted to factors and factors
 are dummy-coded using \code{model.matrix()}. Observations with missing values
-in the covariates are removed before estimation.}
+in the covariates are removed before estimation for ordinary latent class
+models. In temporal models, only the covariates at the first observation of
+each trajectory are used. These values must be observed.}
 
 \item{outcomes}{Optional distal outcomes. It can be either a character vector
 with variable names in \code{data}, or a named list specifying the likelihood
@@ -68,13 +70,15 @@ objects stored in its \code{extra} slot are traversed recursively so that
 parameters fixed in earlier stages are retained.}
 
 \item{weights}{Optional numeric vector of observation weights, with one value
-per row of \code{data}.}
+per row of \code{data}. In temporal models, supply one positive weight per
+trajectory, in order of first appearance of the IDs in the input data.}
 
 \item{adjustment}{Character string selecting the estimation strategy when
 \code{covariates} are supplied. Use \code{"none"} for one-step estimation,
 \code{"bk"} for the Bakk--Kuha two-step method, or \code{"ml"} for the
 ML three-step correction based on classification error. Defaults to
-\code{"bk"}.}
+\code{"bk"} for ordinary latent class models. Temporal models use
+one-step estimation (\code{"none"}).}
 
 \item{classification}{Character string used when \code{adjustment = "ml"}.
 Use \code{"modal"} for modal assignment or \code{"prop"} for proportional
@@ -92,7 +96,9 @@ Sigma = list(alpha = 1))}. The \code{beta} block may also contain
 
 \item{start}{Optional named list of starting values. Names should correspond
 to parameter blocks in the model. Supplied values replace the corresponding
-default initial values, allowing partial specification of starting values.}
+default initial values, allowing partial specification of starting values.
+Use \code{start$transition} for a positive transition matrix whose columns
+sum to one, or \code{start$logtransition} for its reference logits.}
 
 \item{control}{Optional list of optimization and estimation controls.
 Common entries include \code{rstarts} for the number of random starts,
@@ -109,16 +115,25 @@ iterations within each M step and \code{mstep_eps} its convergence
 tolerance. Missing entries are replaced by internal defaults.}
 
 \item{do.fit}{Logical. If \code{TRUE}, the model is estimated. If
-\code{FALSE}, the function returns an \code{"llca"} object containing the
+\code{FALSE}, the function returns an object containing the
 processed data, model structure, and optimization setup, but without running
 the optimizer.}
 
 \item{verbose}{Logical. If \code{TRUE}, progress information is printed,
 especially when fitting several values of \code{nclasses}.}
+
+\item{time}{Optional name of the time variable. Observations are sorted by
+time within each trajectory. Times must be unique within a trajectory.
+If omitted, or if every trajectory has a single observation, an ordinary
+latent class model is estimated.}
+
+\item{id}{Optional name of the trajectory variable. When \code{time} is
+supplied and \code{id = NULL}, all observations form one trajectory.}
 }
 \value{
 If \code{length(nclasses) == 1} and \code{adjustment = "none"}, an S4 object
-of class \code{"llca"} with the following slots:
+of class \code{"llca"} (ordinary latent class models) or \code{"llhmm"}
+(hidden Markov models) with the following slots:
 \describe{
   \item{\code{version}}{Version of the \pkg{latent} package used to fit the model.}
   \item{\code{call}}{The matched function call.}
@@ -148,7 +163,8 @@ ordinary slots and the fitted model from the preceding stage is stored in the
 be propagated recursively by the multistage covariance methods.
 
 If \code{nclasses} contains several values, a list of fitted objects is
-returned with class \code{"llcalist"}.
+returned with class \code{"llcalist"} or, for temporal models,
+\code{"llhmmlist"}.
 }
 \description{
 \code{lca()} estimates latent class models in which the measurement model may
@@ -162,7 +178,8 @@ values to \code{nclasses}.
 }
 \details{
 Estimate latent class models with continuous and categorical indicators, with
-optional covariates and distal outcomes.
+optional covariates and distal outcomes. For repeated observations, estimate a
+hidden Markov model with a common transition matrix.
 
 
 The measurement model is defined by the variables supplied through
@@ -194,9 +211,17 @@ model is first estimated, cases are assigned to classes using either modal or
 proportional classification, and the structural model is estimated using a
 classification-error correction.
 
-The function compresses the data into unique response/covariate patterns and
+For ordinary latent class models, the function compresses the data into
+unique response/covariate patterns and
 uses their frequencies as pattern weights. If observation weights are supplied
 through \code{weights}, they are incorporated into the pattern weights.
+
+Temporal models retain all observations. Each adjacent pair of observations
+within a trajectory represents one transition, irrespective of the elapsed
+time. In \code{transition}, columns correspond to the previous state and rows
+to the next state. Use \code{model$logtransition} to constrain the transition
+logits. The first row is fixed to zero by default. Outcomes contribute at
+their observed times, conditional on the current state.
 
 Residual dependencies can be requested with covariance-style syntax in
 \code{model}. For Gaussian indicators, terms such as \code{"y1 ~~ y2"}
@@ -211,11 +236,13 @@ marginal item probabilities are recovered from the joint probabilities by
 summing over the relevant joint levels.
 
 When \code{control$opt = "em"}, posterior class-membership probabilities are
-updated in the E step and held fixed while the expected complete-data
+updated in the E step. For temporal models, the forward-backward recursion
+also gives posterior probabilities for transitions between adjacent states.
+These probabilities are held fixed while the expected complete-data
 objective is numerically minimized in the M step. The M step can use gradient
 descent, L-BFGS, or the Newton trust-region optimizer. After convergence,
 model fit and post-estimation derivatives are evaluated using the observed-data
-latent class likelihood.
+likelihood.
 }
 \examples{
 \dontrun{
@@ -251,6 +278,15 @@ fit_bk <- lca(
   covariates = c("sex", "pt1", "pt2", "pt3", "pt4"),
   outcomes = list(gaussian = c("pt5", "pt6")),
   adjustment = "bk"
+)
+
+# Hidden Markov model for repeated measurements within subjects
+fit_hmm <- lca(
+  data = datasets::Indometh,
+  nclasses = 2L,
+  gaussian = "conc",
+  time = "time", id = "Subject",
+  control = list(opt = "em")
 )
 }
 

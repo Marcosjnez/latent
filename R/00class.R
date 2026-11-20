@@ -50,6 +50,9 @@ setClass("latent",
 setClass("llca",
          contains = "latent")
 
+setClass("llhmm",
+         contains = "latent")
+
 setClass("lcfa",
          contains = "latent")
 

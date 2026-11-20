@@ -2,10 +2,11 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 10/09/2026
 #'
-#' Latent Class Analysis
+#' Latent Class and Hidden Markov Models
 #'
 #' Estimate latent class models with continuous and categorical indicators, with
-#' optional covariates and distal outcomes.
+#' optional covariates and distal outcomes. For repeated observations, estimate a
+#' hidden Markov model with a common transition matrix.
 #'
 #' @description
 #' \code{lca()} estimates latent class models in which the measurement model may
@@ -21,7 +22,8 @@
 #' lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
 #'     covariates = NULL, outcomes = NULL, model = NULL, weights = NULL,
 #'     adjustment = "bk", classification = "modal", penalties = TRUE,
-#'     start = NULL, control = NULL, do.fit = TRUE, verbose = TRUE)
+#'     start = NULL, control = NULL, do.fit = TRUE, verbose = TRUE,
+#'     time = NULL, id = NULL)
 #'
 #' @param data A \code{data.frame} containing the observed variables. Variables
 #'   listed in \code{gaussian} and/or \code{multinomial} are used as indicators.
@@ -29,8 +31,7 @@
 #'   Variables listed in \code{outcomes} are treated as distal outcomes.
 #' @param nclasses A positive integer giving the number of latent classes. If a
 #'   vector of positive integers is supplied, one model is fitted for each value
-#'   and the result is returned as an object of class \code{"llcalist"}. This
-#'   is usually termed as "class enumeration".
+#'   and the result is returned as a list of fitted models (class enumeration).
 #' @param gaussian Optional character vector with the names of variables in
 #'   \code{data} to be modeled as Gaussian indicators. These variables are
 #'   modeled with class-specific means and variances. If residual covariance
@@ -47,7 +48,9 @@
 #'   \code{data} used to predict latent class membership. Internally, an intercept
 #'   is always included. Character covariates are converted to factors and factors
 #'   are dummy-coded using \code{model.matrix()}. Observations with missing values
-#'   in the covariates are removed before estimation.
+#'   in the covariates are removed before estimation for ordinary latent class
+#'   models. In temporal models, only the covariates at the first observation of
+#'   each trajectory are used. These values must be observed.
 #' @param outcomes Optional distal outcomes. It can be either a character vector
 #'   with variable names in \code{data}, or a named list specifying the likelihood
 #'   for each outcome. If a character vector is supplied, numeric variables are
@@ -83,15 +86,19 @@
 #'   objects stored in its \code{extra} slot are traversed recursively so that
 #'   parameters fixed in earlier stages are retained.
 #' @param weights Optional numeric vector of observation weights, with one value
-#'   per row of \code{data}.
+#'   per row of \code{data}. In temporal models, supply one positive weight per
+#'   trajectory, in order of first appearance of the IDs in the input data.
 #' @param start Optional named list of starting values. Names should correspond
 #'   to parameter blocks in the model. Supplied values replace the corresponding
 #'   default initial values, allowing partial specification of starting values.
+#'   Use \code{start$transition} for a positive transition matrix whose columns
+#'   sum to one, or \code{start$logtransition} for its reference logits.
 #' @param adjustment Character string selecting the estimation strategy when
 #'   \code{covariates} are supplied. Use \code{"none"} for one-step estimation,
 #'   \code{"bk"} for the Bakk--Kuha two-step method, or \code{"ml"} for the
 #'   ML three-step correction based on classification error. Defaults to
-#'   \code{"bk"}.
+#'   \code{"bk"} for ordinary latent class models. Temporal models use
+#'   one-step estimation (\code{"none"}).
 #' @param classification Character string used when \code{adjustment = "ml"}.
 #'   Use \code{"modal"} for modal assignment or \code{"prop"} for proportional
 #'   assignment when estimating the classification-error matrix.
@@ -109,11 +116,17 @@
 #'   iterations within each M step and \code{mstep_eps} its convergence
 #'   tolerance. Missing entries are replaced by internal defaults.
 #' @param do.fit Logical. If \code{TRUE}, the model is estimated. If
-#'   \code{FALSE}, the function returns an \code{"llca"} object containing the
+#'   \code{FALSE}, the function returns an object containing the
 #'   processed data, model structure, and optimization setup, but without running
 #'   the optimizer.
 #' @param verbose Logical. If \code{TRUE}, progress information is printed,
 #'   especially when fitting several values of \code{nclasses}.
+#' @param time Optional name of the time variable. Observations are sorted by
+#'   time within each trajectory. Times must be unique within a trajectory.
+#'   If omitted, or if every trajectory has a single observation, an ordinary
+#'   latent class model is estimated.
+#' @param id Optional name of the trajectory variable. When \code{time} is
+#'   supplied and \code{id = NULL}, all observations form one trajectory.
 #'
 #'
 #' @details
@@ -146,9 +159,17 @@
 #' proportional classification, and the structural model is estimated using a
 #' classification-error correction.
 #'
-#' The function compresses the data into unique response/covariate patterns and
+#' For ordinary latent class models, the function compresses the data into
+#' unique response/covariate patterns and
 #' uses their frequencies as pattern weights. If observation weights are supplied
 #' through \code{weights}, they are incorporated into the pattern weights.
+#'
+#' Temporal models retain all observations. Each adjacent pair of observations
+#' within a trajectory represents one transition, irrespective of the elapsed
+#' time. In \code{transition}, columns correspond to the previous state and rows
+#' to the next state. Use \code{model$logtransition} to constrain the transition
+#' logits. The first row is fixed to zero by default. Outcomes contribute at
+#' their observed times, conditional on the current state.
 #'
 #' Residual dependencies can be requested with covariance-style syntax in
 #' \code{model}. For Gaussian indicators, terms such as \code{"y1 ~~ y2"}
@@ -163,15 +184,18 @@
 #' summing over the relevant joint levels.
 #'
 #' When \code{control$opt = "em"}, posterior class-membership probabilities are
-#' updated in the E step and held fixed while the expected complete-data
+#' updated in the E step. For temporal models, the forward-backward recursion
+#' also gives posterior probabilities for transitions between adjacent states.
+#' These probabilities are held fixed while the expected complete-data
 #' objective is numerically minimized in the M step. The M step can use gradient
 #' descent, L-BFGS, or the Newton trust-region optimizer. After convergence,
 #' model fit and post-estimation derivatives are evaluated using the observed-data
-#' latent class likelihood.
+#' likelihood.
 #'
 #' @return
 #' If \code{length(nclasses) == 1} and \code{adjustment = "none"}, an S4 object
-#' of class \code{"llca"} with the following slots:
+#' of class \code{"llca"} (ordinary latent class models) or \code{"llhmm"}
+#' (hidden Markov models) with the following slots:
 #' \describe{
 #'   \item{\code{version}}{Version of the \pkg{latent} package used to fit the model.}
 #'   \item{\code{call}}{The matched function call.}
@@ -201,7 +225,8 @@
 #' be propagated recursively by the multistage covariance methods.
 #'
 #' If \code{nclasses} contains several values, a list of fitted objects is
-#' returned with class \code{"llcalist"}.
+#' returned with class \code{"llcalist"} or, for temporal models,
+#' \code{"llhmmlist"}.
 #'
 #' @examples
 #' \dontrun{
@@ -238,6 +263,15 @@
 #'   outcomes = list(gaussian = c("pt5", "pt6")),
 #'   adjustment = "bk"
 #' )
+#'
+#' # Hidden Markov model for repeated measurements within subjects
+#' fit_hmm <- lca(
+#'   data = datasets::Indometh,
+#'   nclasses = 2L,
+#'   gaussian = "conc",
+#'   time = "time", id = "Subject",
+#'   control = list(opt = "em")
+#' )
 #' }
 #'
 #' @references
@@ -258,33 +292,57 @@ lca <- function(data,
                 start = NULL,
                 control = NULL,
                 do.fit = TRUE,
-                verbose = TRUE) {
+                verbose = TRUE,
+                time = NULL,
+                id = NULL) {
 
   #### Check input arguments ####
-
-  # Check weights if available:
-  if(!is.null(weights)) {
-
-    if(!is.numeric(weights) ||
-       any(weights <= 0) ||
-       !all(is.finite(weights))) {
-      stop("weights must be a positive numeric vector.")
-    }
-
-    if(length(c(weights)) != nrow(data)) {
-      stop("weights must be the same length than the number of rows in data.")
-    }
-
-  }
 
   # Check that data is a data.frame:
   if(!is.data.frame(data)) {
     stop("data must be a data.frame")
   }
 
+  temporal <- FALSE
+  if(!is.null(time)) {
+    if(!nrow(data)) stop("Temporal data must contain at least one observation.")
+    if(!is.character(time) || length(time) != 1L || !time %in% names(data) ||
+       (!is.null(id) && (!is.character(id) || length(id) != 1L ||
+                        !id %in% names(data)))) {
+      stop("time and id must name columns of data; id may be NULL.")
+    }
+    ids <- if(is.null(id)) rep.int(1L, nrow(data)) else data[[id]]
+    if(anyNA(ids) || anyNA(data[[time]])) stop("id and time cannot be missing.")
+    trajectory <- match(ids, unique(ids))
+    lengths <- tabulate(trajectory)
+    temporal <- any(lengths > 1L)
+  }
+  if(temporal) {
+    if(missing(adjustment)) adjustment <- "none"
+    if(tolower(adjustment) != "none") {
+      stop("Temporal models currently require adjustment = 'none'.")
+    }
+    if(!is.null(model) && !is.list(model)) {
+      stop("For temporal models, model must be a parameter specification list.")
+    }
+  }
+
+  # Check weights if available:
+  if(!is.null(weights)) {
+    if(!is.numeric(weights) || any(!is.finite(weights) | weights <= 0)) {
+      stop("weights must be a positive numeric vector.")
+    }
+    if(temporal && length(weights) != length(lengths)) {
+      stop("weights must contain one value per trajectory.")
+    }
+    if(!temporal && length(weights) != nrow(data)) {
+      stop("weights must be the same length than the number of rows in data.")
+    }
+  }
+
   # Check that nclasses is a (vector of) positive integer(s):
-  if(any(nclasses < 1L) ||
-     !all(nclasses == as.integer(nclasses))) {
+  if(!is.numeric(nclasses) || !length(nclasses) ||
+     any(!is.finite(nclasses) | nclasses < 1L | nclasses != floor(nclasses))) {
     stop("nclasses must be a (vector of) positive integer(s)")
   }
 
@@ -376,13 +434,14 @@ lca <- function(data,
                          model = model, weights = weights,
                          adjustment = adjustment, classification = classification,
                          penalties = penalties, start = start,
-                         control = control, do.fit = do.fit, verbose = verbose)
+                         control = control, do.fit = do.fit, verbose = verbose,
+                         time = time, id = id)
 
       names(result)[i] <- paste("nclasses=", nclasses[i], sep = "")
 
     }
 
-    class(result) <- "llcalist"
+    class(result) <- if(temporal) "llhmmlist" else "llcalist"
 
     return(result)
 
@@ -444,27 +503,73 @@ lca <- function(data,
   #### Store original call ####
 
   mc <- match.call(expand.dots = TRUE)
-  args <- lapply(as.list(mc)[-1], eval, envir = parent.frame())
+  if(!temporal) args <- lapply(as.list(mc)[-1], eval, envir = parent.frame())
 
   #### Create the dataList ####
 
+  if(temporal) {
+    ordering <- order(trajectory, data[[time]])
+    data <- data[ordering, , drop = FALSE]
+    if(anyDuplicated(data.frame(id = trajectory[ordering], time = data[[time]]))) {
+      stop("Time values must be unique within each trajectory.")
+    }
+    first <- c(1L, head(cumsum(lengths), -1L) + 1L)
+    initial_data <- data[first, , drop = FALSE]
+    if(anyNA(initial_data[, covariates, drop = FALSE])) {
+      stop("Initial-state covariates cannot be missing at trajectory starts.")
+    }
+  }
+
   dataList <- create_lca_dataList(data = data,
                                   nclasses = nclasses,
-                                  covariates = covariates,
+                                  covariates = if(!temporal) covariates,
                                   outcomes = outcomes,
                                   gaussian = gaussian,
                                   multinomial = multinomial,
                                   model = model,
-                                  weights = weights)
-  list2env(dataList, envir = environment())
-  dataList$args <- args
+                                  weights = if(!temporal) weights,
+                                  collapse = !temporal)
+  if(temporal) {
+    # Covariates predict the initial state of each trajectory.
+    design <- make_design_matrix(covariates, initial_data)
+    trajectory_ids <- ids[ordering[first]]
+    rownames(design) <- as.character(trajectory_ids)
+    dataList$design <- dataList$cov_patterns <- design
+    dataList$pdesign <- ncol(design)
+    dataList$covariates_names <- covariates
+    dataList$variables <- c(dataList$variables, covariates)
+    dataList$lengths <- lengths
+    dataList$trajectory_weights <- if(is.null(weights)) rep(1, length(lengths)) else weights
+    dataList$initial_rows <- first
+    dataList$trajectory_ids <- trajectory_ids
+    dataList$ordering <- ordering
+    dataList$inverse_ordering <- order(ordering)
+    dataList$time <- time
+    dataList$id <- id
+    dataList$npossible_patterns <- NA_real_
+  } else {
+    dataList$args <- args
+  }
 
   #### Check control parameters ####
+
+  if(temporal && !is.null(start$transition)) {
+    A <- start$transition
+    if(!is.null(start$logtransition)) {
+      stop("Supply start$transition or start$logtransition, not both.")
+    }
+    if(!is.matrix(A) || !is.numeric(A) || !all(dim(A) == c(nclasses, nclasses)) ||
+       any(!is.finite(A) | A <= 0) || any(abs(colSums(A) - 1) > 1e-8)) {
+      stop("start$transition must be a positive column-stochastic matrix.")
+    }
+    start$logtransition <- sweep(log(A), 2L, log(A[1L, ]), "-")
+    start$transition <- NULL
+  }
 
   # Update and check control parameters:
   control$penalties <- penalties # Either a logical or a list of named penalties
   control$start <- start # Optional named list with initial values
-  control <- lca_control(control) # Check and update the control inputs and create defaults
+  control <- lca_control(control, temporal) # Check the control inputs and create defaults
 
   #### Create the model ####
 
@@ -486,7 +591,9 @@ lca <- function(data,
 
   #### Object class ####
 
-  object_class <- if(length(previous_models) > 0L) {
+  object_class <- if(temporal) {
+    "llhmm"
+  } else if(length(previous_models) > 0L) {
     "multistage_llca"
   } else {
     "llca"
@@ -536,8 +643,8 @@ lca <- function(data,
   names(Optim$rg) <- modelInfo$parameters_labels
   names(Optim$dir) <- modelInfo$parameters_labels
 
-  # If control$opt == "em", ensure "lca" estimator post fitting:
-  modelInfo$control_estimator[[1]]$estimator <- "lca"
+  # Use the observed likelihood for post-estimation derivatives:
+  modelInfo$control_estimator[[1]]$estimator <- if(temporal) "lhmm" else "lca"
 
   #### Process the outputs ####
 
@@ -818,6 +925,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   list2env(dataList, envir = environment())
 
   class_names <- dataList$class_names
+  temporal <- !is.null(dataList$lengths)
   control$class_names <- class_names
   initial_names <- if(nrow(cov_patterns) == npatterns) pattern_names else rownames(cov_patterns)
 
@@ -846,6 +954,10 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   }
 
   #### Model for the transformed parameters ####
+
+  if(temporal && length(llca_models) > 0L) {
+    stop("Multistage fitting is not yet implemented for temporal models.")
+  }
 
   pred_names <- colnames(design) # Names of intercept + predictors
 
@@ -894,6 +1006,13 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
                    model_mvgaussian_lca(nclasses, dataList),
                    model_multinomial_lca(nclasses, dataList))
 
+  if(temporal) {
+    for(nm in c("logtransition", "transition")) {
+      list_struct[[length(list_struct) + 1L]] <- list(name = nm, type = "matrix",
+        dim = c(nclasses, nclasses), rownames = class_names, colnames = class_names)
+    }
+  }
+
   # Create the full transparameter structure:
   trans <- create_parameters(list_struct)
 
@@ -912,6 +1031,11 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   # Model for multivariate gaussian items:
   param <- constraints_mvgaussian_lca(dataList, param, trans)
+
+  if(temporal) {
+    param$logtransition <- trans$logtransition
+    param$logtransition[1L, ] <- "0"
+  }
 
   # Reorder the parameter list to match the ordering of the indicator variables:
   pos <- match(indicators_names, names(param))
@@ -941,6 +1065,11 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
   init_multinom <- start_multinomial_lca(param, dataList, control$rstarts)
   init_gauss <- start_gaussian_lca(param, dataList, control$rstarts)
   init_mvgauss <- start_mvgaussian_lca(param, dataList, control$rstarts)
+  if(temporal) {
+    # Start with a preference for remaining in the previous state.
+    initial <- diag(2, nclasses)
+    initial <- sweep(initial, 2L, initial[1L, ], "-")
+  }
 
   for(i in 1:control$rstarts) {
 
@@ -948,6 +1077,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
                          init_multinom[[i]],
                          init_gauss[[i]],
                          init_mvgauss[[i]])
+    if(temporal) init_param[[i]]$logtransition <- initial
 
     # Preserve the same order than in param:
     init_param[[i]] <- init_param[[i]][names(param)]
@@ -982,7 +1112,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
   list2env(full_model, envir = environment())
 
   nclasses <- ncol(trans$class)
-  temporal <- identical(control$estimator, "lhmm")
+  temporal <- !is.null(dataList$lengths)
 
   #### Manifolds ####
 
@@ -1127,7 +1257,7 @@ create_lca_modelInfo <- function(dataList, full_model, control) {
 
 #### Function to create the control list of optimization parameters ####
 
-lca_control <- function(control) {
+lca_control <- function(control, temporal = FALSE) {
 
   # Auxiliary function for lca.R
 
@@ -1260,7 +1390,7 @@ lca_control <- function(control) {
 
   if(control$opt == "em") {
 
-    control$estimator <- "lcaEM"
+    control$estimator <- if(temporal) "lhmmEM" else "lcaEM"
 
     if(is.null(control$mstep_maxit)) {
       control$mstep_maxit <- 30L
@@ -1279,7 +1409,7 @@ lca_control <- function(control) {
     }
 
   } else {
-    control$estimator <- "lca"
+    control$estimator <- if(temporal) "lhmm" else "lca"
   }
 
   return(control)

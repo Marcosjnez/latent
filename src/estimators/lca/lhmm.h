@@ -91,12 +91,16 @@ public:
 
   }
 
-  void G(arguments_optim& x) {
+  // Backward pass for the smoothed state probabilities and the scores
+  // of the initial and transition probabilities.
+  template<class StoreState>
+  void smooth(arma::mat& initial_scores, arma::mat& transition_scores,
+              StoreState store_state) {
 
     if(!std::isfinite(loss)) Rcpp::stop("lhmm: non-finite likelihood.");
 
-    arma::mat df_dclasses(Q, I, arma::fill::zeros);
-    arma::mat df_dtransition(I, I, arma::fill::zeros);
+    initial_scores.set_size(Q, I);
+    transition_scores.zeros(I, I);
     arma::vec backward(I), u(I);
     int start = 0;
 
@@ -111,15 +115,13 @@ public:
         u = emission.col(s) % backward / scale(s);
 
         for(int i = 0; i < I; ++i) {
-          // Derivative w.r.t. emission log-likelihood = -w * smoothed probability.
-          x.grad(indices_classloglik(s + S*i)) -=
-            w * forward(i, s) * backward(i);
+          store_state(s + S*i, w * forward(i, s) * backward(i));
         }
 
         if(s == start) {
-          df_dclasses.row(q) -= w * u.t();
+          initial_scores.row(q) = w * u.t();
         } else {
-          df_dtransition -= w * u * forward.col(s - 1).t();
+          transition_scores += w * u * forward.col(s - 1).t();
           backward = transition.t() * u;
         }
 
@@ -129,8 +131,16 @@ public:
 
     }
 
-    x.grad.elem(indices_classes) += arma::vectorise(df_dclasses);
-    x.grad.elem(indices_transition) += arma::vectorise(df_dtransition);
+  }
+
+  void G(arguments_optim& x) {
+
+    arma::mat initial_scores, transition_scores;
+    smooth(initial_scores, transition_scores, [&](int k, double count) {
+      x.grad(indices_classloglik(k)) -= count;
+    });
+    x.grad.elem(indices_classes) -= arma::vectorise(initial_scores);
+    x.grad.elem(indices_transition) -= arma::vectorise(transition_scores);
 
   }
 
@@ -227,7 +237,8 @@ public:
 
 };
 
-inline lhmm* choose_lhmm(const Rcpp::List& estimator_setup) {
+template<class HMM>
+inline HMM* choose_lhmm(const Rcpp::List& estimator_setup) {
 
   std::vector<arma::uvec> indices = estimator_setup["indices"];
   const int S = estimator_setup["S"];
@@ -261,7 +272,7 @@ inline lhmm* choose_lhmm(const Rcpp::List& estimator_setup) {
     Rcpp::stop("lhmm: supply one positive finite weight per trajectory.");
   }
 
-  lhmm* myestimator = new lhmm();
+  HMM* myestimator = new HMM();
   myestimator->S = S;
   myestimator->I = I;
   myestimator->Q = Q;
