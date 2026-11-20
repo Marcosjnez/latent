@@ -81,7 +81,7 @@
 - [`lbvr(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/lbvr.llcalist.md)
   : Local bivariate residuals for a collection of latent class models
 - [`lca()`](https://marcosjnez.github.io/latent/reference/lca.md) :
-  Latent Class Analysis
+  Latent Class and Hidden Markov Models
 - [`lcfa()`](https://marcosjnez.github.io/latent/reference/lcfa.md) :
   Confirmatory Factor Analysis and Structural Equation Modeling
 - [`lcfa_to_lavaan()`](https://marcosjnez.github.io/latent/reference/lcfa_to_lavaan.md)
@@ -92,8 +92,6 @@
   : Exploratory Factor Analysis Class
 - [`lefa()`](https://marcosjnez.github.io/latent/reference/lefa.md) :
   Exploratory Factor Analysis
-- [`lhmm()`](https://marcosjnez.github.io/latent/reference/lhmm.md) :
-  Hidden Markov Models
 - [`lmean()`](https://marcosjnez.github.io/latent/reference/lmean.md) :
   Sample Means
 - [`lmvnorm()`](https://marcosjnez.github.io/latent/reference/lmvnorm.md)

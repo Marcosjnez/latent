@@ -1,4 +1,4 @@
-# Latent Class Analysis
+# Latent Class and Hidden Markov Models
 
 `lca()` estimates latent class models in which the measurement model may
 contain Gaussian indicators, multinomial indicators, or both. Class
@@ -15,7 +15,8 @@ class enumeration by passing several values to `nclasses`.
 lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
     covariates = NULL, outcomes = NULL, model = NULL, weights = NULL,
     adjustment = "bk", classification = "modal", penalties = TRUE,
-    start = NULL, control = NULL, do.fit = TRUE, verbose = TRUE)
+    start = NULL, control = NULL, do.fit = TRUE, verbose = TRUE,
+    time = NULL, id = NULL)
 ```
 
 ## Arguments
@@ -31,8 +32,7 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
 
   A positive integer giving the number of latent classes. If a vector of
   positive integers is supplied, one model is fitted for each value and
-  the result is returned as an object of class `"llcalist"`. This is
-  usually termed as "class enumeration".
+  the result is returned as a list of fitted models (class enumeration).
 
 - gaussian:
 
@@ -60,7 +60,9 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
   are dummy-coded using
   [`model.matrix()`](https://rdrr.io/r/stats/model.matrix.html).
   Observations with missing values in the covariates are removed before
-  estimation.
+  estimation for ordinary latent class models. In temporal models, only
+  the covariates at the first observation of each trajectory are used.
+  These values must be observed.
 
 - outcomes:
 
@@ -97,14 +99,16 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
 - weights:
 
   Optional numeric vector of observation weights, with one value per row
-  of `data`.
+  of `data`. In temporal models, supply one positive weight per
+  trajectory, in order of first appearance of the IDs in the input data.
 
 - adjustment:
 
   Character string selecting the estimation strategy when `covariates`
   are supplied. Use `"none"` for one-step estimation, `"bk"` for the
   Bakk–Kuha two-step method, or `"ml"` for the ML three-step correction
-  based on classification error. Defaults to `"bk"`.
+  based on classification error. Defaults to `"bk"` for ordinary latent
+  class models. Temporal models use one-step estimation (`"none"`).
 
 - classification:
 
@@ -128,7 +132,9 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
   Optional named list of starting values. Names should correspond to
   parameter blocks in the model. Supplied values replace the
   corresponding default initial values, allowing partial specification
-  of starting values.
+  of starting values. Use `start$transition` for a positive transition
+  matrix whose columns sum to one, or `start$logtransition` for its
+  reference logits.
 
 - control:
 
@@ -148,18 +154,31 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
 - do.fit:
 
   Logical. If `TRUE`, the model is estimated. If `FALSE`, the function
-  returns an `"llca"` object containing the processed data, model
-  structure, and optimization setup, but without running the optimizer.
+  returns an object containing the processed data, model structure, and
+  optimization setup, but without running the optimizer.
 
 - verbose:
 
   Logical. If `TRUE`, progress information is printed, especially when
   fitting several values of `nclasses`.
 
+- time:
+
+  Optional name of the time variable. Observations are sorted by time
+  within each trajectory. Times must be unique within a trajectory. If
+  omitted, or if every trajectory has a single observation, an ordinary
+  latent class model is estimated.
+
+- id:
+
+  Optional name of the trajectory variable. When `time` is supplied and
+  `id = NULL`, all observations form one trajectory.
+
 ## Value
 
 If `length(nclasses) == 1` and `adjustment = "none"`, an S4 object of
-class `"llca"` with the following slots:
+class `"llca"` (ordinary latent class models) or `"llhmm"` (hidden
+Markov models) with the following slots:
 
 - `version`:
 
@@ -214,12 +233,13 @@ stages to be propagated recursively by the multistage covariance
 methods.
 
 If `nclasses` contains several values, a list of fitted objects is
-returned with class `"llcalist"`.
+returned with class `"llcalist"` or, for temporal models, `"llhmmlist"`.
 
 ## Details
 
 Estimate latent class models with continuous and categorical indicators,
-with optional covariates and distal outcomes.
+with optional covariates and distal outcomes. For repeated observations,
+estimate a hidden Markov model with a common transition matrix.
 
 The measurement model is defined by the variables supplied through
 `gaussian` and `multinomial`. Variables not listed there are ignored by
@@ -251,10 +271,18 @@ model is first estimated, cases are assigned to classes using either
 modal or proportional classification, and the structural model is
 estimated using a classification-error correction.
 
-The function compresses the data into unique response/covariate patterns
-and uses their frequencies as pattern weights. If observation weights
-are supplied through `weights`, they are incorporated into the pattern
-weights.
+For ordinary latent class models, the function compresses the data into
+unique response/covariate patterns and uses their frequencies as pattern
+weights. If observation weights are supplied through `weights`, they are
+incorporated into the pattern weights.
+
+Temporal models retain all observations. Each adjacent pair of
+observations within a trajectory represents one transition, irrespective
+of the elapsed time. In `transition`, columns correspond to the previous
+state and rows to the next state. Use `model$logtransition` to constrain
+the transition logits. The first row is fixed to zero by default.
+Outcomes contribute at their observed times, conditional on the current
+state.
 
 Residual dependencies can be requested with covariance-style syntax in
 `model`. For Gaussian indicators, terms such as `"y1 ~~ y2"` define
@@ -269,11 +297,13 @@ probabilities are recovered from the joint probabilities by summing over
 the relevant joint levels.
 
 When `control$opt = "em"`, posterior class-membership probabilities are
-updated in the E step and held fixed while the expected complete-data
-objective is numerically minimized in the M step. The M step can use
-gradient descent, L-BFGS, or the Newton trust-region optimizer. After
-convergence, model fit and post-estimation derivatives are evaluated
-using the observed-data latent class likelihood.
+updated in the E step. For temporal models, the forward-backward
+recursion also gives posterior probabilities for transitions between
+adjacent states. These probabilities are held fixed while the expected
+complete-data objective is numerically minimized in the M step. The M
+step can use gradient descent, L-BFGS, or the Newton trust-region
+optimizer. After convergence, model fit and post-estimation derivatives
+are evaluated using the observed-data likelihood.
 
 ## References
 
@@ -315,6 +345,15 @@ fit_bk <- lca(
   covariates = c("sex", "pt1", "pt2", "pt3", "pt4"),
   outcomes = list(gaussian = c("pt5", "pt6")),
   adjustment = "bk"
+)
+
+# Hidden Markov model for repeated measurements within subjects
+fit_hmm <- lca(
+  data = datasets::Indometh,
+  nclasses = 2L,
+  gaussian = "conc",
+  time = "time", id = "Subject",
+  control = list(opt = "em")
 )
 } # }
 ```
