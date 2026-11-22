@@ -12,267 +12,168 @@ public:
 
   int S, J, I, n_in, n_out;
   arma::uvec indices_mu, indices_sigma, indices_loglik;
-  arma::mat y, mu, dmu, loglik;
-  arma::cube Sigma, dSigma;
-  arma::uvec pattern;
-  std::vector<arma::uvec> observed;
-  std::vector<std::vector<arma::mat>> precision;
-  arma::mat logdet;
+  // Each pattern holds cases with the same observed variables (one case per column).
+  struct observation_pattern {
+    arma::uvec obs, rows;
+    arma::mat data;
+    std::vector<arma::mat> precision, mean_score;
+  };
+  std::vector<observation_pattern> patterns;
+  struct case_index {
+    arma::uword pattern, column;
+  };
+  std::vector<case_index> cases;
+  arma::vec last_mu, last_sigma, log_density;
+  arma::mat dmu;
+  arma::cube dSigma;
 
-  void initialize_patterns() {
+  void initialize_patterns(const arma::mat& y) {
     std::map<std::vector<arma::uword>, arma::uword> indices;
-    pattern.set_size(S);
+    std::vector<std::vector<arma::uword>> rows;
     for(int s = 0; s < S; ++s) {
       arma::uvec obs = arma::find_finite(y.row(s));
+      if(obs.is_empty()) continue; // A fully missing row adds zero log density.
       std::vector<arma::uword> key(obs.begin(), obs.end());
-      auto entry = indices.emplace(key, observed.size());
-      if(entry.second) observed.push_back(obs);
-      pattern(s) = entry.first->second;
+      auto entry = indices.emplace(key, patterns.size());
+      if(entry.second) {
+        patterns.emplace_back();
+        patterns.back().obs = obs;
+        rows.emplace_back();
+      }
+      arma::uword p = entry.first->second;
+      cases.push_back({p, rows[p].size()});
+      rows[p].push_back(s);
     }
-    precision.resize(I, std::vector<arma::mat>(observed.size()));
-    logdet.set_size(observed.size(), I);
+    for(arma::uword p = 0; p < patterns.size(); ++p) {
+      auto& block = patterns[p];
+      block.rows = arma::uvec(rows[p]);
+      block.data = y.submat(block.rows, block.obs).t();
+      block.precision.resize(I);
+      block.mean_score.resize(I);
+    }
+    log_density.zeros(S * I);
   }
 
   void transform(arguments_optim& x) {
-
-    mu = arma::reshape(x.transparameters.elem(indices_mu), J, I);
-    loglik = arma::reshape(x.transparameters.elem(indices_loglik), S, I);
-
-    Sigma.set_size(J, J, I);
-    for (int i = 0; i < I; ++i) {
-      Sigma.slice(i) = arma::reshape(
-        x.transparameters.elem(indices_sigma.subvec(i * J * J, (i + 1) * J * J - 1)),
-        J, J
-      );
-      // For Sigma to be positive-definite:
-      if(!Sigma.slice(i).is_sympd()) {
-        arma::vec eigval;
-        arma::mat eigvec;
-        eig_sym(eigval, eigvec, Sigma.slice(i));
-        arma::vec d = arma::clamp(eigval, 0.00001, eigval.max());
-        Sigma.slice(i) = eigvec * arma::diagmat(d) * eigvec.t();
+    arma::vec means = x.transparameters.elem(indices_mu);
+    arma::vec covariances = x.transparameters.elem(indices_sigma);
+    // In a structural fit the measurement parameters can stay fixed across iterations.
+    if(last_mu.is_empty() || !arma::all(means == last_mu) ||
+       !arma::all(covariances == last_sigma)) {
+      last_mu.reset(); // A failed trial must not leave a valid cache key.
+      for(int i = 0; i < I; ++i) {
+        arma::vec mu = means.subvec(i*J, (i+1)*J-1);
+        arma::mat Sigma = arma::reshape(covariances.subvec(i*J*J, (i+1)*J*J-1), J, J);
+        if(!Sigma.is_sympd()) {
+          arma::vec eigval;
+          arma::mat eigvec;
+          arma::eig_sym(eigval, eigvec, Sigma);
+          arma::vec d = arma::clamp(eigval, 0.00001, eigval.max());
+          Sigma = eigvec * arma::diagmat(d) * eigvec.t();
+        }
+        for(auto& block : patterns) {
+          arma::mat Sig = Sigma.submat(block.obs, block.obs);
+          arma::mat& K = block.precision[i];
+          K = arma::inv_sympd(Sig);
+          arma::mat residual = block.data.each_col() - mu.elem(block.obs);
+          arma::mat& score = block.mean_score[i];
+          score.set_size(residual.n_rows, residual.n_cols);
+          double constant = block.obs.n_elem * std::log(2.0 * M_PI) + arma::log_det_sympd(Sig);
+          for(arma::uword c = 0; c < residual.n_cols; ++c) {
+            arma::vec d(residual.colptr(c), residual.n_rows, false, true);
+            score.col(c) = K*d;
+            log_density(block.rows(c) + i*S) = -0.5 * (constant + arma::as_scalar(d.t()*K*d));
+          }
+        }
       }
-      // Cases with the same observed items share the same marginal covariance.
-      for(arma::uword p = 0; p < observed.size(); ++p) {
-        const arma::uvec& obs = observed[p];
-        if(obs.is_empty()) continue;
-        arma::mat Sig = Sigma.slice(i).submat(obs, obs);
-        precision[i][p] = arma::inv_sympd(Sig);
-        logdet(p, i) = arma::log_det_sympd(Sig);
-      }
+      last_mu = std::move(means);
+      last_sigma = std::move(covariances);
     }
-
-    for (int i = 0; i < I; ++i) {
-      for (int s = 0; s < S; ++s) {
-
-        arma::vec ys = y.row(s).t();
-        const arma::uvec& obs = observed[pattern(s)];
-        const arma::uword m = obs.n_elem;
-        if (m == 0) continue;
-
-        arma::vec mui = mu.col(i);
-        arma::vec d = ys.elem(obs) - mui.elem(obs);
-        const arma::mat& K = precision[i][pattern(s)];
-
-        double logdetSig = logdet(pattern(s), i);
-        double quad = arma::as_scalar(d.t() * K * d);
-
-        loglik(s, i) += -0.5 * (static_cast<double>(m) * std::log(2.0 * M_PI) + logdetSig + quad);
-      }
-    }
-
-    x.transparameters.elem(indices_out) = arma::vectorise(loglik);
-
+    x.transparameters.elem(indices_out) = x.transparameters.elem(indices_loglik) + log_density;
   }
 
   void update_grad(arguments_optim& x) {
-
-    arma::mat df_dmu(J, I, arma::fill::zeros);
-    arma::cube df_dSigma(J, J, I, arma::fill::zeros);
-    arma::vec grad_out = x.grad.elem(indices_out);
-
-    int k = 0L;
-    for (int i = 0; i < I; ++i) {
-      for (int s = 0; s < S; ++s, ++k) {
-
-        arma::vec ys = y.row(s).t();
-        const arma::uvec& obs = observed[pattern(s)];
-        const arma::uword m = obs.n_elem;
-        if (m == 0) continue;
-
-        arma::vec mui = mu.col(i);
-        arma::vec d = ys.elem(obs) - mui.elem(obs);
-        const arma::mat& K = precision[i][pattern(s)];
-
-        arma::vec gmu = K * d;
-        arma::mat gSigma = 0.5 * (gmu * gmu.t() - K);
-
-        const double gk = grad_out(k);
-
-        for (arma::uword a = 0; a < m; ++a) {
-          df_dmu(obs(a), i) += gk * gmu(a);
-        }
-
-        for (arma::uword a = 0; a < m; ++a) {
-          for (arma::uword b = 0; b < m; ++b) {
-            df_dSigma(obs(a), obs(b), i) += gk * gSigma(a, b);
+    for(int i = 0; i < I; ++i) {
+      arma::vec grad_mu(J, arma::fill::zeros);
+      arma::mat grad_sigma(J, J, arma::fill::zeros);
+      // Accumulate in input order: rounding can affect which tied random start wins.
+      for(const auto& item : cases) {
+        const auto& block = patterns[item.pattern];
+        const double* score = block.mean_score[i].colptr(item.column);
+        const double w = x.grad(indices_out(block.rows(item.column) + i*S));
+        for(arma::uword b = 0; b < block.obs.n_elem; ++b) {
+          grad_mu(block.obs(b)) += w*score[b];
+          for(arma::uword a = 0; a < block.obs.n_elem; ++a) {
+            double cov_score = 0.5 * (score[a]*score[b] - block.precision[i](a,b));
+            grad_sigma(block.obs(a), block.obs(b)) += w*cov_score;
           }
         }
       }
+      x.grad.elem(indices_mu.subvec(i*J, (i+1)*J-1)) += grad_mu;
+      x.grad.elem(indices_sigma.subvec(i*J*J, (i+1)*J*J-1)) += arma::vectorise(grad_sigma);
     }
-
-    arma::vec grad_sigma(indices_sigma.n_elem, arma::fill::zeros);
-    for (int i = 0; i < I; ++i) {
-      grad_sigma.subvec(i * J * J, (i + 1) * J * J - 1) =
-        arma::vectorise(df_dSigma.slice(i));
-    }
-
-    x.grad.elem(indices_mu) += arma::vectorise(df_dmu);
-    x.grad.elem(indices_sigma) += grad_sigma;
-
   }
 
   void dtransform(arguments_optim& x) {
-
     dmu = arma::reshape(x.dtransparameters.elem(indices_mu), J, I);
-
     dSigma.set_size(J, J, I);
-    for (int i = 0; i < I; ++i) {
+    arma::vec dloglik = x.dtransparameters.elem(indices_loglik);
+    for(int i = 0; i < I; ++i) {
       dSigma.slice(i) = arma::reshape(
-        x.dtransparameters.elem(indices_sigma.subvec(i * J * J, (i + 1) * J * J - 1)),
-        J, J
-      );
-    }
-
-    arma::mat dloglik = arma::reshape(x.dtransparameters.elem(indices_loglik), S, I);
-
-    for (int i = 0; i < I; ++i) {
-      for (int s = 0; s < S; ++s) {
-
-        arma::vec ys = y.row(s).t();
-        const arma::uvec& obs = observed[pattern(s)];
-        const arma::uword m = obs.n_elem;
-        if (m == 0) continue;
-
-        arma::vec mui = mu.col(i);
-        arma::vec dmui = dmu.col(i);
-        arma::vec d = ys.elem(obs) - mui.elem(obs);
-        arma::vec dmu_obs = dmui.elem(obs);
-        arma::mat dSig = dSigma.slice(i).submat(obs, obs);
-        const arma::mat& K = precision[i][pattern(s)];
-
-        arma::vec gmu = K * d;
-        arma::mat gSigma = 0.5 * (gmu * gmu.t() - K);
-
-        dloglik(s, i) +=
-          arma::dot(gmu, dmu_obs) +
-          arma::accu(gSigma % dSig);
+        x.dtransparameters.elem(indices_sigma.subvec(i*J*J, (i+1)*J*J-1)), J, J);
+      arma::vec dmui = dmu.col(i);
+      for(const auto& block : patterns) {
+        const arma::mat& score = block.mean_score[i];
+        arma::mat dSig = dSigma.slice(i).submat(block.obs, block.obs);
+        dloglik.elem(block.rows + i*S) += score.t() * dmui.elem(block.obs) +
+          0.5 * (arma::sum(score % (dSig * score), 0).t() - arma::accu(dSig % block.precision[i]));
       }
     }
-
-    x.dtransparameters.elem(indices_out) = arma::vectorise(dloglik);
-
+    x.dtransparameters.elem(indices_out) = dloglik;
   }
 
   void update_dgrad(arguments_optim& x) {
-
-    arma::mat ddf_dmu(J, I, arma::fill::zeros);
-    arma::cube ddf_dSigma(J, J, I, arma::fill::zeros);
-
-    arma::vec grad_out = x.grad.elem(indices_out);
-    arma::vec dgrad_out = x.dgrad.elem(indices_out);
-
-    int k = 0L;
-    for (int i = 0; i < I; ++i) {
-      for (int s = 0; s < S; ++s, ++k) {
-
-        arma::vec ys = y.row(s).t();
-        const arma::uvec& obs = observed[pattern(s)];
-        const arma::uword m = obs.n_elem;
-        if (m == 0) continue;
-
-        arma::vec mui = mu.col(i);
-        arma::vec dmui = dmu.col(i);
-        arma::vec d = ys.elem(obs) - mui.elem(obs);
-        arma::vec dmu_obs = dmui.elem(obs);
-        arma::mat dSig = dSigma.slice(i).submat(obs, obs);
-        const arma::mat& K = precision[i][pattern(s)];
+    for(int i = 0; i < I; ++i) {
+      arma::vec grad_mu(J, arma::fill::zeros), dmui = dmu.col(i);
+      arma::mat grad_sigma(J, J, arma::fill::zeros);
+      for(const auto& block : patterns) {
+        arma::uvec out = indices_out.elem(block.rows + i*S);
+        arma::vec w = x.grad.elem(out), dw = x.dgrad.elem(out);
+        const arma::mat& score = block.mean_score[i];
+        const arma::mat& K = block.precision[i];
+        arma::mat dSig = dSigma.slice(i).submat(block.obs, block.obs);
         arma::mat dK = -K * dSig * K;
-
-        arma::vec gmu = K * d;
-        arma::mat gSigma = 0.5 * (gmu * gmu.t() - K);
-
-        arma::vec dgmu = dK * d - K * dmu_obs;
-        arma::mat dgSigma = 0.5 * (dgmu * gmu.t() + gmu * dgmu.t() - dK);
-
-        const double gk = grad_out(k);
-        const double dgk = dgrad_out(k);
-
-        for (arma::uword a = 0; a < m; ++a) {
-          ddf_dmu(obs(a), i) += dgk * gmu(a) + gk * dgmu(a);
-        }
-
-        for (arma::uword a = 0; a < m; ++a) {
-          for (arma::uword b = 0; b < m; ++b) {
-            ddf_dSigma(obs(a), obs(b), i) += dgk * gSigma(a, b) + gk * dgSigma(a, b);
-          }
-        }
+        arma::mat shift = dSig * score;
+        shift.each_col() += dmui.elem(block.obs);
+        arma::mat dscore = -K * shift;
+        grad_mu.elem(block.obs) += score * dw + dscore * w;
+        arma::mat cross = (dscore.each_row() % w.t()) * score.t();
+        grad_sigma.submat(block.obs, block.obs) += 0.5 *
+          ((score.each_row() % dw.t()) * score.t() + cross + cross.t() -
+           arma::accu(dw)*K - arma::accu(w)*dK);
       }
+      x.dgrad.elem(indices_mu.subvec(i*J, (i+1)*J-1)) += grad_mu;
+      x.dgrad.elem(indices_sigma.subvec(i*J*J, (i+1)*J*J-1)) += arma::vectorise(grad_sigma);
     }
-
-    arma::vec dgrad_sigma(indices_sigma.n_elem, arma::fill::zeros);
-    for (int i = 0; i < I; ++i) {
-      dgrad_sigma.subvec(i * J * J, (i + 1) * J * J - 1) =
-        arma::vectorise(ddf_dSigma.slice(i));
-    }
-
-    x.dgrad.elem(indices_mu) += arma::vectorise(ddf_dmu);
-    x.dgrad.elem(indices_sigma) += dgrad_sigma;
-
   }
 
   void jacobian(arguments_optim& x) {
-
-    jacob.set_size(n_out, n_in);
-    jacob.zeros();
-
-    const int offset_mu = 0;
-    const int offset_sigma = J * I;
-    const int offset_loglik = J * I + I * J * J;
-
-    int k = 0L;
-    for (int i = 0; i < I; ++i) {
-      const int mu_offset = offset_mu + i * J;
-      const int sigma_offset = offset_sigma + i * J * J;
-
-      for (int s = 0; s < S; ++s, ++k) {
-
-        jacob(k, offset_loglik + k) = 1.0;
-
-        arma::vec ys = y.row(s).t();
-        const arma::uvec& obs = observed[pattern(s)];
-        const arma::uword m = obs.n_elem;
-        if (m == 0) continue;
-
-        arma::vec mui = mu.col(i);
-        arma::vec d = ys.elem(obs) - mui.elem(obs);
-        const arma::mat& K = precision[i][pattern(s)];
-
-        arma::vec gmu = K * d;
-        arma::mat gSigma = 0.5 * (gmu * gmu.t() - K);
-
-        for (arma::uword a = 0; a < m; ++a) {
-          jacob(k, mu_offset + obs(a)) = gmu(a);
-        }
-
-        for (arma::uword a = 0; a < m; ++a) {
-          for (arma::uword b = 0; b < m; ++b) {
-            jacob(k, sigma_offset + obs(a) + obs(b) * J) = gSigma(a, b);
+    jacob.zeros(n_out, n_in);
+    for(int i = 0; i < I; ++i) {
+      for(const auto& block : patterns) {
+        arma::uvec rows = block.rows + i*S;
+        const arma::mat& score = block.mean_score[i];
+        jacob.submat(rows, block.obs + i*J) = score.t();
+        for(arma::uword b = 0; b < block.obs.n_elem; ++b) {
+          for(arma::uword a = 0; a < block.obs.n_elem; ++a) {
+            arma::uword col = J*I + i*J*J + block.obs[a] + block.obs[b]*J;
+            jacob.submat(rows, arma::uvec{col}) =
+              0.5 * (score.row(a) % score.row(b) - block.precision[i](a,b)).t();
           }
         }
       }
     }
-
+    jacob.cols(n_in-n_out, n_in-1).eye();
   }
 
   void outcomes(arguments_optim& x) {
@@ -308,12 +209,6 @@ mvnormal* choose_mvnormal(const Rcpp::List& trans_setup) {
 
   int n_out = indices_out[0].n_elem;
 
-  arma::mat mu(J, I, arma::fill::zeros);
-  arma::mat dmu(J, I, arma::fill::zeros);
-  arma::mat loglik(S, I, arma::fill::zeros);
-  arma::cube Sigma(J, J, I, arma::fill::zeros);
-  arma::cube dSigma(J, J, I, arma::fill::zeros);
-
   mytrans->indices_mu = indices_mu;
   mytrans->indices_sigma = indices_sigma;
   mytrans->indices_loglik = indices_loglik;
@@ -322,16 +217,10 @@ mvnormal* choose_mvnormal(const Rcpp::List& trans_setup) {
   mytrans->indices_out = indices_out[0];
   mytrans->n_in = n_in;
   mytrans->n_out = n_out;
-  mytrans->y = y;
   mytrans->S = S;
   mytrans->J = J;
   mytrans->I = I;
-  mytrans->mu = mu;
-  mytrans->dmu = dmu;
-  mytrans->loglik = loglik;
-  mytrans->Sigma = Sigma;
-  mytrans->dSigma = dSigma;
-  mytrans->initialize_patterns();
+  mytrans->initialize_patterns(y);
 
   return mytrans;
 
