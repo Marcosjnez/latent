@@ -17,11 +17,18 @@ latInspect(x, what = "est", sort = TRUE, ..., fit = x)
 
 - what:
 
-  Character string identifying the requested component.
+  Character string identifying the requested component. Use `"est"` or
+  `"labels"` for the model parameters, or request a block such as
+  `"lambda"`, `"theta"`, `"psi"` or `"intercepts"`. Use `"implied"`,
+  `"implied.means"`, `"implied.thresholds"` or `"residuals"` for model
+  moments. `"loglik"` and `"loss"` return fit components by group and
+  overall. Log-likelihoods are available for likelihood estimators. Use
+  `"convergence"`, `"gradient"` or `"elapsed"` for optimizer
+  diagnostics. Elapsed time is in seconds.
 
 - sort:
 
-  Logical. Sort/orient only the requested output; defaults to TRUE.
+  Logical. Sort and orient factor-specific outputs. Defaults to TRUE.
 
 - ...:
 

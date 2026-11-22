@@ -177,6 +177,11 @@ pseudo-\(R^2\).</p>
 p-value are returned only when all modeled variables use a multinomial
 likelihood. They are returned as <code>NA</code> for models containing Gaussian
 variables.</p>
+<p>For hidden Markov models, information criteria use the trajectory
+log-likelihoods and the total number of observations across trajectories.
+The response-pattern test, its degrees of freedom and p-value, the
+classification likelihood, and entropy-based pseudo-\(R^2\) are
+returned as <code>NA</code>.</p>
 <p>When penalization is active, the output also contains the penalized
 log-likelihood and the corresponding penalized information criteria. The
 attribute <code>"penalized"</code> indicates whether these additional indices are

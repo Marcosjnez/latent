@@ -1,4 +1,4 @@
-# Inspect fitted latent class models
+# Inspect fitted latent class and hidden Markov models
 
 Extract model-implied class probabilities, posterior probabilities,
 class-conditional response profiles, fit statistics, response-pattern
@@ -119,6 +119,45 @@ latInspect(x, what = "profile", digits = 4L, sort = TRUE, ..., model = x)
 
   :   Elapsed optimization time.
 
+  `"initial"`, `"transition"`
+
+  :   For a hidden Markov model, the initial probabilities by trajectory
+      or the common transition matrix. In the transition matrix, columns
+      are previous states and rows are next states.
+
+  `"forward"`, `"filtered"`
+
+  :   Filtered state probabilities conditional on the observations
+      through the current time.
+
+  `"backward"`
+
+  :   Scaled likelihood of the future observations for each current
+      state. Its value is one at a trajectory's final time. Multiplying
+      it by the forward probabilities gives the smoothed probabilities.
+
+  `"smoothed"`, `"posterior"`
+
+  :   For a hidden Markov model, the state probabilities given all
+      observations in the trajectory.
+
+  `"posterior_transition"`
+
+  :   Joint probabilities of adjacent states given the whole trajectory,
+      returned as an array indexed by next state, previous state, and
+      destination observation. Trajectory starts have `NA` slices.
+
+  `"viterbi"`
+
+  :   Most probable joint state sequence for each trajectory. Values are
+      integer state identifiers in the fitted model.
+
+  `"loglik_trajectory"`
+
+  :   Unweighted observed-data log-likelihood per trajectory. In a
+      temporal model, `"loglik_case"` gives the same result. The sum
+      weighted by trajectory weights gives the model log-likelihood.
+
   Matching is case-insensitive.
 
 - digits:
@@ -161,6 +200,17 @@ retained observations when case-level results are requested.
 Pattern weights are used when calculating average class probabilities,
 posterior class sizes, and classification-error matrices. Consequently,
 frequency-weighted models produce weighted inspection results.
+
+For hidden Markov models, observation-level results follow the original
+input row order. Trajectory-level results follow the order in which IDs
+first appeared. `"fullclasses"` gives the initial state probabilities,
+and `"classes"` averages them using trajectory weights. The class sizes
+in `"profile"` and the default state ordering use smoothed occupancy
+across all observations, with each trajectory weight applied to its
+observations. `"table"` returns the observations, marginal modal states,
+and smoothed probabilities. The modal state at each time can differ from
+the Viterbi path. Use `sort = FALSE` to keep the state order from
+estimation.
 
 Gaussian item matrices are read by row name, using `"mean"` and
 `"stdv"`. Multinomial item matrices are assumed to contain probabilities

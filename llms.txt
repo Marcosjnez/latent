@@ -110,11 +110,10 @@ The package development is supported by two projects:
   : Inspect Fitted Exploratory Factor Analysis Objects
 - [`latInspect(`*`<llca>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
   [`latInspect(`*`<llcalist>`*`)`](https://marcosjnez.github.io/latent/reference/latInspect.llca.md)
-  : Inspect fitted latent class models
+  : Inspect fitted latent class and hidden Markov models
 - [`latent-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
   [`lcfa-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
   [`llca-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
-  [`llhmm-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
   [`latscores-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
   [`multistep-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)
   [`multistep_lcfa-class`](https://marcosjnez.github.io/latent/reference/latent-class.md)

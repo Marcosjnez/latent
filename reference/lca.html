@@ -263,8 +263,8 @@ supplied and <code>id = NULL</code>, all observations form one trajectory.</p></
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>If <code>length(nclasses) == 1</code> and <code>adjustment = "none"</code>, an S4 object
-of class <code>"llca"</code> (ordinary latent class models) or <code>"llhmm"</code>
-(hidden Markov models) with the following slots:</p><dl><dt><code>version</code></dt>
+of class <code>"llca"</code> with the following slots for both latent class and
+hidden Markov models:</p><dl><dt><code>version</code></dt>
 <dd><p>Version of the <span class="pkg">latent</span> package used to fit the model.</p></dd>
 
   <dt><code>call</code></dt>
@@ -308,8 +308,7 @@ ordinary slots and the fitted model from the preceding stage is stored in the
 <code>extra</code> slot. This allows uncertainty from earlier estimation stages to
 be propagated recursively by the multistage covariance methods.</p>
 <p>If <code>nclasses</code> contains several values, a list of fitted objects is
-returned with class <code>"llcalist"</code> or, for temporal models,
-<code>"llhmmlist"</code>.</p>
+returned with class <code>"llcalist"</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

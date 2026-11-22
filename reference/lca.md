@@ -177,8 +177,8 @@ lca(data, nclasses = 1L, gaussian = NULL, multinomial = NULL,
 ## Value
 
 If `length(nclasses) == 1` and `adjustment = "none"`, an S4 object of
-class `"llca"` (ordinary latent class models) or `"llhmm"` (hidden
-Markov models) with the following slots:
+class `"llca"` with the following slots for both latent class and hidden
+Markov models:
 
 - `version`:
 
@@ -233,7 +233,7 @@ stages to be propagated recursively by the multistage covariance
 methods.
 
 If `nclasses` contains several values, a list of fitted objects is
-returned with class `"llcalist"` or, for temporal models, `"llhmmlist"`.
+returned with class `"llcalist"`.
 
 ## Details
 

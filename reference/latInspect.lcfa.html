@@ -88,11 +88,19 @@
 
 
 <dt id="arg-what">what<a class="anchor" aria-label="anchor" href="#arg-what"></a></dt>
-<dd><p>Character string identifying the requested component.</p></dd>
+<dd><p>Character string identifying the requested component. Use
+<code>"est"</code> or <code>"labels"</code> for the model parameters, or request a
+block such as <code>"lambda"</code>, <code>"theta"</code>, <code>"psi"</code> or
+<code>"intercepts"</code>. Use <code>"implied"</code>, <code>"implied.means"</code>,
+<code>"implied.thresholds"</code> or <code>"residuals"</code> for model moments.
+<code>"loglik"</code> and <code>"loss"</code> return fit components by group and
+overall. Log-likelihoods are available for likelihood estimators.
+Use <code>"convergence"</code>, <code>"gradient"</code> or <code>"elapsed"</code> for
+optimizer diagnostics. Elapsed time is in seconds.</p></dd>
 
 
 <dt id="arg-sort">sort<a class="anchor" aria-label="anchor" href="#arg-sort"></a></dt>
-<dd><p>Logical. Sort/orient only the requested output; defaults to TRUE.</p></dd>
+<dd><p>Logical. Sort and orient factor-specific outputs. Defaults to TRUE.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
