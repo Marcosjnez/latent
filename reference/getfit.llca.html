@@ -163,9 +163,8 @@ output. Use <code>NULL</code> to return the unrounded values.</p></dd>
 <dd><p>Entropy-based pseudo-\(R^2\).</p></dd>
 
 
-</dl><p>For an object of class <code>"llcalist"</code>, a numeric matrix of class
-<code>"getfit.llcalist"</code> with one row per model and one column per available
-fit index.</p>
+</dl><p>For an object of class <code>"llcalist"</code>, a list of class
+<code>"getfit.llcalist"</code> with one vector of fit indices per model.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -174,9 +173,10 @@ classes, model parameters, and observations; the log-likelihood; information
 criteria; the integrated classification likelihood; and entropy-based
 pseudo-\(R^2\).</p>
 <p>The likelihood-ratio statistic \(L^2\), its degrees of freedom, and its
-p-value are returned only when all modeled variables use a multinomial
-likelihood. They are returned as <code>NA</code> for models containing Gaussian
-variables.</p>
+p-value use complete multinomial responses, comparing frequencies within
+each observed covariate pattern. The response-pattern test is unavailable
+with missing responses or Gaussian variables. Posterior entropy and the
+classification contribution to ICL use the fitted response-pattern weights.</p>
 <p>For hidden Markov models, information criteria use the trajectory
 log-likelihoods and the total number of observations across trajectories.
 The response-pattern test, its degrees of freedom and p-value, the
@@ -186,8 +186,8 @@ returned as <code>NA</code>.</p>
 log-likelihood and the corresponding penalized information criteria. The
 attribute <code>"penalized"</code> indicates whether these additional indices are
 present.</p>
-<p>For an <code>"llcalist"</code> object, the indices are collected into a matrix
-with one row per fitted model.</p>
+<p>For an <code>"llcalist"</code> object, the indices are collected in a named
+list with one element per fitted model.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

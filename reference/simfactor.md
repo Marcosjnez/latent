@@ -49,11 +49,14 @@ lambda = NULL, Phi = NULL, Psi = NULL)
 
 - fit:
 
-  Fit index to control the population error.
+  Fit index used to control the population error. One of `"rmsr"`,
+  `"rmsea"`, `"cfi"`, or `"raw"` for the estimator discrepancy.
 
 - misfit:
 
-  Misfit value to generate population error.
+  Target value of the selected fit index. For RMSR, `"close"` and
+  `"acceptable"` use 5 and 10 percent of the mean communality. A numeric
+  zero or `"zero"` requests the model without population error.
 
 - error_method:
 
@@ -171,15 +174,15 @@ sim <- simfactor(nfactors = 3, nitems = 4, correlations = 0.40,
                  crossloadings = 0.30)
 sim$lambda
 #>               S1        S2        S3
-#> item1  0.4161500 0.0000000 0.3000000
+#> item1  0.1923793 0.0000000 0.3000000
 #> item2  0.5668666 0.0000000 0.0000000
 #> item3  0.5201522 0.0000000 0.0000000
 #> item4  0.4314417 0.0000000 0.0000000
-#> item5  0.3000000 0.4014799 0.0000000
+#> item5  0.3000000 0.1725510 0.0000000
 #> item6  0.0000000 0.4932787 0.0000000
 #> item7  0.0000000 0.4995555 0.0000000
 #> item8  0.0000000 0.4579534 0.0000000
-#> item9  0.0000000 0.3000000 0.5465764
+#> item9  0.0000000 0.3000000 0.3523831
 #> item10 0.0000000 0.0000000 0.5545043
 #> item11 0.0000000 0.0000000 0.5749201
 #> item12 0.0000000 0.0000000 0.4349881

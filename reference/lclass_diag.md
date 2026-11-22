@@ -18,7 +18,7 @@ lclass_diag(
 
 - x:
 
-  An object of class \`"lca"\` from the latent package.
+  An object of class \`"llca"\` from the latent package.
 
 - digits:
 
@@ -68,7 +68,8 @@ if (FALSE) { # \dontrun{
   # Fit a model
   library(latent)
   # Fit a 3‑class model with multinomial indicators
-  fit <- lca(data = gss82, nclasses = 3,item = rep("multinomial", ncol(gss82)))
+  fit <- lca(data = gss82, nclasses = 3,
+             multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"))
 
   # Get default diagnostics (Entropy, AvePP, Mostlikely.Class, Sum.Mostlikely)
   diag <- lclass_diag(fit)

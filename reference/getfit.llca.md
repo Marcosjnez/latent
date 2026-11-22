@@ -108,9 +108,8 @@ For an object of class `"llca"`, a named numeric vector of class
 
   Entropy-based pseudo-\\R^2\\.
 
-For an object of class `"llcalist"`, a numeric matrix of class
-`"getfit.llcalist"` with one row per model and one column per available
-fit index.
+For an object of class `"llcalist"`, a list of class `"getfit.llcalist"`
+with one vector of fit indices per model.
 
 ## Details
 
@@ -120,9 +119,11 @@ criteria; the integrated classification likelihood; and entropy-based
 pseudo-\\R^2\\.
 
 The likelihood-ratio statistic \\L^2\\, its degrees of freedom, and its
-p-value are returned only when all modeled variables use a multinomial
-likelihood. They are returned as `NA` for models containing Gaussian
-variables.
+p-value use complete multinomial responses, comparing frequencies within
+each observed covariate pattern. The response-pattern test is
+unavailable with missing responses or Gaussian variables. Posterior
+entropy and the classification contribution to ICL use the fitted
+response-pattern weights.
 
 For hidden Markov models, information criteria use the trajectory
 log-likelihoods and the total number of observations across
@@ -135,8 +136,8 @@ log-likelihood and the corresponding penalized information criteria. The
 attribute `"penalized"` indicates whether these additional indices are
 present.
 
-For an `"llcalist"` object, the indices are collected into a matrix with
-one row per fitted model.
+For an `"llcalist"` object, the indices are collected in a named list
+with one element per fitted model.
 
 ## References
 

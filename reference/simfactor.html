@@ -117,11 +117,14 @@
 
 
 <dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>Fit index to control the population error.</p></dd>
+<dd><p>Fit index used to control the population error. One of <code>"rmsr"</code>,
+<code>"rmsea"</code>, <code>"cfi"</code>, or <code>"raw"</code> for the estimator discrepancy.</p></dd>
 
 
 <dt id="arg-misfit">misfit<a class="anchor" aria-label="anchor" href="#arg-misfit"></a></dt>
-<dd><p>Misfit value to generate population error.</p></dd>
+<dd><p>Target value of the selected fit index. For RMSR, <code>"close"</code> and
+<code>"acceptable"</code> use 5 and 10 percent of the mean communality. A numeric
+zero or <code>"zero"</code> requests the model without population error.</p></dd>
 
 
 <dt id="arg-error-method">error_method<a class="anchor" aria-label="anchor" href="#arg-error-method"></a></dt>
@@ -206,15 +209,15 @@ or increase (if setting pure items).</p>
 <span class="r-in"><span>                 crossloadings <span class="op">=</span> <span class="fl">0.30</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">sim</span><span class="op">$</span><span class="va">lambda</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>               S1        S2        S3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> item1  0.4161500 0.0000000 0.3000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item1  0.1923793 0.0000000 0.3000000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> item2  0.5668666 0.0000000 0.0000000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> item3  0.5201522 0.0000000 0.0000000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> item4  0.4314417 0.0000000 0.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> item5  0.3000000 0.4014799 0.0000000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item5  0.3000000 0.1725510 0.0000000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> item6  0.0000000 0.4932787 0.0000000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> item7  0.0000000 0.4995555 0.0000000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> item8  0.0000000 0.4579534 0.0000000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> item9  0.0000000 0.3000000 0.5465764</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> item9  0.0000000 0.3000000 0.3523831</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> item10 0.0000000 0.0000000 0.5545043</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> item11 0.0000000 0.0000000 0.5749201</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> item12 0.0000000 0.0000000 0.4349881</span>

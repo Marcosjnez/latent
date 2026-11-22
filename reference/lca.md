@@ -294,7 +294,8 @@ contribution of `u1` and `u2` by a joint multinomial contribution for
 defines one joint variable `u1.u2.u3`. Pairwise interaction parameters
 are used to build the joint log-probabilities, and the marginal item
 probabilities are recovered from the joint probabilities by summing over
-the relevant joint levels.
+the relevant joint levels. A partially observed block contributes the
+sum of the joint probabilities consistent with its observed responses.
 
 When `control$opt = "em"`, posterior class-membership probabilities are
 updated in the E step. For temporal models, the forward-backward

@@ -53,9 +53,9 @@ lpoly(data, method = "two-step", model = NULL,
 
 - se:
 
-  Logical. If `TRUE`, compute the two-step ACOV currently used by
-  `lpoly()`. If `FALSE`, return the estimates without ACOV or standard
-  errors.
+  Logical. Compute the sampling covariance and standard errors for the
+  selected method. One-step estimation uses the composite-likelihood
+  sandwich covariance.
 
 - do.fit:
 

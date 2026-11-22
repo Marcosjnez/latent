@@ -88,7 +88,7 @@
 
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>An object of class `"lca"` from the <span class="pkg">latent</span> package.</p></dd>
+<dd><p>An object of class `"llca"` from the <span class="pkg">latent</span> package.</p></dd>
 
 
 <dt id="arg-digits">digits<a class="anchor" aria-label="anchor" href="#arg-digits"></a></dt>
@@ -125,7 +125,8 @@ Available options:</p><ul><li><p><code>"Entropy"</code> – Entropy‑based R² 
 <span class="r-in"><span>  <span class="co"># Fit a model</span></span></span>
 <span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Marcosjnez/latent" class="external-link">latent</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="co"># Fit a 3‑class model with multinomial indicators</span></span></span>
-<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="lca.html">lca</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">gss82</span>, nclasses <span class="op">=</span> <span class="fl">3</span>,item <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"multinomial"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">gss82</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="lca.html">lca</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">gss82</span>, nclasses <span class="op">=</span> <span class="fl">3</span>,</span></span>
+<span class="r-in"><span>             multinomial <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PURPOSE"</span>, <span class="st">"ACCURACY"</span>, <span class="st">"UNDERSTA"</span>, <span class="st">"COOPERAT"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span>  <span class="co"># Get default diagnostics (Entropy, AvePP, Mostlikely.Class, Sum.Mostlikely)</span></span></span>
 <span class="r-in"><span>  <span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu">lclass_diag</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
