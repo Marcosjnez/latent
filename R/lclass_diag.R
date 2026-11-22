@@ -6,7 +6,7 @@
 #'
 #' Computes various classification diagnostics from a fitted latent class model.
 #'
-#' @param x An object of class `"lca"` from the \pkg{latent} package.
+#' @param x An object of class `"llca"` from the \pkg{latent} package.
 #' @param digits Number of decimal places to use for rounding (default = 4).
 #' @param type Character vector specifying which diagnostics to compute.
 #'   Available options:
@@ -31,7 +31,8 @@
 #'   # Fit a model
 #'   library(latent)
 #'   # Fit a 3‑class model with multinomial indicators
-#'   fit <- lca(data = gss82, nclasses = 3,item = rep("multinomial", ncol(gss82)))
+#'   fit <- lca(data = gss82, nclasses = 3,
+#'              multinomial = c("PURPOSE", "ACCURACY", "UNDERSTA", "COOPERAT"))
 #'
 #'   # Get default diagnostics (Entropy, AvePP, Mostlikely.Class, Sum.Mostlikely)
 #'   diag <- lclass_diag(fit)
@@ -41,13 +42,15 @@
 #'   diag_all <- lclass_diag(fit, type = "all")
 #'   print(diag_all)
 #' }
-#' @importFrom psych describeBy
 #' @export
 lclass_diag <- function(x, digits = 4,
                         type = c("Entropy", "AvePP", "Mostlikely.Class", "Sum.Mostlikely"),
                         ...) {
 
-  if(inherits(x, "llca") && !is.null(x@dataList$lengths)) {
+  if(!inherits(x, "llca") || !length(x@Optim)) {
+    stop("x must be a fitted llca object.")
+  }
+  if(!is.null(x@dataList$lengths)) {
     stop("Use latInspect(x, what = 'classification') for hidden Markov models.")
   }
 
@@ -62,98 +65,72 @@ lclass_diag <- function(x, digits = 4,
 
   type <- match.arg(type, choices = valid_types, several.ok = TRUE)
 
-  # ---- Extract basic quantities from model ----
-  post_probs <- latInspect(x, what = "posterior", sort = FALSE, ...)
-  state      <- latInspect(x, what = "state", sort = FALSE, ...)
-  class_prop <- latInspect(x, what = "classes", sort = FALSE, ...)
+  # Work with response-pattern frequencies, including any observation weights.
+  post_probs <- .llca_posterior(x)
+  weights <- x@dataList$pattern_weights
+  classes <- seq_len(ncol(post_probs))
+  class_names <- paste0("P(", x@dataList$class_names, "|data)")
+  state <- max.col(post_probs, ties.method = "first")
+  assigned <- diag(length(classes))[state, , drop = FALSE]
+  counts <- crossprod(assigned, post_probs * weights)
+  modal_count <- rowSums(counts)
+  posterior_count <- colSums(counts)
+  total <- sum(weights)
 
-  # ---- Helper functions (kept inside for portability) ----
-  avgprobs_mostlikely <- function(post_prob, class = NULL) {
-    if (is.null(dim(post_prob))) return(1)
-    if (is.null(class)) class <- apply(post_prob, 1, which.max)
-    tab <- t(sapply(1:ncol(post_prob), function(i) {
-      colMeans(post_prob[class == i, , drop = FALSE])
-    }))
-    rownames(tab) <- paste0("assigned.", 1:nrow(tab))
-    colnames(tab) <- paste0("meanprob.", colnames(tab))
-    return(tab)
-  }
+  # Rows of the first matrix are assigned classes; rows of the second are true classes.
+  avg_most <- sweep(counts, 1L, modal_count, "/")
+  avg_most[!is.finite(avg_most)] <- NA_real_
+  dimnames(avg_most) <- list(paste0("assigned.", classes), paste0("meanprob.", class_names))
+  class_most <- sweep(t(counts), 1L, posterior_count, "/")
+  class_most[!is.finite(class_most)] <- NA_real_
+  dimnames(class_most) <- list(paste0("avgprob.", classes), paste0("assigned.", classes))
+  misclass <- setNames(1 - diag(class_most), class_names)
 
-  classification_probs_mostlikely <- function(post_prob, class = NULL) {
-    if (is.null(dim(post_prob))) return(1)
-    if (is.null(class)) class <- apply(post_prob, 1, which.max)
-    avg_probs <- avgprobs_mostlikely(post_prob, class)
-    avg_probs[is.na(avg_probs)] <- 0
-    class_counts <- as.integer(table(ordered(class, levels = 1:ncol(post_prob))))
-    tab <- avg_probs * class_counts
-    tab <- tab / matrix(colSums(avg_probs * class_counts),
-                        ncol = ncol(tab), nrow = nrow(tab), byrow = TRUE)
-    rownames(tab) <- paste0("assigned.", 1:nrow(tab))
-    colnames(tab) <- paste0("avgprob.", 1:nrow(tab))
-    return(t(tab))   # rows = true class, cols = assigned class
-  }
-
-  avepp <- function(post_prob, state, digits = 4) {
-    desc_k <- psych::describeBy(post_prob, group = state, digits = digits, mat = TRUE)
-    unq <- sort(unique(state))
-    out <- NULL
-    for (j in seq_along(unq)) {
-      temp0 <- subset(desc_k, group1 == unq[j])
-      temp <- temp0[j, c("mean", "sd", "median", "min", "max")]
-      out <- rbind(out, temp)
+  if("AvePP" %in% type) {
+    AV <- matrix(NA_real_, length(classes), 5L,
+                 dimnames = list(NULL, c("mean", "sd", "median", "min", "max")))
+    for(i in classes) {
+      keep <- state == i
+      if(!any(keep)) next
+      p <- post_probs[keep, i]
+      w <- weights[keep]
+      mean_p <- avg_most[i, i]
+      sd_p <- if(sum(w) > 1) sqrt(sum(w * (p-mean_p)^2)/(sum(w)-1)) else NA_real_
+      order_p <- order(p)
+      cumulative <- cumsum(w[order_p])
+      middle <- which(cumulative >= sum(w)/2)[1L]
+      median_p <- p[order_p[middle]]
+      if(cumulative[middle] == sum(w)/2 && middle < length(p)) {
+        median_p <- (median_p + p[order_p[middle + 1L]])/2
+      }
+      AV[i, ] <- c(mean_p, sd_p, median_p, min(p), max(p))
     }
-    return(out)
+    AV <- as.data.frame(round(AV, digits))
   }
 
-  sum_mostlikely <- function(post_prob, state, digits = 4) {
-    classif <- table(state)
-    mix_names <- colnames(post_prob)
-    data.frame(class = mix_names,
-               count = as.vector(classif),
-               proportion = round(as.vector(prop.table(classif)), digits))
+  if("OCC" %in% type) {
+    prior <- latInspect(x, what = "classes", sort = FALSE, ...)
+    mean_p <- diag(avg_most)
+    OCC <- (mean_p / (1 - mean_p)) / (prior / (1 - prior))
+    OCC[is.nan(OCC)] <- NA_real_
   }
 
-  sum_postprob <- function(post_prob, class_pp, digits = 4) {
-    mix_names <- colnames(post_prob)
-    numObs <- nrow(post_prob)
-    data.frame(class = mix_names,
-               count = round(as.vector(class_pp * numObs), digits),
-               proportion = round(as.vector(class_pp), digits))
+  size_table <- function(count) {
+    data.frame(class = class_names, count = round(count, digits),
+               proportion = round(count/total, digits), row.names = NULL)
   }
 
-  # ---- Pre‑compute commonly used matrices (avoids redundant calculations) ----
-  avg_most   <- avgprobs_mostlikely(post_probs)          # for "Avg.Mostlikely"
-  class_most <- classification_probs_mostlikely(post_probs)  # for "Mostlikely.Class"
-
-  # ---- AvePP ----
-  AV <- avepp(post_probs, state, digits = digits)
-
-  # ---- Odds of Correct Classification (OCC) ----
-  OCC_k <- (AV$mean / (1 - AV$mean)) / (class_prop / (1 - class_prop))
-
-  # ---- Misclassification per true class ----
-  misclass_by_true <- 1 - diag(class_most)
-  names(misclass_by_true) <- colnames(post_probs)
-
-  # ---- Overall misclassification (correctly weighted by true class proportions) ----
-  overall_misclass <- sum(class_prop * misclass_by_true)
-
-  # ---- Sum.Mostlikely (modal assignment proportions) ----
-  sum_ml <- sum_mostlikely(post_probs, state, digits)
-
-  # ---- Assemble requested diagnostics ----
   out <- lapply(type, function(thetype) {
     switch(thetype,
            "Mostlikely.Class"           = round(class_most, digits),
-           "Avg.Mostlikely"              = round(avg_most, digits),
-           "Sum.Posterior"                = sum_postprob(post_probs, class_prop, digits = digits),
-           "Sum.Mostlikely"                = sum_ml,
-           "AvePP"                          = AV,
-           "Entropy"                        = getfit(x, digits = digits)[["R2_entropy"]],
-           "OCC"                            = round(OCC_k, digits),
-           "Misclassification.per.class"    = round(misclass_by_true, digits),
-           "Overall.Misclassification"      = round(overall_misclass, digits)
-    )
+           "Avg.Mostlikely"             = round(avg_most, digits),
+           "Sum.Posterior"              = size_table(posterior_count),
+           "Sum.Mostlikely"             = size_table(modal_count),
+           "AvePP"                      = AV,
+           "Entropy"                    = getfit(x, digits = digits)[["R2_entropy"]],
+           "OCC"                        = round(OCC, digits),
+           "Misclassification.per.class" = round(misclass, digits),
+           "Overall.Misclassification"  = round(1 - sum(diag(counts))/total, digits))
   })
 
   names(out) <- type

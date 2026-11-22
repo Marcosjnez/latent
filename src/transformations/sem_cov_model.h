@@ -31,12 +31,9 @@ public:
 
   void update_grad(arguments_optim& x) {
 
-    grad_out = arma::reshape(x.grad(indices_out), p, p);
-    grad_out *= 0.50; // Do not double-count the symmetric part
-    grad_out.diag() *= 2; // Restore the diagonal
+    grad_out = matrix_output_gradient(x.grad, p);
 
-    lambda_latent_cov = lambda * latent_cov;
-    glambda = 2*grad_out * lambda_latent_cov;
+    glambda = grad_out*lambda*latent_cov.t()+grad_out.t()*lambda*latent_cov;
     glatent_cov = lambda.t() * grad_out * lambda;
     gtheta = grad_out;
 
@@ -63,12 +60,11 @@ public:
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::mat dgrad_out = arma::reshape(x.dgrad.elem(indices_out), p, p);
-    dgrad_out *= 0.50; // Do not double-count the symmetric part
-    dgrad_out.diag() *= 2; // Restore the diagonal
+    arma::mat dgrad_out = matrix_output_gradient(x.dgrad, p);
 
-    arma::mat dB = dlambda * latent_cov + lambda * dlatent_cov;
-    dglambda = 2*(dgrad_out * lambda_latent_cov + grad_out * dB);
+    dglambda =
+      dgrad_out*lambda*latent_cov.t()+grad_out*dlambda*latent_cov.t()+grad_out*lambda*dlatent_cov.t()+
+      dgrad_out.t()*lambda*latent_cov+grad_out.t()*dlambda*latent_cov+grad_out.t()*lambda*dlatent_cov;
 
     // dglatent_cov:
     dglatent_cov = dlambda.t() * grad_out * lambda +
@@ -91,13 +87,12 @@ public:
     arma::mat I_p = arma::eye(p, p);
     arma::mat comm = dxt(p, q); // Commutation matrix
 
-    arma::mat J_lambda = arma::kron(lambda_latent_cov, I_p) +
+    arma::mat J_lambda = arma::kron(lambda*latent_cov.t(), I_p) +
       arma::kron(I_p, lambda_latent_cov) * comm;
     arma::mat J_latent_cov    = arma::kron(lambda, lambda);
     arma::mat J_theta  = arma::eye(p*p, p*p);
 
-    arma::mat Dp = duplication(p, true, false);
-    jacob = Dp.t() * arma::join_rows(J_lambda, J_latent_cov, J_theta);
+    jacob = arma::join_rows(J_lambda, J_latent_cov, J_theta);
 
   }
 
@@ -145,7 +140,7 @@ sem_cov_model* choose_sem_cov_model(const Rcpp::List& trans_setup) {
   mytrans->indices_theta = indices_theta;
   mytrans->indices_in = arma::join_cols(indices_lambda, indices_latent_cov,
                                         indices_theta);
-  mytrans->indices_out = indices_out[0];
+  mytrans->set_matrix_output(indices_out[0]);
   mytrans->p = p;
   mytrans->q = q;
   mytrans->grad_out = grad_out;

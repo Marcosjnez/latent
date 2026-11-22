@@ -22,10 +22,10 @@ Imports:
     methods,
     openxlsx,
     png,
-    psych,
     Rcpp (>= 1.0.11)
 Suggests:
     MASS,
+    psych,
     testthat (>= 3.0.0)
 LinkingTo:
     Rcpp,

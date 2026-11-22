@@ -13,16 +13,23 @@ class oblimin: public estimators {
 public:
 
   int p, q;
-  double loss;
+  double loss, gamma;
   arma::uvec indices_lambda;
-  arma::mat lambda, I_gamma_C, N, dlambda, L2, IgCL2N;
+  arma::mat lambda, dlambda, L2, IgCL2N;
+
+  arma::mat other_factors(const arma::mat& L2) {
+    arma::mat result = -L2;
+    result.each_col() += arma::sum(L2, 1);
+    result.each_row() -= gamma * arma::mean(result, 0);
+    return result;
+  }
 
   void param(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
 
     L2 = lambda % lambda;
-    IgCL2N = I_gamma_C * L2 * N;
+    IgCL2N = other_factors(L2);
 
   }
 
@@ -44,7 +51,7 @@ public:
 
     dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
     arma::mat ddf_dlambda = dlambda % IgCL2N +
-                            lambda % (I_gamma_C * (2*dlambda % lambda) * N);
+                            lambda % other_factors(2*dlambda % lambda);
 
     x.dgrad.elem(indices_lambda) += arma::vectorise(ddf_dlambda);
 
@@ -54,7 +61,7 @@ public:
 
     doubles.resize(2);
     doubles[0] =  loss;
-    doubles[0] =  0.00;
+    doubles[1] =  0.00;
 
   }
 
@@ -69,18 +76,10 @@ oblimin* choose_oblimin(const Rcpp::List& estimator_setup) {
   int q = estimator_setup["q"];
   double gamma = estimator_setup["gamma"];
 
-  arma::mat N(q, q, arma::fill::ones);
-  N.diag(0).zeros();
-  arma::mat I(p, p, arma::fill::eye), gamma_C(p, p, arma::fill::ones);
-  gamma_C *= (gamma/p);
-  arma::mat I_gamma_C = (I - gamma_C);
-  // I_gamma_C and N must be symmetric
-
   myestimator->indices_lambda = indices[0];
   myestimator->p = p;
   myestimator->q = q;
-  myestimator->N = N;
-  myestimator->I_gamma_C = I_gamma_C;
+  myestimator->gamma = gamma;
 
   return myestimator;
 

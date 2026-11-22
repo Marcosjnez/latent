@@ -5,9 +5,9 @@
 \alias{predict.llcalist}
 \title{Predict latent class membership probabilities}
 \usage{
-\method{predict}{llca}(object, new = NULL, ..., model = object)
+\method{predict}{llca}(object, new = newdata, ..., model = object, newdata = NULL)
 
-\method{predict}{llcalist}(object, new = NULL, ..., model = object)
+\method{predict}{llcalist}(object, new = newdata, ..., model = object, newdata = NULL)
 }
 \arguments{
 \item{object}{Fitted model or collection of fitted models passed to the method.}
@@ -21,6 +21,8 @@ number and row names of the returned predictions.}
 \item{...}{Additional arguments. Currently not used.}
 
 \item{model}{A fitted object of class `"llca"` or `"llcalist"`.}
+
+\item{newdata}{Alias for `new`, following the usual `predict()` convention.}
 }
 \value{
 For an `"llca"` object, a `data.frame` containing the non-intercept columns

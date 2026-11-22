@@ -133,6 +133,11 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
                  do.fit = TRUE, control.moments = NULL,
                  ...) {
 
+  #### Store original call ####
+
+  mc <- match.call(expand.dots = TRUE)
+  args <- .matched_arguments(match.call(expand.dots = FALSE), environment())
+
   #### Check input arguments ####
 
   if("sort" %in% names(list(...))) {
@@ -266,11 +271,6 @@ lcfa <- function(data = NULL, model = NULL, estimator = "ml",
             "polychoric correlations, and Yule correlations use their ",
             "standard covariance matrices.")
   }
-
-  #### Store original call ####
-
-  mc <- match.call(expand.dots = TRUE)
-  args <- lapply(as.list(mc)[-1L], eval, envir = parent.frame())
 
   #### Check control parameters ####
 
@@ -598,9 +598,13 @@ create_lcfa_dataList <- function(data = NULL, model = NULL, cor = "pearson",
                                  ngroups = ngroups)
       items_i <- item_names[[i]]
 
-      not_all_na_i <- !apply(is.na(data[group_i, items_i, drop = FALSE]),
-                             MARGIN = 1L, FUN = all)
-      keep[group_i] <- not_all_na_i
+      observed <- rowSums(!is.na(data[group_i, items_i, drop = FALSE]))
+      keep[group_i] <- if(missing %in% c("complete.obs", "na.or.complete")) {
+        observed == length(items_i)
+      } else {
+        observed > 0L
+      }
+      if(!any(keep[group_i])) stop("No observations remain in group ", i)
 
     }
 
@@ -2978,6 +2982,8 @@ constraints_lcfa <- function(dataList, data_param, trans, control) {
 
 start_lcfa <- function(dataList, data_param, param, trans,
                        fixed, fixed_values_list, control) {
+
+  if(!is.null(control$fitted_start)) return(list(control$fitted_start[names(param)]))
 
   list2env(data_param, envir = environment())
 

@@ -23,15 +23,14 @@ arma::mat real_sqrtmat(arma::mat R) {
 // [[Rcpp::export]]
 std::vector<int> count(const std::vector<int>& X, const int n, const int max_X) {
 
-  // Allocate memory space for table
+  if(n < 0 || static_cast<size_t>(n) > X.size() || max_X < 0) {
+    Rcpp::stop("Invalid frequency table dimensions.");
+  }
   std::vector<int> frequency(max_X);
-  // std::vector<int> frequency;
-  // frequency.reserve(max_X);
-
-  // Populate table
   for (int i = 0; i < n; i++) {
-    if((!std::isnan(X[i])) && (X[i] < max_X)) frequency[X[i]]++;
-    // if(X[i] < max_X) frequency[X[i]]++;
+    if(X[i] == NA_INTEGER || X[i] == max_X) continue;
+    if(X[i] < 0 || X[i] > max_X) Rcpp::stop("Category outside the frequency table.");
+    ++frequency[X[i]];
   }
 
   // Return joint frequency table
@@ -42,12 +41,16 @@ std::vector<int> count(const std::vector<int>& X, const int n, const int max_X) 
 std::vector<std::vector<int>> joint_frequency_table(const std::vector<int>& X, const int n, const int max_X,
                                                     const std::vector<int>& Y, const int max_Y) {
 
-  // Allocate memory space for table
+  if(n < 0 || static_cast<size_t>(n) > X.size() || static_cast<size_t>(n) > Y.size() ||
+     max_X < 0 || max_Y < 0) Rcpp::stop("Invalid joint table dimensions.");
   std::vector<std::vector<int>> joint_frequency(max_X + 1L, std::vector<int>(max_Y + 1L, 0));
 
   // Populate table
   for (int i = 0; i < n; i++) {
-    // if(!std::isnan(X[i]) & !std::isnan(Y[i]) ) joint_frequency[X[i]][Y[i]]++;
+    if(X[i] == NA_INTEGER || Y[i] == NA_INTEGER) continue;
+    if(X[i] < 0 || X[i] > max_X || Y[i] < 0 || Y[i] > max_Y) {
+      Rcpp::stop("Category outside the joint frequency table.");
+    }
     joint_frequency[X[i]][Y[i]]++;
   }
 
@@ -120,124 +123,40 @@ double drezner(double h1, double hk, const double pnorm_tau_h, const double pnor
 const double GOLDEN_RATIO = (3.0 - std::sqrt(5.0)) / 2.0;
 constexpr double ZEPS = 1.0e-10;
 
-std::vector<double> optimize2(const std::vector<double>& tau1, const std::vector<double>& tau2, const std::vector<std::vector<int>>& n,
-                              const size_t s1, const size_t s2, const std::vector<double>& pnorm_tau1, const std::vector<double>& pnorm_tau2,
-                              const int nobs, const double cor) {
+std::vector<double> optimize(const std::vector<double>& tau1, const std::vector<double>& tau2,
+                             const std::vector<std::vector<int>>& n, const size_t s1,
+                             const size_t s2, const std::vector<double>& pnorm_tau1,
+                             const std::vector<double>& pnorm_tau2, const int nobs, double p) {
 
-  // tau1 = Vector of thresholds for the first variable (It must start at -Infinite and end at Infinite)
-  // tau2 = Vector of thresholds for the second variable (It must start at -Infinite and end at Infinite)
-  // n =  Contingency table for the variables
-  // s1 = Length of tau1 - 1L
-  // s2 = Length of tau2 - 1L
-  // pnorm_tau1 = pnorm of tau1
-  // pnorm_tau2 = pnorm of tau2
-  // nobs =  Sample size
-  // cor = Initial value for the correlation
+  // Fisher scoring for one correlation with fixed marginal thresholds.
+  double lo = -1.0 + 1e-8, hi = 1.0 - 1e-8;
+  double g = 0.0, information = 0.0;
+  int iteration = 0;
 
-  double asin_p = std::asin(cor);
-  double p = cor; // Parameters to be estimated
-  double cos_asin_p = std::cos(asin_p);
-  double g;       // Gradient
-  double h;       // Approximated Hessian (asymptotic formula)
-  double iteration = 1;
-
-  // Start the iterative algorithm
-  for(int i=0; i < 20L; ++i) {
-    // double f = 0.0;  // Objective value (no needed)
-    g = 0.0;     // Gradient
-    h = 0.0;     // Approximated Hessian (asymptotic formula)
-
-    for (size_t i = 0; i < s1; ++i) {
-      for (size_t j = 0; j < s2; ++j) {
-        // CDF of the bivariate normal:
-        double prop = pbinorm(p, tau1[i], tau2[j], tau1[i + 1], tau2[j + 1],
-                              pnorm_tau1[i], pnorm_tau2[j], pnorm_tau1[i+1], pnorm_tau2[j+1]);
-        // PDF of the Bivariate normal:
-        double gij = dbinorm(p, tau1[i+1], tau2[j+1]) -
-          dbinorm(p, tau1[i], tau2[j+1]) -
-          dbinorm(p, tau1[i+1], tau2[j]) +
-          dbinorm(p, tau1[i], tau2[j]);
-        // Derivative of the PDF of the Bivariate normal:
-        double hij = ddbinorm(p, tau1[i+1], tau2[j+1]) -
-          ddbinorm(p, tau1[i], tau2[j+1]) -
-          ddbinorm(p, tau1[i+1], tau2[j]) +
-          ddbinorm(p, tau1[i], tau2[j]);
-        // f -= n[i][j] * std::log(prop) / nobs; // No need to compute the objective value
-        if(prop < 1e-09) prop = 1e-09; // Avoid division by zero
-        double gij_cos = gij*cos_asin_p;
-        g -= n[i][j] / prop * gij_cos / nobs; // Update Gradient
-        double term = hij*cos_asin_p*cos_asin_p - gij*p;
-        h += n[i][j]*(gij_cos*gij_cos - prop*term)/(prop*prop) / nobs; // Update Hessian
+  while(iteration < 60) {
+    ++iteration;
+    g = 0.0;
+    information = 0.0;
+    for(size_t i = 0; i < s1; ++i) {
+      for(size_t j = 0; j < s2; ++j) {
+        double probability = pbinorm(p, tau1[i], tau2[j], tau1[i+1], tau2[j+1],
+                                     pnorm_tau1[i], pnorm_tau2[j], pnorm_tau1[i+1], pnorm_tau2[j+1]);
+        probability = std::max(probability, 1e-12);
+        double derivative = dbinorm(p, tau1[i+1], tau2[j+1]) - dbinorm(p, tau1[i], tau2[j+1])
+                          - dbinorm(p, tau1[i+1], tau2[j]) + dbinorm(p, tau1[i], tau2[j]);
+        g -= n[i][j]*derivative/probability/nobs;
+        information += derivative*derivative/probability;
       }
     }
-    double dir = g/h; // Approximated Newton's Descent direction
-    asin_p -= dir;             // Update parameter (no need for step-size)
-    p = std::sin(asin_p);
-    if((g*g) < 1e-09) break; // Tolerance criteria
-    ++ iteration;
-    cos_asin_p = std::cos(asin_p);
+    if(std::abs(g) < 1e-8 || hi-lo < 1e-9 || iteration == 60) break;
+    if(g < 0.0) lo = p;
+    else hi = p;
+    // Bisect when the scoring step leaves the admissible interval.
+    double next = p - g/information;
+    if(!std::isfinite(next) || next <= lo || next >= hi) next = (lo+hi)/2;
+    p = next;
   }
-
-  return {p, iteration, g, h};
-
-}
-
-std::vector<double> optimize(const std::vector<double>& tau1, const std::vector<double>& tau2, const std::vector<std::vector<int>>& n,
-                             const size_t s1, const size_t s2, const std::vector<double>& pnorm_tau1, const std::vector<double>& pnorm_tau2,
-                             const int nobs, const double cor) {
-
-  // tau1 = Vector of thresholds for the first variable (It must start at -Infinite and end at Infinite)
-  // tau2 = Vector of thresholds for the second variable (It must start at -Infinite and end at Infinite)
-  // n =  Contingency table for the variables
-  // s1 = Length of tau1 - 1L
-  // s2 = Length of tau2 - 1L
-  // pnorm_tau1 = pnorm of tau1
-  // pnorm_tau2 = pnorm of tau2
-  // nobs =  Sample size
-  // cor = Initial value for the correlation
-
-  double p = cor; // Parameters to be estimated
-  double g;       // Gradient
-  double score;   // Approximated Hessian (asymptotic formula)
-  double iteration = 1;
-
-  // Start the iterative algorithm
-  for(int k=0; k < 20L; ++k) {
-    // double f = 0.0;  // Objective value (no needed)
-    g = 0.0;     // Gradient
-    score = 0.0; // Approximated Hessian (asymptotic formula)
-
-    for (size_t i = 0; i < s1; ++i) {
-      for (size_t j = 0; j < s2; ++j) {
-        // CDF of the bivariate normal:
-        double prop = pbinorm(p, tau1[i], tau2[j], tau1[i + 1], tau2[j + 1],
-                              pnorm_tau1[i], pnorm_tau2[j], pnorm_tau1[i+1], pnorm_tau2[j+1]);
-        // PDF of the Bivariate normal:
-        double gij = dbinorm(p, tau1[i+1], tau2[j+1]) -
-          dbinorm(p, tau1[i], tau2[j+1]) -
-          dbinorm(p, tau1[i+1], tau2[j]) +
-          dbinorm(p, tau1[i], tau2[j]);
-        // No need to compute the likelihood
-        // f -= n[i][j] * std::log(prop) / nobs;
-        // A Taylor expansion results in a Fisher scoring method to update the correlation
-        if(prop < 1e-09) prop = 1e-09; // Avoid division by zero
-        g -= n[i][j] / prop * gij / nobs; // Update Gradient
-        score += gij*gij / prop;          // Update Hessian
-      }
-    }
-    double dir = g/score; // Approximated Newton's Descent direction
-    p -= dir;             // Update parameter (no need for step-size)
-    if(p > 1 || p < -1) {
-      Rprintf("parameter ");
-      return optimize2(tau1, tau2, n, s1, s2, pnorm_tau1, pnorm_tau2, nobs, cor);
-    }
-    if((g*g) < 1e-09) break; // Tolerance criteria
-
-    ++ iteration;
-  }
-
-  return {p, iteration, g, score};
-
+  return {p, static_cast<double>(iteration), g, information};
 }
 
 // [[Rcpp::export]]

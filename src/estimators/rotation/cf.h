@@ -15,15 +15,17 @@ public:
   int p, q;
   double k, ff1, ff2, loss;
   arma::uvec indices_lambda;
-  arma::mat lambda, dlambda, L2, N, Mm, L2N, ML2, hL;
+  arma::mat lambda, dlambda, L2, L2N, ML2;
 
   void param(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
 
     L2 = lambda % lambda;
-    L2N = L2 * N;
-    ML2 = Mm * L2;
+    L2N = -L2;
+    L2N.each_col() += arma::sum(L2, 1);
+    ML2 = -L2;
+    ML2.each_row() += arma::sum(L2, 0);
     ff1 = (1-k) * arma::accu(L2 % L2N) / 4;
     ff2 = k * arma::accu(L2 % ML2) / 4;
 
@@ -51,8 +53,12 @@ public:
     dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
 
     arma::mat dL2 = 2 * dlambda % lambda;
-    arma::mat df1 = (1-k) * dlambda % L2N + (1-k) * lambda % (dL2 * N);
-    arma::mat df2 = k * dlambda % ML2 + k * lambda % (Mm * dL2);
+    arma::mat dL2N = -dL2;
+    dL2N.each_col() += arma::sum(dL2, 1);
+    arma::mat dML2 = -dL2;
+    dML2.each_row() += arma::sum(dL2, 0);
+    arma::mat df1 = (1-k) * dlambda % L2N + (1-k) * lambda % dL2N;
+    arma::mat df2 = k * dlambda % ML2 + k * lambda % dML2;
     arma::mat ddf_dlambda = df1 + df2;
 
     x.dgrad.elem(indices_lambda) += arma::vectorise(ddf_dlambda);
@@ -63,7 +69,7 @@ public:
 
     doubles.resize(2);
     doubles[0] =  loss;
-    doubles[0] =  0.00;
+    doubles[1] =  0.00;
 
   }
 
@@ -78,16 +84,9 @@ cf* choose_cf(const Rcpp::List& estimator_setup) {
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
 
-  arma::mat M(p, p, arma::fill::ones);
-  M.diag(0).zeros();
-  arma::mat N(q, q, arma::fill::ones);
-  N.diag(0).zeros();
-
   myestimator->indices_lambda = indices[0];
   myestimator->p = p;
   myestimator->q = q;
-  myestimator->Mm = M;
-  myestimator->N = N;
   myestimator->k = k;
 
   return myestimator;

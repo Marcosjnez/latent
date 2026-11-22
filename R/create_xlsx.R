@@ -103,9 +103,20 @@ create_xlsx <- function(..., file, sheet_names = NULL, digits = 3L,
     stop("All worksheets must have a valid name")
   }
 
-  sheet_names <- gsub("[\\[\\]:*?/\\\\]", "_", sheet_names)
+  sheet_names <- gsub("[\\[\\]:*?/\\\\]", "_", sheet_names, perl = TRUE)
+  sheet_names <- gsub("^'+|'+$", "_", sheet_names)
   sheet_names <- substr(sheet_names, 1L, 31L)
-  sheet_names <- make.unique(sheet_names)
+  used <- character(0)
+  for(i in seq_along(sheet_names)) {
+    base <- sheet_names[i]
+    suffix <- 0L
+    while(tolower(sheet_names[i]) %in% used) {
+      suffix <- suffix+1L
+      tag <- paste0(".", suffix)
+      sheet_names[i] <- paste0(substr(base, 1L, 31L-nchar(tag)), tag)
+    }
+    used <- c(used, tolower(sheet_names[i]))
+  }
 
   #### Create workbook ####
 

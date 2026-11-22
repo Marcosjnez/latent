@@ -2,6 +2,25 @@
 # email: m.j.jimenezhenriquez@vu.nl
 # Modification date: 13/09/2026
 
+# Match all labels at once, so long models only build the lookup table once.
+.parameter_indices <- function(specs, structures, labels_all) {
+  blocks <- lapply(specs, function(spec) {
+    if(is.list(spec)) return(lapply(unname(spec), unlist, use.names = FALSE))
+    unknown <- setdiff(spec, names(structures))
+    if(length(unknown)) stop("Unknown parameter block: ", paste(unknown, collapse = ", "))
+    lapply(unname(structures[spec]), unlist, use.names = FALSE)
+  })
+  labels <- unlist(blocks, use.names = FALSE)
+  indices <- match(labels, labels_all) - 1L
+  if(anyNA(indices)) stop("Unknown parameter label: ", labels[which(is.na(indices))[1L]])
+  offset <- 0L
+  lapply(blocks, function(block) lapply(block, function(x) {
+    index <- offset + seq_along(x)
+    offset <<- offset + length(x)
+    indices[index]
+  }))
+}
+
 create_transforms <- function(transforms, structures) {
 
   #### Check inputs ####
@@ -14,6 +33,8 @@ create_transforms <- function(transforms, structures) {
   transform_names <- lapply(transforms, FUN = \(x) x$transform)
   labels_in <- lapply(transforms, FUN = \(x) x$parameters_in)
   labels_out <- lapply(transforms, FUN = \(x) x$parameters_out)
+  inputs <- .parameter_indices(labels_in, structures, param_structures_vector)
+  outputs <- .parameter_indices(labels_out, structures, param_structures_vector)
   dots <- lapply(transforms, FUN = \(x) x$extra)
 
   #### Create transformation control objects ####
@@ -76,55 +97,9 @@ create_transforms <- function(transforms, structures) {
 
     }
 
-    #### Input indices ####
-
-    indices_in <- vector("list", length = length(labels_in[[i]]))
-
-    for(j in seq_along(labels_in[[i]])) {
-
-      if(is.list(labels_in[[i]][j])) {
-        labels_in_vector <- unname(c(unlist(labels_in[[i]][[j]])))
-      } else {
-        labels_in_vector <- unname(c(unlist(structures[labels_in[[i]][[j]]])))
-      }
-
-      match_in <- match(labels_in_vector, param_structures_vector)
-
-      if(anyNA(match_in)) {
-        stop("Some labels_in were not found in param_structures_vector: ",
-             paste(labels_in_vector[is.na(match_in)], collapse = ", "))
-      }
-
-      indices_in[[j]] <- match_in-1L
-
-    }
-
-    #### Output indices ####
-
-    indices_out <- vector("list", length = length(labels_out[[i]]))
-
-    for(j in seq_along(labels_out[[i]])) {
-
-      if(is.list(labels_out[[i]][j])) {
-        labels_out_vector <- unname(c(unlist(labels_out[[i]][[j]])))
-      } else {
-        labels_out_vector <- unname(c(unlist(structures[labels_out[[i]][[j]]])))
-      }
-
-      match_out <- match(labels_out_vector, param_structures_vector)
-
-      if(anyNA(match_out)) {
-        stop("Some labels_out were not found in param_structures_vector: ",
-             paste(labels_out_vector[is.na(match_out)], collapse = ", "))
-      }
-
-      indices_out[[j]] <- match_out-1L
-
-    }
-
     result[[i]] <- c(list(transform = transform,
-                          indices_in = indices_in,
-                          indices_out = indices_out),
+                          indices_in = inputs[[i]],
+                          indices_out = outputs[[i]]),
                      extra)
 
   }

@@ -11,232 +11,123 @@
 #include <map>
 #include <vector>
 
-arma::vec diagcov(arma::mat X) {
-
-  const size_t numCols = X.n_cols;
-  arma::vec diag_cov(numCols);
-
-  for(size_t i = 0; i < numCols; ++i) {
-    arma::vec col = X.col(i);
-    arma::uvec validIndices = arma::find_finite(col);
-    arma::vec validCol = col(validIndices);
-    validCol -= arma::mean(validCol);
-    double d = arma::accu(validCol % validCol)/(validIndices.n_elem-1);
-    diag_cov(i) = d;
-  }
-
-  return diag_cov;
-
-}
-
-arma::mat center_finite(arma::mat X) {
-
-  // Center each column ignoring NaNs
-
-  for(arma::uword j = 0; j < X.n_cols; ++j) {
-    arma::vec col = X.col(j);
-    arma::uvec idx = arma::find_finite(col);
-    if(idx.n_elem > 0) {
-      double mu = arma::mean(col(idx));
-      col(idx) -= mu;
-      X.col(j) = col;
-    }
-  }
-
-  return X;
-
-}
-
 arma::mat asymptotic_general(arma::mat X, bool cov, bool diag) {
 
-  /*
-   * Browne and Shapiro (Equation 3.2; 1986)
-   *
-   * cov = false : asymptotic covariance matrix of item correlations
-   *               (off-diagonal only)
-   * cov = true  : asymptotic covariance matrix of item covariances
-   *               (including variances)
-   */
+  // The covariance of the observation-level influences gives the
+  // fourth-moment covariance of the Pearson estimates.
+  const arma::uword n = X.n_rows, p = X.n_cols;
+  if(n < 2 || p == 0 || X.has_inf()) Rcpp::stop("Invalid data for Pearson covariance estimation.");
 
-  int q = X.n_cols;
-  int qq = q*q;
-
-  // Center variables first (important for fourth moments)
-  arma::mat Xc = center_finite(X);
-
-  arma::vec d;
-  arma::mat S, P;
-
-  if(Xc.has_nan()) {
-    d = arma::sqrt(diagcov(Xc));
-    P = pairwise_cor(Xc);
-    arma::mat D = arma::diagmat(d);
-    S = D*P*D;
+  arma::mat S(p, p), means(p, p), weights(p, p, arma::fill::ones);
+  if(!X.has_nan()) {
+    arma::vec mu = arma::mean(X, 0).t();
+    X.each_row() -= mu.t();
+    S = X.t()*X/n;
+    means.zeros();
   } else {
-    S = (Xc.t()*Xc)/Xc.n_rows;
-    d = arma::sqrt(arma::diagvec(S));
-    arma::mat Dinv = arma::diagmat(1.0/d);
-    P = Dinv*S*Dinv;
-  }
-
-  arma::mat Theta(qq, qq, arma::fill::zeros);
-
-  int ij = 0;
-  int kh = 0;
-
-  for(int j = 0; j < q; ++j) {
-    for(int i = 0; i < q; ++i) {
-
-      kh = 0;
-
-      for(int h = 0; h < q; ++h) {
-        for(int k = 0; k < q; ++k) {
-
-          arma::vec m = Xc.col(i) % Xc.col(j) % Xc.col(k) % Xc.col(h);
-          arma::uvec validIndices = arma::find_finite(m);
-          arma::vec v = m(validIndices);
-
-          double val = arma::mean(v);
-
-          if(cov) {
-            Theta(ij, kh) = val;
-          } else {
-            Theta(ij, kh) = val/(d[i]*d[j]*d[k]*d[h]);
-          }
-
-          ++kh;
-        }
+    // Each covariance is centered and scaled using its jointly observed rows.
+    const arma::umat observed = (X == X);
+    for(arma::uword i = 0; i < p; ++i) {
+      for(arma::uword j = 0; j <= i; ++j) {
+        arma::uvec rows = arma::find(observed.col(i) % observed.col(j));
+        if(rows.n_elem < 2) Rcpp::stop("Each covariance needs at least two joint observations.");
+        arma::vec a = X.col(i), b = X.col(j);
+        a = a.elem(rows);
+        b = b.elem(rows);
+        means(i,j) = arma::mean(a);
+        means(j,i) = arma::mean(b);
+        S(i,j) = S(j,i) = arma::dot(a-means(i,j), b-means(j,i))/rows.n_elem;
+        weights(i,j) = weights(j,i) = static_cast<double>(n)/rows.n_elem;
       }
-
-      ++ij;
     }
   }
 
-  if(cov) {
-    arma::vec s = arma::vectorise(S);
-    arma::mat Gamma = Theta-s*s.t();
-
-    arma::uvec lower_indices = arma::trimatl_ind(arma::size(S), 0);
-    return Gamma(lower_indices, lower_indices);
+  if(!cov && arma::any(S.diag() <= 0)) Rcpp::stop("Correlations require positive variances.");
+  const arma::uvec indices = arma::trimatl_ind(arma::size(S), cov || diag ? 0 : -1);
+  arma::mat result(indices.n_elem, indices.n_elem, arma::fill::zeros);
+  // Bound working memory even when there are many observations.
+  const arma::uword block_size = 1024;
+  for(arma::uword start = 0; start < n; start += block_size) {
+    const arma::uword count = std::min(block_size, n-start);
+    arma::mat scores(count, indices.n_elem, arma::fill::zeros);
+    for(arma::uword k = 0; k < indices.n_elem; ++k) {
+      const arma::uword i = indices[k] % p, j = indices[k] / p;
+      if(!cov && i == j) continue;
+      const double scale = cov ? 1.0 : std::sqrt(S(i,i)*S(j,j));
+      const double rho = S(i,j)/scale;
+      for(arma::uword r = 0; r < count; ++r) {
+        const double a = X(start+r,i), b = X(start+r,j);
+        double value = 0.0;
+        if(std::isfinite(a) && std::isfinite(b)) {
+          value = weights(i,j)*((a-means(i,j))*(b-means(j,i))-S(i,j))/scale;
+        }
+        if(!cov) {
+          if(std::isfinite(a)) {
+            double ai = a-means(i,i);
+            value -= 0.5*rho*weights(i,i)*(ai*ai/S(i,i)-1.0);
+          }
+          if(std::isfinite(b)) {
+            double bj = b-means(j,j);
+            value -= 0.5*rho*weights(j,j)*(bj*bj/S(j,j)-1.0);
+          }
+        }
+        scores(r,k) = value;
+      }
+    }
+    result += scores.t()*scores;
   }
-
-  arma::vec p = arma::vectorise(P);
-  arma::mat Gamma = Theta-p*p.t();
-
-  arma::mat Ms = dxt(q, q)*0.5;
-  Ms.diag() += 0.5;
-
-  arma::mat I(q, q, arma::fill::eye);
-  arma::mat Kd(qq, q, arma::fill::zeros);
-
-  for(int i = 0; i < q; ++i) {
-    int ii = i*q+i;
-    Kd(ii, i) = 1.0;
-  }
-
-  arma::mat A = Ms*arma::kron(I, P)*Kd;
-  arma::mat B = Gamma*Kd;
-  arma::mat G = Kd.t()*Gamma*Kd;
-
-  arma::mat asymptotic = Gamma-A*B.t()-B*A.t()+A*G*A.t();
-
-  arma::uvec lower_indices;
-  if(diag) {
-    lower_indices = arma::trimatl_ind(arma::size(P), 0);
-  } else {
-    lower_indices = arma::trimatl_ind(arma::size(P), -1);
-  }
-
-  return asymptotic(lower_indices, lower_indices);
-
+  return result/n;
 }
 
 arma::mat asymptotic_normal(const arma::mat& S, bool cov, bool diag) {
 
-  /*
-   * Browne and Shapiro (Equation 4.1; 1986)
-   *
-   * Input is the covariance matrix S.
-   *
-   * cov = false : asymptotic covariance matrix of item correlations
-   * cov = true  : asymptotic covariance matrix of item covariances
-   */
-
-  int q = S.n_rows;
-  int qq = q*q;
-
-  arma::mat Ms = dxt(q, q)*0.5;
-  Ms.diag() += 0.5;
-
-  if(cov) {
-    arma::mat Gamma = 2.0*Ms*arma::kron(S, S);
-    arma::uvec lower_indices = arma::trimatl_ind(arma::size(S), 0);
-    return Gamma(lower_indices, lower_indices);
+  // For sample covariances, Cov(s_ij, s_kl)*N = S_ik*S_jl + S_il*S_jk.
+  // Apply the correlation derivatives only when standardized output is needed.
+  if(S.n_rows != S.n_cols) Rcpp::stop("S must be square.");
+  arma::mat P = S;
+  if(!cov) {
+    if(arma::any(S.diag() <= 0)) Rcpp::stop("Correlations require positive variances.");
+    arma::vec sd = arma::sqrt(S.diag());
+    P.each_col() /= sd;
+    P.each_row() /= sd.t();
   }
-
-  arma::vec d = arma::sqrt(arma::diagvec(S));
-  arma::mat Dinv = arma::diagmat(1.0/d);
-  arma::mat P = Dinv*S*Dinv;
-
-  arma::mat I(q, q, arma::fill::eye);
-  arma::mat Kd(qq, q, arma::fill::zeros);
-
-  for(int i = 0; i < q; ++i) {
-    int ii = i*q+i;
-    Kd(ii, i) = 1.0;
+  const arma::uword p = P.n_rows;
+  const arma::uvec indices = arma::trimatl_ind(arma::size(P), cov || diag ? 0 : -1);
+  arma::mat result(indices.n_elem, indices.n_elem);
+  for(arma::uword a = 0; a < indices.n_elem; ++a) {
+    const arma::uword i = indices[a] % p, j = indices[a] / p;
+    for(arma::uword b = 0; b <= a; ++b) {
+      const arma::uword k = indices[b] % p, l = indices[b] / p;
+      const double ik = P(i,k), il = P(i,l), jk = P(j,k), jl = P(j,l);
+      double value = ik*jl + il*jk;
+      if(!cov) {
+        value -= P(i,j)*(ik*il + jk*jl) + P(k,l)*(ik*jk + il*jl);
+        value += 0.5*P(i,j)*P(k,l)*(ik*ik + il*il + jk*jk + jl*jl);
+        if(i == j || k == l) value = 0.0;
+      }
+      result(a,b) = result(b,a) = value;
+    }
   }
-
-  arma::mat A = Ms*arma::kron(I, P)*Kd;
-  arma::mat Gamma = 2.0*Ms*arma::kron(P, P);
-  arma::mat B = Gamma*Kd;
-  arma::mat G = 2.0*P % P;
-
-  arma::mat asymptotic = Gamma-A*B.t()-B*A.t()+A*G*A.t();
-
-  arma::uvec lower_indices;
-  if(diag) {
-    lower_indices = arma::trimatl_ind(arma::size(P), 0);
-  } else {
-    lower_indices = arma::trimatl_ind(arma::size(P), -1);
-  }
-
-  return asymptotic(lower_indices, lower_indices);
-
+  return result;
 }
 
 arma::mat asymptotic_elliptical(const arma::mat& S, double eta, bool cov,
                                 bool diag) {
 
-  /*
-   * Browne and Shapiro style elliptical correction.
-   *
-   * Input is the covariance matrix S.
-   * Here eta = 1+kappa.
-   */
-
-  if(!cov) {
-    return eta*asymptotic_normal(S, false, false);
+  arma::mat result = eta*asymptotic_normal(S, cov, diag);
+  if(!cov) return result;
+  const arma::uvec indices = arma::trimatl_ind(arma::size(S), 0);
+  const arma::vec s = S.elem(indices);
+  result += (eta-1.0)*(s*s.t());
+  if(!diag) {
+    arma::uvec off_diag(S.n_rows*(S.n_rows-1)/2);
+    arma::uword k = 0;
+    for(arma::uword i = 0; i < indices.n_elem; ++i) {
+      if(indices[i] % (S.n_rows+1) != 0) off_diag[k++] = i;
+    }
+    return result(off_diag, off_diag);
   }
-
-  int q = S.n_rows;
-
-  arma::mat Ms = dxt(q, q)*0.5;
-  Ms.diag() += 0.5;
-
-  arma::mat Gamma_normal = 2.0*Ms*arma::kron(S, S);
-  arma::vec s = arma::vectorise(S);
-
-  arma::mat Gamma = eta*Gamma_normal+(eta-1.0)*(s*s.t());
-
-  arma::uvec lower_indices;
-  if(diag) {
-    lower_indices = arma::trimatl_ind(arma::size(S), 0);
-  } else {
-    lower_indices = arma::trimatl_ind(arma::size(S), -1);
-  }
-
-  return Gamma(lower_indices, lower_indices);
-
+  return result;
 }
 
 
@@ -721,6 +612,7 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
   const bool reuse_tables = use_polyfast && !has_missing;
   std::vector<double> category_min;
   std::vector<int> category_count;
+  std::vector<arma::vec> cached_levels;
   std::vector<std::vector<std::vector<int>>> cached_tables;
 
   if(use_polyfast) {
@@ -735,6 +627,10 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
 
     category_min = Rcpp::as<std::vector<double>>(cache["category_min"]);
     category_count = Rcpp::as<std::vector<int>>(cache["category_count"]);
+    if(cache.containsElementNamed("category_levels")) {
+      cached_levels = Rcpp::as<std::vector<arma::vec>>(cache["category_levels"]);
+      if(cached_levels.size() != nitems) Rcpp::stop("Invalid cached category levels.");
+    }
     if(reuse_tables) {
       cached_tables =
         Rcpp::as<std::vector<std::vector<std::vector<int>>>>(
@@ -789,9 +685,18 @@ Rcpp::List asymptotic_poly(const arma::mat& data,
           " does not match the polyfast category metadata.");
       }
 
+      if(!cached_levels.empty() && (cached_levels[j].n_elem != ncategories ||
+         !cached_levels[j].is_finite() || arma::any(arma::diff(cached_levels[j]) <= 0))) {
+        Rcpp::stop("Invalid cached category levels.");
+      }
+
       for(arma::uword i = 0L; i < nobs; ++i) {
 
         if(!std::isfinite(data(i, j))) continue;
+        if(!cached_levels.empty()) {
+          categories(i, j) = category_index(cached_levels[j], data(i, j));
+          continue;
+        }
 
         const double shifted = data(i, j)-category_min[j];
         const double rounded = std::round(shifted);

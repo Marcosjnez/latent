@@ -72,6 +72,11 @@ lpearson <- function(data,
                      control = NULL,
                      ...) {
 
+  #### Store original call ####
+
+  mc <- match.call(expand.dots = TRUE)
+  args <- .matched_arguments(match.call(expand.dots = FALSE), environment())
+
   #### Check input arguments ####
 
   if(!is.data.frame(data) && !is.matrix(data)) {
@@ -135,11 +140,6 @@ lpearson <- function(data,
   if(is.null(control)) {
     control <- list()
   }
-
-  #### Store original call ####
-
-  mc <- match.call(expand.dots = TRUE)
-  args <- lapply(as.list(mc)[-1L], eval, envir = parent.frame())
 
   #### Check control parameters ####
 
@@ -244,6 +244,10 @@ create_lpearson_dataList <- function(data, control) {
 
   #### Sample covariance or correlation matrix ####
 
+  if(control$missing %in% c("complete.obs", "na.or.complete")) {
+    data <- data[complete.cases(data), , drop = FALSE]
+    if(nrow(data) == 0L) stop("No complete observations remain")
+  }
   sample_stats <- sample_lpearson(data = data,
                                   control = control)
 
@@ -494,21 +498,29 @@ sample_lpearson <- function(data, control) {
 
   rownames(S) <- colnames(S) <- colnames(data)
 
+  variances <- diag(S)
+  # Each covariance uses its own number of available pairs.
+  pairwise_normal <- likelihood == "normal" &&
+    control$missing == "pairwise.complete.obs" && anyNA(data)
+  if(pairwise_normal) {
+    n_pair <- crossprod(!is.na(as.matrix(data)))
+    if(any(n_pair < 2L)) stop("Each covariance needs at least two joint observations")
+    S <- S*((n_pair-1L)/n_pair)
+  }
+
   if(control$std.ov) {
 
-    if(any(!is.finite(diag(S))) || any(diag(S) <= 0)) {
+    if(any(!is.finite(variances)) || any(variances <= 0)) {
       stop("Observed variables cannot be standardized because at least one variance is non-positive or non-finite")
     }
 
-    inv_sqrtdiagS <- diag(1/sqrt(diag(S)), nrow = ncol(S))
-    S <- inv_sqrtdiagS %*% S %*% inv_sqrtdiagS
-    rownames(S) <- colnames(S) <- colnames(data)
+    S <- S/sqrt(outer(variances, variances))
 
   }
 
   # Preserve the existing lpearson convention: under the normal likelihood the
   # sample matrix uses N rather than N-1 in the denominator.
-  if(likelihood == "normal") {
+  if(likelihood == "normal" && !pairwise_normal) {
     S <- S*(nobs-1L)/nobs
   }
 
@@ -686,6 +698,37 @@ compute_se_lpearson <- function(dataList, modelInfo, Optim, control) {
     VCOV <- matrix(0,
                    nrow = modelInfo$nparam,
                    ncol = modelInfo$nparam)
+
+  } else if(dataList$VCOV_type == "standard" && anyNA(dataList$data) &&
+            control$missing == "pairwise.complete.obs") {
+
+    # Each pair of covariance estimates shares only the cases on which
+    # both pairs were observed. Complete data give the usual divisor N.
+    S <- dataList$S
+    pairs <- which(lower.tri(S, diag = TRUE), arr.ind = TRUE)
+    observed <- !is.na(as.matrix(dataList$data))
+    observed_pairs <- observed[, pairs[, 1L], drop = FALSE] &
+      observed[, pairs[, 2L], drop = FALSE]
+    n <- colSums(observed_pairs)
+    if(any(n < 2L)) stop("Each covariance needs at least two joint observations")
+    VCOV <- asymptotic_normal(S)*crossprod(observed_pairs)/outer(n, n)
+
+    if(control$std.ov) {
+      # Apply the derivative of each correlation to its covariance and
+      # the two marginal variances.
+      variances <- which(pairs[, 1L] == pairs[, 2L])
+      off_diag <- which(pairs[, 1L] != pairs[, 2L])
+      D <- matrix(0, length(off_diag), nrow(pairs))
+      row <- seq_along(off_diag)
+      i <- pairs[off_diag, 1L]
+      j <- pairs[off_diag, 2L]
+      scale <- sqrt(diag(S)[i]*diag(S)[j])
+      rho <- S[cbind(i, j)]/scale
+      D[cbind(row, off_diag)] <- 1/scale
+      D[cbind(row, variances[i])] <- -0.5*rho/diag(S)[i]
+      D[cbind(row, variances[j])] <- -0.5*rho/diag(S)[j]
+      VCOV <- D %*% VCOV %*% t(D)
+    }
 
   } else if(dataList$VCOV_type == "standard") {
 

@@ -46,18 +46,23 @@ public:
 
   }
 
+  static arma::mat retract(const arma::mat& X) {
+
+    if(X.n_rows < X.n_cols) Rcpp::stop("The orthogonal manifold requires p >= q.");
+    arma::mat Q, R;
+    if(!arma::qr_econ(Q, R, X)) Rcpp::stop("Could not compute the orthogonal retraction.");
+
+    // A positive diagonal of R preserves the orientation of feasible columns.
+    for(arma::uword j=0L; j < Q.n_cols; ++j) {
+      if(R(j, j) < 0.0) Q.col(j) *= -1.0;
+    }
+    return Q;
+
+  }
+
   void retr(arguments_optim& x) {
 
-    arma::mat Q, R;
-    arma::qr_econ(Q, R, X);
-
-    // arma::mat eigvec;
-    // arma::vec eigval;
-    // bool decomposed = arma::eig_sym(eigval, eigvec, X.t()*X);
-    // arma::mat Q = X;
-    // Q *= eigvec*arma::diagmat(1.00/arma::sqrt(eigval))*eigvec.t();
-
-    x.parameters(indices) = arma::vectorise(Q);
+    x.parameters(indices) = arma::vectorise(retract(X));
 
   }
 
@@ -245,10 +250,7 @@ orth* choose_orth(Rcpp::List manifold_setup) {
 
 arma::mat orth(arma::mat X) {
 
-  arma::mat Q, R;
-  arma::qr_econ(Q, R, X);
-
-  return Q;
+  return orth::retract(X);
 
 }
 

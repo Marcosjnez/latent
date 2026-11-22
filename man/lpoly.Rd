@@ -35,9 +35,9 @@ estimation does not use penalties.}
 the model. Partial matrices/vectors and \code{NA} values are handled in the
 same way as in \code{lca()}.}
 
-\item{se}{Logical. If \code{TRUE}, compute the two-step ACOV currently used
-by \code{lpoly()}. If \code{FALSE}, return the estimates without ACOV or
-standard errors.}
+\item{se}{Logical. Compute the sampling covariance and standard errors
+for the selected method. One-step estimation uses the composite-likelihood
+sandwich covariance.}
 
 \item{do.fit}{Logical. If \code{FALSE}, return the prepared but unfitted
 \code{"latent"} object.}

@@ -6,7 +6,7 @@
 
 // Gradient descent algorithm:
 
-optim_result gd(arguments_optim x,
+optim_result gd(arguments_optim& x,
                 std::vector<transformations*>& xtransforms,
                 std::vector<manifolds*>& xmanifolds,
                 std::vector<estimators*>& xestimators) {
@@ -33,8 +33,15 @@ optim_result gd(arguments_optim x,
   // Riemannian gradient
   final_manifold.proj(x, xmanifolds);
 
-  do {
+  x.ng = arma::norm(x.rg, 2);
+  x.convergence = false;
+  while(std::isfinite(x.f) && std::isfinite(x.ng)) {
 
+    if(x.rg.is_empty() || x.ng <= x.eps) {
+      x.convergence = true;
+      break;
+    }
+    if(x.iterations >= x.maxit) break;
     x.dir = -x.rg;
 
     step->update(x, xtransforms, xmanifolds, xestimators);
@@ -51,12 +58,13 @@ optim_result gd(arguments_optim x,
 
     ++x.iterations;
 
-    if ((x.ng < x.eps) | (std::sqrt(x.df*x.df) < x.df_eps)) {
+    if(x.ss == 0.0) break;
+    if(std::isfinite(x.ng) && (x.ng <= x.eps || (x.df < 0.0 && -x.df < x.df_eps))) {
       x.convergence = true;
       break;
     }
 
-  } while (x.iterations < x.maxit);
+  }
 
   optim_result result = std::make_tuple(x.parameters,
                                         x.transparameters,

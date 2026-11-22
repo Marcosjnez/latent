@@ -32,7 +32,7 @@ Rcpp::List get_dgrad(Rcpp::S4 fit,
   pointer_vector_guard<transformations> transform_guard(xtransforms);
   pointer_vector_guard<estimators> estimator_guard(xestimators);
 
-  std::unique_ptr<optim> algorithm(choose_optim(x, fit));
+  std::unique_ptr<optim> algorithm(choose_optim(x, fit, false));
 
   for(int i=0; i < x.nmanifolds; ++i) {
     xmanifolds[i] = choose_manifold(control_manifold[i]);

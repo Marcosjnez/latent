@@ -45,9 +45,8 @@ For an object of class \code{"llca"}, a named numeric vector of class
   \item{R2_entropy}{Entropy-based pseudo-\eqn{R^2}.}
 }
 
-For an object of class \code{"llcalist"}, a numeric matrix of class
-\code{"getfit.llcalist"} with one row per model and one column per available
-fit index.
+For an object of class \code{"llcalist"}, a list of class
+\code{"getfit.llcalist"} with one vector of fit indices per model.
 }
 \description{
 Computes likelihood-based fit indices, classification measures, and entropy
@@ -60,9 +59,10 @@ criteria; the integrated classification likelihood; and entropy-based
 pseudo-\eqn{R^2}.
 
 The likelihood-ratio statistic \eqn{L^2}, its degrees of freedom, and its
-p-value are returned only when all modeled variables use a multinomial
-likelihood. They are returned as \code{NA} for models containing Gaussian
-variables.
+p-value use complete multinomial responses, comparing frequencies within
+each observed covariate pattern. The response-pattern test is unavailable
+with missing responses or Gaussian variables. Posterior entropy and the
+classification contribution to ICL use the fitted response-pattern weights.
 
 For hidden Markov models, information criteria use the trajectory
 log-likelihoods and the total number of observations across trajectories.
@@ -75,8 +75,8 @@ log-likelihood and the corresponding penalized information criteria. The
 attribute \code{"penalized"} indicates whether these additional indices are
 present.
 
-For an \code{"llcalist"} object, the indices are collected into a matrix
-with one row per fitted model.
+For an \code{"llcalist"} object, the indices are collected in a named
+list with one element per fitted model.
 }
 \examples{
 \dontrun{

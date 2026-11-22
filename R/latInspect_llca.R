@@ -277,7 +277,8 @@ latInspect.llca <- function(x,
     }
     patterns <- data[d$full2short, d$variables, drop = FALSE]
     ll <- as.numeric(fit@Optim$outputs$estimators$vectors[[1L]][[1L]])
-    result <- cbind(patterns, Observed = weights, Estimated = exp(ll)*sum(weights),
+    total <- if(all(d$variable_type == "multinomial")) .llca_strata(d)$total else sum(weights)
+    result <- cbind(patterns, Observed = weights, Estimated = exp(ll)*total,
                     State = reported_states, Posterior = posterior_patterns,
                     loglik_case = ll, loglik_patterns = weights*ll)
     if(ncol(patterns)) result <- result[do.call(order, patterns), , drop = FALSE]

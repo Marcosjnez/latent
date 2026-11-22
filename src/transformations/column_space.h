@@ -23,9 +23,8 @@ public:
 
   void update_grad(arguments_optim& x) {
 
-    arma::mat I(coefs.n_cols, coefs.n_cols, arma::fill::eye);
-    jacob = arma::kron(I, X);
-    x.grad(indices_in) += arma::vectorise(jacob.t() * x.grad(indices_out));
+    arma::mat gradient = arma::reshape(x.grad(indices_out), X.n_rows, coefs.n_cols);
+    x.grad(indices_in) += arma::vectorise(X.t() * gradient);
 
   }
 
@@ -40,7 +39,8 @@ public:
 
   void update_dgrad(arguments_optim& x) {
 
-    x.dgrad(indices_in) += arma::vectorise(jacob.t() * x.dgrad(indices_out));
+    arma::mat gradient = arma::reshape(x.dgrad(indices_out), X.n_rows, coefs.n_cols);
+    x.dgrad(indices_in) += arma::vectorise(X.t() * gradient);
 
   }
 
@@ -102,6 +102,7 @@ public:
   void outcomes(arguments_optim& x) {
 
     matrices.resize(1);
+    jacobian(x);
     matrices[0] = jacob;
     names_matrices.resize(1);
     names_matrices[0] = "jacobian";
@@ -112,13 +113,17 @@ public:
 
 column_space* choose_column_space(const Rcpp::List& trans_setup) {
 
-  column_space* mytrans = new column_space();
-
   std::vector<arma::uvec> indices_in = trans_setup["indices_in"];
   std::vector<arma::uvec> indices_out = trans_setup["indices_out"];
   arma::mat X = trans_setup["X"];
 
-  int q = indices_in[0].n_elem / X.n_cols;
+  if(indices_in.size() != 1 || indices_out.size() != 1 || X.n_cols == 0 ||
+     indices_in[0].n_elem % X.n_cols != 0) {
+    Rcpp::stop("Incompatible input dimensions for column_space.");
+  }
+  arma::uword q = indices_in[0].n_elem / X.n_cols;
+  if(indices_out[0].n_elem != X.n_rows*q) Rcpp::stop("Incompatible output dimensions for column_space.");
+  column_space* mytrans = new column_space();
   arma::mat coefs(X.n_cols, q);
 
   mytrans->indices_in = indices_in[0];

@@ -91,11 +91,11 @@ matrix_vector* choose_matrix_vector(const Rcpp::List& trans_setup) {
   int q = trans_setup["q"];
 
   if(p < 1 || q < 1) {
-    Rf_error("matrix_vector requires positive p and q dimensions.");
+    Rcpp::stop("matrix_vector requires positive p and q dimensions.");
   }
 
   if(indices_in.size() != 2L || indices_out.size() != 1L) {
-    Rf_error("matrix_vector requires X and y inputs and one output.");
+    Rcpp::stop("matrix_vector requires X and y inputs and one output.");
   }
 
   arma::uvec indices_X = indices_in[0];
@@ -105,7 +105,7 @@ matrix_vector* choose_matrix_vector(const Rcpp::List& trans_setup) {
   if(indices_X.n_elem != static_cast<arma::uword>(p*q) ||
      indices_y.n_elem != static_cast<arma::uword>(q) ||
      indices_Xy.n_elem != static_cast<arma::uword>(p)) {
-    Rf_error("The matrix_vector parameter indices have incompatible dimensions.");
+    Rcpp::stop("The matrix_vector parameter indices have incompatible dimensions.");
   }
 
   mytrans->indices_in = arma::join_cols(indices_X, indices_y);

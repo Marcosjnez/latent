@@ -126,7 +126,8 @@ information.latent <- function(x, ..., fit = x) {
       )
 
     },
-    lpoly = compute_se_lpoly_two_step(
+    lpoly = compute_se_lpoly(
+      Optim = fit@Optim,
       dataList = fit@dataList,
       modelInfo = fit@modelInfo,
       parameters = fit@parameters

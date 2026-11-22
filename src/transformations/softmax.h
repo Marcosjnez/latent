@@ -23,16 +23,15 @@ public:
 
   void update_grad(arguments_optim& x) {
 
-    jacob = arma::diagmat(probs) - probs * probs.t();
-    x.grad(indices_in) += arma::vectorise(jacob.t() * x.grad(indices_out));
+    const arma::vec grad = x.grad(indices_out);
+    x.grad(indices_in) += probs % (grad - arma::dot(probs, grad));
 
   }
 
   void dtransform(arguments_optim& x) {
 
     arma::vec dtrans = x.dtransparameters(indices_in);
-    jacob = arma::diagmat(probs) - probs * probs.t();
-    Jdx = jacob * dtrans;
+    Jdx = probs % (dtrans - arma::dot(probs, dtrans));
     x.dtransparameters(indices_out) = Jdx;
 
   }
@@ -49,7 +48,7 @@ public:
 
     arma::vec dJg = g_out % dp - gp * dp - gdp * probs;
 
-    arma::vec dg_theta = dJg + jacob * dg_out;
+    arma::vec dg_theta = dJg + probs % (dg_out - arma::dot(probs, dg_out));
 
     x.dgrad(indices_in) += dg_theta;
 
@@ -95,7 +94,7 @@ public:
     names_vectors[0] = "constraints_deriv";
 
     matrices.resize(1);
-    matrices[0] = jacob;
+    matrices[0] = arma::diagmat(probs) - probs * probs.t();
     names_matrices.resize(1);
     names_matrices[0] = "jacobian";
 

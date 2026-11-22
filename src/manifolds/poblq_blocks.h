@@ -13,12 +13,12 @@ arma::uvec check_poblq_blocks_oblique(SEXP input, arma::uword p,
 
   if((!indexed && TYPEOF(input) != INTSXP && TYPEOF(input) != REALSXP) ||
      Rf_isObject(input) || !Rf_isNull(Rf_getAttrib(input, R_DimSymbol))) {
-    Rf_error("oblique must be a numeric vector of block sizes or a list of factor-position vectors.");
+    Rcpp::stop("oblique must be a numeric vector of block sizes or a list of factor-position vectors.");
   }
 
   const R_xlen_t nblocks = Rf_xlength(input);
   if(nblocks == 0L || nblocks > static_cast<R_xlen_t>(p)) {
-    Rf_error("The poblq_blocks manifold requires between 1 and p non-empty oblique blocks.");
+    Rcpp::stop("The poblq_blocks manifold requires between 1 and p non-empty oblique blocks.");
   }
 
   arma::uvec oblique(nblocks);
@@ -33,7 +33,7 @@ arma::uvec check_poblq_blocks_oblique(SEXP input, arma::uword p,
       double value = TYPEOF(input) == INTSXP ? INTEGER(input)[i] : REAL(input)[i];
       if(!std::isfinite(value) || value < 1.00 || value != std::floor(value) ||
          value > static_cast<double>(p-total)) {
-        Rf_error("The poblq_blocks block sizes must be positive integers with sum <= p.");
+        Rcpp::stop("The poblq_blocks block sizes must be positive integers with sum <= p.");
       }
       oblique[i] = static_cast<arma::uword>(value);
       total += oblique[i];
@@ -43,11 +43,11 @@ arma::uvec check_poblq_blocks_oblique(SEXP input, arma::uword p,
       SEXP block = VECTOR_ELT(input, i);
       if((TYPEOF(block) != INTSXP && TYPEOF(block) != REALSXP) ||
          Rf_isObject(block) || !Rf_isNull(Rf_getAttrib(block, R_DimSymbol))) {
-        Rf_error("Each oblique block must be a numeric vector of factor positions.");
+        Rcpp::stop("Each oblique block must be a numeric vector of factor positions.");
       }
       const R_xlen_t size = Rf_xlength(block);
       if(size == 0L || size > static_cast<R_xlen_t>(p-total)) {
-        Rf_error("Oblique blocks must be non-empty and contain at most p factors in total.");
+        Rcpp::stop("Oblique blocks must be non-empty and contain at most p factors in total.");
       }
       oblique[i] = static_cast<arma::uword>(size);
 
@@ -55,11 +55,11 @@ arma::uvec check_poblq_blocks_oblique(SEXP input, arma::uword p,
         double value = TYPEOF(block) == INTSXP ? INTEGER(block)[j] : REAL(block)[j];
         if(!std::isfinite(value) || value < 1.00 || value > static_cast<double>(p) ||
            value != std::floor(value)) {
-          Rf_error("Oblique factor positions must be integers between 1 and p.");
+          Rcpp::stop("Oblique factor positions must be integers between 1 and p.");
         }
         arma::uword column = static_cast<arma::uword>(value)-1L;
         if(used[column]) {
-          Rf_error("A factor cannot appear more than once within or across oblique blocks.");
+          Rcpp::stop("A factor cannot appear more than once within or across oblique blocks.");
         }
         used[column] = 1L;
         column_order[total++] = column;
@@ -109,7 +109,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
   if(X.n_rows == 0L ||
      X.n_rows != X.n_cols ||
      !X.is_finite()) {
-    Rf_error("The poblq_blocks manifold requires a non-empty finite square matrix.");
+    Rcpp::stop("The poblq_blocks manifold requires a non-empty finite square matrix.");
   }
 
   const arma::uword p = X.n_cols;
@@ -125,7 +125,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
     arma::rowvec norms = arma::sqrt(arma::sum(R % R, 0));
 
     if(!norms.is_finite() || arma::any(norms <= tolerance)) {
-      Rf_error("The poblq_blocks retraction produced a zero column in an oblique block.");
+      Rcpp::stop("The poblq_blocks retraction produced a zero column in an oblique block.");
     }
 
     R.each_row() /= norms;
@@ -135,7 +135,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
     bool inverted = arma::inv_sympd(gram_inverse, R.t()*R);
 
     if(!inverted || !gram_inverse.is_finite()) {
-      Rf_error("The poblq_blocks retraction requires full-rank oblique blocks.");
+      Rcpp::stop("The poblq_blocks retraction requires full-rank oblique blocks.");
     }
 
     projector += R*gram_inverse*R.t();
@@ -155,7 +155,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
        !eigval.is_finite() ||
        !eigvec.is_finite() ||
        eigval.min() <= tolerance*std::max(1.00, eigval.max())) {
-      Rf_error("The poblq_blocks retraction requires a full-rank orthogonal block.");
+      Rcpp::stop("The poblq_blocks retraction requires a full-rank orthogonal block.");
     }
 
     R *= eigvec*arma::diagmat(1.00/arma::sqrt(eigval))*eigvec.t();
@@ -164,7 +164,7 @@ arma::mat poblq_blocks_retract(arma::mat X,
   }
 
   if(!result.is_finite()) {
-    Rf_error("The poblq_blocks retraction produced non-finite values.");
+    Rcpp::stop("The poblq_blocks retraction produced non-finite values.");
   }
 
   return result;
@@ -198,7 +198,7 @@ public:
 
     if(!denominator.is_finite() ||
        arma::any(arma::vectorise(denominator) <= tolerance)) {
-      Rf_error("The poblq_blocks Sylvester equation is not uniquely defined.");
+      Rcpp::stop("The poblq_blocks Sylvester equation is not uniquely defined.");
     }
 
     arma::mat solution =
@@ -207,7 +207,7 @@ public:
       right_vectors.t();
 
     if(!solution.is_finite()) {
-      Rf_error("The poblq_blocks Sylvester equation could not be solved.");
+      Rcpp::stop("The poblq_blocks Sylvester equation could not be solved.");
     }
 
     return solution;
@@ -313,7 +313,7 @@ public:
          !block_eigvec[i].is_finite() ||
          block_eigval[i].min() <=
          tolerance*std::max(1.00, block_eigval[i].max())) {
-        Rf_error("The poblq_blocks projection requires full-rank oblique blocks.");
+        Rcpp::stop("The poblq_blocks projection requires full-rank oblique blocks.");
       }
 
     }
@@ -359,11 +359,11 @@ poblq_blocks* choose_poblq_blocks(Rcpp::List manifold_setup) {
   std::size_t p = manifold_setup["p"];
 
   if(p == 0L) {
-    Rf_error("The poblq_blocks manifold requires a positive p dimension.");
+    Rcpp::stop("The poblq_blocks manifold requires a positive p dimension.");
   }
 
   if(indices.n_elem != p*p) {
-    Rf_error("The poblq_blocks manifold requires p*p parameters.");
+    Rcpp::stop("The poblq_blocks manifold requires p*p parameters.");
   }
 
   arma::uvec column_order;

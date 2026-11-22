@@ -4,6 +4,8 @@
  * Modification date: 11/08/2026
  */
 
+#include <map>
+
 class mvnormal: public transformations {
 
 public:
@@ -12,6 +14,24 @@ public:
   arma::uvec indices_mu, indices_sigma, indices_loglik;
   arma::mat y, mu, dmu, loglik;
   arma::cube Sigma, dSigma;
+  arma::uvec pattern;
+  std::vector<arma::uvec> observed;
+  std::vector<std::vector<arma::mat>> precision;
+  arma::mat logdet;
+
+  void initialize_patterns() {
+    std::map<std::vector<arma::uword>, arma::uword> indices;
+    pattern.set_size(S);
+    for(int s = 0; s < S; ++s) {
+      arma::uvec obs = arma::find_finite(y.row(s));
+      std::vector<arma::uword> key(obs.begin(), obs.end());
+      auto entry = indices.emplace(key, observed.size());
+      if(entry.second) observed.push_back(obs);
+      pattern(s) = entry.first->second;
+    }
+    precision.resize(I, std::vector<arma::mat>(observed.size()));
+    logdet.set_size(observed.size(), I);
+  }
 
   void transform(arguments_optim& x) {
 
@@ -32,22 +52,29 @@ public:
         arma::vec d = arma::clamp(eigval, 0.00001, eigval.max());
         Sigma.slice(i) = eigvec * arma::diagmat(d) * eigvec.t();
       }
+      // Cases with the same observed items share the same marginal covariance.
+      for(arma::uword p = 0; p < observed.size(); ++p) {
+        const arma::uvec& obs = observed[p];
+        if(obs.is_empty()) continue;
+        arma::mat Sig = Sigma.slice(i).submat(obs, obs);
+        precision[i][p] = arma::inv_sympd(Sig);
+        logdet(p, i) = arma::log_det_sympd(Sig);
+      }
     }
 
     for (int i = 0; i < I; ++i) {
       for (int s = 0; s < S; ++s) {
 
         arma::vec ys = y.row(s).t();
-        arma::uvec obs = arma::find_finite(ys);
+        const arma::uvec& obs = observed[pattern(s)];
         const arma::uword m = obs.n_elem;
         if (m == 0) continue;
 
         arma::vec mui = mu.col(i);
         arma::vec d = ys.elem(obs) - mui.elem(obs);
-        arma::mat Sig = Sigma.slice(i).submat(obs, obs);
-        arma::mat K = arma::inv_sympd(Sig);
+        const arma::mat& K = precision[i][pattern(s)];
 
-        double logdetSig = arma::log_det_sympd(Sig);
+        double logdetSig = logdet(pattern(s), i);
         double quad = arma::as_scalar(d.t() * K * d);
 
         loglik(s, i) += -0.5 * (static_cast<double>(m) * std::log(2.0 * M_PI) + logdetSig + quad);
@@ -69,14 +96,13 @@ public:
       for (int s = 0; s < S; ++s, ++k) {
 
         arma::vec ys = y.row(s).t();
-        arma::uvec obs = arma::find_finite(ys);
+        const arma::uvec& obs = observed[pattern(s)];
         const arma::uword m = obs.n_elem;
         if (m == 0) continue;
 
         arma::vec mui = mu.col(i);
         arma::vec d = ys.elem(obs) - mui.elem(obs);
-        arma::mat Sig = Sigma.slice(i).submat(obs, obs);
-        arma::mat K = arma::inv_sympd(Sig);
+        const arma::mat& K = precision[i][pattern(s)];
 
         arma::vec gmu = K * d;
         arma::mat gSigma = 0.5 * (gmu * gmu.t() - K);
@@ -124,7 +150,7 @@ public:
       for (int s = 0; s < S; ++s) {
 
         arma::vec ys = y.row(s).t();
-        arma::uvec obs = arma::find_finite(ys);
+        const arma::uvec& obs = observed[pattern(s)];
         const arma::uword m = obs.n_elem;
         if (m == 0) continue;
 
@@ -132,9 +158,8 @@ public:
         arma::vec dmui = dmu.col(i);
         arma::vec d = ys.elem(obs) - mui.elem(obs);
         arma::vec dmu_obs = dmui.elem(obs);
-        arma::mat Sig = Sigma.slice(i).submat(obs, obs);
         arma::mat dSig = dSigma.slice(i).submat(obs, obs);
-        arma::mat K = arma::inv_sympd(Sig);
+        const arma::mat& K = precision[i][pattern(s)];
 
         arma::vec gmu = K * d;
         arma::mat gSigma = 0.5 * (gmu * gmu.t() - K);
@@ -162,7 +187,7 @@ public:
       for (int s = 0; s < S; ++s, ++k) {
 
         arma::vec ys = y.row(s).t();
-        arma::uvec obs = arma::find_finite(ys);
+        const arma::uvec& obs = observed[pattern(s)];
         const arma::uword m = obs.n_elem;
         if (m == 0) continue;
 
@@ -170,9 +195,8 @@ public:
         arma::vec dmui = dmu.col(i);
         arma::vec d = ys.elem(obs) - mui.elem(obs);
         arma::vec dmu_obs = dmui.elem(obs);
-        arma::mat Sig = Sigma.slice(i).submat(obs, obs);
         arma::mat dSig = dSigma.slice(i).submat(obs, obs);
-        arma::mat K = arma::inv_sympd(Sig);
+        const arma::mat& K = precision[i][pattern(s)];
         arma::mat dK = -K * dSig * K;
 
         arma::vec gmu = K * d;
@@ -226,14 +250,13 @@ public:
         jacob(k, offset_loglik + k) = 1.0;
 
         arma::vec ys = y.row(s).t();
-        arma::uvec obs = arma::find_finite(ys);
+        const arma::uvec& obs = observed[pattern(s)];
         const arma::uword m = obs.n_elem;
         if (m == 0) continue;
 
         arma::vec mui = mu.col(i);
         arma::vec d = ys.elem(obs) - mui.elem(obs);
-        arma::mat Sig = Sigma.slice(i).submat(obs, obs);
-        arma::mat K = arma::inv_sympd(Sig);
+        const arma::mat& K = precision[i][pattern(s)];
 
         arma::vec gmu = K * d;
         arma::mat gSigma = 0.5 * (gmu * gmu.t() - K);
@@ -308,6 +331,7 @@ mvnormal* choose_mvnormal(const Rcpp::List& trans_setup) {
   mytrans->loglik = loglik;
   mytrans->Sigma = Sigma;
   mytrans->dSigma = dSigma;
+  mytrans->initialize_patterns();
 
   return mytrans;
 

@@ -148,7 +148,10 @@ plot.getfit.llcalist <- function(x, indices = NULL,
                                   base_size = 12, colors = NULL, pch = 19,
                                   lwd = 2, ...) {
 
-  x <- do.call(rbind, x)
+  # Penalized and unpenalized models can have different fit indices.
+  penalized <- all(vapply(x, function(fit) isTRUE(attr(fit, "penalized")), logical(1L)))
+  available <- unique(unlist(lapply(x, names), use.names = FALSE))
+  x <- do.call(rbind, lapply(x, function(fit) unclass(fit)[available]))
 
   if(!is.matrix(x) && !is.data.frame(x)) {
     stop("x must be a matrix or data.frame containing model-fit indices")
@@ -161,7 +164,6 @@ plot.getfit.llcalist <- function(x, indices = NULL,
     stop("base_size must be a single positive number")
   }
 
-  penalized <- isTRUE(attr(x, "penalized"))
   if(is.null(indices)) {
     if(penalized && all(c("AICp", "BICp") %in% colnames(x))) {
       indices <- c("AICp", "BICp")
@@ -861,7 +863,7 @@ print.llca_plots <- function(x, ...) {
 #'   matrix, confidence limits, and coefficient estimates, invisibly.
 #'
 #' @noRd
-plot_lca_coefficients <- function(fit, se_type = "standard",
+plot_lca_coefficients <- function(fit, se_type = "information",
                                   what = c("OR", "log"),
                                   effects = c("coding", "dummy"),
                                   confidence = 0.95, predictors = NULL,
@@ -902,7 +904,9 @@ plot_lca_coefficients <- function(fit, se_type = "standard",
   what <- match.arg(tolower(what), choices = c("or", "log"))
   effects <- match.arg(effects)
 
-  SE <- se(fit = fit, type = se_type, digits = 9)
+  if(tolower(se_type) == "standard") se_type <- "information"
+  SE <- se(fit, type = se_type, parameters = list(beta = fit@modelInfo$trans$beta),
+           digits = NULL)
 
   beta_labels <- as.vector(fit@modelInfo$trans$beta)
 
@@ -961,9 +965,7 @@ plot_lca_coefficients <- function(fit, se_type = "standard",
     refline <- 1
 
     parameters <- exp(parameters)
-    J <- diag(parameters)
-    rownames(J) <- colnames(J) <- allnames
-    vcov <- J %*% vcov %*% t(J)
+    vcov <- vcov * tcrossprod(parameters)
     standard_errors <- sqrt(diag(vcov))
     names(standard_errors) <- allnames
     lower <- exp(lower)

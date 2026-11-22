@@ -31,7 +31,7 @@ Rcpp::List get_hess(Rcpp::S4 fit,
   pointer_vector_guard<transformations> transform_guard(xtransforms);
   pointer_vector_guard<estimators> estimator_guard(xestimators);
 
-  std::unique_ptr<optim> algorithm(choose_optim(x, fit));
+  std::unique_ptr<optim> algorithm(choose_optim(x, fit, false));
 
   for(int i=0; i < x.nmanifolds; ++i) {
     xmanifolds[i] = choose_manifold(control_manifold[i]);
@@ -51,6 +51,7 @@ Rcpp::List get_hess(Rcpp::S4 fit,
 
   final_transform.transform(x, xtransforms);
   final_estimator.param(x, xestimators);
+  final_estimator.F(x, xestimators);
   final_estimator.G(x, xestimators);
   final_transform.update_grad(x, xtransforms);
 

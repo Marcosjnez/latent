@@ -56,10 +56,6 @@ robust.llca <- function(x, ..., fit = x) {
     stop("Response-pattern weights must be positive and finite.")
   }
 
-  # Remove the aggregate LCA estimator but keep all other estimators.
-  control_estimator <- fit@modelInfo$control_estimator[-1L]
-  K <- length(control_estimator)
-
   pattern_struct <- vector("list", length = npatterns)
 
   for(s in seq_len(npatterns)) {
@@ -70,7 +66,7 @@ robust.llca <- function(x, ..., fit = x) {
                         fit@modelInfo$trans$loglik[s, ]),
       extra = list(S = 1L,
                    I = nclasses,
-                   weights = pattern_weights[s])
+                   weights = 1)
     )
 
   }
@@ -79,31 +75,15 @@ robust.llca <- function(x, ..., fit = x) {
     estimators = pattern_struct,
     structures = fit@modelInfo$trans
   )
-  control_estimator <- c(control_estimator, pattern_estimators)
-
   #### Empirical score covariance ####
 
-  # control_manifold <- fit@modelInfo$control_manifold
-  # control_transform <- fit@modelInfo$control_transform
-  # control_optimizer <- fit@modelInfo$control_optimizer
-  # fit@modelInfo$control_estimator <- control_estimator[idx]
-
-  B <- matrix(0,
-              nrow = nparam,
-              ncol = nparam,
-              dimnames = list(labels, labels))
-
+  scores <- matrix(0, npatterns, nparam, dimnames = list(NULL, labels))
   for(s in seq_len(npatterns)) {
-
-    # FIX: REMOVE FROM ESTIMATORS THE PENALTIES
-    idx <- c(seq_len(K), K+s)
-    fit@modelInfo$control_estimator <- control_estimator[idx]
-
-    gradient <- get_grad(fit)$g/pattern_weights[s]
-    B <- B + pattern_weights[s]*tcrossprod(gradient)
-
+    # The penalty contributes to the Hessian, but is not a case score.
+    fit@modelInfo$control_estimator <- pattern_estimators[s]
+    scores[s, ] <- get_grad(fit)$g
   }
-
+  B <- crossprod(scores * sqrt(pattern_weights))
   B <- B*nobs/(nobs-1L)
   B <- validate_covariance_matrix(B, labels = labels,
                                   object_name = "empirical score covariance")

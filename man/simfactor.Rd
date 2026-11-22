@@ -27,9 +27,12 @@ lambda = NULL, Phi = NULL, Psi = NULL)
 
 \item{estimator}{Estimator used to generate population error. Defaults to "uls".}
 
-\item{fit}{Fit index to control the population error.}
+\item{fit}{Fit index used to control the population error. One of \code{"rmsr"},
+\code{"rmsea"}, \code{"cfi"}, or \code{"raw"} for the estimator discrepancy.}
 
-\item{misfit}{Misfit value to generate population error.}
+\item{misfit}{Target value of the selected fit index. For RMSR, \code{"close"} and
+\code{"acceptable"} use 5 and 10 percent of the mean communality. A numeric
+zero or \code{"zero"} requests the model without population error.}
 
 \item{error_method}{Method used to control population error: c("yuan", "cudeck"). Defaults to "cudeck".}
 

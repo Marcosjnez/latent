@@ -81,11 +81,11 @@ public:
 inline void validate_stepsize(const std::string& step, bool newton_optimizer) {
 
   if(step != "armijo" && step != "wolfe" && step != "trust" && step != "tcg") {
-    Rf_error("control$step must be one of 'armijo', 'wolfe', or 'trust'.");
+    Rcpp::stop("control$step must be one of 'armijo', 'wolfe', or 'trust'.");
   }
 
   if(!newton_optimizer && (step == "trust" || step == "tcg")) {
-    Rf_error("control$step = 'trust' requires opt = 'newton', "
+    Rcpp::stop("control$step = 'trust' requires opt = 'newton', "
              "or opt = 'em' with mopt = 'newton'.");
   }
 

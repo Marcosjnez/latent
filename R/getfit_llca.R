@@ -22,9 +22,10 @@
 #' pseudo-\eqn{R^2}.
 #'
 #' The likelihood-ratio statistic \eqn{L^2}, its degrees of freedom, and its
-#' p-value are returned only when all modeled variables use a multinomial
-#' likelihood. They are returned as \code{NA} for models containing Gaussian
-#' variables.
+#' p-value use complete multinomial responses, comparing frequencies within
+#' each observed covariate pattern. The response-pattern test is unavailable
+#' with missing responses or Gaussian variables. Posterior entropy and the
+#' classification contribution to ICL use the fitted response-pattern weights.
 #'
 #' For hidden Markov models, information criteria use the trajectory
 #' log-likelihoods and the total number of observations across trajectories.
@@ -37,8 +38,8 @@
 #' attribute \code{"penalized"} indicates whether these additional indices are
 #' present.
 #'
-#' For an \code{"llcalist"} object, the indices are collected into a matrix
-#' with one row per fitted model.
+#' For an \code{"llcalist"} object, the indices are collected in a named
+#' list with one element per fitted model.
 #'
 #' @return
 #' For an object of class \code{"llca"}, a named numeric vector of class
@@ -64,9 +65,8 @@
 #'   \item{R2_entropy}{Entropy-based pseudo-\eqn{R^2}.}
 #' }
 #'
-#' For an object of class \code{"llcalist"}, a numeric matrix of class
-#' \code{"getfit.llcalist"} with one row per model and one column per available
-#' fit index.
+#' For an object of class \code{"llcalist"}, a list of class
+#' \code{"getfit.llcalist"} with one vector of fit indices per model.
 #'
 #' @references
 #' Akaike, H. (1974). A New Look at the Statistical Model Identification.
@@ -112,66 +112,14 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
     stop("digits must be NULL or a non-negative integer.")
   }
 
-  #### Auxiliary functions ####
-
-  return_na <- function(e) {
-
-    #### Result ####
-
-    return(NA_real_)
-
-  }
-
-  icl_default <- function(post_prob, BIC) {
-
-    result <- tryCatch({
-
-      if(!is.null(dim(post_prob))) {
-        max_prob <- apply(post_prob, MARGIN = 1L, FUN = max)
-        classification <- post_prob == max_prob
-        value <- -BIC + 2*sum(classification*log(max_prob + 1e-12))
-      } else {
-        value <- -BIC + 2*sum(post_prob*log(post_prob))
-      }
-
-      value
-
-    }, error = return_na)
-
-    #### Result ####
-
-    return(result)
-
-  }
-
-  entropy <- function(p) {
-
-    p <- p[p > sqrt(.Machine$double.eps)]
-    result <- sum(-p*log(p))
-
-    #### Result ####
-
-    return(result)
-
-  }
-
-  entropy.R2 <- function(prop, post) {
-
-    error_prior <- entropy(prop)
-    error_post <- mean(apply(post, MARGIN = 1L, FUN = entropy))
-    result <- (error_prior-error_post)/error_prior
-
-    #### Result ####
-
-    return(result)
-
-  }
-
   #### Extract model information ####
 
   penalized <- model@modelInfo$control_optimizer$reg
   temporal <- !is.null(model@dataList$lengths)
-  if(!temporal) posterior <- latInspect(model, what = "posterior", sort = FALSE)
+  if(!temporal) {
+    posterior <- .llca_posterior(model)
+    weights <- model@dataList$pattern_weights
+  }
   fit_loglik <- latInspect(model, what = "loglik", sort = FALSE)
 
   nclasses <- ncol(model@transformed_pars$class)
@@ -182,22 +130,27 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
 
   #### Likelihood-ratio test ####
 
-  if(!temporal && all(model@dataList$variable_type == "multinomial")) {
+  d <- model@dataList
+  if(!temporal && all(d$variable_type == "multinomial") &&
+     !anyNA(d$multinomial$patterns_multinomial)) {
 
-    summary_table <- latInspect(model, what = "summary", sort = FALSE)
-    ni <- summary_table$Observed
-    mi <- summary_table$Estimated
+    # Expected counts use the total frequency at the same covariate values.
+    strata <- .llca_strata(d)
+    total <- strata$total
     dof <- model@modelInfo$dof
-    term <- ni*log(ni/mi)
-    term[is.infinite(term)] <- 0
-    L2 <- 2*sum(term)
-    pv <- 1-pchisq(L2, dof)
+    if(length(d$covariates_names)) {
+      cells <- prod(d$multinomial$multinomial_factor_lengths)
+      dof <- min(nobs, strata$npatterns*(cells-1)) - k
+    }
+    ll <- as.numeric(model@Optim$outputs$estimators$vectors[[1L]][[1L]])
+    L2 <- max(0, 2*sum(weights*(log(weights/total)-ll)))
+    pv <- if(dof > 0) pchisq(L2, dof, lower.tail = FALSE) else NA_real_
 
   } else {
 
     L2 <- NA_real_
     pv <- NA_real_
-    dof <- if(temporal) NA_real_ else model@modelInfo$dof
+    dof <- if(temporal || all(d$variable_type == "multinomial")) NA_real_ else model@modelInfo$dof
 
   }
 
@@ -209,7 +162,11 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
   CAIC <- -2*loglik + (k*(log(nobs) + 1))
   KIC <- -2*loglik + (3*(k + 1))
   SABIC <- -2*loglik + (k*log((nobs + 2)/24))
-  ICL <- if(temporal) NA_real_ else icl_default(posterior, BIC)
+  if(!temporal) {
+    modal <- max.col(posterior, ties.method = "first")
+    modal_loglik <- sum(weights * log(posterior[cbind(seq_along(modal), modal)]))
+  }
+  ICL <- if(temporal) NA_real_ else -BIC + 2*modal_loglik
 
   #### Entropy ####
 
@@ -221,10 +178,14 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
 
   } else {
 
-    pattern_weights <- model@dataList$pattern_weights
-    classes <- colSums(model@transformed_pars$class*pattern_weights) /
-      sum(pattern_weights)
-    entropyR2 <- entropy.R2(classes, posterior)
+    classes <- colSums(model@transformed_pars$class * weights) / sum(weights)
+    positive <- classes > 0
+    prior_entropy <- -sum(classes[positive]*log(classes[positive]))
+    log_post <- matrix(0, nrow(posterior), ncol(posterior))
+    positive <- posterior > 0
+    log_post[positive] <- log(posterior[positive])
+    post_entropy <- -sum(weights * rowSums(posterior * log_post))/sum(weights)
+    entropyR2 <- if(prior_entropy > 0) 1 - post_entropy/prior_entropy else NA_real_
 
   }
 
@@ -238,7 +199,7 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
     CAICp <- -2*penalized_loglik + (k*(log(nobs) + 1))
     KICp <- -2*penalized_loglik + (3*(k + 1))
     SABICp <- -2*penalized_loglik + (k*log((nobs + 2)/24))
-    ICLp <- if(temporal) NA_real_ else icl_default(posterior, BICp)
+    ICLp <- if(temporal) NA_real_ else -BICp + 2*modal_loglik
 
     result <- c(nclasses = nclasses, npar = k, nobs = nobs,
                 loglik = loglik, penalized_loglik = penalized_loglik,
@@ -270,6 +231,14 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
 
   return(result)
 
+}
+
+# Frequencies of the conditioning covariate patterns for multinomial responses.
+.llca_strata <- function(d) {
+  if(!length(d$covariates_names)) return(list(npatterns = 1L, total = sum(d$pattern_weights)))
+  covariates <- d$data[d$full2short, d$covariates_names, drop = FALSE]
+  strata <- make_patterns(covariates, d$pattern_weights, any_continuous = FALSE)
+  list(npatterns = strata$npatterns, total = strata$pattern_weights[strata$short2full])
 }
 
 #' @rdname getfit.llca

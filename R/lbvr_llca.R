@@ -619,9 +619,9 @@ latentgold_cont_cont_bvr <- function(fit, v1, v2) {
 
   K <- length(U)
 
-  score_stat <- as.numeric(t(U) %*% solve(I) %*% U)
+  score_stat <- as.numeric(crossprod(U, solve(I, U)))
   resid <- score_stat / K
-  pval <- 1 - pchisq(resid, df = K)
+  pval <- pchisq(score_stat, df = K, lower.tail = FALSE)
 
   result <- list(resid = resid, pval = pval, score_stat = score_stat, df = K)
 

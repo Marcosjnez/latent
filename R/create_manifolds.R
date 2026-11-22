@@ -27,7 +27,7 @@ create_manifolds <- function(manifolds, structures) {
   # For each manifold:
   result <- vector("list", length = nmanifolds)
   k <- 1L
-  for(i in 1:nmanifolds) {
+  for(i in seq_len(nmanifolds)) {
 
     manifold <- manifolds[[i]]
 
@@ -57,7 +57,7 @@ create_manifolds <- function(manifolds, structures) {
     }
 
     ninputs <- length(inputs[[i]]) # Number of manifolds
-    for(j in 1:ninputs) {
+    for(j in seq_len(ninputs)) {
 
       # Collect the unique subset of parameter labels that are not fixed values:
       if(is.list(inputs[[i]][j])) {

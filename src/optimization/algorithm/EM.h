@@ -6,7 +6,7 @@
 
 // Expectation-Maximization:
 
-optim_result moptim(arguments_optim x,
+optim_result moptim(arguments_optim& x,
                     std::vector<transformations*>& xtransforms,
                     std::vector<manifolds*>& xmanifolds,
                     std::vector<estimators*>& xestimators) {
@@ -27,7 +27,7 @@ optim_result moptim(arguments_optim x,
 
   } else {
 
-    Rf_error(
+    Rcpp::stop(
       "Available optimization routines for the M step: "
       "grad, lbfgs, newton"
     );
@@ -36,7 +36,7 @@ optim_result moptim(arguments_optim x,
 
 }
 
-optim_result em(arguments_optim x,
+optim_result em(arguments_optim& x,
                 std::vector<transformations*>& xtransforms,
                 std::vector<manifolds*>& xmanifolds,
                 std::vector<estimators*>& xestimators) {
@@ -115,7 +115,7 @@ optim_result em(arguments_optim x,
     x.ng = diff;
 
     // Print information:
-    if(x.print) {
+    if(x.print && x.rstarts == 1L && x.print_interval > 0L) {
 
       if(x.iterations % x.print_interval == 0L) {
 
@@ -138,7 +138,8 @@ optim_result em(arguments_optim x,
 
     if(diff < x.eps) {
 
-      x.convergence = true;
+      // A rejected M step can leave the objective unchanged away from a solution.
+      x.convergence = new_f != old_f || std::get<4>(mstep);
       break;
 
     }
@@ -163,6 +164,12 @@ optim_result em(arguments_optim x,
   // Project onto the product manifold:
   final_manifold.param(x, xmanifolds);
   final_manifold.proj(x, xmanifolds);
+
+  if(!std::isfinite(x.f) || !x.rg.is_finite()) {
+    x.convergence = false;
+  } else if(x.rg.is_empty() || arma::norm(x.rg, 2) <= x.eps*std::sqrt(x.rg.n_elem)) {
+    x.convergence = true;
+  }
 
   optim_result result =
     std::make_tuple(x.parameters,

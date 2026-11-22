@@ -440,12 +440,17 @@ fit_latscores <- function(dataList, modelInfo) {
     m <- dataList$models[[g]]
     q <- ncol(m$lambda)
     F <- matrix(NA_real_, nrow(X), q, dimnames = list(rownames(X), colnames(m$lambda)))
-    key <- if (nrow(X)) apply(!is.na(X), 1L, paste0, collapse = "") else character(0L)
-    keys <- unique(key)
-    pats <- wts <- vector("list", length(keys))
-    membership <- match(key, keys)
-    for (k in seq_along(keys)) {
-      rows <- which(membership == k)
+    if (anyNA(X)) {
+      key <- do.call(paste, unname(as.list(as.data.frame(is.na(X)))))
+      membership <- match(key, unique(key))
+      rows_by_pattern <- split(seq_len(nrow(X)), factor(membership, levels = seq_len(max(membership))))
+    } else {
+      membership <- rep.int(1L, nrow(X))
+      rows_by_pattern <- if (nrow(X)) list(seq_len(nrow(X))) else list()
+    }
+    pats <- wts <- vector("list", length(rows_by_pattern))
+    for (k in seq_along(rows_by_pattern)) {
+      rows <- rows_by_pattern[[k]]
       obs <- which(!is.na(X[rows[1L], ]))
       pats[[k]] <- list(rows = rows, observed = obs)
       if (dataList$missing == "complete" && length(obs) < ncol(X)) next
@@ -462,7 +467,7 @@ fit_latscores <- function(dataList, modelInfo) {
       wts[[k]] <- B
       F[rows, ] <- sweep(X[rows, obs, drop = FALSE] %*% B, 2L, m$latent_means, "+")
     }
-    names(pats) <- names(wts) <- if (length(keys)) paste0("pattern", seq_along(keys)) else character(0L)
+    names(pats) <- names(wts) <- if (length(pats)) paste0("pattern", seq_along(pats)) else character(0L)
     names(membership) <- rownames(X)
     scores[[g]] <- F; weights[[g]] <- wts
     patterns[[g]] <- pats; memberships[[g]] <- membership

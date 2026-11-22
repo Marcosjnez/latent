@@ -1608,6 +1608,8 @@ constraints_lrotate <- function(trans, dataList, data_param, control) {
 
 start_lrotate <- function(trans, dataList, data_param, control) {
 
+  if(!is.null(control$fitted_start)) return(list(control$fitted_start))
+
   list2env(data_param, envir = environment())
 
   init_param <- vector("list", length = control$rstarts)

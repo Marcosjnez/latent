@@ -61,6 +61,11 @@ lmvnorm <- function(data, group = NULL, variables = NULL,
                     se = TRUE, do.fit = TRUE, message = FALSE,
                     control = NULL, ...) {
 
+  #### Store original call ####
+
+  mc <- match.call(expand.dots = TRUE)
+  args <- .matched_arguments(match.call(expand.dots = FALSE), environment())
+
   #### Check input arguments ####
 
   if(!is.data.frame(data) && !is.matrix(data)) {
@@ -107,11 +112,6 @@ lmvnorm <- function(data, group = NULL, variables = NULL,
   }
 
   se_control <- normalize_lmvnorm_se(se)
-
-  #### Store original call ####
-
-  mc <- match.call(expand.dots = TRUE)
-  args <- lapply(as.list(mc)[-1L], eval, envir = parent.frame())
 
   #### Check control parameters ####
 
@@ -247,7 +247,7 @@ create_lmvnorm_dataList <- function(data, group, variables, args) {
   for(i in seq_len(ngroups)) {
 
     X <- data[group_index == i, variables[[i]], drop = FALSE]
-    X <- X[!apply(is.na(X), MARGIN = 1L, FUN = all), , drop = FALSE]
+    X <- X[rowSums(!is.na(X)) > 0L, , drop = FALSE]
 
     if(nrow(X) < 2L) {
       stop("Each group must contain at least two observations with observed data")
@@ -401,19 +401,20 @@ normalize_lmvnorm_variables <- function(data, group, group_label,
 create_lmvnorm_patterns <- function(data) {
 
   missing_matrix <- is.na(data)
-  pattern_key <- apply(missing_matrix, MARGIN = 1L,
-                       FUN = \(x) paste(as.integer(x), collapse = ""))
-  pattern_levels <- unique(pattern_key)
-  frequencies <- tabulate(match(pattern_key, pattern_levels),
-                          nbins = length(pattern_levels))
-  ord <- order(-frequencies, seq_along(pattern_levels))
-  pattern_levels <- pattern_levels[ord]
+  if(any(missing_matrix)) {
+    key <- do.call(paste0, unname(lapply(as.data.frame(missing_matrix), as.integer)))
+    group <- match(key, unique(key))
+    rows_by_pattern <- split(seq_along(group), group)
+    rows_by_pattern <- rows_by_pattern[order(-lengths(rows_by_pattern))]
+  } else {
+    rows_by_pattern <- list(seq_len(nrow(data)))
+  }
 
-  result <- vector("list", length = length(pattern_levels))
+  result <- vector("list", length(rows_by_pattern))
 
-  for(i in seq_along(pattern_levels)) {
+  for(i in seq_along(rows_by_pattern)) {
 
-    rows <- which(pattern_key == pattern_levels[i])
+    rows <- rows_by_pattern[[i]]
     observed <- !missing_matrix[rows[1L], ]
     observed_names <- colnames(data)[observed]
     X <- as.matrix(data[rows, observed, drop = FALSE])
@@ -454,19 +455,7 @@ initial_lmvnorm_covariance <- function(data) {
   S[!is.finite(S)] <- 0
   S <- (S+t(S))/2
 
-  for(i in seq_len(ncol(data))) {
-
-    variance_i <- suppressWarnings(stats::var(data[[i]], na.rm = TRUE))
-
-    if(!is.finite(variance_i) || variance_i <= 0) {
-      variance_i <- 1
-    }
-
-    if(!is.finite(S[i, i]) || S[i, i] <= 0) {
-      S[i, i] <- variance_i
-    }
-
-  }
+  diag(S) <- ifelse(diag(S) > 0, diag(S), 1)
 
   result <- make_positive_definite_lmvnorm(S)
 

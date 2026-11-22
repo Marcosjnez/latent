@@ -8,7 +8,7 @@
 #define LATENT_NEWTON_H
 
 // Riemannian Newton-CG with trust-region or line-search step selection.
-optim_result newton(arguments_optim x,
+optim_result newton(arguments_optim& x,
                      std::vector<transformations*>& xtransforms,
                      std::vector<manifolds*>& xmanifolds,
                      std::vector<estimators*>& xestimators) {

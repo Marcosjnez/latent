@@ -9,88 +9,68 @@
  * Poisson logarithm likelihood
  */
 
-double log_poisson(double x, double lambda) {
-  return x * std::log(lambda) - lambda - std::lgamma(x + 1.0);
-}
-
-double dlog_poisson(double x, double lambda) {
-  return x / lambda - 1.0;
-}
-
-double ddlog_poisson(double x, double lambda) {
-  return -x / (lambda * lambda);
-}
-
 class poisson_loglik: public estimators {
 
 public:
 
-  int p, q;
-  double loss;
   arma::uvec indices;
-  arma::mat X, lambdas, log_dpois;
+  arma::vec counts, lambdas;
+  double log_factorials, loss;
 
-  void param(arguments_optim& x) {
-    lambdas = arma::reshape(x.transparameters(indices), p, q);
-    for(int i=0; i < p; ++i) {
-      for(int j=0; j < q; ++j) {
-        log_dpois(i,j) = log_poisson(X(i,j), lambdas(i,j));
-      }
-    }
+  void param(arguments_optim& x) override {
+    lambdas = x.transparameters.elem(indices);
   }
 
-  void F(arguments_optim& x) {
-    loss = arma::accu(log_dpois);
+  void F(arguments_optim& x) override {
+    loss = log_factorials;
+    for(arma::uword i = 0; i < counts.n_elem; ++i) {
+      const double rate = lambdas(i);
+      if(!std::isfinite(rate) || rate < 0.0 || (rate == 0.0 && counts(i) > 0.0)) {
+        loss = arma::datum::inf;
+        break;
+      }
+      loss += counts(i) > 0.0 ? rate - counts(i)*std::log(rate) : rate;
+    }
     x.f += loss;
   }
 
-  void G(arguments_optim& x) {
-    arma::mat df_dlambda(p, q);
-    for(int i=0; i < p; ++i) {
-      for(int j=0; j < q; ++j) {
-        df_dlambda(i,j) = -dlog_poisson(X(i,j), lambdas(i,j));
-      }
+  void G(arguments_optim& x) override {
+    for(arma::uword i = 0; i < counts.n_elem; ++i) {
+      double score = 1.0;
+      if(counts(i) > 0.0) score -= counts(i) / lambdas(i);
+      x.grad(indices(i)) += score;
     }
-    x.grad.elem(indices) += arma::vectorise(df_dlambda);
   }
 
-  void dG(arguments_optim& x) {
-    arma::mat dlambda = reshape(x.dtransparameters(indices), p, q);
-    arma::mat ddf_dlambda(p, q);
-    for(int i=0; i < p; ++i) {
-      for(int j=0; j < q; ++j) {
-        ddf_dlambda(i,j) =
-          -ddlog_poisson(X(i,j), lambdas(i,j)) * dlambda(i,j);
+  void dG(arguments_optim& x) override {
+    for(arma::uword i = 0; i < counts.n_elem; ++i) {
+      if(counts(i) > 0.0) {
+        x.dgrad(indices(i)) += (counts(i) / lambdas(i)) *
+          (x.dtransparameters(indices(i)) / lambdas(i));
       }
     }
-    x.dgrad.elem(indices) += arma::vectorise(ddf_dlambda);
   }
 
-  void outcomes(arguments_optim& x) {
-    doubles.resize(1);
-    doubles[0] = loss;
-  };
+  void outcomes(arguments_optim& x) override {
+    doubles = {loss, -loss};
+    names_doubles = {"loss", "loglik"};
+  }
 };
 
 poisson_loglik* choose_poisson_loglik(const Rcpp::List& estimator_setup) {
+  std::vector<arma::uvec> indices = estimator_setup["indices"];
+  arma::mat observations = estimator_setup["X"];
+  if(indices.size() != 1 || indices[0].n_elem != observations.n_elem) {
+    Rcpp::stop("poisson_loglik requires one rate per observation.");
+  }
+  if(!observations.is_finite() || arma::any(arma::vectorise(observations < 0)) ||
+     arma::any(arma::vectorise(observations != arma::floor(observations)))) {
+    Rcpp::stop("Poisson observations must be non-negative integer counts.");
+  }
 
   poisson_loglik* myestimator = new poisson_loglik();
-
-  std::vector<arma::uvec> indices = estimator_setup["indices"];
-  arma::mat X = estimator_setup["X"];
-
-  int p = X.n_rows;
-  int q = X.n_cols;
-
-  arma::mat log_dpois(p, q);
-  arma::mat lambdas(p, q);
-
   myestimator->indices = indices[0];
-  myestimator->X = X;
-  myestimator->p = p;
-  myestimator->q = q;
-  myestimator->log_dpois = log_dpois;
-  myestimator->lambdas = lambdas;
-
+  myestimator->counts = arma::vectorise(observations);
+  myestimator->log_factorials = arma::accu(arma::lgamma(observations + 1.0));
   return myestimator;
 }

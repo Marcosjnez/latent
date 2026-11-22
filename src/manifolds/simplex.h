@@ -11,12 +11,11 @@ class simplex:public manifolds {
 public:
 
   arma::uvec indices;
-  arma::vec X, dX, dir, g, dg;
+  arma::vec X, dX, g, dg;
 
   void param(arguments_optim& x) {
 
     X = x.parameters(indices);
-    dir = x.dir(indices);
 
   }
 
@@ -55,33 +54,9 @@ public:
 
   void retr(arguments_optim& x) {
 
-    // Rf_error("OK 37");
-    double alpha = arma::accu(dir);
-
-    // for (size_t i = 0; i < dir.n_elem; ++i) {
-    //   Rprintf("parameter ");
-    //   Rprintf("%u", i);
-    //   Rprintf(" = ");
-    //   Rprintf("%f", dir[i]);
-    //   Rprintf("\n");
-    // }
-    // Rf_error("OK 40");
-
-    dir = dir - alpha * X;
-    // Rf_error("OK 50");
-
-    X = X + x.ss*dir;
-    // Rf_error("OK 53");
-    arma::vec Y(X.size());
-    for(arma::uword j=0L; j < X.size(); ++j) {
-      Y[j] = X[j] * exp(x.ss * (dir[j] / X[j]));
-    }
-    Y = Y / arma::accu(Y);
-
-    double eps = arma::datum::eps;
-    // Rf_error("OK 61");
-    Y.elem(arma::find(Y < eps)).fill(eps);
-    x.parameters(indices) = Y;
+    // The optimizer has already added its step to X.
+    X.elem(arma::find(X < arma::datum::eps)).fill(arma::datum::eps);
+    x.parameters(indices) = X/arma::accu(X);
 
   }
 

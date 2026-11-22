@@ -528,6 +528,8 @@ unrestricted_model_multistage <- function(fit) {
   }
 
   args$do.fit <- FALSE
+  if("control" %in% function_args) args$control <- .se_rebuild_control(args$control, fit)
+  args$start <- NULL
 
   if("adjustment" %in% function_args) {
     args$adjustment <- "none"
@@ -597,6 +599,14 @@ unrestricted_model_multistage <- function(fit) {
 
   return(result)
 
+}
+
+.se_rebuild_control <- function(control, fit) {
+  # Derivatives are evaluated at the fitted estimates. No random starts are needed.
+  control$rstarts <- control$cores <- 1L
+  control$start <- NULL
+  control$fitted_start <- fit@transformed_pars
+  control
 }
 
 #### Remove previous fitted models from the model argument ####

@@ -41,7 +41,7 @@ public:
     arma::mat df_dpsi = w * psiweight % f2;
 
     x.grad.elem(indices_lambda) += arma::vectorise(df_dlambda);
-    x.grad.elem(indices_psi) += df_dpsi;
+    x.grad.elem(indices_psi) += arma::vectorise(df_dpsi);
 
   }
 
@@ -54,7 +54,7 @@ public:
     arma::mat ddf_dpsi = w * psiweight2 % dpsi;
 
     x.dgrad.elem(indices_lambda) += arma::vectorise(ddf_dlambda);
-    x.dgrad.elem(indices_psi) += ddf_dpsi;
+    x.dgrad.elem(indices_psi) += arma::vectorise(ddf_dpsi);
 
   }
 
@@ -62,7 +62,7 @@ public:
 
     doubles.resize(2);
     doubles[0] =  loss;
-    doubles[0] =  0.00;
+    doubles[1] =  0.00;
 
   }
 

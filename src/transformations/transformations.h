@@ -4,6 +4,8 @@
  * Modification date: 13/09/2026
  */
 
+#include <unordered_set>
+
 // Transformations
 
 class transformations {
@@ -12,7 +14,24 @@ public:
 
   virtual ~transformations() = default;
 
-  arma::uvec indices_in, indices_out;
+  arma::uvec indices_in, indices_out, overwritten_outputs;
+
+  void set_matrix_output(const arma::uvec& indices) {
+    indices_out = indices;
+    // Assignment to repeated matrix coordinates retains the last entry.
+    std::unordered_set<arma::uword> seen;
+    std::vector<arma::uword> overwritten;
+    for(arma::uword i=indices.n_elem; i > 0; --i) {
+      if(!seen.insert(indices[i-1]).second) overwritten.push_back(i-1);
+    }
+    overwritten_outputs = arma::uvec(overwritten);
+  }
+
+  arma::mat matrix_output_gradient(const arma::vec& grad, int p) const {
+    arma::mat G = arma::reshape(grad.elem(indices_out), p, p);
+    G.elem(overwritten_outputs).zeros();
+    return G;
+  }
 
   std::vector<double> doubles;
   std::vector<arma::vec> vectors;

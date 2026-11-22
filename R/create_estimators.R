@@ -17,6 +17,7 @@ create_estimators <- function(estimators, structures) {
                             FUN = \(x) x$estimator)
   inputs <- lapply(estimators,
                    FUN = \(x) x$parameters)
+  indices <- .parameter_indices(inputs, structures, vector_structures)
   dots <- lapply(estimators,
                  FUN = \(x) x$extra)
 
@@ -107,37 +108,9 @@ create_estimators <- function(estimators, structures) {
       intersect(metadata_names, names(extra_i))
     ]
 
-    #### Parameter indices ####
-
-    ninputs <- length(inputs[[i]])
-    indices <- vector("list", length = ninputs)
-
-    for(j in seq_len(ninputs)) {
-
-      if(is.list(inputs[[i]][j])) {
-        labels_vector <- unname(c(unlist(inputs[[i]][[j]])))
-      } else {
-        labels_vector <- unname(c(unlist(
-          structures[inputs[[i]][[j]]]
-        )))
-      }
-
-      match_indices <- match(labels_vector,
-                             vector_structures)
-
-      if(anyNA(match_indices)) {
-        stop("Some parameters were not found in structures: ",
-             paste(labels_vector[is.na(match_indices)],
-                   collapse = ", "))
-      }
-
-      indices[[j]] <- match_indices-1L
-
-    }
-
     result[[i]] <- c(
       list(estimator = estimator,
-           indices = indices),
+           indices = indices[[i]]),
       extra,
       metadata
     )

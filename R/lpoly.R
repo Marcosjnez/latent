@@ -32,9 +32,9 @@
 #'   \code{method = "one-step"}. Names should correspond to parameter blocks in
 #'   the model. Partial matrices/vectors and \code{NA} values are handled in the
 #'   same way as in \code{lca()}.
-#' @param se Logical. If \code{TRUE}, compute the two-step ACOV currently used
-#'   by \code{lpoly()}. If \code{FALSE}, return the estimates without ACOV or
-#'   standard errors.
+#' @param se Logical. Compute the sampling covariance and standard errors
+#'   for the selected method. One-step estimation uses the composite-likelihood
+#'   sandwich covariance.
 #' @param do.fit Logical. If \code{FALSE}, return the prepared but unfitted
 #'   \code{"latent"} object.
 #' @param message Logical. Print progress messages during estimation.
@@ -80,6 +80,11 @@ lpoly <- function(data,
                   control = NULL,
                   ...) {
 
+  #### Store original call ####
+
+  mc <- match.call(expand.dots = TRUE)
+  args <- .matched_arguments(match.call(expand.dots = FALSE), environment())
+
   #### Check input arguments ####
 
   if(!is.data.frame(data) && !is.matrix(data)) {
@@ -90,8 +95,8 @@ lpoly <- function(data,
     data <- as.data.frame(data)
   }
 
-  if(nrow(data) == 0L || ncol(data) == 0L) {
-    stop("data must contain at least one observation and one variable")
+  if(nrow(data) < 2L || ncol(data) == 0L) {
+    stop("Ordinal data must contain at least two observations and one variable")
   }
 
   if(is.null(colnames(data)) ||
@@ -105,15 +110,10 @@ lpoly <- function(data,
     stop("All variables in data must be numeric ordinal variables")
   }
 
-  nlevels <- vapply(data, FUN = function(x) {
-    length(unique(x[!is.na(x)]))
-  }, FUN.VALUE = integer(1L))
-
-  if(any(nlevels < 2L)) {
-    stop("Every variable must contain at least two observed categories")
-  }
-
   method <- match.arg(tolower(method), c("one-step", "two-step"))
+  if(method == "one-step" && ncol(data) < 2L) {
+    stop("The pairwise one-step likelihood requires at least two variables")
+  }
 
   if(!is.logical(positive) || length(positive) != 1L || is.na(positive)) {
     stop("positive must be TRUE or FALSE")
@@ -172,11 +172,6 @@ lpoly <- function(data,
     penalties <- FALSE
 
   }
-
-  #### Store original call ####
-
-  mc <- match.call(expand.dots = TRUE)
-  args <- lapply(as.list(mc)[-1L], eval, envir = parent.frame())
 
   #### Check control parameters ####
 
@@ -244,15 +239,10 @@ lpoly <- function(data,
 
   if(se) {
 
-    # ACOV for the composite pairwise likelihood:
-    # Optim$SE <- compute_se_lpoly_one_step(dataList = dataList,
-    #                                       modelInfo = modelInfo,
-    #                                       Optim = Optim,
-    #                                       parameters = parameters)
-    # For now, we use always the ACOV of the two-step method:
-    Optim$SE <- compute_se_lpoly_two_step(dataList = dataList,
-                                          modelInfo = modelInfo,
-                                          parameters = parameters)
+    Optim$SE <- compute_se_lpoly(dataList = dataList,
+                                 modelInfo = modelInfo,
+                                 Optim = Optim,
+                                 parameters = parameters)
 
   } else {
 
@@ -303,9 +293,7 @@ create_lpoly_dataList <- function(data, control) {
     length(x)-2L
   }, FUN.VALUE = integer(1L))
 
-  item_cat <- lapply(data, FUN = function(x) {
-    sort(unique(x[!is.na(x)]))
-  })
+  item_cat <- setNames(polychorics$category_levels, item_label)
 
   #### Result ####
 
@@ -1037,56 +1025,45 @@ fit_lpoly <- function(dataList, modelInfo, method) {
 
 }
 
+compute_se_lpoly <- function(dataList, modelInfo, Optim, parameters) {
+
+  if(identical(modelInfo$control_optimizer$method, "two-step")) {
+    return(compute_se_lpoly_two_step(dataList, modelInfo, parameters))
+  }
+  return(compute_se_lpoly_one_step(dataList, modelInfo, Optim, parameters))
+
+}
+
 compute_se_lpoly_one_step <- function(dataList, modelInfo, Optim, parameters) {
 
-  data_param <- create_lpoly_data_param(dataList = dataList,
-                                        control = modelInfo$control_optimizer)
+  data_param <- create_lpoly_data_param(dataList, modelInfo$control_optimizer)
   list2env(data_param, envir = environment())
-
-  #### Hessian ####
-
   fit <- new("latent", call = match.call(), dataList = dataList,
-              modelInfo = modelInfo, Optim = Optim)
+             modelInfo = modelInfo, Optim = Optim)
+  labels <- modelInfo$parameters_labels
 
-  H <- get_hess(fit, cores = 1L)$h
+  #### Composite-likelihood sandwich covariance ####
 
-  rownames(H) <- colnames(H) <- modelInfo$parameters_labels
-
-  #### Variance-covariance matrix ####
-
-  var_names <- rownames(parameters$S)
-
-  # Scores for the two-step method:
-  # ACOV <- asymptotic_poly(
-  #   data = as.matrix(dataList$data),
-  #   correlation = parameters[[S_matrix]],
-  #   thresholds = parameters[taus_item],
-  #   return_scores = TRUE,
-  #   probability_floor = 1e-12,
-  #   inversion_tolerance = 1e-10
-  # )
-  # scores <- ACOV$pattern_scores * c(ACOV$pattern_weights)
-
-  # Scores for pairwise log-likelihoods:
+  H <- hessian(fit)
   scores <- composite_poly_scores(data = as.matrix(dataList$data),
                                   correlation = parameters[[S_matrix]],
                                   thresholds = parameters[taus_item])
 
-  J <- crossprod(scores)/nrow(scores)
+  # Map each threshold and pair score to the free coordinates. Repeated
+  # labels contribute to the same coordinate under equality constraints.
+  S <- modelInfo$trans[[S_matrix]]
+  natural <- c(unlist(modelInfo$trans[taus_item], use.names = FALSE),
+               S[lower.tri(S)])
+  D <- as.matrix(jacobian(fit)[natural, labels, drop = FALSE])
+  scores <- scores %*% D
+  if(isTRUE(modelInfo$control_optimizer$positive)) {
+    fit@modelInfo$control_optimizer$se_method <- "KKT"
+  }
+  Hinv <- invert_hessian_latent(fit, H, labels)
+  influence <- scores %*% Hinv
+  VCOV <- crossprod(influence)/dataList$nobs^2
 
-  Hinv <- approx_Hinv(H)
-  VCOV <- Hinv %*% J %*% Hinv/nrow(scores)
-  VCOV <- (VCOV+t(VCOV))/2
-  se <- sqrt(diag(VCOV))
-  names(se) <- modelInfo$parameters_labels
-
-  #### Result ####
-
-  result <- list(H = H,
-                 VCOV = VCOV,
-                 se = se)
-
-  return(result)
+  return(list(H = H, VCOV = VCOV, se = sqrt(diag(VCOV))))
 
 }
 
@@ -1095,6 +1072,16 @@ compute_se_lpoly_two_step <- function(dataList, modelInfo, parameters) {
   data_param <- create_lpoly_data_param(dataList = dataList,
                                         control = modelInfo$control_optimizer)
   list2env(data_param, envir = environment())
+
+  if(dataList$nitems == 1L) {
+    # Thresholds are normal quantiles of the observed cumulative proportions.
+    tau <- c(parameters[[taus_item]])
+    p <- stats::pnorm(tau)
+    n <- sum(!is.na(dataList$data[[1L]]))
+    V <- (outer(p, p, pmin) - outer(p, p))/(n*outer(stats::dnorm(tau), stats::dnorm(tau)))
+    dimnames(V) <- list(modelInfo$parameters_labels, modelInfo$parameters_labels)
+    return(list(VCOV = V, se = sqrt(diag(V))))
+  }
 
   ACOV <- asymptotic_poly(
     data = as.matrix(dataList$data),

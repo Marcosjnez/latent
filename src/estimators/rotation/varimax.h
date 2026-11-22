@@ -15,14 +15,14 @@ public:
   int p, q;
   double loss;
   arma::uvec indices_lambda;
-  arma::mat lambda, dlambda, L2, HL2, Hh, hL;
+  arma::mat lambda, dlambda, L2, HL2;
 
   void param(arguments_optim& x) {
 
     lambda = arma::reshape(x.transparameters(indices_lambda), p, q);
 
     L2 = lambda % lambda;
-    HL2 = Hh * L2;
+    HL2 = L2.each_row() - arma::mean(L2, 0);
 
   }
 
@@ -45,7 +45,7 @@ public:
     dlambda = arma::reshape(x.dtransparameters(indices_lambda), p, q);
     arma::mat dL2 = 2 * dlambda % lambda;
 
-    arma::mat ddf_dlambda = -dlambda % HL2 - lambda % (Hh * dL2);
+    arma::mat ddf_dlambda = -dlambda % HL2 - lambda % (dL2.each_row() - arma::mean(dL2, 0));
     x.dgrad.elem(indices_lambda) += arma::vectorise(ddf_dlambda);
 
   }
@@ -54,7 +54,7 @@ public:
 
     doubles.resize(2);
     doubles[0] =  loss;
-    doubles[0] =  0.00;
+    doubles[1] =  0.00;
 
   }
 
@@ -68,12 +68,7 @@ varimax* choose_varimax(const Rcpp::List& estimator_setup) {
   int p = estimator_setup["p"];
   int q = estimator_setup["q"];
 
-  arma::vec v(p, arma::fill::ones);
-  arma::mat I(p, p, arma::fill::eye);
-  arma::mat Hh = I - v * v.t() / (p + 0.0);
-
   myestimator->indices_lambda = indices[0];
-  myestimator->Hh = Hh;
   myestimator->p = p;
   myestimator->q = q;
 

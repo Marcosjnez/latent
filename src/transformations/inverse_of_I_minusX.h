@@ -18,13 +18,13 @@ public:
     X = arma::reshape(x.transparameters(indices_in), p, p);
 
     if(!X.is_finite()) {
-      Rf_error("inverse_of_I_minusX requires a finite input matrix.");
+      Rcpp::stop("inverse_of_I_minusX requires a finite input matrix.");
     }
 
     bool ok = arma::inv(A, I-X);
 
     if(!ok || !A.is_finite()) {
-      Rf_error("inverse_of_I_minusX: I-X is singular or its inverse is nonfinite.");
+      Rcpp::stop("inverse_of_I_minusX: I-X is singular or its inverse is nonfinite.");
     }
 
     x.transparameters(indices_out) = arma::vectorise(A);
@@ -87,17 +87,17 @@ inverse_of_I_minusX* choose_inverse_of_I_minusX(const Rcpp::List& trans_setup) {
   int p = trans_setup["p"];
 
   if(p < 1) {
-    Rf_error("inverse_of_I_minusX requires a positive p dimension.");
+    Rcpp::stop("inverse_of_I_minusX requires a positive p dimension.");
   }
 
   if(indices_in.size() != 1L || indices_out.size() != 1L) {
-    Rf_error("inverse_of_I_minusX requires one input and one output.");
+    Rcpp::stop("inverse_of_I_minusX requires one input and one output.");
   }
 
   const arma::uword n2 = static_cast<arma::uword>(p)*p;
 
   if(indices_in[0].n_elem != n2 || indices_out[0].n_elem != n2) {
-    Rf_error("The inverse_of_I_minusX parameter indices have incompatible dimensions.");
+    Rcpp::stop("The inverse_of_I_minusX parameter indices have incompatible dimensions.");
   }
 
   mytrans->indices_in = indices_in[0];

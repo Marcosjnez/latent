@@ -24,6 +24,7 @@
 #'   covariate names. When `NULL`, predictions are computed for the data used to
 #'   fit the model. For a model without covariates, `new` only determines the
 #'   number and row names of the returned predictions.
+#' @param newdata Alias for `new`, following the usual `predict()` convention.
 #' @param ... Additional arguments. Currently not used.
 #'
 #' @details
@@ -82,8 +83,9 @@
 #' @param object Fitted model or collection of fitted models passed to the method.
 #' @method predict llca
 #' @export
-predict.llca <- function(object, new = NULL, ..., model = object) {
+predict.llca <- function(object, new = newdata, ..., model = object, newdata = NULL) {
   if(!missing(model) && !missing(object)) return(.match_legacy_model("model"))
+  if(!missing(new) && !missing(newdata)) stop("Supply only one of new and newdata.")
 
   if(!inherits(model, "llca")) {
     stop("model must inherit from class 'llca'.")
@@ -173,22 +175,8 @@ predict.llca <- function(object, new = NULL, ..., model = object) {
       stop("new cannot contain missing values in the model covariates.")
     }
 
-    mf <- model.frame(~ . + 1, data = X_df, na.action = na.pass)
-    covariates <- model.matrix(~ . + 1, data = mf)
-
-    fac_cols <- names(X_df)[vapply(X_df, is.factor, logical(1L))]
-    terms_X <- terms(~ . + 1, data = X_df)
-
-    for(v in fac_cols) {
-      term_id <- match(v, attr(terms_X, "term.labels"))
-      i <- which(attr(covariates, "assign") == term_id)
-
-      if(length(i) > 0L) {
-        old_names <- colnames(covariates)[i]
-        level_names <- sub(paste0("^", v), "", old_names)
-        colnames(covariates)[i] <- paste0(v, "_", level_names)
-      }
-    }
+    covariates <- make_design_matrix(covariates_names, X_df, drop_levels = FALSE,
+                                     contrasts = attr(model@dataList$design, "contrasts"))
 
     expected_names <- colnames(model@dataList$design)
     extra_names <- setdiff(colnames(covariates), expected_names)
@@ -211,9 +199,8 @@ predict.llca <- function(object, new = NULL, ..., model = object) {
   }
 
   Z0 <- covariates %*% model@transformed_pars$beta
-  row_max <- apply(Z0, MARGIN = 1L, FUN = max)
-  Z0 <- sweep(Z0, MARGIN = 1L, STATS = row_max, FUN = "-")
-  P0 <- exp(Z0)
+  row_max <- Z0[cbind(seq_len(nrow(Z0)), max.col(Z0, ties.method = "first"))]
+  P0 <- exp(Z0 - row_max)
   P0 <- P0 / rowSums(P0)
 
   class_names <- colnames(model@transformed_pars$class)
@@ -238,8 +225,9 @@ predict.llca <- function(object, new = NULL, ..., model = object) {
 #' @rdname predict.llca
 #' @method predict llcalist
 #' @export
-predict.llcalist <- function(object, new = NULL, ..., model = object) {
+predict.llcalist <- function(object, new = newdata, ..., model = object, newdata = NULL) {
   if(!missing(model) && !missing(object)) return(.match_legacy_model("model"))
+  if(!missing(new) && !missing(newdata)) stop("Supply only one of new and newdata.")
 
   if(!inherits(model, "llcalist")) {
     stop("model must inherit from class 'llcalist'.")

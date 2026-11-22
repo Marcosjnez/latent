@@ -60,7 +60,7 @@ public:
 
     doubles.resize(2);
     doubles[0] =  loss;
-    doubles[0] =  0.00;
+    doubles[1] =  0.00;
 
   }
 

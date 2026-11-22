@@ -24,16 +24,9 @@ public:
 
   void update_grad(arguments_optim& x) {
 
-    grad_out = arma::reshape(x.grad(indices_out), p, p);
-    grad_out *= 0.50; // Do not double-count the symmetric part
-    grad_out.diag() *= 2; // Restore the diagonal
+    grad_out = matrix_output_gradient(x.grad, p);
 
-    x.grad(indices_in) += arma::vectorise(2*X * grad_out);
-
-    // arma::mat I(p, p, arma::fill::eye);
-    // arma::mat Dp = duplication(p, true, false);
-    // jacob = 2*Dp.t() * arma::kron(I, X.t());
-    // x.grad(indices_in) += jacob.t() * x.grad(indices_out);
+    x.grad(indices_in) += arma::vectorise(X*(grad_out+grad_out.t()));
 
   }
 
@@ -47,12 +40,10 @@ public:
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::mat dgrad_out = arma::reshape(x.dgrad.elem(indices_out), p, p);
-    dgrad_out *= 0.50; // Do not double-count the symmetric part
-    dgrad_out.diag() *= 2; // Restore the diagonal
+    arma::mat dgrad_out = matrix_output_gradient(x.dgrad, p);
 
-    x.dgrad.elem(indices_in) += arma::vectorise(2*dX * grad_out +
-                                                   2*X * dgrad_out);
+    x.dgrad.elem(indices_in) += arma::vectorise(
+      dX*(grad_out+grad_out.t())+X*(dgrad_out+dgrad_out.t()));
 
   }
 
@@ -97,7 +88,7 @@ crossprod* choose_crossprod(const Rcpp::List& trans_setup) {
   arma::uvec unique_indices_out = arma::unique(indices_out[0]);
 
   mytrans->indices_in = indices_in[0];
-  mytrans->indices_out = indices_out[0];
+  mytrans->set_matrix_output(indices_out[0]);
   mytrans->p = p;
   mytrans->X = X;
   mytrans->grad_out = grad_out;

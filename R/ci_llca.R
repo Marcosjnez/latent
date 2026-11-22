@@ -86,7 +86,7 @@ ci.llca <- function(x, type = "information", confidence = 0.95,
            digits = NULL,
            ...)
 
-  critical <- stats::qnorm(0.5+confidence/2)
+  critical <- stats::qnorm((1-confidence)/2, lower.tail = FALSE)
   selected_parameters <- names(SE$se)
   estimates <- fit@Optim$transparameters[selected_parameters]
 

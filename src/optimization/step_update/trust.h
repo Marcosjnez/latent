@@ -44,7 +44,7 @@ void trust(arguments_optim& x,
 
   double preddiff = -arma::accu(x.dparameters % (x.rg + 0.5*x.dH));
 
-  if(!std::isfinite(preddiff)) {
+  if(!std::isfinite(preddiff) || preddiff <= 0.0) {
     rad = fac_rad[0]*rad;
     x.df = 0.0;
     return;
@@ -61,10 +61,9 @@ void trust(arguments_optim& x,
 
   x.df = x.f - new_x.f;
   new_x.df = x.df;
-  double goa = (std::abs(preddiff) <= arma::datum::eps) ?
-    1.0 : x.df/preddiff;
+  double goa = x.df/preddiff;
 
-  // Invalid proposals must not be accepted through the tiny-prediction case.
+  // Reject invalid proposals before updating the trust-region radius.
   if(!new_x.parameters.is_finite() || !new_x.transparameters.is_finite() ||
      !std::isfinite(new_x.f) || !std::isfinite(goa)) {
     goa = -arma::datum::inf;

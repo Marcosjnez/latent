@@ -26,9 +26,7 @@ public:
 
   void update_grad(arguments_optim& x) {
 
-    grad_out = arma::reshape(x.grad(indices_XYXt), p, p);
-    grad_out *= 0.50; // Do not double-count the symmetric part
-    grad_out.diag() *= 2; // Restore the diagonal
+    grad_out = matrix_output_gradient(x.grad, p);
 
     grad_in_X = grad_out*X*Y.t()+grad_out.t()*X*Y;
     grad_in_Y = X.t()*grad_out*X;
@@ -50,9 +48,7 @@ public:
 
   void update_dgrad(arguments_optim& x) {
 
-    arma::mat dgrad_out = arma::reshape(x.dgrad(indices_XYXt), p, p);
-    dgrad_out *= 0.50; // Do not double-count the symmetric part
-    dgrad_out.diag() *= 2; // Restore the diagonal
+    arma::mat dgrad_out = matrix_output_gradient(x.dgrad, p);
 
     arma::mat dgrad_in_X =
       dgrad_out*X*Y.t()+grad_out*dX*Y.t()+grad_out*X*dY.t()+
@@ -131,7 +127,7 @@ XYXt* choose_XYXt(const Rcpp::List& trans_setup) {
   XYXt* mytrans = new XYXt();
 
   mytrans->indices_in = arma::join_cols(indices_X, indices_Y);
-  mytrans->indices_out = indices_XYXt;
+  mytrans->set_matrix_output(indices_XYXt);
   mytrans->indices_X = indices_X;
   mytrans->indices_Y = indices_Y;
   mytrans->indices_XYXt = indices_XYXt;

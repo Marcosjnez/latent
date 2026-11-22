@@ -181,7 +181,8 @@
 #' \code{"u1 ~~ u2 ~~ u3"} defines one joint variable \code{u1.u2.u3}. Pairwise
 #' interaction parameters are used to build the joint log-probabilities, and the
 #' marginal item probabilities are recovered from the joint probabilities by
-#' summing over the relevant joint levels.
+#' summing over the relevant joint levels. A partially observed block contributes
+#' the sum of the joint probabilities consistent with its observed responses.
 #'
 #' When \code{control$opt = "em"}, posterior class-membership probabilities are
 #' updated in the E step. For temporal models, the forward-backward recursion
@@ -502,7 +503,7 @@ lca <- function(data,
   #### Store original call ####
 
   mc <- match.call(expand.dots = TRUE)
-  if(!temporal) args <- lapply(as.list(mc)[-1], eval, envir = parent.frame())
+  if(!temporal) args <- mget(names(mc)[-1L], envir = environment(), inherits = FALSE)
 
   #### Create the dataList ####
 
@@ -1054,32 +1055,7 @@ create_lca_model <- function(dataList, nclasses, model = NULL, control) {
 
   #### Create the initial values for the parameters ####
 
-  # Initial values for the log coefficients (betas):
-  # betas are sampled from a normal distribution:
-  init_param <- vector("list", length = control$rstarts)
-
-  init_beta <- start_beta_lca(param, dataList, control$rstarts)
-  init_multinom <- start_multinomial_lca(param, dataList, control$rstarts)
-  init_gauss <- start_gaussian_lca(param, dataList, control$rstarts)
-  init_mvgauss <- start_mvgaussian_lca(param, dataList, control$rstarts)
-  if(temporal) {
-    # Start with a preference for remaining in the previous state.
-    initial <- diag(2, nclasses)
-    initial <- sweep(initial, 2L, initial[1L, ], "-")
-  }
-
-  for(i in 1:control$rstarts) {
-
-    init_param[[i]] <- c(init_beta[[i]],
-                         init_multinom[[i]],
-                         init_gauss[[i]],
-                         init_mvgauss[[i]])
-    if(temporal) init_param[[i]]$logtransition <- initial
-
-    # Preserve the same order than in param:
-    init_param[[i]] <- init_param[[i]][names(param)]
-
-  }
+  init_param <- .start_lca(param, dataList, control)
 
   #### Custom initial values ####
 
@@ -1415,7 +1391,7 @@ lca_control <- function(control, temporal = FALSE) {
 
 #### Auxiliary functions for create_lca_dataList ####
 
-make_design_matrix <- function(covariates, data) {
+make_design_matrix <- function(covariates, data, drop_levels = TRUE, contrasts = NULL) {
 
   nobs <- nrow(data)
 
@@ -1441,9 +1417,9 @@ make_design_matrix <- function(covariates, data) {
     X_df[char_cols] <- lapply(X_df[char_cols], factor)
 
     # Create design matrix:
-    X_df <- droplevels(X_df) # Drop absent levels
+    if(drop_levels) X_df <- droplevels(X_df)
     mf <- model.frame(~ . + 1, data = X_df, na.action = na.pass)
-    X  <- model.matrix(~ . + 1, data = mf)
+    X  <- model.matrix(~ . + 1, data = mf, contrasts.arg = contrasts)
 
     # Rename factor dummy columns:
     fac_cols <- names(X_df)[vapply(X_df, is.factor, logical(1L))]
@@ -1455,7 +1431,7 @@ make_design_matrix <- function(covariates, data) {
 
       if(length(i) > 0L) {
         old_names <- colnames(X)[i]
-        level_names <- sub(paste0("^", v), "", old_names)
+        level_names <- substring(old_names, nchar(v) + 1L)
         colnames(X)[i] <- paste0(v, "_", level_names)
       }
     }
@@ -1776,26 +1752,13 @@ check_mvmultinomial <- function(multinomial, dependencies = NULL, patterns) {
       indep_pairs_list <- groups$elements
       joint_names <- vapply(indep_pairs_list, paste, character(1), collapse = ".")
       names(indep_pairs) <- names(indep_pairs_list) <- joint_names
-      patterns_original <- patterns$patterns # dataList$patterns_original
-      joints <- lapply(indep_pairs_list, FUN = \(x) {
-        apply(patterns_original[, x], MARGIN = 1, FUN = paste, collapse = ".")
-      })
-      joints <- as.data.frame(joints)
-      new_probs <- unlist(c(keep, colnames(joints)))
-      new_J <- length(new_probs)
-      patterns_mvmultinomial <- data.frame(patterns_original,
-                                           joints)[, new_probs, drop = FALSE]
       joint_levels <- lapply(indep_pairs_list, FUN = \(x) {
-        apply(expand.grid(multinomial_factor_levels[x]),
-              MARGIN = 1, FUN = paste, collapse = ".")
+        make.unique(do.call(paste, c(expand.grid(multinomial_factor_levels[x]),
+                                     sep = ".")))
       })
       new_levels <- c(multinomial_factor_levels[keep], joint_levels)
       new_K <- unlist(lapply(new_levels, FUN = length))
-      for(j in seq_len(length(new_probs))) {
-        patterns_mvmultinomial[[new_probs[j]]] <-
-          factor(patterns_mvmultinomial[[new_probs[j]]], ordered = TRUE,
-                 levels = new_levels[[j]])
-      }
+      new_J <- length(new_levels)
       njoints <- length(joint_levels)
       multinomial_factor_levels_numeric <-
         setNames(lapply(multinomial_factor_lengths, seq_len),
@@ -1804,12 +1767,36 @@ check_mvmultinomial <- function(multinomial, dependencies = NULL, patterns) {
         expand.grid(multinomial_factor_levels_numeric[x])
       })
 
-      patterns_mvmultinomial_recoded <- lapply(patterns_mvmultinomial,
-                                               FUN = function(col) {
-                                                 if(is.factor(col)) as.integer(col) - 1L else col
-                                               })
-      patterns_mvmultinomial_recoded <-
-        as.matrix(as.data.frame(patterns_mvmultinomial_recoded))
+      recoded <- as.data.frame(patterns_multinomial[, keep, drop = FALSE])
+      partial_cells <- setNames(vector("list", njoints), joint_names)
+      for(name in joint_names) {
+        vars <- indep_pairs_list[[name]]
+        codes <- patterns_multinomial[, vars, drop = FALSE]
+        sizes <- multinomial_factor_lengths[vars]
+        # The first item varies fastest in expand.grid().
+        strides <- cumprod(c(1, head(sizes, -1L)))
+        index <- as.integer(codes %*% strides)
+        partial <- is.na(index) & rowSums(!is.na(codes)) > 0L
+        if(any(partial)) {
+          # Equal integer codes identify exactly the same observed event.
+          observed <- codes[partial, , drop = FALSE]
+          keys <- do.call(paste, as.data.frame(observed))
+          unique_keys <- unique(keys)
+          index[partial] <- new_K[name] + match(keys, unique_keys) - 1L
+          cells <- as.matrix(joint_orderings[[name]]) - 1L
+          partial_cells[[name]] <- lapply(match(unique_keys, keys), function(r) {
+            known <- !is.na(observed[r, ])
+            matches <- sweep(cells[, known, drop = FALSE], 2L, observed[r, known], "==")
+            which(rowSums(matches) == sum(known))
+          })
+        }
+        recoded[[name]] <- index
+      }
+      patterns_mvmultinomial_recoded <- as.matrix(recoded)
+      patterns_mvmultinomial <- as.data.frame(Map(function(index, levels) {
+        factor(index, levels = seq_along(levels)-1L, labels = levels, ordered = TRUE)
+      }, recoded, new_levels), optional = TRUE)
+      joints <- patterns_mvmultinomial[joint_names]
 
       nremoved_multinomial <- length(removed_multinomial)
       removed_logmultinomial <- removed_multinomial
@@ -1841,6 +1828,7 @@ check_mvmultinomial <- function(multinomial, dependencies = NULL, patterns) {
         njoints = njoints,
         joint_orderings = joint_orderings
       )
+      mvmultinomial$partial_cells <- partial_cells
 
     }
 
@@ -1879,46 +1867,22 @@ make_patterns <- function(data, weights = NULL, any_continuous) {
 
   dt <- data.table::as.data.table(data)
   data_names <- colnames(data)
-
-  if(is.null(weights)) {
-
-    counts_dt <- dt[
-      ,
-      .(
-        index = .I[1],
-        pattern_weights = .N
-      ),
-      by = data_names
-    ]
-
-  } else {
-
-    dt[, ".weights" := weights]
-
-    counts_dt <- dt[
-      ,
-      .(
-        index = .I[1],
-        pattern_weights = sum(.weights)
-      ),
-      by = data_names
-    ]
-  }
-
-  npatterns <- nrow(counts_dt)
+  # Keep the same group identity for counting and expanding the patterns.
+  first_column <- tail(make.unique(c(data_names, ".first")), 1L)
+  dt[, (first_column) := .I[1L], by = data_names]
+  first <- dt[[first_column]]
+  full2short <- unique(first)
+  short2full <- match(first, full2short)
+  npatterns <- length(full2short)
   pattern_names <- paste("pattern", seq_len(npatterns), sep = "")
-
-  patterns <- as.matrix(counts_dt[, data_names, with = FALSE])
+  patterns <- as.matrix(data[full2short, , drop = FALSE])
   rownames(patterns) <- pattern_names
 
-  pattern_weights <- counts_dt$pattern_weights
-
-  full2short <- counts_dt$index
-
-  short2full <- match(
-    do.call(paste, dt[, data_names, with = FALSE]),
-    do.call(paste, counts_dt[, data_names, with = FALSE])
-  )
+  pattern_weights <- if(is.null(weights)) {
+    tabulate(short2full, npatterns)
+  } else {
+    as.numeric(rowsum(weights, short2full, reorder = FALSE))
+  }
 
   result <- list(
     patterns = patterns,
@@ -2042,7 +2006,12 @@ lca_ml <- function(data,
     data$states <- factor(rep(seq_len(nclasses), times = N),
                                    levels = seq_len(nclasses))
     posterior <- latInspect(fit1, what = "posterior", sort = FALSE)
-    weights <- as.vector(t(posterior)) # Original weights are overwritten
+    if(!is.null(weights)) posterior <- posterior * weights
+    weights <- as.vector(t(posterior))
+    # Rows with zero assignment probability have no structural likelihood contribution.
+    keep <- weights > 0
+    data <- data[keep, , drop = FALSE]
+    weights <- weights[keep]
     class_error <- latInspect(fit1, what = "classification", sort = FALSE)$class_error_prop
 
   } else {
@@ -2306,10 +2275,10 @@ objects_mvgaussian_lca <- function(data, patterns, mvgaussian, nclasses, target)
 
     }
 
-    for(j in 1:nclasses) {
-      init_sigma[[j]] <- cov(data[, mvgaussian_names, drop = FALSE],
-                             use = "pairwise.complete.obs")
-    }
+    sigma <- cov(data[, mvgaussian_names, drop = FALSE], use = "pairwise.complete.obs")
+    # Start pairs without joint observations at zero covariance.
+    sigma[is.na(sigma)] <- 0
+    init_sigma <- rep(list(sigma), nclasses)
 
     mvgaussian$sigma_names <- sigma_names
     mvgaussian$init_mean <- init_mean
@@ -2383,13 +2352,15 @@ model_multinomial_lca <- function(nclasses, dataList) {
 
         joint_name <- paste(indep_pairs_list[[h]], collapse = ".")
         joint_levels_h <- new_levels[[joint_name]]
+        partial <- seq_along(dataList$mvmultinomial$partial_cells[[joint_name]])
 
         list_struct[[k]] <- list(
           name = joint_name,
           type = "matrix",
-          dim = c(2L*new_K[joint_name], nclasses),
+          dim = c(2L*new_K[joint_name] + length(partial), nclasses),
           rownames = c(paste0("prob(", joint_levels_h, ")"),
-                       paste0("logprob(", joint_levels_h, ")")),
+                       paste0("logprob(", joint_levels_h, ")"),
+                       if(length(partial)) paste0("marginal(", partial, ")")),
           colnames = class_names
         )
         k <- k+1L
@@ -2756,6 +2727,40 @@ expand_llca_models <- function(models) {
 
 #### Functions for starting values of conditional likelihood model parameters ####
 
+.start_lca <- function(param, dataList, control) {
+
+  if(!is.null(control$fitted_start)) return(list(control$fitted_start[names(param)]))
+
+  # Initial values for the log coefficients (betas):
+  # betas are sampled from a normal distribution:
+  init_param <- vector("list", length = control$rstarts)
+
+  init_beta <- start_beta_lca(param, dataList, control$rstarts)
+  init_multinom <- start_multinomial_lca(param, dataList, control$rstarts)
+  init_gauss <- start_gaussian_lca(param, dataList, control$rstarts)
+  init_mvgauss <- start_mvgaussian_lca(param, dataList, control$rstarts)
+  if(!is.null(dataList$lengths)) {
+    # Start with a preference for remaining in the previous state.
+    initial <- diag(2, dataList$nclasses)
+    initial <- sweep(initial, 2L, initial[1L, ], "-")
+  }
+
+  for(i in 1:control$rstarts) {
+
+    init_param[[i]] <- c(init_beta[[i]],
+                         init_multinom[[i]],
+                         init_gauss[[i]],
+                         init_mvgauss[[i]])
+    if(!is.null(dataList$lengths)) init_param[[i]]$logtransition <- initial
+
+    # Preserve the same order than in param:
+    init_param[[i]] <- init_param[[i]][names(param)]
+
+  }
+
+  return(init_param)
+}
+
 start_beta_lca <- function(param, dataList, rstarts) {
 
   pdesign <- dataList$pdesign
@@ -3104,11 +3109,25 @@ transformations_multinomial_lca <- function(trans, dataList) {
 
       }
 
+      # For a partially observed block, sum the probabilities of the complete
+      # cells consistent with its observed items. A wholly missing block is skipped.
+      partial_cells <- mvmultinomial$partial_cells
+      for(name in names(partial_cells)) {
+        for(p in seq_along(partial_cells[[name]])) {
+          transforms[[k]] <- list(
+            transform = "sum_vectors",
+            parameters_in = lapply(partial_cells[[name]][[p]], function(r) trans[[name]][r, ]),
+            parameters_out = list(trans[[name]][2L*new_K[name] + p, ])
+          )
+          k <- k+1L
+        }
+      }
       likelihood_names <- colnames(patterns_mvmultinomial_recoded)
       likelihood_probs <- lapply(likelihood_names, FUN = function(name) {
 
         K_name <- new_K[name]
-        trans[[name]][seq_len(K_name), , drop = FALSE]
+        rows <- c(seq_len(K_name), 2L*K_name + seq_along(partial_cells[[name]]))
+        trans[[name]][rows, , drop = FALSE]
 
       })
       names(likelihood_probs) <- likelihood_names
@@ -3119,7 +3138,7 @@ transformations_multinomial_lca <- function(trans, dataList) {
         parameters_out = list(trans$loglik),
         extra = list(y = patterns_mvmultinomial_recoded,
                      S = npatterns, J = new_J,
-                     I = nclasses, K = new_K)
+                     I = nclasses, K = vapply(likelihood_probs, nrow, integer(1L)))
       )
       k <- k+1L
 
@@ -3387,7 +3406,7 @@ ridge <- function(trans, lambda, power, nobs) {
 
   estimators <- list()
 
-  if(!is.null(lambda) & !is.null(power)) {
+  if(nrow(trans$beta) > 1L && !is.null(lambda) && !is.null(power)) {
 
     if(lambda != 0 && power != 0) {
 
@@ -3411,12 +3430,12 @@ gaussloglik <- function(trans, alpha, nobs, cov_patterns) {
 
   estimators <- list()
 
-  if(alpha != 0) {
+  if(nrow(trans$beta) > 1L && alpha != 0) {
 
     p <- nrow(trans$beta)-1L
     q <- ncol(trans$beta)
     means <- matrix(0, nrow = p, ncol = q)
-    sds <- apply(cov_patterns[, -1], MARGIN = 2, sd, na.rm = TRUE)
+    sds <- apply(cov_patterns[, -1, drop = FALSE], MARGIN = 2, sd, na.rm = TRUE)
     sds <- matrix(sds, nrow = p, ncol = q) / alpha
 
     estimators[[1]] <- list(estimator = "gaussian_loglik",

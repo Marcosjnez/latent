@@ -232,7 +232,8 @@ for \code{u1.u2}. Similarly, a connected dependency such as
 \code{"u1 ~~ u2 ~~ u3"} defines one joint variable \code{u1.u2.u3}. Pairwise
 interaction parameters are used to build the joint log-probabilities, and the
 marginal item probabilities are recovered from the joint probabilities by
-summing over the relevant joint levels.
+summing over the relevant joint levels. A partially observed block contributes
+the sum of the joint probabilities consistent with its observed responses.
 
 When \code{control$opt = "em"}, posterior class-membership probabilities are
 updated in the E step. For temporal models, the forward-backward recursion

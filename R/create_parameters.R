@@ -16,7 +16,7 @@ create_parameters <- function(parameters) {
 
   result <- vector("list", length = nlist)
 
-  for(i in 1:nlist) {
+  for(i in seq_len(nlist)) {
 
     if(type[[i]] == "scalar") {
 
@@ -54,7 +54,7 @@ create_parameters <- function(parameters) {
 
         result[[i]] <- labels[[i]]
 
-        if(!identical(dim(result[[i]]), c(dim1, dim2))) {
+        if(!identical(dim(result[[i]]), as.integer(c(dim1, dim2)))) {
           stop("Custom labels for parameter block '", name[[i]],
                "' do not match the requested dimensions.")
         }
@@ -82,7 +82,7 @@ create_parameters <- function(parameters) {
 
         result[[i]] <- labels[[i]]
 
-        if(!identical(dim(result[[i]]), dims[[i]])) {
+        if(!identical(dim(result[[i]]), as.integer(dims[[i]]))) {
           stop("Custom labels for parameter block '", name[[i]],
                "' do not match the requested dimensions.")
         }
@@ -91,17 +91,10 @@ create_parameters <- function(parameters) {
 
       } else {
 
-        dim1 <- dims[[i]][1]
-        dim2 <- dims[[i]][2]
-        dim3 <- dims[[i]][3]
-
-        dim1_expanded <- rep(seq_len(dim1), times  = dim2*dim3)
-        dim2_expanded <- rep(rep(seq_len(dim2), times = dim3), each = dim1)
-        dim3_expanded <- rep(rep(seq_len(dim3), each = dim2), each = dim1)
-
-        vector_names <- paste(name[[i]], "[", dim1_expanded, ",",
-                              dim2_expanded, ",",
-                              dim3_expanded, "]", sep = "")
+        indices <- arrayInd(seq_len(prod(dims[[i]])), dims[[i]])
+        vector_names <- if(nrow(indices)) {
+          paste0(name[[i]], "[", do.call(paste, c(as.data.frame(indices), sep = ",")), "]")
+        } else character(0)
 
         result[[i]] <- array(vector_names,
                              dim = dims[[i]],
@@ -109,6 +102,8 @@ create_parameters <- function(parameters) {
 
       }
 
+    } else {
+      stop("Unknown type for parameter block '", name[[i]], "'.")
     }
 
   }

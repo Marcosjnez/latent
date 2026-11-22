@@ -121,31 +121,36 @@ fill_in <- function(lst, values, miss = NA) {
 
 }
 
+.matched_arguments <- function(mc, frame) {
+  supplied <- names(as.list(mc)[-1L])
+  args <- mget(setdiff(supplied, "..."), envir = frame, inherits = FALSE)
+  if("..." %in% supplied) args <- c(args, eval(quote(list(...)), envir = frame))
+  args
+}
+
 extract_unique_values <- function(chars, vals, miss = 0) {
 
-  coerce_numeric_leaf <- function(v, miss) {
+  labels <- unique(as.character(unlist(chars, use.names = FALSE)))
+  out <- setNames(rep(as.numeric(miss), length(labels)), labels)
+  align <- function(ch, vl) {
+    if(!length(vl)) return(numeric(0))
+    if(length(ch) != length(vl)) stop("Labels and values must have matching lengths.")
+    if(is.factor(vl)) vl <- as.character(vl)
+    setNames(suppressWarnings(as.numeric(vl)), as.character(ch))
   }
-
-  align_leaf <- function(ch, vl, miss) {
+  # Drop block names before joining the labelled leaves.
+  strip_blocks <- function(ch, vl) {
+    if(!is.list(ch)) return(align(ch, vl))
+    if(!is.null(names(ch)) && !is.null(names(vl))) vl <- vl[names(ch)]
+    if(!is.null(vl) && !is.list(vl)) stop("Expected matching lists of labels and values.")
+    vl <- as.list(vl)
+    length(vl) <- length(ch)
+    do.call(c, unname(Map(strip_blocks, ch, vl)))
   }
-
-  walk <- function(ch, vl = NULL) {
-  }
-
-  flat <- walk(chars, vals)
-
-  u <- unique(flat$chars)
-  out <- rep(miss, length(u))
-  names(out) <- u
-
-  idx_split <- split(seq_along(flat$chars), flat$chars)
-
-  for (nm in names(idx_split)) {
-    idx <- idx_split[[nm]]
-    first_ok <- match(TRUE, flat$ok[idx])
-    out[nm] <- if (!is.na(first_ok)) flat$vals[idx[first_ok]] else miss
-  }
-
+  flat <- strip_blocks(chars, vals)
+  flat <- flat[!is.na(flat)]
+  found <- match(labels, names(flat))
+  out[!is.na(found)] <- flat[found[!is.na(found)]]
   out
 }
 
@@ -338,7 +343,7 @@ create_init <- function(trans, param, init_param,
   }
 
   extract_numeric_by_label <- function(reference, values, miss = NA_real_) {
-    ref_labels <- unname(unique(list_to_char_vector(reference)))
+    ref_labels <- transparameters_labels
     out <- setNames(rep(miss, length(ref_labels)), ref_labels)
 
     if (length(values) == 0) {

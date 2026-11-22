@@ -853,6 +853,7 @@ unrestricted_model_multistep <- function(fit) {
   }
 
   args$do.fit <- FALSE
+  if("control" %in% function_args) args$control <- .se_rebuild_control(args$control, fit)
 
   if("se" %in% function_args) {
     args$se <- FALSE
@@ -887,14 +888,11 @@ unrestricted_model_multistep <- function(fit) {
 unrestricted_lcfa_multistep <- function(fit) {
 
   dataList <- fit@dataList
-  control_free <- fit@modelInfo$control_optimizer
+  control_free <- .se_rebuild_control(fit@modelInfo$control_optimizer, fit)
 
   control_free$free_taus <- TRUE
   control_free$free_S <- TRUE
   control_free$free_M <- TRUE
-  control_free$rstarts <- 1L
-  control_free$cores <- 1L
-  control_free$start <- NULL
 
   full_model <- create_lcfa_model(dataList = dataList,
                                   model = dataList$model,
@@ -905,6 +903,7 @@ unrestricted_lcfa_multistep <- function(fit) {
                                      control = control_free)
 
   Optim <- fit@Optim
+  Optim$start <- 1L
   Optim$parameters <-
     fit@Optim$transparameters[modelInfo$parameters_labels]
   Optim$transparameters <-

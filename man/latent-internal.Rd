@@ -36,6 +36,7 @@
 \alias{compute_se_lmean}
 \alias{compute_se_lmvnorm}
 \alias{compute_se_lpearson}
+\alias{compute_se_lpoly}
 \alias{compute_se_lpoly_one_step}
 \alias{compute_se_lpoly_two_step}
 \alias{compute_se_lyule}

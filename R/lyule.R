@@ -52,6 +52,11 @@ lyule <- function(data,
                   control = NULL,
                   ...) {
 
+  #### Store original call ####
+
+  mc <- match.call(expand.dots = TRUE)
+  args <- .matched_arguments(match.call(expand.dots = FALSE), environment())
+
   #### Check input arguments ####
 
   if(!is.data.frame(data) && !is.matrix(data)) {
@@ -91,11 +96,6 @@ lyule <- function(data,
   if(is.null(control)) {
     control <- list()
   }
-
-  #### Store original call ####
-
-  mc <- match.call(expand.dots = TRUE)
-  args <- lapply(as.list(mc)[-1L], eval, envir = parent.frame())
 
   #### Check control parameters ####
 

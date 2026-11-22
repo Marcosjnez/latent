@@ -46,21 +46,20 @@ void armijo(arguments_optim& x,
     // Accept the step if the Armijo condition is satisfied:
     if(x.parameters.is_finite() && std::isfinite(x.f) &&
        x.df <= x.c1*x.ss*x.inprod) {
-      break;
+      return;
     }
 
     x.ss *= x.c2;
 
   } while(x.step_iteration < x.step_maxit);
 
-  // Do not return a nonfinite final trial:
-  if(!x.parameters.is_finite() || !std::isfinite(x.f)) {
-    x.parameters = parameters;
-    final_manifold.param(x, xmanifolds);
-    final_transform.transform(x, xtransforms);
-    final_estimator.param(x, xestimators);
-    final_estimator.F(x, xestimators);
-    x.df = 0.0;
-  }
+  // No acceptable trial: restore both the parameters and their model caches.
+  x.parameters = parameters;
+  final_manifold.param(x, xmanifolds);
+  final_transform.transform(x, xtransforms);
+  final_estimator.param(x, xestimators);
+  final_estimator.F(x, xestimators);
+  x.df = 0.0;
+  x.ss = 0.0;
 
 }

@@ -270,66 +270,44 @@ Rcpp::List upsilon_full_H_rcpp(const arma::mat& H_in,
 }
 
 // -----------------------------
-// Overload: compute from two integer-coded vectors (R factors -> as.integer)
-// xi, yi are IntegerVector (R-side) - may contain arbitrary integer codes
-// -----------------------------
-Rcpp::List upsilon_full_xy_rcpp(const IntegerVector& x_in,
-    const IntegerVector& y_in,
-    int ipfp_maxit = 2000,
-    double ipfp_tol = 1e-12,
-    double pinv_tol = 1e-12) {
-    // convert to integer vectors
-    int N = x_in.size();
-    if ((int)y_in.size() != N) Rcpp::stop("x and y must have same length.");
-
-    // Map unique sorted categories to 0..R-1 and 0..S-1
-    IntegerVector ux = sort_unique(x_in);
-    IntegerVector uy = sort_unique(y_in);
-    int R = ux.size();
-    int S = uy.size();
-
-    std::unordered_map<int, int> mapx;
-    for (int i = 0; i < R; ++i) mapx[ux[i]] = i;
-    std::unordered_map<int, int> mapy;
-    for (int j = 0; j < S; ++j) mapy[uy[j]] = j;
-
-    arma::mat H = arma::zeros<arma::mat>((unsigned int)R, (unsigned int)S);
-    for (int k = 0; k < N; ++k) {
-        int xi = x_in[k];
-        int yi = y_in[k];
-        int i = mapx[xi];
-        int j = mapy[yi];
-        H(i, j) += 1.0;
-    }
-
-    return upsilon_full_H_rcpp(H, ipfp_maxit, ipfp_tol, pinv_tol);
-}
-
-// -----------------------------
-// Pairwise matrix: accepts R data.frame (handles factor columns)
-// Returns list(cor=matrix, se=matrix) similar to R version
+// Pairwise Yule correlations and standard errors.
 // -----------------------------
 Rcpp::List yule_cor_full_rcpp(const Rcpp::DataFrame& X_df,
     int ipfp_maxit,
     double ipfp_tol,
     double pinv_tol) {
     int P = X_df.size();
-
     arma::mat cor_mat = arma::eye<arma::mat>(P, P);
-    arma::mat se_mat = arma::eye<arma::mat>(P, P);
+    arma::mat se_mat(P, P, arma::fill::zeros);
 
-    // Pre-convert each column to integer codes (as in R: as.integer(factor))
-    std::vector< IntegerVector > cols(P);
-    for (int a = 0; a < P; ++a) {
-        SEXP col = X_df[a];
-        // If factor or integer, as<IntegerVector> will work
-        // If numeric, we convert to integer via as<IntegerVector> (may truncate)
-        cols[a] = as<IntegerVector>(col);
+    // Rank the observed categories once per variable, preserving factor order.
+    std::vector<arma::ivec> codes(P);
+    std::vector<arma::uword> nlevels(P);
+    for (int j = 0; j < P; ++j) {
+        arma::vec x = as<arma::vec>(X_df[j]);
+        if (x.has_inf()) Rcpp::stop("Yule scores must be finite or missing.");
+        arma::uvec observed = arma::find_finite(x);
+        arma::vec levels = arma::unique(x.elem(observed));
+        nlevels[j] = levels.n_elem;
+        codes[j].set_size(x.n_elem);
+        codes[j].fill(-1);
+        for (arma::uword i : observed) {
+            codes[j][i] = std::lower_bound(levels.begin(), levels.end(), x[i]) - levels.begin();
+        }
     }
 
     for (int a = 0; a < P; ++a) {
         for (int b = a + 1; b < P; ++b) {
-            Rcpp::List out = upsilon_full_xy_rcpp(cols[a], cols[b], ipfp_maxit, ipfp_tol, pinv_tol);
+            arma::mat H(nlevels[a], nlevels[b], arma::fill::zeros);
+            for (arma::uword i = 0; i < codes[a].n_elem; ++i) {
+                if (codes[a][i] >= 0 && codes[b][i] >= 0) ++H(codes[a][i], codes[b][i]);
+            }
+            arma::uvec rows = arma::find(arma::sum(H, 1) > 0);
+            arma::uvec cols = arma::find(arma::sum(H, 0) > 0);
+            if (rows.n_elem < 2 || cols.n_elem < 2) {
+                Rcpp::stop("Each Yule pair needs two jointly observed categories per variable.");
+            }
+            Rcpp::List out = upsilon_full_H_rcpp(H.submat(rows, cols), ipfp_maxit, ipfp_tol, pinv_tol);
             double u = as<double>(out["upsilon"]);
             double se = as<double>(out["se"]);
             cor_mat(a, b) = u;

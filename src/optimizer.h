@@ -30,7 +30,18 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   x.nestimators = control_estimator.size();
 
   // Check parameters for the optimizer:
-  optim* algorithm = choose_optim(x, control_optimizer);
+  if(rstarts < 1 || cores < 1 || parameters.size() != static_cast<size_t>(rstarts) ||
+     transparameters.size() != parameters.size()) {
+    Rcpp::stop("Supply one parameter and transformed-parameter vector per start, and positive cores.");
+  }
+  std::unique_ptr<optim> algorithm(choose_optim(x, control_optimizer, parameters[0], transparameters[0]));
+  if(x.pick < 0 || x.pick > rstarts) Rcpp::stop("pick must be between zero and rstarts.");
+  for(int j=1; j < rstarts; ++j) {
+    if(parameters[j].n_elem != parameters[0].n_elem ||
+       transparameters[j].n_elem != transparameters[0].n_elem) {
+      Rcpp::stop("All starting vectors must have the same model dimensions.");
+    }
+  }
 
   // Initialize as many model structures as random starts:
   std::vector<std::vector<manifolds*>> xmanifolds(rstarts,
@@ -39,6 +50,10 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
                                                          std::vector<transformations*>(x.ntransforms));
   std::vector<std::vector<estimators*>> xestimators(rstarts,
                                                     std::vector<estimators*>(x.nestimators));
+
+  nested_pointer_vector_guard<manifolds> manifold_guard(xmanifolds);
+  nested_pointer_vector_guard<transformations> transform_guard(xtransforms);
+  nested_pointer_vector_guard<estimators> estimator_guard(xestimators);
 
   // Check and setup each model structure:
   for(int j=0; j < rstarts; ++j) {
@@ -65,7 +80,8 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   // Perform the optimization from multiple random starting values:
 
   // Vector containing the loss function of each random start:
-  arma::vec xf(rstarts);
+  arma::vec xf(rstarts, arma::fill::value(arma::datum::inf));
+  std::vector<std::exception_ptr> errors(rstarts);
   // We will select the optimization procedure with minimum loss value
   std::vector<optim_result> x2(rstarts);
   std::vector<arguments_optim> args(rstarts);
@@ -75,19 +91,20 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
 
   // Set up the parallelization:
   #ifdef _OPENMP
-    omp_set_num_threads(cores);
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(std::min(cores, rstarts)) if(rstarts > 1)
   #endif
   for(int i=0; i < rstarts; ++i) {
 
-    args[i] = x;
-
-    args[i].parameters = parameters[i];
-    args[i].transparameters = transparameters[i];
-
-    x2[i] = algorithm->optimize(args[i], xtransforms[i], xmanifolds[i], xestimators[i]);
-    xf[i] = std::get<2>(x2[i]);
-
+    try {
+      args[i] = x;
+      args[i].parameters = parameters[i];
+      args[i].transparameters_init = transparameters[i];
+      x2[i] = algorithm->optimize(args[i], xtransforms[i], xmanifolds[i], xestimators[i]);
+      xf[i] = std::get<2>(x2[i]);
+    } catch(...) {
+      // Exceptions from workers must be handled on the calling R thread.
+      errors[i] = std::current_exception();
+    }
   }
 
   // Stop the clock:
@@ -95,11 +112,22 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   std::chrono::nanoseconds elapsed_ns = end - start;
   double elapsed_sec = elapsed_ns.count() / 1e9;  // Convert to seconds
 
+  arma::uvec finite_starts = arma::find_finite(xf);
+  if(finite_starts.is_empty()) {
+    for(const auto& error : errors) {
+      if(error) std::rethrow_exception(error);
+    }
+    Rcpp::stop("No starting value produced a finite objective.");
+  }
+
   // Return the best x.pick rstarts:
   if (x.pick > 0L) {
 
     Rcpp::List result(x.pick);
-    arma::uvec indices = arma::sort_index(xf);
+    if(static_cast<arma::uword>(x.pick) > finite_starts.n_elem) {
+      Rcpp::stop("Fewer starts produced a finite objective than requested by pick.");
+    }
+    arma::uvec indices = finite_starts(arma::stable_sort_index(xf(finite_starts)));
 
     for (int i = 0; i < x.pick; ++i) {
 
@@ -123,18 +151,18 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   }
 
   // Choose the optimization procedure with the smallest objective value:
-  arma::uword index_minimum = index_min(xf);
-  optim_result x1 = x2[index_minimum];
+  arma::uword index_minimum = finite_starts(xf(finite_starts).index_min());
+  const optim_result& x1 = x2[index_minimum];
 
   // Compute some outcomes:
-  product_manifold* final_manifold;
-  product_transform* final_transform;
-  product_estimator* final_estimator;
+  product_manifold final_manifold;
+  product_transform final_transform;
+  product_estimator final_estimator;
 
   // Store the outputs generated from each function type and class:
-  final_manifold->outcomes(args[index_minimum], xmanifolds[index_minimum]);
-  final_transform->outcomes(args[index_minimum], xtransforms[index_minimum]);
-  final_estimator->outcomes(args[index_minimum], xestimators[index_minimum]);
+  final_manifold.outcomes(args[index_minimum], xmanifolds[index_minimum]);
+  final_transform.outcomes(args[index_minimum], xtransforms[index_minimum]);
+  final_estimator.outcomes(args[index_minimum], xestimators[index_minimum]);
 
   // Extract the information from the fitted object:
   arma::vec opt_param = std::get<0>(x1); // Parameter estimates
@@ -156,6 +184,7 @@ Rcpp::List optimizer(Rcpp::List control_manifold,
   result["rg"] = rg;
   result["dir"] = dir;
   result["elapsed"] = elapsed_sec;
+  result["start"] = static_cast<int>(index_minimum) + 1;
 
   // Store all the outputs of each manifold class:
   Rcpp::List outputsMani;

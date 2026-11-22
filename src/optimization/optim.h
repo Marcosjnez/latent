@@ -4,6 +4,7 @@
  * Modification date: 11/09/2026
  */
 
+#include <exception>
 #include <memory>
 #include "../component_cleanup.h"
 
@@ -22,7 +23,7 @@ public:
 
   virtual ~optim() = default;
 
-  virtual optim_result optimize(arguments_optim x,
+  virtual optim_result optimize(arguments_optim& x,
                                 std::vector<transformations*>& xtransforms,
                                 std::vector<manifolds*>& xmanifolds,
                                 std::vector<estimators*>& xestimators) = 0;
@@ -38,7 +39,7 @@ class RGD:public optim {
 
 public:
 
-  optim_result optimize(arguments_optim x,
+  optim_result optimize(arguments_optim& x,
                         std::vector<transformations*>& xtransforms,
                         std::vector<manifolds*>& xmanifolds,
                         std::vector<estimators*>& xestimators) {
@@ -55,7 +56,7 @@ class LBFGS:public optim {
 
 public:
 
-  optim_result optimize(arguments_optim x,
+  optim_result optimize(arguments_optim& x,
                         std::vector<transformations*>& xtransforms,
                         std::vector<manifolds*>& xmanifolds,
                         std::vector<estimators*>& xestimators) {
@@ -72,7 +73,7 @@ class RNEWTON:public optim {
 
 public:
 
-  optim_result optimize(arguments_optim x,
+  optim_result optimize(arguments_optim& x,
                         std::vector<transformations*>& xtransforms,
                         std::vector<manifolds*>& xmanifolds,
                         std::vector<estimators*>& xestimators) {
@@ -89,7 +90,7 @@ class EM: public optim {
 
 public:
 
-  optim_result optimize(arguments_optim x,
+  optim_result optimize(arguments_optim& x,
                         std::vector<transformations*>& xtransforms,
                         std::vector<manifolds*>& xmanifolds,
                         std::vector<estimators*>& xestimators) {
@@ -121,7 +122,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
   if(x.transparam2param.n_elem != parameters.n_elem ||
      (x.transparam2param.n_elem > 0L &&
       x.transparam2param.max() >= transparameters.n_elem)) {
-    Rf_error("The parameter vectors do not match transparam2param.");
+    Rcpp::stop("The parameter vectors do not match transparam2param.");
   }
 
   x.transparameters(x.transparam2param) = x.parameters;
@@ -137,7 +138,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
     x.dparameters.zeros(x.nparam);
   }
   if(x.dparameters.n_elem != parameters.n_elem) {
-    Rf_error("dparameters must have one element per free parameter.");
+    Rcpp::stop("dparameters must have one element per free parameter.");
   }
 
   x.dtransparameters.set_size(x.ntransparam);
@@ -225,6 +226,9 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
     // Compute the jacobians and update the vcov of the parameters that are in
     // the control_transform structures indexed by idx_transforms:
     arma::uvec idx_transforms = control_optimizer["idx_transforms"];
+    if(!idx_transforms.is_empty() && idx_transforms.max() >= static_cast<arma::uword>(x.ntransforms)) {
+      Rcpp::stop("A requested transformation index is outside the transformation list.");
+    }
     x.idx_transforms = idx_transforms;
   }
   if(control_optimizer.containsElementNamed("mstep_maxit")) {
@@ -238,6 +242,13 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
   if(control_optimizer.containsElementNamed("mopt")) {
     std::string mopt = control_optimizer["mopt"];
     x.mopt = mopt;
+  }
+
+  if(x.maxit < 1 || x.step_maxit < 1 || x.mstep_maxit < 1 || x.M < 0) {
+    Rcpp::stop("Iteration limits must be positive and L-BFGS memory must be non-negative.");
+  }
+  if(x.optimizer == "em" && x.mopt != "grad" && x.mopt != "lbfgs" && x.mopt != "newton") {
+    Rcpp::stop("Available optimization routines for the M step: grad, lbfgs, newton.");
   }
 
   // Select the step-size method. EM uses the method of its M-step optimizer.
@@ -255,7 +266,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
 
       if(TYPEOF(step) != STRSXP || Rf_xlength(step) != 1L ||
          STRING_ELT(step, 0L) == NA_STRING) {
-        Rf_error("control$step must be one of 'armijo', 'wolfe', or 'trust'.");
+        Rcpp::stop("control$step must be one of 'armijo', 'wolfe', or 'trust'.");
       }
 
       x.step = CHAR(STRING_ELT(step, 0L));
@@ -302,7 +313,7 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
 
   } else {
 
-    Rf_error("Available optimization routines: \n grad, lbfgs, newton, em");
+    Rcpp::stop("Available optimization routines: \n grad, lbfgs, newton, em");
 
   }
 
@@ -310,15 +321,6 @@ optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer,
 
 }
 
-// Starting values for model fitting:
-optim* choose_optim(arguments_optim& x, Rcpp::List control_optimizer) {
-
-  std::vector<arma::vec> parameters = control_optimizer["parameters"];
-  std::vector<arma::vec> transparameters = control_optimizer["transparameters"];
-
-  return choose_optim(x, control_optimizer, parameters[0], transparameters[0]);
-
-}
 
 // Fitted values for post-estimation computations:
 optim* choose_optim(arguments_optim& x, Rcpp::S4 fit,
@@ -332,10 +334,12 @@ optim* choose_optim(arguments_optim& x, Rcpp::S4 fit,
   arma::vec parameters = Optim["parameters"];
   arma::vec transparameters = Optim["transparameters"];
   Rcpp::List initial = control_optimizer["transparameters"];
-  arma::vec transparameters_init = initial[0];
+  int start = Optim.containsElementNamed("start") ? Rcpp::as<int>(Optim["start"]) : 1;
+  if(start < 1 || start > initial.size()) Rcpp::stop("Invalid fitted starting-value index.");
+  arma::vec transparameters_init = initial[start - 1];
 
   if(transparameters.n_elem != transparameters_init.n_elem) {
-    Rf_error("Optim$transparameters does not match the model coordinates.");
+    Rcpp::stop("Optim$transparameters does not match the model coordinates.");
   }
 
   // Recompute outputs from their original seeds, not their fitted values.

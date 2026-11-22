@@ -4,147 +4,108 @@
  * Modification date: 06/09/2026
  */
 
-typedef std::tuple<arma::mat,
-                   std::vector<std::vector<double>>,
-                   std::vector<std::vector<double>>,
-                   std::vector<std::vector<std::vector<int>>>,
-                   arma::mat,
-                   arma::vec,
-                   arma::vec,
-                   std::vector<double>,
-                   std::vector<int>> polyfast_object;
+Rcpp::List polyfast(arma::mat X, std::string missing, const std::string smooth,
+                    double min_eigval, const int nboot, const bool fit, const int cores) {
 
-std::vector<double> cumsum(const std::vector<int> input) {
-  std::vector<double> output(input.size());
-  std::partial_sum(input.begin(), input.end(), output.begin());
-  return output;
-}
-
-polyfast_object poly(const arma::mat& X, const std::string smooth, double min_eigval,
-                     const bool fit, const int cores) {
-
-  /*
-   * Function to estimate the full polychoric correlation matrix
-   *                      (Multiple cores)
-   */
-
-  const int n = X.n_rows;
+  Rcpp::Timer timer;
   const int q = X.n_cols;
-
-  arma::mat cor;
-  if(X.has_nan()) {
-    cor = pairwise_cor(X);
-  } else {
-    cor = arma::cor(X);
+  if(q < 1 || X.n_rows < 2 || cores < 1) {
+    Rcpp::stop("polyfast requires at least two rows, one column and one thread.");
   }
-
-  std::vector<std::vector<int>> cols(q);
-  std::vector<int> maxs(q);
-  std::vector<int> mins(q);
+  if(X.has_inf()) Rcpp::stop("Ordinal values must be finite or missing.");
+  if(missing == "complete.obs" || missing == "complete.cases" || missing == "listwise") {
+    const arma::uvec rows = arma::find(arma::sum(X != X, 1) == 0);
+    X = X.rows(rows);
+  } else if(missing == "all.obs") {
+    if(X.has_nan()) Rcpp::stop("Missing ordinal values with missing = 'all.obs'.");
+  } else if(missing != "pairwise.complete.cases" && missing != "pairwise.complete.obs") {
+    Rcpp::stop("Use pairwise or complete observations for polyfast.");
+  }
+  const int n = X.n_rows;
+  std::vector<std::vector<double>> levels(q), taus(q), cumulative(q);
+  std::vector<std::vector<int>> codes(q, std::vector<int>(n, -1));
+  std::vector<int> category_count(q);
   std::vector<double> category_min(q);
-  std::vector<std::vector<double>> taus(q);
-  std::vector<size_t> s(q);
-  std::vector<std::vector<double>> pnorm_tau(q);
-  arma::mat X2 = X;
 
-  for(int i = 0; i < q; ++i) {
+  for(int j = 0; j < q; ++j) {
+    // Ordinal scores need not be consecutive integers.
+    const arma::vec values = X.col(j);
+    const arma::uvec observed = arma::find_finite(values);
+    const arma::vec categories = arma::unique(values.elem(observed));
+    const int K = categories.n_elem;
+    if(K < 2) Rcpp::stop("Every variable needs at least two observed categories.");
+    levels[j] = arma::conv_to<std::vector<double>>::from(categories);
+    category_min[j] = categories[0];
+    category_count[j] = K;
 
-    category_min[i] = X2.col(i).min();
-    mins[i] = category_min[i];
-    X2.col(i) -= mins[i];
-    cols[i] = arma::conv_to<std::vector<int>>::from(X2.col(i));
-    maxs[i] = *max_element(cols[i].begin(), cols[i].end());
-
-    std::vector<int> frequencies = count(cols[i], n, maxs[i]);
-    pnorm_tau[i] = cumsum(frequencies); // Cumulative frequencies
-    taus[i] = pnorm_tau[i];
-
-    for (int j = 0; j < maxs[i]; ++j) {
-      pnorm_tau[i][j] /= n;
-      taus[i][j] = Qnorm(pnorm_tau[i][j]);
+    std::vector<int> frequencies(K, 0);
+    for(arma::uword row : observed) {
+      int k = std::lower_bound(levels[j].begin(), levels[j].end(), values[row]) - levels[j].begin();
+      codes[j][row] = k;
+      ++frequencies[k];
     }
-    pnorm_tau[i].push_back(1.0);
-    pnorm_tau[i].insert(pnorm_tau[i].begin(), 0.0);
-    taus[i].push_back(pos_inf);
-    taus[i].insert(taus[i].begin(), neg_inf);
-    s[i] = taus[i].size() - 1L;
+    taus[j].resize(K+1);
+    cumulative[j].resize(K+1);
+    taus[j].front() = neg_inf;
+    taus[j].back() = pos_inf;
+    cumulative[j].front() = 0.0;
+    cumulative[j].back() = 1.0;
+    int total = 0;
+    for(int k = 1; k < K; ++k) {
+      total += frequencies[k-1];
+      cumulative[j][k] = static_cast<double>(total)/observed.n_elem;
+      taus[j][k] = R::qnorm(cumulative[j][k], 0.0, 1.0, true, false);
+    }
   }
 
-  arma::mat polys(q, q, arma::fill::eye);
-  arma::mat iters(q, q, arma::fill::zeros);
-
-  int d = 0.5*q*(q-1);
-  arma::vec grad(d);
-  arma::vec hess(d);
-  std::vector<std::vector<std::vector<int>>> tabs(d);
-  arma::vec seq = arma::linspace(0, q-1, q);
-  arma::vec I = arma::cumsum(q - seq) - 2*q;
+  const int npairs = q*(q-1)/2;
+  arma::mat correlation(q, q, arma::fill::eye), iters(q, q, arma::fill::zeros);
+  arma::vec grad(npairs), hess(npairs);
+  std::vector<std::vector<std::vector<int>>> tables(npairs);
+  std::vector<int> pair_counts(npairs);
 
 #ifdef _OPENMP
-  omp_set_num_threads(cores);
-#pragma omp parallel for
+#pragma omp parallel for num_threads(cores)
 #endif
-  for(int i=0; i < (q-1L); ++i) {
-    for(int j=(i+1L); j < q; ++j) {
-      int k = I[i+1] + j;
-      tabs[k] = joint_frequency_table(cols[i], n, maxs[i], cols[j], maxs[j]);
-      std::vector<double> rho = optimize(taus[i], taus[j], tabs[k], s[i], s[j],
-                                         pnorm_tau[i], pnorm_tau[j], n, cor(i, j));
-      polys(i, j) = polys(j, i) = rho[0];
+  for(int i = 0; i < q-1; ++i) {
+    for(int j = i+1; j < q; ++j) {
+      const int k = i*(2*q-i-1)/2 + j-i-1;
+      auto& table = tables[k];
+      table.assign(category_count[i], std::vector<int>(category_count[j], 0));
+      int count = 0;
+      for(int row = 0; row < n; ++row) {
+        const int a = codes[i][row], b = codes[j][row];
+        if(a >= 0 && b >= 0) {
+          ++table[a][b];
+          ++count;
+        }
+      }
+      pair_counts[k] = count;
+      if(count < 2) continue;
+      std::vector<double> rho = optimize(taus[i], taus[j], table, category_count[i],
+                                         category_count[j], cumulative[i], cumulative[j],
+                                         count, 0.0);
+      correlation(i, j) = correlation(j, i) = rho[0];
       iters(i, j) = iters(j, i) = rho[1];
       grad(k) = rho[2];
       hess(k) = rho[3];
     }
   }
-
-  polyfast_object result = std::make_tuple(polys, taus, pnorm_tau, tabs, iters,
-                                           grad, hess, category_min, maxs);
-
-  return result;
-
-}
-
-Rcpp::List polyfast(arma::mat X, std::string missing, const std::string smooth,
-                    double min_eigval, const int nboot, const bool fit, const int cores) {
-
-  /*
-   * Function to estimate the full polychoric correlation matrix
-   */
-
-  Rcpp::Timer timer;
-
-  // polyfast_object x = poly(xcor.X, smooth, min_eigval, false, cores);
-  polyfast_object x = poly(X, smooth, min_eigval, false, cores);
-
-  timer.step("polychorics");
-
-  arma::mat polys = std::get<0>(x);
-  std::vector<std::vector<double>> taus = std::get<1>(x);
-  std::vector<std::vector<double>> pnorm_taus = std::get<2>(x);
-  std::vector<std::vector<std::vector<int>>> tabs = std::get<3>(x);
-  arma::mat iters = std::get<4>(x);
-  arma::vec grad = std::get<5>(x);
-  arma::vec hess = std::get<6>(x);
-  std::vector<double> category_min = std::get<7>(x);
-  std::vector<int> category_count = std::get<8>(x);
-
-  for(size_t i = 0L; i < category_count.size(); ++i) {
-    category_count[i] += 1L;
+  if(std::find_if(pair_counts.begin(), pair_counts.end(), [](int x) {return x < 2;}) != pair_counts.end()) {
+    Rcpp::stop("Each pair of ordinal variables needs at least two joint observations.");
   }
 
-  Rcpp::List result;
-  result["type"] = "polychorics";
-  result["correlation"] = polys;
-  result["thresholds"] = taus;
-  result["contingency_tables"] = tabs;
-  result["cumulative_freqs"] = pnorm_taus;
-  result["category_min"] = category_min;
-  result["category_count"] = category_count;
-  result["iters"] = iters;
-  result["grad"] = grad;
-  result["hess"] = hess;
-  result["elapsed"] = timer;
-
-  return result;
-
+  timer.step("polychorics");
+  return Rcpp::List::create(Rcpp::_["type"] = "polychorics",
+                            Rcpp::_["correlation"] = correlation,
+                            Rcpp::_["thresholds"] = taus,
+                            Rcpp::_["contingency_tables"] = tables,
+                            Rcpp::_["cumulative_freqs"] = cumulative,
+                            Rcpp::_["category_min"] = category_min,
+                            Rcpp::_["category_count"] = category_count,
+                            Rcpp::_["category_levels"] = levels,
+                            Rcpp::_["iters"] = iters,
+                            Rcpp::_["grad"] = grad,
+                            Rcpp::_["hess"] = hess,
+                            Rcpp::_["elapsed"] = timer);
 }
