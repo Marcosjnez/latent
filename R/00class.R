@@ -31,7 +31,7 @@
 #' \code{\link{constraints_derivs}}, \code{\link[stats]{vcov}}
 #'
 #' @name latent-class
-#' @aliases lcfa-class llca-class llhmm-class latscores-class multistep-class multistep_lcfa-class multistage-class multistage_lcfa-class multistage_llca-class
+#' @aliases lcfa-class llca-class latscores-class multistep-class multistep_lcfa-class multistage-class multistage_lcfa-class multistage_llca-class
 #' @rdname latent-class
 setClass("latent",
          slots = c(
@@ -48,9 +48,6 @@ setClass("latent",
 )
 
 setClass("llca",
-         contains = "latent")
-
-setClass("llhmm",
          contains = "latent")
 
 setClass("lcfa",

@@ -811,7 +811,7 @@ estimators_lmvnorm <- function(dataList, data_param, trans) {
       sample_means <- trans[[pattern_means_group[[i]][j]]]
 
       estimators[[k]] <- list(
-        estimator = "cfa_means_ml",
+        estimator = "cfa_ml",
         parameters = list(model_covariance,
                           sample_covariance,
                           model_means,

@@ -36,6 +36,9 @@
 #' If the model has no covariates, every subject receives the same vector of
 #' estimated class proportions.
 #'
+#' For hidden Markov models, each row contains the initial state probabilities
+#' for one trajectory, in order of first appearance in the input data.
+#'
 #' @return
 #' A numeric matrix with one row per retained subject and one column per latent
 #' class. Row names correspond to the retained observations and column names
@@ -61,6 +64,9 @@ fitted.llca <- function(object, ...) {
   }
 
   class_patterns <- object@transformed_pars$class
+  if(!is.null(object@dataList$lengths)) {
+    return(class_patterns)
+  }
   short2full <- object@dataList$short2full
 
   if(is.null(short2full)) {

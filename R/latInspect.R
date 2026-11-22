@@ -27,6 +27,15 @@
 #' @export
 latInspect <- function(x, ..., sort = TRUE) {
 
+  # Previously saved temporal fits have the same slots as an llca fit.
+  if(!missing(x) && inherits(x, "llhmm")) {
+    class(x) <- methods::getClass("llca")@className
+    return(latInspect.llca(x, ..., sort = sort))
+  }
+  if(!missing(x) && inherits(x, "llhmmlist")) {
+    class(x) <- "llcalist"
+    return(latInspect.llcalist(x, ..., sort = sort))
+  }
   UseMethod("latInspect")
 
 }

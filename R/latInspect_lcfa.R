@@ -5,8 +5,16 @@
 #' Inspect Fitted CFA and SEM Objects
 #'
 #' @param fit A fitted object inheriting from class \code{"lcfa"}.
-#' @param what Character string identifying the requested component.
-#' @param sort Logical. Sort/orient only the requested output; defaults to TRUE.
+#' @param what Character string identifying the requested component. Use
+#'   \code{"est"} or \code{"labels"} for the model parameters, or request a
+#'   block such as \code{"lambda"}, \code{"theta"}, \code{"psi"} or
+#'   \code{"intercepts"}. Use \code{"implied"}, \code{"implied.means"},
+#'   \code{"implied.thresholds"} or \code{"residuals"} for model moments.
+#'   \code{"loglik"} and \code{"loss"} return fit components by group and
+#'   overall. Log-likelihoods are available for likelihood estimators.
+#'   Use \code{"convergence"}, \code{"gradient"} or \code{"elapsed"} for
+#'   optimizer diagnostics. Elapsed time is in seconds.
+#' @param sort Logical. Sort and orient factor-specific outputs. Defaults to TRUE.
 #'
 #' @return A parameter list, residual list, fit matrix, or estimator-specific
 #'   control component, depending on \code{what}.
@@ -30,172 +38,60 @@ latInspect.lcfa <- function(x, what = "est", sort = TRUE, ..., fit = x) {
     stop("what must be a single character string.")
   }
 
+  if(!is.logical(sort) || length(sort) != 1L || is.na(sort)) {
+    stop("sort must be TRUE or FALSE.")
+  }
+
   what <- tolower(what)
+  if(!length(fit@Optim) && what %in% c("resid", "residuals", "gradient", "convergence")) {
+    stop("Fit the model to inspect ", what, ".")
+  }
   data_param <- fit@dataList$data_param
-  output <- latInspect.latent(fit, what = "structures", sort = sort)
-  transformed_pars <- output$transformed_pars
 
   #### Parameter blocks ####
 
-  block_names <- unique(c(
-    data_param$lambda_group,
-    data_param$theta_group,
-    data_param$psi_group,
-    data_param$alpha_group,
-    data_param$nu_group,
-    data_param$B_group,
-    data_param$A_group,
-    data_param$latent_cov_group,
-    data_param$latent_means_group,
-    data_param$kappa_group,
-    data_param$delta_group
-  ))
-  block_names <- intersect(block_names,
-                           names(transformed_pars))
+  groups <- switch(what,
+    labels =, est =, estimates =, parameters =, fixed =
+      c("lambda_group", "theta_group", "psi_group", "alpha_group", "nu_group",
+        "B_group", "A_group", "latent_cov_group", "latent_means_group",
+        "kappa_group", "delta_group"),
+    rhat =, model =, implied =, implied.cov =, implied_cov = "model_group",
+    lambda =, loadings = "lambda_group",
+    psi = "psi_group",
+    b =, beta =, structural.coefficients =, structural_coefficients = "B_group",
+    a =, structural.inverse =, structural_inverse = "A_group",
+    latent.cov =, latent_cov =, cov.lv =, cov_lv =
+      if(is.null(data_param$latent_cov_group)) "psi_group" else "latent_cov_group",
+    theta =, uniquenesses = "theta_group",
+    alpha = "alpha_group",
+    latent.means =, latent_means =, mean.lv =, mean_lv =
+      if(is.null(data_param$latent_means_group)) "alpha_group" else "latent_means_group",
+    nu =, intercepts = "nu_group",
+    means =, meanshat =, implied.means =, implied_means = "meanshat_group",
+    kappa =, kappas =, unstandardized.thresholds =, unstandardized_thresholds = "kappa_group",
+    tauhat =, implied.thresholds =, implied_thresholds = "tauhat_group"
+  )
 
-  if(what == "labels") {
+  if(!is.null(groups)) {
 
-    result <- output$trans[block_names]
-
-  } else if(what %in% c("est", "estimates", "parameters",
-                        "fixed")) {
-
-    result <- transformed_pars[block_names]
+    labels <- what == "labels"
+    structures <- if(sort) {
+      output <- sort_latent(fit)
+      if(labels) output$trans else output$transformed_pars
+    } else {
+      if(labels) fit@modelInfo$trans else fit@transformed_pars
+    }
+    block_names <- unlist(data_param[groups], use.names = FALSE)
+    result <- structures[intersect(block_names, names(structures))]
+    if(what == "uniquenesses") result <- lapply(result, diag)
 
   } else if(what == "items") {
 
     result <- fit@dataList$item_label
 
-  } else if(what %in% c("rhat", "model",
-                        "implied", "implied.cov",
-                        "implied_cov")) {
-
-    names_model <- intersect(
-      data_param$model_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_model]
-
   } else if(what %in% c("resid", "residuals")) {
 
     result <- lcfa_residuals(fit)
-
-  } else if(what %in% c("lambda", "loadings")) {
-
-    names_lambda <- intersect(
-      data_param$lambda_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_lambda]
-
-  } else if(what == "psi") {
-
-    names_psi <- intersect(
-      data_param$psi_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_psi]
-
-  } else if(what %in% c("b", "beta", "structural.coefficients",
-                        "structural_coefficients")) {
-
-    names_B <- intersect(
-      data_param$B_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_B]
-
-  } else if(what %in% c("a", "structural.inverse",
-                        "structural_inverse")) {
-
-    names_A <- intersect(
-      data_param$A_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_A]
-
-  } else if(what %in% c("latent.cov", "latent_cov", "cov.lv", "cov_lv")) {
-
-    latent_cov_group <- data_param$latent_cov_group
-    if(is.null(latent_cov_group)) latent_cov_group <- data_param$psi_group
-    names_latent_cov <- intersect(
-      latent_cov_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_latent_cov]
-
-  } else if(what == "theta") {
-
-    names_theta <- intersect(
-      data_param$theta_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_theta]
-
-  } else if(what == "alpha") {
-
-    names_alpha <- intersect(
-      data_param$alpha_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_alpha]
-
-  } else if(what %in% c("latent.means", "latent_means", "mean.lv", "mean_lv")) {
-
-    latent_means_group <- data_param$latent_means_group
-    if(is.null(latent_means_group)) latent_means_group <- data_param$alpha_group
-    names_latent_means <- intersect(
-      latent_means_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_latent_means]
-
-  } else if(what %in% c("nu", "intercepts")) {
-
-    names_nu <- intersect(
-      data_param$nu_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_nu]
-
-  } else if(what %in% c("means", "meanshat",
-                        "implied.means", "implied_means")) {
-
-    names_meanshat <- intersect(
-      data_param$meanshat_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_meanshat]
-
-  } else if(what %in% c("kappa", "kappas",
-                        "unstandardized.thresholds",
-                        "unstandardized_thresholds")) {
-
-    names_kappa <- intersect(
-      data_param$kappa_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_kappa]
-
-  } else if(what %in% c("tauhat", "implied.thresholds",
-                        "implied_thresholds")) {
-
-    names_tauhat <- intersect(
-      data_param$tauhat_group,
-      names(transformed_pars)
-    )
-    result <- transformed_pars[names_tauhat]
-
-  } else if(what == "uniquenesses") {
-
-    names_theta <- intersect(
-      data_param$theta_group,
-      names(transformed_pars)
-    )
-    result <- lapply(
-      transformed_pars[names_theta],
-      FUN = diag
-    )
 
   } else if(what == "w") {
 
@@ -252,6 +148,10 @@ latInspect.lcfa <- function(x, what = "est", sort = TRUE, ..., fit = x) {
     result <- data.frame(Iterations = fit@Optim$iterations,
                          convergence = fit@Optim$convergence,
                          grad.norm = fit@Optim$ng)
+
+  } else if(what %in% c("elapsed", "timing")) {
+
+    result <- fit@timing
 
   } else if(what == "gradient") {
 

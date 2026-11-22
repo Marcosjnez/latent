@@ -194,8 +194,8 @@
 #'
 #' @return
 #' If \code{length(nclasses) == 1} and \code{adjustment = "none"}, an S4 object
-#' of class \code{"llca"} (ordinary latent class models) or \code{"llhmm"}
-#' (hidden Markov models) with the following slots:
+#' of class \code{"llca"} with the following slots for both latent class and
+#' hidden Markov models:
 #' \describe{
 #'   \item{\code{version}}{Version of the \pkg{latent} package used to fit the model.}
 #'   \item{\code{call}}{The matched function call.}
@@ -225,8 +225,7 @@
 #' be propagated recursively by the multistage covariance methods.
 #'
 #' If \code{nclasses} contains several values, a list of fitted objects is
-#' returned with class \code{"llcalist"} or, for temporal models,
-#' \code{"llhmmlist"}.
+#' returned with class \code{"llcalist"}.
 #'
 #' @examples
 #' \dontrun{
@@ -441,7 +440,7 @@ lca <- function(data,
 
     }
 
-    class(result) <- if(temporal) "llhmmlist" else "llcalist"
+    class(result) <- "llcalist"
 
     return(result)
 
@@ -591,9 +590,7 @@ lca <- function(data,
 
   #### Object class ####
 
-  object_class <- if(temporal) {
-    "llhmm"
-  } else if(length(previous_models) > 0L) {
+  object_class <- if(length(previous_models) > 0L) {
     "multistage_llca"
   } else {
     "llca"
@@ -2113,7 +2110,6 @@ as_multistage_llca <- function(fit, previous_models = list()) {
   if(!inherits(fit, "llca")) {
     stop("fit must inherit from class 'llca'.")
   }
-
   if(!is.list(previous_models)) {
     previous_models <- list(previous_models)
   }
@@ -2124,6 +2120,10 @@ as_multistage_llca <- function(fit, previous_models = list()) {
            FUN = \(x) inherits(x, "latent"),
            FUN.VALUE = logical(1L))
   ]
+  if(!is.null(fit@dataList$lengths) ||
+     any(vapply(previous_models, \(x) !is.null(x@dataList$lengths), logical(1L)))) {
+    stop("Multistage fitting is not yet implemented for temporal models.")
+  }
 
   result <- new("multistage_llca",
                 version            = fit@version,
@@ -2712,6 +2712,10 @@ expand_llca_models <- function(models) {
 
       return(invisible(NULL))
 
+    }
+
+    if(!is.null(model@dataList$lengths)) {
+      stop("Multistage fitting is not yet implemented for temporal models.")
     }
 
     previous <- model@extra

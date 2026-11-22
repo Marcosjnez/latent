@@ -17,6 +17,10 @@
 #' @export
 robust.llca <- function(x, ..., fit = x) {
 
+  if(!is.null(fit@dataList$lengths)) {
+    stop("Robust standard errors based on trajectory scores are not implemented.")
+  }
+
   if(fit@dataList$nobs <= 1L) {
     stop("Robust standard errors require more than one observation.")
   }

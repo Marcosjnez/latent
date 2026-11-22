@@ -42,6 +42,9 @@ included.
 
 If the model has no covariates, every subject receives the same vector of
 estimated class proportions.
+
+For hidden Markov models, each row contains the initial state probabilities
+for one trajectory, in order of first appearance in the input data.
 }
 \references{
 None yet.

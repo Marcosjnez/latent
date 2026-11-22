@@ -74,10 +74,15 @@ summary.llca <- function(object, digits = 3L, ..., fit = object) {
               fit@modelInfo$nparam))
   cat(sprintf("  %-45s %d\n", "Number of observations",
               fit@dataList$nobs))
-  cat(sprintf("  %-45s %d\n", "Number of response patterns",
-              fit@dataList$npatterns))
-  cat(sprintf("  %-45s %d\n\n", "Number of possible patterns",
-              fit@dataList$npossible_patterns))
+  if(is.null(fit@dataList$lengths)) {
+    cat(sprintf("  %-45s %d\n", "Number of response patterns",
+                fit@dataList$npatterns))
+    cat(sprintf("  %-45s %d\n\n", "Number of possible patterns",
+                fit@dataList$npossible_patterns))
+  } else {
+    cat(sprintf("  %-45s %d\n\n", "Number of trajectories",
+                length(fit@dataList$lengths)))
+  }
 
   #### Fit indices ####
 

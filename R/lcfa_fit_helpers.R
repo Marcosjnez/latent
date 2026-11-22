@@ -121,6 +121,12 @@ lcfa_fit_components <- function(fit) {
           "penalty")
       )
 
+      if(control$estimator %in% c("cfa_dwls", "cfa_dwls_poly")) {
+        # The estimator returns the independence discrepancy before group weighting.
+        component$fit["loss_base"] <- control$w*component$fit["loss_base"]
+        component$fit[c("loglik", "loglik_base", "loglik_sat")] <- NA_real_
+      }
+
     } else {
 
       component$fit <- c(
@@ -234,10 +240,9 @@ lcfa_independence_loglik <- function(fit) {
 
   for(i in seq_len(ngroups)) {
 
-    X <- fit@dataList$data_per_group[[i]]
+    if(isTRUE(fit@dataList$direct_fiml)) {
 
-    if(!is.null(X) && nrow(X) > 0L) {
-
+      X <- fit@dataList$data_per_group[[i]]
       loglik <- 0
 
       for(j in seq_len(ncol(X))) {
@@ -341,18 +346,17 @@ lcfa_fit_matrix <- function(fit, compute_h1 = TRUE) {
   likelihood_model <- fit@dataList$estimator %in%
     c("ml", "fml")
 
-  normal_likelihood <- is.null(fit@dataList$likelihood) ||
-    identical(tolower(fit@dataList$likelihood), "normal")
-
-  if(likelihood_model && normal_likelihood) {
+  total_nobs <- sum(unlist(fit@dataList$nobs))
+  if(likelihood_model) {
 
     result["loglik_base", ] <-
       lcfa_independence_loglik(fit)
 
-    if(isTRUE(fit@dataList$direct_fiml) &&
-       compute_h1) {
+    if(isTRUE(fit@dataList$direct_fiml)) {
 
-      h1 <- tryCatch(
+      # The saturated model has one distribution per group across all patterns.
+      result["loglik_sat", ] <- NA_real_
+      h1 <- if(compute_h1) tryCatch(
         lcfa_direct_h1(fit),
         error = function(e) {
           warning("The saturated incomplete-data model could not be fitted: ",
@@ -368,6 +372,12 @@ lcfa_fit_matrix <- function(fit, compute_h1 = TRUE) {
 
     }
 
+    # Convert reference log-likelihoods to the optimizer's discrepancy scale.
+    result["loss_base", ] <- result["loss", ] +
+      2*(result["loglik", ]-result["loglik_base", ])/total_nobs
+    result["loss_sat", ] <- result["loss", ] +
+      2*(result["loglik", ]-result["loglik_sat", ])/total_nobs
+
   }
 
   result <- rbind(
@@ -375,7 +385,7 @@ lcfa_fit_matrix <- function(fit, compute_h1 = TRUE) {
     penalized_loss =
       result["loss", ]+result["penalty", ],
     penalized_loglik =
-      result["loglik", ]-result["penalty", ]
+      result["loglik", ]-total_nobs/2*result["penalty", ]
   )
 
   overall <- vapply(

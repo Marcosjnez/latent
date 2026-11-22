@@ -9,9 +9,17 @@
 \arguments{
 \item{x}{Fitted model or collection of fitted models passed to the method.}
 
-\item{what}{Character string identifying the requested component.}
+\item{what}{Character string identifying the requested component. Use
+\code{"est"} or \code{"labels"} for the model parameters, or request a
+block such as \code{"lambda"}, \code{"theta"}, \code{"psi"} or
+\code{"intercepts"}. Use \code{"implied"}, \code{"implied.means"},
+\code{"implied.thresholds"} or \code{"residuals"} for model moments.
+\code{"loglik"} and \code{"loss"} return fit components by group and
+overall. Log-likelihoods are available for likelihood estimators.
+Use \code{"convergence"}, \code{"gradient"} or \code{"elapsed"} for
+optimizer diagnostics. Elapsed time is in seconds.}
 
-\item{sort}{Logical. Sort/orient only the requested output; defaults to TRUE.}
+\item{sort}{Logical. Sort and orient factor-specific outputs. Defaults to TRUE.}
 
 \item{...}{Additional arguments to the generic.}
 

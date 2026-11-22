@@ -132,8 +132,8 @@ supplied and \code{id = NULL}, all observations form one trajectory.}
 }
 \value{
 If \code{length(nclasses) == 1} and \code{adjustment = "none"}, an S4 object
-of class \code{"llca"} (ordinary latent class models) or \code{"llhmm"}
-(hidden Markov models) with the following slots:
+of class \code{"llca"} with the following slots for both latent class and
+hidden Markov models:
 \describe{
   \item{\code{version}}{Version of the \pkg{latent} package used to fit the model.}
   \item{\code{call}}{The matched function call.}
@@ -163,8 +163,7 @@ ordinary slots and the fitted model from the preceding stage is stored in the
 be propagated recursively by the multistage covariance methods.
 
 If \code{nclasses} contains several values, a list of fitted objects is
-returned with class \code{"llcalist"} or, for temporal models,
-\code{"llhmmlist"}.
+returned with class \code{"llcalist"}.
 }
 \description{
 \code{lca()} estimates latent class models in which the measurement model may

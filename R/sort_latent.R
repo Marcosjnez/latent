@@ -41,42 +41,8 @@ sort_latent <- function(fit) {
 
   if(inherits(fit, "llca")) {
 
-    q <- ncol(fit@transformed_pars$class)
-    weights <- as.numeric(fit@dataList$pattern_weights)
-    posterior <- fit@Optim$outputs$estimators$matrices[[1L]][[1L]]
-    if(length(posterior) != length(weights)*q || any(!is.finite(weights)) ||
-       any(weights < 0) || sum(weights) <= 0) {
-      stop("Invalid posterior probabilities or pattern weights for sorting.")
-    }
-    posterior <- exp(matrix(posterior, nrow = length(weights), ncol = q))
-    if(any(!is.finite(posterior)) || any(abs(rowSums(posterior)-1) > 1e-06)) {
-      stop("Posterior probabilities must be finite and sum to one.")
-    }
-    index <- order(-colSums(posterior*weights), seq_len(q))
-    orderings <- index
-    blocks <- unique(c("beta", "theta", "class", "loglik",
-                       fit@dataList$gaussian$gaussian_names,
-                       fit@dataList$mvgaussian$mvgaussian_names,
-                       fit@dataList$multinomial$multinomial_names,
-                       names(fit@dataList$mvmultinomial$indep_pairs_list)))
-
-    for(part in names(result)) {
-      for(nm in intersect(blocks, names(result[[part]]))) {
-        x <- result[[part]][[nm]]
-        if(!is.matrix(x) || ncol(x) != q) {
-          stop("A class-specific parameter block has incompatible dimensions.")
-        }
-        result[[part]][[nm]] <- x[, index, drop = FALSE]
-      }
-      # Covariance blocks have a class-specific name, not a class axis.
-      sigma <- fit@dataList$mvgaussian$sigma_names
-      if(length(sigma) == q) {
-        block_names <- names(result[[part]])
-        present <- intersect(sigma, block_names)
-        block_names[match(present, block_names)] <- intersect(sigma[index], present)
-        result[[part]] <- result[[part]][block_names]
-      }
-    }
+    index <- .llca_order(.llca_posterior(fit), .llca_weights(fit))
+    return(.sort_llca_blocks(fit, result, index))
 
   } else {
 
@@ -208,4 +174,63 @@ sort_latent <- function(fit) {
 
   return(result)
 
+}
+
+# Weights and posteriors refer to patterns in LCA and to visits in an HMM.
+.llca_weights <- function(fit) {
+  data <- fit@dataList
+  if(is.null(data$lengths)) return(as.numeric(data$pattern_weights))
+  rep(data$trajectory_weights, data$lengths)
+}
+
+.llca_posterior <- function(fit) {
+  if(!is.null(fit@dataList$lengths)) return(.hmm_quantities(fit, "smoothed"))
+  logposterior <- fit@Optim$outputs$estimators$matrices[[1L]][[1L]]
+  exp(matrix(logposterior, nrow = fit@dataList$npatterns))
+}
+
+.llca_order <- function(posterior, weights) {
+  if(nrow(posterior) != length(weights) || any(!is.finite(weights)) ||
+     any(weights < 0) || sum(weights) <= 0) {
+    stop("Invalid posterior probabilities or pattern weights for sorting.")
+  }
+  if(any(!is.finite(posterior)) || any(abs(rowSums(posterior)-1) > 1e-06)) {
+    stop("Posterior probabilities must be finite and sum to one.")
+  }
+  order(-colSums(posterior*weights), seq_len(ncol(posterior)))
+}
+
+.sort_llca_blocks <- function(fit, result, index) {
+  q <- length(index)
+  blocks <- unique(c("beta", "theta", "class", "loglik",
+                     fit@dataList$gaussian$gaussian_names,
+                     fit@dataList$mvgaussian$mvgaussian_names,
+                     fit@dataList$multinomial$multinomial_names,
+                     names(fit@dataList$mvmultinomial$indep_pairs_list)))
+
+  for(part in names(result)) {
+    for(nm in intersect(blocks, names(result[[part]]))) {
+      x <- result[[part]][[nm]]
+      if(!is.matrix(x) || ncol(x) != q) {
+        stop("A class-specific parameter block has incompatible dimensions.")
+      }
+      result[[part]][[nm]] <- x[, index, drop = FALSE]
+    }
+    if(!is.null(fit@dataList$lengths)) {
+      for(nm in intersect(c("transition", "logtransition"), names(result[[part]]))) {
+        result[[part]][[nm]] <- result[[part]][[nm]][index, index, drop = FALSE]
+      }
+    }
+    # Covariance blocks have a class-specific name, not a class axis.
+    sigma <- fit@dataList$mvgaussian$sigma_names
+    if(length(sigma) == q) {
+      block_names <- names(result[[part]])
+      present <- intersect(sigma, block_names)
+      block_names[match(present, block_names)] <- intersect(sigma[index], present)
+      result[[part]] <- result[[part]][block_names]
+    }
+  }
+  attr(result, "order") <- index
+  attr(result, "signs") <- list()
+  result
 }

@@ -5,7 +5,6 @@
 \alias{latent-class}
 \alias{lcfa-class}
 \alias{llca-class}
-\alias{llhmm-class}
 \alias{latscores-class}
 \alias{multistep-class}
 \alias{multistep_lcfa-class}

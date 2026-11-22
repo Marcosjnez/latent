@@ -26,6 +26,12 @@
 #' likelihood. They are returned as \code{NA} for models containing Gaussian
 #' variables.
 #'
+#' For hidden Markov models, information criteria use the trajectory
+#' log-likelihoods and the total number of observations across trajectories.
+#' The response-pattern test, its degrees of freedom and p-value, the
+#' classification likelihood, and entropy-based pseudo-\eqn{R^2} are
+#' returned as \code{NA}.
+#'
 #' When penalization is active, the output also contains the penalized
 #' log-likelihood and the corresponding penalized information criteria. The
 #' attribute \code{"penalized"} indicates whether these additional indices are
@@ -164,11 +170,11 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
   #### Extract model information ####
 
   penalized <- model@modelInfo$control_optimizer$reg
-  posterior <- latInspect(model, what = "posterior", sort = FALSE)
-  summary_table <- latInspect(model, what = "summary", sort = FALSE)
+  temporal <- !is.null(model@dataList$lengths)
+  if(!temporal) posterior <- latInspect(model, what = "posterior", sort = FALSE)
   fit_loglik <- latInspect(model, what = "loglik", sort = FALSE)
 
-  nclasses <- ncol(posterior)
+  nclasses <- ncol(model@transformed_pars$class)
   k <- model@modelInfo$nparam
   nobs <- model@dataList$nobs
   loglik <- fit_loglik["loglik", "overall"]
@@ -176,8 +182,9 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
 
   #### Likelihood-ratio test ####
 
-  if(all(model@dataList$variable_type == "multinomial")) {
+  if(!temporal && all(model@dataList$variable_type == "multinomial")) {
 
+    summary_table <- latInspect(model, what = "summary", sort = FALSE)
     ni <- summary_table$Observed
     mi <- summary_table$Estimated
     dof <- model@modelInfo$dof
@@ -190,7 +197,7 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
 
     L2 <- NA_real_
     pv <- NA_real_
-    dof <- model@modelInfo$dof
+    dof <- if(temporal) NA_real_ else model@modelInfo$dof
 
   }
 
@@ -202,11 +209,13 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
   CAIC <- -2*loglik + (k*(log(nobs) + 1))
   KIC <- -2*loglik + (3*(k + 1))
   SABIC <- -2*loglik + (k*log((nobs + 2)/24))
-  ICL <- icl_default(posterior, BIC)
+  ICL <- if(temporal) NA_real_ else icl_default(posterior, BIC)
 
   #### Entropy ####
 
-  if(nclasses < 2L) {
+  if(temporal) {
+    entropyR2 <- NA_real_
+  } else if(nclasses < 2L) {
 
     entropyR2 <- 1.00
 
@@ -229,7 +238,7 @@ getfit.llca <- function(x, digits = 4L, ..., model = x) {
     CAICp <- -2*penalized_loglik + (k*(log(nobs) + 1))
     KICp <- -2*penalized_loglik + (3*(k + 1))
     SABICp <- -2*penalized_loglik + (k*log((nobs + 2)/24))
-    ICLp <- icl_default(posterior, BICp)
+    ICLp <- if(temporal) NA_real_ else icl_default(posterior, BICp)
 
     result <- c(nclasses = nclasses, npar = k, nobs = nobs,
                 loglik = loglik, penalized_loglik = penalized_loglik,

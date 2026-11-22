@@ -41,6 +41,9 @@
 #' probabilities, which also condition on the observed indicators and can be
 #' obtained with `latInspect(model, what = "posterior")`.
 #'
+#' For hidden Markov models, predictions are initial state probabilities.
+#' Each row of `new` supplies the covariates at the start of one trajectory.
+#'
 #' For an `"llcalist"` containing named measurement and structural fits, the
 #' measurement fit is skipped. For other collections containing both models with
 #' and without covariates, only models with covariates are retained. For
@@ -98,7 +101,12 @@ predict.llca <- function(object, new = NULL, ..., model = object) {
     stop("new must be NULL, a data.frame, or a matrix.")
   }
 
-  if(length(covariates_names) == 0L) {
+  temporal <- !is.null(model@dataList$lengths)
+  if(temporal && is.null(new)) {
+
+    covariates <- model@dataList$design
+
+  } else if(length(covariates_names) == 0L) {
 
     if(is.null(new)) {
       nnew <- nrow(model@dataList$data)
@@ -133,6 +141,7 @@ predict.llca <- function(object, new = NULL, ..., model = object) {
 
     X_df <- X_df[, covariates_names, drop = FALSE]
     fitted_data <- model@dataList$data[, covariates_names, drop = FALSE]
+    if(temporal) fitted_data <- fitted_data[model@dataList$initial_rows, , drop = FALSE]
 
     for(name in covariates_names) {
 

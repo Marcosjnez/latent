@@ -47,6 +47,10 @@ lclass_diag <- function(x, digits = 4,
                         type = c("Entropy", "AvePP", "Mostlikely.Class", "Sum.Mostlikely"),
                         ...) {
 
+  if(inherits(x, "llca") && !is.null(x@dataList$lengths)) {
+    stop("Use latInspect(x, what = 'classification') for hidden Markov models.")
+  }
+
   # ---- Argument validation ----
   valid_types <- c("Entropy", "AvePP", "OCC", "Overall.Misclassification",
                    "Misclassification.per.class", "Sum.Posterior",

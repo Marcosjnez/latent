@@ -64,6 +64,12 @@ p-value are returned only when all modeled variables use a multinomial
 likelihood. They are returned as \code{NA} for models containing Gaussian
 variables.
 
+For hidden Markov models, information criteria use the trajectory
+log-likelihoods and the total number of observations across trajectories.
+The response-pattern test, its degrees of freedom and p-value, the
+classification likelihood, and entropy-based pseudo-\eqn{R^2} are
+returned as \code{NA}.
+
 When penalization is active, the output also contains the penalized
 log-likelihood and the corresponding penalized information criteria. The
 attribute \code{"penalized"} indicates whether these additional indices are

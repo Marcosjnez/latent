@@ -62,6 +62,9 @@ on the class-membership model. They are different from posterior class
 probabilities, which also condition on the observed indicators and can be
 obtained with `latInspect(model, what = "posterior")`.
 
+For hidden Markov models, predictions are initial state probabilities.
+Each row of `new` supplies the covariates at the start of one trajectory.
+
 For an `"llcalist"` containing named measurement and structural fits, the
 measurement fit is skipped. For other collections containing both models with
 and without covariates, only models with covariates are retained. For

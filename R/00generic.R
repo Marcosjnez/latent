@@ -85,10 +85,14 @@ setMethod("show", "llca", function(object) {
                    object@modelInfo$nparam)
   .show_latent_row("Number of observations",
                    object@dataList$nobs)
-  .show_latent_row("Number of response patterns",
-                   object@dataList$npatterns)
-  .show_latent_row("Number of possible patterns",
-                   object@dataList$npossible_patterns)
+  if(is.null(object@dataList$lengths)) {
+    .show_latent_row("Number of response patterns",
+                     object@dataList$npatterns)
+    .show_latent_row("Number of possible patterns",
+                     object@dataList$npossible_patterns)
+  } else {
+    .show_latent_row("Number of trajectories", length(object@dataList$lengths))
+  }
 
   fit_indices <- tryCatch(
     getfit(object, digits = NULL),

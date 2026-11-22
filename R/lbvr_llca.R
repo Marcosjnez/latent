@@ -77,6 +77,9 @@ lbvr.llca <- function(x, digits = 4L, ...) {
   if(!inherits(model, "llca")) {
     stop("model must be a fitted object of class 'llca'")
   }
+  if(!is.null(model@dataList$lengths)) {
+    stop("Bivariate residuals for hidden Markov models are not implemented.")
+  }
   if(length(model@transformed_pars) == 0L) {
     stop("model must be fitted before computing bivariate residuals")
   }
