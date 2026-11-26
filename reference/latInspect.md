@@ -5,7 +5,7 @@ Inspect Latent Model Results
 ## Usage
 
 ``` r
-latInspect(x, ..., sort = TRUE)
+latInspect(x, ..., sort = TRUE, polish = FALSE)
 
 # S3 method for class 'latent'
 latInspect(x, what = "est", sort = TRUE, ..., fit = x)
@@ -25,6 +25,12 @@ latInspect(x, what = "est", sort = TRUE, ..., fit = x)
 
   Logical. Apply factor ordering/sign orientation or class ordering to
   the requested output. Defaults to TRUE. FALSE returns native outputs.
+
+- polish:
+
+  Logical. If TRUE, print HMM transition probabilities with descriptive
+  headings. For posterior transitions the headings identify the
+  trajectory and the two observation times. Defaults to FALSE.
 
 - what:
 

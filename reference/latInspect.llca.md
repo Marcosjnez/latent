@@ -9,10 +9,26 @@ from fitted `"llca"` objects.
 
 ``` r
 # S3 method for class 'llca'
-latInspect(x, what = "profile", digits = 4L, sort = TRUE, ..., fit = x)
+latInspect(
+  x,
+  what = "profile",
+  digits = 4L,
+  sort = TRUE,
+  ...,
+  fit = x,
+  polish = FALSE
+)
 
 # S3 method for class 'llcalist'
-latInspect(x, what = "profile", digits = 4L, sort = TRUE, ..., model = x)
+latInspect(
+  x,
+  what = "profile",
+  digits = 4L,
+  sort = TRUE,
+  ...,
+  model = x,
+  polish = FALSE
+)
 ```
 
 ## Arguments
@@ -143,9 +159,10 @@ latInspect(x, what = "profile", digits = 4L, sort = TRUE, ..., model = x)
 
   `"posterior_transition"`
 
-  :   Joint probabilities of adjacent states given the whole trajectory,
-      returned as an array indexed by next state, previous state, and
-      destination observation. Trajectory starts have `NA` slices.
+  :   Joint probabilities of adjacent states given the whole trajectory.
+      Each trajectory contains one matrix per move, named by its
+      destination time. Rows are next states and columns are previous
+      states. A trajectory with one observation has an empty list.
 
   `"viterbi"`
 
@@ -181,6 +198,13 @@ latInspect(x, what = "profile", digits = 4L, sort = TRUE, ..., model = x)
   An object of class `"llca"` returned by
   [`lca`](https://marcosjnez.github.io/latent/reference/lca.md).
 
+- polish:
+
+  Logical. If TRUE, print `"transition"` with a heading for the shared
+  matrix and `"posterior_transition"` with the ID and observation
+  interval for each move. ID and time indexing, state order and numeric
+  probabilities are preserved. Defaults to FALSE.
+
 - model:
 
   For the `"llcalist"` method, a collection containing `"llca"` and/or
@@ -201,16 +225,21 @@ Pattern weights are used when calculating average class probabilities,
 posterior class sizes, and classification-error matrices. Consequently,
 frequency-weighted models produce weighted inspection results.
 
-For hidden Markov models, observation-level results follow the original
-input row order. Trajectory-level results follow the order in which IDs
-first appeared. `"fullclasses"` gives the initial state probabilities,
-and `"classes"` averages them using trajectory weights. The class sizes
-in `"profile"` and the default state ordering use smoothed occupancy
-across all observations, with each trajectory weight applied to its
-observations. `"table"` returns the observations, marginal modal states,
-and smoothed probabilities. The modal state at each time can differ from
-the Viterbi path. Use `sort = FALSE` to keep the state order from
-estimation.
+For hidden Markov models, `"initial"` (also `"fullclasses"`),
+`"forward"`, `"backward"`, `"smoothed"`, `"state"`, `"viterbi"`,
+`"posterior_transition"` and their aliases return lists named by
+trajectory ID, in order of first appearance. Without an ID column, the
+single trajectory is named `"1"`. Each initial probability matrix has
+one row. Within each trajectory, state probabilities are matrices with
+times as row names, and state assignments are vectors named by time,
+both in chronological order. `"transition"` gives the matrix shared by
+all trajectories, and `"classes"` averages them using trajectory
+weights. The class sizes in `"profile"` and the default state ordering
+use smoothed occupancy across all observations, with each trajectory
+weight applied to its observations. `"table"` returns the observations,
+marginal modal states, and smoothed probabilities in original input row
+order. The modal state at each time can differ from the Viterbi path.
+Use `sort = FALSE` to keep the state order from estimation.
 
 Gaussian item matrices are read by row name, using `"mean"` and
 `"stdv"`. Multinomial item matrices are assumed to contain probabilities

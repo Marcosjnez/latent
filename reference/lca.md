@@ -356,5 +356,10 @@ fit_hmm <- lca(
   time = "time", id = "Subject",
   control = list(opt = "em")
 )
+smoothed <- latInspect(fit_hmm, "smoothed", sort = FALSE)
+smoothed[["1"]] # Subject 1, with one row per observation time
+moves <- latInspect(fit_hmm, "posterior_transition", sort = FALSE)
+moves[["1"]][["0.5"]] # Subject 1, from 0.25 to 0.5 hours
+latInspect(fit_hmm, "posterior_transition", polish = TRUE)
 } # }
 ```

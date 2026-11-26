@@ -75,7 +75,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">latInspect</span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">latInspect</span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, polish <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'latent'</span></span>
 <span><span class="fu">latInspect</span><span class="op">(</span><span class="va">x</span>, what <span class="op">=</span> <span class="st">"est"</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span>, fit <span class="op">=</span> <span class="va">x</span><span class="op">)</span></span></code></pre></div>
@@ -96,6 +96,12 @@
 <dt id="arg-sort">sort<a class="anchor" aria-label="anchor" href="#arg-sort"></a></dt>
 <dd><p>Logical. Apply factor ordering/sign orientation or class ordering
 to the requested output. Defaults to TRUE. FALSE returns native outputs.</p></dd>
+
+
+<dt id="arg-polish">polish<a class="anchor" aria-label="anchor" href="#arg-polish"></a></dt>
+<dd><p>Logical. If TRUE, print HMM transition probabilities with
+descriptive headings. For posterior transitions the headings identify the
+trajectory and the two observation times. Defaults to FALSE.</p></dd>
 
 
 <dt id="arg-what">what<a class="anchor" aria-label="anchor" href="#arg-what"></a></dt>
