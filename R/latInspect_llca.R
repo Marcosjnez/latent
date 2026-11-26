@@ -62,9 +62,9 @@
 #'     \item{\code{"smoothed"}, \code{"posterior"}}{For a hidden Markov model,
 #'       the state probabilities given all observations in the trajectory.}
 #'     \item{\code{"posterior_transition"}}{Joint probabilities of adjacent states
-#'       given the whole trajectory, returned as an array indexed by next state,
-#'       previous state, and destination observation. Trajectory starts have
-#'       \code{NA} slices.}
+#'       given the whole trajectory. Each trajectory contains one matrix per
+#'       move, named by its destination time. Rows are next states and columns
+#'       are previous states. A trajectory with one observation has an empty list.}
 #'     \item{\code{"viterbi"}}{Most probable joint state sequence for each
 #'       trajectory. Values are integer state identifiers in the fitted model.}
 #'     \item{\code{"loglik_trajectory"}}{Unweighted observed-data log-likelihood
@@ -78,6 +78,10 @@
 #' @param digits Non-negative integer retained for compatibility with other
 #'   inspection methods. Numeric results are returned without rounding so they
 #'   can safely be used in subsequent computations.
+#' @param polish Logical. If TRUE, print \code{"transition"} with a heading
+#'   for the shared matrix and \code{"posterior_transition"} with the ID and
+#'   observation interval for each move. ID and time indexing, state order
+#'   and numeric probabilities are preserved. Defaults to FALSE.
 #'
 #' @details
 #' Posterior probabilities and log-likelihood contributions are stored
@@ -88,14 +92,21 @@
 #' posterior class sizes, and classification-error matrices. Consequently,
 #' frequency-weighted models produce weighted inspection results.
 #'
-#' For hidden Markov models, observation-level results follow the original
-#' input row order. Trajectory-level results follow the order in which IDs first
-#' appeared. \code{"fullclasses"} gives the initial state probabilities, and
+#' For hidden Markov models, \code{"initial"} (also \code{"fullclasses"}),
+#' \code{"forward"}, \code{"backward"}, \code{"smoothed"}, \code{"state"},
+#' \code{"viterbi"}, \code{"posterior_transition"} and their aliases return
+#' lists named by trajectory ID, in order of first appearance. Without an ID
+#' column, the single trajectory is named \code{"1"}. Each initial probability
+#' matrix has one row. Within each trajectory, state probabilities are matrices
+#' with times as row names, and state assignments are vectors named by time,
+#' both in chronological order. \code{"transition"} gives the matrix shared
+#' by all trajectories, and
 #' \code{"classes"} averages them using trajectory weights. The class sizes in
 #' \code{"profile"} and the default state ordering use smoothed occupancy across
 #' all observations, with each trajectory weight applied to its observations.
 #' \code{"table"} returns the observations, marginal modal states, and smoothed
-#' probabilities. The modal state at each time can differ from the Viterbi path.
+#' probabilities in original input row order. The modal state at each time can
+#' differ from the Viterbi path.
 #' Use \code{sort = FALSE} to keep the state order from estimation.
 #'
 #' Gaussian item matrices are read by row name, using \code{"mean"} and
@@ -115,7 +126,7 @@
 #' @export
 latInspect.llca <- function(x,
                             what = "profile",
-                            digits = 4L, sort = TRUE, ..., fit = x) {
+                            digits = 4L, sort = TRUE, ..., fit = x, polish = FALSE) {
   if(!missing(fit) && !missing(x)) return(.match_legacy_model("fit"))
 
   #### Check inputs ####
@@ -218,7 +229,7 @@ latInspect.llca <- function(x,
     stop("This request requires a temporal model.")
   }
   if(what == "viterbi") {
-    return(setNames(.hmm_quantities(fit, "viterbi")[rows], row_names))
+    return(.hmm_by_id(.hmm_quantities(fit, "viterbi"), d))
   }
 
   nclasses <- ncol(fit@transformed_pars$class)
@@ -239,19 +250,27 @@ latInspect.llca <- function(x,
 
   if(what %in% c("forward", "backward")) {
     value <- if(sort && what == "backward") recursion$value else .hmm_quantities(fit, what)
-    result <- value[rows, class_ids, drop = FALSE]
-    dimnames(result) <- list(row_names, class_names)
-    return(result)
+    result <- value[, class_ids, drop = FALSE]
+    colnames(result) <- class_names
+    return(.hmm_by_id(result, d))
   }
   if(what == "posterior_transition") {
     value <- if(sort) recursion$value else .hmm_quantities(fit, what)
-    result <- value[class_ids, class_ids, rows, drop = FALSE]
-    dimnames(result) <- list(next_state = class_names, previous_state = class_names,
-                             observation = row_names)
+    result <- lapply(value, function(moves) lapply(moves, function(move) {
+      move <- move[class_ids, class_ids, drop = FALSE]
+      dimnames(move) <- list(next_state = class_names, previous_state = class_names)
+      move
+    }))
+    if(polish) {
+      attr(result, "first_time") <- as.character(d$data[[d$time]][d$initial_rows])
+      class(result) <- "latent_transitions"
+    }
     return(result)
   }
   if(what == "transition") {
-    return(fit@transformed_pars$transition[class_ids, class_ids, drop = FALSE])
+    result <- fit@transformed_pars$transition[class_ids, class_ids, drop = FALSE]
+    if(polish) class(result) <- c("latent_transitions", class(result))
+    return(result)
   }
   if(need_posterior) {
     expanded <- if(temporal) rows else d$short2full
@@ -260,8 +279,12 @@ latInspect.llca <- function(x,
     state_patterns <- match(reported_states, class_ids)
     posterior_patterns <- posterior[, class_ids, drop = FALSE]
     colnames(posterior_patterns) <- if(temporal) class_names else paste0("P(", class_names, "|data)")
-    if(what %in% c("state", "states")) return(setNames(reported_states[expanded], row_names))
+    if(what %in% c("state", "states")) {
+      if(temporal) return(.hmm_by_id(reported_states, d))
+      return(setNames(reported_states[expanded], row_names))
+    }
     if(what == "posterior") {
+      if(temporal) return(.hmm_by_id(posterior_patterns, d))
       result <- posterior_patterns[expanded, , drop = FALSE]
       rownames(result) <- row_names
       return(result)
@@ -288,7 +311,14 @@ latInspect.llca <- function(x,
 
   if(what %in% c("fullclasses", "initial", "class", "classes", "cluster", "clusters")) {
     priors <- fit@transformed_pars$class[, class_ids, drop = FALSE]
-    if(what %in% c("fullclasses", "initial")) return(priors)
+    if(what %in% c("fullclasses", "initial")) {
+      if(temporal) {
+        ids <- as.character(d$trajectory_ids)
+        dimnames(priors) <- list(ids, class_names)
+        return(setNames(lapply(seq_along(ids), function(q) priors[q, , drop = FALSE]), ids))
+      }
+      return(priors)
+    }
     prior_weights <- if(temporal) d$trajectory_weights else weights
     return(colSums(priors * prior_weights) / sum(prior_weights))
   }
@@ -542,7 +572,7 @@ latInspect.llca <- function(x,
 #' @export
 latInspect.llcalist <- function(x,
                                 what = "profile",
-                                digits = 4L, sort = TRUE, ..., model = x) {
+                                digits = 4L, sort = TRUE, ..., model = x, polish = FALSE) {
   if(!missing(model) && !missing(x)) return(.match_legacy_model("model"))
 
   if(!inherits(model, "llcalist")) {
@@ -553,7 +583,8 @@ latInspect.llcalist <- function(x,
     stop("sort must be TRUE or FALSE.")
   }
 
-  result <- lapply(model, FUN = latInspect, what = what, digits = digits, sort = sort)
+  result <- lapply(model, FUN = latInspect, what = what, digits = digits, sort = sort,
+                   polish = polish)
 
   class(result) <- "latInspect.llcalist"
 

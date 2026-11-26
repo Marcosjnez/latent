@@ -8,6 +8,9 @@
 #' @param ... Arguments passed to the inspection method, including \code{what}.
 #' @param sort Logical. Apply factor ordering/sign orientation or class ordering
 #'   to the requested output. Defaults to TRUE. FALSE returns native outputs.
+#' @param polish Logical. If TRUE, print HMM transition probabilities with
+#'   descriptive headings. For posterior transitions the headings identify the
+#'   trajectory and the two observation times. Defaults to FALSE.
 #'
 #' @details
 #' Sorting never modifies the supplied object, its optimizer coordinates, or
@@ -25,16 +28,20 @@
 #'
 #' @return The requested model component, without altering \code{x}.
 #' @export
-latInspect <- function(x, ..., sort = TRUE) {
+latInspect <- function(x, ..., sort = TRUE, polish = FALSE) {
+
+  if(!is.logical(polish) || length(polish) != 1L || is.na(polish)) {
+    stop("polish must be TRUE or FALSE.")
+  }
 
   # Previously saved temporal fits have the same slots as an llca fit.
   if(!missing(x) && inherits(x, "llhmm")) {
     class(x) <- methods::getClass("llca")@className
-    return(latInspect.llca(x, ..., sort = sort))
+    return(latInspect.llca(x, ..., sort = sort, polish = polish))
   }
   if(!missing(x) && inherits(x, "llhmmlist")) {
     class(x) <- "llcalist"
-    return(latInspect.llcalist(x, ..., sort = sort))
+    return(latInspect.llcalist(x, ..., sort = sort, polish = polish))
   }
   UseMethod("latInspect")
 

@@ -5,9 +5,25 @@
 \alias{latInspect.llcalist}
 \title{Inspect fitted latent class and hidden Markov models}
 \usage{
-\method{latInspect}{llca}(x, what = "profile", digits = 4L, sort = TRUE, ..., fit = x)
+\method{latInspect}{llca}(
+  x,
+  what = "profile",
+  digits = 4L,
+  sort = TRUE,
+  ...,
+  fit = x,
+  polish = FALSE
+)
 
-\method{latInspect}{llcalist}(x, what = "profile", digits = 4L, sort = TRUE, ..., model = x)
+\method{latInspect}{llcalist}(
+  x,
+  what = "profile",
+  digits = 4L,
+  sort = TRUE,
+  ...,
+  model = x,
+  polish = FALSE
+)
 }
 \arguments{
 \item{x}{Fitted model or collection of fitted models passed to the method.}
@@ -63,9 +79,9 @@ values and aliases include:
   \item{\code{"smoothed"}, \code{"posterior"}}{For a hidden Markov model,
     the state probabilities given all observations in the trajectory.}
   \item{\code{"posterior_transition"}}{Joint probabilities of adjacent states
-    given the whole trajectory, returned as an array indexed by next state,
-    previous state, and destination observation. Trajectory starts have
-    \code{NA} slices.}
+    given the whole trajectory. Each trajectory contains one matrix per
+    move, named by its destination time. Rows are next states and columns
+    are previous states. A trajectory with one observation has an empty list.}
   \item{\code{"viterbi"}}{Most probable joint state sequence for each
     trajectory. Values are integer state identifiers in the fitted model.}
   \item{\code{"loglik_trajectory"}}{Unweighted observed-data log-likelihood
@@ -85,6 +101,11 @@ reference class are retained, including in modal assignments.}
 \item{...}{Additional arguments to the generic.}
 
 \item{fit}{An object of class \code{"llca"} returned by \code{\link{lca}}.}
+
+\item{polish}{Logical. If TRUE, print \code{"transition"} with a heading
+for the shared matrix and \code{"posterior_transition"} with the ID and
+observation interval for each move. ID and time indexing, state order
+and numeric probabilities are preserved. Defaults to FALSE.}
 
 \item{model}{For the \code{"llcalist"} method, a collection containing
 \code{"llca"} and/or \code{"llca_sam"} model fits.}
@@ -108,14 +129,21 @@ Pattern weights are used when calculating average class probabilities,
 posterior class sizes, and classification-error matrices. Consequently,
 frequency-weighted models produce weighted inspection results.
 
-For hidden Markov models, observation-level results follow the original
-input row order. Trajectory-level results follow the order in which IDs first
-appeared. \code{"fullclasses"} gives the initial state probabilities, and
+For hidden Markov models, \code{"initial"} (also \code{"fullclasses"}),
+\code{"forward"}, \code{"backward"}, \code{"smoothed"}, \code{"state"},
+\code{"viterbi"}, \code{"posterior_transition"} and their aliases return
+lists named by trajectory ID, in order of first appearance. Without an ID
+column, the single trajectory is named \code{"1"}. Each initial probability
+matrix has one row. Within each trajectory, state probabilities are matrices
+with times as row names, and state assignments are vectors named by time,
+both in chronological order. \code{"transition"} gives the matrix shared
+by all trajectories, and
 \code{"classes"} averages them using trajectory weights. The class sizes in
 \code{"profile"} and the default state ordering use smoothed occupancy across
 all observations, with each trajectory weight applied to its observations.
 \code{"table"} returns the observations, marginal modal states, and smoothed
-probabilities. The modal state at each time can differ from the Viterbi path.
+probabilities in original input row order. The modal state at each time can
+differ from the Viterbi path.
 Use \code{sort = FALSE} to keep the state order from estimation.
 
 Gaussian item matrices are read by row name, using \code{"mean"} and

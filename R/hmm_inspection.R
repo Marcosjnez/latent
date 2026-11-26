@@ -1,5 +1,44 @@
 # HMM inspection in trajectory order and in the fitted state order.
 
+.print_hmm_transitions <- function(x, ...) {
+  print_matrix <- function(m) {
+    names(dimnames(m)) <- c("To state", "From state")
+    print.default(m, ...)
+  }
+  if(is.matrix(x)) {
+    cat("Transition probabilities shared by all trajectories\n")
+    print_matrix(unclass(x))
+  } else {
+    first_time <- attr(x, "first_time")
+    for(q in seq_along(x)) {
+      if(q > 1L) cat("\n")
+      cat("ID = ", names(x)[q], "\n", sep = "")
+      moves <- x[[q]]
+      if(!length(moves)) cat("One observation. No transitions.\n")
+      from <- first_time[q]
+      for(j in seq_along(moves)) {
+        to <- names(moves)[j]
+        cat("Joint state probabilities from time ", from, " to time ", to, "\n", sep = "")
+        print_matrix(moves[[j]])
+        from <- to
+      }
+    }
+  }
+  invisible(x)
+}
+
+.hmm_by_id <- function(value, d) {
+  times <- as.character(d$data[[d$time]])
+  rows <- split(seq_along(times), rep.int(seq_along(d$lengths), d$lengths))
+  names(rows) <- as.character(d$trajectory_ids)
+  if(is.matrix(value)) {
+    rownames(value) <- times
+    return(lapply(rows, function(i) value[i, , drop = FALSE]))
+  }
+  names(value) <- times
+  lapply(rows, function(i) value[i])
+}
+
 .hmm_log_row_sums <- function(x) {
   # log(rowSums(exp(x))), allowing an impossible transition or emission.
   shift <- x[cbind(seq_len(nrow(x)), max.col(x, ties.method = "first"))]
@@ -59,8 +98,8 @@
   need_smoothed <- with_smoothed || what == "smoothed"
   if(need_smoothed) smoothed <- filtered # At trajectory ends the two coincide.
   if(what == "posterior_transition") {
-    # A slice is indexed by the observation at the end of a transition.
-    result <- array(NA_real_, c(nclasses, nclasses, nrow(log_emission)))
+    result <- setNames(vector("list", length(first)), as.character(fit@dataList$trajectory_ids))
+    times <- as.character(fit@dataList$data[[fit@dataList$time]])
   } else if(what == "backward") {
     result <- matrix(1, nrow(log_emission), nclasses)
   }
@@ -68,6 +107,10 @@
   for(q in seq_along(first)) {
     start <- first[q]
     end <- last[q]
+    if(what == "posterior_transition") {
+      destinations <- start + seq_len(end - start)
+      result[[q]] <- setNames(vector("list", length(destinations)), times[destinations])
+    }
     if(end == start) next
 
     log_filtered <- log(filtered[start:end, , drop = FALSE])
@@ -103,7 +146,7 @@
         # The final value is one; multiplying by the filter gives the smoother.
         result[s - 1L, ] <- exp(log_backward - normalizer)
       } else if(what == "posterior_transition") {
-        result[, , s] <- t(exp(joint + log_forward - normalizer))
+        result[[q]][[s - start]] <- t(exp(joint + log_forward - normalizer))
       }
     }
   }

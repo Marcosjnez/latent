@@ -5,7 +5,7 @@
 \alias{latInspect.latent}
 \title{Inspect Latent Model Results}
 \usage{
-latInspect(x, ..., sort = TRUE)
+latInspect(x, ..., sort = TRUE, polish = FALSE)
 
 \method{latInspect}{latent}(x, what = "est", sort = TRUE, ..., fit = x)
 }
@@ -16,6 +16,10 @@ latInspect(x, ..., sort = TRUE)
 
 \item{sort}{Logical. Apply factor ordering/sign orientation or class ordering
 to the requested output. Defaults to TRUE. FALSE returns native outputs.}
+
+\item{polish}{Logical. If TRUE, print HMM transition probabilities with
+descriptive headings. For posterior transitions the headings identify the
+trajectory and the two observation times. Defaults to FALSE.}
 
 \item{what}{Character string identifying the requested component.}
 
